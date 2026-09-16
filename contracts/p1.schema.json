@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.2.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.3.0/p1.schema.json",
   "title": "FlowArkP1",
   "$defs": {
     "Json": {
@@ -376,6 +376,101 @@
             "binding",
             "name",
             "rows"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "type": {
+              "const": "excel"
+            },
+            "version": {
+              "const": 2
+            },
+            "name": {
+              "$ref": "#/$defs/Value"
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 3600000
+            },
+            "operation": {
+              "const": "fill"
+            },
+            "binding": {
+              "type": "string",
+              "maxLength": 100000
+            },
+            "templateName": {
+              "$ref": "#/$defs/Value"
+            },
+            "sheet": {
+              "type": "string",
+              "maxLength": 100000
+            },
+            "cells": {
+              "$ref": "#/$defs/Value"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "version",
+            "operation",
+            "binding",
+            "name",
+            "templateName",
+            "sheet",
+            "cells"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "type": {
+              "const": "file"
+            },
+            "version": {
+              "const": 2
+            },
+            "name": {
+              "$ref": "#/$defs/Value"
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 3600000
+            },
+            "operation": {
+              "const": "archive"
+            },
+            "binding": {
+              "type": "string",
+              "maxLength": 100000
+            },
+            "files": {
+              "$ref": "#/$defs/Value"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "version",
+            "operation",
+            "binding",
+            "name",
+            "files"
           ],
           "additionalProperties": false
         },

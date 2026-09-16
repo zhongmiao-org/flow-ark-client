@@ -161,6 +161,11 @@ app
       }
       await ready;
       if (startupError) throw new Error(startupError);
+      if (method === 'artifact.reveal') {
+        const path = await rpc.call('artifact.resolve', args);
+        shell.showItemInFolder(path);
+        return true;
+      }
       if (method === 'credentials.set') {
         await vault.set(args.id, args.value);
         return true;

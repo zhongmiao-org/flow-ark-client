@@ -37,6 +37,19 @@ try {
     nodeIntegration: false,
   });
   assert.equal(await page.evaluate(() => typeof window.require), 'undefined');
+  const missingConfirmation = await page.evaluate(async () => {
+    try {
+      await window.flowark.request('action.confirm', {
+        id: 'missing-confirmation',
+        policyHash: '0'.repeat(64),
+      });
+    } catch (error) {
+      return error.message;
+    }
+    return '';
+  });
+  assert.match(missingConfirmation, /不存在/);
+  assert.doesNotMatch(missingConfirmation, /方法未授权/);
   await page.getByRole('button', { name: '运行', exact: true }).first().click();
   console.log('Run submitted');
   const deadline = Date.now() + 20000;
@@ -83,6 +96,22 @@ try {
     path: 'test-results/desktop-editor.png',
     fullPage: true,
   });
+  await page.getByRole('button', { name: 'Excel 表格', exact: true }).click();
+  await page.getByRole('button', { name: '添加到主流程', exact: true }).click();
+  await page.getByLabel('操作', { exact: true }).selectOption('fill');
+  const fillNode = JSON.parse(await page.locator('.inspector .code-input').inputValue());
+  assert.equal(fillNode.version, 2);
+  assert.equal(fillNode.operation, 'fill');
+  assert.equal(fillNode.templateName, 'template.xlsx');
+  await page.getByRole('button', { name: '文件处理', exact: true }).click();
+  await page.getByRole('button', { name: '添加到主流程', exact: true }).click();
+  await page.getByLabel('操作', { exact: true }).selectOption('archive');
+  const archiveNode = JSON.parse(await page.locator('.inspector .code-input').inputValue());
+  assert.equal(archiveNode.version, 2);
+  assert.deepEqual(archiveNode.files, ['result.txt']);
+  await page.getByRole('button', { name: '保存', exact: true }).click();
+  assert.equal(await page.locator('.inspector').getByText(/招聘/).count(), 0);
+  await page.screenshot({ path: 'test-results/file-operations-editor.png', fullPage: true });
   const beforeTemplates = await page.evaluate(() => window.flowark.request('bootstrap'));
   await page.evaluate(() =>
     window.flowark.request('flow.create', { templateId: 'boss-resume-apply' }),

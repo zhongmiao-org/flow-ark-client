@@ -1,12 +1,17 @@
 {
   "name": "flow-ark-client",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "FlowArk 序舟本地自动化工作台",
   "private": true,
   "type": "module",
   "main": "dist/main.cjs",
   "author": "FlowArk",
   "license": "UNLICENSED",
+  "flowark": {
+    "governanceBaseline": "a950b6ab517c2a7aee6f4faaf9db7306c3f0bdd1",
+    "contractsVersion": "0.3.0",
+    "contractsTag": "contracts-v0.3.0"
+  },
   "packageManager": "pnpm@10.14.0",
   "engines": {
     "node": ">=24.3.0"
@@ -67,6 +72,7 @@
     "ajv": "8.20.0",
     "esbuild": "0.28.2",
     "exceljs": "4.4.0",
+    "jszip": "3.10.2",
     "lucide-react": "1.46.0",
     "monaco-editor": "0.56.0",
     "playwright-core": "1.63.0",

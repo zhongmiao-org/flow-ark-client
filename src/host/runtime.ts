@@ -162,22 +162,44 @@ export class Runtime {
   private assertAdmitting() {
     if (this.stopping || this.store.fault) throw new Error(this.store.fault ?? '应用正在退出');
   }
-  async enqueue(flowId: string, versionId?: string, scheduleId?: string, triggerId?: string, scheduleRevision?: string) {
+  async enqueue(
+    flowId: string,
+    versionId?: string,
+    scheduleId?: string,
+    triggerId?: string,
+    scheduleRevision?: string,
+  ) {
     this.assertAdmitting();
     // Capture the requested content before waiting, while serializing admission
     // so a cheap second preflight cannot overtake the first manual request.
     const record = this.store.get<FlowRecord>(versionId ? 'version' : 'flow', versionId ?? flowId);
     if (!record) throw new Error('流程或版本不存在');
-    const pending = this.admissions.then(() => this.admit(record, flowId, versionId, scheduleId, triggerId, scheduleRevision));
-    this.admissions = pending.then(() => {}, () => {});
+    const pending = this.admissions.then(() =>
+      this.admit(record, flowId, versionId, scheduleId, triggerId, scheduleRevision),
+    );
+    this.admissions = pending.then(
+      () => {},
+      () => {},
+    );
     return pending;
   }
-  private async admit(record: FlowRecord, flowId: string, versionId?: string, scheduleId?: string, triggerId?: string, scheduleRevision?: string) {
+  private async admit(
+    record: FlowRecord,
+    flowId: string,
+    versionId?: string,
+    scheduleId?: string,
+    triggerId?: string,
+    scheduleRevision?: string,
+  ) {
     const check = () => {
       this.assertAdmitting();
       if (scheduleId) {
         const schedule = this.store.get<Schedule>('schedule', scheduleId);
-        if (!schedule?.enabled || schedule.versionId !== versionId || schedule.revision !== scheduleRevision)
+        if (
+          !schedule?.enabled ||
+          schedule.versionId !== versionId ||
+          schedule.revision !== scheduleRevision
+        )
           throw new Error('计划已暂停或配置已变化，本次触发已跳过');
       }
     };
@@ -415,6 +437,13 @@ export class Runtime {
     );
     return { artifactId: item.artifactId, runId };
   }
+  private async artifactAvailable(item: { path: string }) {
+    try {
+      return (await realpath(item.path)) === item.path && (await stat(item.path)).isFile();
+    } catch {
+      return false;
+    }
+  }
   async control(id: string, action: 'pause' | 'resume' | 'cancel') {
     const run = this.store.get<Run>('run', id);
     if (!run) throw new Error('运行不存在');
@@ -430,7 +459,10 @@ export class Runtime {
       a.cancelling = true;
       a.abort.abort(new Error('用户取消'));
       this.store.state(id, 'CANCELLING');
-      if (a.child.connected) a.child.send({ control: 'cancel' }, error => { if (error) a.rpc.close(); });
+      if (a.child.connected)
+        a.child.send({ control: 'cancel' }, (error) => {
+          if (error) a.rpc.close();
+        });
       await this.sessions.release(id, true);
       setTimeout(() => void killOwnedTree(a.child), 2000).unref();
       return true;
@@ -440,7 +472,9 @@ export class Runtime {
     if (action === 'resume' && !['PAUSED', 'WAITING_INPUT'].includes(run.state))
       throw new Error('运行当前无需继续');
     if (!a.child.connected) throw new Error('运行进程已断开');
-    a.child.send({ control: action }, error => { if (error) a.rpc.close(); });
+    a.child.send({ control: action }, (error) => {
+      if (error) a.rpc.close();
+    });
     return true;
   }
   private skipMissed(reason: string, time = Date.now()) {
@@ -550,10 +584,22 @@ export class Runtime {
         return {
           run: this.store.get('run', args.id),
           events: this.store.events(args.id),
-          artifacts: this.store.list<any>('artifact').filter((a) => a.runId === args.id),
+          artifacts: await Promise.all(
+            this.store
+              .list<any>('artifact')
+              .filter((a) => a.runId === args.id)
+              .map(async (a) => ({ ...a, available: await this.artifactAvailable(a) })),
+          ),
           output: redact(this.store.get('output', args.id)),
           snapshot: this.store.get('snapshot', args.id)?.flow,
         };
+      case 'artifact.resolve': {
+        const item = this.store.get<any>('artifact', args.id);
+        if (!item) throw new Error('产物不存在');
+        if (!(await this.artifactAvailable(item)))
+          throw new Error('产物文件已移动、删除或不可访问');
+        return item.path;
+      }
       case 'browser.discover':
         return discoverBrowsers();
       case 'browser.bind': {

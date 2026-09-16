@@ -19,6 +19,7 @@ export const methods = {
   'flow.create': z.object({ templateId: id.optional() }).strict(),
   'flow.run': z.object({ id }).strict(),
   'run.detail': z.object({ id }).strict(),
+  'artifact.reveal': z.object({ id }).strict(),
   'run.control': z.object({ id, action: z.enum(['pause', 'resume', 'cancel']) }).strict(),
   'browser.discover': empty,
   'browser.bind': z

@@ -11,8 +11,13 @@ await verifyBundle(executablePath.split('/Contents/MacOS/')[0]);
 const data = await mkdtemp(join(tmpdir(), 'flowark-installed-data-'));
 const evidence = [];
 for (let phase = 0; phase < 2; phase++) {
+  const phaseExecutable =
+    phase === 0 && process.env.FLOWARK_PREVIOUS_EXECUTABLE
+      ? process.env.FLOWARK_PREVIOUS_EXECUTABLE
+      : executablePath;
+  await verifyBundle(phaseExecutable.split('/Contents/MacOS/')[0]);
   const app = await electron.launch({
-    executablePath,
+    executablePath: phaseExecutable,
     env: { ...process.env, FLOWARK_DATA_DIR: data },
     timeout: 30000,
   });
@@ -62,6 +67,7 @@ for (let phase = 0; phase < 2; phase++) {
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].show());
     evidence.push({
       phase: phase === 0 ? 'first-launch' : 'reopen',
+      appVersion: await app.evaluate(({ app }) => app.getVersion()),
       previousRuns: first.runs.length,
       tray: true,
     });
@@ -95,7 +101,14 @@ await mkdir('test-results', { recursive: true });
 await writeFile(
   'test-results/install.json',
   JSON.stringify(
-    { time: new Date().toISOString(), executablePath, dataPath: data, evidence, realApi: false },
+    {
+      time: new Date().toISOString(),
+      executablePath,
+      previousExecutable: process.env.FLOWARK_PREVIOUS_EXECUTABLE ?? null,
+      dataPath: data,
+      evidence,
+      realApi: false,
+    },
     null,
     2,
   ),

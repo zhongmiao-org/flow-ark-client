@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, symlink, realpath } from 'node:fs/promises';
+import ExcelJS from 'exceljs';
+import JSZip from 'jszip';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -25,6 +27,90 @@ async function until(fn: () => boolean, timeout = 12000) {
     await new Promise((r) => setTimeout(r, 20));
   }
 }
+test('real Worker fills workbook, archives it and preserves run history when artifacts disappear', async () => {
+  const path = await realpath(await mkdtemp(join(tmpdir(), 'flowark-workbook-runtime-')));
+  const runtime = new Runtime(
+    path,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  try {
+    const book = new ExcelJS.Workbook();
+    book.addWorksheet('Sheet1').getCell('A1').value = 'before';
+    await book.xlsx.writeFile(join(path, 'template.xlsx'));
+    runtime.saveFlow(
+      {
+        ...base,
+        parameters: { cells: { A1: 'after', B1: 9 } },
+        steps: [
+          {
+            id: 'fill',
+            type: 'excel',
+            version: 2,
+            operation: 'fill',
+            binding: 'workspace',
+            name: 'filled.xlsx',
+            templateName: 'template.xlsx',
+            sheet: '',
+            cells: { $ref: 'params.cells' },
+          },
+          {
+            id: 'zip',
+            type: 'file',
+            version: 2,
+            operation: 'archive',
+            binding: 'workspace',
+            name: 'archive.zip',
+            files: ['filled.xlsx'],
+          },
+        ],
+      },
+      { files: { workspace: path }, credentials: [] },
+    );
+    const run = await runtime.enqueue('test');
+    await until(() =>
+      ['SUCCEEDED', 'FAILED'].includes(runtime.store.get<Run>('run', run.id)?.state ?? ''),
+    );
+    let detail = await runtime.request('run.detail', { id: run.id });
+    assert.equal(detail.run.state, 'SUCCEEDED', detail.run.error);
+    assert.equal(detail.artifacts.length, 2);
+    assert.ok(detail.artifacts.every((a: any) => a.available));
+    const output = detail.artifacts.find((a: any) => a.name === 'filled.xlsx');
+    assert.equal(
+      await runtime.request('artifact.resolve', { id: output.artifactId }),
+      join(path, 'filled.xlsx'),
+    );
+    const zip = await JSZip.loadAsync(await readFile(join(path, 'archive.zip')));
+    const restored = new ExcelJS.Workbook();
+    await restored.xlsx.load((await zip.file('filled.xlsx')!.async('nodebuffer')) as any);
+    assert.equal(restored.worksheets[0].getCell('A1').value, 'after');
+    assert.equal(restored.worksheets[0].getCell('B1').value, 9);
+    await rm(join(path, 'filled.xlsx'));
+    detail = await runtime.request('run.detail', { id: run.id });
+    assert.equal(detail.run.state, 'SUCCEEDED');
+    assert.equal(
+      detail.artifacts.find((a: any) => a.artifactId === output.artifactId).available,
+      false,
+    );
+    await assert.rejects(
+      runtime.request('artifact.resolve', { id: output.artifactId }),
+      /移动、删除/,
+    );
+    await assert.rejects(runtime.request('artifact.resolve', { id: 'unknown' }), /不存在/);
+    await symlink(join(path, 'template.xlsx'), join(path, 'filled.xlsx'));
+    await assert.rejects(
+      runtime.request('artifact.resolve', { id: output.artifactId }),
+      /移动、删除/,
+    );
+    assert.equal(runtime.store.get<Run>('run', run.id)?.state, 'SUCCEEDED');
+  } finally {
+    await runtime.shutdown();
+    runtime.store.close();
+    await rm(path, { recursive: true, force: true });
+  }
+});
 test('real Worker FIFO, immutable snapshot, human wait, queued cancellation and restart history', async () => {
   const path = await mkdtemp(join(tmpdir(), 'flowark-runtime-'));
   const key = randomBytes(32);
@@ -330,92 +416,179 @@ test('SQLite event write failure stops admissions and preserves existing history
 });
 
 test('concurrent manual requests stay FIFO and retain content captured before slow admission', async () => {
-  const runtime = new Runtime(await mkdtemp(join(tmpdir(), 'flowark-admission-')), resolve('dist'), process.execPath, randomBytes(32), async () => []);
+  const runtime = new Runtime(
+    await mkdtemp(join(tmpdir(), 'flowark-admission-')),
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
   let release!: () => void;
   let entered = false;
-  const gate = new Promise<void>(r => { release = r; });
+  const gate = new Promise<void>((r) => {
+    release = r;
+  });
   const original = runtime.preflight.bind(runtime);
-  runtime.preflight = async record => {
-    if (record.id === 'slow' && !entered) { entered = true; await gate; }
+  runtime.preflight = async (record) => {
+    if (record.id === 'slow' && !entered) {
+      entered = true;
+      await gate;
+    }
     return original(record);
   };
   try {
-    const flow = (id: string, value: string): Flow => ({ ...base, id, steps: [{ id: 'v', type: 'value', version: 1, value }] });
+    const flow = (id: string, value: string): Flow => ({
+      ...base,
+      id,
+      steps: [{ id: 'v', type: 'value', version: 1, value }],
+    });
     runtime.saveFlow(flow('slow', 'first'), { files: {}, credentials: [] });
     runtime.saveFlow(flow('fast', 'requested'), { files: {}, credentials: [] });
     const first = runtime.enqueue('slow');
     await until(() => entered);
     const second = runtime.enqueue('fast');
     runtime.saveFlow(flow('fast', 'edited-after-request'), { files: {}, credentials: [] });
-    await new Promise(r => setTimeout(r, 40));
+    await new Promise((r) => setTimeout(r, 40));
     assert.equal(runtime.store.list('run').length, 0);
     release();
     const runs = await Promise.all([first, second]);
-    await until(() => runs.every(r => runtime.store.get<Run>('run', r.id)!.state === 'SUCCEEDED'));
-    assert.deepEqual(runtime.store.list<Run>('run').map(r => r.flowId), ['slow', 'fast']);
+    await until(() =>
+      runs.every((r) => runtime.store.get<Run>('run', r.id)!.state === 'SUCCEEDED'),
+    );
+    assert.deepEqual(
+      runtime.store.list<Run>('run').map((r) => r.flowId),
+      ['slow', 'fast'],
+    );
     assert.equal(runtime.store.get('output', runs[1].id).v, 'requested');
-  } finally { release(); await runtime.shutdown(); runtime.store.close(); }
+  } finally {
+    release();
+    await runtime.shutdown();
+    runtime.store.close();
+  }
 });
 
 test('shutdown during preflight rejects a late admission without creating a run', async () => {
-  const runtime = new Runtime(await mkdtemp(join(tmpdir(), 'flowark-admission-exit-')), resolve('dist'), process.execPath, randomBytes(32), async () => []);
+  const runtime = new Runtime(
+    await mkdtemp(join(tmpdir(), 'flowark-admission-exit-')),
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
   let release!: () => void;
   let entered = false;
-  const gate = new Promise<void>(r => { release = r; });
+  const gate = new Promise<void>((r) => {
+    release = r;
+  });
   const original = runtime.preflight.bind(runtime);
-  runtime.preflight = async record => { entered = true; await gate; return original(record); };
+  runtime.preflight = async (record) => {
+    entered = true;
+    await gate;
+    return original(record);
+  };
   try {
     const pending = runtime.enqueue('hello');
     const rejected = assert.rejects(pending, /退出/);
     await until(() => entered);
     await runtime.shutdown();
-    release(); await rejected;
+    release();
+    await rejected;
     assert.equal(runtime.store.list('run').length, 0);
-  } finally { release(); await runtime.shutdown(); runtime.store.close(); }
+  } finally {
+    release();
+    await runtime.shutdown();
+    runtime.store.close();
+  }
 });
 
 test('schedule occupancy and duplicate triggers never create additional runs; pause revokes pending admission', async () => {
-  const runtime = new Runtime(await mkdtemp(join(tmpdir(), 'flowark-schedule-races-')), resolve('dist'), process.execPath, randomBytes(32), async () => []);
+  const runtime = new Runtime(
+    await mkdtemp(join(tmpdir(), 'flowark-schedule-races-')),
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
   let release: (() => void) | undefined;
   try {
-    runtime.saveFlow({ ...base, steps: [{ id: 'wait', type: 'human', version: 1, message: 'fixture' }] }, { files: {}, credentials: [] });
-    const plan = await runtime.request('schedule.save', { flowId: 'test', intervalMinutes: 1, timezone: 'Asia/Shanghai' });
+    runtime.saveFlow(
+      { ...base, steps: [{ id: 'wait', type: 'human', version: 1, message: 'fixture' }] },
+      { files: {}, credentials: [] },
+    );
+    const plan = await runtime.request('schedule.save', {
+      flowId: 'test',
+      intervalMinutes: 1,
+      timezone: 'Asia/Shanghai',
+    });
     const time = Date.now();
     const due = time - 1;
     runtime.store.put('schedule', plan.id, { ...plan, nextAt: due });
     await runtime.tick(time);
     const first = runtime.store.list<Run>('run')[0];
     await until(() => runtime.store.get<Run>('run', first.id)!.state === 'WAITING_INPUT');
-    runtime.store.put('schedule', plan.id, { ...runtime.store.get('schedule', plan.id), nextAt: time + 1 });
+    runtime.store.put('schedule', plan.id, {
+      ...runtime.store.get('schedule', plan.id),
+      nextAt: time + 1,
+    });
     await runtime.tick(time + 2);
     assert.equal(runtime.store.list('run').length, 1);
-    assert.ok(runtime.store.list<any>('schedule-log').some(log => log.reason === 'occupied'));
-    await assert.rejects(runtime.enqueue('test', plan.versionId, plan.id, plan.id + ':' + due, plan.revision), /重复计划/);
+    assert.ok(runtime.store.list<any>('schedule-log').some((log) => log.reason === 'occupied'));
+    await assert.rejects(
+      runtime.enqueue('test', plan.versionId, plan.id, plan.id + ':' + due, plan.revision),
+      /重复计划/,
+    );
     await runtime.control(first.id, 'cancel');
     await until(() => runtime.store.get<Run>('run', first.id)!.state === 'CANCELLED');
     let entered = false;
-    const gate = new Promise<void>(r => { release = r; });
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
     const original = runtime.preflight.bind(runtime);
-    runtime.preflight = async record => { entered = true; await gate; return original(record); };
-    runtime.store.put('schedule', plan.id, { ...runtime.store.get('schedule', plan.id), nextAt: time + 3 });
+    runtime.preflight = async (record) => {
+      entered = true;
+      await gate;
+      return original(record);
+    };
+    runtime.store.put('schedule', plan.id, {
+      ...runtime.store.get('schedule', plan.id),
+      nextAt: time + 3,
+    });
     const tick = runtime.tick(time + 4);
     await until(() => entered);
     await runtime.request('schedule.toggle', { id: plan.id, enabled: false });
-    release!(); await tick;
+    release!();
+    await tick;
     assert.equal(runtime.store.list('run').length, 1);
-    assert.ok(runtime.store.list<any>('schedule-log').some(log => log.reason.includes('已暂停')));
-  } finally { release?.(); await runtime.shutdown(); runtime.store.close(); }
+    assert.ok(runtime.store.list<any>('schedule-log').some((log) => log.reason.includes('已暂停')));
+  } finally {
+    release?.();
+    await runtime.shutdown();
+    runtime.store.close();
+  }
 });
 
 test('large wall-clock gaps skip missed windows using the observed clock', async () => {
-  const runtime = new Runtime(await mkdtemp(join(tmpdir(), 'flowark-clock-')), resolve('dist'), process.execPath, randomBytes(32), async () => []);
+  const runtime = new Runtime(
+    await mkdtemp(join(tmpdir(), 'flowark-clock-')),
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
   try {
-    const plan = await runtime.request('schedule.save', { flowId: 'hello', intervalMinutes: 1, timezone: 'Asia/Shanghai' });
+    const plan = await runtime.request('schedule.save', {
+      flowId: 'hello',
+      intervalMinutes: 1,
+      timezone: 'Asia/Shanghai',
+    });
     const time = Date.now() + 3600000;
     await runtime.tick(time);
     assert.equal(runtime.store.list('run').length, 0);
     assert.equal(runtime.store.get('schedule', plan.id).nextAt, time + 60000);
-  } finally { await runtime.shutdown(); runtime.store.close(); }
+  } finally {
+    await runtime.shutdown();
+    runtime.store.close();
+  }
 });
 
 test('SIGKILL of actual host stops its script and recovers active/queued runs without replay', async () => {
@@ -425,28 +598,56 @@ test('SIGKILL of actual host stops its script and recovers active/queued runs wi
   const marker = join(root, 'starts.txt');
   async function launch() {
     const proc = child(resolve('dist/host.cjs'), process.execPath);
-    const rpc = new Rpc(m => proc.send(m), async () => []);
-    proc.on('message', m => void rpc.receive(m as any));
-    proc.on('exit', () => rpc.close()); proc.on('error', () => rpc.close());
-    await rpc.call('init', { dataPath: root, executable: process.execPath, key: key.toString('base64') });
+    const rpc = new Rpc(
+      (m) => proc.send(m),
+      async () => [],
+    );
+    proc.on('message', (m) => void rpc.receive(m as any));
+    proc.on('exit', () => rpc.close());
+    proc.on('error', () => rpc.close());
+    await rpc.call('init', {
+      dataPath: root,
+      executable: process.execPath,
+      key: key.toString('base64'),
+    });
     return { proc, rpc };
   }
   let host = await launch();
   let scriptPid = 0;
   try {
-    const flow: Flow = { ...base, steps: [{ id: 'owned', type: 'script', version: 1, language: 'js', dependencies: [], input: { pidFile, marker },
-      code: 'import {writeFile,appendFile} from "node:fs/promises"; export default async ({input}) => { await writeFile(input.pidFile,String(process.pid)); await appendFile(input.marker,"started\\n"); await new Promise(()=>{}); }' }] };
+    const flow: Flow = {
+      ...base,
+      steps: [
+        {
+          id: 'owned',
+          type: 'script',
+          version: 1,
+          language: 'js',
+          dependencies: [],
+          input: { pidFile, marker },
+          code: 'import {writeFile,appendFile} from "node:fs/promises"; export default async ({input}) => { await writeFile(input.pidFile,String(process.pid)); await appendFile(input.marker,"started\\n"); await new Promise(()=>{}); }',
+        },
+      ],
+    };
     await host.rpc.call('flow.save', { flow, bindings: { files: {}, credentials: [] } });
     const first = await host.rpc.call('flow.run', { id: 'test' });
     const second = await host.rpc.call('flow.run', { id: 'test' });
     for (let attempt = 0; attempt < 200 && !scriptPid; attempt++) {
       scriptPid = Number(await readFile(pidFile, 'utf8').catch(() => ''));
-      if (!scriptPid) await new Promise(r => setTimeout(r, 20));
+      if (!scriptPid) await new Promise((r) => setTimeout(r, 20));
     }
     assert.ok(scriptPid);
-    const exited = new Promise(resolve => host.proc.once('exit', resolve));
-    host.proc.kill('SIGKILL'); await exited;
-    await until(() => { try { process.kill(scriptPid, 0); return false; } catch { return true; } });
+    const exited = new Promise((resolve) => host.proc.once('exit', resolve));
+    host.proc.kill('SIGKILL');
+    await exited;
+    await until(() => {
+      try {
+        process.kill(scriptPid, 0);
+        return false;
+      } catch {
+        return true;
+      }
+    });
     host = await launch();
     const data = await host.rpc.call('bootstrap');
     assert.equal(data.runs.find((r: Run) => r.id === first.id).state, 'INTERRUPTED');
@@ -455,6 +656,7 @@ test('SIGKILL of actual host stops its script and recovers active/queued runs wi
     await host.rpc.call('shutdown');
   } finally {
     if (host.proc.connected) host.proc.disconnect();
-    await killOwnedTree(host.proc); host.rpc.close();
+    await killOwnedTree(host.proc);
+    host.rpc.close();
   }
 });

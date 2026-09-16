@@ -546,6 +546,7 @@ export default function App() {
                 detail={detail}
                 back={() => setDetail(null)}
                 control={(id, a) => action(() => api('run.control', { id, action: a }))}
+                reveal={(id) => action(() => api('artifact.reveal', { id }))}
               />
             ) : (
               <div className="table-wrap">
@@ -783,7 +784,7 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose 
                 <small>{kinds[n.type].label}</small>
                 <b>{typeof n.name === 'string' ? n.name : n.id}</b>
               </div>
-              <em>v1</em>
+              <em>v{n.version}</em>
             </div>
           ),
         },
@@ -915,6 +916,58 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose 
                 </button>
               </div>
               <p className="muted">{selectedNode.id} · 修改后保存，下一次运行生效</p>
+              {(selectedNode.type === 'file' || selectedNode.type === 'excel') && (
+                <>
+                  <label htmlFor="file-operation">操作</label>
+                  <select
+                    id="file-operation"
+                    value={selectedNode.operation}
+                    onChange={(e) => {
+                      const operation = e.target.value;
+                      const isExcel = selectedNode.type === 'excel';
+                      const extra = isExcel
+                        ? operation === 'fill'
+                          ? {
+                              version: 2,
+                              name: 'filled.xlsx',
+                              templateName: 'template.xlsx',
+                              sheet: '',
+                              cells: { A1: '示例' },
+                            }
+                          : { version: 1, name: 'result.xlsx', rows: [] }
+                        : operation === 'archive'
+                          ? { version: 2, name: 'archive.zip', files: ['result.txt'] }
+                          : {
+                              version: 1,
+                              name: 'result.txt',
+                              content: operation === 'copy' ? 'source.txt' : '',
+                            };
+                      const next = {
+                        id: selectedNode.id,
+                        type: selectedNode.type,
+                        binding: selectedNode.binding,
+                        ...(selectedNode.timeoutMs ? { timeoutMs: selectedNode.timeoutMs } : {}),
+                        operation,
+                        ...extra,
+                      } as Step;
+                      patch(() => next);
+                      setRaw(JSON.stringify(next, null, 2));
+                      setInvalid('');
+                    }}
+                  >
+                    <option value="read">读取</option>
+                    <option value="write">写入</option>
+                    {selectedNode.type === 'excel' ? (
+                      <option value="fill">填充工作簿模板</option>
+                    ) : (
+                      <>
+                        <option value="copy">复制文件</option>
+                        <option value="archive">归档为 ZIP</option>
+                      </>
+                    )}
+                  </select>
+                </>
+              )}
               {selectedNode.type === 'script' && (
                 <>
                   <label>可信脚本 · 独立进程执行</label>
@@ -1076,10 +1129,12 @@ function RunDetail({
   detail: d,
   back,
   control,
+  reveal,
 }: {
   detail: any;
   back: () => void;
   control: (id: string, a: string) => void;
+  reveal: (id: string) => void;
 }) {
   const r: Run = d.run;
   return (
@@ -1141,9 +1196,15 @@ function RunDetail({
         <>
           <h3>运行产物</h3>
           {d.artifacts.map((a: any) => (
-            <p key={a.artifactId} className="path-text">
-              {a.name} · {a.size} 字节 · {a.path}
-            </p>
+            <div key={a.artifactId} className="row">
+              <p className="path-text">
+                {a.name} · {a.size} 字节 · {a.path}
+                {!a.available && <span className="field-error"> · 文件已移动、删除或不可访问</span>}
+              </p>
+              <button disabled={!a.available} onClick={() => reveal(a.artifactId)}>
+                在文件夹中显示
+              </button>
+            </div>
           ))}
         </>
       )}

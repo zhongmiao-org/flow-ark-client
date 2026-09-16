@@ -69,6 +69,28 @@ export type Node =
     }
   | {
       id: string;
+      type: 'excel';
+      version: 2;
+      name: Value;
+      timeoutMs?: number;
+      operation: 'fill';
+      binding: string;
+      templateName: Value;
+      sheet: string;
+      cells: Value;
+    }
+  | {
+      id: string;
+      type: 'file';
+      version: 2;
+      name: Value;
+      timeoutMs?: number;
+      operation: 'archive';
+      binding: string;
+      files: Value;
+    }
+  | {
+      id: string;
       type: 'browser';
       version: 1;
       name?: string;
