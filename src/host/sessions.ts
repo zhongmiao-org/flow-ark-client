@@ -28,6 +28,7 @@ export class Sessions {
         },
       );
       proc.on('message', (m) => void rpc.receive(m as any));
+      proc.on('error', () => rpc.close());
       s = {
         child: proc,
         rpc,

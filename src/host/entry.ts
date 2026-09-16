@@ -21,8 +21,8 @@ const rpc = new Rpc(send, async (method, args) => {
 });
 if (port) {
   port.on('message', (e: any) => void rpc.receive(e.data));
-  port.on('close', () => void runtime?.shutdown());
+  port.on('close', () => { rpc.close(); void runtime?.shutdown(); });
 } else {
   process.on('message', (m) => void rpc.receive(m as any));
-  process.on('disconnect', () => void runtime?.shutdown().finally(() => process.exit(0)));
+  process.on('disconnect', () => { rpc.close(); void runtime?.shutdown().finally(() => process.exit(0)); });
 }

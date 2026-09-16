@@ -61,6 +61,7 @@ export type Schedule = {
   timezone: string;
   enabled: boolean;
   nextAt: number;
+  revision?: string;
 };
 export type Attention = {
   id: string;

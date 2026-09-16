@@ -8,6 +8,7 @@ type Message = {
   reply?: boolean;
 };
 export class Rpc {
+  private closed = false;
   private pending = new Map<
     string,
     {
@@ -21,7 +22,7 @@ export class Rpc {
     private handler: (method: string, args: any) => Promise<any>,
   ) {}
   async receive(m: Message) {
-    if (!m?.rpc) return;
+    if (this.closed || !m?.rpc) return;
     if (m.reply) {
       const p = this.pending.get(m.rpc);
       if (p) {
@@ -31,21 +32,22 @@ export class Rpc {
       }
       return;
     }
+    let reply: Message;
     try {
-      this.send({
-        rpc: m.rpc,
-        reply: true,
-        result: await this.handler(m.method!, m.args),
-      });
+      reply = { rpc: m.rpc, reply: true, result: await this.handler(m.method!, m.args) };
     } catch (e) {
-      this.send({
+      reply = {
         rpc: m.rpc,
         reply: true,
         error: e instanceof Error ? e.message : '请求失败',
-      });
+      };
+    }
+    if (!this.closed) {
+      try { this.send(reply); } catch { this.close(); }
     }
   }
   call(method: string, args: any = {}, timeoutMs = 65000): Promise<any> {
+    if (this.closed) return Promise.reject(new Error('进程已断开'));
     const id = uid();
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
@@ -63,6 +65,7 @@ export class Rpc {
     });
   }
   close() {
+    this.closed = true;
     for (const p of this.pending.values()) {
       clearTimeout(p.timer);
       p.reject(new Error('进程已断开'));

@@ -49,6 +49,7 @@ export async function runScript(options: {
   const rpc = new Rpc((m) => proc.send(m), options.call);
   proc.on('message', (m) => void rpc.receive(m as any));
   proc.on('exit', () => rpc.close());
+  proc.on('error', () => rpc.close());
   const cancel = () => {
     if (proc.connected) proc.send({ control: 'cancel' }, () => {});
     void killOwnedTree(proc);

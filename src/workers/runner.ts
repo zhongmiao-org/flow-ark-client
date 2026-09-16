@@ -130,6 +130,7 @@ process.on('message', (m: any) => {
   } else void rpc.receive(m);
 });
 process.on('disconnect', () => {
+  rpc.close();
   abort.abort(new Error('运行宿主已断开'));
   // Allow the script adapter to terminate its owned child before leaving.
   setTimeout(() => process.exit(1), 1800).unref();

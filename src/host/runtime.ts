@@ -51,6 +51,7 @@ export class Runtime {
   private lastTick = Date.now();
   private timer?: NodeJS.Timeout;
   private secrets: string[] = [];
+  private admissions: Promise<void> = Promise.resolve();
   constructor(
     readonly dataPath: string,
     private dir: string,
@@ -158,11 +159,31 @@ export class Runtime {
       }
     return scripts;
   }
-  async enqueue(flowId: string, versionId?: string, scheduleId?: string, triggerId?: string) {
+  private assertAdmitting() {
     if (this.stopping || this.store.fault) throw new Error(this.store.fault ?? '应用正在退出');
+  }
+  async enqueue(flowId: string, versionId?: string, scheduleId?: string, triggerId?: string, scheduleRevision?: string) {
+    this.assertAdmitting();
+    // Capture the requested content before waiting, while serializing admission
+    // so a cheap second preflight cannot overtake the first manual request.
     const record = this.store.get<FlowRecord>(versionId ? 'version' : 'flow', versionId ?? flowId);
     if (!record) throw new Error('流程或版本不存在');
+    const pending = this.admissions.then(() => this.admit(record, flowId, versionId, scheduleId, triggerId, scheduleRevision));
+    this.admissions = pending.then(() => {}, () => {});
+    return pending;
+  }
+  private async admit(record: FlowRecord, flowId: string, versionId?: string, scheduleId?: string, triggerId?: string, scheduleRevision?: string) {
+    const check = () => {
+      this.assertAdmitting();
+      if (scheduleId) {
+        const schedule = this.store.get<Schedule>('schedule', scheduleId);
+        if (!schedule?.enabled || schedule.versionId !== versionId || schedule.revision !== scheduleRevision)
+          throw new Error('计划已暂停或配置已变化，本次触发已跳过');
+      }
+    };
+    check();
     const scripts = await this.preflight(record);
+    check();
     const id = uid();
     const version = versionId ?? this.version(record);
     const run: Run = {
@@ -216,6 +237,7 @@ export class Runtime {
     this.active = active;
     proc.on('message', (m) => void rpc.receive(m as any));
     proc.on('exit', () => rpc.close());
+    proc.on('error', () => rpc.close());
     try {
       this.store.state(run.id, 'RUNNING');
       const s = this.store.get<FlowRecord & { scripts: Record<string, string> }>(
@@ -408,7 +430,7 @@ export class Runtime {
       a.cancelling = true;
       a.abort.abort(new Error('用户取消'));
       this.store.state(id, 'CANCELLING');
-      a.child.send({ control: 'cancel' });
+      if (a.child.connected) a.child.send({ control: 'cancel' }, error => { if (error) a.rpc.close(); });
       await this.sessions.release(id, true);
       setTimeout(() => void killOwnedTree(a.child), 2000).unref();
       return true;
@@ -417,11 +439,11 @@ export class Runtime {
       throw new Error('只有运行中的任务可请求暂停');
     if (action === 'resume' && !['PAUSED', 'WAITING_INPUT'].includes(run.state))
       throw new Error('运行当前无需继续');
-    a.child.send({ control: action });
+    if (!a.child.connected) throw new Error('运行进程已断开');
+    a.child.send({ control: action }, error => { if (error) a.rpc.close(); });
     return true;
   }
-  private skipMissed(reason: string) {
-    const time = Date.now();
+  private skipMissed(reason: string, time = Date.now()) {
     for (const s of this.store.list<Schedule>('schedule'))
       if (s.enabled && s.nextAt <= time) {
         this.store.put('schedule-log', uid(), {
@@ -440,7 +462,7 @@ export class Runtime {
     if (this.stopping || this.ticking || this.store.fault) return;
     this.ticking = true;
     try {
-      if (time - this.lastTick > 10000) this.skipMissed('sleep-or-clock-gap');
+      if (time - this.lastTick > 10000) this.skipMissed('sleep-or-clock-gap', time);
       this.lastTick = time;
       for (const s of this.store.list<Schedule>('schedule'))
         if (s.enabled && s.nextAt <= time) {
@@ -459,7 +481,7 @@ export class Runtime {
             });
           else
             try {
-              await this.enqueue(s.flowId, s.versionId, s.id, triggerId);
+              await this.enqueue(s.flowId, s.versionId, s.id, triggerId, s.revision);
             } catch (e) {
               this.store.put('schedule-log', uid(), {
                 scheduleId: s.id,
@@ -540,9 +562,11 @@ export class Runtime {
         return b;
       }
       case 'schedule.save': {
+        this.assertAdmitting();
         const r = this.store.get<FlowRecord>('flow', args.flowId);
         if (!r) throw new Error('流程不存在');
         await this.preflight(r);
+        this.assertAdmitting();
         new Intl.DateTimeFormat('en', { timeZone: args.timezone });
         const s = {
           id: args.id ?? uid(),
@@ -552,6 +576,7 @@ export class Runtime {
           timezone: args.timezone,
           enabled: true,
           nextAt: Date.now() + args.intervalMinutes * 60000,
+          revision: uid(),
         };
         this.store.put('schedule', s.id, s);
         return s;
@@ -563,6 +588,7 @@ export class Runtime {
           ...s,
           enabled: args.enabled,
           nextAt: Date.now() + s.intervalMinutes * 60000,
+          revision: uid(),
         });
         return true;
       }
