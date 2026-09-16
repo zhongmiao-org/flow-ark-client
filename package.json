@@ -31,6 +31,7 @@
     "test:scenario": "node --import tsx scripts/scenario-smoke.ts",
     "test:desktop": "node scripts/desktop-smoke.mjs",
     "test:install": "node scripts/install-smoke.mjs",
+    "test:vault": "node --import tsx scripts/vault-smoke.mjs",
     "package:mac": "pnpm build && electron-builder --mac zip --arm64 --publish never --config.electronDist=node_modules/electron/dist && node scripts/package-dmg.mjs"
   },
   "build": {

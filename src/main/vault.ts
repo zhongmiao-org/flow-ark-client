@@ -28,14 +28,18 @@ export class Vault {
     return (await safeStorage.decryptStringAsync(encrypted)).result;
   }
   async key() {
+    await this.available();
+    let encrypted: Buffer;
     try {
-      return await this.get('data-key');
+      encrypted = await readFile(this.path('data-key'));
     } catch (e: any) {
       if (e.code !== 'ENOENT') throw e;
       const key = randomBytes(32).toString('base64');
       await this.set('data-key', key);
       return key;
     }
+    // Only a missing file authorizes creation. A backend/decryption failure must preserve the key.
+    return (await safeStorage.decryptStringAsync(encrypted)).result;
   }
   async list() {
     const found: string[] = [];

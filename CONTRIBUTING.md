@@ -5,6 +5,7 @@
 - 提交采用 `type(scope): description`，例如 `fix(editor): 修复节点排序`。
 - 不提交 API Key、账号资料、浏览器 Profile、数据库、测试产物或安装包。
 - 执行 `pnpm check`；涉及运行、取消、调度时补充 `pnpm test:runtime`。涉及桌面或浏览器时按改动执行 `pnpm test:desktop`、`pnpm test:browser` 或 `pnpm test:scenario`。
+- 修改凭据保护时执行 `pnpm test:vault`；它使用临时目录、虚构凭据与进程内故障注入，不应更改真实系统凭据。
 - 当前不增加 CI、Husky、commitlint 或自动发布工具。
 - PR 说明具体行为、验证命令及未验证部分；真实外发测试需要明确授权。
 - 本仓库 Markdown 仅保留 README、贡献指南等必要说明，不新增 AGENTS、设计文档、实施计划或验收报告；这些文档归治理仓库。
