@@ -1,6 +1,6 @@
 {
   "name": "flow-ark-client",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "FlowArk 序舟本地自动化工作台",
   "private": true,
   "type": "module",

@@ -18,6 +18,22 @@ app.process().stderr.on('data', (b) => process.stderr.write(b));
 try {
   const page = await app.firstWindow();
   page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (message) => {
+    if (/\[React Flow\].*(handle|node type|edge type)/i.test(message.text()))
+      errors.push(message.text());
+  });
+  const assertOutputOnOutline = async (shape) => {
+    const aligned = await page.locator(`.canvas [data-shape="${shape}"]`).evaluate((element) => {
+      const svg = element.querySelector('.flow-shape-outline');
+      const handle = element.querySelector('[data-handleid="out"]').getBoundingClientRect();
+      const point = new DOMPoint(
+        handle.x + handle.width / 2,
+        handle.y + handle.height / 2,
+      ).matrixTransform(svg.getScreenCTM().inverse());
+      return svg.lastElementChild.isPointInStroke(point);
+    });
+    assert.ok(aligned, `${shape} output must touch its SVG outline`);
+  };
   await page.waitForFunction(() => Boolean(window.flowark), {}, { timeout: 15000 });
   const bootstrap = await page.evaluate(() => window.flowark.request('bootstrap'));
   console.log('Desktop initialized');
@@ -142,6 +158,116 @@ try {
       .configuration.values.account,
     'fictional-desktop-account',
   );
+  // Use saved structured steps to exercise the same graph projection as normal editing.
+  const graphFlow = {
+    formatVersion: '1.0',
+    id: 'shape-smoke',
+    name: '条件分支示例',
+    description: '虚构图形回归',
+    parameters: {},
+    requiredCapabilities: [],
+    steps: [
+      {
+        id: 'decision',
+        type: 'condition',
+        version: 1,
+        name: '检查结果是否有效',
+        actual: true,
+        operator: 'equals',
+        expected: true,
+        then: [
+          { id: 'manual', type: 'human', version: 1, name: '确认处理结果', message: '虚构测试' },
+        ],
+        else: [
+          {
+            id: 'script',
+            type: 'script',
+            version: 1,
+            name: '整理异常信息',
+            language: 'js',
+            code: 'export default async () => null;',
+            input: {},
+            dependencies: [],
+          },
+        ],
+      },
+      {
+        id: 'document',
+        type: 'file',
+        version: 1,
+        operation: 'write',
+        binding: 'workspace',
+        name: '处理报告.txt',
+        content: '虚构数据',
+      },
+    ],
+  };
+  await page.evaluate(
+    (flow) =>
+      window.flowark.request('flow.save', { flow, bindings: { files: {}, credentials: [] } }),
+    graphFlow,
+  );
+  await page.getByRole('button', { name: '我的流程', exact: true }).click();
+  await page.getByRole('button', { name: '编辑 条件分支示例', exact: true }).click();
+  await page.locator('[data-step-id="decision"]').click();
+  assert.equal(
+    JSON.parse(await page.locator('.inspector .code-input').inputValue()).id,
+    'decision',
+  );
+  for (const shape of ['decision', 'manual', 'subprocess', 'document'])
+    assert.equal(await page.locator(`.canvas [data-shape="${shape}"]`).count(), 1);
+  assert.equal(await page.locator('.canvas [data-shape="terminal"]').count(), 2);
+  assert.equal(await page.locator('.canvas [data-shape="join"]').count(), 1);
+  await page.getByText('成立', { exact: true }).waitFor();
+  await page.getByText('否则', { exact: true }).waitFor();
+  await assertOutputOnOutline('document');
+  await page.screenshot({ path: 'test-results/flowchart-branches.png', fullPage: true });
+  await page.getByRole('button', { name: '保存', exact: true }).click();
+  const persisted = await page.evaluate(() => window.flowark.request('bootstrap'));
+  assert.deepEqual(
+    persisted.flows.find((r) => r.flow.id === 'shape-smoke').flow.steps,
+    graphFlow.steps,
+  );
+  const loopFlow = {
+    ...graphFlow,
+    id: 'loop-shape-smoke',
+    name: '循环与数据示例',
+    steps: [
+      { id: 'input', type: 'value', version: 1, name: '待处理数据', value: [1, 2] },
+      {
+        id: 'loop',
+        type: 'loop',
+        version: 1,
+        name: '逐条处理数据',
+        items: { $ref: 'steps.input' },
+        body: [
+          {
+            id: 'workbook',
+            type: 'excel',
+            version: 1,
+            operation: 'write',
+            binding: 'workspace',
+            name: '结果.xlsx',
+            rows: [],
+          },
+        ],
+      },
+    ],
+  };
+  await page.evaluate(
+    (flow) =>
+      window.flowark.request('flow.save', { flow, bindings: { files: {}, credentials: [] } }),
+    loopFlow,
+  );
+  await page.getByRole('button', { name: '我的流程', exact: true }).click();
+  await page.getByRole('button', { name: '编辑 循环与数据示例', exact: true }).click();
+  await page.locator('[data-step-id="loop"]').click();
+  for (const shape of ['data', 'loop', 'workbook'])
+    assert.equal(await page.locator(`.canvas [data-shape="${shape}"]`).count(), 1);
+  await page.getByText('下一项', { exact: true }).waitFor();
+  await page.getByText('完成', { exact: true }).waitFor();
+  await assertOutputOnOutline('workbook');
+  await page.screenshot({ path: 'test-results/flowchart-loop.png', fullPage: true });
   assert.deepEqual(errors, []);
   await writeFile(
     'test-results/desktop.json',

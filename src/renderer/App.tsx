@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { version as appVersion } from '../../package.json';
-import { ReactFlow, Background, Controls, MarkerType, type Node, type Edge } from '@xyflow/react';
+import { ReactFlow, Background, Controls } from '@xyflow/react';
+import { buildDiagram } from './flow-diagram';
+import { flowNodeTypes, flowEdgeTypes, FitDiagram } from './FlowNode';
+import { kinds } from './node-kinds';
 import '@xyflow/react/dist/style.css';
 import {
   Workflow,
@@ -59,19 +62,6 @@ const status: Record<string, string> = {
   INTERRUPTED: '已中断',
   SUCCEEDED: '执行完成',
   FAILED: '执行失败',
-};
-const kinds: Record<string, { label: string; icon: typeof Play; color: string }> = {
-  value: { label: '数据', icon: Workflow, color: '#526b87' },
-  assert: { label: '结果断言', icon: Check, color: '#428574' },
-  http: { label: 'HTTP 请求', icon: Globe, color: '#456bd0' },
-  script: { label: 'JS / TS 脚本', icon: Code, color: '#bc873d' },
-  file: { label: '文件处理', icon: FolderOpen, color: '#6e7f85' },
-  excel: { label: 'Excel 表格', icon: FileSpreadsheet, color: '#488064' },
-  browser: { label: '浏览器', icon: Globe, color: '#4068c6' },
-  human: { label: '等待人工', icon: Hand, color: '#bb843f' },
-  condition: { label: '条件分支', icon: GitBranch, color: '#87669d' },
-  loop: { label: '串行循环', icon: Repeat, color: '#a17857' },
-  recruiting: { label: '模板动作', icon: Workflow, color: '#257c71' },
 };
 const actions: Record<string, string> = {
   apply: '投递 / 发起沟通',
@@ -765,57 +755,8 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose 
     } else setRecord({ ...r, flow: { ...r.flow, steps: [...r.flow.steps, n] } });
     setSelected(n.id);
   };
-  const nodes: Node[] = [];
-  const edges: Edge[] = [];
-  let row = 0;
-  function diagram(steps: Step[], depth = 0, parent?: string, label?: string) {
-    let previous = parent;
-    for (const n of steps) {
-      const Icon = kinds[n.type].icon;
-      nodes.push({
-        id: n.id,
-        position: { x: 70 + depth * 110, y: 30 + row++ * 100 },
-        data: {
-          label: (
-            <div className="canvas-node">
-              <span style={{ background: kinds[n.type].color }}>
-                <Icon size={18} />
-              </span>
-              <div>
-                <small>{kinds[n.type].label}</small>
-                <b>{typeof n.name === 'string' ? n.name : n.id}</b>
-              </div>
-              <em>v{n.version}</em>
-            </div>
-          ),
-        },
-        style: {
-          width: 260,
-          padding: 0,
-          border: n.id === selected ? '2px solid #2c8174' : '1px solid #dce3e2',
-          borderRadius: 10,
-          background: '#fff',
-        },
-        draggable: false,
-      });
-      if (previous)
-        edges.push({
-          id: previous + '-' + n.id,
-          source: previous,
-          target: n.id,
-          label,
-          markerEnd: { type: MarkerType.ArrowClosed },
-          style: { stroke: '#aabbb8' },
-        });
-      if (n.type === 'condition') {
-        diagram(n.then, depth + 1, n.id, '成立');
-        diagram(n.else, depth + 1, n.id, '否则');
-      }
-      if (n.type === 'loop') diagram(n.body, depth + 1, n.id, '逐项');
-      previous = n.id;
-    }
-  }
-  diagram(r.flow.steps);
+  const { nodes, edges, stepCount } = buildDiagram(r.flow.steps, selected);
+  const layoutKey = nodes.map((n) => `${n.id}:${n.position.x}:${n.position.y}`).join('|');
   return (
     <div className="editor-layout">
       <aside className="node-library">
@@ -851,19 +792,33 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose 
         <ReactFlow
           nodes={nodes}
           edges={edges}
+          nodeTypes={flowNodeTypes}
+          edgeTypes={flowEdgeTypes}
+          deleteKeyCode={null}
           onNodeClick={(_e, n) => {
+            if (!n.data.step) return;
             setSelected(n.id);
             setTab('node');
           }}
           fitView
           fitViewOptions={{ maxZoom: 1 }}
           nodesConnectable={false}
+          minZoom={0.15}
           elementsSelectable
         >
           <Background gap={22} color="#d7e0de" />
-          <Controls />
+          <Controls showInteractive={false} />
+          <FitDiagram layoutKey={layoutKey} />
         </ReactFlow>
-        <span className="canvas-label">执行流程 · {nodes.length} 个节点</span>
+        <div className="canvas-legend" aria-label="流程图图例">
+          <span className="legend-decision" />
+          条件
+          <span className="legend-data" />
+          数据
+          <span className="legend-manual" />
+          人工
+        </div>
+        <span className="canvas-label">执行流程 · {stepCount} 个步骤</span>
       </div>
       <aside className="inspector">
         <div className="tabs">

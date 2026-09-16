@@ -709,42 +709,201 @@ main {
   color: #9baaa0;
   font-size: 9px;
 }
-.canvas-node {
-  display: flex;
-  align-items: center;
-  padding: 14px;
-  gap: 12px;
-  text-align: left;
-}
-.canvas-node > span {
-  width: 34px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 7px;
-  color: #fff;
-}
-.canvas-node small {
-  display: block;
-  font-size: 9px;
-  color: #9aa49f;
-  margin-bottom: 4px;
-}
-.canvas-node b {
-  font-size: 11px;
-  font-weight: 500;
-}
-.canvas-node em {
-  margin-left: auto;
-  font:
-    9px Menlo,
-    monospace;
-  color: #b7c0b9;
-}
 .react-flow__controls {
   box-shadow: none;
   border: 1px solid #dce4de;
+}
+.flow-shape {
+  position: relative;
+  color: #253c34;
+  filter: drop-shadow(0 2px 2px #243e2e05);
+}
+.flow-shape-outline {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: #fff;
+  stroke: #bacbc2;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  transition:
+    stroke 120ms,
+    filter 120ms;
+}
+.flow-shape.is-selected .flow-shape-outline,
+.react-flow__node-semantic:focus-visible .flow-shape-outline {
+  stroke: #267e69;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 4px #267e6925);
+}
+.flow-shape:hover:not(.is-selected) .flow-shape-outline {
+  stroke: var(--node-accent);
+}
+.shape-detail {
+  fill: none;
+  stroke-width: 1;
+}
+.flow-shape-content {
+  position: absolute;
+  inset: 0 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+.flow-node-icon {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  color: var(--node-accent);
+  background: color-mix(in srgb, var(--node-accent) 10%, white);
+}
+.flow-node-text {
+  min-width: 0;
+  flex: 1;
+}
+.flow-node-text small {
+  display: block;
+  font-size: 10px;
+  color: #72867b;
+  margin-bottom: 6px;
+}
+.flow-node-text b {
+  display: block;
+  font-size: 12px;
+  font-weight: 550;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.flow-node-version {
+  font:
+    9px Menlo,
+    monospace;
+  color: #8a9d91;
+}
+.flow-shape--data .flow-shape-content {
+  inset-inline: 38px;
+}
+.flow-shape--manual .flow-shape-content {
+  padding-bottom: 8px;
+}
+.flow-shape--document .flow-shape-content {
+  padding-bottom: 14px;
+}
+.flow-shape--workbook .flow-shape-content {
+  right: 40px;
+}
+.flow-shape--decision .flow-shape-content {
+  inset: 26px 60px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  text-align: center;
+}
+.flow-shape--decision .flow-node-icon {
+  width: 24px;
+  height: 24px;
+  flex-basis: 24px;
+  background: transparent;
+}
+.flow-shape--decision .flow-node-text {
+  flex: none;
+  width: 100%;
+}
+.flow-shape--decision .flow-node-text small {
+  margin-bottom: 4px;
+}
+.flow-shape--decision .flow-node-version {
+  font-size: 8px;
+}
+.flow-shape--terminal .flow-shape-outline {
+  fill: #e6f0e9;
+  stroke: #99b6a4;
+}
+.flow-shape--empty .flow-shape-outline {
+  fill: #f5f8f6;
+  stroke-dasharray: 4 4;
+}
+.flow-auxiliary-label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  color: #58705f;
+}
+.flow-shape--empty .flow-auxiliary-label {
+  font-size: 10px;
+  color: #8b9e90;
+}
+.flow-shape--join .flow-shape-outline {
+  fill: #8da698;
+  stroke: none;
+}
+.flow-shape .react-flow__handle {
+  width: 5px;
+  height: 5px;
+  min-width: 5px;
+  min-height: 5px;
+  background: #91a89c;
+  border: 1px solid #f5f8f6;
+  pointer-events: none;
+}
+.flow-shape.is-selected .react-flow__handle {
+  background: #267e69;
+}
+.flow-shape--join .react-flow__handle,
+.flow-shape--terminal .react-flow__handle {
+  opacity: 0;
+}
+.flow-route-label {
+  position: absolute;
+  padding: 4px 7px;
+  border-radius: 4px;
+  background: #f5f8f6;
+  color: #50655b;
+  font-size: 11px;
+  font-weight: 500;
+  pointer-events: none;
+}
+.canvas-legend {
+  position: absolute;
+  top: 16px;
+  left: 18px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 12px;
+  background: #f5f8f6e8;
+  border: 1px solid #e0e8e2;
+  border-radius: 6px;
+  color: #7a8d80;
+  font-size: 10px;
+  pointer-events: none;
+}
+.canvas-legend span {
+  width: 11px;
+  height: 9px;
+  background: #a5b8ac;
+  margin-left: 6px;
+}
+.canvas-legend .legend-decision {
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+  margin-left: 0;
+}
+.canvas-legend .legend-data {
+  transform: skew(-18deg);
+}
+.canvas-legend .legend-manual {
+  clip-path: polygon(0 0, 100% 0, 80% 100%, 20% 100%);
 }
 .inspector {
   width: 340px;
