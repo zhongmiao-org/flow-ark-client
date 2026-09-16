@@ -124,6 +124,27 @@ test('unsupported assertions, hidden contacts and stale context require human re
   assert.ok(validateDraft({ ...base, contextHash: 'old' }, input).length);
   assert.ok(
     validateDraft(
+      { ...base, draft: { ...draft, body: '很高兴为您介绍。' + draft.body } },
+      input,
+    ).includes('存在无法确定依据的正文，需要人工审阅'),
+  );
+  for (const phrase of [
+    '您好',
+    '你好',
+    '感谢您的联系',
+    '谢谢',
+    '感谢',
+    '期待进一步沟通',
+    '请问',
+    '方便进一步介绍岗位吗',
+  ]) {
+    assert.deepEqual(
+      validateDraft({ ...base, draft: { ...draft, body: phrase + '，' + draft.body } }, input),
+      [],
+    );
+  }
+  assert.ok(
+    validateDraft(
       {
         ...base,
         draft: {
@@ -135,4 +156,39 @@ test('unsupported assertions, hidden contacts and stale context require human re
       input,
     ).length,
   );
+});
+
+test('DeepSeek rejects valid JSON with malformed review fields without coercion or retry', async () => {
+  const request = { ...input, provider: 'deepseek' as const, model: 'deepseek-flash' };
+  for (const needsHuman of ['', null, false, { required: false }]) {
+    let calls = 0;
+    const provider = new DeepSeekAdapter((async () => {
+      calls++;
+      return new Response(
+        JSON.stringify({
+          choices: [
+            {
+              finish_reason: 'stop',
+              message: { content: JSON.stringify({ ...draft, needsHuman }) },
+            },
+          ],
+        }),
+      );
+    }) as typeof fetch);
+    await assert.rejects(
+      () => provider.draft(request, 'fictional-key', new AbortController().signal),
+      /needsHuman must be array/,
+    );
+    assert.equal(calls, 1);
+  }
+  const provider = new DeepSeekAdapter(
+    (async () =>
+      new Response(
+        JSON.stringify({
+          choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(draft) } }],
+        }),
+      )) as typeof fetch,
+  );
+  const result = await provider.draft(request, 'fictional-key', new AbortController().signal);
+  assert.deepEqual(validateDraft(result, request), []);
 });
