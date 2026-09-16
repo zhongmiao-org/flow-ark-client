@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { version as appVersion } from '../../package.json';
 import { ReactFlow, Background, Controls, MarkerType, type Node, type Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import {
@@ -317,7 +318,7 @@ export default function App() {
         </nav>
         <div className="sidebar-bottom">
           <div className="local-dot" />
-          单机运行 <span>0.1.0</span>
+          单机运行 <span>{appVersion}</span>
           <p>流程与历史保存在这台 Mac 上</p>
         </div>
       </aside>

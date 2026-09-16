@@ -23,6 +23,8 @@ try {
   console.log('Desktop initialized');
   assert.equal(bootstrap.flows.length, 1);
   assert.equal(bootstrap.runs.length, 0);
+  const appVersion = await app.evaluate(({ app }) => app.getVersion());
+  assert.equal(await page.locator('.sidebar-bottom span').textContent(), appVersion);
   const security = await app.evaluate(({ BrowserWindow }) => {
     const p = BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences();
     return {
