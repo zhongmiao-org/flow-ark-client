@@ -1,11 +1,19 @@
 import type { Policy } from '../shared/types';
 import { uid } from '../shared/utils';
+import { validateObject } from '../core/validate';
+import { defaultJobFilter, validateJobFilter } from './job-filter';
+export function validateRecruitingPolicy(value: unknown): Policy {
+  const policy = validateObject<Policy>('RecruitingPolicy', value);
+  validateJobFilter(policy.jobFilter);
+  return policy;
+}
 export const defaultPolicy = (platform: 'boss' | 'zhaopin'): Policy => ({
   platform,
   account: '',
   keywords: [],
   excludedCompanies: [],
   allowedTargets: [],
+  jobFilter: defaultJobFilter(),
   resumeVersion: '',
   resumeBinding: '',
   facts: [],

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.4.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.5.0/p1.schema.json",
   "title": "FlowArkP1",
   "$defs": {
     "Json": {
@@ -1133,6 +1133,9 @@
         "contextRevision": {
           "type": "string",
           "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "jobFilter": {
+          "$ref": "#/$defs/RecruitingJobFilter"
         }
       },
       "required": [
@@ -1403,6 +1406,9 @@
         "evidence": {
           "type": "string",
           "maxLength": 100000
+        },
+        "jobSnapshot": {
+          "$ref": "#/$defs/RecruitingJobSnapshot"
         }
       },
       "required": [
@@ -1542,6 +1548,189 @@
         "dedupeKey",
         "read",
         "time"
+      ],
+      "additionalProperties": false
+    },
+    "RecruitingJobFilter": {
+      "type": "object",
+      "properties": {
+        "cities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "maxItems": 1000
+        },
+        "includedCompanies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "maxItems": 1000
+        },
+        "excludedKeywords": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "maxItems": 1000
+        },
+        "workModes": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "onsite",
+              "hybrid",
+              "remote"
+            ]
+          },
+          "maxItems": 1000
+        },
+        "salary": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "minimumMonthly": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000000
+            },
+            "maximumMonthly": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000000
+            },
+            "currency": {
+              "const": "CNY"
+            }
+          },
+          "required": [
+            "enabled",
+            "minimumMonthly",
+            "maximumMonthly",
+            "currency"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "cities",
+        "includedCompanies",
+        "excludedKeywords",
+        "workModes",
+        "salary"
+      ],
+      "additionalProperties": false
+    },
+    "JobSalary": {
+      "type": "object",
+      "properties": {
+        "minimum": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100000000
+        },
+        "maximum": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100000000
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "period": {
+          "enum": [
+            "month",
+            "year",
+            "day",
+            "hour"
+          ]
+        }
+      },
+      "required": [
+        "minimum",
+        "maximum",
+        "currency",
+        "period"
+      ],
+      "additionalProperties": false
+    },
+    "RecruitingJobSnapshot": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "company": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "city": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "workMode": {
+          "anyOf": [
+            {
+              "enum": [
+                "onsite",
+                "hybrid",
+                "remote"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "salary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JobSalary"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "observedAt": {
+          "type": "string",
+          "maxLength": 100000
+        }
+      },
+      "required": [
+        "title",
+        "company",
+        "city",
+        "workMode",
+        "salary",
+        "source",
+        "observedAt"
       ],
       "additionalProperties": false
     },

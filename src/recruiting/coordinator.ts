@@ -4,6 +4,7 @@ import type { RecruitingSiteAdapter } from './sites';
 import type { Policy, AIRequest, AIResult } from '../shared/types';
 import { Store } from '../host/store';
 import { digest, errorText } from '../shared/utils';
+import { jobContent, jobFilterDecision, jobSnapshotProblem } from './job-filter';
 
 /** Host-only finite batch. Waiting for confirmation or peers never holds a Run. */
 export class RecruitingCoordinator {
@@ -25,7 +26,12 @@ export class RecruitingCoordinator {
   }) {
     const { policy, site, signal } = options;
     const count = { processed: 0, submitted: 0, waiting: 0, blocked: 0, verified: false };
-    const attention = (kind: string, reason: string, target = '', extra = {}) => {
+    const attention = (
+      kind: string,
+      reason: string,
+      target = '',
+      extra: Record<string, any> = {},
+    ) => {
       this.store.attention(
         kind,
         reason,
@@ -37,6 +43,7 @@ export class RecruitingCoordinator {
           platform: site.platform,
           account: policy.account,
           ...extra,
+          ...(extra.jobSnapshot ? { jobSnapshot: jobContent(extra.jobSnapshot) } : {}),
         }),
       );
     };
@@ -92,13 +99,37 @@ export class RecruitingCoordinator {
           count.blocked++;
           continue;
         }
+        // Only the current detail page can satisfy an active filter; list hints
+        // are never substituted for a missing detail snapshot.
+        const observed = { ...candidate, jobSnapshot: context.jobSnapshot };
+        const filterReason = jobFilterDecision(observed, policy);
+        if (filterReason) {
+          attention(
+            'limitation',
+            '岗位筛选需要核对：' + candidate.company + ' · ' + candidate.job,
+            candidate.target,
+            {
+              reason: filterReason,
+              jobSnapshot:
+                context.jobSnapshot && !jobSnapshotProblem(context.jobSnapshot)
+                  ? context.jobSnapshot
+                  : null,
+              company: candidate.company,
+              job: candidate.job,
+            },
+          );
+          count.blocked++;
+          continue;
+        }
         let content = candidate.content ?? '';
         if (candidate.kind === 'reply') {
           const input: AIRequest = {
             provider: policy.provider,
             model: policy.model,
             facts: policy.facts,
-            job: candidate.job,
+            job: context.jobSnapshot
+              ? JSON.stringify(jobContent(context.jobSnapshot))
+              : candidate.job,
             conversation: context.conversation,
             contextHash: context.contextHash,
             resumeVersion: policy.resumeVersion,
@@ -127,7 +158,7 @@ export class RecruitingCoordinator {
           content = result.draft.body;
         }
         const proposal: Proposal = {
-          ...candidate,
+          ...observed,
           content,
           contextHash: context.contextHash,
           resumeVersion: policy.resumeVersion,
@@ -143,6 +174,19 @@ export class RecruitingCoordinator {
         }
         const latest = await site.read(candidate.target, signal);
         assertPolicy();
+        const currentProposal = { ...proposal, jobSnapshot: latest.jobSnapshot };
+        const latestFilterReason = jobFilterDecision(currentProposal, policy);
+        if (
+          latestFilterReason ||
+          digest(jobContent(latest.jobSnapshot)) !== digest(jobContent(proposal.jobSnapshot))
+        ) {
+          this.actions.invalidate(
+            prepared.id,
+            latestFilterReason ?? '岗位信息已变化，未发送旧内容',
+          );
+          count.blocked++;
+          continue;
+        }
         if (
           latest.account !== policy.account ||
           latest.target !== candidate.target ||
@@ -151,12 +195,12 @@ export class RecruitingCoordinator {
           latest.eventId !== context.eventId ||
           (candidate.kind === 'reply' && latest.replied)
         ) {
-          attention('confirmation', '会话已经变化，未发送旧内容', candidate.target);
+          this.actions.invalidate(prepared.id, '会话已经变化，未发送旧内容');
           count.blocked++;
           continue;
         }
-        const result = await this.actions.submit(prepared.id, proposal, policy, () =>
-          site.submit(proposal, signal),
+        const result = await this.actions.submit(prepared.id, currentProposal, policy, () =>
+          site.submit(currentProposal, signal),
         );
         count.submitted++;
         if (result.state === 'WAITING_PEER') count.waiting++;

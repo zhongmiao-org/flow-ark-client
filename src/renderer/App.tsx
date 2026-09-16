@@ -1120,6 +1120,29 @@ function AttentionContent({ detail: d }: { detail: any }) {
         {p.contact && <p>联系人：{p.contact}</p>}
         {p.account && <p>使用账号：{p.account}</p>}
         {p.target && <p>职位 / 会话：{p.target}</p>}
+        {p.jobSnapshot && (
+          <div className="job-evidence">
+            <p>
+              城市：{p.jobSnapshot.city ?? '未明确'} · 工作方式：
+              {(
+                { onsite: '现场办公', hybrid: '混合办公', remote: '远程办公' } as Record<
+                  string,
+                  string
+                >
+              )[p.jobSnapshot.workMode] ?? '未明确'}
+            </p>
+            <p>
+              页面薪资：
+              {p.jobSnapshot.salary
+                ? `${p.jobSnapshot.salary.minimum}–${p.jobSnapshot.salary.maximum} ${p.jobSnapshot.salary.currency} / ${({ month: '月', year: '年', day: '天', hour: '小时' } as Record<string, string>)[p.jobSnapshot.salary.period]}`
+                : '未明确'}
+            </p>
+            <p className="path-text">岗位来源：{p.jobSnapshot.source}</p>
+            {p.jobSnapshot.observedAt && (
+              <small>读取时间：{format(p.jobSnapshot.observedAt)}</small>
+            )}
+          </div>
+        )}
         {p.content && (
           <>
             <b>{actions[p.kind] ?? '拟发送内容'}</b>

@@ -15,11 +15,12 @@ export function packageFlow(
   flow: Flow,
   source = 'local',
   configuration?: Template['manifest']['configuration'],
+  version = '1.1.0',
 ): Template {
   return {
     manifest: {
       id: flow.id,
-      version: '1.1.0',
+      version,
       source,
       digest: templateDigest(flow, configuration),
       ...(configuration ? { configuration } : {}),
@@ -41,7 +42,7 @@ export const templates: Template[] = (['boss', 'zhaopin'] as const).map((platfor
     name: platform === 'boss' ? 'BOSS 直聘投递简历' : '智联招聘投递简历',
     description: '有限批次检查职位与会话；按独立动作权限执行，取得微信号后建立本地待办。',
     parameters: {},
-    requiredCapabilities: ['browser', 'recruiting', platform],
+    requiredCapabilities: ['browser', 'recruiting', platform, 'recruiting-job-filter-v1'],
     steps: [
       {
         id: 'recruiting_batch',
@@ -52,10 +53,15 @@ export const templates: Template[] = (['boss', 'zhaopin'] as const).map((platfor
       },
     ],
   };
-  return packageFlow(flow, 'flowark-builtin', {
-    adapter: 'recruiting-policy-v1',
-    schema: recruitingConfigurationSchema(platform),
-  });
+  return packageFlow(
+    flow,
+    'flowark-builtin',
+    {
+      adapter: 'recruiting-policy-v1',
+      schema: recruitingConfigurationSchema(platform),
+    },
+    '1.2.0',
+  );
 });
 export function validateTemplate(value: unknown): Template {
   const p = validateObject<Template>('TemplatePackage', value);

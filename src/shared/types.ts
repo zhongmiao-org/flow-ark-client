@@ -2,6 +2,8 @@ import type { FlowArkP1 as P1Contracts } from './contracts.generated';
 export type Flow = NonNullable<P1Contracts['FlowDefinition']>;
 export type Step = Flow['steps'][number];
 export type Policy = NonNullable<P1Contracts['RecruitingPolicy']>;
+export type JobSnapshot = NonNullable<P1Contracts['RecruitingJobSnapshot']>;
+export type JobFilter = NonNullable<P1Contracts['RecruitingJobFilter']>;
 export type Draft = NonNullable<P1Contracts['AIReplyDraft']>;
 export type AIRequest = NonNullable<P1Contracts['AIReplyRequest']>;
 export type AIResult = NonNullable<P1Contracts['AIReplyResult']>;

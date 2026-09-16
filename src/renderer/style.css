@@ -1344,6 +1344,28 @@ td small {
   gap: 12px;
   align-items: flex-start;
 }
+.template-field:has(> input[type='checkbox']) {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+.template-field:has(> input[type='checkbox']) > span {
+  grid-column: 2;
+  grid-row: 1;
+}
+.template-field input[type='checkbox'] {
+  grid-column: 1;
+  grid-row: 1;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin: 0;
+  accent-color: #26776a;
+}
+.template-field:has(> input[type='checkbox']) > small {
+  grid-column: 2;
+}
 .template-array-row > :first-child {
   flex: 1;
 }

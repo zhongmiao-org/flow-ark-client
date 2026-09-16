@@ -10,6 +10,7 @@ if (!executablePath)
 await verifyBundle(executablePath.split('/Contents/MacOS/')[0]);
 const data = await mkdtemp(join(tmpdir(), 'flowark-installed-data-'));
 const evidence = [];
+let originalTemplateInstance;
 for (let phase = 0; phase < 2; phase++) {
   const phaseExecutable =
     phase === 0 && process.env.FLOWARK_PREVIOUS_EXECUTABLE
@@ -36,6 +37,16 @@ for (let phase = 0; phase < 2; phase++) {
           value: 'fictional-install-test-key',
         }),
       );
+      originalTemplateInstance = await page.evaluate(async () => {
+        const record = await window.flowark.request('flow.create', {
+          templateId: 'boss-resume-apply',
+        });
+        record.bindings.configuration.values.account = 'fictional-upgrade-account';
+        return window.flowark.request('flow.save', {
+          flow: record.flow,
+          bindings: record.bindings,
+        });
+      });
       const run = await page.evaluate(
         (id) => window.flowark.request('flow.run', { id }),
         first.flows[0].id,
@@ -57,6 +68,11 @@ for (let phase = 0; phase < 2; phase++) {
       assert.equal(first.runs[0].state, 'SUCCEEDED');
       assert.ok(first.credentials.includes('deepseek'));
       assert.ok(!JSON.stringify(first).includes('fictional-install-test-key'));
+      assert.deepEqual(
+        first.flows.find((record) => record.id === originalTemplateInstance.id),
+        originalTemplateInstance,
+        'upgrading must not rewrite an existing template instance, its schema or permissions',
+      );
     }
     // Closing the window must leave a tray-resident app that can show itself again.
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close());
@@ -70,6 +86,10 @@ for (let phase = 0; phase < 2; phase++) {
       appVersion: await app.evaluate(({ app }) => app.getVersion()),
       previousRuns: first.runs.length,
       tray: true,
+      savedTemplateVersion: originalTemplateInstance.flow.sourceTemplate.version,
+      catalogTemplateVersion: first.templates.find(
+        (template) => template.manifest.id === 'boss-resume-apply',
+      ).manifest.version,
     });
   } catch (error) {
     console.error('Installed verification failed in phase', phase, error);

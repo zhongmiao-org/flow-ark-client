@@ -1,4 +1,4 @@
-import type { AIRequest, BrowserDriver, Contact, Policy } from '../shared/types';
+import type { AIRequest, BrowserDriver, Contact, JobSnapshot, Policy } from '../shared/types';
 import type { Proposal } from './actions';
 
 export type SiteProbe = { verified: boolean; account?: string; reason?: string };
@@ -13,6 +13,7 @@ export type Conversation = {
   resumeVersion: string;
   conversation: AIRequest['conversation'];
   replied: boolean;
+  jobSnapshot?: JobSnapshot;
 };
 export interface RecruitingSiteAdapter {
   readonly platform: Policy['platform'];

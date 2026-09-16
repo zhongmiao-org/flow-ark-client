@@ -29,6 +29,65 @@ export function recruitingConfigurationSchema(platform: 'boss' | 'zhaopin') {
       keywords: list('职位关键词'),
       excludedCompanies: list('排除公司'),
       allowedTargets: list('允许的岗位 / 会话 ID'),
+      jobFilter: {
+        type: 'object',
+        title: '岗位筛选',
+        description: '各组条件同时满足才允许动作；空列表不增加限制，未知信息进入待办。',
+        additionalProperties: false,
+        properties: {
+          cities: {
+            ...list('允许城市'),
+            description: '与岗位页面的完整城市名称一致，不自动推断别名。',
+            items: { type: 'string', minLength: 1, maxLength: 200 },
+          },
+          includedCompanies: {
+            ...list('包含公司'),
+            description: '公司名称包含任一项即可；仍受排除公司限制。',
+            items: { type: 'string', minLength: 1, maxLength: 200 },
+          },
+          excludedKeywords: {
+            ...list('排除职位词'),
+            items: { type: 'string', minLength: 1, maxLength: 200 },
+          },
+          workModes: {
+            type: 'array',
+            title: '允许工作方式',
+            maxItems: 3,
+            items: {
+              type: 'string',
+              oneOf: [
+                { const: 'onsite', title: '现场办公' },
+                { const: 'hybrid', title: '混合办公' },
+                { const: 'remote', title: '远程办公' },
+              ],
+            },
+          },
+          salary: {
+            type: 'object',
+            title: '人民币月薪',
+            additionalProperties: false,
+            description: '核对页面的完整薪资区间；面议、年薪、日薪、时薪及其他币种需要人工核对。',
+            properties: {
+              enabled: { type: 'boolean', title: '启用月薪筛选' },
+              minimumMonthly: {
+                type: 'integer',
+                title: '岗位月薪下限至少（元，0 不限）',
+                minimum: 0,
+                maximum: 100000000,
+              },
+              maximumMonthly: {
+                type: 'integer',
+                title: '岗位月薪上限至多（元，0 不限）',
+                minimum: 0,
+                maximum: 100000000,
+              },
+              currency: { const: 'CNY' },
+            },
+            required: ['enabled', 'minimumMonthly', 'maximumMonthly', 'currency'],
+          },
+        },
+        required: ['cities', 'includedCompanies', 'excludedKeywords', 'workModes', 'salary'],
+      },
       actions: {
         type: 'object',
         title: '逐项动作权限',

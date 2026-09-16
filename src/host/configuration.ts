@@ -5,13 +5,12 @@ import {
   schemaDefaults,
   supportedConfigurationAdapters,
 } from '../shared/template-config';
-import { defaultPolicy } from '../recruiting/policy';
+import { defaultPolicy, validateRecruitingPolicy } from '../recruiting/policy';
 import { recruitingConfigurationSchema } from '../recruiting/template-schema';
-import { validateObject } from '../core/validate';
 export function policyOf(bindings: Bindings): Policy | undefined {
   return bindings.configuration?.adapter === 'recruiting-policy-v1'
-    ? validateObject<Policy>('RecruitingPolicy', bindings.configuration.values)
-    : bindings.policy;
+    ? validateRecruitingPolicy(bindings.configuration.values)
+    : bindings.policy && validateRecruitingPolicy(bindings.policy);
 }
 export function configureTemplate(template: Template): Bindings['configuration'] {
   const config = template.manifest.configuration;
@@ -25,17 +24,21 @@ export function configureTemplate(template: Template): Bindings['configuration']
     if (!node || node.type !== 'recruiting') throw new Error('模板缺少对应业务节点');
     // Template defaults never grant permission or seed an account, facts or contact values.
     values = defaultPolicy(node.platform);
+    // Older packages retain their original form and policy surface.
+    if (!(config.schema as any)?.properties?.jobFilter) delete values.jobFilter;
   }
   return { ...structuredClone(config), values };
 }
 export function normalizeBindings(bindings: Bindings): Bindings {
   if (!bindings.policy || bindings.configuration) return bindings;
   const { policy, ...rest } = bindings;
+  const schema = recruitingConfigurationSchema(policy.platform);
+  if (!policy.jobFilter) delete (schema.properties as any).jobFilter;
   return {
     ...rest,
     configuration: {
       adapter: 'recruiting-policy-v1',
-      schema: recruitingConfigurationSchema(policy.platform),
+      schema,
       values: JSON.parse(JSON.stringify(policy)),
     },
   };

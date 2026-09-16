@@ -24,6 +24,7 @@ export const capabilities = [
   'condition',
   'loop',
   'recruiting',
+  'recruiting-job-filter-v1',
   'boss',
   'zhaopin',
   'openai-codex',

@@ -188,6 +188,9 @@ export interface FlowArkP1 {
   RecruitingAction?: RecruitingAction;
   ContactExchangeResult?: ContactExchangeResult;
   UserAttentionItem?: UserAttentionItem;
+  RecruitingJobFilter?: RecruitingJobFilter;
+  JobSalary?: JobSalary;
+  RecruitingJobSnapshot?: RecruitingJobSnapshot;
   TemplateManifest?: TemplateManifest;
   TemplateConfiguration?: TemplateConfiguration;
   TemplatePackage?: TemplatePackage;
@@ -301,6 +304,31 @@ export interface RecruitingPolicy {
   provider: 'openai-codex' | 'deepseek';
   model: string;
   contextRevision: string;
+  jobFilter?: RecruitingJobFilter;
+}
+export interface RecruitingJobFilter {
+  /**
+   * @maxItems 1000
+   */
+  cities: string[];
+  /**
+   * @maxItems 1000
+   */
+  includedCompanies: string[];
+  /**
+   * @maxItems 1000
+   */
+  excludedKeywords: string[];
+  /**
+   * @maxItems 1000
+   */
+  workModes: ('onsite' | 'hybrid' | 'remote')[];
+  salary: {
+    enabled: boolean;
+    minimumMonthly: number;
+    maximumMonthly: number;
+    currency: 'CNY';
+  };
 }
 export interface AIReplyDraft {
   body: string;
@@ -364,6 +392,22 @@ export interface RecruitingAction {
   state:
     'PENDING_CONFIRMATION' | 'READY' | 'SUBMITTING' | 'CONFIRMED' | 'WAITING_PEER' | 'FAILED' | 'UNKNOWN' | 'BLOCKED';
   evidence: string;
+  jobSnapshot?: RecruitingJobSnapshot;
+}
+export interface RecruitingJobSnapshot {
+  title: string;
+  company: string;
+  city: string | null;
+  workMode: ('onsite' | 'hybrid' | 'remote') | null;
+  salary: JobSalary | null;
+  source: string;
+  observedAt: string;
+}
+export interface JobSalary {
+  minimum: number;
+  maximum: number;
+  currency: string;
+  period: 'month' | 'year' | 'day' | 'hour';
 }
 export interface ContactExchangeResult {
   platform: 'boss' | 'zhaopin';

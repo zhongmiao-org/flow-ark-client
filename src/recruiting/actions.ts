@@ -1,6 +1,7 @@
-import type { Policy, Action, Contact } from '../shared/types';
+import type { Policy, Action, Contact, JobSnapshot } from '../shared/types';
 import { Store } from '../host/store';
 import { digest, now } from '../shared/utils';
+import { jobContent, jobFilterDecision } from './job-filter';
 export type Proposal = {
   platform: 'boss' | 'zhaopin';
   account: string;
@@ -14,6 +15,7 @@ export type Proposal = {
   resumeVersion: string;
   sharedValue?: string;
   eventId: string;
+  jobSnapshot?: JobSnapshot;
 };
 export type PreparedAction = Proposal & {
   id: string;
@@ -27,7 +29,10 @@ export type PreparedAction = Proposal & {
   submittedAt?: string;
 };
 export function authorizationHash(p: Proposal, policy: Policy) {
-  return digest({ p, policy });
+  return digest({
+    p: { ...p, ...(p.jobSnapshot ? { jobSnapshot: jobContent(p.jobSnapshot) } : {}) },
+    policy,
+  });
 }
 export function policyDecision(
   p: Proposal,
@@ -38,9 +43,8 @@ export function policyDecision(
   if (p.platform !== policy.platform || p.account !== policy.account) return '账号或平台不匹配';
   if (p.resumeVersion !== policy.resumeVersion) return '简历版本已经改变';
   if (!policy.allowedTargets.includes(p.target)) return '目标超出配置范围';
-  if (policy.excludedCompanies.some((x) => p.company.includes(x))) return '公司在排除名单';
-  if (policy.keywords.length && !policy.keywords.some((x) => p.job.includes(x)))
-    return '职位不匹配筛选条件';
+  const filterReason = jobFilterDecision(p, policy);
+  if (filterReason) return filterReason;
   if (policy.actions[p.kind] === 'deny') return '此类动作已禁止';
   const hour = Number(
     new Intl.DateTimeFormat('en', {
@@ -94,13 +98,15 @@ export class RecruitingActions {
     const old = this.store.get<PreparedAction>('action', id);
     // Regenerated text or changed permissions cannot make an already attempted
     // external operation into a new send. Unsent revisions lose confirmation.
-    if (
-      old &&
-      (['SUBMITTING', 'CONFIRMED', 'WAITING_PEER', 'UNKNOWN', 'FAILED'].includes(old.state) ||
-        old.policyHash === authorizationHash(p, policy))
-    )
+    if (old && ['SUBMITTING', 'CONFIRMED', 'WAITING_PEER', 'UNKNOWN', 'FAILED'].includes(old.state))
       return old;
     const reason = policyDecision(p, policy, this.count(p, policy, time), time);
+    if (
+      old?.policyHash === authorizationHash(p, policy) &&
+      ((!reason && ['READY', 'PENDING_CONFIRMATION'].includes(old.state)) ||
+        (old.state === 'BLOCKED' && old.reason === reason && reason))
+    )
+      return old;
     const state = reason
       ? 'BLOCKED'
       : policy.actions[p.kind] === 'auto'
@@ -131,6 +137,20 @@ export class RecruitingActions {
         );
     });
     return a;
+  }
+  invalidate(id: string, reason: string) {
+    const old = this.store.get<PreparedAction>('action', id);
+    if (!old || !['READY', 'PENDING_CONFIRMATION'].includes(old.state)) return;
+    const { confirmedHash: _confirmed, ...record } = old;
+    this.store.tx(() => {
+      this.store.put('action', id, { ...record, state: 'BLOCKED', reason });
+      this.store.attention(
+        'confirmation',
+        '招聘动作需要重新核对',
+        { actionId: id, reason, proposal: proposalOf(old) },
+        'action-invalidated:' + id + ':' + digest({ policyHash: old.policyHash, reason }),
+      );
+    });
   }
   confirm(id: string, policy: Policy, expectedHash?: string) {
     const a = this.store.get<PreparedAction>('action', id);
@@ -252,6 +272,7 @@ function proposalOf(a: PreparedAction): Proposal {
     resumeVersion,
     sharedValue,
     eventId,
+    jobSnapshot,
   } = a;
   return {
     platform,
@@ -266,5 +287,6 @@ function proposalOf(a: PreparedAction): Proposal {
     resumeVersion,
     ...(sharedValue === undefined ? {} : { sharedValue }),
     eventId,
+    ...(jobSnapshot ? { jobSnapshot } : {}),
   };
 }

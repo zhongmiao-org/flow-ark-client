@@ -172,33 +172,57 @@ try {
   assert.equal(await page.locator('.inspector').getByText(/招聘/).count(), 0);
   await page.screenshot({ path: 'test-results/file-operations-editor.png', fullPage: true });
   const beforeTemplates = await page.evaluate(() => window.flowark.request('bootstrap'));
-  await page.evaluate(() =>
-    window.flowark.request('flow.create', { templateId: 'boss-resume-apply' }),
-  );
-  await page.getByRole('button', { name: '我的流程', exact: true }).click();
-  await page.getByRole('button', { name: '编辑 BOSS 直聘投递简历', exact: true }).click();
-  assert.equal(
-    await page
-      .locator('.inspector')
-      .getByText(/招聘配置|求职者账号|逐项动作权限/)
-      .count(),
-    0,
-  );
-  await page.getByRole('button', { name: '实例配置', exact: true }).click();
-  await page
-    .getByRole('dialog')
-    .getByLabel('求职者账号标识', { exact: true })
-    .fill('fictional-desktop-account');
-  await page.screenshot({ path: 'test-results/template-instance.png', fullPage: true });
-  await page.getByRole('button', { name: '保存配置', exact: true }).click();
-  await page.getByRole('dialog').waitFor({ state: 'hidden' });
-  const configured = await page.evaluate(() => window.flowark.request('bootstrap'));
-  assert.equal(configured.runs.length, beforeTemplates.runs.length);
-  assert.equal(
-    configured.flows.find((r) => r.flow.sourceTemplate?.id === 'boss-resume-apply').bindings
-      .configuration.values.account,
-    'fictional-desktop-account',
-  );
+  for (const [templateId, name] of [
+    ['boss-resume-apply', 'BOSS 直聘投递简历'],
+    ['zhaopin-resume-apply', '智联招聘投递简历'],
+  ]) {
+    await page.evaluate(
+      (templateId) => window.flowark.request('flow.create', { templateId }),
+      templateId,
+    );
+    await page.getByRole('button', { name: '我的流程', exact: true }).click();
+    await page.getByRole('button', { name: '编辑 ' + name, exact: true }).click();
+    assert.equal(
+      await page
+        .locator('.inspector')
+        .getByText(/招聘配置|求职者账号|逐项动作权限|岗位筛选|允许城市/)
+        .count(),
+      0,
+    );
+    await page.getByRole('button', { name: '实例配置', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('求职者账号标识', { exact: true }).fill('fictional-desktop-account');
+    await dialog.getByRole('button', { name: '添加允许城市', exact: true }).click();
+    await dialog.getByLabel('允许城市 1', { exact: true }).fill('深圳');
+    await dialog.getByRole('button', { name: '添加包含公司', exact: true }).click();
+    await dialog.getByLabel('包含公司 1', { exact: true }).fill('虚构科技');
+    await dialog.getByRole('button', { name: '添加排除职位词', exact: true }).click();
+    await dialog.getByLabel('排除职位词 1', { exact: true }).fill('外包');
+    await dialog.getByRole('button', { name: '添加允许工作方式', exact: true }).click();
+    await dialog.getByLabel('允许工作方式 1', { exact: true }).selectOption('hybrid');
+    await dialog.getByLabel('启用月薪筛选', { exact: true }).check();
+    await dialog.getByLabel('岗位月薪下限至少（元，0 不限）', { exact: true }).fill('20000');
+    await dialog.getByLabel('岗位月薪上限至多（元，0 不限）', { exact: true }).fill('30000');
+    await page.screenshot({ path: 'test-results/' + templateId + '-filters.png', fullPage: true });
+    await page.getByRole('button', { name: '保存配置', exact: true }).click();
+    await dialog.waitFor({ state: 'hidden' });
+    const configured = await page.evaluate(() => window.flowark.request('bootstrap'));
+    assert.equal(configured.runs.length, beforeTemplates.runs.length);
+    const saved = configured.flows.find((r) => r.flow.sourceTemplate?.id === templateId);
+    assert.equal(saved.flow.sourceTemplate.version, '1.2.0');
+    assert.equal(saved.bindings.configuration.values.account, 'fictional-desktop-account');
+    assert.deepEqual(saved.bindings.configuration.values.jobFilter, {
+      cities: ['深圳'],
+      includedCompanies: ['虚构科技'],
+      excludedKeywords: ['外包'],
+      workModes: ['hybrid'],
+      salary: { enabled: true, minimumMonthly: 20000, maximumMonthly: 30000, currency: 'CNY' },
+    });
+    await page.getByRole('button', { name: '实例配置', exact: true }).click();
+    assert.equal(await dialog.getByLabel('允许城市 1', { exact: true }).inputValue(), '深圳');
+    assert.equal(await dialog.getByLabel('启用月薪筛选', { exact: true }).isChecked(), true);
+    await dialog.getByRole('button', { name: '取消', exact: true }).click();
+  }
   // Use saved structured steps to exercise the same graph projection as normal editing.
   const graphFlow = {
     formatVersion: '1.0',

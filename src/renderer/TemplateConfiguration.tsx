@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import type { Bindings, Json } from '../shared/types';
 import { schemaDefaults } from '../shared/template-config';
 
 /** A generic, data-only form. Business field labels and options live in the package. */
 function Field({ schema: s, value, change, label }: any) {
+  const id = useId();
   if (Object.hasOwn(s, 'const') || s.readOnly) return null;
   const title = s.title ?? label;
   if (s.type === 'object')
@@ -18,7 +19,7 @@ function Field({ schema: s, value, change, label }: any) {
             schema={schema}
             label={key}
             value={value?.[key]}
-            change={(next: Json) => change({ ...value, [key]: next })}
+            change={(next: Json) => change({ ...schemaDefaults(s), ...value, [key]: next })}
           />
         ))}
       </fieldset>
@@ -61,9 +62,11 @@ function Field({ schema: s, value, change, label }: any) {
   const options = s.oneOf ?? s.enum?.map((v: Json) => ({ const: v, title: String(v) }));
   return (
     <label className="template-field">
-      {title}
+      <span id={id}>{title}</span>
       {options ? (
         <select
+          aria-labelledby={id}
+          aria-describedby={s.description ? id + '-description' : undefined}
           value={String(value ?? '')}
           onChange={(e) =>
             change(options.find((o: any) => String(o.const) === e.target.value).const)
@@ -77,12 +80,16 @@ function Field({ schema: s, value, change, label }: any) {
         </select>
       ) : s.type === 'boolean' ? (
         <input
+          aria-labelledby={id}
+          aria-describedby={s.description ? id + '-description' : undefined}
           type="checkbox"
           checked={Boolean(value)}
           onChange={(e) => change(e.target.checked)}
         />
       ) : (
         <input
+          aria-labelledby={id}
+          aria-describedby={s.description ? id + '-description' : undefined}
           value={value ?? ''}
           type={s.type === 'number' || s.type === 'integer' ? 'number' : 'text'}
           min={s.minimum}
@@ -97,7 +104,7 @@ function Field({ schema: s, value, change, label }: any) {
           }
         />
       )}
-      {s.description && <small>{s.description}</small>}
+      {s.description && <small id={id + '-description'}>{s.description}</small>}
     </label>
   );
 }
