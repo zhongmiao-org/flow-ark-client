@@ -1,0 +1,32 @@
+{
+  "formatVersion": "1.0",
+  "id": "frame-example",
+  "name": "嵌套框架读取",
+  "description": "虚构数据回归",
+  "parameters": {},
+  "requiredCapabilities": [
+    "browser-frames-v1"
+  ],
+  "steps": [
+    {
+      "id": "open",
+      "type": "browser",
+      "version": 1,
+      "operation": "navigate",
+      "selector": "",
+      "value": "https://example.com"
+    },
+    {
+      "id": "read_frame",
+      "type": "browser",
+      "version": 2,
+      "operation": "read",
+      "selector": "#receipt",
+      "value": null,
+      "framePath": [
+        "iframe#outer",
+        "iframe[name=\"content\"]"
+      ]
+    }
+  ]
+}

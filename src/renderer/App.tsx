@@ -41,6 +41,7 @@ import {
 import type { Bootstrap, FlowRecord, Step, Run, Event, Template } from '../shared/types';
 import TemplateConfiguration from './TemplateConfiguration';
 import ScriptPackages from './ScriptPackages';
+import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 const CodeEditor = lazy(() => import('./CodeEditor'));
 const initial: Bootstrap = {
   flows: [],
@@ -106,6 +107,8 @@ function newStep(type: string): Step {
       ],
     },
     browser: {
+      version: 2,
+      framePath: [],
       operation: 'navigate',
       selector: '',
       value: 'https://example.com',
@@ -873,6 +876,17 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose 
                 </button>
               </div>
               <p className="muted">{selectedNode.id} · 修改后保存，下一次运行生效</p>
+              {selectedNode.type === 'browser' && (
+                <BrowserNodeConfiguration
+                  key={selectedNode.id}
+                  node={selectedNode}
+                  change={(next) => {
+                    patch(() => next);
+                    setRaw(JSON.stringify(next, null, 2));
+                    setInvalid('');
+                  }}
+                />
+              )}
               {(selectedNode.type === 'file' || selectedNode.type === 'excel') && (
                 <>
                   <label htmlFor="file-operation">操作</label>

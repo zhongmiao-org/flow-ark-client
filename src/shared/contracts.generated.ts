@@ -1,5 +1,18 @@
 /* Generated from pinned contracts/p1.schema.json. Do not edit. */
 
+/**
+ * @maxItems 8
+ */
+export type FramePath =
+  | []
+  | [string]
+  | [string, string]
+  | [string, string, string]
+  | [string, string, string, string]
+  | [string, string, string, string, string]
+  | [string, string, string, string, string, string]
+  | [string, string, string, string, string, string, string]
+  | [string, string, string, string, string, string, string, string];
 export type Node =
   | {
       id: string;
@@ -101,6 +114,17 @@ export type Node =
     }
   | {
       id: string;
+      type: 'browser';
+      version: 2;
+      name?: string;
+      timeoutMs?: number;
+      operation: 'navigate' | 'read' | 'click' | 'fill' | 'wait' | 'upload' | 'screenshot' | 'download';
+      selector: string;
+      value: Value;
+      framePath: FramePath;
+    }
+  | {
+      id: string;
       type: 'human';
       version: 1;
       name?: string;
@@ -174,6 +198,7 @@ export type RunState =
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
   ArtifactRef?: ArtifactRef;
+  FramePath?: FramePath;
   Node?: Node;
   FlowDefinition?: FlowDefinition;
   RunState?: RunState;

@@ -92,6 +92,7 @@ export type Bridge = { request(method: string, args?: any): Promise<any> };
 export type BrowserCommand = {
   operation: string;
   selector?: string;
+  framePath?: string[];
   value?: any;
   timeoutMs?: number;
 };

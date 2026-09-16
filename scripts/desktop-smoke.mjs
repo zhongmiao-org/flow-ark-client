@@ -223,6 +223,61 @@ try {
     assert.equal(await dialog.getByLabel('启用月薪筛选', { exact: true }).isChecked(), true);
     await dialog.getByRole('button', { name: '取消', exact: true }).click();
   }
+  const browserFlow = {
+    formatVersion: '1.0',
+    id: 'browser-frame-ui',
+    name: '框架定位示例',
+    description: 'local UI only',
+    parameters: {},
+    requiredCapabilities: [],
+    steps: [
+      {
+        id: 'browser',
+        type: 'browser',
+        version: 1,
+        operation: 'navigate',
+        selector: '',
+        value: 'https://example.com',
+      },
+    ],
+  };
+  await page.evaluate(
+    (flow) =>
+      window.flowark.request('flow.save', { flow, bindings: { files: {}, credentials: [] } }),
+    browserFlow,
+  );
+  await page.getByRole('button', { name: '我的流程', exact: true }).click();
+  await page.getByRole('button', { name: '编辑 框架定位示例', exact: true }).click();
+  await page.locator('[data-step-id="browser"]').click();
+  assert.equal(JSON.parse(await page.locator('.inspector .code-input').inputValue()).version, 1);
+  assert.equal(await page.getByLabel('iframe 路径', { exact: true }).isDisabled(), true);
+  await page.getByLabel('操作', { exact: true }).selectOption('read');
+  await page.getByLabel('目标元素选择器', { exact: true }).fill('#receipt');
+  const frameInput = page.getByLabel('iframe 路径', { exact: true });
+  await frameInput.fill('iframe#outer');
+  await frameInput.press('End');
+  await frameInput.press('Enter');
+  await frameInput.pressSequentially('iframe#inner');
+  assert.equal(await frameInput.inputValue(), 'iframe#outer\niframe#inner');
+  await page.getByRole('button', { name: '保存', exact: true }).click();
+  await page.getByRole('button', { name: '我的流程', exact: true }).click();
+  await page.getByRole('button', { name: '编辑 框架定位示例', exact: true }).click();
+  await page.locator('[data-step-id="browser"]').click();
+  assert.equal(await frameInput.inputValue(), 'iframe#outer\niframe#inner');
+  const framedNode = JSON.parse(await page.locator('.inspector .code-input').inputValue());
+  assert.equal(framedNode.version, 2);
+  assert.deepEqual(framedNode.framePath, ['iframe#outer', 'iframe#inner']);
+  assert.equal(framedNode.selector, '#receipt');
+  await page.screenshot({ path: 'test-results/browser-frame-editor.png', fullPage: true });
+  await page.getByLabel('操作', { exact: true }).selectOption('screenshot');
+  assert.equal(await frameInput.isDisabled(), true);
+  assert.deepEqual(
+    JSON.parse(await page.locator('.inspector .code-input').inputValue()).framePath,
+    [],
+  );
+  await page.getByLabel('操作', { exact: true }).selectOption('read');
+  await frameInput.fill('iframe#outer\niframe#inner');
+  await page.getByRole('button', { name: '保存', exact: true }).click();
   // Use saved structured steps to exercise the same graph projection as normal editing.
   const graphFlow = {
     formatVersion: '1.0',

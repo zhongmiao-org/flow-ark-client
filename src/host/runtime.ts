@@ -10,6 +10,7 @@ import { child, killOwnedTree } from './processes';
 import { Rpc } from '../shared/rpc';
 import { uid, now, digest, errorText, redact } from '../shared/utils';
 import { validateFlow, validateObject, walk } from '../core/validate';
+import { assertBrowserOperations } from '../adapters/browser-scope';
 import { discoverBrowsers, inspectBrowser, validateBinding } from '../adapters/browsers';
 import { compileScript, inspectScriptPackage, verifyScriptBundle } from '../adapters/script-bundle';
 import { artifactPath, scopedPath } from '../adapters/files';
@@ -144,6 +145,10 @@ export class Runtime {
       const b = this.store.get<BrowserBinding>('browser', record.bindings.browserId ?? '');
       if (!b) throw new Error('请先选择本机浏览器');
       await validateBinding(b);
+      assertBrowserOperations(
+        b,
+        steps.filter((n) => n.type === 'browser'),
+      );
     }
     for (const n of steps)
       if (n.type === 'file' || n.type === 'excel') {
@@ -337,6 +342,7 @@ export class Runtime {
   }
   private async workerRequest(id: string, method: string, args: any): Promise<any> {
     if (this.active?.id !== id || this.active.cancelling) throw new Error('运行已停止');
+    const runSignal = this.active.abort.signal;
     const snapshot = this.store.get<FlowRecord>('snapshot', id)!;
     if (method === 'event') {
       if (!['node-start', 'node-end', 'log', 'progress', 'error'].includes(args.type))
@@ -361,6 +367,7 @@ export class Runtime {
       const command = {
         operation: args.operation,
         selector: args.selector,
+        framePath: args.framePath,
         value: args.value,
         timeoutMs: args.timeoutMs,
       };
@@ -376,7 +383,7 @@ export class Runtime {
           id,
           args.operation === 'screenshot' ? uid() + '.png' : String(args.value),
         );
-      const result = await this.sessions.use(binding, id, command);
+      const result = await this.sessions.use(binding, id, command, runSignal);
       if (args.operation === 'screenshot' || args.operation === 'download')
         return this.registerArtifact(id, command.value);
       return result;
@@ -404,7 +411,7 @@ export class Runtime {
       const binding = this.store.get<BrowserBinding>('browser', snapshot.bindings.browserId ?? '');
       if (!binding) throw new Error('请先绑定本机浏览器');
       const driver = {
-        perform: (command: any) => this.sessions.use(binding, id, command),
+        perform: (command: any) => this.sessions.use(binding, id, command, runSignal),
         close: async () => {},
       };
       const site =
