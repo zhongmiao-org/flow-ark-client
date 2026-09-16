@@ -27,6 +27,7 @@
     "check": "pnpm typecheck && pnpm test && pnpm build",
     "contracts:generate": "node scripts/generate-contracts.mjs",
     "test:browser": "node --import tsx scripts/browser-smoke.ts",
+    "test:browser-recovery": "node --import tsx scripts/browser-recovery.ts",
     "test:scenario": "node --import tsx scripts/scenario-smoke.ts",
     "test:desktop": "node scripts/desktop-smoke.mjs",
     "test:install": "node scripts/install-smoke.mjs",
