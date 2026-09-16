@@ -93,6 +93,38 @@ try {
   await page.getByRole('button', { name: 'JS / TS 脚本', exact: true }).click();
   await page.getByRole('button', { name: '添加到主流程', exact: true }).click();
   await page.waitForSelector('.monaco-editor', { timeout: 20000 });
+  const localPackage = join(data, 'fixture-package');
+  await mkdir(localPackage);
+  await writeFile(
+    join(localPackage, 'package.json'),
+    JSON.stringify({ name: '@desktop/fixture', version: '1.2.3', main: 'index.cjs' }),
+  );
+  await writeFile(
+    join(localPackage, 'index.cjs'),
+    "module.exports = require('node:path').basename('/fixture/local-package-ready');",
+  );
+  await app.evaluate(({ dialog }, path) => {
+    const original = dialog.showOpenDialog;
+    globalThis.restorePackageDialog = () => {
+      dialog.showOpenDialog = original;
+    };
+    dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] });
+  }, localPackage);
+  try {
+    await page.getByRole('button', { name: '绑定本地包', exact: true }).click();
+    await page.locator('.script-package').getByText('@desktop/fixture', { exact: true }).waitFor();
+  } finally {
+    await app.evaluate(() => {
+      globalThis.restorePackageDialog();
+      delete globalThis.restorePackageDialog;
+    });
+  }
+  const packageNode = JSON.parse(await page.locator('.inspector .code-input').inputValue());
+  assert.deepEqual(packageNode.dependencies, [{ name: '@desktop/fixture', version: '1.2.3' }]);
+  packageNode.code = "import value from '@desktop/fixture'; export default async()=>value;";
+  await page.locator('.inspector .code-input').fill(JSON.stringify(packageNode, null, 2));
+  await page.getByRole('region', { name: '脚本本地依赖' }).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: 'test-results/script-packages-editor.png', fullPage: true });
   await page.getByRole('button', { name: '保存', exact: true }).click();
   await page.getByRole('button', { name: '运行', exact: true }).click();
   const scriptDeadline = Date.now() + 20000;
@@ -103,6 +135,15 @@ try {
       ['SUCCEEDED', 'FAILED', 'INTERRUPTED'].includes(state.runs[0].state)
     ) {
       assert.equal(state.runs[0].state, 'SUCCEEDED', JSON.stringify(state.runs[0]));
+      const packageDetail = await page.evaluate(
+        (id) => window.flowark.request('run.detail', { id }),
+        state.runs[0].id,
+      );
+      assert.equal(packageDetail.output[packageNode.id], 'local-package-ready');
+      assert.deepEqual(packageDetail.scriptBundles[0].dependencies, [
+        { name: '@desktop/fixture', version: '1.2.3' },
+      ]);
+      assert.match(packageDetail.scriptBundles[0].sha256, /^[a-f0-9]{64}$/);
       break;
     }
     if (Date.now() > scriptDeadline) throw new Error('Packaged script execution timed out');

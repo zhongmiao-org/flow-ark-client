@@ -6,6 +6,12 @@ const bindings = z
     browserId: id.optional(),
     files: z.record(z.string(), z.string().max(4096)),
     credentials: z.array(id).max(30),
+    scriptPackages: z
+      .record(
+        z.string().max(214),
+        z.object({ path: z.string().min(1).max(4096), version: z.string().max(100) }).strict(),
+      )
+      .optional(),
     policy: z.unknown().optional(),
     configuration: z
       .object({ adapter: z.string().max(100), schema: z.unknown(), values: z.unknown() })
@@ -22,6 +28,7 @@ export const methods = {
   'artifact.reveal': z.object({ id }).strict(),
   'run.control': z.object({ id, action: z.enum(['pause', 'resume', 'cancel']) }).strict(),
   'browser.discover': empty,
+  'script.package.inspect': z.object({ path: z.string().min(1).max(4096) }).strict(),
   'browser.bind': z
     .object({
       path: z.string().min(1).max(4096),

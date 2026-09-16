@@ -1,6 +1,7 @@
 import type { Flow, Template } from '../shared/types';
 import { digest, uid } from '../shared/utils';
 import { validateFlow, validateObject, walk } from '../core/validate';
+import { declaredDependencies } from '../core/script-dependencies';
 import { recruitingConfigurationSchema } from './template-schema';
 import {
   validateConfigurationSchema,
@@ -28,7 +29,7 @@ export function packageFlow(
       scripts: walk(flow.steps)
         .filter((n) => n.type === 'script')
         .map((n) => n.id),
-      dependencies: [],
+      dependencies: declaredDependencies(walk(flow.steps)),
     },
     flow,
   };
@@ -66,7 +67,18 @@ export function validateTemplate(value: unknown): Template {
       throw new Error('模板配置适配器尚未安装');
     validateConfigurationSchema(p.manifest.configuration.schema);
   }
-  if (p.manifest.dependencies.length) throw new Error('模板依赖不可用，不会自动安装');
+  const sorted = (items: unknown[]) =>
+    JSON.stringify([...items].sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))));
+  const steps = walk(p.flow.steps);
+  if (
+    sorted(p.manifest.dependencies.map(({ name, version }) => ({ name, version }))) !==
+    sorted(declaredDependencies(steps))
+  )
+    throw new Error('模板依赖声明与脚本不一致');
+  if (
+    sorted(p.manifest.scripts) !== sorted(steps.filter((n) => n.type === 'script').map((n) => n.id))
+  )
+    throw new Error('模板脚本清单与流程不一致');
   if (
     JSON.stringify(p.manifest.requiredCapabilities) !== JSON.stringify(p.flow.requiredCapabilities)
   )

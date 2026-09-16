@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, symlink, realpath } from 'node:fs/promises';
+import {
+  mkdtemp,
+  readFile,
+  rm,
+  symlink,
+  realpath,
+  mkdir,
+  writeFile,
+  access,
+} from 'node:fs/promises';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import { tmpdir } from 'node:os';
@@ -658,5 +667,216 @@ test('SIGKILL of actual host stops its script and recovers active/queued runs wi
     if (host.proc.connected) host.proc.disconnect();
     await killOwnedTree(host.proc);
     host.rpc.close();
+  }
+});
+
+test('queued scripts and reopened schedules retain frozen local dependencies while new runs adopt changed code', async () => {
+  const path = await mkdtemp(join(tmpdir(), 'flowark-frozen-package-'));
+  const pkg = join(path, 'local-package');
+  const key = randomBytes(32);
+  const open = () =>
+    new Runtime(path, resolve('dist'), process.execPath, Buffer.from(key), async () => []);
+  let runtime = open();
+  const completed = async (id: string) => {
+    await until(() =>
+      ['SUCCEEDED', 'FAILED', 'INTERRUPTED'].includes(
+        runtime.store.get<Run>('run', id)?.state ?? '',
+      ),
+    );
+    const detail = await runtime.request('run.detail', { id });
+    assert.equal(detail.run.state, 'SUCCEEDED', detail.run.error);
+    return detail;
+  };
+  try {
+    await mkdir(pkg);
+    await writeFile(
+      join(pkg, 'package.json'),
+      JSON.stringify({ name: 'fixture-package', version: '1.0.0', main: 'index.cjs' }),
+    );
+    await writeFile(join(pkg, 'index.cjs'), 'module.exports = { value: "original" };');
+    const declaration = { name: 'fixture-package', version: '1.0.0' };
+    const bindings = {
+      files: {},
+      credentials: [],
+      scriptPackages: { 'fixture-package': { path: pkg, version: '1.0.0' } },
+    };
+    runtime.saveFlow(
+      {
+        ...base,
+        steps: [
+          { id: 'wait', type: 'human', version: 1, message: 'wait for package mutation' },
+          {
+            id: 'script',
+            type: 'script',
+            version: 1,
+            language: 'ts',
+            dependencies: [declaration],
+            input: null,
+            code: 'import pkg from "fixture-package"; export default async()=>pkg.value;',
+          },
+        ],
+      },
+      bindings,
+    );
+    const schedule = await runtime.request('schedule.save', {
+      flowId: base.id,
+      intervalMinutes: 60,
+      timezone: 'UTC',
+    });
+    const first = await runtime.enqueue(base.id);
+    await until(() => runtime.store.get<Run>('run', first.id)?.state === 'WAITING_INPUT');
+    const queued = await runtime.enqueue(base.id);
+    await writeFile(join(pkg, 'index.cjs'), 'module.exports = { value: "updated" };');
+    const fresh = await runtime.enqueue(base.id);
+    assert.equal(first.versionId, queued.versionId);
+    assert.notEqual(first.versionId, fresh.versionId);
+    assert.equal(schedule.versionId, first.versionId);
+    for (const [run, expected] of [
+      [first, 'original'],
+      [queued, 'original'],
+      [fresh, 'updated'],
+    ] as const) {
+      await until(() => runtime.store.get<Run>('run', run.id)?.state === 'WAITING_INPUT');
+      await runtime.control(run.id, 'resume');
+      const detail = await completed(run.id);
+      assert.equal(detail.output.script, expected);
+      assert.deepEqual(detail.scriptBundles[0].dependencies, [declaration]);
+    }
+    const exported = await runtime.request('flow.export', { id: base.id });
+    assert.ok(!exported.includes(pkg));
+    assert.ok(!exported.includes('scriptPackages'));
+    const imported = await runtime.request('flow.import', { content: exported });
+    assert.equal(imported.bindings.scriptPackages, undefined);
+    await assert.rejects(runtime.enqueue(imported.id), /未绑定/);
+    await writeFile(
+      join(pkg, 'package.json'),
+      JSON.stringify({ name: 'fixture-package', version: '2.0.0', main: 'index.cjs' }),
+    );
+    await assert.rejects(runtime.enqueue(base.id), /版本不匹配/);
+    await runtime.shutdown();
+    runtime.store.close();
+    runtime = open();
+    await rm(pkg, { recursive: true });
+    const scheduled = await runtime.enqueue(
+      base.id,
+      schedule.versionId,
+      schedule.id,
+      'frozen-test-trigger',
+      schedule.revision,
+    );
+    await until(() => runtime.store.get<Run>('run', scheduled.id)?.state === 'WAITING_INPUT');
+    await runtime.control(scheduled.id, 'resume');
+    assert.equal((await completed(scheduled.id)).output.script, 'original');
+  } finally {
+    await runtime.shutdown();
+    runtime.store.close();
+    await rm(path, { recursive: true, force: true });
+  }
+});
+
+test('missing or tampered compiled code is never rebuilt or executed after a wait or in the queue', async () => {
+  for (const mutation of ['missing', 'tampered']) {
+    const path = await mkdtemp(join(tmpdir(), 'flowark-bundle-integrity-'));
+    const marker = join(path, 'side-effect');
+    const runtime = new Runtime(
+      path,
+      resolve('dist'),
+      process.execPath,
+      randomBytes(32),
+      async () => [],
+    );
+    try {
+      runtime.saveFlow(
+        {
+          ...base,
+          steps: [
+            { id: 'wait', type: 'human', version: 1, message: 'wait for integrity test' },
+            {
+              id: 'script',
+              type: 'script',
+              version: 1,
+              language: 'js',
+              dependencies: [],
+              input: null,
+              code: `import fs from 'node:fs'; export default async()=>{fs.writeFileSync(${JSON.stringify(marker)},'ran');return true;};`,
+            },
+          ],
+        },
+        { files: {}, credentials: [] },
+      );
+      const active = await runtime.enqueue(base.id);
+      await until(() => runtime.store.get<Run>('run', active.id)?.state === 'WAITING_INPUT');
+      const queued = await runtime.enqueue(base.id);
+      const artifact = runtime.store.get<any>('snapshot', active.id).scripts.script;
+      if (mutation === 'missing') await rm(artifact);
+      else
+        await writeFile(
+          artifact,
+          `import fs from 'node:fs'; fs.writeFileSync(${JSON.stringify(marker)},'tampered'); export default()=>true;`,
+        );
+      await runtime.control(active.id, 'resume');
+      for (const run of [active, queued]) {
+        await until(() =>
+          ['SUCCEEDED', 'FAILED', 'INTERRUPTED'].includes(
+            runtime.store.get<Run>('run', run.id)?.state ?? '',
+          ),
+        );
+        const state = runtime.store.get<Run>('run', run.id)!;
+        assert.equal(state.state, 'FAILED', JSON.stringify(state));
+        assert.match(state.error ?? '', /丢失|摘要不匹配/);
+      }
+      await assert.rejects(access(marker));
+      if (mutation === 'missing') await assert.rejects(access(artifact));
+      else assert.match(await readFile(artifact, 'utf8'), /tampered/);
+    } finally {
+      await runtime.shutdown();
+      runtime.store.close();
+      await rm(path, { recursive: true, force: true });
+    }
+  }
+});
+
+test('legacy fixed source without dependencies remains runnable and legacy unfrozen dependency plans require resaving', async () => {
+  const path = await mkdtemp(join(tmpdir(), 'flowark-legacy-script-'));
+  const runtime = new Runtime(
+    path,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  try {
+    const record = runtime.saveFlow(
+      {
+        ...base,
+        steps: [
+          {
+            id: 'script',
+            type: 'script',
+            version: 1,
+            language: 'ts',
+            dependencies: [],
+            input: null,
+            code: 'export default async()=>42',
+          },
+        ],
+      },
+      { files: {}, credentials: [] },
+    );
+    runtime.store.put('version', 'legacy', { ...record, versionId: 'legacy' });
+    const run = await runtime.enqueue(base.id, 'legacy');
+    await until(() =>
+      ['SUCCEEDED', 'FAILED'].includes(runtime.store.get<Run>('run', run.id)?.state ?? ''),
+    );
+    assert.equal(runtime.store.get<Run>('run', run.id)?.state, 'SUCCEEDED');
+    assert.equal(runtime.store.get('output', run.id).script, 42);
+    const bad = structuredClone(record);
+    (bad.flow.steps[0] as any).dependencies = [{ name: 'fixture-package', version: '1.0.0' }];
+    runtime.store.put('version', 'legacy-deps', { ...bad, versionId: 'legacy-deps' });
+    await assert.rejects(runtime.enqueue(base.id, 'legacy-deps'), /重新保存计划/);
+  } finally {
+    await runtime.shutdown();
+    runtime.store.close();
+    await rm(path, { recursive: true, force: true });
   }
 });

@@ -8,6 +8,7 @@ const allowed = new Set([
   'artifact.reveal',
   'run.control',
   'browser.discover',
+  'script.package.inspect',
   'browser.bind',
   'schedule.save',
   'schedule.toggle',

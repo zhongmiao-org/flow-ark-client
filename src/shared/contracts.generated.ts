@@ -179,6 +179,7 @@ export interface FlowArkP1 {
   RunState?: RunState;
   RunRequest?: RunRequest;
   RunSnapshot?: RunSnapshot;
+  ScriptBundle?: ScriptBundle;
   RunEvent?: RunEvent;
   RecruitingPolicy?: RecruitingPolicy;
   AIReplyDraft?: AIReplyDraft;
@@ -233,6 +234,21 @@ export interface RunSnapshot {
   flow: FlowDefinition;
   parameters: Json;
   createdAt: string;
+  /**
+   * @maxItems 1000
+   */
+  scriptBundles?: ScriptBundle[];
+}
+export interface ScriptBundle {
+  nodeId: string;
+  sha256: string;
+  /**
+   * @maxItems 1000
+   */
+  dependencies: {
+    name: string;
+    version: string;
+  }[];
 }
 export interface RunEvent {
   runId: string;

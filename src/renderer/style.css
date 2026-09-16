@@ -1347,3 +1347,28 @@ td small {
 .template-array-row > :first-child {
   flex: 1;
 }
+.script-packages {
+  margin: 16px 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border, #dce3df);
+}
+.script-package {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 10px 0;
+}
+.script-package > div {
+  flex: 1;
+  min-width: 0;
+}
+.script-package strong,
+.script-package small,
+.script-package .path-text {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.script-package small {
+  color: #718078;
+  margin-top: 3px;
+}

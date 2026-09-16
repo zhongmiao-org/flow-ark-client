@@ -1,6 +1,7 @@
 import Ajv2020 from 'ajv/dist/2020.js';
 import schema from '../../contracts/p1.schema.json';
 import type { Flow, Step } from '../shared/types';
+import { declaredDependencies } from './script-dependencies';
 const ajv = new Ajv2020({ strict: false, allErrors: true });
 ajv.addSchema(schema);
 export function validateObject<T>(name: string, value: unknown): T {
@@ -71,12 +72,11 @@ export function validateFlow(value: unknown): Flow {
         block(n.else, scope, inLoop, depth + 1);
       }
       if (n.type === 'loop') block(n.body, scope, true, depth + 1);
-      if (n.type === 'script' && n.dependencies.length)
-        throw new Error('首版尚无已验证的额外脚本依赖，请移除依赖声明；不会自动安装');
       scope.add(n.id);
     }
   }
   block(flow.steps, new Set(), false, 0);
+  declaredDependencies(walk(flow.steps));
   return flow;
 }
 export function walk(steps: Step[]): Step[] {

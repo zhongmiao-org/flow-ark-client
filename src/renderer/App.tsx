@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import type { Bootstrap, FlowRecord, Step, Run, Event, Template } from '../shared/types';
 import TemplateConfiguration from './TemplateConfiguration';
+import ScriptPackages from './ScriptPackages';
 const CodeEditor = lazy(() => import('./CodeEditor'));
 const initial: Bootstrap = {
   flows: [],
@@ -938,6 +939,64 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose 
                       height="280px"
                     />
                   </Suspense>
+                  <ScriptPackages
+                    flowId={r.id}
+                    node={selectedNode}
+                    bindings={r.bindings}
+                    bind={(info) => {
+                      const conflict = flatten(r.flow.steps).some(
+                        (n: Step) =>
+                          n.id !== selectedNode.id &&
+                          n.type === 'script' &&
+                          n.dependencies.some(
+                            (d) => d.name === info.name && d.version !== info.version,
+                          ),
+                      );
+                      if (conflict)
+                        throw new Error('其他节点声明了不同版本，请先统一依赖版本：' + info.name);
+                      const next = {
+                        ...selectedNode,
+                        dependencies: [
+                          ...selectedNode.dependencies.filter((d: any) => d.name !== info.name),
+                          { name: info.name, version: info.version },
+                        ],
+                      };
+                      setRecord({
+                        ...r,
+                        flow: { ...r.flow, steps: changeSteps(r.flow.steps, selected, () => next) },
+                        bindings: {
+                          ...r.bindings,
+                          scriptPackages: {
+                            ...r.bindings.scriptPackages,
+                            [info.name]: { path: info.path, version: info.version },
+                          },
+                        },
+                      });
+                      setRaw(JSON.stringify(next, null, 2));
+                      setInvalid('');
+                    }}
+                    remove={(name) => {
+                      const next = {
+                        ...selectedNode,
+                        dependencies: selectedNode.dependencies.filter((d: any) => d.name !== name),
+                      };
+                      const steps = changeSteps(r.flow.steps, selected, () => next);
+                      const packages = { ...r.bindings.scriptPackages };
+                      if (
+                        !flatten(steps).some(
+                          (n: Step) =>
+                            n.type === 'script' && n.dependencies.some((d) => d.name === name),
+                        )
+                      )
+                        delete packages[name];
+                      setRecord({
+                        ...r,
+                        flow: { ...r.flow, steps },
+                        bindings: { ...r.bindings, scriptPackages: packages },
+                      });
+                      setRaw(JSON.stringify(next, null, 2));
+                    }}
+                  />
                 </>
               )}
               <label>节点配置 JSON</label>
@@ -1136,6 +1195,22 @@ function RunDetail({
       </div>
       <p className="note">{r.business}</p>
       {r.error && <div className="alert error">{r.error}</div>}
+      {d.scriptBundles?.length > 0 && (
+        <details className="script-bundles">
+          <summary>已固定的脚本与依赖 · {d.scriptBundles.length} 个节点</summary>
+          {d.scriptBundles.map((bundle: any) => (
+            <div key={bundle.nodeId}>
+              <p>
+                <b>{bundle.nodeId}</b> ·{' '}
+                {bundle.dependencies.length
+                  ? bundle.dependencies.map((dep: any) => dep.name + '@' + dep.version).join('，')
+                  : '仅使用脚本及 Node 内置能力'}
+              </p>
+              <code className="path-text">SHA-256 {bundle.sha256}</code>
+            </div>
+          ))}
+        </details>
+      )}
       <div className="event-list">
         {d.events.map((e: Event) => (
           <div key={e.sequence}>

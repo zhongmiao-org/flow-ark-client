@@ -77,6 +77,7 @@ const rpc = new Rpc(
           if (n.type === 'script')
             return runScript({
               compiled: args.scripts[n.id],
+              sha256: args.scriptBundles.find((bundle: any) => bundle.nodeId === n.id)?.sha256,
               input: resolved.input,
               dir: dirname(process.argv[1]),
               executable: args.executable,

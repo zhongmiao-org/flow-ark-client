@@ -1,10 +1,12 @@
 import { pathToFileURL } from 'node:url';
 import { Rpc } from '../shared/rpc';
+import { verifyScriptBundle } from '../adapters/script-bundle';
 const abort = new AbortController();
 const rpc = new Rpc(
   (m) => process.send?.(m),
   async (method, args) => {
     if (method !== 'execute') throw new Error('未知脚本方法');
+    await verifyScriptBundle(args.path, args.sha256);
     const module = await import(pathToFileURL(args.path).href);
     if (typeof module.default !== 'function')
       throw new Error('脚本必须 default export 一个 async 函数');

@@ -1,5 +1,5 @@
 import { join, dirname, basename } from 'node:path';
-import { mkdir, access, stat, writeFile, realpath } from 'node:fs/promises';
+import { access, stat, writeFile, realpath } from 'node:fs/promises';
 import type { ChildProcess } from 'node:child_process';
 import { RecruitingCoordinator } from '../recruiting/coordinator';
 import { BossRecruitingAdapter, ZhaopinRecruitingAdapter } from '../recruiting/sites';
@@ -11,7 +11,7 @@ import { Rpc } from '../shared/rpc';
 import { uid, now, digest, errorText, redact } from '../shared/utils';
 import { validateFlow, validateObject, walk } from '../core/validate';
 import { discoverBrowsers, inspectBrowser, validateBinding } from '../adapters/browsers';
-import { compileScript } from '../adapters/script';
+import { compileScript, inspectScriptPackage, verifyScriptBundle } from '../adapters/script-bundle';
 import { artifactPath, scopedPath } from '../adapters/files';
 import { templates, instantiate, packageFlow, validateTemplate } from '../recruiting/templates';
 import {
@@ -31,6 +31,7 @@ import type {
   Schedule,
   BrowserBinding,
   Bootstrap,
+  PreparedScripts,
 } from '../shared/types';
 const terminal = new Set(['SUCCEEDED', 'FAILED', 'INTERRUPTED', 'CANCELLED']);
 type Active = {
@@ -93,9 +94,14 @@ export class Runtime {
     this.store.put('flow', flow.id, record);
     return record;
   }
-  private version(record: FlowRecord) {
-    const id = digest({ flow: record.flow, bindings: record.bindings });
-    if (!this.store.get('version', id)) this.store.put('version', id, { ...record, versionId: id });
+  private version(record: FlowRecord, prepared: PreparedScripts) {
+    const id = digest({
+      flow: record.flow,
+      bindings: record.bindings,
+      scriptBundles: prepared.scriptBundles,
+    });
+    if (!this.store.get('version', id))
+      this.store.put('version', id, { ...record, ...prepared, versionId: id });
     return id;
   }
   async bootstrap(): Promise<Bootstrap> {
@@ -131,7 +137,7 @@ export class Runtime {
       dataPath: this.dataPath,
     };
   }
-  async preflight(record: FlowRecord) {
+  async preflight(record: FlowRecord & Partial<PreparedScripts>): Promise<PreparedScripts> {
     const flow = validateFlow(record.flow);
     const steps = walk(flow.steps);
     if (steps.some((n) => n.type === 'browser' || n.type === 'recruiting')) {
@@ -148,16 +154,42 @@ export class Runtime {
     for (const id of record.bindings.credentials)
       if (!(await this.system('credentials.list', {})).includes(id))
         throw new Error('未配置凭据：' + id);
-    const scriptDir = join(this.dataPath, 'compiled', digest(flow));
-    await mkdir(scriptDir, { recursive: true, mode: 0o700 });
-    const scripts: Record<string, string> = {};
+    const scriptNodes = steps.filter((n) => n.type === 'script');
+    if (record.scriptBundles !== undefined) {
+      if (
+        !record.scripts ||
+        record.scriptBundles.length !== scriptNodes.length ||
+        new Set(record.scriptBundles.map((b) => b.nodeId)).size !== scriptNodes.length
+      )
+        throw new Error('脚本快照清单不完整');
+      for (const n of scriptNodes) {
+        const bundle = record.scriptBundles.find((b) => b.nodeId === n.id);
+        if (!bundle) throw new Error('脚本快照缺少节点：' + n.id);
+        validateObject('ScriptBundle', bundle);
+        await verifyScriptBundle(record.scripts[n.id], bundle.sha256);
+      }
+      return { scripts: record.scripts, scriptBundles: record.scriptBundles };
+    }
+    if (record.versionId && scriptNodes.some((n) => n.dependencies.length))
+      throw new Error('旧计划没有固定脚本依赖，请重新保存计划');
+    const prepared: PreparedScripts = { scripts: {}, scriptBundles: [] };
     for (const n of steps)
       if (n.type === 'script') {
-        const path = join(scriptDir, n.id + '.mjs');
-        await compileScript(n.code, n.language, path);
-        scripts[n.id] = path;
+        const bundle = await compileScript({
+          code: n.code,
+          language: n.language,
+          dependencies: n.dependencies,
+          bindings: record.bindings.scriptPackages,
+          directory: join(this.dataPath, 'compiled'),
+        });
+        prepared.scripts[n.id] = bundle.path;
+        prepared.scriptBundles.push({
+          nodeId: n.id,
+          sha256: bundle.sha256,
+          dependencies: bundle.dependencies,
+        });
       }
-    return scripts;
+    return prepared;
   }
   private assertAdmitting() {
     if (this.stopping || this.store.fault) throw new Error(this.store.fault ?? '应用正在退出');
@@ -204,10 +236,10 @@ export class Runtime {
       }
     };
     check();
-    const scripts = await this.preflight(record);
+    const prepared = await this.preflight(record);
     check();
     const id = uid();
-    const version = versionId ?? this.version(record);
+    const version = versionId ?? this.version(record, prepared);
     const run: Run = {
       id,
       flowId,
@@ -222,7 +254,7 @@ export class Runtime {
     };
     this.store.tx(() => {
       if (triggerId && this.store.get('trigger', triggerId)) throw new Error('重复计划触发');
-      this.store.put('snapshot', id, { ...structuredClone(record), scripts });
+      this.store.put('snapshot', id, { ...structuredClone(record), ...prepared });
       this.store.put('run', id, run);
       this.store.event(id, 'state', '', { state: 'QUEUED' });
       if (triggerId) this.store.put('trigger', triggerId, { id, at: now() });
@@ -262,17 +294,14 @@ export class Runtime {
     proc.on('error', () => rpc.close());
     try {
       this.store.state(run.id, 'RUNNING');
-      const s = this.store.get<FlowRecord & { scripts: Record<string, string> }>(
-        'snapshot',
-        run.id,
-      )!;
-      await this.preflight(s); // Revalidate resources after FIFO wait.
+      const s = this.store.get<FlowRecord & PreparedScripts>('snapshot', run.id)!;
+      const prepared = await this.preflight(s); // Revalidate resources, never recompile a fixed bundle.
       const outputs = await rpc.call(
         'execute',
         {
           ...s,
           parameters: s.flow.parameters,
-          scripts: s.scripts,
+          ...prepared,
           executable: this.executable,
         },
         24 * 3600000,
@@ -592,6 +621,7 @@ export class Runtime {
           ),
           output: redact(this.store.get('output', args.id)),
           snapshot: this.store.get('snapshot', args.id)?.flow,
+          scriptBundles: this.store.get('snapshot', args.id)?.scriptBundles ?? [],
         };
       case 'artifact.resolve': {
         const item = this.store.get<any>('artifact', args.id);
@@ -602,6 +632,8 @@ export class Runtime {
       }
       case 'browser.discover':
         return discoverBrowsers();
+      case 'script.package.inspect':
+        return inspectScriptPackage(args.path);
       case 'browser.bind': {
         const b = await inspectBrowser(args.path, args.driver);
         this.store.put('browser', b.id, b);
@@ -611,13 +643,13 @@ export class Runtime {
         this.assertAdmitting();
         const r = this.store.get<FlowRecord>('flow', args.flowId);
         if (!r) throw new Error('流程不存在');
-        await this.preflight(r);
+        const prepared = await this.preflight(r);
         this.assertAdmitting();
         new Intl.DateTimeFormat('en', { timeZone: args.timezone });
         const s = {
           id: args.id ?? uid(),
           flowId: r.id,
-          versionId: this.version(r),
+          versionId: this.version(r, prepared),
           intervalMinutes: args.intervalMinutes,
           timezone: args.timezone,
           enabled: true,

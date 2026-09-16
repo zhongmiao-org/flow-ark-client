@@ -9,11 +9,14 @@ export type Action = NonNullable<P1Contracts['RecruitingAction']>;
 export type Contact = NonNullable<P1Contracts['ContactExchangeResult']>;
 export type Template = NonNullable<P1Contracts['TemplatePackage']>;
 export type RunState = NonNullable<P1Contracts['RunState']>;
+export type ScriptBundle = NonNullable<P1Contracts['ScriptBundle']>;
+export type PreparedScripts = { scripts: Record<string, string>; scriptBundles: ScriptBundle[] };
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export type Bindings = {
   browserId?: string;
   files: Record<string, string>;
   credentials: string[];
+  scriptPackages?: Record<string, { path: string; version: string }>;
   policy?: Policy;
   configuration?: { adapter: string; schema: Json; values: Json };
 };

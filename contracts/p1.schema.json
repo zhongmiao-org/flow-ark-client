@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.3.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.4.0/p1.schema.json",
   "title": "FlowArkP1",
   "$defs": {
     "Json": {
@@ -854,6 +854,13 @@
         "createdAt": {
           "type": "string",
           "maxLength": 100000
+        },
+        "scriptBundles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ScriptBundle"
+          },
+          "maxItems": 1000
         }
       },
       "required": [
@@ -862,6 +869,47 @@
         "flow",
         "parameters",
         "createdAt"
+      ],
+      "additionalProperties": false
+    },
+    "ScriptBundle": {
+      "type": "object",
+      "properties": {
+        "nodeId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "maxLength": 100000
+              },
+              "version": {
+                "type": "string",
+                "maxLength": 100000
+              }
+            },
+            "required": [
+              "name",
+              "version"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 1000
+        }
+      },
+      "required": [
+        "nodeId",
+        "sha256",
+        "dependencies"
       ],
       "additionalProperties": false
     },
