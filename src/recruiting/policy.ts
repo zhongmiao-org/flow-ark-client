@@ -1,0 +1,31 @@
+import type { Policy } from '../shared/types';
+import { uid } from '../shared/utils';
+export const defaultPolicy = (platform: 'boss' | 'zhaopin'): Policy => ({
+  platform,
+  account: '',
+  keywords: [],
+  excludedCompanies: [],
+  allowedTargets: [],
+  resumeVersion: '',
+  resumeBinding: '',
+  facts: [],
+  actions: {
+    apply: 'confirm',
+    resume: 'confirm',
+    reply: 'confirm',
+    requestWechat: 'confirm',
+    acceptWechat: 'confirm',
+    requestPhone: 'confirm',
+    acceptPhone: 'confirm',
+  },
+  dailyLimit: 10,
+  batchLimit: 5,
+  startHour: 9,
+  endHour: 21,
+  timezone: 'Asia/Shanghai',
+  ownWechat: '',
+  ownPhone: '',
+  provider: 'openai-codex',
+  model: 'gpt-5.3-codex',
+  contextRevision: uid(),
+});

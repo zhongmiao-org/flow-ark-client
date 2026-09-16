@@ -1,0 +1,91 @@
+{
+  "name": "flow-ark-client",
+  "version": "0.1.0",
+  "description": "FlowArk 序舟本地自动化工作台",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.cjs",
+  "author": "FlowArk",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@10.14.0",
+  "engines": {
+    "node": ">=24.3.0"
+  },
+  "scripts": {
+    "setup:electron": "install-electron",
+    "dev": "pnpm build && electron .",
+    "start": "electron .",
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "test:runtime": "node --import tsx --test tests/runtime.integration.ts",
+    "check": "pnpm typecheck && pnpm test && pnpm build",
+    "contracts:generate": "node scripts/generate-contracts.mjs",
+    "test:browser": "node --import tsx scripts/browser-smoke.ts",
+    "test:scenario": "node --import tsx scripts/scenario-smoke.ts",
+    "test:desktop": "node scripts/desktop-smoke.mjs",
+    "test:install": "node scripts/install-smoke.mjs",
+    "package:mac": "pnpm build && electron-builder --mac zip --arm64 --publish never --config.electronDist=node_modules/electron/dist && node scripts/package-dmg.mjs"
+  },
+  "build": {
+    "appId": "org.zhongmiao.flowark",
+    "productName": "FlowArk",
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/@esbuild/**/*",
+      "node_modules/esbuild/bin/*"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "contracts/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "identity": null
+    },
+    "dmg": {
+      "title": "FlowArk ${version}"
+    }
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron",
+      "esbuild"
+    ]
+  },
+  "dependencies": {
+    "@monaco-editor/react": "4.7.0",
+    "@xyflow/react": "12.11.6",
+    "ajv": "8.20.0",
+    "esbuild": "0.28.2",
+    "exceljs": "4.4.0",
+    "lucide-react": "1.46.0",
+    "monaco-editor": "0.56.0",
+    "playwright-core": "1.63.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "selenium-webdriver": "4.49.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/selenium-webdriver": "4.35.7",
+    "electron": "44.4.1",
+    "electron-builder": "26.15.3",
+    "json-schema-to-typescript": "16.0.0",
+    "prettier": "3.6.2",
+    "tsx": "4.23.13",
+    "typescript": "7.0.2",
+    "vite": "8.3.0"
+  }
+}

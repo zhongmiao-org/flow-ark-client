@@ -1,0 +1,6 @@
+dist
+release
+node_modules
+src/shared/contracts.generated.ts
+pnpm-lock.yaml
+contracts
