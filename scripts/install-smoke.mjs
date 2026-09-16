@@ -3,9 +3,11 @@ import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import assert from 'node:assert/strict';
+import { verifyBundle } from './verify-bundle.mjs';
 const executablePath = process.env.FLOWARK_TEST_EXECUTABLE;
 if (!executablePath)
   throw new Error('Set FLOWARK_TEST_EXECUTABLE to the installed FlowArk executable');
+await verifyBundle(executablePath.split('/Contents/MacOS/')[0]);
 const data = await mkdtemp(join(tmpdir(), 'flowark-installed-data-'));
 const evidence = [];
 for (let phase = 0; phase < 2; phase++) {
@@ -14,6 +16,9 @@ for (let phase = 0; phase < 2; phase++) {
     env: { ...process.env, FLOWARK_DATA_DIR: data },
     timeout: 30000,
   });
+  const child = app.process();
+  child.stderr?.on('data', (data) => process.stderr.write(data));
+  console.log('Installed launch phase', phase);
   try {
     const page = await app.firstWindow();
     await page.waitForFunction(() => Boolean(window.flowark));
@@ -60,10 +65,14 @@ for (let phase = 0; phase < 2; phase++) {
       previousRuns: first.runs.length,
       tray: true,
     });
+  } catch (error) {
+    console.error('Installed verification failed in phase', phase, error);
+    throw error;
   } finally {
-    const ended = new Promise((resolve) =>
-      app.process().once('exit', (code, signal) => resolve({ code, signal })),
-    );
+    const ended =
+      child.exitCode !== null || child.signalCode !== null
+        ? Promise.resolve({ code: child.exitCode, signal: child.signalCode })
+        : new Promise((resolve) => child.once('exit', (code, signal) => resolve({ code, signal })));
     await app
       .evaluate(({ Menu }) => {
         setTimeout(
@@ -75,7 +84,7 @@ for (let phase = 0; phase < 2; phase++) {
         );
       })
       .catch(() => {});
-    const timer = setTimeout(() => app.process().kill('SIGKILL'), 12000);
+    const timer = setTimeout(() => child.kill('SIGKILL'), 12000);
     const exit = await ended;
     clearTimeout(timer);
     assert.equal(exit.signal, null);

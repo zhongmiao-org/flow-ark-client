@@ -1,4 +1,5 @@
-import { mkdtemp, cp, symlink, rm } from 'node:fs/promises';
+import { mkdtemp, symlink, rm } from 'node:fs/promises';
+import { verifyBundle } from './verify-bundle.mjs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { execFile } from 'node:child_process';
@@ -8,7 +9,12 @@ const exec = promisify(execFile);
 const { version } = JSON.parse(await readFile('package.json', 'utf8'));
 const stage = await mkdtemp(join(tmpdir(), 'flowark-dmg-'));
 try {
-  await cp('release/mac-arm64/FlowArk.app', join(stage, 'FlowArk.app'), { recursive: true });
+  // ditto preserves framework-relative symlinks when staging a relocatable .app.
+  await exec('/usr/bin/ditto', [
+    resolve('release/mac-arm64/FlowArk.app'),
+    join(stage, 'FlowArk.app'),
+  ]);
+  await verifyBundle(join(stage, 'FlowArk.app'));
   await symlink('/Applications', join(stage, 'Applications'));
   const output = resolve(`release/FlowArk-${version}-arm64.dmg`);
   await exec(
