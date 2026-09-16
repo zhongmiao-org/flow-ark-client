@@ -34,6 +34,17 @@ export function authorizationHash(p: Proposal, policy: Policy) {
     policy,
   });
 }
+export function recruitingActionId(
+  p: Pick<Proposal, 'platform' | 'account' | 'target' | 'kind' | 'resumeVersion' | 'eventId'>,
+) {
+  return digest({
+    platform: p.platform,
+    account: p.account,
+    target: p.target,
+    kind: p.kind,
+    eventId: p.kind === 'apply' ? 'application' : p.kind === 'resume' ? p.resumeVersion : p.eventId,
+  });
+}
 export function policyDecision(
   p: Proposal,
   policy: Policy,
@@ -87,14 +98,7 @@ export class RecruitingActions {
     ).length;
   }
   prepare(p: Proposal, policy: Policy, time = new Date(), flowId?: string): PreparedAction {
-    const id = digest({
-      platform: p.platform,
-      account: p.account,
-      target: p.target,
-      kind: p.kind,
-      eventId:
-        p.kind === 'apply' ? 'application' : p.kind === 'resume' ? p.resumeVersion : p.eventId,
-    });
+    const id = recruitingActionId(p);
     const old = this.store.get<PreparedAction>('action', id);
     // Regenerated text or changed permissions cannot make an already attempted
     // external operation into a new send. Unsent revisions lose confirmation.

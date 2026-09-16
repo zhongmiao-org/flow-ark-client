@@ -1,5 +1,5 @@
 import { validateDraft } from './ai';
-import { RecruitingActions, type Proposal } from './actions';
+import { RecruitingActions, recruitingActionId, type Proposal } from './actions';
 import type { RecruitingSiteAdapter } from './sites';
 import type { Policy, AIRequest, AIResult } from '../shared/types';
 import { Store } from '../host/store';
@@ -104,6 +104,14 @@ export class RecruitingCoordinator {
         const observed = { ...candidate, jobSnapshot: context.jobSnapshot };
         const filterReason = jobFilterDecision(observed, policy);
         if (filterReason) {
+          this.actions.invalidate(
+            recruitingActionId({
+              ...candidate,
+              resumeVersion: policy.resumeVersion,
+              eventId: context.eventId,
+            }),
+            filterReason,
+          );
           attention(
             'limitation',
             '岗位筛选需要核对：' + candidate.company + ' · ' + candidate.job,

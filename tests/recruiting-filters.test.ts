@@ -431,3 +431,34 @@ test('action submit independently checks job facts, source changes and stale con
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test('a confirmed action blocked by the first detail read cannot revive its old confirmation when conditions recover', async () => {
+  for (const platform of ['boss', 'zhaopin'] as const) {
+    for (const kind of ['reply', 'apply', 'resume'] as const) {
+      const f = await fixture(platform);
+      try {
+        f.state.kind = kind;
+        assert.equal((await f.run()).waiting, 1);
+        const action = f.store.list<PreparedAction>('action')[0];
+        f.service.actions.confirm(action.id, f.rules, action.policyHash);
+        f.state.page!.city = '上海';
+        const aiBefore = f.state.ai;
+        assert.equal((await f.run()).blocked, 1);
+        assert.equal(f.state.ai, aiBefore);
+        assert.equal(f.store.get<PreparedAction>('action', action.id)!.confirmedHash, undefined);
+        f.state.page!.city = '深圳';
+        assert.equal((await f.run()).waiting, 1);
+        assert.equal(
+          f.store.get<PreparedAction>('action', action.id)!.state,
+          'PENDING_CONFIRMATION',
+        );
+        assert.equal(f.state.sent, 0);
+        const renewed = f.store.get<PreparedAction>('action', action.id)!;
+        f.service.actions.confirm(renewed.id, f.rules, renewed.policyHash);
+        assert.equal((await f.run()).submitted, 1);
+      } finally {
+        await f.close();
+      }
+    }
+  }
+});
