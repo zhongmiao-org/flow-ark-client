@@ -1,7 +1,7 @@
 import Ajv2020 from 'ajv/dist/2020.js';
 import schema from '../../contracts/p1.schema.json';
 import type { Flow, Step } from '../shared/types';
-import { framePathOf } from './browser-command';
+import { framePathOf, validateFormCommand } from './browser-command';
 import { declaredDependencies } from './script-dependencies';
 const ajv = new Ajv2020({ strict: false, allErrors: true });
 ajv.addSchema(schema);
@@ -22,6 +22,7 @@ export const capabilities = [
   'excel',
   'browser',
   'browser-frames-v1',
+  'browser-forms-v1',
   'human',
   'condition',
   'loop',
@@ -68,7 +69,10 @@ export function validateFlow(value: unknown): Flow {
     for (const n of steps) {
       if (++count > 1000 || all.has(n.id)) throw new Error('节点数量过多或 ID 重复：' + n.id);
       all.add(n.id);
-      if (n.type === 'browser') framePathOf(n);
+      if (n.type === 'browser') {
+        framePathOf(n);
+        validateFormCommand(n, true);
+      }
       const { then: yes, else: no, body, ...rest } = n as any;
       values(rest, scope, inLoop);
       if (n.type === 'condition') {

@@ -125,6 +125,29 @@ export type Node =
     }
   | {
       id: string;
+      type: 'browser';
+      version: 3;
+      name?: string;
+      timeoutMs?: number;
+      operation:
+        | 'navigate'
+        | 'read'
+        | 'click'
+        | 'fill'
+        | 'wait'
+        | 'upload'
+        | 'screenshot'
+        | 'download'
+        | 'select'
+        | 'check'
+        | 'inputValue'
+        | 'press';
+      selector: string;
+      value: Value;
+      framePath: FramePath;
+    }
+  | {
+      id: string;
       type: 'human';
       version: 1;
       name?: string;

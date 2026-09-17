@@ -278,6 +278,31 @@ try {
   await page.getByLabel('操作', { exact: true }).selectOption('read');
   await frameInput.fill('iframe#outer\niframe#inner');
   await page.getByRole('button', { name: '保存', exact: true }).click();
+  await page.getByLabel('操作', { exact: true }).selectOption('select');
+  await page.getByLabel('选择方式', { exact: true }).selectOption('multiple');
+  await page.getByLabel('选项值', { exact: true }).fill('ts\nqa');
+  await page.getByRole('button', { name: '保存', exact: true }).click();
+  await page.getByRole('button', { name: '我的流程', exact: true }).click();
+  await page.getByRole('button', { name: '编辑 框架定位示例', exact: true }).click();
+  await page.locator('[data-step-id="browser"]').click();
+  const formNode = JSON.parse(await page.locator('.inspector .code-input').inputValue());
+  assert.equal(formNode.version, 3);
+  assert.deepEqual(formNode.value, ['ts', 'qa']);
+  assert.deepEqual(formNode.framePath, ['iframe#outer', 'iframe#inner']);
+  await page.screenshot({ path: 'test-results/browser-form-editor.png', fullPage: true });
+  await page.getByLabel('操作', { exact: true }).selectOption('check');
+  await page.getByLabel('目标状态', { exact: true }).selectOption('false');
+  assert.equal(JSON.parse(await page.locator('.inspector .code-input').inputValue()).value, false);
+  await page.getByLabel('操作', { exact: true }).selectOption('press');
+  await page.getByLabel('按键', { exact: true }).selectOption('ArrowRight');
+  assert.equal(
+    JSON.parse(await page.locator('.inspector .code-input').inputValue()).value,
+    'ArrowRight',
+  );
+  await page.getByLabel('操作', { exact: true }).selectOption('inputValue');
+  assert.equal(JSON.parse(await page.locator('.inspector .code-input').inputValue()).value, null);
+  assert.equal(await page.locator('.inspector').getByText(/招聘/).count(), 0);
+  await page.getByRole('button', { name: '保存', exact: true }).click();
   // Use saved structured steps to exercise the same graph projection as normal editing.
   const graphFlow = {
     formatVersion: '1.0',
