@@ -1,0 +1,197 @@
+{
+  "manifest": {
+    "id": "simple-web-form",
+    "version": "1.0.0",
+    "source": "flowark-example",
+    "digest": "ea0622b3861acfa9609f3cabe554edc9d1aa09dce9919507bbdf78eee2868b5d",
+    "formatVersion": "1.0",
+    "parametersSchema": {
+      "type": "object"
+    },
+    "requiredCapabilities": ["browser", "excel", "condition", "assert"],
+    "scripts": [],
+    "dependencies": []
+  },
+  "flow": {
+    "id": "simple-web-form",
+    "formatVersion": "1.0",
+    "name": "简单网站练习：表单与结果",
+    "description": "在 Selenium 官方测试页填写虚构文本，读取回执，生成 Excel 与截图。无需账号或 AI；此页面不提供后端字段回显。",
+    "parameters": {},
+    "requiredCapabilities": ["browser", "excel", "condition", "assert"],
+    "steps": [
+      {
+        "id": "open",
+        "name": "打开测试表单",
+        "type": "browser",
+        "version": 1,
+        "operation": "navigate",
+        "selector": "",
+        "value": "https://www.selenium.dev/selenium/web/web-form.html",
+        "timeoutMs": 15000
+      },
+      {
+        "id": "title",
+        "name": "读取页面标题",
+        "type": "browser",
+        "version": 1,
+        "operation": "read",
+        "selector": "h1",
+        "value": null,
+        "timeoutMs": 15000
+      },
+      {
+        "id": "verify_title",
+        "name": "确认目标页面",
+        "type": "assert",
+        "version": 1,
+        "actual": {
+          "$ref": "steps.title"
+        },
+        "operator": "equals",
+        "expected": "Web form"
+      },
+      {
+        "id": "fill_name",
+        "name": "填写虚构名称",
+        "type": "browser",
+        "version": 1,
+        "operation": "fill",
+        "selector": "input[name=\"my-text\"]",
+        "value": "FlowArk practice",
+        "timeoutMs": 15000
+      },
+      {
+        "id": "fill_note",
+        "name": "填写练习说明",
+        "type": "browser",
+        "version": 1,
+        "operation": "fill",
+        "selector": "textarea[name=\"my-textarea\"]",
+        "value": "Fictional automation example",
+        "timeoutMs": 15000
+      },
+      {
+        "id": "check",
+        "name": "选择测试复选框",
+        "type": "browser",
+        "version": 1,
+        "operation": "click",
+        "selector": "#my-check-2",
+        "value": null,
+        "timeoutMs": 15000
+      },
+      {
+        "id": "submit",
+        "name": "提交测试表单",
+        "type": "browser",
+        "version": 1,
+        "operation": "click",
+        "selector": "button[type=\"submit\"]",
+        "value": null,
+        "timeoutMs": 15000
+      },
+      {
+        "id": "wait",
+        "name": "等待回执",
+        "type": "browser",
+        "version": 1,
+        "operation": "wait",
+        "selector": "#message",
+        "value": null,
+        "timeoutMs": 15000
+      },
+      {
+        "id": "receipt",
+        "name": "读取回执",
+        "type": "browser",
+        "version": 1,
+        "operation": "read",
+        "selector": "#message",
+        "value": null,
+        "timeoutMs": 15000
+      },
+      {
+        "id": "result_title",
+        "name": "读取结果标题",
+        "type": "browser",
+        "version": 1,
+        "operation": "read",
+        "selector": "h1",
+        "value": null,
+        "timeoutMs": 15000
+      },
+      {
+        "id": "verify_result",
+        "name": "确认结果页面",
+        "type": "assert",
+        "version": 1,
+        "actual": {
+          "$ref": "steps.result_title"
+        },
+        "operator": "equals",
+        "expected": "Form submitted"
+      },
+      {
+        "id": "receipt_branch",
+        "name": "回执是否成功",
+        "type": "condition",
+        "version": 1,
+        "actual": {
+          "$ref": "steps.receipt"
+        },
+        "operator": "equals",
+        "expected": "Received!",
+        "then": [
+          {
+            "id": "save_excel",
+            "name": "simple-web-result.xlsx",
+            "type": "excel",
+            "version": 1,
+            "operation": "write",
+            "binding": "output",
+            "rows": [
+              ["字段", "值"],
+              [
+                "回执",
+                {
+                  "$ref": "steps.receipt"
+                }
+              ],
+              ["虚构输入", "FlowArk practice"],
+              [
+                "结果页面",
+                {
+                  "$ref": "steps.result_title"
+                }
+              ]
+            ]
+          }
+        ],
+        "else": [
+          {
+            "id": "unexpected_receipt",
+            "name": "回执异常时停止",
+            "type": "assert",
+            "version": 1,
+            "actual": {
+              "$ref": "steps.receipt"
+            },
+            "operator": "equals",
+            "expected": "Received!"
+          }
+        ]
+      },
+      {
+        "id": "screenshot",
+        "name": "保存回执截图",
+        "type": "browser",
+        "version": 1,
+        "operation": "screenshot",
+        "selector": "",
+        "value": null,
+        "timeoutMs": 15000
+      }
+    ]
+  }
+}
