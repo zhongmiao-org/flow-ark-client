@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: client-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      SE_AVOID_BROWSER_DOWNLOAD: 'true'
+      SE_OFFLINE: 'true'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.3.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm test:runtime
+
+  automerge:
+    name: Auto Merge
+    needs: validate
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !github.event.pull_request.draft &&
+      contains(github.event.pull_request.labels.*.name, 'automerge')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      # This job does not check out or execute application code.
+      - name: Recheck PR and merge the validated head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+          EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          pr=$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" \
+            --json state,isDraft,labels,headRefOid,baseRefName,baseRefOid,mergeStateStatus,title)
+          if ! jq -e --arg head "$EXPECTED_HEAD" --arg base "$EXPECTED_BASE" '
+            .state == "OPEN" and (.isDraft | not) and
+            any(.labels[]; .name == "automerge") and
+            .headRefOid == $head and .baseRefOid == $base and
+            .baseRefName == "main" and .mergeStateStatus == "CLEAN"
+          ' <<< "$pr" > /dev/null; then
+            echo 'PR changed or is not ready; leave it open for fresh checks.'
+            exit 1
+          fi
+          title=$(jq -r '.title' <<< "$pr")
+          if [[ ! "$title" =~ ^(feat|fix|docs|chore|refactor|perf|test|style|build|revert|ci)(\([a-z0-9-]+\))?\!?:\ .+ ]]; then
+            echo 'PR title must follow Conventional Commits.'
+            exit 1
+          fi
+          gh api --method PUT "repos/$GH_REPO/pulls/$PR_NUMBER/merge" \
+            -f sha="$EXPECTED_HEAD" -f merge_method=squash \
+            -f commit_title="$title (#$PR_NUMBER)" \
+            --jq 'if .merged then .sha else error(.message) end'
