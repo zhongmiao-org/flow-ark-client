@@ -6,6 +6,8 @@
 - 不提交 API Key、账号资料、浏览器 Profile、数据库、测试产物或安装包。
 - 执行 `pnpm check`；涉及运行、取消、调度时补充 `pnpm test:runtime`。涉及桌面或浏览器时按改动执行 `pnpm test:desktop`、`pnpm test:browser` 或 `pnpm test:scenario`。
 - 修改凭据保护时执行 `pnpm test:vault`；它使用临时目录、虚构凭据与进程内故障注入，不应更改真实系统凭据。
-- 当前不增加 CI、Husky、commitlint 或自动发布工具。
+- 每次提交使用功能分支并创建或更新本仓库 PR，添加固定的 `automerge` PR 标签；不直接推送默认分支。当前最新提交的必需 CI 检查通过且满足合并规则后，由 CI 自动合并。
+- 核对 PR 实际合并状态、CI 结果及合并提交，再从最新默认分支继续开发。CI 失败、冲突、权限不足或自动合并未配置时如实报告，不手工合并或绕过检查。
+- 不额外添加 Husky、commitlint 或自动发布工具；CI 自动合并不代表自动发版或真实业务验收完成。
 - PR 说明具体行为、验证命令及未验证部分；真实外发测试需要明确授权。
 - 本仓库 Markdown 仅保留 README、贡献指南等必要说明，不新增 AGENTS、设计文档、实施计划或验收报告；这些文档归治理仓库。
