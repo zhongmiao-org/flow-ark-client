@@ -35,7 +35,8 @@
     "test:desktop": "node scripts/desktop-smoke.mjs",
     "test:install": "node scripts/install-smoke.mjs",
     "test:vault": "node --import tsx scripts/vault-smoke.mjs",
-    "package:mac": "pnpm build && electron-builder --mac zip --arm64 --publish never --config.electronDist=node_modules/electron/dist && node scripts/package-dmg.mjs"
+    "package:mac": "pnpm build && electron-builder --mac zip --arm64 --publish never --config.electronDist=node_modules/electron/dist && node scripts/package-dmg.mjs",
+    "test:debug": "node --import tsx scripts/debug-smoke.ts"
   },
   "build": {
     "appId": "org.zhongmiao.flowark",

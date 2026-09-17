@@ -258,10 +258,10 @@ export default function App() {
         '已保存本地草稿',
       );
   }
-  async function run(r: FlowRecord) {
+  async function run(r: FlowRecord, debug = false) {
     await action(async () => {
       await api('flow.save', { flow: r.flow, bindings: r.bindings });
-      const run = await api('flow.run', { id: r.id });
+      const run = await api('flow.run', { id: r.id, debug });
       setDetail(await api('run.detail', { id: run.id }));
       setSection('runs');
     }, '已生成快照并加入队列');
@@ -486,6 +486,10 @@ export default function App() {
               <button className="primary" onClick={() => run(edit)} disabled={busy}>
                 <Play size={15} />
                 运行
+              </button>
+              <button onClick={() => run(edit, true)} disabled={busy}>
+                <Pause size={15} />
+                逐步调试
               </button>
             </div>
             {configOpen && edit.bindings.configuration && (
@@ -1189,6 +1193,8 @@ function RunDetail({
   reveal: (id: string) => void;
 }) {
   const r: Run = d.run;
+  const pause = [...d.events].reverse().find((e: Event) => e.type === 'debug-pause');
+  const results = d.events.filter((e: Event) => typeof e.data?.outputPreview === 'string');
   return (
     <>
       <div className="section-row">
@@ -1213,6 +1219,9 @@ function RunDetail({
               继续
             </button>
           )}
+          {r.state === 'PAUSED' && (
+            <button onClick={() => control(r.id, 'step')}>执行下一步</button>
+          )}
           {!['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(r.state) && (
             <button onClick={() => control(r.id, 'cancel')}>
               <Square size={14} />
@@ -1231,7 +1240,32 @@ function RunDetail({
         <span>{format(r.createdAt)}</span>
       </div>
       <p className="note">{r.business}</p>
+      {r.debug && (
+        <p className="note">逐步调试 · 每次执行下一步会实际操作页面；继续将连续运行剩余流程。</p>
+      )}
+      {r.state === 'PAUSED' && pause && (
+        <div className="panel" aria-label="调试位置">
+          <b>下一步：{pause.data.nodeName}</b>
+          <p>
+            <code>{pause.nodeInstance}</code>
+          </p>
+        </div>
+      )}
       {r.error && <div className="alert error">{r.error}</div>}
+      {results.length > 0 && (
+        <section className="panel" aria-label="步骤输出">
+          <h3>步骤输出</h3>
+          <p className="note">
+            显示脱敏后的输出预览，长内容截断；已执行步骤不会因暂停或失败自动重放。
+          </p>
+          {results.map((e: Event) => (
+            <details key={e.sequence} open={e === results.at(-1)}>
+              <summary>{e.nodeInstance}</summary>
+              <pre>{e.data.outputPreview}</pre>
+            </details>
+          ))}
+        </section>
+      )}
       {d.scriptBundles?.length > 0 && (
         <details className="script-bundles">
           <summary>已固定的脚本与依赖 · {d.scriptBundles.length} 个节点</summary>

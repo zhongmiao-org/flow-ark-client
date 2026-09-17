@@ -40,6 +40,7 @@ type Active = {
   child: ChildProcess;
   rpc: Rpc;
   cancelling: boolean;
+  controlPending?: boolean;
   done: Promise<void>;
   abort: AbortController;
 };
@@ -144,9 +145,9 @@ export class Runtime {
     if (steps.some((n) => n.type === 'browser' || n.type === 'recruiting')) {
       const b = this.store.get<BrowserBinding>('browser', record.bindings.browserId ?? '');
       if (!b) throw new Error('请先选择本机浏览器');
-      await validateBinding(b);
+      const current = await validateBinding(b);
       assertBrowserOperations(
-        b,
+        current,
         steps.filter((n) => n.type === 'browser'),
       );
     }
@@ -205,6 +206,7 @@ export class Runtime {
     scheduleId?: string,
     triggerId?: string,
     scheduleRevision?: string,
+    debug = false,
   ) {
     this.assertAdmitting();
     // Capture the requested content before waiting, while serializing admission
@@ -212,7 +214,7 @@ export class Runtime {
     const record = this.store.get<FlowRecord>(versionId ? 'version' : 'flow', versionId ?? flowId);
     if (!record) throw new Error('流程或版本不存在');
     const pending = this.admissions.then(() =>
-      this.admit(record, flowId, versionId, scheduleId, triggerId, scheduleRevision),
+      this.admit(record, flowId, versionId, scheduleId, triggerId, scheduleRevision, debug),
     );
     this.admissions = pending.then(
       () => {},
@@ -227,6 +229,7 @@ export class Runtime {
     scheduleId?: string,
     triggerId?: string,
     scheduleRevision?: string,
+    debug = false,
   ) {
     const check = () => {
       this.assertAdmitting();
@@ -254,6 +257,7 @@ export class Runtime {
       createdAt: now(),
       updatedAt: now(),
       source: scheduleId ? 'schedule' : 'manual',
+      debug: !scheduleId && debug,
       scheduleId,
       business: '执行结果与外部业务核对分别记录',
     };
@@ -306,6 +310,7 @@ export class Runtime {
         {
           ...s,
           parameters: s.flow.parameters,
+          debug: Boolean(run.debug),
           ...prepared,
           executable: this.executable,
         },
@@ -348,15 +353,23 @@ export class Runtime {
       if (!['node-start', 'node-end', 'log', 'progress', 'error'].includes(args.type))
         throw new Error('事件类型无效');
       if (this.store.events(id).length > 20000) throw new Error('运行事件超过上限');
-      this.store.tx(() =>
-        this.store.event(id, args.type, args.nodeInstance, redact(args.data, this.secrets)),
-      );
+      const data = redact(args.data, this.secrets);
+      if (Object.hasOwn(data, 'result')) {
+        const preview = JSON.stringify(data.result);
+        delete data.result;
+        data.outputPreview =
+          preview.length > 4000 ? preview.slice(0, 4000) + '…（已截断）' : preview;
+      }
+      this.store.tx(() => this.store.event(id, args.type, args.nodeInstance, data));
       return true;
     }
     if (method === 'state') {
       if (!['PAUSED', 'RUNNING', 'WAITING_INPUT'].includes(args.state))
         throw new Error('Worker 状态无效');
+      if (args.state === 'RUNNING') this.active.controlPending = false;
       this.store.state(id, args.state);
+      if (args.state === 'PAUSED' && typeof args.nodeInstance === 'string')
+        this.store.event(id, 'debug-pause', args.nodeInstance, { nodeName: args.nodeName });
       if (args.message)
         this.store.tx(() => this.store.event(id, 'log', '', { message: args.message }));
       return true;
@@ -480,7 +493,7 @@ export class Runtime {
       return false;
     }
   }
-  async control(id: string, action: 'pause' | 'resume' | 'cancel') {
+  async control(id: string, action: 'pause' | 'resume' | 'step' | 'cancel') {
     const run = this.store.get<Run>('run', id);
     if (!run) throw new Error('运行不存在');
     if (terminal.has(run.state)) return false;
@@ -507,7 +520,11 @@ export class Runtime {
       throw new Error('只有运行中的任务可请求暂停');
     if (action === 'resume' && !['PAUSED', 'WAITING_INPUT'].includes(run.state))
       throw new Error('运行当前无需继续');
+    if (action === 'step' && run.state !== 'PAUSED') throw new Error('只有暂停中的任务可单步执行');
+    if ((action === 'step' || action === 'resume') && a.controlPending)
+      throw new Error('上一次继续指令尚未处理');
     if (!a.child.connected) throw new Error('运行进程已断开');
+    if (action === 'step' || action === 'resume') a.controlPending = true;
     a.child.send({ control: action }, (error) => {
       if (error) a.rpc.close();
     });
@@ -598,7 +615,14 @@ export class Runtime {
       case 'flow.save':
         return this.saveFlow(args.flow, args.bindings);
       case 'flow.run':
-        return this.enqueue(args.id);
+        return this.enqueue(
+          args.id,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          args.debug === true,
+        );
       case 'flow.create': {
         const t = templates.find((x) => x.manifest.id === args.templateId);
         const flow = t

@@ -1,7 +1,8 @@
 import type { Flow, Step } from '../shared/types';
 export type Execution = {
   signal: AbortSignal;
-  boundary(): Promise<void>;
+  boundary(instance: string, node: Step): Promise<void>;
+  captureResults?: boolean;
   emit(type: string, instance: string, data: any): Promise<void>;
   perform(node: Step, resolved: any, instance: string): Promise<any>;
   human(message: string): Promise<any>;
@@ -56,11 +57,11 @@ export async function execute(flow: Flow, params: any, ctx: Execution) {
     const local = { ...scope, steps: { ...scope.steps } };
     const outputs: Record<string, any> = {};
     for (const n of nodes) {
+      const instance = path + n.id;
       ctx.signal.throwIfAborted();
-      await ctx.boundary();
+      await ctx.boundary(instance, n);
       ctx.signal.throwIfAborted();
       if (++executions > 10000) throw new Error('单次运行超过 10000 步');
-      const instance = path + n.id;
       await ctx.emit('node-start', instance, { type: n.type });
       let result: any;
       if (n.type === 'condition')
@@ -88,7 +89,10 @@ export async function execute(flow: Flow, params: any, ctx: Execution) {
       } else if (n.type === 'human') result = await ctx.human(n.message);
       else result = await ctx.perform(n, resolveValue(n, local), instance);
       local.steps[n.id] = outputs[n.id] = result ?? null;
-      await ctx.emit('node-end', instance, { completed: true });
+      await ctx.emit('node-end', instance, {
+        completed: true,
+        ...(ctx.captureResults ? { result: result ?? null } : {}),
+      });
     }
     return outputs;
   }

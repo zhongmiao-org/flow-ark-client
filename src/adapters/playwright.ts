@@ -2,11 +2,12 @@ import { chromium, type BrowserContext, type Page, type Frame } from 'playwright
 import { mkdir } from 'node:fs/promises';
 import type { BrowserBinding, BrowserCommand, BrowserDriver } from '../shared/types';
 import { framePathOf, validateFormCommand } from '../core/browser-command';
-import { commandBudget } from './browser-scope';
+import { commandBudget, assertBrowserOperations } from './browser-scope';
 export class PlaywrightDriver implements BrowserDriver {
   private constructor(
     private context: BrowserContext,
     private page: Page,
+    private binding: BrowserBinding,
   ) {}
   static async start(b: BrowserBinding, profile: string, headless = false) {
     await mkdir(profile, { recursive: true, mode: 0o700 });
@@ -20,11 +21,12 @@ export class PlaywrightDriver implements BrowserDriver {
     context.on('page', (p) => {
       driver.page = p;
     });
-    const driver = new PlaywrightDriver(context, page);
+    const driver = new PlaywrightDriver(context, page, b);
     return driver;
   }
   async perform(c: BrowserCommand): Promise<any> {
     validateFormCommand(c);
+    assertBrowserOperations(this.binding, [c]);
     const path = framePathOf(c);
     const remaining = commandBudget(c.timeoutMs);
     const page = this.page;

@@ -23,10 +23,10 @@ export const methods = {
   bootstrap: empty,
   'flow.save': z.object({ flow: z.unknown(), bindings }).strict(),
   'flow.create': z.object({ templateId: id.optional() }).strict(),
-  'flow.run': z.object({ id }).strict(),
+  'flow.run': z.object({ id, debug: z.boolean().optional() }).strict(),
   'run.detail': z.object({ id }).strict(),
   'artifact.reveal': z.object({ id }).strict(),
-  'run.control': z.object({ id, action: z.enum(['pause', 'resume', 'cancel']) }).strict(),
+  'run.control': z.object({ id, action: z.enum(['pause', 'resume', 'step', 'cancel']) }).strict(),
   'browser.discover': empty,
   'script.package.inspect': z.object({ path: z.string().min(1).max(4096) }).strict(),
   'browser.bind': z

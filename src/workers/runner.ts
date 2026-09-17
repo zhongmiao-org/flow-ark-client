@@ -1,45 +1,31 @@
 import { Rpc } from '../shared/rpc';
 import { execute } from '../core/engine';
+import { RunControl } from '../core/run-control';
 import { runScript } from '../adapters/script';
 import { fileOperation } from '../adapters/files';
 import { runRecruitingBatch } from '../recruiting/batch';
 import { dirname } from 'node:path';
 import type { Step } from '../shared/types';
 const abort = new AbortController();
-let paused = false;
-let waiting: (() => void) | undefined;
+let control: RunControl | undefined;
+let pendingPause = false;
 const rpc = new Rpc(
   (m) => process.send?.(m),
   async (method, args) => {
     if (method !== 'execute') throw new Error('未知 Worker 方法');
     const emit = async (type: string, nodeInstance: string, data: any) =>
       rpc.call('event', { type, nodeInstance, data });
+    control = new RunControl(Boolean(args.debug), abort.signal, (state, data) =>
+      rpc.call('state', { state, ...data }),
+    );
+    if (pendingPause) control.control('pause');
     return execute(args.flow, args.parameters, {
       signal: abort.signal,
-      boundary: async () => {
-        if (paused) {
-          await rpc.call('state', { state: 'PAUSED' });
-          await new Promise<void>((resolve, reject) => {
-            waiting = resolve;
-            abort.signal.addEventListener('abort', () => reject(abort.signal.reason), {
-              once: true,
-            });
-          });
-          abort.signal.throwIfAborted();
-          await rpc.call('state', { state: 'RUNNING' });
-        }
-      },
+      captureResults: Boolean(args.debug),
+      boundary: (instance, node) =>
+        control!.boundary({ nodeInstance: instance, nodeName: String(node.name || node.id) }),
       emit,
-      human: async (message) => {
-        await rpc.call('state', { state: 'WAITING_INPUT', message });
-        await new Promise<void>((resolve, reject) => {
-          waiting = resolve;
-          abort.signal.addEventListener('abort', () => reject(abort.signal.reason), { once: true });
-        });
-        abort.signal.throwIfAborted();
-        await rpc.call('state', { state: 'RUNNING' });
-        return { confirmed: true };
-      },
+      human: (message) => control!.human(message),
       perform: async (n: Step, resolved: any, instance: string) => {
         const timeout = n.timeoutMs ?? 60000;
         const signal = AbortSignal.any([abort.signal, AbortSignal.timeout(timeout)]);
@@ -122,12 +108,9 @@ const rpc = new Rpc(
 process.on('message', (m: any) => {
   if (m.control === 'cancel') {
     abort.abort(new Error('用户取消'));
-    waiting?.();
-  } else if (m.control === 'pause') paused = true;
-  else if (m.control === 'resume') {
-    paused = false;
-    waiting?.();
-    waiting = undefined;
+  } else if (['pause', 'resume', 'step'].includes(m.control)) {
+    if (m.control === 'pause' && !control) pendingPause = true;
+    control?.control(m.control);
   } else void rpc.receive(m);
 });
 process.on('disconnect', () => {

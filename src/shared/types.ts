@@ -38,6 +38,7 @@ export type Run = {
   createdAt: string;
   updatedAt: string;
   source: string;
+  debug?: boolean;
   scheduleId?: string;
   error?: string;
   business: string;

@@ -36,6 +36,133 @@ async function until(fn: () => boolean, timeout = 12000) {
     await new Promise((r) => setTimeout(r, 20));
   }
 }
+test('real debug Worker steps into branches and loops, freezes the draft, rejects duplicate controls and cancels before effects', async () => {
+  const path = await mkdtemp(join(tmpdir(), 'flowark-debug-runtime-'));
+  const runtime = new Runtime(
+    path,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  const flow: Flow = {
+    ...base,
+    steps: [
+      { id: 'first', type: 'value', version: 1, value: 'original' },
+      {
+        id: 'branch',
+        type: 'condition',
+        version: 1,
+        actual: true,
+        operator: 'equals',
+        expected: true,
+        then: [
+          {
+            id: 'loop',
+            type: 'loop',
+            version: 1,
+            items: [1, 2],
+            body: [{ id: 'item', type: 'value', version: 1, value: { $ref: 'item' } }],
+          },
+        ],
+        else: [],
+      },
+      {
+        id: 'write',
+        type: 'file',
+        version: 1,
+        operation: 'write',
+        binding: 'work',
+        name: 'must-not-write.txt',
+        content: 'unexpected',
+      },
+    ],
+  };
+  try {
+    runtime.saveFlow(flow, { files: { work: path }, credentials: [] });
+    const run = await runtime.request('flow.run', { id: flow.id, debug: true });
+    const pausedAt = async (location: string) =>
+      until(
+        () =>
+          runtime.store.get<Run>('run', run.id)?.state === 'PAUSED' &&
+          runtime.store
+            .events(run.id)
+            .filter((e) => e.type === 'debug-pause')
+            .at(-1)?.nodeInstance === location,
+      );
+    await pausedAt('first');
+    assert.equal(runtime.store.events(run.id).filter((e) => e.type === 'node-start').length, 0);
+    runtime.saveFlow(
+      { ...flow, steps: [{ id: 'changed', type: 'value', version: 1, value: 'changed' }] },
+      { files: { work: path }, credentials: [] },
+    );
+    const one = runtime.control(run.id, 'step');
+    await assert.rejects(runtime.control(run.id, 'step'), /尚未处理/);
+    await one;
+    await pausedAt('branch');
+    assert.equal(
+      runtime.store.events(run.id).find((e) => e.nodeInstance === 'first' && e.type === 'node-end')
+        ?.data.outputPreview,
+      '"original"',
+    );
+    for (const next of ['branch/loop', 'branch/loop[0]/item', 'branch/loop[1]/item', 'write']) {
+      await runtime.control(run.id, 'step');
+      await pausedAt(next);
+    }
+    assert.deepEqual(
+      runtime.store
+        .events(run.id)
+        .filter((e) => e.type === 'node-start')
+        .map((e) => e.nodeInstance),
+      ['first', 'branch', 'branch/loop', 'branch/loop[0]/item', 'branch/loop[1]/item'],
+    );
+    await runtime.control(run.id, 'cancel');
+    await until(() => runtime.store.get<Run>('run', run.id)?.state === 'CANCELLED');
+    await assert.rejects(readFile(join(path, 'must-not-write.txt')), { code: 'ENOENT' });
+    const next = await runtime.request('flow.run', { id: flow.id, debug: true });
+    await until(() => runtime.store.get<Run>('run', next.id)?.state === 'PAUSED');
+    await runtime.control(next.id, 'resume');
+    await until(() => runtime.store.get<Run>('run', next.id)?.state === 'SUCCEEDED');
+    assert.deepEqual((await runtime.request('run.detail', { id: next.id })).output, {
+      changed: 'changed',
+    });
+  } finally {
+    await runtime.shutdown();
+    runtime.store.close();
+  }
+});
+test('pause requested during worker startup reaches the first boundary before any node starts', async () => {
+  const runtime = new Runtime(
+    await mkdtemp(join(tmpdir(), 'flowark-early-pause-')),
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  const original = runtime.preflight.bind(runtime);
+  let calls = 0;
+  runtime.preflight = async (record) => {
+    if (++calls === 2) await new Promise((resolve) => setTimeout(resolve, 250));
+    return original(record);
+  };
+  try {
+    runtime.saveFlow(
+      { ...base, steps: [{ id: 'first', type: 'value', version: 1, value: 'must-not-run' }] },
+      { files: {}, credentials: [] },
+    );
+    const run = await runtime.enqueue(base.id);
+    await until(() => runtime.store.get<Run>('run', run.id)?.state === 'RUNNING');
+    await runtime.control(run.id, 'pause');
+    await until(() => runtime.store.get<Run>('run', run.id)?.state === 'PAUSED');
+    assert.equal(runtime.store.events(run.id).filter((e) => e.type === 'node-start').length, 0);
+    await runtime.control(run.id, 'cancel');
+    await until(() => runtime.store.get<Run>('run', run.id)?.state === 'CANCELLED');
+  } finally {
+    await runtime.shutdown();
+    runtime.store.close();
+  }
+});
+
 test('real Worker fills workbook, archives it and preserves run history when artifacts disappear', async () => {
   const path = await realpath(await mkdtemp(join(tmpdir(), 'flowark-workbook-runtime-')));
   const runtime = new Runtime(
@@ -383,7 +510,18 @@ test('step-boundary pause prevents next side effect, cancel works from paused an
     await until(() => runtime.store.events(r.id).some((e) => e.type === 'node-start'));
     await runtime.control(r.id, 'pause');
     await until(() => runtime.store.get<Run>('run', r.id)!.state === 'PAUSED');
-    assert.ok(!runtime.store.events(r.id).some((e) => e.nodeInstance === 'never'));
+    assert.ok(
+      !runtime.store
+        .events(r.id)
+        .some((e) => e.nodeInstance === 'never' && e.type === 'node-start'),
+    );
+    assert.equal(
+      runtime.store
+        .events(r.id)
+        .filter((e) => e.type === 'debug-pause')
+        .at(-1)?.nodeInstance,
+      'never',
+    );
     await runtime.control(r.id, 'cancel');
     await until(() => runtime.store.get<Run>('run', r.id)!.state === 'CANCELLED');
     runtime.saveFlow(
