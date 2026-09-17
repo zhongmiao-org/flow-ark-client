@@ -1,0 +1,28 @@
+{
+  "formatVersion": "1.0",
+  "id": "hello",
+  "name": "第一个流程",
+  "description": "虚构数据回归",
+  "parameters": {},
+  "requiredCapabilities": [],
+  "steps": [
+    {
+      "id": "greeting",
+      "type": "value",
+      "version": 1,
+      "value": {
+        "message": "你好，序舟"
+      }
+    },
+    {
+      "id": "verify",
+      "type": "assert",
+      "version": 1,
+      "actual": {
+        "$ref": "steps.greeting.message"
+      },
+      "operator": "equals",
+      "expected": "你好，序舟"
+    }
+  ]
+}

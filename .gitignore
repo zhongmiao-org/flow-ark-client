@@ -1,0 +1,13 @@
+node_modules/
+dist/
+release/
+.DS_Store
+.env*
+*.log
+*.sqlite*
+*.db*
+runtime-data/
+artifacts/
+browser-profiles/
+credentials/
+test-results/
