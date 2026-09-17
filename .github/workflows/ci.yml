@@ -23,6 +23,21 @@ jobs:
       SE_AVOID_BROWSER_DOWNLOAD: 'true'
       SE_OFFLINE: 'true'
     steps:
+      - name: Check branch and PR title conventions
+        env:
+          PR_BRANCH: ${{ github.head_ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$PR_BRANCH" =~ ^(feat|fix|docs|chore|refactor|perf|test|style|build|revert|ci)/[a-z0-9][a-z0-9._/-]*$ ]]; then
+            echo 'Branch must use a type prefix, for example feat/client-initial.'
+            exit 1
+          fi
+          if [[ ! "$PR_TITLE" =~ ^(feat|fix|docs|chore|refactor|perf|test|style|build|revert|ci)(\([a-z0-9-]+\))?\!?:\ .+ ]]; then
+            echo 'PR title must follow Conventional Commits.'
+            exit 1
+          fi
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
@@ -47,6 +62,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
+      checks: read
       contents: write
       pull-requests: write
     steps:
@@ -62,16 +78,21 @@ jobs:
         run: |
           set -euo pipefail
           pr=$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" \
-            --json state,isDraft,labels,headRefOid,baseRefName,baseRefOid,mergeStateStatus,title)
+            --json state,isDraft,labels,headRefOid,baseRefName,baseRefOid,mergeable,title)
           if ! jq -e --arg head "$EXPECTED_HEAD" --arg base "$EXPECTED_BASE" '
             .state == "OPEN" and (.isDraft | not) and
             any(.labels[]; .name == "automerge") and
             .headRefOid == $head and .baseRefOid == $base and
-            .baseRefName == "main" and .mergeStateStatus == "CLEAN"
+            .baseRefName == "main" and .mergeable == "MERGEABLE"
           ' <<< "$pr" > /dev/null; then
             echo 'PR changed or is not ready; leave it open for fresh checks.'
             exit 1
           fi
+          # Auto Merge itself is still running. Only required checks gate merging;
+          # GitHub's merge endpoint independently enforces the branch protection.
+          checks=$(gh pr checks "$PR_NUMBER" --repo "$GH_REPO" \
+            --required --json name,state,bucket)
+          jq -e 'length > 0 and all(.[]; .bucket == "pass")' <<< "$checks" > /dev/null
           title=$(jq -r '.title' <<< "$pr")
           if [[ ! "$title" =~ ^(feat|fix|docs|chore|refactor|perf|test|style|build|revert|ci)(\([a-z0-9-]+\))?\!?:\ .+ ]]; then
             echo 'PR title must follow Conventional Commits.'
