@@ -1408,3 +1408,104 @@ td small {
   margin-left: auto;
   margin-right: 16px;
 }
+
+.browser-sidebar {
+  flex: 0 0 min(49vw, 720px);
+  width: min(49vw, 720px);
+  min-width: 400px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-left: 1px solid var(--border);
+  box-shadow: -6px 0 22px #203a2810;
+}
+.browser-sidebar > header {
+  height: 62px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--border);
+}
+.browser-sidebar > header > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--accent);
+}
+.browser-sidebar > header strong {
+  font-size: 14px;
+  color: #273e35;
+}
+.browser-sidebar button {
+  padding: 8px;
+  flex-shrink: 0;
+}
+.browser-address {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  background: #f5f8f6;
+  border-bottom: 1px solid var(--border);
+}
+.browser-address input {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  height: 34px;
+  font-size: 12px;
+}
+.browser-viewport {
+  flex: 1;
+  min-height: 1px;
+  background: #fff;
+}
+.browser-sidebar footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 8px 12px;
+  font-size: 10px;
+  color: #7c8b83;
+  border-top: 1px solid var(--border);
+}
+.browser-sidebar footer > span:last-child {
+  margin-left: auto;
+  white-space: nowrap;
+}
+.browser-error {
+  font-size: 12px;
+  color: #923d30;
+  padding: 8px 12px;
+  background: #fff1ed;
+  overflow-wrap: anywhere;
+}
+.with-browser .sidebar {
+  width: 174px;
+  flex-basis: 174px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.with-browser .topbar {
+  padding: 0 18px;
+}
+.with-browser .topbar > div,
+.with-browser .machine {
+  display: none;
+}
+.with-browser .topbar {
+  justify-content: flex-end;
+}
+.with-browser .page {
+  padding: 24px;
+}
+.with-browser .page-heading {
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.with-browser .overview {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}

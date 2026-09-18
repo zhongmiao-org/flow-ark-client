@@ -45,46 +45,26 @@ export default function EmbeddedBrowserPanel({
             启用内置浏览器
           </button>
         ) : (
-          <div className="row">
-            <button
-              disabled={!status.started}
-              onClick={() =>
-                action(async () =>
-                  setStatus(await api('browser.embedded.visibility', { visible: true })),
-                )
-              }
-            >
-              <Eye size={15} />
-              显示网页
-            </button>
-            <button
-              disabled={!status.started}
-              onClick={() =>
-                action(async () =>
-                  setStatus(await api('browser.embedded.visibility', { visible: false })),
-                )
-              }
-            >
-              <EyeOff size={15} />
-              收起网页
-            </button>
-          </div>
+          <button onClick={() => window.dispatchEvent(new Event('flowark:open-browser'))}>
+            <Eye size={15} /> 打开右侧网页面板
+          </button>
         )}
       </div>
       <p>
         在 FlowArk
-        专用窗口中操作网页。最小化或收起工作台后，任务继续执行；需要登录或验证码时，再显示网页处理。
+        主窗口右侧面板中操作网页。最小化或收起工作台后，任务继续执行；需要登录或验证码时，再显示网页处理。
       </p>
       <div className="note">
         <b>
           {status.started
             ? status.visible
-              ? '网页窗口已显示'
+              ? '右侧网页面板已显示'
               : '会话在后台运行'
-            : '等待流程打开网页'}
+            : '随时打开网页面板'}
         </b>
         <span className="embedded-url">
-          {status.url || '在流程「参数与本机资源」中选择 FlowArk 内置浏览器，然后运行或逐步调试。'}
+          {status.url ||
+            '点击右上角打开网页面板；流程中选择 FlowArk 内置浏览器即可运行或逐步调试。'}
         </span>
       </div>
       <small className="muted">

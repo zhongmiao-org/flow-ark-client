@@ -12,6 +12,7 @@ import {
   shell,
   powerMonitor,
 } from 'electron';
+import { EmbeddedBrowser } from './embedded-browser';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { readFile, writeFile } from 'node:fs/promises';
@@ -25,6 +26,7 @@ let quitting = false;
 let rpc: Rpc;
 let host: Electron.UtilityProcess;
 let startupError = '';
+let embedded: EmbeddedBrowser;
 if (process.env.FLOWARK_DATA_DIR) app.setPath('userData', process.env.FLOWARK_DATA_DIR);
 if (!app.requestSingleInstanceLock()) app.quit();
 app.on('second-instance', () => {
@@ -55,6 +57,7 @@ async function quit() {
   try {
     await rpc.call('shutdown', {}, 15000);
   } catch {}
+  await embedded?.close();
   host?.kill();
   app.quit();
 }
@@ -85,11 +88,9 @@ app
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     win.webContents.on('will-navigate', (e) => e.preventDefault());
     win.webContents.session.setPermissionRequestHandler((_w, _p, callback) => callback(false));
-    const hideBrowser = () => {
-      void rpc?.call('browser.embedded.visibility', { visible: false }).catch(() => {});
-    };
-    win.on('minimize', hideBrowser);
-    win.on('hide', hideBrowser);
+    embedded = new EmbeddedBrowser(win, (token) => {
+      void rpc?.call('system.browserLost', { token }).catch(() => {});
+    });
     win.on('close', (e) => {
       if (!quitting) {
         e.preventDefault();
@@ -149,6 +150,7 @@ app
       )
         throw new Error('IPC 来源无效');
       const args: any = validateIPC(method, raw ?? {});
+      if (method === 'browser.embedded.viewport') return embedded.viewport(args);
       if (method === 'file.choose') {
         const r = await dialog.showOpenDialog(win, {
           properties: args.kind === 'directory' ? ['openDirectory'] : ['openFile'],
@@ -246,6 +248,7 @@ app
                 executable: app.getPath('exe'),
                 version: process.versions.chrome,
               };
+            if (method.startsWith('browser.embedded.')) return embedded.system(method, args);
             if (method === 'credentials.list') return vault.list();
             if (method === 'credentials.get') return vault.get(args.id);
             if (method === 'notification') {
@@ -262,6 +265,7 @@ app
         host.on('message', (m) => void rpc.receive(m));
         host.on('exit', () => {
           rpc.close();
+          void embedded.close();
           startupError = '本地宿主已停止，请重开应用查看中断记录';
         });
         host.stderr?.on('data', (b) => {

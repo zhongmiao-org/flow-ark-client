@@ -10,6 +10,8 @@ const allowed = new Set([
   'browser.discover',
   'browser.embedded.enable',
   'browser.embedded.status',
+  'browser.embedded.navigate',
+  'browser.embedded.viewport',
   'browser.embedded.visibility',
   'script.package.inspect',
   'browser.bind',

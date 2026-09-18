@@ -42,6 +42,7 @@ import type { Bootstrap, FlowRecord, Step, Run, Event, Template } from '../share
 import TemplateConfiguration from './TemplateConfiguration';
 import ScriptPackages from './ScriptPackages';
 import EmbeddedBrowserPanel from './EmbeddedBrowserPanel';
+import BrowserSidebar from './BrowserSidebar';
 import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 const CodeEditor = lazy(() => import('./CodeEditor'));
 const initial: Bootstrap = {
@@ -197,6 +198,12 @@ function format(t: string) {
   });
 }
 export default function App() {
+  const [browserOpen, setBrowserOpen] = useState(false);
+  useEffect(() => {
+    const open = () => setBrowserOpen(true);
+    window.addEventListener('flowark:open-browser', open);
+    return () => window.removeEventListener('flowark:open-browser', open);
+  }, []);
   const [data, setData] = useState(initial),
     [section, setSection] = useState('flows'),
     [edit, setEdit] = useState<FlowRecord | null>(null),
@@ -280,7 +287,7 @@ export default function App() {
     ['RUNNING', 'PAUSED', 'WAITING_INPUT', 'CANCELLING'].includes(r.state),
   );
   return (
-    <div className="app">
+    <div className={`app ${browserOpen ? 'with-browser' : ''}`}>
       <aside className="sidebar">
         <div className="brand">
           <span className="brand-mark">
@@ -323,19 +330,13 @@ export default function App() {
             工作空间 <ChevronRight size={14} />{' '}
             {section === 'editor' ? '流程编辑' : nav.find((n) => n[0] === section)?.[1]}
           </div>
-          {data.browsers.some((b) => b.product === 'embedded') && (
-            <button
-              className="embedded-show"
-              onClick={() =>
-                action(async () => {
-                  const state = await api('browser.embedded.visibility', { visible: true });
-                  if (!state.started) setNotice('先运行已绑定内置浏览器的流程，再显示网页。');
-                })
-              }
-            >
-              <Globe size={15} /> 显示内置网页
-            </button>
-          )}
+          <button
+            className="embedded-show"
+            aria-pressed={browserOpen}
+            onClick={() => setBrowserOpen(!browserOpen)}
+          >
+            <Globe size={15} /> {browserOpen ? '收起网页面板' : '打开网页面板'}
+          </button>
           <span className="machine">
             <span className="local-dot" />
             {data.fault ? '存储异常' : active ? '任务运行中' : '本机已就绪'}
@@ -664,6 +665,12 @@ export default function App() {
         )}
         {section === 'settings' && <SettingsView data={data} action={action} />}
       </main>
+      {browserOpen && (
+        <BrowserSidebar
+          close={() => setBrowserOpen(false)}
+          running={!!active && !['PAUSED', 'WAITING_INPUT'].includes(active.state)}
+        />
+      )}
     </div>
   );
 }

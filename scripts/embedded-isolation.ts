@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, writeFile, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import electronPath from 'electron';
-import { EmbeddedDriver } from '../src/adapters/embedded';
+import { embeddedHarness } from './fixtures/embedded-harness';
 import type { BrowserBinding } from '../src/shared/types';
 
 export async function verifyEmbeddedIsolation() {
@@ -44,20 +44,12 @@ export async function verifyEmbeddedIsolation() {
   });
   await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
   const url = `http://127.0.0.1:${(server.address() as any).port}`;
-  const binding: BrowserBinding = {
-    id: 'embedded',
-    product: 'embedded',
-    executable: '',
-    version: '',
+  const harness = await embeddedHarness(data);
+  const start = async () => {
+    await harness.start();
+    return harness;
   };
-  const start = () =>
-    EmbeddedDriver.start(
-      binding,
-      data,
-      process.env.FLOWARK_TEST_EXECUTABLE || (electronPath as unknown as string),
-      resolve('.'),
-    );
-  let driver: EmbeddedDriver | undefined;
+  let driver: typeof harness | undefined;
   try {
     driver = await start();
     await driver.perform({ operation: 'navigate', value: url });
@@ -77,16 +69,18 @@ export async function verifyEmbeddedIsolation() {
     const before = Number(await driver.perform({ operation: 'read', selector: '#timer' }));
     await new Promise((r) => setTimeout(r, 500));
     assert.ok(Number(await driver.perform({ operation: 'read', selector: '#timer' })) > before);
-    const app = (driver as any).app;
+    const app = harness.app;
     const preferences = await app.evaluate(({ BrowserWindow }: any) =>
-      BrowserWindow.getAllWindows().map((w: any) => w.webContents.getLastWebPreferences()),
+      BrowserWindow.getAllWindows()[0].contentView.children.map((v: any) =>
+        v.webContents.getLastWebPreferences(),
+      ),
     );
     assert.equal(preferences[0].nodeIntegration, false);
     assert.equal(preferences[0].contextIsolation, true);
     assert.equal(preferences[0].sandbox, true);
     assert.equal(
       await app.evaluate(({ BrowserWindow }: any) =>
-        BrowserWindow.getAllWindows()[0].webContents.getBackgroundThrottling(),
+        BrowserWindow.getAllWindows()[0].contentView.children[0].webContents.getBackgroundThrottling(),
       ),
       false,
     );
@@ -106,7 +100,7 @@ export async function verifyEmbeddedIsolation() {
     // The native session rejects unarmed downloads before any Save dialog or path.
     await app.evaluate(({ session }: any) => {
       (globalThis as any).fixtureBlocked = false;
-      session.defaultSession.on('will-download', (event: any) => {
+      session.fromPartition('persist:flowark-web-panel').on('will-download', (event: any) => {
         (globalThis as any).fixtureBlocked = event.defaultPrevented;
       });
     });
@@ -154,7 +148,7 @@ export async function verifyEmbeddedIsolation() {
       downloadAfterReopen: true,
     };
   } finally {
-    await driver?.close();
+    await harness.shutdown();
     await new Promise<void>((r) => server.close(() => r()));
   }
 }

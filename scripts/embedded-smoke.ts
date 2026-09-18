@@ -30,12 +30,44 @@ try {
       method,
       args,
     });
-  evidence.version = await app.evaluate(({ app }) => app.getVersion());
+  evidence.version = await app.evaluate(({ app, BrowserWindow }) => {
+    (globalThis as any).unexpectedShown = [];
+    const main = BrowserWindow.getAllWindows()[0].id;
+    app.on('browser-window-created', (_event, win) =>
+      win.on('show', () => {
+        if (win.id !== main) (globalThis as any).unexpectedShown.push(win.id);
+      }),
+    );
+    return app.getVersion();
+  });
   await page.getByRole('button', { name: '本地设置', exact: true }).click();
   await page.getByRole('button', { name: '启用内置浏览器', exact: true }).click();
   await page
     .getByRole('button', { name: '启用内置浏览器', exact: true })
     .waitFor({ state: 'hidden' });
+  await page.getByRole('button', { name: '打开网页面板', exact: true }).click();
+  await page.getByLabel('网页地址', { exact: true }).waitFor();
+  await page.waitForTimeout(500);
+  assert.equal((await call('browser.embedded.status')).started, true);
+  assert.equal(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length), 1);
+  const panelBounds = await app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows()[0].contentView.children[0].getBounds(),
+  );
+  assert.ok(panelBounds.width > 400 && panelBounds.x > 500);
+  evidence.panelBeforeRun = panelBounds;
+  await page.getByLabel('网页地址', { exact: true }).fill(lab.url);
+  await page.getByRole('button', { name: '访问网页', exact: true }).click();
+  await page.waitForFunction(
+    () => document.querySelector('[aria-label="网页地址"]')?.getAttribute('disabled') === null,
+  );
+  await page.waitForTimeout(500);
+  assert.ok((await call('browser.embedded.status')).url.startsWith(lab.url));
+  await mkdir('test-results', { recursive: true });
+  const panelImage = await app.evaluate(async ({ BrowserWindow }) =>
+    (await BrowserWindow.getAllWindows()[0].capturePage()).toPNG().toString('base64'),
+  );
+  await writeFile('test-results/embedded-panel.png', Buffer.from(panelImage, 'base64'));
+  evidence.screenshots.push('test-results/embedded-panel.png');
   const browser = (await call('bootstrap')).browsers.find((b: any) => b.product === 'embedded');
   assert.equal(browser.product, 'embedded');
   const record = await call('flow.create');
@@ -87,11 +119,16 @@ try {
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].minimize());
   await waitFor(async () => {
     detail = await call('run.detail', { id: runId });
-    if (['FAILED', 'INTERRUPTED'].includes(detail.run.state)) throw new Error(detail.run.error);
+    if (['FAILED', 'INTERRUPTED'].includes(detail.run.state))
+      throw new Error(JSON.stringify({ run: detail.run, events: detail.events.slice(-5) }));
     return detail.run.state === 'SUCCEEDED';
   }, '完整表单');
   assert.deepEqual(lab.state.accepted[0].fields, formExpected);
   assert.equal((await call('browser.embedded.status')).visible, false);
+  assert.equal(
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isMinimized()),
+    true,
+  );
   evidence.minimizedForm = true;
   evidence.formRun = runId;
   const waiting = {
@@ -125,7 +162,8 @@ try {
   const reopened = await call('flow.run', { id: flow.id });
   await waitFor(async () => {
     const detail = await call('run.detail', { id: reopened.id });
-    if (['FAILED', 'INTERRUPTED'].includes(detail.run.state)) throw new Error(detail.run.error);
+    if (['FAILED', 'INTERRUPTED'].includes(detail.run.state))
+      throw new Error(JSON.stringify({ run: detail.run, events: detail.events.slice(-5) }));
     return detail.run.state === 'SUCCEEDED';
   }, '取消后重开上传');
   assert.equal(lab.state.attempts, 2);
@@ -155,7 +193,7 @@ try {
     BrowserWindow.getAllWindows()[0].restore();
   });
   await call('browser.embedded.visibility', { visible: true });
-  assert.equal((await call('browser.embedded.status')).visible, true);
+  await waitFor(async () => (await call('browser.embedded.status')).visible, '恢复网页面板');
   await app.evaluate(({ BrowserWindow }) => {
     BrowserWindow.getAllWindows()[0].hide();
   });
@@ -164,6 +202,42 @@ try {
   await app.evaluate(({ BrowserWindow }) => {
     BrowserWindow.getAllWindows()[0].show();
   });
+  // A native website crash must end WAITING_INPUT rather than leave a dead Continue button.
+  const lossFlow = {
+    ...flow,
+    id: 'embedded-loss',
+    steps: [
+      flow.steps[0],
+      { id: 'human', type: 'human', version: 1, message: 'fixture manual takeover' },
+      formBrowser('must_not_submit', 'click', '#submit'),
+    ],
+  };
+  await call('flow.save', { flow: lossFlow, bindings });
+  const lossRun = await call('flow.run', { id: lossFlow.id });
+  await waitFor(
+    async () => (await call('run.detail', { id: lossRun.id })).run.state === 'WAITING_INPUT',
+    '等待人工',
+  );
+  await app.evaluate(({ BrowserWindow }) =>
+    (
+      BrowserWindow.getAllWindows()[0].contentView.children[0] as any
+    ).webContents.forcefullyCrashRenderer(),
+  );
+  await waitFor(
+    async () => (await call('run.detail', { id: lossRun.id })).run.state === 'CANCELLED',
+    '会话失联停止运行',
+  );
+  assert.ok(
+    (await call('bootstrap')).attention.some((item: any) => item.detail?.runId === lossRun.id),
+  );
+  assert.ok(
+    !(await call('run.detail', { id: lossRun.id })).events.some(
+      (event: any) => event.nodeInstance === 'must_not_submit',
+    ),
+  );
+  evidence.lostSessionStopped = true;
+  assert.deepEqual(await app.evaluate(() => (globalThis as any).unexpectedShown), []);
+  evidence.noExtraVisibleWindow = true;
   evidence.passed = true;
   console.log('Desktop debug, field receipt, cancellation and fresh browser upload passed');
 } finally {

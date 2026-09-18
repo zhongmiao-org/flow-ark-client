@@ -31,9 +31,7 @@ try {
       args,
     });
   evidence.version = await app.evaluate(({ app }) => app.getVersion());
-  const browser = await call('browser.bind', {
-    path: process.env.FLOWARK_CHROME_PATH || '/Applications/Google Chrome.app',
-  });
+  const browser = await call('browser.embedded.enable');
   const record = await call('flow.create');
   const flow = { ...formLabFlow(lab.url), id: record.id };
   const bindings = { files: { work: data }, browserId: browser.id, credentials: [] };
