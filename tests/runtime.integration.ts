@@ -1070,3 +1070,54 @@ test('system suspend cancels active and queued work and resume never replays eit
     await runtime.shutdown();
   }
 });
+
+test('picker requests require a paused boundary and resume clears picking before releasing the Worker', async () => {
+  const path = await mkdtemp(join(tmpdir(), 'flowark-picker-policy-'));
+  let release!: () => void;
+  let cancellingPicker = false;
+  const cancelled = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const calls: string[] = [];
+  const runtime = new Runtime(
+    path,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async (method) => {
+      calls.push(method);
+      if (method === 'browser.embedded.pick.cancel') {
+        cancellingPicker = true;
+        await cancelled;
+      }
+      return [];
+    },
+  );
+  try {
+    runtime.saveFlow(
+      { ...base, steps: [{ id: 'value', type: 'value', version: 1, value: 'test' }] },
+      { files: {}, credentials: [] },
+    );
+    const run = await runtime.request('flow.run', { id: base.id, debug: true });
+    await until(() => runtime.store.get<Run>('run', run.id)?.state === 'PAUSED');
+    await runtime.request('browser.embedded.pick.start', { requestId: 'editor' });
+    assert.ok(calls.includes('browser.embedded.pick.start'));
+    const resume = runtime.control(run.id, 'resume');
+    await until(() => cancellingPicker);
+    await assert.rejects(
+      runtime.request('browser.embedded.pick.start', { requestId: 'racing' }),
+      /先暂停/,
+    );
+    await assert.rejects(
+      runtime.request('browser.embedded.pick.validate', { selector: '#test', framePath: [] }),
+      /先暂停/,
+    );
+    assert.equal(runtime.store.events(run.id).filter((e) => e.type === 'node-start').length, 0);
+    release();
+    await resume;
+    await until(() => runtime.store.get<Run>('run', run.id)?.state === 'SUCCEEDED');
+  } finally {
+    release();
+    await runtime.shutdown();
+  }
+});

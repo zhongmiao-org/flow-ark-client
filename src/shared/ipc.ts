@@ -30,6 +30,15 @@ export const methods = {
   'browser.discover': empty,
   'browser.embedded.enable': empty,
   'browser.embedded.status': empty,
+  'browser.embedded.pick.start': z.object({ requestId: id }).strict(),
+  'browser.embedded.pick.status': z.object({ requestId: id }).strict(),
+  'browser.embedded.pick.cancel': z.object({ requestId: id }).strict(),
+  'browser.embedded.pick.validate': z
+    .object({
+      selector: z.string().min(1).max(4000),
+      framePath: z.array(z.string().min(1).max(4000)).max(8),
+    })
+    .strict(),
   'browser.embedded.navigate': z
     .object({
       url: z

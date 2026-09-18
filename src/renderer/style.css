@@ -1509,3 +1509,121 @@ td small {
 .with-browser .overview {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+
+.element-picker-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.element-picker-actions button {
+  padding: 8px 10px;
+}
+.picker-message {
+  color: var(--accent);
+  font-size: 12px;
+  margin: 10px 0;
+}
+.picked-target {
+  border: 1px solid #b7d3c7;
+  border-left: 3px solid var(--accent);
+  background: var(--soft);
+  border-radius: 5px;
+  padding: 12px;
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+}
+.picked-target strong {
+  display: block;
+  font-size: 13px;
+}
+.picked-target span {
+  display: block;
+  color: #5c7568;
+  font-size: 11px;
+  margin-top: 6px;
+}
+.picked-target p {
+  font-size: 11px;
+  margin: 8px 0 0;
+}
+.locator-details,
+.node-advanced {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.locator-details summary,
+.node-advanced summary {
+  color: #667c72;
+  cursor: pointer;
+  font-size: 12px;
+}
+/* Keep the editor, inspector and native page usable together at laptop widths. */
+.with-browser .browser-sidebar {
+  flex-basis: min(42vw, 620px);
+  width: min(42vw, 620px);
+}
+.with-browser .sidebar {
+  width: 64px;
+  flex-basis: 64px;
+  padding-inline: 8px;
+}
+.with-browser .brand {
+  padding: 0;
+  justify-content: center;
+}
+.with-browser .brand > div,
+.with-browser .workspace-label,
+.with-browser .sidebar-bottom {
+  display: none;
+}
+.with-browser .sidebar nav {
+  margin-top: 40px;
+}
+.with-browser .sidebar nav button {
+  font-size: 0;
+  padding: 12px;
+  gap: 0;
+  justify-content: center;
+  position: relative;
+}
+.with-browser .sidebar nav button b {
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: 9px;
+}
+.with-browser .node-library {
+  width: 120px;
+  flex-basis: 120px;
+  padding: 18px 7px;
+}
+.with-browser .inspector {
+  width: 282px;
+  flex-basis: 282px;
+  padding-inline: 16px;
+}
+.with-browser .inspector .tabs {
+  margin-inline: -16px;
+}
+.with-browser .editor-toolbar {
+  height: auto;
+  flex-basis: auto;
+  min-height: 66px;
+  flex-wrap: wrap;
+  padding: 12px;
+  gap: 7px;
+}
+.with-browser .editor-toolbar .title-input {
+  width: 170px;
+}
+@media (max-width: 1100px) {
+  .with-browser .node-library {
+    width: 104px;
+    flex-basis: 104px;
+  }
+  .with-browser .inspector {
+    width: 260px;
+    flex-basis: 260px;
+  }
+}
