@@ -43,6 +43,7 @@ import TemplateConfiguration from './TemplateConfiguration';
 import ScriptPackages from './ScriptPackages';
 import EmbeddedBrowserPanel from './EmbeddedBrowserPanel';
 import BrowserSidebar from './BrowserSidebar';
+import { fileBindingNames } from './file-bindings';
 import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 const CodeEditor = lazy(() => import('./CodeEditor'));
 const initial: Bootstrap = {
@@ -535,14 +536,14 @@ export default function App() {
               selected={selected}
               setSelected={setSelected}
               browsers={data.browsers}
-              choose={async () => {
+              choose={async (binding: string) => {
                 const path = await action(() => api('file.choose', { kind: 'directory' }));
                 if (path)
                   setEdit({
                     ...edit,
                     bindings: {
                       ...edit.bindings,
-                      files: { ...edit.bindings.files, workspace: path },
+                      files: { ...edit.bindings.files, [binding]: path },
                     },
                   });
               }}
@@ -1091,12 +1092,15 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose 
                 </option>
               ))}
             </select>
-            <label>workspace 文件目录</label>
-            <p className="path-text">{r.bindings.files.workspace ?? '尚未选择'}</p>
-            <button onClick={choose}>
-              <FolderOpen size={15} />
-              选择目录
-            </button>
+            {fileBindingNames(r.flow.steps, r.bindings.files).map((binding) => (
+              <section key={binding} className="file-binding">
+                <label>{binding} 文件目录</label>
+                <p className="path-text">{r.bindings.files[binding] ?? '尚未选择'}</p>
+                <button aria-label={`选择 ${binding} 目录`} onClick={() => choose(binding)}>
+                  <FolderOpen size={15} /> 选择目录
+                </button>
+              </section>
+            ))}
             <label>允许脚本读取的凭据</label>
             {['openai-codex', 'deepseek'].map((id) => (
               <label className="check-label" key={id}>
