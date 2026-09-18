@@ -18,6 +18,9 @@ export class PlaywrightDriver implements BrowserDriver {
       timeout: 20000,
     });
     const page = context.pages()[0] ?? (await context.newPage());
+    return PlaywrightDriver.attach(context, page, b);
+  }
+  static attach(context: BrowserContext, page: Page, b: BrowserBinding) {
     context.on('page', (p) => {
       driver.page = p;
     });

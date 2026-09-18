@@ -131,6 +131,15 @@ test('templates create isolated drafts and tampering is rejected', () => {
 });
 test('IPC refuses arbitrary methods, keys and invalid schedule interval', () => {
   assert.throws(() => validateIPC('shell.exec', { command: 'whoami' }));
+  assert.throws(() => validateIPC('system.suspend', {}));
+  assert.throws(() => validateIPC('browser.embedded.binding', {}));
+  assert.throws(() => validateIPC('browser.embedded.enable', { executable: '/tmp/program' }));
+  assert.throws(() =>
+    validateIPC('browser.embedded.visibility', { visible: true, url: 'file:///etc/passwd' }),
+  );
+  assert.deepEqual(validateIPC('browser.embedded.visibility', { visible: false }), {
+    visible: false,
+  });
   assert.throws(() => validateIPC('credentials.get', { id: 'openai-codex' }));
   assert.throws(() => validateIPC('flow.run', { id: 'a', extra: true }));
   assert.throws(() =>

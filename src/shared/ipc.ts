@@ -28,6 +28,9 @@ export const methods = {
   'artifact.reveal': z.object({ id }).strict(),
   'run.control': z.object({ id, action: z.enum(['pause', 'resume', 'step', 'cancel']) }).strict(),
   'browser.discover': empty,
+  'browser.embedded.enable': empty,
+  'browser.embedded.status': empty,
+  'browser.embedded.visibility': z.object({ visible: z.boolean() }).strict(),
   'script.package.inspect': z.object({ path: z.string().min(1).max(4096) }).strict(),
   'browser.bind': z
     .object({

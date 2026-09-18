@@ -1018,3 +1018,55 @@ test('legacy fixed source without dependencies remains runnable and legacy unfro
     await rm(path, { recursive: true, force: true });
   }
 });
+
+test('system suspend cancels active and queued work and resume never replays either run', async () => {
+  const path = await mkdtemp(join(tmpdir(), 'flowark-suspend-runtime-'));
+  const runtime = new Runtime(
+    path,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  try {
+    const flow: Flow = {
+      ...base,
+      steps: [
+        { id: 'wait', type: 'human', version: 1, message: 'fixture' },
+        {
+          id: 'write',
+          type: 'file',
+          version: 1,
+          operation: 'write',
+          binding: 'work',
+          name: 'must-not-write.txt',
+          content: 'unexpected',
+        },
+      ],
+    };
+    runtime.saveFlow(flow, { files: { work: path }, credentials: [] });
+    const active = await runtime.enqueue(flow.id);
+    await until(() => runtime.store.get<Run>('run', active.id)?.state === 'WAITING_INPUT');
+    const queued = await runtime.enqueue(flow.id);
+    await runtime.request('system.suspend');
+    await until(() => runtime.store.get<Run>('run', active.id)?.state === 'CANCELLED');
+    assert.equal(runtime.store.get<Run>('run', queued.id)?.state, 'CANCELLED');
+    await assert.rejects(runtime.enqueue(flow.id), /休眠/);
+    assert.ok(runtime.store.events(active.id).some((e) => e.type === 'system-suspend'));
+    assert.equal(
+      runtime.store.list<any>('attention').filter((a) => a.title.includes('休眠')).length,
+      1,
+    );
+    await runtime.request('system.resume');
+    await runtime.tick();
+    assert.equal(runtime.store.get<Run>('run', active.id)?.state, 'CANCELLED');
+    assert.equal(runtime.store.get<Run>('run', queued.id)?.state, 'CANCELLED');
+    await assert.rejects(access(join(path, 'must-not-write.txt')));
+    const fresh = await runtime.enqueue(flow.id);
+    await until(() => runtime.store.get<Run>('run', fresh.id)?.state === 'WAITING_INPUT');
+    await runtime.control(fresh.id, 'cancel');
+    await until(() => runtime.store.get<Run>('run', fresh.id)?.state === 'CANCELLED');
+  } finally {
+    await runtime.shutdown();
+  }
+});
