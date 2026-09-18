@@ -73,10 +73,28 @@ try {
   const record = await call('flow.create');
   const flow = { ...formLabFlow(lab.url), id: record.id };
   const bindings = { files: { work: data }, browserId: browser.id, credentials: [] };
-  await call('flow.save', { flow, bindings });
+  await call('flow.save', {
+    flow,
+    bindings: { ...bindings, files: { workspace: data + '/separate' } },
+  });
   await page.getByRole('button', { name: '本地设置', exact: true }).click();
   await page.getByRole('button', { name: '我的流程', exact: true }).click();
   await page.getByRole('button', { name: '编辑 复杂表单功能验证', exact: true }).click();
+  // Exercise the actual binding UI; a non-workspace imported name must be configurable.
+  await page.getByRole('button', { name: '参数与绑定', exact: true }).click();
+  await app.evaluate(({ dialog }, path) => {
+    const original = dialog.showOpenDialog;
+    dialog.showOpenDialog = (async () => {
+      dialog.showOpenDialog = original;
+      return { canceled: false, filePaths: [path] };
+    }) as any;
+  }, data);
+  await page.getByRole('button', { name: '选择 work 目录', exact: true }).click();
+  await page.getByRole('button', { name: '保存', exact: true }).click();
+  const bound = (await call('bootstrap')).flows.find((item: any) => item.id === flow.id);
+  assert.equal(bound.bindings.files.work, data);
+  assert.equal(bound.bindings.files.workspace, data + '/separate');
+  evidence.namedFileBinding = true;
   await page.getByRole('button', { name: '逐步调试', exact: true }).click();
   const waitFor = async (fn: () => Promise<any>, label: string, ms = 60000) => {
     const deadline = Date.now() + ms;
