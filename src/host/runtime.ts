@@ -68,7 +68,7 @@ export class Runtime {
     this.recruiting = new RecruitingCoordinator(this.store, () =>
       this.system('notification', { title: 'FlowArk 有新的联系方式待办' }),
     );
-    this.sessions = new Sessions(dir, executable, dataPath);
+    this.sessions = new Sessions(dir, executable, dataPath, system);
     if (!this.store.list('flow').length)
       this.saveFlow(validateFlow(example), { files: {}, credentials: [] });
     this.skipMissed('application-restart');
@@ -146,7 +146,10 @@ export class Runtime {
     if (steps.some((n) => n.type === 'browser' || n.type === 'recruiting')) {
       const b = this.store.get<BrowserBinding>('browser', record.bindings.browserId ?? '');
       if (!b) throw new Error('请先选择本机浏览器');
-      const current = await validateBinding(b);
+      const current =
+        b.product === 'embedded'
+          ? await this.system('browser.embedded.binding', {})
+          : await validateBinding(b);
       assertBrowserOperations(
         current,
         steps.filter((n) => n.type === 'browser'),
@@ -695,6 +698,27 @@ export class Runtime {
       }
       case 'browser.embedded.visibility':
         return this.sessions.embeddedVisibility(args.visible);
+      case 'browser.embedded.navigate': {
+        if (this.active) {
+          const run = this.store.get<Run>('run', this.active.id);
+          if (!run || !['PAUSED', 'WAITING_INPUT'].includes(run.state))
+            throw new Error('请先暂停当前任务，再切换网页');
+        }
+        return this.system('browser.embedded.navigate', args);
+      }
+      case 'system.browserLost': {
+        const owner = this.sessions.embeddedLost(args.token);
+        if (owner) {
+          this.store.attention(
+            'limitation',
+            '内置网页会话已关闭，请核对结果后重新调试',
+            { runId: owner },
+            'browser-lost:' + owner,
+          );
+          await this.control(owner, 'cancel');
+        }
+        return true;
+      }
       case 'browser.embedded.status':
         return this.sessions.embeddedStatus();
       case 'browser.discover':

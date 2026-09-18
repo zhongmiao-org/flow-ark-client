@@ -12,7 +12,12 @@ const rpc = new Rpc(send, async (method, args) => {
       dirname(process.argv[1]),
       args.executable,
       Buffer.from(args.key, 'base64'),
-      (m, a) => rpc.call(m, a),
+      (m, a) =>
+        rpc.call(
+          m,
+          a,
+          m === 'browser.embedded.perform' ? (a.command.timeoutMs ?? 15000) + 5000 : 65000,
+        ),
     );
     return true;
   }
@@ -21,8 +26,14 @@ const rpc = new Rpc(send, async (method, args) => {
 });
 if (port) {
   port.on('message', (e: any) => void rpc.receive(e.data));
-  port.on('close', () => { rpc.close(); void runtime?.shutdown(); });
+  port.on('close', () => {
+    rpc.close();
+    void runtime?.shutdown();
+  });
 } else {
   process.on('message', (m) => void rpc.receive(m as any));
-  process.on('disconnect', () => { rpc.close(); void runtime?.shutdown().finally(() => process.exit(0)); });
+  process.on('disconnect', () => {
+    rpc.close();
+    void runtime?.shutdown().finally(() => process.exit(0));
+  });
 }

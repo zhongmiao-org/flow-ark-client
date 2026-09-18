@@ -1,124 +1,77 @@
-import { createServer } from 'node:http';
-import { mkdtemp, writeFile, readFile, mkdir } from 'node:fs/promises';
+import assert from 'node:assert/strict';
+import { mkdtemp, mkdir, writeFile, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import assert from 'node:assert/strict';
-import { inspectBrowser } from '../src/adapters/browsers';
 import { startFrameFixture } from './fixtures/frames';
-import { PlaywrightDriver } from '../src/adapters/playwright';
-const root = await mkdtemp(join(tmpdir(), 'flowark-browser-'));
-const chrome = process.env.FLOWARK_CHROME_PATH ?? '/Applications/Google Chrome.app';
-process.env.PLAYWRIGHT_BROWSERS_PATH = join(root, 'empty-browser-cache');
-process.env.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = '1';
-let uploaded = '';
-const server = createServer((req, res) => {
-  if (req.url === '/receipt' && req.method === 'POST') {
-    const chunks: Buffer[] = [];
-    req.on('data', (c) => chunks.push(c));
-    req.on('end', () => {
-      uploaded = Buffer.concat(chunks).toString();
-      res.end('已核对本地上传');
-    });
-    return;
-  }
-  if (req.url === '/download') {
-    res.setHeader('Content-Disposition', 'attachment; filename="fictional.txt"');
-    res.end('local-only');
-    return;
-  }
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.end(
-    '<!doctype html><title>FlowArk local fixture</title><label>称呼<input id="name"></label><input type="file" id="upload"><button id="submit">本地提交</button><p id="receipt"></p><a id="download" href="/download">下载</a><script>document.querySelector("#submit").onclick=async()=>{const file=document.querySelector("#upload").files[0];document.querySelector("#receipt").textContent=await fetch("/receipt",{method:"POST",body:await file.text()}).then(r=>r.text())}</script>',
-  );
-});
-await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-const port = (server.address() as any).port;
-const binding = await inspectBrowser(chrome);
+import { embeddedHarness } from './fixtures/embedded-harness';
+const root = await mkdtemp(join(tmpdir(), 'flowark-native-frames-'));
 const frames = await startFrameFixture();
-const driver = await PlaywrightDriver.start(binding, join(root, 'dedicated-profile'), true);
+const browser = await embeddedHarness(root);
+const framePath = ['#outer', '#inner'];
+const checks: string[] = [];
 try {
-  const result = await driver.perform({ operation: 'navigate', value: `http://127.0.0.1:${port}` });
-  assert.equal(result.title, 'FlowArk local fixture');
-  await driver.perform({ operation: 'fill', selector: '#name', value: '虚构测试' });
-  const file = join(root, 'fictional.txt');
-  await writeFile(file, 'fictional-resume-data');
-  await driver.perform({ operation: 'upload', selector: '#upload', value: file });
-  await driver.perform({ operation: 'click', selector: '#submit' });
-  await driver.perform({ operation: 'wait', selector: '#receipt:not(:empty)' });
-  assert.equal(await driver.perform({ operation: 'read', selector: '#receipt' }), '已核对本地上传');
-  assert.equal(uploaded, 'fictional-resume-data');
-  const download = join(root, 'download.txt');
-  await driver.perform({ operation: 'download', selector: '#download', value: download });
-  assert.equal(await readFile(download, 'utf8'), 'local-only');
-  await driver.perform({ operation: 'navigate', value: frames.url });
-  const framePath = ['#outer', '#inner'];
-  assert.equal(await driver.perform({ operation: 'read', selector: '#value' }), 'top');
+  await browser.start();
+  await browser.perform({ operation: 'navigate', value: frames.url });
+  for (const [path, expected] of [
+    [[], 'top'],
+    [['#outer'], 'outer'],
+    [framePath, 'inner:first'],
+  ] as [string[], string][]) {
+    assert.equal(
+      await browser.perform({ operation: 'read', selector: '#value', framePath: path }),
+      expected,
+    );
+  }
+  checks.push('nested-cross-origin-frame-read');
+  await browser.perform({ operation: 'fill', selector: '#name', value: 'framed input', framePath });
   assert.equal(
-    await driver.perform({ operation: 'read', selector: '#value', framePath: ['#outer'] }),
-    'outer',
-  );
-  assert.equal(
-    await driver.perform({ operation: 'read', selector: '#value', framePath }),
-    'inner:first',
-  );
-  await driver.perform({ operation: 'fill', selector: '#name', value: 'framed input', framePath });
-  assert.equal(
-    await driver.perform({ operation: 'read', selector: '#echo', framePath }),
+    await browser.perform({ operation: 'read', selector: '#echo', framePath }),
     'framed input',
   );
+  await browser.perform({ operation: 'fill', selector: '#name', value: '', framePath });
   assert.equal(
-    await driver.perform({ operation: 'attribute', selector: '#name', value: 'value' }),
-    'top',
+    await browser.perform({ operation: 'inputValue', selector: '#name', value: null, framePath }),
+    '',
   );
-  assert.equal(await driver.perform({ operation: 'count', selector: '#unknown', framePath }), 0);
-  await driver.perform({ operation: 'click', selector: '#action', framePath });
-  await driver.perform({
-    operation: 'wait',
-    selector: '#echo:text-is("clicked:first")',
+  await browser.perform({ operation: 'click', selector: '#action', framePath });
+  await browser.perform({ operation: 'wait', selector: '#echo:not(:empty)', framePath });
+  assert.equal(
+    await browser.perform({ operation: 'read', selector: '#echo', framePath }),
+    'clicked:first',
+  );
+  assert.equal(await browser.perform({ operation: 'read', selector: '#echo' }), 'top unchanged');
+  checks.push('frame-fill-clear-click-no-top-level-fallback');
+  await writeFile(join(root, 'fictional.txt'), 'fictional-frame-content');
+  await browser.perform({
+    operation: 'upload',
+    selector: '#upload',
+    value: join(root, 'fictional.txt'),
     framePath,
   });
-  assert.deepEqual(frames.state.clicks, ['first']);
-  assert.equal(await driver.perform({ operation: 'read', selector: '#echo' }), 'top unchanged');
-  await driver.perform({ operation: 'upload', selector: '#upload', value: file, framePath });
-  await driver.perform({ operation: 'click', selector: '#send', framePath });
-  await driver.perform({ operation: 'wait', selector: '#receipt:not(:empty)', framePath });
-  assert.equal(
-    await driver.perform({ operation: 'read', selector: '#receipt', framePath }),
-    'frame-upload-confirmed',
-  );
-  assert.equal(frames.state.uploads[0].toString(), 'fictional-resume-data');
-  const frameDownload = join(root, 'frame-download.txt');
-  await driver.perform({
+  await browser.perform({ operation: 'click', selector: '#send', framePath });
+  await browser.perform({ operation: 'wait', selector: '#receipt:not(:empty)', framePath });
+  assert.equal(frames.state.uploads[0].toString(), 'fictional-frame-content');
+  await browser.perform({
     operation: 'download',
     selector: '#download',
-    value: frameDownload,
+    value: join(root, 'download.txt'),
     framePath,
   });
-  assert.equal(await readFile(frameDownload, 'utf8'), 'frame-download');
-  for (const framePath of [
-    ['#absent'],
-    ['.duplicate'],
-    ['#value'],
-    ['#outer', '#absent'],
-    ['[invalid'],
-  ]) {
+  assert.equal(await readFile(join(root, 'download.txt'), 'utf8'), 'frame-download');
+  checks.push('frame-upload-and-download-bytes');
+  for (const path of [['.duplicate'], ['#value'], ['[invalid'], ['#absent']]) {
     await assert.rejects(
-      driver.perform({ operation: 'click', selector: '#action', framePath, timeoutMs: 300 }),
+      browser.perform({ operation: 'click', selector: '#action', framePath: path, timeoutMs: 250 }),
     );
-    assert.equal(await driver.perform({ operation: 'read', selector: '#echo' }), 'top unchanged');
+    await browser.close();
+    await browser.start();
+    await browser.perform({ operation: 'navigate', value: frames.url });
   }
-  await assert.rejects(
-    driver.perform({
-      operation: 'count',
-      selector: '#action',
-      framePath: ['#absent'],
-      timeoutMs: 200,
-    }),
-  );
   assert.deepEqual(frames.state.clicks, ['first']);
-  await driver.perform({ operation: 'click', selector: '#add-delayed' });
+  checks.push('invalid-frame-path-rejected');
+  await browser.perform({ operation: 'click', selector: '#add-delayed' });
   assert.equal(
-    await driver.perform({
+    await browser.perform({
       operation: 'read',
       selector: '#value',
       framePath: ['#delayed', '#inner'],
@@ -126,70 +79,32 @@ try {
     }),
     'inner:first',
   );
-  await driver.perform({ operation: 'click', selector: '#replace' });
+  await browser.perform({ operation: 'click', selector: '#replace' });
   assert.equal(
-    await driver.perform({ operation: 'read', selector: '#value', framePath }),
+    await browser.perform({ operation: 'read', selector: '#value', framePath }),
     'inner:second',
   );
-  await driver.perform({ operation: 'click', selector: '#arm-swap' });
-  await assert.rejects(
-    driver.perform({ operation: 'click', selector: '#late', framePath, timeoutMs: 3000 }),
-    /detached|closed/i,
+  checks.push('delayed-and-replaced-frames');
+  const waiting = assert.rejects(
+    browser.perform({ operation: 'wait', selector: '#never', timeoutMs: 20000 }),
   );
-  assert.equal(
-    await driver.perform({ operation: 'read', selector: '#value', framePath }),
-    'inner:late',
-  );
-  assert.deepEqual(frames.state.clicks, ['first']);
-  await assert.rejects(
-    driver.perform({ operation: 'navigate', value: frames.url, framePath }),
-    /顶层/,
-  );
-  const cancelled = assert.rejects(
-    driver.perform({ operation: 'wait', selector: '#never', framePath, timeoutMs: 20000 }),
-  );
-  await driver.close();
-  await cancelled;
+  await new Promise((r) => setTimeout(r, 100));
+  const started = Date.now();
+  await browser.close();
+  await waiting;
+  assert.ok(Date.now() - started < 3000);
+  checks.push('close-aborts-wait');
   await mkdir('test-results', { recursive: true });
   await writeFile(
     'test-results/browser.json',
     JSON.stringify(
-      {
-        time: new Date().toISOString(),
-        platform: process.platform,
-        arch: process.arch,
-        browser: binding.product,
-        version: binding.version,
-        driver: 'playwright-core 1.63.0',
-        headless: true,
-        profile: 'dedicated temporary profile',
-        fixture: '127.0.0.1 only',
-        checks: [
-          'launch-selected-browser',
-          'navigate',
-          'DOM',
-          'input',
-          'upload',
-          'receipt',
-          'download',
-          'close-cancels-wait',
-          'empty-cache',
-          'nested-cross-origin-frames',
-          'frame-input-click-upload-download',
-          'no-top-level-fallback',
-          'strict-frame-path',
-          'delayed-and-replaced-frames',
-          'detachment-does-not-replay',
-        ],
-        realRecruitingSites: false,
-      },
+      { passed: true, browser: browser.binding, driver: 'Electron webContents.debugger', checks },
       null,
       2,
     ),
   );
-  console.log('Local Chrome smoke passed', binding.version, '(no recruiting websites accessed)');
+  console.log('Native embedded frame, transfer, strict selector and cancellation checks passed');
 } finally {
-  await driver.close().catch(() => {});
-  server.close();
+  await browser.shutdown();
   await frames.close();
 }

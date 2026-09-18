@@ -1,3 +1,4 @@
+import { embeddedHarness } from './fixtures/embedded-harness';
 import { createServer } from 'node:http';
 import { mkdtemp, mkdir, writeFile, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -39,17 +40,16 @@ const server = createServer((req, res) => {
 await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
 const url = `http://127.0.0.1:${(server.address() as any).port}`;
 const frames = await startFrameFixture();
+const embedded = await embeddedHarness(root);
 const runtime = new Runtime(
   root,
   resolve('dist'),
   process.execPath,
   randomBytes(32),
-  async () => [],
+  embedded.system,
 );
 try {
-  const browser = await runtime.request('browser.bind', {
-    path: process.env.FLOWARK_CHROME_PATH ?? '/Applications/Google Chrome.app',
-  });
+  const browser = await runtime.request('browser.embedded.enable');
   const flow: Flow = {
     id: 'regression',
     name: 'HTTP 到 Excel 上传核对',
@@ -363,10 +363,11 @@ try {
     ),
   );
   console.log('Real framed upload, download, missing scope and cancellation passed');
-  console.log('Real HTTP → TS child → Excel → selected Chrome upload → receipt assertion passed');
+  console.log('Real HTTP → TS child → Excel → embedded browser upload → receipt assertion passed');
 } finally {
   await runtime.shutdown();
   runtime.store.close();
+  await embedded.shutdown();
   server.close();
   await frames.close();
 }

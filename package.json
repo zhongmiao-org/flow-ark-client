@@ -1,6 +1,6 @@
 {
   "name": "flow-ark-client",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "FlowArk 序舟本地自动化工作台",
   "private": true,
   "type": "module",
@@ -8,7 +8,7 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "8d39dbb50f535c1932c61fef3793c2b642d4424c",
+    "governanceBaseline": "ec7b432112ce3d3927a83b9db02301d3733e8077",
     "contractsVersion": "0.7.0",
     "contractsTag": "contracts-v0.7.0"
   },
@@ -27,7 +27,7 @@
     "check": "pnpm typecheck && pnpm test && pnpm build",
     "contracts:generate": "node scripts/generate-contracts.mjs",
     "test:browser": "node --import tsx scripts/browser-smoke.ts",
-    "test:browser-recovery": "node --import tsx scripts/browser-recovery.ts",
+    "test:browser-recovery": "node --import tsx scripts/embedded-isolation.ts",
     "test:scenario": "node --import tsx scripts/scenario-smoke.ts",
     "test:simple-site": "node --import tsx scripts/simple-site-smoke.ts",
     "forms:serve": "node --import tsx scripts/form-lab-server.ts",
@@ -37,7 +37,10 @@
     "test:vault": "node --import tsx scripts/vault-smoke.mjs",
     "package:mac": "pnpm build && electron-builder --mac zip --arm64 --publish never --config.electronDist=node_modules/electron/dist && node scripts/package-dmg.mjs",
     "test:debug": "node --import tsx scripts/debug-smoke.ts",
-    "test:embedded": "node --import tsx scripts/embedded-smoke.ts"
+    "test:embedded": "node --import tsx scripts/embedded-smoke.ts",
+    "test:chrome": "node --import tsx scripts/chrome-smoke.ts",
+    "test:chrome-recovery": "node --import tsx scripts/chrome-recovery.ts",
+    "test:embedded-isolation": "node --import tsx scripts/embedded-isolation.ts"
   },
   "build": {
     "appId": "org.zhongmiao.flowark",

@@ -1,3 +1,4 @@
+import { embeddedHarness } from './fixtures/embedded-harness';
 import assert from 'node:assert/strict';
 import { randomBytes, createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
@@ -14,12 +15,13 @@ process.env.PLAYWRIGHT_BROWSERS_PATH = join(root, 'empty-browser-cache');
 process.env.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = '1';
 await writeFile(join(root, 'fictional.txt'), formText);
 const lab = await startFormLab();
+const embedded = await embeddedHarness(root);
 const runtime = new Runtime(
   root,
   resolve('dist'),
   process.execPath,
   randomBytes(32),
-  async () => [],
+  embedded.system,
 );
 const report: Record<string, any> = {
   at: new Date().toISOString(),
@@ -64,9 +66,7 @@ const scenario = (name: string, steps: Step[]): Flow => ({
   steps: [base.steps[0], ...steps],
 });
 try {
-  report.browser = await runtime.request('browser.bind', {
-    path: process.env.FLOWARK_CHROME_PATH ?? '/Applications/Google Chrome.app',
-  });
+  report.browser = await runtime.request('browser.embedded.enable');
   await execute(
     scenario('native-validation', [
       b('invalid_email', 'fill', '#email', 'invalid'),
@@ -182,6 +182,7 @@ try {
     throw error;
   } finally {
     runtime.store.close();
+    await embedded.shutdown();
     await lab.close();
     await mkdir('test-results', { recursive: true });
     await writeFile('test-results/form-lab.json', JSON.stringify(report, null, 2) + '\n');

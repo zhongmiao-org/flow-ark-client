@@ -133,6 +133,12 @@ test('IPC refuses arbitrary methods, keys and invalid schedule interval', () => 
   assert.throws(() => validateIPC('shell.exec', { command: 'whoami' }));
   assert.throws(() => validateIPC('system.suspend', {}));
   assert.throws(() => validateIPC('browser.embedded.binding', {}));
+  assert.throws(() => validateIPC('browser.embedded.perform', { command: {} }));
+  assert.throws(() => validateIPC('system.browserLost', {}));
+  assert.throws(() => validateIPC('browser.embedded.navigate', { url: 'file:///etc/passwd' }));
+  assert.throws(() =>
+    validateIPC('browser.embedded.viewport', { x: -1, y: 0, width: 400, height: 400 }),
+  );
   assert.throws(() => validateIPC('browser.embedded.enable', { executable: '/tmp/program' }));
   assert.throws(() =>
     validateIPC('browser.embedded.visibility', { visible: true, url: 'file:///etc/passwd' }),

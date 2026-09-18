@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import type { ChildProcess } from 'node:child_process';
 import { child, killOwnedTree } from './processes';
@@ -13,10 +14,15 @@ export class Sessions {
   private sessions = new Map<string, Session>();
   private closing = new Map<string, { session: Session; done: Promise<void> }>();
   private stopping = false;
+  private embedded?: { token: string; owner?: string; ready: Promise<any> };
+  private embeddedClosing: Promise<any> = Promise.resolve();
   constructor(
     private dir: string,
     private executable: string,
     private dataPath: string,
+    private system: (method: string, args: any) => Promise<any> = async () => {
+      throw new Error('内置网页需要桌面运行环境');
+    },
   ) {}
   async use(binding: BrowserBinding, runId: string, command: BrowserCommand, signal?: AbortSignal) {
     const check = () => {
@@ -24,6 +30,28 @@ export class Sessions {
       if (this.stopping) throw new Error('浏览器会话管理器正在退出');
     };
     check();
+    if (binding.product === 'embedded') {
+      await this.embeddedClosing;
+      check();
+      let session = this.embedded;
+      if (session?.owner && session.owner !== runId)
+        throw new Error('浏览器会话已被另一个运行占用');
+      if (!session) {
+        const token = randomUUID();
+        session = { token, owner: runId, ready: this.system('browser.embedded.start', { token }) };
+        this.embedded = session;
+      }
+      session.owner = runId;
+      try {
+        await session.ready;
+        check();
+        if (this.embedded !== session) throw new Error('浏览器会话租约已失效');
+        return await this.system('browser.embedded.perform', { token: session.token, command });
+      } catch (error) {
+        await this.closeEmbedded(session);
+        throw error;
+      }
+    }
     // The old process must release its dedicated profile before another run opens it.
     await this.closing.get(binding.id)?.done;
     check();
@@ -75,6 +103,10 @@ export class Sessions {
     }
   }
   async release(runId: string, destroy = false) {
+    if (this.embedded?.owner === runId) {
+      if (destroy) await this.closeEmbedded(this.embedded);
+      else this.embedded.owner = undefined;
+    }
     for (const [id, s] of this.sessions)
       if (s.owner === runId) {
         if (destroy) await this.close(id, s);
@@ -105,20 +137,31 @@ export class Sessions {
       if (this.closing.get(id) === own) this.closing.delete(id);
     }
   }
-  async embeddedVisibility(visible: boolean) {
-    const session = this.sessions.get('embedded');
-    if (!session) return { started: false, visible: false, url: '' };
-    await session.ready;
-    return session.rpc.call('visibility', { visible });
+  private async closeEmbedded(expected = this.embedded) {
+    if (!expected || this.embedded !== expected) return this.embeddedClosing;
+    this.embedded = undefined;
+    this.embeddedClosing = expected.ready
+      .catch(() => {})
+      .then(() => this.system('browser.embedded.close', { token: expected.token }))
+      .catch(() => {});
+    return this.embeddedClosing;
   }
-  async embeddedStatus() {
-    const session = this.sessions.get('embedded');
-    if (!session) return { started: false, visible: false, url: '' };
-    await session.ready;
-    return session.rpc.call('status');
+  embeddedLost(token?: string) {
+    if (!token || this.embedded?.token !== token) return;
+    const owner = this.embedded.owner;
+    this.embedded = undefined;
+    return owner;
+  }
+  embeddedVisibility(visible: boolean) {
+    return this.system('browser.embedded.visibility', { visible });
+  }
+  embeddedStatus() {
+    return this.system('browser.embedded.status', {});
   }
   async shutdown() {
     this.stopping = true;
+    await this.closeEmbedded();
+    await this.system('browser.embedded.close', {}).catch(() => {});
     await Promise.all([...this.sessions.keys()].map((id) => this.close(id)));
     await Promise.all([...this.closing.values()].map((c) => c.done));
   }

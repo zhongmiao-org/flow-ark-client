@@ -91,3 +91,54 @@ test('closing a profile blocks reuse, release joins cleanup, and cancelled waiti
   await sessions.shutdown();
   await assert.rejects(sessions.use(binding, 'future-run', { operation: 'read' }), /退出/);
 });
+
+test('embedded leases reject overlap, wait for close, and ignore a stale failed command', async () => {
+  const binding = {
+    id: 'embedded',
+    product: 'embedded' as const,
+    executable: '/unused',
+    version: 'fixture',
+  };
+  let rejectOld!: (error: Error) => void;
+  let finishClose!: () => void;
+  const closed: string[] = [],
+    started: string[] = [];
+  const sessions = new Sessions('/unused', '/unused', '/unused', async (method, args) => {
+    if (method.endsWith('.start')) {
+      started.push(args.token);
+      return true;
+    }
+    if (method.endsWith('.perform')) {
+      if (args.command.operation === 'wait')
+        return new Promise((_, reject) => {
+          rejectOld = reject;
+        });
+      return 'fresh';
+    }
+    if (method.endsWith('.close') && args.token) {
+      closed.push(args.token);
+      if (closed.length === 1)
+        await new Promise<void>((resolve) => {
+          finishClose = resolve;
+        });
+    }
+    return true;
+  });
+  const old = assert.rejects(sessions.use(binding, 'old', { operation: 'wait' }), /old/);
+  while (!rejectOld) await new Promise((r) => setTimeout(r, 1));
+  await assert.rejects(sessions.use(binding, 'other', { operation: 'read' }), /占用/);
+  const closing = sessions.release('old', true);
+  while (!finishClose) await new Promise((r) => setTimeout(r, 1));
+  const next = sessions.use(binding, 'next', { operation: 'read' });
+  await new Promise((r) => setTimeout(r, 5));
+  assert.equal(started.length, 1);
+  finishClose();
+  await closing;
+  assert.equal(await next, 'fresh');
+  rejectOld(new Error('old failure'));
+  await old;
+  assert.equal(closed.length, 1);
+  assert.equal(sessions.embeddedLost(started[0]), undefined);
+  assert.equal(sessions.embeddedLost(started[1]), 'next');
+  await sessions.shutdown();
+});

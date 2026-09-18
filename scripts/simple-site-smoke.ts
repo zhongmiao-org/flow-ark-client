@@ -1,3 +1,4 @@
+import { embeddedHarness } from './fixtures/embedded-harness';
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
@@ -13,12 +14,13 @@ const output = join(root, 'output');
 await mkdir(output);
 process.env.PLAYWRIGHT_BROWSERS_PATH = join(root, 'empty-browser-cache');
 process.env.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = '1';
+const embedded = await embeddedHarness(root);
 const runtime = new Runtime(
   root,
   resolve('dist'),
   process.execPath,
   randomBytes(32),
-  async () => [],
+  embedded.system,
 );
 const report: Record<string, unknown> = {
   at: new Date().toISOString(),
@@ -66,9 +68,7 @@ async function assertSuccess(current: Run) {
 }
 
 try {
-  const browser = await runtime.request('browser.bind', {
-    path: process.env.FLOWARK_CHROME_PATH ?? '/Applications/Google Chrome.app',
-  });
+  const browser = await runtime.request('browser.embedded.enable');
   assert.equal(browser.product, 'chrome');
   report.browser = { product: browser.product, version: browser.version };
   const content = await readFile(resolve('examples/simple-web-form.template.json'), 'utf8');
@@ -130,6 +130,7 @@ try {
     throw error;
   } finally {
     runtime.store.close();
+    await embedded.shutdown();
     await mkdir('test-results', { recursive: true });
     await writeFile('test-results/simple-site.json', JSON.stringify(report, null, 2) + '\n');
   }

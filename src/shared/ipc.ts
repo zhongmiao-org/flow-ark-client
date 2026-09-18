@@ -30,6 +30,23 @@ export const methods = {
   'browser.discover': empty,
   'browser.embedded.enable': empty,
   'browser.embedded.status': empty,
+  'browser.embedded.navigate': z
+    .object({
+      url: z
+        .string()
+        .url()
+        .max(8192)
+        .refine((v) => /^https?:\/\//.test(v)),
+    })
+    .strict(),
+  'browser.embedded.viewport': z
+    .object({
+      x: z.number().int().min(0).max(20000),
+      y: z.number().int().min(0).max(20000),
+      width: z.number().int().min(0).max(20000),
+      height: z.number().int().min(0).max(20000),
+    })
+    .strict(),
   'browser.embedded.visibility': z.object({ visible: z.boolean() }).strict(),
   'script.package.inspect': z.object({ path: z.string().min(1).max(4096) }).strict(),
   'browser.bind': z
