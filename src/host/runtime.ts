@@ -529,7 +529,16 @@ export class Runtime {
     if ((action === 'step' || action === 'resume') && a.controlPending)
       throw new Error('上一次继续指令尚未处理');
     if (!a.child.connected) throw new Error('运行进程已断开');
-    if (action === 'step' || action === 'resume') a.controlPending = true;
+    if (action === 'step' || action === 'resume') {
+      a.controlPending = true;
+      try {
+        await this.system('browser.embedded.pick.cancel', {});
+      } catch (error) {
+        a.controlPending = false;
+        throw error;
+      }
+      if (a.cancelling || this.active !== a) throw new Error('运行已停止');
+    }
     a.child.send({ control: action }, (error) => {
       if (error) a.rpc.close();
     });
@@ -698,6 +707,22 @@ export class Runtime {
       }
       case 'browser.embedded.visibility':
         return this.sessions.embeddedVisibility(args.visible);
+      case 'browser.embedded.pick.start':
+      case 'browser.embedded.pick.validate': {
+        if (this.active) {
+          const run = this.store.get<Run>('run', this.active.id);
+          if (
+            !run ||
+            !['PAUSED', 'WAITING_INPUT'].includes(run.state) ||
+            this.active.controlPending
+          )
+            throw new Error('请先暂停当前任务，再选取或验证元素');
+        }
+        return this.system(method, args);
+      }
+      case 'browser.embedded.pick.status':
+      case 'browser.embedded.pick.cancel':
+        return this.system(method, args);
       case 'browser.embedded.navigate': {
         if (this.active) {
           const run = this.store.get<Run>('run', this.active.id);

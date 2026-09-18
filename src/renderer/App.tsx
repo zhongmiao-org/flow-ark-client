@@ -305,6 +305,8 @@ export default function App() {
           {nav.map(([id, label, Icon]) => (
             <button
               key={id}
+              title={label}
+              aria-label={label}
               className={
                 section === id || (section === 'editor' && id === 'flows') ? 'selected' : ''
               }
@@ -1039,28 +1041,31 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose 
                   />
                 </>
               )}
-              <label>节点配置 JSON</label>
-              <textarea
-                className="code-input"
-                value={raw}
-                onChange={(e) => {
-                  setRaw(e.target.value);
-                  try {
-                    const value = JSON.parse(e.target.value);
-                    if (value.id !== selectedNode.id || value.type !== selectedNode.type)
-                      throw new Error('ID 和类型不可在此修改');
-                    patch(() => value);
-                    setInvalid('');
-                  } catch (e: any) {
-                    setInvalid(e.message);
-                  }
-                }}
-              />
-              {invalid && <p className="field-error">{invalid}</p>}
-              <p className="note">
-                引用示例：<code>{'{"$ref":"steps.greeting.message"}'}</code>
-                。循环体可引用 item 和 index。
-              </p>
+              <details className="node-advanced" open={selectedNode.type !== 'browser'}>
+                <summary>高级配置 JSON</summary>
+                <label>节点配置 JSON</label>
+                <textarea
+                  className="code-input"
+                  value={raw}
+                  onChange={(e) => {
+                    setRaw(e.target.value);
+                    try {
+                      const value = JSON.parse(e.target.value);
+                      if (value.id !== selectedNode.id || value.type !== selectedNode.type)
+                        throw new Error('ID 和类型不可在此修改');
+                      patch(() => value);
+                      setInvalid('');
+                    } catch (e: any) {
+                      setInvalid(e.message);
+                    }
+                  }}
+                />
+                {invalid && <p className="field-error">{invalid}</p>}
+                <p className="note">
+                  引用示例：<code>{'{"$ref":"steps.greeting.message"}'}</code>
+                  。循环体可引用 item 和 index。
+                </p>
+              </details>
             </>
           ) : (
             <Empty text="选择画布节点，编辑参数或脚本。" />

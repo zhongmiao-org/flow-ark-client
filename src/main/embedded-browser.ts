@@ -48,6 +48,12 @@ export class EmbeddedBrowser {
     window.on('restore', () => this.layout());
     window.on('hide', () => this.layout());
     window.on('minimize', () => this.layout());
+    window.on('hide', () => {
+      void this.page?.picker.cancel();
+    });
+    window.on('minimize', () => {
+      void this.page?.picker.cancel();
+    });
   }
   private permitted(url: string) {
     try {
@@ -133,6 +139,7 @@ export class EmbeddedBrowser {
   }
   async visibility(visible: boolean) {
     this.visible = visible;
+    if (!visible) await this.page?.picker.cancel();
     if (visible) await this.ensure();
     this.layout();
     return this.status();
@@ -168,6 +175,7 @@ export class EmbeddedBrowser {
       this.stopOperation = () => reject(new Error('网页会话已关闭'));
     });
     const task = async () => {
+      await page.picker.cancel();
       if (
         command.operation === 'screenshot' &&
         (!this.window.isVisible() || this.window.isMinimized() || !this.visible)
@@ -276,6 +284,33 @@ export class EmbeddedBrowser {
   }
   async system(method: string, args: any) {
     switch (method) {
+      case 'browser.embedded.pick.start':
+      case 'browser.embedded.pick.validate': {
+        if (this.busy) throw new Error('网页正在执行操作，请稍后选取');
+        await this.ensure();
+        if (this.busy) throw new Error('网页正在执行操作，请稍后选取');
+        if (!this.visible || !this.window.isVisible() || this.window.isMinimized())
+          throw new Error('请先展开内置网页面板');
+        if (!this.permitted(this.view!.webContents.getURL())) throw new Error('请先打开测试网页');
+        if (method.endsWith('.start')) return this.page!.picker.start(args.requestId);
+        this.busy = true;
+        try {
+          await this.page!.picker.cancel();
+          return await this.page!.inspectTarget(args.selector, args.framePath);
+        } finally {
+          this.busy = false;
+        }
+      }
+      case 'browser.embedded.pick.status':
+        return (
+          this.page?.picker.status(args.requestId) ?? {
+            requestId: args.requestId,
+            phase: 'cancelled',
+          }
+        );
+      case 'browser.embedded.pick.cancel':
+        await this.page?.picker.cancel(args.requestId);
+        return true;
       case 'browser.embedded.start':
         return this.start(args.token);
       case 'browser.embedded.perform':

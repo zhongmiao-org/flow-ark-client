@@ -3,6 +3,9 @@ import { writeFile } from 'node:fs/promises';
 import type { BrowserCommand } from '../shared/types';
 import { commandBudget } from './browser-scope';
 import { framePathOf, validateFormCommand, formKeys } from '../core/browser-command';
+import { EmbeddedPicker } from './embedded-picker';
+import { describeElement } from './element-description';
+import type { ElementTarget } from '../shared/element-picker';
 type Scope = {
   context: number;
   session?: string;
@@ -18,14 +21,26 @@ const query = `(selector) => {
 }`;
 /** CDP transport is restricted to one unprivileged website WebContents, never the workbench. */
 export class EmbeddedPage {
+  readonly picker: EmbeddedPicker;
   private abort = new AbortController();
   private frames = new Map<string, string>();
   constructor(readonly contents: WebContents) {
     contents.debugger.attach('1.3');
+    this.picker = new EmbeddedPicker(
+      contents,
+      (m, p, s) => this.send(m, p, s),
+      this.frames,
+      (selector, path) => this.inspectTarget(selector, path, false),
+    );
     contents.debugger.on('message', (_event, method, params) => {
       if (method === 'Target.attachedToTarget' && params.targetInfo.type === 'iframe') {
         this.frames.set(params.targetInfo.targetId, params.sessionId);
         void this.send('Page.enable', {}, params.sessionId).catch(() => {});
+        void this.send(
+          'Target.setAutoAttach',
+          { autoAttach: true, waitForDebuggerOnStart: false, flatten: true },
+          params.sessionId,
+        ).catch(() => {});
       }
       if (method === 'Target.detachedFromTarget') {
         for (const [id, session] of this.frames)
@@ -341,7 +356,36 @@ export class EmbeddedPage {
       );
     }
   }
+  async inspectTarget(selector: string, path: string[], highlight = true): Promise<ElementTarget> {
+    const scope = await this.scope(path, commandBudget(3000));
+    const element = await this.element(scope, selector, commandBudget(3000));
+    try {
+      await this.visible(scope, element, commandBudget(3000));
+      const target = await this.call(scope, element, describeElement.toString(), false);
+      if (highlight) {
+        await this.send('DOM.enable', {}, scope.session);
+        await this.send('Overlay.enable', {}, scope.session);
+        await this.send(
+          'Overlay.highlightNode',
+          {
+            objectId: element,
+            highlightConfig: { contentColor: { r: 43, g: 133, b: 116, a: 0.23 } },
+          },
+          scope.session,
+        );
+        setTimeout(() => {
+          void this.send('Overlay.hideHighlight', {}, scope.session).catch(() => {});
+        }, 1500).unref();
+      }
+      return { ...target, selector, framePath: path };
+    } finally {
+      await this.send('Runtime.releaseObject', { objectId: element }, scope.session).catch(
+        () => {},
+      );
+    }
+  }
   stop() {
+    this.picker.dispose();
     this.abort.abort(new Error('网页会话已关闭'));
   }
 }

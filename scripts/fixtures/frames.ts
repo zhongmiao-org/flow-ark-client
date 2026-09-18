@@ -1,6 +1,6 @@
 import { createServer, type Server } from 'node:http';
 
-export async function startFrameFixture() {
+export async function startFrameFixture(options: { crossSite?: boolean } = {}) {
   const state = { clicks: [] as string[], uploads: [] as Buffer[] };
   const listen = (server: Server) =>
     new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -45,7 +45,7 @@ export async function startFrameFixture() {
       </script>`);
   });
   await listen(embedded);
-  const origin = `http://127.0.0.1:${(embedded.address() as any).port}`;
+  const origin = `http://${options.crossSite ? 'localhost' : '127.0.0.1'}:${(embedded.address() as any).port}`;
   const top = createServer((_req, res) => {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.end(`<!doctype html><title>Local frame scopes</title><p id="value">top</p><p id="echo">top unchanged</p>
