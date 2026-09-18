@@ -41,6 +41,7 @@ import {
 import type { Bootstrap, FlowRecord, Step, Run, Event, Template } from '../shared/types';
 import TemplateConfiguration from './TemplateConfiguration';
 import ScriptPackages from './ScriptPackages';
+import EmbeddedBrowserPanel from './EmbeddedBrowserPanel';
 import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 const CodeEditor = lazy(() => import('./CodeEditor'));
 const initial: Bootstrap = {
@@ -322,6 +323,19 @@ export default function App() {
             工作空间 <ChevronRight size={14} />{' '}
             {section === 'editor' ? '流程编辑' : nav.find((n) => n[0] === section)?.[1]}
           </div>
+          {data.browsers.some((b) => b.product === 'embedded') && (
+            <button
+              className="embedded-show"
+              onClick={() =>
+                action(async () => {
+                  const state = await api('browser.embedded.visibility', { visible: true });
+                  if (!state.started) setNotice('先运行已绑定内置浏览器的流程，再显示网页。');
+                })
+              }
+            >
+              <Globe size={15} /> 显示内置网页
+            </button>
+          )}
           <span className="machine">
             <span className="local-dot" />
             {data.fault ? '存储异常' : active ? '任务运行中' : '本机已就绪'}
@@ -1066,7 +1080,7 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose 
               <option value="">尚未绑定</option>
               {browsers.map((b: any) => (
                 <option key={b.id} value={b.id}>
-                  {b.product} {b.version}
+                  {b.product === 'embedded' ? 'FlowArk 内置浏览器' : b.product} {b.version}
                 </option>
               ))}
             </select>
@@ -1385,7 +1399,11 @@ function SettingsView({ data, action }: any) {
     [model, setModel] = useState('gpt-5.3-codex');
   return (
     <div className="page settings-page">
-      <Heading title="连接你的本机能力" text="选择已有浏览器，配置自己的 AI 接口。" />
+      <Heading title="连接你的本机能力" text="选择内置或本机浏览器，配置自己的 AI 接口。" />
+      <EmbeddedBrowserPanel
+        enabled={data.browsers.some((b: any) => b.product === 'embedded')}
+        action={action}
+      />
       <section className="panel">
         <div className="section-row">
           <div className="row">
@@ -1412,7 +1430,7 @@ function SettingsView({ data, action }: any) {
         </div>
         <p>使用专用自动化会话。Chrome 为首个验证目标，Firefox / Safari 的兼容结果单独记录。</p>
         {[
-          ...data.browsers,
+          ...data.browsers.filter((b: any) => b.product !== 'embedded'),
           ...candidates.filter((c) => !data.browsers.some((b: any) => b.id === c.id)),
         ].map((b) => (
           <div className="browser-row" key={b.id}>

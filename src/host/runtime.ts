@@ -50,6 +50,7 @@ export class Runtime {
   readonly recruiting: RecruitingCoordinator;
   private active?: Active;
   private stopping = false;
+  private suspended = false;
   private ticking = false;
   private lastTick = Date.now();
   private timer?: NodeJS.Timeout;
@@ -198,6 +199,7 @@ export class Runtime {
     return prepared;
   }
   private assertAdmitting() {
+    if (this.suspended) throw new Error('系统正在休眠，恢复后请重新开始运行');
     if (this.stopping || this.store.fault) throw new Error(this.store.fault ?? '应用正在退出');
   }
   async enqueue(
@@ -277,7 +279,7 @@ export class Runtime {
     });
   }
   private async pump() {
-    if (this.active || this.stopping || this.store.fault) return;
+    if (this.active || this.stopping || this.suspended || this.store.fault) return;
     const run = this.store.list<Run>('run').find((r) => r.state === 'QUEUED');
     if (!run) return;
     const proc = child(join(this.dir, 'worker.cjs'), this.executable);
@@ -546,7 +548,7 @@ export class Runtime {
       }
   }
   async tick(time = Date.now()) {
-    if (this.stopping || this.ticking || this.store.fault) return;
+    if (this.stopping || this.suspended || this.ticking || this.store.fault) return;
     this.ticking = true;
     try {
       if (time - this.lastTick > 10000) this.skipMissed('sleep-or-clock-gap', time);
@@ -583,6 +585,31 @@ export class Runtime {
   }
   async request(method: string, args: any = {}): Promise<any> {
     switch (method) {
+      case 'system.suspend': {
+        this.suspended = true;
+        const runs = this.store.list<Run>('run').filter((r) => !terminal.has(r.state));
+        for (const run of runs) {
+          this.store.event(run.id, 'system-suspend', '', {
+            reason: '休眠停止运行；外部结果需核对，不自动重放',
+          });
+          await this.control(run.id, 'cancel');
+        }
+        if (runs.length) {
+          this.store.attention(
+            'limitation',
+            '休眠已停止任务，请核对结果后重新运行',
+            { runIds: runs.map((r) => r.id) },
+            'suspend:' + runs.map((r) => r.id).join(','),
+          );
+          void this.system('notification', {}).catch(() => {});
+        }
+        return true;
+      }
+      case 'system.resume':
+        this.skipMissed('system-resume');
+        this.lastTick = Date.now();
+        this.suspended = false;
+        return true;
       case 'ai.test': {
         const input = {
           provider: args.provider,
@@ -661,6 +688,15 @@ export class Runtime {
           throw new Error('产物文件已移动、删除或不可访问');
         return item.path;
       }
+      case 'browser.embedded.enable': {
+        const b = await this.system('browser.embedded.binding', {});
+        this.store.put('browser', b.id, b);
+        return b;
+      }
+      case 'browser.embedded.visibility':
+        return this.sessions.embeddedVisibility(args.visible);
+      case 'browser.embedded.status':
+        return this.sessions.embeddedStatus();
       case 'browser.discover':
         return discoverBrowsers();
       case 'script.package.inspect':

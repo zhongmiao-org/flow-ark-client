@@ -53,7 +53,7 @@ export type Event = {
 };
 export type BrowserBinding = {
   id: string;
-  product: 'chrome' | 'firefox' | 'safari';
+  product: 'chrome' | 'firefox' | 'safari' | 'embedded';
   executable: string;
   version: string;
   driver?: string;

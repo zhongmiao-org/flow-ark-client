@@ -27,7 +27,7 @@ export function assertBrowserOperations(
       throw new Error(
         'Chrome 153.0.8010.48 在本机存在原生下载恢复崩溃，当前阻止自动下载；其他操作可单独调试。不会点击或重试。',
       );
-    if (binding.product !== 'chrome' && command.operation === 'download')
+    if (!['chrome', 'embedded'].includes(binding.product) && command.operation === 'download')
       throw new Error('本机 Selenium 下载能力尚未验证');
     if (binding.product === 'safari' && command.operation === 'upload')
       throw new Error('Safari 上传需单独实测，当前禁止');

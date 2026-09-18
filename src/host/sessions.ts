@@ -47,6 +47,9 @@ export class Sessions {
           'start',
           {
             binding,
+            executable: this.executable,
+            appPath: join(this.dir, '..'),
+            visible: false,
             profile: join(this.dataPath, 'browser-profiles', binding.id),
           },
           30000,
@@ -101,6 +104,18 @@ export class Sessions {
     } finally {
       if (this.closing.get(id) === own) this.closing.delete(id);
     }
+  }
+  async embeddedVisibility(visible: boolean) {
+    const session = this.sessions.get('embedded');
+    if (!session) return { started: false, visible: false, url: '' };
+    await session.ready;
+    return session.rpc.call('visibility', { visible });
+  }
+  async embeddedStatus() {
+    const session = this.sessions.get('embedded');
+    if (!session) return { started: false, visible: false, url: '' };
+    await session.ready;
+    return session.rpc.call('status');
   }
   async shutdown() {
     this.stopping = true;

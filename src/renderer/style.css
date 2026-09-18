@@ -1394,3 +1394,17 @@ td small {
   color: #718078;
   margin-top: 3px;
 }
+
+.embedded-panel {
+  border-top: 3px solid var(--accent, #297c70);
+}
+.embedded-url {
+  display: block;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.embedded-show {
+  margin-left: auto;
+  margin-right: 16px;
+}

@@ -69,6 +69,11 @@ export async function discoverBrowsers() {
   return found;
 }
 export async function validateBinding(b: BrowserBinding) {
+  if (b.product === 'embedded') {
+    if (b.id !== 'embedded' || !process.versions.electron)
+      throw new Error('当前运行环境不支持内置浏览器');
+    return { ...b, version: process.versions.chrome ?? b.version };
+  }
   const current = await inspectBrowser(b.executable, b.driver);
   if (current.product !== b.product || current.id !== b.id)
     throw new Error('浏览器安装已变化，请重新选择');
