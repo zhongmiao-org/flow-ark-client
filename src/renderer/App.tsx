@@ -4,6 +4,7 @@ import { ReactFlow, Background, Controls } from '@xyflow/react';
 import { buildDiagram } from './flow-diagram';
 import { flowNodeTypes, flowEdgeTypes, FitDiagram } from './FlowNode';
 import { kinds } from './node-kinds';
+import ActionLibrary from './ActionLibrary';
 import '@xyflow/react/dist/style.css';
 import {
   Workflow,
@@ -78,63 +79,6 @@ const actions: Record<string, string> = {
   acceptPhone: '接受手机号',
 };
 const uid = () => crypto.randomUUID();
-function newStep(type: string): Step {
-  const defaults: Record<string, object> = {
-    value: { value: '你好，序舟' },
-    assert: { actual: true, operator: 'equals', expected: true },
-    http: {
-      url: 'https://example.com',
-      method: 'GET',
-      headers: {},
-      body: null,
-    },
-    script: {
-      language: 'ts',
-      code: 'export default async ({ input, logger, progress }) => {\n  logger.info("开始处理");\n  progress(1, 1);\n  return input;\n};',
-      input: {},
-      dependencies: [],
-    },
-    file: {
-      operation: 'write',
-      binding: 'workspace',
-      name: 'result.txt',
-      content: '示例',
-    },
-    excel: {
-      operation: 'write',
-      binding: 'workspace',
-      name: 'result.xlsx',
-      rows: [
-        ['名称', '数量'],
-        ['示例', 1],
-      ],
-    },
-    browser: {
-      version: 2,
-      framePath: [],
-      operation: 'navigate',
-      selector: '',
-      value: 'https://example.com',
-    },
-    human: { message: '请完成当前操作后点击继续' },
-    condition: {
-      actual: true,
-      operator: 'equals',
-      expected: true,
-      then: [],
-      else: [],
-    },
-    loop: { items: [1, 2, 3], body: [] },
-    recruiting: { platform: 'boss', batchLimit: 5 },
-  };
-  if (!defaults[type]) throw new Error('未知节点类型');
-  return {
-    id: 'n_' + uid().slice(0, 8),
-    type,
-    version: 1,
-    ...structuredClone(defaults[type]),
-  } as Step;
-}
 
 function flatten(steps: Step[]): Step[] {
   return steps.flatMap((n) => [
@@ -767,7 +711,6 @@ function TemplateCard({ t, create }: { t: Template; create: () => void }) {
 }
 function Editor({ record: r, setRecord, selected, setSelected, browsers, choose }: any) {
   const [tab, setTab] = useState('node');
-  const [type, setType] = useState('value');
   const [raw, setRaw] = useState('');
   const [invalid, setInvalid] = useState('');
   const selectedNode = flatten(r.flow.steps).find((n: Step) => n.id === selected);
@@ -780,46 +723,23 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose 
       ...r,
       flow: { ...r.flow, steps: changeSteps(r.flow.steps, selected, fn) },
     });
-  const append = (branch?: string) => {
-    const n = newStep(type);
-    if (branch && selectedNode) {
-      patch((old) => ({ ...old, [branch]: [...(old as any)[branch], n] }));
-    } else setRecord({ ...r, flow: { ...r.flow, steps: [...r.flow.steps, n] } });
+  const append = (n: Step, owner?: string, branch?: 'then' | 'else' | 'body') => {
+    const steps =
+      owner && branch
+        ? changeSteps(r.flow.steps, owner, (old) => ({
+            ...old,
+            [branch]: [...(old as any)[branch], n],
+          }))
+        : [...r.flow.steps, n];
+    setRecord({ ...r, flow: { ...r.flow, steps } });
     setSelected(n.id);
+    setTab('node');
   };
   const { nodes, edges, stepCount } = buildDiagram(r.flow.steps, selected);
   const layoutKey = nodes.map((n) => `${n.id}:${n.position.x}:${n.position.y}`).join('|');
   return (
     <div className="editor-layout">
-      <aside className="node-library">
-        <span className="eyebrow">节点库</span>
-        {Object.entries(kinds)
-          .filter(([key]) => key !== 'recruiting')
-          .map(([key, { label, icon: Icon }]) => (
-            <button
-              className={type === key ? 'selected' : ''}
-              key={key}
-              onClick={() => setType(key)}
-            >
-              <Icon size={16} />
-              {label}
-            </button>
-          ))}
-        <button className="primary" onClick={() => append()}>
-          <Plus size={15} />
-          添加到主流程
-        </button>
-        {selectedNode?.type === 'condition' && (
-          <>
-            <button onClick={() => append('then')}>添加到成立分支</button>
-            <button onClick={() => append('else')}>添加到否则分支</button>
-          </>
-        )}
-        {selectedNode?.type === 'loop' && (
-          <button onClick={() => append('body')}>添加到循环体</button>
-        )}
-        <p>显式分支和串行循环，按步骤顺序执行。</p>
-      </aside>
+      <ActionLibrary key={r.id} steps={r.flow.steps} add={append} />
       <div className="canvas">
         <ReactFlow
           nodes={nodes}

@@ -142,9 +142,7 @@ try {
   });
   await close();
   await layout('closed-again');
-  await page.locator('.node-library').getByRole('button', { name: '浏览器', exact: true }).click();
-  await page.getByRole('button', { name: '添加到主流程', exact: true }).click();
-  await page.getByLabel('操作', { exact: true }).selectOption('fill');
+  await page.getByRole('button', { name: '添加 填写内容', exact: true }).click();
   await page.locator('#browser-selector').fill('#full-name');
   await page.getByLabel('填写内容', { exact: true }).fill('未保存的配置');
   const selected = (await page.locator('.flow-shape.is-selected').getAttribute('data-step-id'))!;
@@ -186,14 +184,12 @@ try {
   await resize(1040, 700);
   await layout('final-minimum', selected);
   // The horizontal library remains operable without scrolling the whole editor.
-  await page
-    .locator('.node-library')
-    .getByRole('button', { name: '条件分支', exact: true })
-    .click();
-  await page.getByRole('button', { name: '添加到主流程', exact: true }).click();
+  await page.getByLabel('搜索动作', { exact: true }).fill('条件');
+  await page.getByRole('button', { name: '添加 条件分支', exact: true }).click();
   assert.equal(await page.locator('.flow-shape[data-shape="decision"]').count(), 1);
   const condition = (await page.locator('.flow-shape.is-selected').getAttribute('data-step-id'))!;
-  await page.getByRole('button', { name: '添加到成立分支', exact: true }).click();
+  await page.getByLabel('动作添加位置', { exact: true }).selectOption(condition + ':then');
+  await page.getByRole('button', { name: '添加 条件分支', exact: true }).click();
   assert.equal(await page.locator('.flow-shape[data-shape="decision"]').count(), 2);
   // A selected step near the end of a long flow must remain the resize target.
   const seed = (await state()).flows[0];
