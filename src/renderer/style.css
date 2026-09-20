@@ -1042,6 +1042,20 @@ main {
   color: #b56958;
   font-size: 11px;
 }
+.artifact-row {
+  margin: 14px 0;
+}
+.artifact-description {
+  flex: 1;
+  min-width: 0;
+}
+.artifact-description p {
+  margin: 4px 0;
+}
+.artifact-row > button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 .path-text {
   font-family: Menlo, monospace;
   font-size: 10px;

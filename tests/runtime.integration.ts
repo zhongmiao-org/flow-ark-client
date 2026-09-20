@@ -551,16 +551,21 @@ test('real Worker fills workbook, archives it and preserves run history when art
     assert.equal(detail.artifacts.length, 2);
     assert.ok(detail.artifacts.every((a: any) => a.available));
     const output = detail.artifacts.find((a: any) => a.name === 'filled.xlsx');
-    assert.equal(
-      await runtime.request('artifact.resolve', { id: output.artifactId }),
-      join(path, 'filled.xlsx'),
-    );
+    assert.equal(await runtime.request('artifact.resolve', { id: output.artifactId }), output.path);
+    assert.notEqual(output.path, join(path, 'filled.xlsx'));
     const zip = await JSZip.loadAsync(await readFile(join(path, 'archive.zip')));
     const restored = new ExcelJS.Workbook();
     await restored.xlsx.load((await zip.file('filled.xlsx')!.async('nodebuffer')) as any);
     assert.equal(restored.worksheets[0].getCell('A1').value, 'after');
     assert.equal(restored.worksheets[0].getCell('B1').value, 9);
     await rm(join(path, 'filled.xlsx'));
+    assert.equal(
+      (await runtime.request('run.detail', { id: run.id })).artifacts.find(
+        (a: any) => a.artifactId === output.artifactId,
+      ).integrity,
+      'verified',
+    );
+    await rm(output.path);
     detail = await runtime.request('run.detail', { id: run.id });
     assert.equal(detail.run.state, 'SUCCEEDED');
     assert.equal(
@@ -572,7 +577,7 @@ test('real Worker fills workbook, archives it and preserves run history when art
       /移动、删除/,
     );
     await assert.rejects(runtime.request('artifact.resolve', { id: 'unknown' }), /不存在/);
-    await symlink(join(path, 'template.xlsx'), join(path, 'filled.xlsx'));
+    await symlink(join(path, 'template.xlsx'), output.path);
     await assert.rejects(
       runtime.request('artifact.resolve', { id: output.artifactId }),
       /移动、删除/,
@@ -1456,5 +1461,218 @@ test('picker requests require a paused boundary and resume clears picking before
   } finally {
     release();
     await runtime.shutdown();
+  }
+});
+
+test('real Worker preserves each registration across repeated outputs, later runs and host restart; legacy files remain unverified', async () => {
+  const path = await realpath(await mkdtemp(join(tmpdir(), 'flowark-history-copies-')));
+  const key = randomBytes(32);
+  const start = () =>
+    new Runtime(path, resolve('dist'), process.execPath, Buffer.from(key), async () => []);
+  let runtime = start();
+  try {
+    const steps: Flow['steps'] = ['first', 'later'].map((content, i) => ({
+      id: 'write' + i,
+      type: 'file',
+      version: 1,
+      operation: 'write',
+      binding: 'work',
+      name: 'result.txt',
+      content,
+    }));
+    runtime.saveFlow({ ...base, steps }, { files: { work: path }, credentials: [] });
+    const run = await runtime.enqueue(base.id);
+    await until(() =>
+      ['SUCCEEDED', 'FAILED'].includes(runtime.store.get<Run>('run', run.id)?.state ?? ''),
+    );
+    let detail = await runtime.request('run.detail', { id: run.id });
+    assert.equal(detail.run.state, 'SUCCEEDED', detail.run.error);
+    const [first, later] = detail.artifacts;
+    assert.equal(detail.artifacts.length, 2);
+    assert.notEqual(first.path, later.path);
+    assert.equal(await readFile(first.path, 'utf8'), 'first');
+    assert.equal(await readFile(later.path, 'utf8'), 'later');
+    runtime.saveFlow(
+      { ...base, steps: [{ ...steps[0], content: 'third' } as any] },
+      { files: { work: path }, credentials: [] },
+    );
+    const next = await runtime.enqueue(base.id);
+    await until(() =>
+      ['SUCCEEDED', 'FAILED'].includes(runtime.store.get<Run>('run', next.id)?.state ?? ''),
+    );
+    assert.equal(runtime.store.get<Run>('run', next.id)?.state, 'SUCCEEDED');
+    assert.equal(await readFile(join(path, 'result.txt'), 'utf8'), 'third');
+    assert.equal(await readFile(first.path, 'utf8'), 'first');
+    assert.equal(await readFile(later.path, 'utf8'), 'later');
+    runtime.store.put('artifact', 'legacy', {
+      artifactId: 'legacy',
+      runId: run.id,
+      name: 'legacy.txt',
+      path: join(path, 'legacy.txt'),
+      size: 4,
+      time: new Date().toISOString(),
+    });
+    await writeFile(join(path, 'legacy.txt'), 'then');
+    await rm(join(path, 'result.txt'));
+    const events = runtime.store.events(run.id);
+    await runtime.shutdown();
+    runtime.store.close();
+    runtime = start();
+    detail = await runtime.request('run.detail', { id: run.id });
+    assert.equal(detail.run.state, 'SUCCEEDED');
+    assert.deepEqual(
+      detail.artifacts.map((a: any) => a.integrity),
+      ['verified', 'verified', 'unverified'],
+    );
+    await writeFile(join(path, 'legacy.txt'), 'now!');
+    assert.equal(
+      await runtime.request('artifact.resolve', { id: 'legacy' }),
+      join(path, 'legacy.txt'),
+    );
+    await writeFile(first.path, 'other');
+    detail = await runtime.request('run.detail', { id: run.id });
+    assert.equal(detail.artifacts[0].integrity, 'changed');
+    await assert.rejects(
+      runtime.request('artifact.resolve', { id: first.artifactId }),
+      /副本内容已改动/,
+    );
+    await rm(join(path, 'legacy.txt'));
+    await assert.rejects(runtime.request('artifact.resolve', { id: 'legacy' }), /移动、删除/);
+    await symlink(later.path, join(path, 'legacy.txt'));
+    assert.equal(
+      (await runtime.request('run.detail', { id: run.id })).artifacts[2].available,
+      false,
+    );
+    assert.deepEqual(runtime.store.events(run.id), events);
+    assert.equal(runtime.store.get<Run>('run', run.id)?.state, 'SUCCEEDED');
+  } finally {
+    await runtime.shutdown();
+    runtime.store.close();
+    key.fill(0);
+    await rm(path, { recursive: true, force: true });
+  }
+});
+
+test('artifact event failure rolls back its index and removes only the unpublished copy', async () => {
+  const path = await realpath(await mkdtemp(join(tmpdir(), 'flowark-artifact-transaction-')));
+  const runtime = new Runtime(
+    path,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  const files = (runtime as any).artifactFiles;
+  const capture = files.capture.bind(files);
+  let copied: any;
+  files.capture = async (...args: any[]) => (copied = await capture(...args));
+  const event = runtime.store.event.bind(runtime.store);
+  runtime.store.event = (...args) => {
+    if (args[1] === 'artifact') throw new Error('fixture artifact event failure');
+    return event(...args);
+  };
+  try {
+    runtime.saveFlow(
+      {
+        ...base,
+        steps: [
+          {
+            id: 'output',
+            type: 'file',
+            version: 1,
+            operation: 'write',
+            binding: 'work',
+            name: 'result.txt',
+            content: 'keep',
+          },
+          {
+            id: 'later',
+            type: 'file',
+            version: 1,
+            operation: 'write',
+            binding: 'work',
+            name: 'later.txt',
+            content: 'must not run',
+          },
+        ],
+      },
+      { files: { work: path }, credentials: [] },
+    );
+    const run = await runtime.enqueue(base.id);
+    await until(() => runtime.store.get<Run>('run', run.id)?.state === 'FAILED');
+    assert.match(runtime.store.get<Run>('run', run.id)!.error!, /fixture artifact event failure/);
+    assert.equal(runtime.store.list('artifact').length, 0);
+    assert.equal(runtime.store.events(run.id).filter((e) => e.type === 'artifact').length, 0);
+    assert.equal(await readFile(join(path, 'result.txt'), 'utf8'), 'keep');
+    await assert.rejects(access(copied.path), { code: 'ENOENT' });
+    await assert.rejects(access(join(path, 'later.txt')), { code: 'ENOENT' });
+  } finally {
+    await runtime.shutdown();
+    runtime.store.close();
+    await rm(path, { recursive: true, force: true });
+  }
+});
+
+test('cancelled registration discards a late completed copy without publishing or replaying the business file', async () => {
+  const path = await realpath(await mkdtemp(join(tmpdir(), 'flowark-artifact-cancel-')));
+  const runtime = new Runtime(
+    path,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  const files = (runtime as any).artifactFiles;
+  const capture = files.capture.bind(files),
+    discard = files.discard.bind(files);
+  let copied: any,
+    discarded = false,
+    release!: () => void;
+  const gate = new Promise<void>((r) => {
+    release = r;
+  });
+  files.capture = async (...args: any[]) => {
+    copied = await capture(...args);
+    await gate;
+    return copied;
+  };
+  files.discard = async (...args: any[]) => {
+    await discard(...args);
+    discarded = true;
+  };
+  try {
+    runtime.saveFlow(
+      {
+        ...base,
+        steps: [
+          {
+            id: 'output',
+            type: 'file',
+            version: 1,
+            operation: 'write',
+            binding: 'work',
+            name: 'result.txt',
+            content: 'keep',
+          },
+          { id: 'later', type: 'value', version: 1, value: 'must not run' },
+        ],
+      },
+      { files: { work: path }, credentials: [] },
+    );
+    const run = await runtime.enqueue(base.id);
+    await until(() => !!copied);
+    await runtime.control(run.id, 'cancel');
+    release();
+    await until(() => discarded && runtime.store.get<Run>('run', run.id)?.state === 'CANCELLED');
+    assert.equal(runtime.store.list('artifact').length, 0);
+    assert.equal(runtime.store.events(run.id).filter((e) => e.type === 'artifact').length, 0);
+    assert.ok(!runtime.store.events(run.id).some((e) => e.nodeInstance === 'later'));
+    assert.equal(await readFile(join(path, 'result.txt'), 'utf8'), 'keep');
+    await assert.rejects(access(copied.path), { code: 'ENOENT' });
+  } finally {
+    release();
+    await runtime.shutdown();
+    runtime.store.close();
+    await rm(path, { recursive: true, force: true });
   }
 });

@@ -1379,13 +1379,24 @@ function RunDetail({
         <>
           <h3>运行产物</h3>
           {d.artifacts.map((a: any) => (
-            <div key={a.artifactId} className="row">
-              <p className="path-text">
-                {a.name} · {a.size} 字节 · {a.path}
-                {!a.available && <span className="field-error"> · 文件已移动、删除或不可访问</span>}
-              </p>
+            <div key={a.artifactId} className="row artifact-row" data-artifact-id={a.artifactId}>
+              <div className="artifact-description">
+                <p>
+                  {a.name} · {a.size} 字节
+                </p>
+                <span className={!a.available ? 'field-error' : undefined}>
+                  {a.integrity === 'verified'
+                    ? '已保存副本'
+                    : a.integrity === 'changed'
+                      ? '副本内容已改动'
+                      : a.integrity === 'unverified'
+                        ? '旧记录，未保存副本'
+                        : '文件已移动、删除或不可访问'}
+                </span>
+                <p className="path-text">{a.path}</p>
+              </div>
               <button disabled={!a.available} onClick={() => reveal(a.artifactId)}>
-                在文件夹中显示
+                {a.storage === 'snapshot-v1' ? '定位副本' : '定位当前文件'}
               </button>
             </div>
           ))}
