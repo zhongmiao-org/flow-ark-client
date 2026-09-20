@@ -6,10 +6,9 @@ import { access, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { syncBuiltinESMExports } from 'node:module';
-import { join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { Runtime } from '../src/host/runtime';
-import { child } from '../src/host/processes';
 import { Rpc } from '../src/shared/rpc';
 import type { Flow, Run, Step } from '../src/shared/types';
 
@@ -18,6 +17,26 @@ const terminal = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED']);
 const delay = (ms: number) => new Promise<void>((done) => setTimeout(done, ms));
 const options = { timeout: 60000, skip: process.platform === 'win32' };
 const secret = 'fictional-supervision-key-123456';
+const candidateExecutable = process.env.FLOWARK_TEST_EXECUTABLE;
+if (candidateExecutable)
+  assert.ok(isAbsolute(candidateExecutable), 'candidate executable must be an absolute path');
+const executable = candidateExecutable || process.execPath;
+const entryDir = candidateExecutable
+  ? resolve(dirname(candidateExecutable), '..', 'Resources', 'app.asar', 'dist')
+  : resolve('dist');
+const candidateEsbuild = candidateExecutable
+  ? resolve(
+      dirname(candidateExecutable),
+      '..',
+      'Resources',
+      'app.asar.unpacked',
+      'node_modules',
+      '@esbuild',
+      `${process.platform}-${process.arch}`,
+      'bin',
+      'esbuild',
+    )
+  : undefined;
 type ProcessEvidence = {
   pid: number;
   state: 'running' | 'zombie' | 'absent';
@@ -145,7 +164,20 @@ async function fixture(t: TestContext) {
   const expectedShutdownFailures = new Set<Runtime>();
   const receipts: Receipt[] = [];
   const groups = new Set<number>();
-  const evidence: any = { test: t.name, directory, processes: [], receipts, cleanup: [] };
+  const evidence: any = {
+    test: t.name,
+    directory,
+    mode: candidateExecutable
+      ? 'candidate-processes-with-source-runtime'
+      : 'built-processes-with-source-runtime',
+    entryDir,
+    executable,
+    fixtureRuntime:
+      'imported source Runtime; the Host SIGKILL cases additionally fork the selected host.cjs',
+    processes: [],
+    receipts,
+    cleanup: [],
+  };
   const server = createServer((request, response) => {
     void (async () => {
       receipts.push({
@@ -342,13 +374,7 @@ async function fixture(t: TestContext) {
   }
 
   const open = async () => {
-    const runtime = new Runtime(
-      directory,
-      resolve('dist'),
-      process.execPath,
-      Buffer.from(key),
-      system,
-    );
+    const runtime = new Runtime(directory, entryDir, executable, Buffer.from(key), system);
     runtimes.add(runtime);
     await runtime.ready;
     return runtime;
@@ -514,7 +540,29 @@ for (const topLevel of [false, true])
     async (t) => {
       const f = await fixture(t),
         target = f.busy('host-busy', topLevel);
-      const host = child(resolve('dist/host.cjs'), process.execPath);
+      const hostEntry = join(entryDir, 'host.cjs');
+      // Match workbench's packaged Host environment. A standalone fork does not
+      // inherit Electron Main's app.asar.unpacked esbuild override automatically.
+      if (candidateEsbuild) await access(candidateEsbuild);
+      f.evidence.forkedHost = {
+        entry: hostEntry,
+        executable,
+        esbuildBinaryPath: candidateEsbuild ?? process.env.ESBUILD_BINARY_PATH ?? null,
+      };
+      const host = childProcess.fork(hostEntry, [], {
+        execPath: executable,
+        execArgv: [],
+        env: {
+          ...process.env,
+          ELECTRON_RUN_AS_NODE: '1',
+          SE_AVOID_BROWSER_DOWNLOAD: 'true',
+          SE_OFFLINE: 'true',
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1',
+          ...(candidateEsbuild ? { ESBUILD_BINARY_PATH: candidateEsbuild } : {}),
+        },
+        stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+        detached: true,
+      });
       f.ownedChildren.add(host);
       const rpc = new Rpc((message) => host.send(message), system);
       host.on('message', (message) => void rpc.receive(message as any));
@@ -524,7 +572,7 @@ for (const topLevel of [false, true])
       await rpc.call('init', {
         dataPath: f.directory,
         key: f.key.toString('base64'),
-        executable: process.execPath,
+        executable,
       });
       const save = (id: string, steps: Step[]) =>
         rpc.call('flow.save', {
