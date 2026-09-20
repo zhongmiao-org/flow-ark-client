@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
 import { _electron as electron } from 'playwright-core';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { mkdtemp, mkdir, writeFile, readFile } from 'node:fs/promises';
+import { resolve, join } from 'node:path';
+import { formText } from './fixtures/form-lab-flow';
 import { startFormLab } from './fixtures/form-lab';
 const data = await mkdtemp('/private/tmp/flowark-picker-ui-');
 const lab = await startFormLab();
+await writeFile(join(data, 'sample.txt'), formText);
+await mkdir('test-results', { recursive: true });
 const app = await electron.launch({
   executablePath: process.env.FLOWARK_TEST_EXECUTABLE || (electronPath as unknown as string),
   args: process.env.FLOWARK_TEST_EXECUTABLE ? [] : [resolve('.')],
@@ -54,12 +57,23 @@ try {
     await page.getByLabel('删除节点', { exact: true }).click();
   }
   const add = async (operation: string) => {
-    await page
-      .locator('.node-library')
-      .getByRole('button', { name: '浏览器', exact: true })
-      .click();
-    await page.getByRole('button', { name: '添加到主流程', exact: true }).click();
-    await page.getByLabel('操作', { exact: true }).selectOption(operation);
+    const names: Record<string, string> = {
+      navigate: '打开网页',
+      fill: '填写内容',
+      check: '设置勾选状态',
+      select: '选择下拉选项',
+      read: '读取文字',
+      inputValue: '读取当前输入值',
+      wait: '等待可见',
+      click: '点击元素',
+      upload: '选择上传文件',
+      download: '点击并下载',
+      screenshot: '页面截图',
+      press: '按下表单按键',
+    };
+    await page.getByLabel('搜索动作', { exact: true }).fill(names[operation]);
+    await page.getByRole('button', { name: '添加 ' + names[operation], exact: true }).click();
+    assert.equal(await page.getByLabel('操作', { exact: true }).inputValue(), operation);
   };
   await add('navigate');
   await page.locator('#browser-url').fill(lab.url);
@@ -82,6 +96,24 @@ try {
       item.operation === 'check' ? false : '',
     );
   }
+  for (const item of [
+    { operation: 'wait', selector: '#full-name' },
+    { operation: 'read', selector: '#contacts-count' },
+    { operation: 'inputValue', selector: '#full-name' },
+    { operation: 'press', selector: '#full-name' },
+    { operation: 'click', selector: '#add-contact' },
+    { operation: 'upload', selector: '#attachment' },
+    { operation: 'download', selector: 'a[href="/fictional.txt"]' },
+    { operation: 'screenshot', selector: '' },
+  ]) {
+    await add(item.operation);
+    // Picker is covered above. Advanced CSS here targets fixture controls deterministically.
+    if (item.selector) await page.locator('#browser-selector').fill(item.selector);
+    if (item.operation === 'upload')
+      await page.getByLabel('目录内文件名', { exact: true }).fill('sample.txt');
+    if (item.operation === 'download')
+      await page.getByLabel('下载产物文件名', { exact: true }).fill('downloaded.txt');
+  }
   assert.equal(lab.state.attempts, 0);
   const editorImage = await app.evaluate(async ({ BrowserWindow }) =>
     (await BrowserWindow.getAllWindows()[0].capturePage()).toPNG().toString('base64'),
@@ -89,9 +121,18 @@ try {
   await writeFile('test-results/picker-editor.png', Buffer.from(editorImage, 'base64'));
   await page.getByRole('button', { name: '参数与绑定', exact: true }).click();
   await page.locator('.inspector select').selectOption('embedded');
+  await app.evaluate(({ dialog }, path) => {
+    const original = dialog.showOpenDialog;
+    dialog.showOpenDialog = (async () => {
+      dialog.showOpenDialog = original;
+      return { canceled: false, filePaths: [path] };
+    }) as any;
+  }, data);
+  await page.getByRole('button', { name: '选择 workspace 目录', exact: true }).click();
   await page.getByRole('button', { name: '保存', exact: true }).click();
   const flow = (await call('bootstrap')).flows.find((f: any) => f.flow.name === '从空白搭建表单');
-  assert.equal(flow.flow.steps.length, 5);
+  assert.equal(flow.flow.steps.length, 13);
+  assert.equal(new Set(flow.flow.steps.map((s: any) => s.operation)).size, 12);
   assert.equal(flow.bindings.browserId, 'embedded');
   await page.getByRole('button', { name: '我的流程', exact: true }).click();
   await page.getByRole('button', { name: '编辑 从空白搭建表单', exact: true }).click();
@@ -111,7 +152,7 @@ try {
       return true;
     }
   });
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 13; i++) {
     await page.getByRole('button', { name: '执行下一步', exact: true }).click();
     await wait(async () => {
       const d = await call('run.detail', { id: runId });
@@ -128,6 +169,27 @@ try {
     ),
     { name: '虚构拾取用户', radio: true, check: true, department: 'engineering' },
   );
+  assert.equal(await site("document.querySelector('#contacts-count').textContent"), '2 行');
+  assert.equal(await site("document.querySelector('#attachment').files[0].text()"), formText);
+  const result = await call('run.detail', { id: runId });
+  const downloaded = result.artifacts.find((a: any) => a.path.endsWith('/downloaded.txt'));
+  assert.ok(downloaded);
+  assert.equal(await readFile(downloaded.path, 'utf8'), formText);
+  const screenshot = result.artifacts.find((a: any) => a.path.endsWith('.png'));
+  assert.ok(screenshot);
+  const png = await readFile(screenshot.path);
+  assert.ok(png.length > 1000);
+  assert.equal(png.subarray(1, 4).toString(), 'PNG');
+  for (const operation of ['read', 'inputValue']) {
+    const node = flow.flow.steps.find((s: any) => s.operation === operation);
+    const event = result.events.find(
+      (e: any) => e.type === 'node-end' && e.nodeInstance === node.id,
+    );
+    assert.ok(event?.data.outputPreview.includes(operation === 'read' ? '1 行' : '虚构拾取用户'));
+  }
+  assert.equal(lab.state.attempts, 0);
+  evidence.operations = 12;
+  evidence.steps = 13;
   evidence.runId = runId;
   evidence.passed = true;
   const image = await app.evaluate(async ({ BrowserWindow }) =>

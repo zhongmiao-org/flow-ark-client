@@ -4,6 +4,7 @@ import type { Step } from '../shared/types';
 import ElementPicker from './ElementPicker';
 import type { ElementTarget } from '../shared/element-picker';
 import { formKeys } from '../core/browser-command';
+import { browserActions } from './browser-actions';
 
 type BrowserNode = Extract<Step, { type: 'browser' }>;
 export default function BrowserNodeConfiguration({
@@ -43,16 +44,7 @@ export default function BrowserNodeConfiguration({
         onChange={(e) => {
           const operation = e.target.value as BrowserNode['operation'];
           const nextPath: FramePath = ['navigate', 'screenshot'].includes(operation) ? [] : path;
-          const value =
-            operation === 'check'
-              ? true
-              : operation === 'select'
-                ? ''
-                : operation === 'press'
-                  ? 'Tab'
-                  : operation === 'inputValue'
-                    ? null
-                    : node.value;
+          const value = structuredClone(browserActions[operation].value);
           const version =
             node.version === 3 || ['select', 'check', 'inputValue', 'press'].includes(operation)
               ? 3
@@ -60,20 +52,7 @@ export default function BrowserNodeConfiguration({
           change({ ...node, version, operation, value, framePath: nextPath } as BrowserNode);
         }}
       >
-        {Object.entries({
-          navigate: '打开网页',
-          read: '读取文字',
-          click: '点击元素',
-          fill: '填写内容',
-          wait: '等待可见',
-          upload: '选择上传文件',
-          screenshot: '页面截图',
-          download: '点击并下载',
-          select: '选择下拉选项',
-          check: '设置勾选状态',
-          inputValue: '读取当前输入值',
-          press: '按下表单按键',
-        }).map(([value, label]) => (
+        {Object.entries(browserActions).map(([value, { label }]) => (
           <option key={value} value={value}>
             {label}
           </option>
@@ -287,6 +266,64 @@ export default function BrowserNodeConfiguration({
               </option>
             ))}
           </select>
+        </>
+      )}
+      {node.operation === 'upload' && (
+        <>
+          <label htmlFor="browser-file-binding">文件目录绑定</label>
+          <input
+            id="browser-file-binding"
+            value={
+              typeof node.value === 'object' && node.value && 'binding' in node.value
+                ? String(node.value.binding)
+                : ''
+            }
+            onChange={(e) =>
+              change({
+                ...node,
+                value: {
+                  binding: e.target.value,
+                  name:
+                    typeof node.value === 'object' && node.value && 'name' in node.value
+                      ? node.value.name
+                      : '',
+                },
+              })
+            }
+          />
+          <label htmlFor="browser-file-name">目录内文件名</label>
+          <input
+            id="browser-file-name"
+            placeholder="sample.txt"
+            value={
+              typeof node.value === 'object' && node.value && 'name' in node.value
+                ? String(node.value.name)
+                : ''
+            }
+            onChange={(e) =>
+              change({
+                ...node,
+                value: {
+                  binding:
+                    typeof node.value === 'object' && node.value && 'binding' in node.value
+                      ? node.value.binding
+                      : 'workspace',
+                  name: e.target.value,
+                },
+              })
+            }
+          />
+          <p className="note">在“参数与绑定”中选择此绑定对应的本机目录。</p>
+        </>
+      )}
+      {node.operation === 'download' && (
+        <>
+          <label htmlFor="browser-download-name">下载产物文件名</label>
+          <input
+            id="browser-download-name"
+            value={typeof node.value === 'string' ? node.value : ''}
+            onChange={(e) => change({ ...node, value: e.target.value })}
+          />
         </>
       )}
       {node.operation === 'inputValue' && (
