@@ -142,6 +142,9 @@ try {
   await label('新参数名称').fill('payload');
   await button('添加参数').click();
   await label('参数 payload').fill('fixture');
+  await label('新参数名称').fill('uploadSource');
+  await button('添加参数').click();
+  await literal('参数 uploadSource', 'json', '{"binding":"uploads","name":"source.txt"}');
   const get = await add('HTTP 请求', '获取本地数据');
   await label('请求地址').fill(url + '/data');
   await header('X-FlowArk', 'fixture');
@@ -283,8 +286,22 @@ try {
   await label('网页地址').fill(lab.url);
   await add('选择上传文件', '上传生成文本');
   await label('目标元素选择器').fill('#attachment');
-  await label('文件目录绑定').fill('work');
-  await label('目录内文件名').fill('source.txt');
+  await ref('上传文件', 'params.uploadSource');
+  await button('运行').click();
+  await page.getByRole('alert').filter({ hasText: '未绑定文件目录：uploads' }).waitFor();
+  assert.equal((await call('bootstrap')).runs.length, 0);
+  assert.equal(received.length, 0);
+  await assert.rejects(access(join(data, 'source.txt')), { code: 'ENOENT' });
+  await button('参数与绑定').click();
+  await app.evaluate(({ dialog }, path) => {
+    const original = dialog.showOpenDialog;
+    dialog.showOpenDialog = (async () => {
+      dialog.showOpenDialog = original;
+      return { canceled: false, filePaths: [path] };
+    }) as any;
+  }, data);
+  await button('选择 uploads 目录').click();
+  evidence.checks.push('parameter-upload-binding-discovery-and-admission-before-side-effects');
   assert.equal((await call('bootstrap')).runs.length, 0);
   assert.equal(received.length, 0);
   assert.equal(lab.state.attempts, 0);
@@ -292,9 +309,10 @@ try {
   let saved: any;
   await wait(async () => {
     saved = (await call('bootstrap')).flows.find((f: any) => f.flow.name === '资源节点表单验收');
-    return saved?.flow.steps.length === 13;
+    return saved?.flow.steps.length === 13 && saved?.bindings.files.uploads === data;
   });
   assert.equal(saved.bindings.files.work, data);
+  assert.equal(saved.bindings.files.uploads, data);
   assert.deepEqual(saved.flow.steps.find((n: any) => n.id === matrix).rows, matrixBefore);
   evidence.checks.push('form-only-setup-directory-binding-maps-matrix-paging-and-history');
   await button('我的流程').click();
