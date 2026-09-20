@@ -81,6 +81,11 @@ export type Attention = {
   read: boolean;
   time: string;
 };
+export type ExecutionObservation = {
+  observedAt: string;
+  // No Active owner does not prove that historical unknown resources exited.
+  active: { runId: string; phase: 'executing' | 'closing' } | null;
+};
 export type Bootstrap = {
   flows: FlowRecord[];
   runs: Run[];
@@ -91,6 +96,7 @@ export type Bootstrap = {
   templates: Template[];
   credentials: string[];
   fault?: string;
+  execution?: ExecutionObservation;
   runtimeBlock?: string;
   dataPath: string;
 };
