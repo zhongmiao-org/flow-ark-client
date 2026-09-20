@@ -1,6 +1,6 @@
 {
   "name": "flow-ark-client",
-  "version": "0.1.32",
+  "version": "0.1.33",
   "description": "FlowArk 序舟本地自动化工作台",
   "private": true,
   "type": "module",
@@ -8,7 +8,7 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "5f468263aa6b0dd0507ab43162a2b35482371ac8",
+    "governanceBaseline": "333273659ed5352832718d6b1604fea9f2f65ab4",
     "contractsVersion": "0.7.0",
     "contractsTag": "contracts-v0.7.0"
   },
@@ -23,7 +23,7 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "test:runtime": "node --import tsx --test tests/runtime.integration.ts tests/run-rerun.integration.ts tests/embedded-cleanup.integration.ts tests/script-supervision.integration.ts tests/storage-full.integration.ts",
+    "test:runtime": "node --import tsx --test tests/runtime.integration.ts tests/run-rerun.integration.ts tests/embedded-cleanup.integration.ts tests/script-supervision.integration.ts tests/storage-full.integration.ts tests/system-suspend.integration.ts",
     "check": "pnpm typecheck && pnpm test && pnpm build",
     "contracts:generate": "node scripts/generate-contracts.mjs",
     "test:browser": "node --import tsx scripts/browser-smoke.ts",
@@ -64,7 +64,8 @@
     "test:run-rerun": "node --import tsx scripts/run-rerun-smoke.ts",
     "test:embedded-close": "node --import tsx scripts/embedded-close-lifecycle.ts",
     "test:embedded-cleanup": "node --import tsx scripts/embedded-cleanup-smoke.ts",
-    "test:run-observation": "node --import tsx scripts/run-observation-smoke.ts"
+    "test:run-observation": "node --import tsx scripts/run-observation-smoke.ts",
+    "test:system-suspend": "node --import tsx scripts/system-suspend-smoke.ts"
   },
   "build": {
     "appId": "org.zhongmiao.flowark",
