@@ -15,6 +15,7 @@ import JSZip from 'jszip';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
+import { createServer } from 'node:http';
 import { Runtime } from '../src/host/runtime';
 import type { Flow, Run } from '../src/shared/types';
 import { Store } from '../src/host/store';
@@ -36,6 +37,130 @@ async function until(fn: () => boolean, timeout = 12000) {
     await new Promise((r) => setTimeout(r, 20));
   }
 }
+test('invalid legacy HTTP body references cannot save, enter a run or schedule, while scoped requests reach the real server', async () => {
+  const path = await mkdtemp(join(tmpdir(), 'flowark-http-references-'));
+  const received: unknown[] = [];
+  const server = createServer(async (req, res) => {
+    let body = '';
+    for await (const chunk of req) body += chunk;
+    received.push(JSON.parse(body));
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ received: true }));
+  });
+  await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
+  const url = `http://127.0.0.1:${(server.address() as any).port}/`;
+  const runtime = new Runtime(
+    path,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  const bindings = { files: { work: path }, credentials: [] };
+  const request: Extract<Flow['steps'][number], { type: 'http' }> = {
+    id: 'send',
+    type: 'http',
+    version: 1,
+    method: 'POST',
+    url,
+    headers: {},
+    body: null,
+  };
+  const bad: Flow = {
+    ...base,
+    id: 'invalid-old',
+    steps: [
+      {
+        id: 'write',
+        type: 'file',
+        version: 1,
+        operation: 'write',
+        binding: 'work',
+        name: 'must-not-write.txt',
+        content: 'unexpected',
+      },
+      { ...request, body: { nested: [{ $ref: 'steps.missing' }] } },
+    ],
+  };
+  try {
+    await assert.rejects(
+      runtime.request('flow.save', { flow: bad, bindings }),
+      /steps.missing.*send/,
+    );
+    assert.equal(runtime.store.get('flow', bad.id), undefined);
+    // Simulate a definition accepted and persisted by an older client.
+    const record = { id: bad.id, flow: bad, bindings, updatedAt: 'legacy' };
+    runtime.store.put('flow', bad.id, record);
+    runtime.store.put('version', 'legacy-version', { ...record, versionId: 'legacy-version' });
+    await assert.rejects(runtime.request('flow.run', { id: bad.id }), /steps.missing.*send/);
+    await assert.rejects(runtime.enqueue(bad.id, 'legacy-version'), /steps.missing.*send/);
+    await assert.rejects(
+      runtime.request('schedule.save', { flowId: bad.id, intervalMinutes: 1, timezone: 'UTC' }),
+      /steps.missing.*send/,
+    );
+    assert.equal(runtime.store.list('run').length, 0);
+    assert.equal(runtime.store.list('schedule').length, 0);
+    assert.equal(runtime.store.list('snapshot').length, 0);
+    assert.deepEqual(runtime.store.get('flow', bad.id), record);
+    assert.deepEqual(received, []);
+    await assert.rejects(access(join(path, 'must-not-write.txt')), { code: 'ENOENT' });
+    const good: Flow = {
+      ...base,
+      id: 'scoped-http',
+      parameters: { label: 'fixture' },
+      steps: [
+        { id: 'source', type: 'value', version: 1, value: 42 },
+        {
+          id: 'choose',
+          type: 'condition',
+          version: 1,
+          actual: true,
+          expected: true,
+          operator: 'equals',
+          else: [],
+          then: [
+            {
+              id: 'loop',
+              type: 'loop',
+              version: 1,
+              items: ['a', 'b'],
+              body: [
+                {
+                  ...request,
+                  body: {
+                    values: [
+                      { $ref: 'params.label' },
+                      { $ref: 'steps.source' },
+                      { $ref: 'item' },
+                      { $ref: 'index' },
+                    ],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    runtime.saveFlow(good, bindings);
+    const run = await runtime.request('flow.run', { id: good.id });
+    await until(() =>
+      ['SUCCEEDED', 'FAILED'].includes(runtime.store.get<Run>('run', run.id)!.state),
+    );
+    assert.equal(runtime.store.get<Run>('run', run.id)!.state, 'SUCCEEDED');
+    assert.deepEqual(received, [
+      { values: ['fixture', 42, 'a', 0] },
+      { values: ['fixture', 42, 'b', 1] },
+    ]);
+    const history = await runtime.request('run.detail', { id: run.id });
+    await assert.rejects(runtime.request('flow.run', { id: bad.id }), /steps.missing/);
+    assert.deepEqual(await runtime.request('run.detail', { id: run.id }), history);
+  } finally {
+    await runtime.shutdown();
+    runtime.store.close();
+    await new Promise<void>((done) => server.close(() => done()));
+  }
+});
 test('real debug Worker steps into branches and loops, freezes the draft, rejects duplicate controls and cancels before effects', async () => {
   const path = await mkdtemp(join(tmpdir(), 'flowark-debug-runtime-'));
   const runtime = new Runtime(

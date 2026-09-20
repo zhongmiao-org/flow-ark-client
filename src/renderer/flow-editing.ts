@@ -1,5 +1,5 @@
 import type { Step } from '../shared/types';
-import { referenceIssues } from '../shared/flow-references';
+import { nodeReferenceValues, referenceIssues } from '../shared/flow-references';
 export type Branch = 'then' | 'else' | 'body';
 export type Destination = {
   owner?: string;
@@ -193,8 +193,7 @@ function outputReferenceIssues(steps: Step[]) {
     for (const child of Object.values(value)) values(child, owner);
   }
   for (const node of nodes) {
-    const { then, else: otherwise, body, ...rest } = node as any;
-    values(rest, node.id);
+    values(nodeReferenceValues(node), node.id);
   }
   return issues;
 }
