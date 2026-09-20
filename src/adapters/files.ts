@@ -130,7 +130,10 @@ export async function fileOperation(
       await workbook.xlsx.readFile(path);
       const sheet = workbook.worksheets[0];
       const rows: any[] = [];
-      sheet?.eachRow((r) => rows.push((r.values as any[]).slice(1)));
+      sheet?.eachRow({ includeEmpty: true }, (row) => {
+        const values = (row.values as any[]).slice(1);
+        rows.push(Array.from(values, (value) => value ?? null));
+      });
       return rows;
     }
     if (n.operation === 'fill') {
@@ -159,7 +162,13 @@ export async function fileOperation(
       return artifact(path);
     }
     if (!Array.isArray(n.rows)) throw new Error('Excel rows 必须为数组');
-    workbook.addWorksheet('Sheet1').addRows(n.rows);
+    const rows = Array.from(n.rows, (row) => {
+      // A null cell records even a trailing empty row in the workbook.
+      if (row == null || (Array.isArray(row) && !row.length)) return [null];
+      // ExcelJS interprets arrays without their own index 0 as one-based sparse rows.
+      return Array.isArray(row) ? Array.from(row, (value) => value ?? null) : row;
+    });
+    workbook.addWorksheet('Sheet1').addRows(rows);
     await atomicWrite(path, (temporary) => workbook.xlsx.writeFile(temporary));
     return artifact(path);
   }

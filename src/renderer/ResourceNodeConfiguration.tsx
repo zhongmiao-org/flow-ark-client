@@ -159,7 +159,7 @@ export default function ResourceNodeConfiguration({
         </ValueField>
       )}
       {node.type === 'excel' && node.operation === 'read' && (
-        <p className="note">读取首个工作表，输出为行数组。</p>
+        <p className="note">读取首个工作表，保留空行和原始行列位置；行内空单元格输出为 null。</p>
       )}
       {node.type === 'excel' && node.operation === 'write' && (
         <MatrixValues
