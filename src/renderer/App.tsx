@@ -66,6 +66,8 @@ import LogicNodeConfiguration from './LogicNodeConfiguration';
 import ResourceNodeConfiguration from './ResourceNodeConfiguration';
 import ParameterConfiguration from './ParameterConfiguration';
 import RunHistory from './RunHistory';
+import { RunObservation, RunOutput } from './RunObservation';
+import { presentRun } from '../shared/run-presentation';
 import { runStateLabels } from '../shared/run-history';
 import { referenceChoices } from './value-references';
 import { referenceIssues } from '../shared/flow-references';
@@ -269,7 +271,11 @@ export default function App() {
     ['inbox', '待办与提醒', Bell],
     ['settings', '本地设置', Settings],
   ] as const;
-  const active = data.runOverview.active;
+  const observedActive = data.execution?.active;
+  const active = observedActive
+    ? ([data.runOverview.active, ...data.runs].find((run) => run?.id === observedActive.runId) ??
+      null)
+    : null;
   return (
     <div className={`app ${browserOpen ? 'with-browser' : ''}`}>
       <aside className="sidebar">
@@ -331,10 +337,23 @@ export default function App() {
               : data.runtimeBlock
                 ? '执行已停止'
                 : active
-                  ? '任务运行中'
-                  : '本机已就绪'}
+                  ? observedActive?.phase === 'closing'
+                    ? '任务收尾中'
+                    : '任务运行中'
+                  : data.execution
+                    ? '本机已就绪'
+                    : '正在读取执行状态'}
           </span>
         </header>
+        {data.fault && (
+          <div className="alert error storage-fault" role="alert">
+            <b>运行状态未能完整保存</b>
+            <span>
+              {data.fault}
+              。以下状态为最后成功保存的记录，当前执行和最终结果请核对；重开不会自动重放。
+            </span>
+          </div>
+        )}
         {data.runtimeBlock && (
           <div className="alert error" role="alert">
             <b>资源回收未确认</b>
@@ -376,10 +395,16 @@ export default function App() {
                 <small>独立保存 · 随时编辑</small>
               </div>
               <div>
-                <span>正在执行</span>
-                <strong>{active ? '01' : '00'}</strong>
+                <span>当前任务</span>
+                <strong>{active ? '01' : data.execution ? '00' : '—'}</strong>
                 <small>
-                  {active ? active.name : '运行槽空闲，可以开始新任务'}
+                  {active
+                    ? active.name + (observedActive?.phase === 'closing' ? ' · 正在收尾' : '')
+                    : data.fault || data.runtimeBlock
+                      ? '已停止接收新任务，请查看上方提示'
+                      : data.execution
+                        ? '运行槽空闲，可以开始新任务'
+                        : '当前执行情况尚未确定'}
                   {data.runOverview.queued > 0 && ` · ${data.runOverview.queued} 个排队中`}
                 </small>
               </div>
@@ -638,6 +663,7 @@ export default function App() {
               <RunDetail
                 key={detail.run.id}
                 detail={detail}
+                fault={data.fault}
                 open={(next) =>
                   setDetail((current: any) => (current?.run.id === detail.run.id ? next : current))
                 }
@@ -1345,6 +1371,7 @@ function AttentionContent({ detail: d }: { detail: any }) {
 }
 function RunDetail({
   detail: d,
+  fault,
   back,
   control,
   reveal,
@@ -1352,6 +1379,7 @@ function RunDetail({
   open,
 }: {
   detail: any;
+  fault?: string;
   open: (detail: any) => void;
   reload: () => Promise<void>;
   back: () => void;
@@ -1359,36 +1387,47 @@ function RunDetail({
   reveal: (id: string) => void;
 }) {
   const r: Run = d.run;
+  const observed = { ...d, fault: d.fault ?? fault };
+  const presentation = presentRun({ ...observed, output: undefined }, Date.now());
+  const terminal = ['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(r.state);
+  const controllable = presentation.activity === 'active' && !presentation.closing;
+  const lastSaved =
+    !terminal &&
+    (Boolean(observed.fault) || (r.state !== 'QUEUED' && presentation.activity !== 'active'));
   const pause = [...d.events].reverse().find((e: Event) => e.type === 'debug-pause');
   const results = d.events.filter((e: Event) => typeof e.data?.outputPreview === 'string');
   return (
     <>
-      <div className="section-row">
+      <div className="section-row run-detail-heading">
         <div className="row">
           <button onClick={back}>
             <ArrowLeft size={15} />
             全部记录
           </button>
           <h2>{r.name}</h2>
-          {badge(r.state)}
+          {lastSaved ? (
+            <span className="badge state-INTERRUPTED">最后保存：{status[r.state]}</span>
+          ) : (
+            badge(r.state)
+          )}
         </div>
         <div className="row">
-          {r.state === 'RUNNING' && (
+          {controllable && !observed.fault && r.state === 'RUNNING' && (
             <button onClick={() => control(r.id, 'pause')}>
               <Pause size={14} />
               步骤后暂停
             </button>
           )}
-          {['PAUSED', 'WAITING_INPUT'].includes(r.state) && (
+          {controllable && !observed.fault && ['PAUSED', 'WAITING_INPUT'].includes(r.state) && (
             <button onClick={() => control(r.id, 'resume')}>
               <Play size={14} />
               继续
             </button>
           )}
-          {r.state === 'PAUSED' && (
+          {controllable && !observed.fault && r.state === 'PAUSED' && (
             <button onClick={() => control(r.id, 'step')}>执行下一步</button>
           )}
-          {!['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(r.state) && (
+          {!terminal && (controllable || (r.state === 'QUEUED' && !observed.fault)) && (
             <button onClick={() => control(r.id, 'cancel')}>
               <Square size={14} />
               取消
@@ -1405,13 +1444,15 @@ function RunDetail({
         </span>
         <span>{format(r.createdAt)}</span>
       </div>
+      <RunObservation detail={observed} />
+      <RunOutput detail={observed} />
       <p className="note">{r.business}</p>
       <RunRerunPanel run={r} related={d.rerun} open={open} />
       <ArtifactCleanupPanel run={r} cleanup={d.artifactCleanup} changed={reload} />
       {r.debug && (
         <p className="note">逐步调试 · 每次执行下一步会实际操作页面；继续将连续运行剩余流程。</p>
       )}
-      {r.state === 'PAUSED' && pause && (
+      {controllable && r.state === 'PAUSED' && pause && (
         <div className="panel" aria-label="调试位置">
           <b>下一步：{pause.data.nodeName}</b>
           <p>

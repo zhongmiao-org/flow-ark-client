@@ -44,6 +44,7 @@ import type {
   Bootstrap,
   PreparedScripts,
   Template,
+  ExecutionObservation,
 } from '../shared/types';
 const terminal = new Set(['SUCCEEDED', 'FAILED', 'INTERRUPTED', 'CANCELLED']);
 type Active = {
@@ -165,8 +166,29 @@ export class Runtime {
       this.store.put('version', id, { ...record, ...prepared, versionId: id });
     return id;
   }
+  private observeExecution(): ExecutionObservation {
+    const active = this.active;
+    return {
+      observedAt: now(),
+      active: active
+        ? {
+            runId: active.id,
+            phase:
+              active.cancelling ||
+              active.workerClosing ||
+              active.interruption ||
+              active.abort.signal.aborted
+                ? 'closing'
+                : 'executing',
+          }
+        : null,
+    };
+  }
   async bootstrap(): Promise<Bootstrap> {
     await this.ready.catch(() => {});
+    // Finish external reads before sampling synchronous history and its current
+    // owner. A slow credential service must not attach a newer owner to old runs.
+    const credentials = await this.system('credentials.list', {});
     const runs = this.store.list<Run>('run').reverse();
     return {
       flows: this.store
@@ -196,10 +218,11 @@ export class Runtime {
             : item;
         }),
       templates,
-      credentials: await this.system('credentials.list', {}),
+      credentials,
       fault: this.store.fault,
       runtimeBlock: this.executionBlock(),
       dataPath: this.dataPath,
+      execution: this.observeExecution(),
     };
   }
   async preflight(record: FlowRecord & Partial<PreparedScripts>): Promise<PreparedScripts> {
@@ -1036,22 +1059,30 @@ export class Runtime {
         return this.artifactCleanup.preview(args.id);
       case 'run.artifacts.clear':
         return this.artifactCleanup.clear(args.id, args.token, args.reviewed);
-      case 'run.detail':
+      case 'run.detail': {
+        const id = args.id;
+        const artifacts = await Promise.all(
+          this.store
+            .list<any>('artifact')
+            .filter((a) => a.runId === id)
+            .map(async (a) => ({ ...a, ...(await this.artifactFiles.inspect(a)) })),
+        );
+        // Artifact inspection may span a Run finishing and the FIFO starting its
+        // successor. Re-read all historical facts after that asynchronous work.
+        const snapshot = this.store.get('snapshot', id);
         return {
-          run: this.store.get('run', args.id),
-          rerun: this.reruns.details(args.id),
-          artifactCleanup: this.artifactCleanup.status(args.id),
-          events: this.store.events(args.id),
-          artifacts: await Promise.all(
-            this.store
-              .list<any>('artifact')
-              .filter((a) => a.runId === args.id)
-              .map(async (a) => ({ ...a, ...(await this.artifactFiles.inspect(a)) })),
-          ),
-          output: redact(this.store.get('output', args.id)),
-          snapshot: this.store.get('snapshot', args.id)?.flow,
-          scriptBundles: this.store.get('snapshot', args.id)?.scriptBundles ?? [],
+          run: this.store.get('run', id),
+          rerun: this.reruns.details(id),
+          artifactCleanup: this.artifactCleanup.status(id),
+          events: this.store.events(id),
+          artifacts,
+          output: redact(this.store.get('output', id)),
+          snapshot: snapshot?.flow,
+          scriptBundles: snapshot?.scriptBundles ?? [],
+          fault: this.store.fault,
+          execution: this.observeExecution(),
         };
+      }
       case 'artifact.resolve': {
         const item = this.store.get<any>('artifact', args.id);
         if (!item) throw new Error('产物不存在');

@@ -2264,3 +2264,119 @@ td small {
 .run-history table {
   min-width: 660px;
 }
+
+.run-observation {
+  margin-top: 20px;
+  padding: 0;
+  overflow: hidden;
+}
+.run-observation-step {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 20px 22px;
+  border-left: 3px solid var(--accent, #328776);
+  background: #f3f7f4;
+}
+.run-observation-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #64796f;
+  font-size: 11px;
+}
+.run-observation-step strong {
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+.run-observation-step code {
+  font-size: 11px;
+  color: #74857c;
+  overflow-wrap: anywhere;
+}
+.run-observation-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 18px 22px;
+  gap: 24px;
+}
+.run-observation-metrics > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.run-observation-metrics strong {
+  font-size: 19px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.run-observation-metrics small {
+  color: #7d8a82;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.run-observation > .run-observation-note {
+  margin: 0;
+  padding: 12px 22px;
+  border-top: 1px solid var(--border);
+  color: #806239;
+  font-size: 12px;
+}
+.run-output {
+  min-width: 0;
+}
+.run-output h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.run-output pre {
+  max-height: 420px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #f5f7f5;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.run-output .output-limit {
+  color: #806239;
+  font-size: 11px;
+}
+.storage-fault {
+  flex-wrap: wrap;
+}
+.storage-fault span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 1150px) {
+  .with-browser .run-observation-metrics {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .run-output .section-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
+.run-detail-heading {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+}
+.run-detail-heading > .row {
+  flex-wrap: wrap;
+  max-width: 100%;
+  min-width: 0;
+}
+.run-detail-heading h2 {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
