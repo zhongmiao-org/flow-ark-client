@@ -56,7 +56,7 @@ try {
   await page.getByRole('button', { name: '新建流程', exact: true }).click();
   await page.locator('.title-input').fill('从空白搭建表单');
   while (await page.locator('.flow-shape[data-step-id]').count()) {
-    await page.locator('.flow-shape[data-step-id]').first().click();
+    await page.locator('.flow-shape[data-step-id]').last().click();
     await page.getByLabel('删除节点', { exact: true }).click();
   }
   const add = async (operation: string) => {
