@@ -5,13 +5,17 @@ import ElementPicker from './ElementPicker';
 import type { ElementTarget } from '../shared/element-picker';
 import { formKeys } from '../core/browser-command';
 import { browserActions } from './browser-actions';
+import ValueField from './ValueField';
+import type { ReferenceChoice } from './value-references';
 
 type BrowserNode = Extract<Step, { type: 'browser' }>;
 export default function BrowserNodeConfiguration({
   node,
   change,
+  choices,
 }: {
   node: BrowserNode;
+  choices: ReferenceChoice[];
   change: (node: BrowserNode) => void;
 }) {
   const [target, setTarget] = useState<ElementTarget | null>(null);
@@ -59,16 +63,26 @@ export default function BrowserNodeConfiguration({
         ))}
       </select>
       {node.operation === 'navigate' && (
-        <>
-          <label htmlFor="browser-url">网页地址</label>
-          <input
-            id="browser-url"
-            type="url"
-            value={typeof node.value === 'string' ? node.value : ''}
-            placeholder="http://127.0.0.1:4178"
-            onChange={(e) => change({ ...node, value: e.target.value })}
-          />
-        </>
+        <ValueField
+          label="网页地址"
+          value={node.value}
+          change={(value) => change({ ...node, value })}
+          choices={choices}
+          defaultValue={''}
+        >
+          {typeof node.value === 'string' ? (
+            <>
+              <label htmlFor="browser-url">网页地址</label>
+              <input
+                id="browser-url"
+                type="url"
+                value={typeof node.value === 'string' ? node.value : ''}
+                placeholder="http://127.0.0.1:4178"
+                onChange={(e) => change({ ...node, value: e.target.value })}
+              />
+            </>
+          ) : undefined}
+        </ValueField>
       )}
       {!topLevel && (
         <>
@@ -156,175 +170,241 @@ export default function BrowserNodeConfiguration({
         </>
       )}
       {node.operation === 'fill' && (
-        <>
-          <label htmlFor="browser-content">填写内容</label>
-          <textarea
-            id="browser-content"
-            value={typeof node.value === 'string' ? node.value : ''}
-            placeholder="输入要填写的内容"
-            onChange={(e) => change({ ...node, value: e.target.value })}
-          />
-          {typeof node.value !== 'string' && (
-            <p className="note">当前使用变量或表达式；可在高级配置中编辑，填写文本将替换该引用。</p>
-          )}
-        </>
+        <ValueField
+          label="填写内容"
+          value={node.value}
+          change={(value) => change({ ...node, value })}
+          choices={choices}
+          defaultValue={''}
+        >
+          {typeof node.value === 'string' ? (
+            <>
+              <label htmlFor="browser-content">填写内容</label>
+              <textarea
+                id="browser-content"
+                value={typeof node.value === 'string' ? node.value : ''}
+                placeholder="输入要填写的内容"
+                onChange={(e) => change({ ...node, value: e.target.value })}
+              />
+            </>
+          ) : undefined}
+        </ValueField>
       )}
       {node.operation === 'check' && (
-        <>
-          <label htmlFor="browser-checked">目标状态</label>
-          <select
-            id="browser-checked"
-            value={String(node.value)}
-            onChange={(e) => change({ ...node, value: e.target.value === 'true' })}
-          >
-            <option value="true">选中</option>
-            <option value="false">取消勾选（仅复选框）</option>
-          </select>
-        </>
+        <ValueField
+          label="目标状态"
+          value={node.value}
+          change={(value) => change({ ...node, value })}
+          choices={choices}
+          defaultValue={true}
+        >
+          {typeof node.value === 'boolean' ? (
+            <>
+              <label htmlFor="browser-checked">目标状态</label>
+              <select
+                id="browser-checked"
+                value={String(node.value)}
+                onChange={(e) => change({ ...node, value: e.target.value === 'true' })}
+              >
+                <option value="true">选中</option>
+                <option value="false">取消勾选（仅复选框）</option>
+              </select>
+            </>
+          ) : undefined}
+        </ValueField>
       )}
       {node.operation === 'select' && (
-        <>
-          {target?.options.length ? (
+        <ValueField
+          label="选项值"
+          value={node.value}
+          change={(value) => change({ ...node, value })}
+          choices={choices}
+          defaultValue={''}
+        >
+          {typeof node.value === 'string' ||
+          (Array.isArray(node.value) && node.value.every((item) => typeof item === 'string')) ? (
             <>
-              <label htmlFor="browser-known-options">网页中的选项</label>
+              {target?.options.length ? (
+                <>
+                  <label htmlFor="browser-known-options">网页中的选项</label>
+                  <select
+                    id="browser-known-options"
+                    multiple={target.multiple}
+                    size={target.multiple ? Math.min(5, target.options.length) : undefined}
+                    value={
+                      target.multiple
+                        ? Array.isArray(node.value)
+                          ? node.value.map(String)
+                          : typeof node.value === 'string'
+                            ? [node.value]
+                            : []
+                        : typeof node.value === 'string'
+                          ? node.value
+                          : ''
+                    }
+                    onChange={(e) =>
+                      change({
+                        ...node,
+                        value: target.multiple
+                          ? Array.from(e.target.selectedOptions).map((o) => o.value)
+                          : e.target.value,
+                      })
+                    }
+                  >
+                    {!target.multiple && (
+                      <option value="" disabled>
+                        选择网页选项
+                      </option>
+                    )}
+                    {target.options.map((o, i) => (
+                      <option key={i} value={o.value} disabled={o.disabled}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              ) : null}
+              <label htmlFor="browser-select-mode">选择方式</label>
               <select
-                id="browser-known-options"
-                multiple={target.multiple}
-                size={target.multiple ? Math.min(5, target.options.length) : undefined}
-                value={
-                  target.multiple
-                    ? Array.isArray(node.value)
-                      ? node.value.map(String)
-                      : typeof node.value === 'string'
-                        ? [node.value]
-                        : []
-                    : typeof node.value === 'string'
-                      ? node.value
-                      : ''
-                }
+                id="browser-select-mode"
+                value={Array.isArray(node.value) ? 'multiple' : 'single'}
                 onChange={(e) =>
-                  change({
-                    ...node,
-                    value: target.multiple
-                      ? Array.from(e.target.selectedOptions).map((o) => o.value)
-                      : e.target.value,
-                  })
+                  change({ ...node, value: e.target.value === 'multiple' ? [] : '' })
                 }
               >
-                {!target.multiple && (
-                  <option value="" disabled>
-                    选择网页选项
-                  </option>
-                )}
-                {target.options.map((o, i) => (
-                  <option key={i} value={o.value} disabled={o.disabled}>
-                    {o.label}
+                <option value="single">单个选项值</option>
+                <option value="multiple">多个选项值</option>
+              </select>
+              <label htmlFor="browser-options">选项值</label>
+              {Array.isArray(node.value) ? (
+                <textarea
+                  id="browser-options"
+                  value={node.value.join('\n')}
+                  placeholder="每行一个值；留空清空多选"
+                  onChange={(e) =>
+                    change({ ...node, value: e.target.value ? e.target.value.split('\n') : [] })
+                  }
+                />
+              ) : (
+                <input
+                  id="browser-options"
+                  value={typeof node.value === 'string' ? node.value : ''}
+                  onChange={(e) => change({ ...node, value: e.target.value })}
+                />
+              )}
+            </>
+          ) : undefined}
+        </ValueField>
+      )}
+      {node.operation === 'press' && (
+        <ValueField
+          label="按键"
+          value={node.value}
+          change={(value) => change({ ...node, value })}
+          choices={choices}
+          defaultValue={'Tab'}
+        >
+          {typeof node.value === 'string' ? (
+            <>
+              <label htmlFor="browser-key">按键</label>
+              <select
+                id="browser-key"
+                value={String(node.value)}
+                onChange={(e) => change({ ...node, value: e.target.value })}
+              >
+                {formKeys.map((key) => (
+                  <option key={key} value={key}>
+                    {key}
                   </option>
                 ))}
               </select>
             </>
-          ) : null}
-          <label htmlFor="browser-select-mode">选择方式</label>
-          <select
-            id="browser-select-mode"
-            value={Array.isArray(node.value) ? 'multiple' : 'single'}
-            onChange={(e) => change({ ...node, value: e.target.value === 'multiple' ? [] : '' })}
-          >
-            <option value="single">单个选项值</option>
-            <option value="multiple">多个选项值</option>
-          </select>
-          <label htmlFor="browser-options">选项值</label>
-          {Array.isArray(node.value) ? (
-            <textarea
-              id="browser-options"
-              value={node.value.join('\n')}
-              placeholder="每行一个值；留空清空多选"
-              onChange={(e) =>
-                change({ ...node, value: e.target.value ? e.target.value.split('\n') : [] })
-              }
-            />
-          ) : (
-            <input
-              id="browser-options"
-              value={typeof node.value === 'string' ? node.value : ''}
-              onChange={(e) => change({ ...node, value: e.target.value })}
-            />
-          )}
-        </>
-      )}
-      {node.operation === 'press' && (
-        <>
-          <label htmlFor="browser-key">按键</label>
-          <select
-            id="browser-key"
-            value={String(node.value)}
-            onChange={(e) => change({ ...node, value: e.target.value })}
-          >
-            {formKeys.map((key) => (
-              <option key={key} value={key}>
-                {key}
-              </option>
-            ))}
-          </select>
-        </>
+          ) : undefined}
+        </ValueField>
       )}
       {node.operation === 'upload' && (
-        <>
-          <label htmlFor="browser-file-binding">文件目录绑定</label>
-          <input
-            id="browser-file-binding"
-            value={
-              typeof node.value === 'object' && node.value && 'binding' in node.value
-                ? String(node.value.binding)
-                : ''
-            }
-            onChange={(e) =>
-              change({
-                ...node,
-                value: {
-                  binding: e.target.value,
-                  name:
-                    typeof node.value === 'object' && node.value && 'name' in node.value
-                      ? node.value.name
-                      : '',
-                },
-              })
-            }
-          />
-          <label htmlFor="browser-file-name">目录内文件名</label>
-          <input
-            id="browser-file-name"
-            placeholder="sample.txt"
-            value={
-              typeof node.value === 'object' && node.value && 'name' in node.value
-                ? String(node.value.name)
-                : ''
-            }
-            onChange={(e) =>
-              change({
-                ...node,
-                value: {
-                  binding:
-                    typeof node.value === 'object' && node.value && 'binding' in node.value
-                      ? node.value.binding
-                      : 'workspace',
-                  name: e.target.value,
-                },
-              })
-            }
-          />
-          <p className="note">在“参数与绑定”中选择此绑定对应的本机目录。</p>
-        </>
+        <ValueField
+          label="上传文件"
+          value={node.value}
+          change={(value) => change({ ...node, value })}
+          choices={choices}
+          defaultValue={{ binding: 'workspace', name: '' }}
+        >
+          {!!node.value &&
+          typeof node.value === 'object' &&
+          !Array.isArray(node.value) &&
+          'binding' in node.value &&
+          'name' in node.value &&
+          typeof node.value.binding === 'string' &&
+          typeof node.value.name === 'string' ? (
+            <>
+              <label htmlFor="browser-file-binding">文件目录绑定</label>
+              <input
+                id="browser-file-binding"
+                value={
+                  typeof node.value === 'object' && node.value && 'binding' in node.value
+                    ? String(node.value.binding)
+                    : ''
+                }
+                onChange={(e) =>
+                  change({
+                    ...node,
+                    value: {
+                      binding: e.target.value,
+                      name:
+                        typeof node.value === 'object' && node.value && 'name' in node.value
+                          ? node.value.name
+                          : '',
+                    },
+                  })
+                }
+              />
+              <label htmlFor="browser-file-name">目录内文件名</label>
+              <input
+                id="browser-file-name"
+                placeholder="sample.txt"
+                value={
+                  typeof node.value === 'object' && node.value && 'name' in node.value
+                    ? String(node.value.name)
+                    : ''
+                }
+                onChange={(e) =>
+                  change({
+                    ...node,
+                    value: {
+                      binding:
+                        typeof node.value === 'object' && node.value && 'binding' in node.value
+                          ? node.value.binding
+                          : 'workspace',
+                      name: e.target.value,
+                    },
+                  })
+                }
+              />
+              <p className="note">在“参数与绑定”中选择此绑定对应的本机目录。</p>
+            </>
+          ) : undefined}
+        </ValueField>
       )}
       {node.operation === 'download' && (
-        <>
-          <label htmlFor="browser-download-name">下载产物文件名</label>
-          <input
-            id="browser-download-name"
-            value={typeof node.value === 'string' ? node.value : ''}
-            onChange={(e) => change({ ...node, value: e.target.value })}
-          />
-        </>
+        <ValueField
+          label="下载产物文件名"
+          value={node.value}
+          change={(value) => change({ ...node, value })}
+          choices={choices}
+          defaultValue={'download.bin'}
+        >
+          {typeof node.value === 'string' ? (
+            <>
+              <label htmlFor="browser-download-name">下载产物文件名</label>
+              <input
+                id="browser-download-name"
+                value={typeof node.value === 'string' ? node.value : ''}
+                onChange={(e) => change({ ...node, value: e.target.value })}
+              />
+            </>
+          ) : undefined}
+        </ValueField>
       )}
       {node.operation === 'inputValue' && (
         <p className="note">读取控件当前实际填写的值，可供后续节点引用或断言。</p>

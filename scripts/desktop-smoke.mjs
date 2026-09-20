@@ -118,10 +118,11 @@ try {
       delete globalThis.restorePackageDialog;
     });
   }
-  const packageNode = JSON.parse(await page.locator('.inspector .code-input').inputValue());
+  const packageNode = JSON.parse(await page.locator('.node-advanced .code-input').inputValue());
   assert.deepEqual(packageNode.dependencies, [{ name: '@desktop/fixture', version: '1.2.3' }]);
   packageNode.code = "import value from '@desktop/fixture'; export default async()=>value;";
-  await page.locator('.inspector .code-input').fill(JSON.stringify(packageNode, null, 2));
+  await page.locator('.node-advanced summary').click();
+  await page.locator('.node-advanced .code-input').fill(JSON.stringify(packageNode, null, 2));
   await page.getByRole('region', { name: '脚本本地依赖' }).scrollIntoViewIfNeeded();
   await page.screenshot({ path: 'test-results/script-packages-editor.png', fullPage: true });
   await page.getByRole('button', { name: '保存', exact: true }).click();
@@ -156,13 +157,13 @@ try {
   });
   await page.getByRole('button', { name: '添加 Excel 表格', exact: true }).click();
   await page.getByLabel('操作', { exact: true }).selectOption('fill');
-  const fillNode = JSON.parse(await page.locator('.inspector .code-input').inputValue());
+  const fillNode = JSON.parse(await page.locator('.node-advanced .code-input').inputValue());
   assert.equal(fillNode.version, 2);
   assert.equal(fillNode.operation, 'fill');
   assert.equal(fillNode.templateName, 'template.xlsx');
   await page.getByRole('button', { name: '添加 文件处理', exact: true }).click();
   await page.getByLabel('操作', { exact: true }).selectOption('archive');
-  const archiveNode = JSON.parse(await page.locator('.inspector .code-input').inputValue());
+  const archiveNode = JSON.parse(await page.locator('.node-advanced .code-input').inputValue());
   assert.equal(archiveNode.version, 2);
   assert.deepEqual(archiveNode.files, ['result.txt']);
   await page.getByRole('button', { name: '保存', exact: true }).click();
@@ -246,7 +247,10 @@ try {
   await page.getByRole('button', { name: '我的流程', exact: true }).click();
   await page.getByRole('button', { name: '编辑 框架定位示例', exact: true }).click();
   await page.locator('[data-step-id="browser"]').click();
-  assert.equal(JSON.parse(await page.locator('.inspector .code-input').inputValue()).version, 1);
+  assert.equal(
+    JSON.parse(await page.locator('.node-advanced .code-input').inputValue()).version,
+    1,
+  );
   assert.equal(await page.getByLabel('iframe 路径', { exact: true }).count(), 0);
   assert.equal(await page.getByRole('button', { name: '从网页选取', exact: true }).count(), 0);
   await page.getByLabel('操作', { exact: true }).selectOption('read');
@@ -263,7 +267,7 @@ try {
   await page.getByRole('button', { name: '编辑 框架定位示例', exact: true }).click();
   await page.locator('[data-step-id="browser"]').click();
   assert.equal(await frameInput.inputValue(), 'iframe#outer\niframe#inner');
-  const framedNode = JSON.parse(await page.locator('.inspector .code-input').inputValue());
+  const framedNode = JSON.parse(await page.locator('.node-advanced .code-input').inputValue());
   assert.equal(framedNode.version, 2);
   assert.deepEqual(framedNode.framePath, ['iframe#outer', 'iframe#inner']);
   assert.equal(framedNode.selector, '#receipt');
@@ -271,7 +275,7 @@ try {
   await page.getByLabel('操作', { exact: true }).selectOption('screenshot');
   assert.equal(await frameInput.count(), 0);
   assert.deepEqual(
-    JSON.parse(await page.locator('.inspector .code-input').inputValue()).framePath,
+    JSON.parse(await page.locator('.node-advanced .code-input').inputValue()).framePath,
     [],
   );
   await page.getByLabel('操作', { exact: true }).selectOption('read');
@@ -285,22 +289,28 @@ try {
   await page.getByRole('button', { name: '我的流程', exact: true }).click();
   await page.getByRole('button', { name: '编辑 框架定位示例', exact: true }).click();
   await page.locator('[data-step-id="browser"]').click();
-  const formNode = JSON.parse(await page.locator('.inspector .code-input').inputValue());
+  const formNode = JSON.parse(await page.locator('.node-advanced .code-input').inputValue());
   assert.equal(formNode.version, 3);
   assert.deepEqual(formNode.value, ['ts', 'qa']);
   assert.deepEqual(formNode.framePath, ['iframe#outer', 'iframe#inner']);
   await page.screenshot({ path: 'test-results/browser-form-editor.png', fullPage: true });
   await page.getByLabel('操作', { exact: true }).selectOption('check');
   await page.getByLabel('目标状态', { exact: true }).selectOption('false');
-  assert.equal(JSON.parse(await page.locator('.inspector .code-input').inputValue()).value, false);
+  assert.equal(
+    JSON.parse(await page.locator('.node-advanced .code-input').inputValue()).value,
+    false,
+  );
   await page.getByLabel('操作', { exact: true }).selectOption('press');
   await page.getByLabel('按键', { exact: true }).selectOption('ArrowRight');
   assert.equal(
-    JSON.parse(await page.locator('.inspector .code-input').inputValue()).value,
+    JSON.parse(await page.locator('.node-advanced .code-input').inputValue()).value,
     'ArrowRight',
   );
   await page.getByLabel('操作', { exact: true }).selectOption('inputValue');
-  assert.equal(JSON.parse(await page.locator('.inspector .code-input').inputValue()).value, null);
+  assert.equal(
+    JSON.parse(await page.locator('.node-advanced .code-input').inputValue()).value,
+    null,
+  );
   assert.equal(await page.locator('.inspector').getByText(/招聘/).count(), 0);
   await page.getByRole('button', { name: '保存', exact: true }).click();
   // Use saved structured steps to exercise the same graph projection as normal editing.
@@ -356,7 +366,7 @@ try {
   await page.getByRole('button', { name: '编辑 条件分支示例', exact: true }).click();
   await page.locator('[data-step-id="decision"]').click();
   assert.equal(
-    JSON.parse(await page.locator('.inspector .code-input').inputValue()).id,
+    JSON.parse(await page.locator('.node-advanced .code-input').inputValue()).id,
     'decision',
   );
   for (const shape of ['decision', 'manual', 'subprocess', 'document'])
