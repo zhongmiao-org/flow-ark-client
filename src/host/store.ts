@@ -4,6 +4,27 @@ import { mkdirSync, chmodSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { now, redact } from '../shared/utils';
 import type { Event, Run, RunState } from '../shared/types';
+
+// v2 has the same tables/encryption as v1, but readers must honor script leases.
+// Keeping v1 would let an older client execute beside an unconfirmed script.
+export function migrateStore(db: DatabaseSync) {
+  const version = (db.prepare('PRAGMA user_version').get() as { user_version: number })
+    .user_version;
+  if (![0, 1, 2].includes(version))
+    throw new Error('数据库版本比客户端新或不可识别，已阻止打开；未删除数据');
+  if (version === 2) return;
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    if (version === 0)
+      db.exec(
+        'CREATE TABLE documents(kind TEXT NOT NULL,id TEXT NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(kind,id)); CREATE TABLE events(run_id TEXT NOT NULL,seq INTEGER NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(run_id,seq));',
+      );
+    db.exec('PRAGMA user_version=2; COMMIT;');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+}
 export class Store {
   private db: DatabaseSync;
   private key: Buffer;
@@ -13,16 +34,14 @@ export class Store {
     this.key = key;
     mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
     this.db = new DatabaseSync(path);
-    chmodSync(path, 0o600);
-    this.db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
-    const version = (this.db.prepare('PRAGMA user_version').get() as any).user_version;
-    if (version > 1) throw new Error('数据库版本比客户端新，已阻止打开；未删除数据');
-    if (version === 0)
-      this.tx(() =>
-        this.db.exec(
-          `CREATE TABLE documents(kind TEXT NOT NULL,id TEXT NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(kind,id)); CREATE TABLE events(run_id TEXT NOT NULL,seq INTEGER NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(run_id,seq)); PRAGMA user_version=1;`,
-        ),
-      );
+    try {
+      chmodSync(path, 0o600);
+      this.db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
+      migrateStore(this.db);
+    } catch (error) {
+      this.db.close();
+      throw error;
+    }
   }
   private seal(v: any): string {
     const iv = randomBytes(12);

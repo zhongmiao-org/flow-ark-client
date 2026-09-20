@@ -1,6 +1,6 @@
 {
   "name": "flow-ark-client",
-  "version": "0.1.30",
+  "version": "0.1.31",
   "description": "FlowArk 序舟本地自动化工作台",
   "private": true,
   "type": "module",
@@ -8,7 +8,7 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "82da2da0c1c12c676dae63c3f2746a52a87a55b2",
+    "governanceBaseline": "1b2e4fee62ca191c601088c4543b0a148466e380",
     "contractsVersion": "0.7.0",
     "contractsTag": "contracts-v0.7.0"
   },
@@ -23,7 +23,7 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "test:runtime": "node --import tsx --test tests/runtime.integration.ts tests/run-rerun.integration.ts tests/embedded-cleanup.integration.ts",
+    "test:runtime": "node --import tsx --test tests/runtime.integration.ts tests/run-rerun.integration.ts tests/embedded-cleanup.integration.ts tests/script-supervision.integration.ts",
     "check": "pnpm typecheck && pnpm test && pnpm build",
     "contracts:generate": "node scripts/generate-contracts.mjs",
     "test:browser": "node --import tsx scripts/browser-smoke.ts",
@@ -35,6 +35,7 @@
     "test:desktop": "node scripts/desktop-smoke.mjs",
     "test:editor-layout": "node --import tsx scripts/editor-layout-smoke.ts",
     "test:install": "node scripts/install-smoke.mjs",
+    "test:store-upgrade": "node --import tsx scripts/store-upgrade-smoke.mjs",
     "test:vault": "node --import tsx scripts/vault-smoke.mjs",
     "package:mac": "pnpm build && electron-builder --mac zip --arm64 --publish never --config.electronDist=node_modules/electron/dist && node scripts/package-dmg.mjs",
     "test:debug": "node --import tsx scripts/debug-smoke.ts",
