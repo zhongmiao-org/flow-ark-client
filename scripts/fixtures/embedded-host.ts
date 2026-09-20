@@ -9,9 +9,15 @@ void app.whenReady().then(async () => {
     webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false },
   });
   await window.loadURL('about:blank');
-  const browser = new EmbeddedBrowser(window, (token) => {
-    (globalThis as any).lostToken = token;
-  });
+  (globalThis as any).embeddedCleanupFailures = [];
+  const browser = new EmbeddedBrowser(
+    window,
+    (notice) => {
+      (globalThis as any).lostToken = notice.token;
+      (globalThis as any).lostNotice = notice;
+    },
+    (notice) => (globalThis as any).embeddedCleanupFailures.push(notice),
+  );
   (globalThis as any).embeddedFixture = browser;
   (globalThis as any).embeddedBinding = {
     id: 'embedded',

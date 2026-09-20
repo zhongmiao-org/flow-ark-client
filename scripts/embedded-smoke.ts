@@ -242,9 +242,11 @@ try {
     ).webContents.forcefullyCrashRenderer(),
   );
   await waitFor(
-    async () => (await call('run.detail', { id: lossRun.id })).run.state === 'CANCELLED',
+    async () => (await call('run.detail', { id: lossRun.id })).run.state === 'INTERRUPTED',
     '会话失联停止运行',
   );
+  assert.match((await call('run.detail', { id: lossRun.id })).run.error, /意外|丢失/);
+  assert.equal((await call('bootstrap')).runtimeBlock, undefined, '已确认销毁可接受新运行');
   assert.ok(
     (await call('bootstrap')).attention.some((item: any) => item.detail?.runId === lossRun.id),
   );

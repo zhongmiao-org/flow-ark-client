@@ -15,20 +15,24 @@ const wait = async (predicate: () => Promise<boolean>, message: string) => {
 };
 const click = async () =>
   h.app.evaluate(async () => {
-    const wc = (globalThis as any).embeddedFixture.view.webContents;
+    const wc = (globalThis as any).embeddedFixture.resource.view.webContents;
     let point = await wc.executeJavaScript(
       `(()=>{const e=document.querySelector('#full-name'); e.scrollIntoView({block:'center'}); const r=e.getBoundingClientRect(); return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()`,
     );
-    const scale = (globalThis as any).embeddedFixture.view.getBounds().width / 1920;
+    const scale = (globalThis as any).embeddedFixture.resource.view.getBounds().width / 1920;
     point = { x: Math.round(point.x * scale), y: Math.round(point.y * scale) };
     wc.sendInputEvent({ type: 'mouseMove', ...point });
     wc.sendInputEvent({ type: 'mouseDown', ...point, button: 'left', clickCount: 1 });
     wc.sendInputEvent({ type: 'mouseUp', ...point, button: 'left', clickCount: 1 });
   });
 try {
-  await h.app.evaluate(() => {
+  await h.app.evaluate(({ BrowserWindow }) => {
     // Capture failures without Electron's blocking error dialog, then fail this test explicitly.
     (globalThis as any).lifecycleErrors = [];
+    (globalThis as any).windowTransitions = [];
+    const win = BrowserWindow.getAllWindows()[0];
+    win.on('hide', () => (globalThis as any).windowTransitions.push('hide'));
+    win.on('show', () => (globalThis as any).windowTransitions.push('show'));
     process.on('unhandledRejection', (error) =>
       (globalThis as any).lifecycleErrors.push(String(error)),
     );
@@ -42,7 +46,7 @@ try {
   await h.visibility(true);
   await h.perform({ operation: 'navigate', value: lab.url });
   await h.app.evaluate(() => {
-    const wc = (globalThis as any).embeddedFixture.view.webContents;
+    const wc = (globalThis as any).embeddedFixture.resource.view.webContents;
     const original = wc.debugger.sendCommand.bind(wc.debugger);
     let hold = true;
     wc.debugger.sendCommand = async (method: string, params: any, session: any) => {
@@ -100,7 +104,12 @@ try {
         await h.visibility(false);
         await h.visibility(true);
       } else if (transition === 'hide') {
-        await h.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].hide());
+        evidence.hideTransition = await h.app.evaluate(({ BrowserWindow }) => {
+          const win = BrowserWindow.getAllWindows()[0];
+          const before = win.isVisible();
+          win.hide();
+          return { before, after: win.isVisible(), events: (globalThis as any).windowTransitions };
+        });
         await wait(
           async () =>
             (await h.system('browser.embedded.pick.status', { requestId })).phase === 'cancelled',
@@ -113,6 +122,17 @@ try {
           () =>
             h.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isMinimized()),
           '窗口未最小化',
+        );
+        await wait(
+          async () =>
+            (await h.system('browser.embedded.pick.status', { requestId })).phase === 'cancelled',
+          '实际最小化期间未取消拾取',
+        );
+        assert.equal(
+          await h.app.evaluate(({ BrowserWindow }) =>
+            BrowserWindow.getAllWindows()[0].isMinimized(),
+          ),
+          true,
         );
         await h.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].restore());
         await wait(
@@ -133,7 +153,7 @@ try {
         'cancelled',
       );
       await wait(
-        () => h.app.evaluate(() => (globalThis as any).embeddedFixture.view.getVisible()),
+        () => h.app.evaluate(() => (globalThis as any).embeddedFixture.resource.view.getVisible()),
         '恢复后原生网页仍不可见',
       );
       const recovered = `${requestId}-recovered`;
@@ -155,7 +175,7 @@ try {
       );
       const paint = await h.app.evaluate(async () => {
         const fixture = (globalThis as any).embeddedFixture;
-        const image = await fixture.view.webContents.capturePage();
+        const image = await fixture.resource.view.webContents.capturePage();
         const pixels = image.toBitmap();
         let nonwhite = 0;
         for (let i = 0; i < pixels.length; i += 4)

@@ -11,6 +11,7 @@ import { listRuns, runOverview } from './run-history';
 import { ArtifactCleanup } from './artifact-cleanup';
 import { RunRerun, executionVersion } from './run-rerun';
 import { Sessions } from './sessions';
+import type { CleanupResult } from '../shared/embedded-lifecycle';
 import { child, killOwnedTree } from './processes';
 import { Rpc } from '../shared/rpc';
 import { uid, now, digest, errorText, redact } from '../shared/utils';
@@ -48,6 +49,11 @@ type Active = {
   child: ChildProcess;
   rpc: Rpc;
   cancelling: boolean;
+  interruption?: string;
+  sessionCleanup?: Promise<CleanupResult>;
+  workerCleanup?: Promise<CleanupResult>;
+  workerClosing?: boolean;
+  cancelTimer?: NodeJS.Timeout;
   controlPending?: boolean;
   done: Promise<void>;
   abort: AbortController;
@@ -63,6 +69,7 @@ export class Runtime {
   private pendingCapabilities = new Map<string, number>();
   private stopping = false;
   private suspended = false;
+  private runtimeBlock?: string;
   private ticking = false;
   private lastTick = Date.now();
   private timer?: NodeJS.Timeout;
@@ -161,6 +168,7 @@ export class Runtime {
       templates,
       credentials: await this.system('credentials.list', {}),
       fault: this.store.fault,
+      runtimeBlock: this.executionBlock(),
       dataPath: this.dataPath,
     };
   }
@@ -237,8 +245,111 @@ export class Runtime {
     return prepared;
   }
   private assertAdmitting() {
+    const blocked = this.executionBlock();
+    if (blocked) throw new Error(blocked);
     if (this.suspended) throw new Error('系统正在休眠，恢复后请重新开始运行');
     if (this.stopping || this.store.fault) throw new Error(this.store.fault ?? '应用正在退出');
+  }
+  private blockExecution(reason: string) {
+    this.runtimeBlock ??= redact(
+      `资源回收未确认，执行已停止。请完整退出并重新打开应用后核对运行结果。${reason}`,
+      this.secrets,
+    );
+    return this.runtimeBlock;
+  }
+  private executionBlock() {
+    if (this.sessions.recoveryError) this.blockExecution(this.sessions.recoveryError);
+    return this.runtimeBlock;
+  }
+  private recordExecutionBlock(runId?: string) {
+    const reason = this.executionBlock();
+    if (reason)
+      this.store.attention(
+        'limitation',
+        '资源回收未确认，请退出并重开后核对运行结果',
+        { runId, reason },
+        'runtime-resource-block',
+      );
+  }
+  private checkActive(active: Active) {
+    const blocked = this.executionBlock();
+    if (blocked || this.active !== active || active.cancelling)
+      throw new Error(blocked ?? active.interruption ?? '运行已停止');
+  }
+  private async waitActive<T>(active: Active, pending: Promise<T>): Promise<T> {
+    const signal = active.abort.signal;
+    let interrupt!: () => void;
+    const stopped = new Promise<never>((_resolve, reject) => {
+      interrupt = () => reject(signal.reason ?? new Error('运行已停止'));
+      if (signal.aborted) interrupt();
+      else signal.addEventListener('abort', interrupt, { once: true });
+    });
+    try {
+      return await Promise.race([pending, stopped]);
+    } finally {
+      signal.removeEventListener('abort', interrupt);
+    }
+  }
+  private releaseSession(active: Active, destroy: boolean): Promise<CleanupResult> {
+    if (active.sessionCleanup) return active.sessionCleanup;
+    const pending = (async () => {
+      let result: CleanupResult;
+      try {
+        result = await this.sessions.release(active.id, destroy);
+      } catch (error) {
+        result = { confirmed: false, error: '浏览器资源回收失败：' + errorText(error) };
+      }
+      if (!result?.confirmed) {
+        result = { ...result, confirmed: false, error: result?.error ?? '未取得浏览器回收确认' };
+        this.blockExecution(result.error!);
+      }
+      return result;
+    })();
+    if (destroy) active.sessionCleanup = pending;
+    return pending;
+  }
+  private stopWorker(active: Active): Promise<CleanupResult> {
+    if (active.workerCleanup) return active.workerCleanup;
+    active.workerClosing = true;
+    active.workerCleanup = (async () => {
+      let error: string | undefined;
+      try {
+        await killOwnedTree(active.child);
+      } catch (cause) {
+        error = errorText(cause);
+      }
+      const confirmed =
+        !active.child.pid || active.child.exitCode !== null || active.child.signalCode !== null;
+      if (!confirmed) {
+        error = '执行进程回收未确认' + (error ? '：' + error : '');
+        this.blockExecution(error);
+      }
+      return { confirmed, ...(error ? { error } : {}) };
+    })();
+    return active.workerCleanup;
+  }
+  private stop(active: Active, interruption?: string) {
+    if (interruption) active.interruption ??= redact(interruption, this.secrets);
+    if (active.cancelling) return;
+    active.cancelling = true;
+    active.abort.abort(new Error(active.interruption ?? '用户取消'));
+    // This timer starts before any browser close await. A stuck page cannot keep
+    // an unresponsive Worker (or its script descendants) alive indefinitely.
+    active.cancelTimer = setTimeout(() => {
+      void this.stopWorker(active).then(() => active.rpc.close());
+    }, 2000);
+    active.cancelTimer.unref();
+    if (active.child.connected)
+      try {
+        active.child.send({ control: 'cancel' }, (error) => {
+          if (error) active.rpc.close();
+        });
+      } catch {
+        active.rpc.close();
+      }
+    void this.releaseSession(active, true);
+    // Storage failure must remain visible, but must not prevent the stop above.
+    this.store.state(active.id, 'CANCELLING');
   }
   private async fileDirectory(bindings: Bindings, binding: string) {
     if (!Object.hasOwn(bindings.files, binding) || !bindings.files[binding])
@@ -324,11 +435,12 @@ export class Runtime {
   }
   private dispatch() {
     void this.pump().catch(() => {
-      this.store.fault = '运行状态无法可靠保存，已停止接收新任务；请保留数据并重启后核对';
+      this.store.fault ??= '运行状态无法可靠保存，已停止接收新任务；请保留数据并重启后核对';
     });
   }
   private async pump() {
-    if (this.active || this.stopping || this.suspended || this.store.fault) return;
+    if (this.active || this.stopping || this.suspended || this.store.fault || this.executionBlock())
+      return;
     const run = this.store.list<Run>('run').find((r) => r.state === 'QUEUED');
     if (!run) return;
     const proc = child(join(this.dir, 'worker.cjs'), this.executable);
@@ -350,52 +462,93 @@ export class Runtime {
     };
     this.active = active;
     proc.on('message', (m) => void rpc.receive(m as any));
-    proc.on('exit', () => rpc.close());
+    proc.on('exit', () => {
+      if (!active.workerClosing && !active.cancelling) active.interruption ??= '执行进程意外退出';
+      rpc.close();
+    });
     proc.on('error', () => rpc.close());
     try {
-      this.store.state(run.id, 'RUNNING');
-      const s = this.store.get<FlowRecord & PreparedScripts>('snapshot', run.id)!;
-      this.reruns.checkExecution(run, s);
-      const prepared = await this.preflight(s); // Revalidate resources, never recompile a fixed bundle.
-      this.reruns.checkExecution(run, s);
-      const outputs = await rpc.call(
-        'execute',
-        {
-          ...s,
-          parameters: s.flow.parameters,
-          debug: Boolean(run.debug),
-          ...prepared,
-          executable: this.executable,
-        },
-        24 * 3600000,
-      );
-      if (active.cancelling) throw new Error('取消');
-      this.store.put('output', run.id, redact(outputs, this.secrets));
-      await this.sessions.release(run.id);
-      await killOwnedTree(proc);
-      this.store.state(run.id, 'SUCCEEDED');
-    } catch (e) {
-      // Capture loss before our own cleanup kills an otherwise healthy worker.
-      const lost = proc.exitCode !== null || proc.signalCode !== null;
-      active.abort.abort(new Error('运行已停止'));
-      await this.sessions.release(run.id, true);
-      await killOwnedTree(proc);
+      let failure: string | undefined;
+      let outputs: unknown;
+      try {
+        this.store.state(run.id, 'RUNNING');
+        const s = this.store.get<FlowRecord & PreparedScripts>('snapshot', run.id)!;
+        this.reruns.checkExecution(run, s);
+        const prepared = await this.waitActive(active, this.preflight(s)); // Never recompile a fixed bundle.
+        this.checkActive(active);
+        this.reruns.checkExecution(run, s);
+        outputs = await rpc.call(
+          'execute',
+          {
+            ...s,
+            parameters: s.flow.parameters,
+            debug: Boolean(run.debug),
+            ...prepared,
+            executable: this.executable,
+          },
+          24 * 3600000,
+        );
+      } catch (error) {
+        failure = errorText(error);
+      }
+      const results: CleanupResult[] = [];
+      if (failure || active.cancelling || active.interruption || this.executionBlock()) {
+        active.abort.abort(new Error('运行已停止'));
+        results.push(
+          ...(await Promise.all([this.releaseSession(active, true), this.stopWorker(active)])),
+        );
+      } else {
+        results.push(await this.stopWorker(active));
+        results.push(await this.releaseSession(active, false));
+      }
+      // Cancel/lost may arrive while normal release or process cleanup is pending.
+      // Sessions retains this Run's association until finishRun below.
+      if (active.cancelling || active.interruption || this.executionBlock()) {
+        active.abort.abort(new Error('运行已停止'));
+        results.push(await this.releaseSession(active, true));
+      }
+      const blocked = this.executionBlock();
+      const state: RunState =
+        blocked || active.interruption || results.some((r) => !r.confirmed)
+          ? 'INTERRUPTED'
+          : active.cancelling
+            ? 'CANCELLED'
+            : failure
+              ? 'FAILED'
+              : 'SUCCEEDED';
+      const errors = [
+        ...new Set(
+          [failure, active.interruption, ...results.map((r) => r.error), blocked].filter(Boolean),
+        ),
+      ];
       const old = this.store.get<Run>('run', run.id);
-      if (old && !terminal.has(old.state))
+      if (old && !terminal.has(old.state)) {
+        if (state === 'SUCCEEDED') this.store.put('output', run.id, redact(outputs, this.secrets));
         this.store.state(
           run.id,
-          active.cancelling ? 'CANCELLED' : lost ? 'INTERRUPTED' : 'FAILED',
-          {
-            error: redact(errorText(e), this.secrets),
-            business: '若含外部提交，请核对结果；不会自动重试',
-          },
+          state,
+          state === 'SUCCEEDED'
+            ? {}
+            : {
+                error: redact(errors.join('\n') || '用户取消', this.secrets),
+                business: '若含外部提交，请核对结果；不会自动重试',
+              },
         );
+        const warnings = results.flatMap((r) => r.warnings ?? []);
+        if (warnings.length)
+          this.store.event(run.id, 'log', '', {
+            message: redact([...new Set(warnings)].join('\n'), this.secrets),
+          });
+      }
+      this.recordExecutionBlock(run.id);
     } finally {
+      clearTimeout(active.cancelTimer);
+      this.sessions.finishRun(run.id);
       rpc.close();
       this.secrets = [];
       if (this.active === active) this.active = undefined;
       settled();
-      if (!this.stopping && !this.store.fault) this.dispatch();
+      if (!this.stopping && !this.store.fault && !this.executionBlock()) this.dispatch();
     }
   }
   private async workerRequest(id: string, method: string, args: any): Promise<any> {
@@ -409,7 +562,8 @@ export class Runtime {
     }
   }
   private async performWorkerRequest(id: string, method: string, args: any): Promise<any> {
-    if (this.active?.id !== id || this.active.cancelling) throw new Error('运行已停止');
+    if (this.active?.id !== id) throw new Error('运行已停止');
+    this.checkActive(this.active);
     const runSignal = this.active.abort.signal;
     const snapshot = this.store.get<FlowRecord>('snapshot', id)!;
     if (method === 'event') {
@@ -560,18 +714,10 @@ export class Runtime {
     const a = this.active;
     if (!a || a.id !== id) throw new Error('运行进程不存在');
     if (action === 'cancel') {
-      if (a.cancelling) return true;
-      a.cancelling = true;
-      a.abort.abort(new Error('用户取消'));
-      this.store.state(id, 'CANCELLING');
-      if (a.child.connected)
-        a.child.send({ control: 'cancel' }, (error) => {
-          if (error) a.rpc.close();
-        });
-      await this.sessions.release(id, true);
-      setTimeout(() => void killOwnedTree(a.child), 2000).unref();
+      this.stop(a);
       return true;
     }
+    this.checkActive(a);
     if (action === 'pause' && run.state !== 'RUNNING')
       throw new Error('只有运行中的任务可请求暂停');
     if (action === 'resume' && !['PAUSED', 'WAITING_INPUT'].includes(run.state))
@@ -588,7 +734,7 @@ export class Runtime {
         a.controlPending = false;
         throw error;
       }
-      if (a.cancelling || this.active !== a) throw new Error('运行已停止');
+      this.checkActive(a);
     }
     a.child.send({ control: action }, (error) => {
       if (error) a.rpc.close();
@@ -611,13 +757,21 @@ export class Runtime {
       }
   }
   async tick(time = Date.now()) {
-    if (this.stopping || this.suspended || this.ticking || this.store.fault) return;
+    if (
+      this.stopping ||
+      this.suspended ||
+      this.ticking ||
+      this.store.fault ||
+      this.executionBlock()
+    )
+      return;
     this.ticking = true;
     try {
       if (time - this.lastTick > 10000) this.skipMissed('sleep-or-clock-gap', time);
       this.lastTick = time;
       for (const s of this.store.list<Schedule>('schedule'))
         if (s.enabled && s.nextAt <= time) {
+          if (this.executionBlock() || this.stopping || this.suspended || this.store.fault) break;
           const triggerId = s.id + ':' + s.nextAt;
           this.store.put('schedule', s.id, {
             ...s,
@@ -782,9 +936,11 @@ export class Runtime {
         return b;
       }
       case 'browser.embedded.visibility':
+        if (args.visible && this.executionBlock()) throw new Error(this.executionBlock());
         return this.sessions.embeddedVisibility(args.visible);
       case 'browser.embedded.pick.start':
       case 'browser.embedded.pick.validate': {
+        if (this.executionBlock()) throw new Error(this.executionBlock());
         if (this.active) {
           const run = this.store.get<Run>('run', this.active.id);
           if (
@@ -800,6 +956,7 @@ export class Runtime {
       case 'browser.embedded.pick.cancel':
         return this.system(method, args);
       case 'browser.embedded.navigate': {
+        if (this.executionBlock()) throw new Error(this.executionBlock());
         if (this.active) {
           const run = this.store.get<Run>('run', this.active.id);
           if (!run || !['PAUSED', 'WAITING_INPUT'].includes(run.state))
@@ -808,16 +965,26 @@ export class Runtime {
         return this.system('browser.embedded.navigate', args);
       }
       case 'system.browserLost': {
-        const owner = this.sessions.embeddedLost(args.token);
+        const owner = this.sessions.embeddedLost(args);
         if (owner) {
+          if (this.active?.id === owner)
+            this.stop(this.active, '内置网页会话意外丢失：' + String(args.reason ?? '页面已失效'));
           this.store.attention(
             'limitation',
             '内置网页会话已关闭，请核对结果后重新调试',
             { runId: owner },
             'browser-lost:' + owner,
           );
-          await this.control(owner, 'cancel');
         }
+        return true;
+      }
+      case 'system.browserCleanupFailed': {
+        // Main must be free to finish its own close handler. Never await a
+        // session-close RPC in this notification handler (including for previews).
+        const reason = '内置网页回收未确认：' + String(args.error ?? '未取得销毁确认');
+        this.blockExecution(reason);
+        if (this.active) this.stop(this.active, reason);
+        this.recordExecutionBlock(this.active?.id);
         return true;
       }
       case 'browser.embedded.status':
@@ -892,6 +1059,7 @@ export class Runtime {
         });
       }
       case 'schedule.toggle': {
+        if (args.enabled) this.assertAdmitting();
         const s = this.store.get<Schedule>('schedule', args.id);
         if (!s) throw new Error('计划不存在');
         this.store.put('schedule', s.id, {
@@ -951,14 +1119,43 @@ export class Runtime {
   async shutdown() {
     this.stopping = true;
     clearInterval(this.timer);
-    for (const r of this.store.list<Run>('run'))
-      if (r.state === 'QUEUED') this.store.state(r.id, 'CANCELLED');
-    if (this.active) {
-      const a = this.active;
-      await this.control(a.id, 'cancel');
-      await killOwnedTree(a.child);
-      await a.done;
+    const errors: unknown[] = [];
+    try {
+      for (const r of this.store.list<Run>('run'))
+        if (r.state === 'QUEUED') {
+          try {
+            this.store.state(r.id, 'CANCELLED');
+          } catch (error) {
+            errors.push(error);
+          }
+        }
+    } catch (error) {
+      errors.push(error);
     }
-    await this.sessions.shutdown();
+    const active = this.active;
+    if (active) {
+      try {
+        this.stop(active);
+      } catch (error) {
+        errors.push(error);
+      }
+      // A failed state write or browser cleanup must not skip the actual child.
+      await this.stopWorker(active);
+      await active.done;
+    }
+    let cleanup: CleanupResult;
+    try {
+      cleanup = await this.sessions.shutdown();
+    } catch (error) {
+      cleanup = { confirmed: false, error: '浏览器退出回收失败：' + errorText(error) };
+    }
+    if (!cleanup.confirmed) this.blockExecution(cleanup.error ?? '退出时资源回收未确认');
+    try {
+      this.recordExecutionBlock(active?.id);
+    } catch (error) {
+      errors.push(error);
+    }
+    if (errors.length)
+      throw new AggregateError(errors, '退出收尾遇到本地记录错误，请重开后核对运行记录');
   }
 }

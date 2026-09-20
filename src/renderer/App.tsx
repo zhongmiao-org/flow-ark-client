@@ -326,9 +326,21 @@ export default function App() {
           </button>
           <span className="machine">
             <span className="local-dot" />
-            {data.fault ? '存储异常' : active ? '任务运行中' : '本机已就绪'}
+            {data.fault
+              ? '存储异常'
+              : data.runtimeBlock
+                ? '执行已停止'
+                : active
+                  ? '任务运行中'
+                  : '本机已就绪'}
           </span>
         </header>
+        {data.runtimeBlock && (
+          <div className="alert error" role="alert">
+            <b>资源回收未确认</b>
+            <span>{data.runtimeBlock}</span>
+          </div>
+        )}
         {error && (
           <div className="alert error" role="alert">
             <b>操作未完成</b>

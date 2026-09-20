@@ -14,13 +14,13 @@ try {
   await h.visibility(true);
   await h.perform({ operation: 'navigate', value: lab.url });
   assert.ok(
-    await h.app.evaluate(() => (globalThis as any).embeddedFixture.page.frames.size > 0),
+    await h.app.evaluate(() => (globalThis as any).embeddedFixture.resource.page.frames.size > 0),
     '跨站 iframe 应由独立目标会话承载',
   );
   evidence.crossSite = true;
   const zoom = (factor: number) =>
     h.app.evaluate(async (_electron, factor) => {
-      const wc = (globalThis as any).embeddedFixture.view.webContents;
+      const wc = (globalThis as any).embeddedFixture.resource.view.webContents;
       const expected =
         ((await wc.executeJavaScript('devicePixelRatio')) / wc.getZoomFactor()) * factor;
       wc.setZoomFactor(factor);
@@ -45,7 +45,7 @@ try {
       );
     }, factor);
   await h.app.evaluate(async () => {
-    await (globalThis as any).embeddedFixture.view.webContents.executeJavaScript(`
+    await (globalThis as any).embeddedFixture.resource.view.webContents.executeJavaScript(`
       window.pickerMouseEvents=[];
       for(const type of ['mousedown','mouseup','click']) document.addEventListener(type,e=>window.pickerMouseEvents.push(e.type),true);
     `);
@@ -54,7 +54,7 @@ try {
     h.app.evaluate(
       async (_electron, { selector, path, native }) => {
         const fixture = (globalThis as any).embeddedFixture,
-          page = fixture.page;
+          page = fixture.resource.page;
         const scope = await page.scope(path, () => 5000);
         const object = await page.element(scope, selector, () => 5000);
         let point = await page.call(
@@ -74,8 +74,8 @@ try {
         point.y = Math.round(point.y);
         if (native) {
           // A real click may arrive without any preceding hover/mouse-move.
-          const zoom = fixture.view.webContents.getZoomFactor();
-          const bounds = fixture.view.getBounds(),
+          const zoom = fixture.resource.view.webContents.getZoomFactor();
+          const bounds = fixture.resource.view.getBounds(),
             origin = fixture.window.getContentBounds();
           const input = {
             x: point.x * zoom,
@@ -83,13 +83,13 @@ try {
             globalX: origin.x + bounds.x + point.x * zoom,
             globalY: origin.y + bounds.y + point.y * zoom,
           };
-          fixture.view.webContents.sendInputEvent({
+          fixture.resource.view.webContents.sendInputEvent({
             type: 'mouseDown',
             ...input,
             button: 'left',
             clickCount: 1,
           });
-          fixture.view.webContents.sendInputEvent({
+          fixture.resource.view.webContents.sendInputEvent({
             type: 'mouseUp',
             ...input,
             button: 'left',
@@ -141,11 +141,11 @@ try {
   }
   await h.system('browser.embedded.pick.start', { requestId: 'stale-hover' });
   await h.app.evaluate(async () => {
-    const wc = (globalThis as any).embeddedFixture.view.webContents;
+    const wc = (globalThis as any).embeddedFixture.resource.view.webContents;
     const point = await wc.executeJavaScript(
       `(()=>{const r=document.querySelector('#action').getBoundingClientRect();return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()`,
     );
-    const scale = (globalThis as any).embeddedFixture.view.getBounds().width / 1920;
+    const scale = (globalThis as any).embeddedFixture.resource.view.getBounds().width / 1920;
     wc.sendInputEvent({ type: 'mouseMove', x: point.x * scale, y: point.y * scale });
   });
   await clickTarget('#name', [], true);
@@ -162,7 +162,7 @@ try {
   await zoom(1);
   await h.system('browser.embedded.viewport', { x: 0, y: 0, width: 1100, height: 800 });
   await h.app.evaluate(() => {
-    const wc = (globalThis as any).embeddedFixture.view.webContents;
+    const wc = (globalThis as any).embeddedFixture.resource.view.webContents;
     const original = wc.debugger.sendCommand.bind(wc.debugger);
     (globalThis as any).restorePickerCommand = () => {
       wc.debugger.sendCommand = original;
@@ -205,7 +205,7 @@ try {
     evidence.checks.push({ name, target });
   }
   await h.app.evaluate(async () => {
-    await (globalThis as any).embeddedFixture.view.webContents.executeJavaScript(`(() => {
+    await (globalThis as any).embeddedFixture.resource.view.webContents.executeJavaScript(`(() => {
       const section=document.createElement('section'); section.id='picker-fixtures';
       section.innerHTML='<label for="picker-password">测试密码</label><input id="picker-password" type="password" value="fictional-secret"><input id="odd:id[1]" aria-label="特殊字符"><div><input class="structural"><input class="structural"></div><div id="shadow-one"></div><label>可读选项<select id="picker-options" multiple><option value="a">甲</option><option value="b" disabled>乙</option></select></label>';
       document.body.append(section);
@@ -245,7 +245,7 @@ try {
   );
   await h.system('browser.embedded.pick.start', { requestId: 'escape' });
   await h.app.evaluate(() => {
-    const wc = (globalThis as any).embeddedFixture.view.webContents;
+    const wc = (globalThis as any).embeddedFixture.resource.view.webContents;
     wc.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
     wc.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
   });
@@ -270,7 +270,7 @@ try {
   await h.system('browser.embedded.pick.start', { requestId: 'execute' });
   assert.deepEqual(
     await h.app.evaluate(() =>
-      (globalThis as any).embeddedFixture.view.webContents.executeJavaScript(
+      (globalThis as any).embeddedFixture.resource.view.webContents.executeJavaScript(
         'window.pickerMouseEvents',
       ),
     ),
