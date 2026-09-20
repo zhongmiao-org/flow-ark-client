@@ -65,6 +65,7 @@ import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 import LogicNodeConfiguration from './LogicNodeConfiguration';
 import ResourceNodeConfiguration from './ResourceNodeConfiguration';
 import ParameterConfiguration from './ParameterConfiguration';
+import TemplateParameters from './TemplateParameters';
 import RunHistory from './RunHistory';
 import { RunObservation, RunOutput } from './RunObservation';
 import { presentRun } from '../shared/run-presentation';
@@ -605,27 +606,30 @@ export default function App() {
             </div>
             {configOpen && edit.bindings.configuration && (
               <TemplateConfiguration
+                key={`configuration:${edit.id}`}
                 configuration={edit.bindings.configuration}
                 name={edit.flow.name}
                 close={() => setConfigOpen(false)}
                 apply={async (values) => {
-                  if (!guardInvalidNodeJson()) return false;
-                  const next = {
-                    ...edit,
-                    bindings: {
-                      ...edit.bindings,
-                      configuration: { ...edit.bindings.configuration!, values },
-                    },
-                  };
-                  const saved = await action(
-                    () => api('flow.save', { flow: next.flow, bindings: next.bindings }),
-                    '已保存实例配置',
-                  );
-                  if (saved) {
-                    if (!guardInvalidNodeJson()) return false;
+                  checkEditorInput('保存实例配置');
+                  setBusy(true);
+                  setError('');
+                  try {
+                    const saved = await api('flow.save', {
+                      flow: edit.flow,
+                      bindings: {
+                        ...edit.bindings,
+                        configuration: { ...edit.bindings.configuration!, values },
+                      },
+                    });
+                    inputGroup.current = undefined;
+                    inputTarget.current = null;
                     setEdit(saved);
+                    setNotice('已保存实例配置');
+                    await refresh();
+                  } finally {
+                    setBusy(false);
                   }
-                  return Boolean(saved);
                 }}
               />
             )}
@@ -637,6 +641,9 @@ export default function App() {
               selected={selected}
               setSelected={setSelected}
               guardInvalidNodeJson={guardInvalidNodeJson}
+              editConfiguration={() => {
+                if (guardInvalidNodeJson()) setConfigOpen(true);
+              }}
               browsers={data.browsers}
               choose={async (binding: string) => {
                 const path = await action(() => api('file.choose', { kind: 'directory' }));
@@ -742,6 +749,7 @@ export default function App() {
         <BrowserSidebar
           close={() => setBrowserOpen(false)}
           running={!!active && !['PAUSED', 'WAITING_INPUT'].includes(active.state)}
+          obscured={section === 'editor' && configOpen}
         />
       )}
     </div>
@@ -844,6 +852,7 @@ function Editor({
   choose,
   revision,
   guardInvalidNodeJson,
+  editConfiguration,
 }: any) {
   const [tab, setTab] = useState('node');
   const [destination, setDestination] = useState('main');
@@ -1217,15 +1226,24 @@ function Editor({
         {tab === 'params' && (
           <>
             <h3>运行参数</h3>
-            <ParameterConfiguration
-              key={revision}
-              value={r.flow.parameters}
-              change={updateParameters}
-            />
-            <details className="parameters-advanced">
-              <summary>参数 JSON · 高级</summary>
-              <JsonInput key={revision} value={r.flow.parameters} onChange={updateParameters} />
-            </details>
+            {r.bindings.configuration?.adapter === 'flow-parameters-v1' ? (
+              <TemplateParameters
+                value={r.bindings.configuration.values}
+                edit={editConfiguration}
+              />
+            ) : (
+              <>
+                <ParameterConfiguration
+                  key={revision}
+                  value={r.flow.parameters}
+                  change={updateParameters}
+                />
+                <details className="parameters-advanced">
+                  <summary>参数 JSON · 高级</summary>
+                  <JsonInput key={revision} value={r.flow.parameters} onChange={updateParameters} />
+                </details>
+              </>
+            )}
             <label htmlFor="flow-browser-binding">本机浏览器</label>
             <select
               id="flow-browser-binding"

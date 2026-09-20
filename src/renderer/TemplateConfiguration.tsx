@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import type { Bindings, Json } from '../shared/types';
 import { schemaDefaults } from '../shared/template-config';
@@ -117,10 +117,12 @@ export default function TemplateConfiguration({
   configuration: NonNullable<Bindings['configuration']>;
   name: string;
   close: () => void;
-  apply: (value: Json) => Promise<boolean>;
+  apply: (value: Json) => Promise<void>;
 }) {
   const [values, setValues] = useState(structuredClone(configuration.values));
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const submitting = useRef(false);
   return (
     <div className="modal-backdrop" role="presentation">
       <section
@@ -134,27 +136,48 @@ export default function TemplateConfiguration({
             <h2 id="template-config-title">实例配置</h2>
             <p>{name}</p>
           </div>
-          <button aria-label="关闭实例配置" className="icon-button" onClick={close}>
+          <button
+            aria-label="关闭实例配置"
+            className="icon-button"
+            onClick={close}
+            disabled={saving}
+          >
             <X size={20} />
           </button>
         </header>
         <form
+          onInvalid={(event) => {
+            const field = event.target as HTMLInputElement | HTMLSelectElement;
+            setError(field.validationMessage);
+          }}
           onSubmit={async (e) => {
             e.preventDefault();
+            if (submitting.current) return;
+            submitting.current = true;
             setSaving(true);
+            setError('');
             try {
-              if (await apply(values)) close();
+              await apply(values);
+              close();
+            } catch (error: unknown) {
+              setError(error instanceof Error ? error.message : String(error));
             } finally {
+              submitting.current = false;
               setSaving(false);
             }
           }}
         >
-          <div className="template-form-scroll">
+          <fieldset className="template-form-scroll template-form-fields" disabled={saving}>
             <Field schema={configuration.schema} value={values} change={setValues} />
-          </div>
+          </fieldset>
+          {error && (
+            <p className="field-error template-save-error" role="alert">
+              {error}
+            </p>
+          )}
           <footer>
             <span>只保存当前实例；不会开始运行</span>
-            <button type="button" onClick={close}>
+            <button type="button" onClick={close} disabled={saving}>
               取消
             </button>
             <button className="primary" disabled={saving} type="submit">

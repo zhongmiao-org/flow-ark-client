@@ -5,9 +5,11 @@ const api = (method: string, args?: unknown) => window.flowark.request(method, a
 export default function BrowserSidebar({
   close,
   running,
+  obscured,
 }: {
   close: () => void;
   running: boolean;
+  obscured: boolean;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<{
@@ -20,6 +22,9 @@ export default function BrowserSidebar({
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const focused = useRef(false);
+  const obscuredRef = useRef(obscured);
+  const enabled = useRef(false);
+  obscuredRef.current = obscured;
   useEffect(() => {
     let live = true;
     const bounds = () => {
@@ -47,8 +52,9 @@ export default function BrowserSidebar({
       try {
         await api('browser.embedded.enable');
         if (!live) return;
+        enabled.current = true;
         bounds();
-        await api('browser.embedded.visibility', { visible: true });
+        await api('browser.embedded.visibility', { visible: !obscuredRef.current });
         if (!live) return;
         await refresh();
       } catch (e) {
@@ -61,12 +67,19 @@ export default function BrowserSidebar({
     const timer = setInterval(refresh, 750);
     return () => {
       live = false;
+      enabled.current = false;
       clearInterval(timer);
       observer.disconnect();
       window.removeEventListener('resize', bounds);
       void api('browser.embedded.visibility', { visible: false }).catch(() => {});
     };
   }, []);
+  useEffect(() => {
+    if (enabled.current)
+      void api('browser.embedded.visibility', { visible: !obscured }).catch((error) =>
+        setError(String(error)),
+      );
+  }, [obscured]);
   useEffect(() => {
     const r = viewport.current?.getBoundingClientRect();
     if (r)
