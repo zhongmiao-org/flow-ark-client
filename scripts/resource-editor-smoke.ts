@@ -70,7 +70,22 @@ try {
   };
   const select = async (id: string) => {
     const node = page.locator(`.react-flow__node[data-id="${id}"]`);
-    await node.focus();
+    await page.locator('.react-flow__controls-fitview').click();
+    // At the minimum zoom, long flows extend beyond a small canvas. Pan as a user would.
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const canvas = (await page.locator('.canvas').boundingBox())!;
+      const target = (await node.boundingBox())!;
+      const center = target.y + target.height / 2;
+      if (center >= canvas.y + 80 && center <= canvas.y + canvas.height - 60) break;
+      const distance = Math.max(
+        -canvas.height / 3,
+        Math.min(canvas.height / 3, canvas.y + canvas.height / 2 - center),
+      );
+      await page.mouse.move(canvas.x + 8, canvas.y + canvas.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(canvas.x + 8, canvas.y + canvas.height / 2 + distance, { steps: 8 });
+      await page.mouse.up();
+    }
     await node.click();
   };
   const add = async (name: string, title?: string) => {
@@ -220,13 +235,17 @@ try {
   const matrix = await add('Excel 表格');
   await label('文件目录绑定').fill('work');
   await label('输出文件名').fill('matrix.xlsx');
-  for (let i = 0; i < 10; i++) await button('添加数据行').click();
+  for (let i = 0; i < 12; i++) await button('添加数据行').click();
   for (let i = 0; i < 6; i++) await button('添加数据列').click();
   await button('下一页数据行').click();
   await button('编辑单元格 H12').click();
   await literal('单元格值', 'string', '末页保留');
   await button('上一页数据行').click();
   await button('上一组数据列').click();
+  await button('编辑单元格 A1').click();
+  await literal('单元格值', 'null', '');
+  await button('编辑单元格 B1').click();
+  await literal('单元格值', 'null', '');
   await button('编辑单元格 A2').click();
   await ref('单元格值', 'steps.' + get, 'title');
   await button('编辑单元格 B2').click();
@@ -243,6 +262,24 @@ try {
   await button('删除当前数据列').click();
   await button('撤销编辑').click();
   assert.deepEqual((await raw()).rows, matrixBefore);
+  const readMatrix = await add('Excel 表格');
+  await label('操作').selectOption('read');
+  await label('文件目录绑定').fill('work');
+  await label('读取文件名').fill('matrix.xlsx');
+  await add('Excel 表格');
+  await label('文件目录绑定').fill('work');
+  await label('输出文件名').fill('matrix-copy.xlsx');
+  await ref('行列数据', 'steps.' + readMatrix);
+  const rereadMatrix = await add('Excel 表格');
+  await label('操作').selectOption('read');
+  await label('文件目录绑定').fill('work');
+  await label('读取文件名').fill('matrix-copy.xlsx');
+  await add('结果断言', '核对 H12 原始位置');
+  await ref('判断值', 'steps.' + readMatrix, '11.7');
+  await literal('比较值', 'string', '末页保留');
+  await add('结果断言', '核对另存的全部行列');
+  await ref('判断值', 'steps.' + rereadMatrix);
+  await ref('比较值', 'steps.' + readMatrix);
   const fetched = await add('Excel 表格');
   await label('文件目录绑定').fill('work');
   await label('输出文件名').fill('http.xlsx');
@@ -309,7 +346,7 @@ try {
   let saved: any;
   await wait(async () => {
     saved = (await call('bootstrap')).flows.find((f: any) => f.flow.name === '资源节点表单验收');
-    return saved?.flow.steps.length === 13 && saved?.bindings.files.uploads === data;
+    return saved?.flow.steps.length === 18 && saved?.bindings.files.uploads === data;
   });
   assert.equal(saved.bindings.files.work, data);
   assert.equal(saved.bindings.files.uploads, data);
@@ -358,6 +395,26 @@ try {
   assert.equal(written.getCell('B2').value, 42);
   assert.equal(written.getCell('A3').value, false);
   assert.equal(written.getCell('H12').value, '末页保留');
+  const expectedMatrix: unknown[][] = Array.from({ length: 14 }, () => []);
+  expectedMatrix[1] = [payload.title, 42];
+  expectedMatrix[2] = [false];
+  expectedMatrix[11] = [null, null, null, null, null, null, null, '末页保留'];
+  assert.deepEqual(detail.output[readMatrix], expectedMatrix);
+  assert.deepEqual(detail.output[rereadMatrix], expectedMatrix);
+  const copiedMatrix = new ExcelJS.Workbook();
+  await copiedMatrix.xlsx.readFile(join(data, 'matrix-copy.xlsx'));
+  const copiedSheet = copiedMatrix.worksheets[0];
+  assert.equal(copiedSheet.rowCount, 14, 'explicit trailing blank rows remain in the file');
+  assert.equal(copiedSheet.getCell('A1').value, null);
+  assert.equal(copiedSheet.getCell('A2').value, payload.title);
+  assert.equal(copiedSheet.getCell('A3').value, false);
+  assert.equal(copiedSheet.getCell('A11').value, null);
+  assert.equal(copiedSheet.getCell('H12').value, '末页保留');
+  assert.equal(copiedSheet.getCell('G12').value, null, 'empty leading columns do not shift H12');
+  assert.ok(detail.artifacts.some((item: any) => item.name === 'matrix-copy.xlsx'));
+  evidence.checks.push(
+    'blank-leading-middle-trailing-rows-and-h12-retained-through-read-reference-write',
+  );
   const filled = new ExcelJS.Workbook();
   await filled.xlsx.readFile(join(data, 'filled.xlsx'));
   const report = filled.getWorksheet('Report')!;
@@ -375,6 +432,14 @@ try {
     ),
   );
   assert.equal(uploaded, payload.title);
+  assert.equal(
+    await app.evaluate(async ({ BrowserWindow }) =>
+      (
+        BrowserWindow.getAllWindows()[0].contentView.children[0] as any
+      ).webContents.executeJavaScript('innerWidth'),
+    ),
+    1920,
+  );
   assert.equal(lab.state.attempts, 0);
   evidence.checks.push('real-http-bytes-zip-excel-template-and-embedded-upload');
   await button('我的流程').click();

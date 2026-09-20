@@ -720,6 +720,135 @@ test('pause requested during worker startup reaches the first boundary before an
   }
 });
 
+test('real Worker preserves Excel row and column positions through referenced read-write-read', async () => {
+  const path = await realpath(await mkdtemp(join(tmpdir(), 'flowark-excel-rows-runtime-')));
+  const runtime = new Runtime(
+    path,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  try {
+    const source = new ExcelJS.Workbook();
+    const sheet = source.addWorksheet('Source');
+    sheet.getCell('C3').value = 'C3';
+    sheet.getCell('E3').value = 0;
+    sheet.getCell('F3').value = false;
+    sheet.getCell('G3').value = '';
+    const date = new Date('2024-01-02T03:04:05.000Z');
+    sheet.getCell('B5').value = date;
+    sheet.getCell('D5').value = { formula: '1+2', result: 3 };
+    sheet.getCell('H12').value = 'H12';
+    sheet.getRow(14).height = 24;
+    source.addWorksheet('Ignored').getCell('A1').value = 'other worksheet';
+    await source.xlsx.writeFile(join(path, 'source.xlsx'));
+    const sourceBytes = await readFile(join(path, 'source.xlsx'));
+    const read: Step = {
+      id: 'read',
+      type: 'excel',
+      version: 1,
+      operation: 'read',
+      binding: 'workspace',
+      name: 'source.xlsx',
+      rows: [],
+    };
+    runtime.saveFlow(
+      {
+        ...base,
+        steps: [
+          read,
+          {
+            ...read,
+            id: 'write',
+            operation: 'write',
+            name: 'copy.xlsx',
+            rows: { $ref: 'steps.read' },
+          },
+          { ...read, id: 'reread', name: 'copy.xlsx' },
+          {
+            id: 'verifyRows',
+            type: 'assert',
+            version: 1,
+            actual: { $ref: 'steps.reread' },
+            operator: 'equals',
+            expected: { $ref: 'steps.read' },
+          },
+          {
+            id: 'verifyEmptyA3',
+            type: 'assert',
+            version: 1,
+            actual: { $ref: 'steps.reread.2.0' },
+            operator: 'equals',
+            expected: null,
+          },
+          {
+            id: 'verifyH12',
+            type: 'assert',
+            version: 1,
+            actual: { $ref: 'steps.reread.11.7' },
+            operator: 'equals',
+            expected: 'H12',
+          },
+        ],
+      },
+      { files: { workspace: path }, credentials: [] },
+    );
+    const run = await runtime.enqueue(base.id);
+    await until(() =>
+      ['SUCCEEDED', 'FAILED', 'INTERRUPTED'].includes(
+        runtime.store.get<Run>('run', run.id)?.state ?? '',
+      ),
+    );
+    const detail = await runtime.request('run.detail', { id: run.id });
+    assert.equal(detail.run.state, 'SUCCEEDED', detail.run.error);
+    for (const name of ['read', 'reread']) {
+      const rows = detail.output[name];
+      assert.equal(rows.length, 14);
+      assert.deepEqual(rows[0], []);
+      assert.deepEqual(rows[1], []);
+      assert.deepEqual(rows[2], [null, null, 'C3', null, 0, false, '']);
+      assert.deepEqual(rows[3], []);
+      assert.deepEqual(rows[4], [null, date.toISOString(), null, { formula: '1+2', result: 3 }]);
+      assert.deepEqual(rows[11], [null, null, null, null, null, null, null, 'H12']);
+      assert.deepEqual(rows[12], []);
+      assert.deepEqual(rows[13], []);
+    }
+    for (const name of ['verifyRows', 'verifyEmptyA3', 'verifyH12'])
+      assert.deepEqual(detail.output[name], { verified: true });
+    assert.equal(detail.artifacts.length, 1);
+    const artifact = detail.artifacts[0];
+    assert.equal(artifact.name, 'copy.xlsx');
+    assert.equal(artifact.available, true);
+    assert.equal(artifact.integrity, 'verified');
+    assert.equal(
+      await runtime.request('artifact.resolve', { id: artifact.artifactId }),
+      artifact.path,
+    );
+    assert.notEqual(artifact.path, join(path, 'copy.xlsx'));
+    assert.deepEqual(await readFile(artifact.path), await readFile(join(path, 'copy.xlsx')));
+    const copy = new ExcelJS.Workbook();
+    await copy.xlsx.readFile(artifact.path);
+    const copied = copy.worksheets[0];
+    assert.equal(copied.rowCount, 14);
+    assert.equal(copied.getCell('A1').value, null);
+    assert.equal(copied.getCell('B3').value, null);
+    assert.equal(copied.getCell('C3').value, 'C3');
+    assert.equal(copied.getCell('E3').value, 0);
+    assert.equal(copied.getCell('F3').value, false);
+    assert.equal(copied.getCell('G3').value, '');
+    assert.ok(copied.getCell('B5').value instanceof Date);
+    assert.deepEqual(copied.getCell('B5').value, date);
+    assert.deepEqual(copied.getCell('D5').value, { formula: '1+2', result: 3 });
+    assert.equal(copied.getCell('H12').value, 'H12');
+    assert.equal(copied.getCell('G12').value, null);
+    assert.deepEqual(await readFile(join(path, 'source.xlsx')), sourceBytes);
+  } finally {
+    await runtime.shutdown();
+    runtime.store.close();
+    await rm(path, { recursive: true, force: true });
+  }
+});
 test('real Worker fills workbook, archives it and preserves run history when artifacts disappear', async () => {
   const path = await realpath(await mkdtemp(join(tmpdir(), 'flowark-workbook-runtime-')));
   const runtime = new Runtime(
