@@ -1,6 +1,7 @@
 import { WebContentsView, session, BrowserWindow, type DownloadItem } from 'electron';
 import { EmbeddedPage } from '../adapters/embedded-page';
 import type { BrowserCommand } from '../shared/types';
+import { desktopViewportWidth } from '../shared/browser-viewport';
 type Bounds = { x: number; y: number; width: number; height: number };
 export class EmbeddedBrowser {
   private view?: WebContentsView;
@@ -10,6 +11,7 @@ export class EmbeddedBrowser {
   private visible = false;
   private bounds: Bounds = { x: 0, y: 0, width: 1, height: 1 };
   private busy = false;
+  private viewportSize?: { view: WebContentsView; width: number; height: number };
   private capture?: { host: BrowserWindow; view: WebContentsView };
   private stopOperation?: () => void;
   private download?: {
@@ -89,6 +91,14 @@ export class EmbeddedBrowser {
     wc.on('will-redirect', (event, url) => {
       if (!this.permitted(url)) event.preventDefault();
     });
+    // Page zoom is origin-scoped and must be restored on a new document. Restore it before
+    // navigation completion is observed by the execution driver.
+    wc.on('did-finish-load', () => {
+      if (this.view === view && this.page) {
+        this.viewportSize = undefined;
+        this.layoutViewport(view, view.getBounds());
+      }
+    });
     wc.on('will-attach-webview', (event) => event.preventDefault());
     wc.setWindowOpenHandler(({ url }) => {
       if (this.permitted(url)) void wc.loadURL(url).catch(() => {});
@@ -105,7 +115,7 @@ export class EmbeddedBrowser {
       await wc.loadURL('about:blank');
       const page = new EmbeddedPage(wc, (mouse) => {
         // Native input inside an OOPIF is frame-local. Screen coordinates stay
-        // stable, so convert once to this view's viewport before routing a hover.
+        // stable, so convert to view-local input before applying the page zoom.
         if (mouse.globalX || mouse.globalY) {
           const window = this.window.getContentBounds(),
             bounds = view.getBounds();
@@ -114,12 +124,12 @@ export class EmbeddedBrowser {
             y: (mouse.globalY ?? 0) - window.y - bounds.y,
           };
         }
-        // sendInputEvent without screen coordinates uses view-local input.
         return { x: mouse.x, y: mouse.y };
       });
       this.page = page;
       await page.initialize();
       if (this.view !== view) throw new Error('网页会话已关闭');
+      this.layoutViewport(view, view.getBounds());
       this.layout();
     })();
     this.starting = start;
@@ -132,17 +142,32 @@ export class EmbeddedBrowser {
       if (this.starting === start) this.starting = undefined;
     }
   }
+  private layoutViewport(view: WebContentsView, bounds: Bounds) {
+    view.setBounds(bounds);
+    const previous = this.viewportSize;
+    if (
+      previous?.view === view &&
+      previous.width === bounds.width &&
+      previous.height === bounds.height
+    )
+      return;
+    // Native page zoom keeps layout at desktop width while Chromium handles
+    // painting, input routing, and cross-process frames with the same transform.
+    view.webContents.setZoomFactor(bounds.width / desktopViewportWidth);
+    this.viewportSize = { view, width: bounds.width, height: bounds.height };
+  }
   private layout() {
     // A cancelled capture can still be settling after a replacement page starts.
     // Only the page actually reparented to the paint host must defer its layout.
-    if (!this.view || this.window.isDestroyed() || this.capture?.view === this.view) return;
+    if (!this.view || !this.page || this.window.isDestroyed() || this.capture?.view === this.view)
+      return;
     const [width, height] = this.window.getContentSize();
     const x = Math.max(0, Math.min(this.bounds.x, width - 1)),
       y = Math.max(0, Math.min(this.bounds.y, height - 1));
     const w = Math.max(1, Math.min(this.bounds.width, width - x)),
       h = Math.max(1, Math.min(this.bounds.height, height - y));
     // Keep the hidden page usable for automation at its last viewport size.
-    if (w > 1 && h > 1) this.view.setBounds({ x, y, width: w, height: h });
+    if (w > 1 && h > 1) this.layoutViewport(this.view, { x, y, width: w, height: h });
     this.view.setVisible(
       this.visible && w > 1 && h > 1 && this.window.isVisible() && !this.window.isMinimized(),
     );

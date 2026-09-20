@@ -145,7 +145,8 @@ try {
     const point = await wc.executeJavaScript(
       `(()=>{const r=document.querySelector('#action').getBoundingClientRect();return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()`,
     );
-    wc.sendInputEvent({ type: 'mouseMove', ...point });
+    const scale = (globalThis as any).embeddedFixture.view.getBounds().width / 1920;
+    wc.sendInputEvent({ type: 'mouseMove', x: point.x * scale, y: point.y * scale });
   });
   await clickTarget('#name', [], true);
   assert.equal((await selected('stale-hover')).selector, '#name');
