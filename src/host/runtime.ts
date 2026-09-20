@@ -16,7 +16,7 @@ import { ScriptProcessInterruptedError, type ScriptOwner } from '../shared/scrip
 import type { CleanupResult } from '../shared/embedded-lifecycle';
 import { child, killOwnedTree } from './processes';
 import { Rpc } from '../shared/rpc';
-import { uid, now, digest, errorText, redact } from '../shared/utils';
+import { uid, now, digest, errorText, redact, redactedErrorText } from '../shared/utils';
 import { validateFlow, validateObject, walk } from '../core/validate';
 import { assertBrowserOperations } from '../adapters/browser-scope';
 import { discoverBrowsers, inspectBrowser, validateBinding } from '../adapters/browsers';
@@ -134,7 +134,7 @@ export class Runtime {
       this.recovering = false;
       if (!this.stopping)
         this.timer = setInterval(
-          () => void this.tick().catch((e) => (this.store.fault = errorText(e))),
+          () => void this.tick().catch((e) => (this.store.fault = this.redactError(e))),
           1000,
         );
     });
@@ -142,8 +142,11 @@ export class Runtime {
     // preserving the rejected ready promise for init and execution admission.
     void this.ready.catch((error) => {
       this.recovering = false;
-      this.store.fault ??= '脚本资源恢复核对失败：' + errorText(error);
+      this.store.fault ??= '脚本资源恢复核对失败：' + this.redactError(error);
     });
+  }
+  redactError(error: unknown): string {
+    return redactedErrorText(error, this.secrets);
   }
   saveFlow(flow: Flow, bindings: Bindings): FlowRecord {
     bindings = normalizeBindings(bindings);
@@ -221,7 +224,7 @@ export class Runtime {
         }),
       templates,
       credentials,
-      fault: this.store.fault,
+      fault: this.store.fault ? redact(this.store.fault, this.secrets) : undefined,
       runtimeBlock: this.executionBlock(),
       dataPath: this.dataPath,
       execution: this.observeExecution(),
@@ -975,7 +978,7 @@ export class Runtime {
             } catch (e) {
               this.store.put('schedule-log', uid(), {
                 scheduleId: s.id,
-                reason: errorText(e),
+                reason: this.redactError(e),
                 time,
               });
             }
@@ -1075,21 +1078,26 @@ export class Runtime {
           resumeVersion: 'fictional-v1',
         };
         const key = await this.system('credentials.get', { id: args.provider });
-        const result = await draftReply(input, key, new AbortController().signal);
-        const reasons = validateDraft(result, input);
-        if (reasons.length) throw new Error('API 已返回，但草稿未通过校验：' + reasons.join('；'));
-        this.store.put('ai-validation', args.provider, {
-          provider: result.provider,
-          model: result.model,
-          time: now(),
-          requestId: result.requestId,
-          status: 'passed',
-        });
-        return {
-          provider: result.provider,
-          model: result.model,
-          usage: result.usage,
-        };
+        try {
+          const result = await draftReply(input, key, new AbortController().signal);
+          const reasons = validateDraft(result, input);
+          if (reasons.length)
+            throw new Error('API 已返回，但草稿未通过校验：' + reasons.join('；'));
+          this.store.put('ai-validation', args.provider, {
+            provider: result.provider,
+            model: result.model,
+            time: now(),
+            requestId: result.requestId,
+            status: 'passed',
+          });
+          return {
+            provider: result.provider,
+            model: result.model,
+            usage: result.usage,
+          };
+        } catch (error) {
+          throw new Error(redactedErrorText(error, [key]));
+        }
       }
       case 'bootstrap':
         return this.bootstrap();
@@ -1157,16 +1165,28 @@ export class Runtime {
         // Artifact inspection may span a Run finishing and the FIFO starting its
         // successor. Re-read all historical facts after that asynchronous work.
         const snapshot = this.store.get('snapshot', id);
+        const rerun = this.reruns.details(id);
+        const artifactCleanup = this.artifactCleanup.status(id);
         return {
           run: this.store.get('run', id),
-          rerun: this.reruns.details(id),
-          artifactCleanup: this.artifactCleanup.status(id),
+          rerun: {
+            ...rerun,
+            ...(rerun.reason ? { reason: redact(rerun.reason, this.secrets) } : {}),
+          },
+          artifactCleanup: artifactCleanup
+            ? {
+                ...artifactCleanup,
+                ...(artifactCleanup.error
+                  ? { error: redact(artifactCleanup.error, this.secrets) }
+                  : {}),
+              }
+            : artifactCleanup,
           events: this.store.events(id),
           artifacts,
           output: redact(this.store.get('output', id)),
           snapshot: snapshot?.flow,
           scriptBundles: snapshot?.scriptBundles ?? [],
-          fault: this.store.fault,
+          fault: this.store.fault ? redact(this.store.fault, this.secrets) : undefined,
           execution: this.observeExecution(),
         };
       }
