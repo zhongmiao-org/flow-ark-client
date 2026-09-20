@@ -8,7 +8,12 @@ export default function EmbeddedBrowserPanel({
   enabled: boolean;
   action: (fn: () => Promise<any>, message?: string) => Promise<any>;
 }) {
-  const [status, setStatus] = useState({ started: false, visible: false, url: '' });
+  const [status, setStatus] = useState<{
+    started: boolean;
+    visible: boolean;
+    url: string;
+    blocked?: string;
+  }>({ started: false, visible: false, url: '' });
   useEffect(() => {
     let live = true;
     const refresh = () =>
@@ -56,14 +61,17 @@ export default function EmbeddedBrowserPanel({
       </p>
       <div className="note">
         <b>
-          {status.started
-            ? status.visible
-              ? '右侧网页面板已显示'
-              : '会话在后台运行'
-            : '随时打开网页面板'}
+          {status.blocked
+            ? '网页资源回收未确认'
+            : status.started
+              ? status.visible
+                ? '右侧网页面板已显示'
+                : '会话在后台运行'
+              : '随时打开网页面板'}
         </b>
         <span className="embedded-url">
-          {status.url ||
+          {status.blocked ||
+            status.url ||
             '点击右上角打开网页面板；流程中选择 FlowArk 内置浏览器即可运行或逐步调试。'}
         </span>
       </div>

@@ -10,7 +10,12 @@ export default function BrowserSidebar({
   running: boolean;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
-  const [status, setStatus] = useState({ started: false, url: '', title: '' });
+  const [status, setStatus] = useState<{
+    started: boolean;
+    url: string;
+    title: string;
+    blocked?: string;
+  }>({ started: false, url: '', title: '' });
   const [address, setAddress] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -92,7 +97,11 @@ export default function BrowserSidebar({
           <Globe size={18} />
           <strong>内置浏览器</strong>
           <span className="badge">
-            {running ? '任务执行中' : `桌面宽度 ${desktopViewportWidth}`}
+            {status.blocked
+              ? '网页已停止'
+              : running
+                ? '任务执行中'
+                : `桌面宽度 ${desktopViewportWidth}`}
           </span>
         </div>
         <button title="关闭网页面板" aria-label="关闭网页面板" onClick={close}>
@@ -110,7 +119,7 @@ export default function BrowserSidebar({
           aria-label="网页地址"
           placeholder="输入网址，打开网页"
           value={address}
-          disabled={running || loading}
+          disabled={running || loading || !!status.blocked}
           onFocus={() => {
             focused.current = true;
           }}
@@ -121,7 +130,7 @@ export default function BrowserSidebar({
         />
         <button
           type="submit"
-          disabled={running || loading || !address}
+          disabled={running || loading || !!status.blocked || !address}
           title="访问网页"
           aria-label="访问网页"
         >
@@ -129,7 +138,9 @@ export default function BrowserSidebar({
         </button>
         <button
           type="button"
-          disabled={running || loading || !status.url || status.url === 'about:blank'}
+          disabled={
+            running || loading || !!status.blocked || !status.url || status.url === 'about:blank'
+          }
           onClick={() => navigate(status.url)}
           title="重新加载"
           aria-label="重新加载"
@@ -137,6 +148,11 @@ export default function BrowserSidebar({
           <RefreshCw size={15} />
         </button>
       </form>
+      {status.blocked && (
+        <div className="browser-error" role="alert">
+          {status.blocked}
+        </div>
+      )}
       {error && (
         <div className="browser-error" role="alert">
           {error}
@@ -146,13 +162,15 @@ export default function BrowserSidebar({
       <div className="browser-viewport" ref={viewport} data-testid="browser-viewport" />
       <footer>
         <span className="local-dot" />
-        {loading
-          ? '正在打开网页…'
-          : status.started
-            ? status.title ||
-              (status.url === 'about:blank' ? '在上方输入网址，或运行浏览器流程' : '网页已就绪')
-            : '运行流程或输入网址打开网页'}
-        <span>收起面板后任务继续</span>
+        {status.blocked
+          ? '请完整退出并重开应用后核对结果'
+          : loading
+            ? '正在打开网页…'
+            : status.started
+              ? status.title ||
+                (status.url === 'about:blank' ? '在上方输入网址，或运行浏览器流程' : '网页已就绪')
+              : '运行流程或输入网址打开网页'}
+        {!status.blocked && <span>收起面板后任务继续</span>}
       </footer>
     </aside>
   );

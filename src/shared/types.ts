@@ -91,6 +91,7 @@ export type Bootstrap = {
   templates: Template[];
   credentials: string[];
   fault?: string;
+  runtimeBlock?: string;
   dataPath: string;
 };
 export type Bridge = { request(method: string, args?: any): Promise<any> };

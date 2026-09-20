@@ -3,6 +3,7 @@ import { _electron as electron } from 'playwright-core';
 import electronPath from 'electron';
 import { join, resolve } from 'node:path';
 import type { BrowserCommand } from '../../src/shared/types';
+import { randomUUID } from 'node:crypto';
 export async function embeddedHarness(data: string) {
   const entry = join(data, 'embedded-fixture.cjs');
   await build({
@@ -35,19 +36,25 @@ export async function embeddedHarness(data: string) {
     );
   };
   const binding = await system('browser.embedded.binding');
-  const token = 'fixture-lease';
+  let token = randomUUID();
   return {
     app,
     system,
     binding,
-    start: () => system('browser.embedded.start', { token }),
+    start: () => {
+      token = randomUUID();
+      return system('browser.embedded.start', { token });
+    },
     perform: (command: BrowserCommand) => system('browser.embedded.perform', { token, command }),
     visibility: (visible: boolean) => system('browser.embedded.visibility', { visible }),
     status: () => system('browser.embedded.status'),
     close: () => system('browser.embedded.close', { token }),
     shutdown: async () => {
-      await system('browser.embedded.close');
-      await app.close();
+      try {
+        await system('browser.embedded.close');
+      } finally {
+        await app.close();
+      }
     },
   };
 }

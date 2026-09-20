@@ -20,6 +20,7 @@ import { Rpc } from '../shared/rpc';
 import { Vault } from './vault';
 import { validateIPC } from '../shared/ipc';
 import { errorText } from '../shared/utils';
+import type { EmbeddedCleanupFailure, EmbeddedLostNotice } from '../shared/embedded-lifecycle';
 let win: BrowserWindow;
 let tray: Tray;
 let quitting = false;
@@ -28,6 +29,21 @@ let rpc: Rpc;
 let host: Electron.UtilityProcess;
 let startupError = '';
 let embedded: EmbeddedBrowser;
+let hostStopped = false;
+function notifyBrowserLifecycle(
+  method: 'system.browserLost' | 'system.browserCleanupFailed',
+  notice: EmbeddedLostNotice | EmbeddedCleanupFailure,
+) {
+  if (quitting || hostStopped) return;
+  const unavailable = () => {
+    if (quitting || hostStopped) return;
+    startupError =
+      '网页资源状态无法可靠通知本地宿主，执行已停止；请完整退出并重开应用后核对运行结果';
+    host?.kill();
+  };
+  if (!rpc) unavailable();
+  else void rpc.call(method, notice, 8000).catch(unavailable);
+}
 if (process.env.FLOWARK_DATA_DIR) app.setPath('userData', process.env.FLOWARK_DATA_DIR);
 if (!app.requestSingleInstanceLock()) app.quit();
 app.on('second-instance', () => {
@@ -58,9 +74,18 @@ async function quit() {
     try {
       await rpc.call('shutdown', {}, 15000);
     } catch {}
-    await embedded?.close();
-    host?.kill();
-    app.quit();
+    try {
+      await embedded?.close();
+    } catch {
+      // The requested full application exit still terminates all native pages.
+      // The next host boot recovers unfinished records without replaying them.
+    } finally {
+      try {
+        host?.kill();
+      } finally {
+        app.quit();
+      }
+    }
   } finally {
     quitPending = false;
   }
@@ -92,9 +117,11 @@ app
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     win.webContents.on('will-navigate', (e) => e.preventDefault());
     win.webContents.session.setPermissionRequestHandler((_w, _p, callback) => callback(false));
-    embedded = new EmbeddedBrowser(win, (token) => {
-      void rpc?.call('system.browserLost', { token }).catch(() => {});
-    });
+    embedded = new EmbeddedBrowser(
+      win,
+      (notice) => notifyBrowserLifecycle('system.browserLost', notice),
+      (notice) => notifyBrowserLifecycle('system.browserCleanupFailed', notice),
+    );
     win.on('close', (e) => {
       if (!quitting) {
         e.preventDefault();
@@ -268,9 +295,12 @@ app
         );
         host.on('message', (m) => void rpc.receive(m));
         host.on('exit', () => {
+          hostStopped = true;
           rpc.close();
-          void embedded.close();
-          startupError = '本地宿主已停止，请重开应用查看中断记录';
+          startupError ||= '本地宿主已停止，请重开应用查看中断记录';
+          void embedded.close().catch(() => {
+            startupError = '本地宿主已停止，网页回收未确认；请完整退出并重开应用后核对运行结果';
+          });
         });
         host.stderr?.on('data', (b) => {
           if (!app.isPackaged) process.stderr.write(b);

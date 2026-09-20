@@ -1,6 +1,7 @@
 import { Runtime } from './runtime';
 import { Rpc } from '../shared/rpc';
 import { dirname } from 'node:path';
+import { EMBEDDED_CLOSE_RPC_TIMEOUT_MS } from '../shared/embedded-lifecycle';
 const port = (process as any).parentPort;
 let runtime: Runtime | undefined;
 const send = (m: any) => (port ? port.postMessage(m) : process.send?.(m));
@@ -16,7 +17,11 @@ const rpc = new Rpc(send, async (method, args) => {
         rpc.call(
           m,
           a,
-          m === 'browser.embedded.perform' ? (a.command.timeoutMs ?? 15000) + 5000 : 65000,
+          m === 'browser.embedded.perform'
+            ? (a.command.timeoutMs ?? 15000) + 5000
+            : m === 'browser.embedded.close'
+              ? EMBEDDED_CLOSE_RPC_TIMEOUT_MS
+              : 65000,
         ),
     );
     return true;
@@ -28,12 +33,15 @@ if (port) {
   port.on('message', (e: any) => void rpc.receive(e.data));
   port.on('close', () => {
     rpc.close();
-    void runtime?.shutdown();
+    void runtime?.shutdown().catch(() => {});
   });
 } else {
   process.on('message', (m) => void rpc.receive(m as any));
   process.on('disconnect', () => {
     rpc.close();
-    void runtime?.shutdown().finally(() => process.exit(0));
+    void runtime?.shutdown().then(
+      () => process.exit(0),
+      () => process.exit(1),
+    );
   });
 }
