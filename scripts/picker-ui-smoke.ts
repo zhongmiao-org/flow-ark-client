@@ -123,7 +123,7 @@ try {
   );
   await writeFile('test-results/picker-editor.png', Buffer.from(editorImage, 'base64'));
   await page.getByRole('button', { name: '参数与绑定', exact: true }).click();
-  await page.locator('.inspector select').selectOption('embedded');
+  await page.getByLabel('本机浏览器', { exact: true }).selectOption('embedded');
   await app.evaluate(({ dialog }, path) => {
     const original = dialog.showOpenDialog;
     dialog.showOpenDialog = (async () => {

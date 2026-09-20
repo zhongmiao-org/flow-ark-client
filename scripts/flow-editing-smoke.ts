@@ -89,6 +89,7 @@ try {
   await select(fill);
   await button('在前面插入').click();
   const marker = await add('数据');
+  await page.locator('.node-advanced summary').click();
   await raw.fill(JSON.stringify({ id: marker, type: 'value', version: 1, value: 'marker' }));
   await select(fill);
   await button('复制节点').click();
@@ -116,6 +117,7 @@ try {
   const loop = await add('串行循环');
   await position.selectOption(loop + ':body');
   const item = await add('数据');
+  await page.locator('.node-advanced summary').click();
   await raw.fill(JSON.stringify({ id: item, type: 'value', version: 1, value: { $ref: 'item' } }));
   await page.getByLabel('步骤移动位置', { exact: true }).selectOption('main');
   await button('移动').click();
@@ -138,11 +140,11 @@ try {
   assert.equal(await count(), copiedCount);
   evidence.checks.push('relative-insertion-copy-move-nested-history-and-shortcuts');
   await button('参数与绑定').click();
-  await page.locator('.inspector select').selectOption('embedded');
+  await page.getByLabel('本机浏览器', { exact: true }).selectOption('embedded');
   await undo();
-  assert.equal(await page.locator('.inspector select').inputValue(), '');
+  assert.equal(await page.getByLabel('本机浏览器', { exact: true }).inputValue(), '');
   await redo();
-  assert.equal(await page.locator('.inspector select').inputValue(), 'embedded');
+  assert.equal(await page.getByLabel('本机浏览器', { exact: true }).inputValue(), 'embedded');
   await button('保存').click();
   let flow: any;
   await wait(async () => {

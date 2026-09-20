@@ -60,6 +60,10 @@ import EmbeddedBrowserPanel from './EmbeddedBrowserPanel';
 import BrowserSidebar from './BrowserSidebar';
 import { fileBindingNames } from './file-bindings';
 import BrowserNodeConfiguration from './BrowserNodeConfiguration';
+import LogicNodeConfiguration from './LogicNodeConfiguration';
+import ParameterConfiguration from './ParameterConfiguration';
+import { referenceChoices } from './value-references';
+import { referenceIssues } from '../shared/flow-references';
 const CodeEditor = lazy(() => import('./CodeEditor'));
 const initial: Bootstrap = {
   flows: [],
@@ -181,15 +185,24 @@ export default function App() {
     const r = await action(() => api('flow.create', { templateId }));
     if (r) void openFlow(r);
   }
+  function checkEditorInput() {
+    if (section !== 'editor') return;
+    const invalid = document.querySelector<HTMLElement>('.editor-page [data-value-invalid]');
+    if (invalid) {
+      invalid.querySelector<HTMLElement>('textarea,input')?.focus();
+      throw new Error('请先修正未完成的值配置，再保存或运行');
+    }
+  }
   async function save() {
     if (edit)
-      return action(
-        () => api('flow.save', { flow: edit.flow, bindings: edit.bindings }),
-        '已保存本地草稿',
-      );
+      return action(() => {
+        checkEditorInput();
+        return api('flow.save', { flow: edit.flow, bindings: edit.bindings });
+      }, '已保存本地草稿');
   }
   async function run(r: FlowRecord, debug = false) {
     await action(async () => {
+      checkEditorInput();
       await api('flow.save', { flow: r.flow, bindings: r.bindings });
       const run = await api('flow.run', { id: r.id, debug });
       setDetail(await api('run.detail', { id: run.id }));
@@ -787,6 +800,24 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose,
   };
   const location = locationOf(r.flow.steps, selected);
   const targets = destinationChoices(r.flow.steps);
+  const choices = referenceChoices(r.flow, selected);
+  const updateNode = (next: Step) => {
+    patch(() => next);
+    setRaw(JSON.stringify(next, null, 2));
+    setInvalid('');
+  };
+  const updateParameters = (parameters: any) => {
+    if (!parameters || typeof parameters !== 'object' || Array.isArray(parameters))
+      throw new Error('运行参数必须为对象');
+    const before = new Set(
+      referenceIssues(r.flow.steps, r.flow.parameters).map((issue) => JSON.stringify(issue)),
+    );
+    const added = referenceIssues(r.flow.steps, parameters).find(
+      (issue) => !before.has(JSON.stringify(issue)),
+    );
+    if (added) throw new Error(`${added.nodeId} 仍引用 ${added.reference}，请先调整引用`);
+    setRecord({ ...r, flow: { ...r.flow, parameters } });
+  };
   const { nodes, edges, stepCount } = buildDiagram(r.flow.steps, selected);
   const layoutKey = nodes.map((n) => `${n.id}:${n.position.x}:${n.position.y}`).join('|');
   return (
@@ -916,10 +947,28 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose,
                 </p>
               )}
               <p className="muted">{selectedNode.id} · 修改后保存，下一次运行生效</p>
+              {!['file', 'excel'].includes(selectedNode.type) && (
+                <>
+                  <label htmlFor="step-name">步骤名称</label>
+                  <input
+                    id="step-name"
+                    value={typeof selectedNode.name === 'string' ? selectedNode.name : ''}
+                    placeholder="便于识别的名称（可选）"
+                    onChange={(e) => updateNode({ ...selectedNode, name: e.target.value })}
+                  />
+                </>
+              )}
+              <LogicNodeConfiguration
+                key={selectedNode.id + ':logic:' + revision}
+                node={selectedNode}
+                choices={choices}
+                change={updateNode}
+              />
               {selectedNode.type === 'browser' && (
                 <BrowserNodeConfiguration
                   key={selectedNode.id + ':' + revision}
                   node={selectedNode}
+                  choices={choices}
                   change={(next) => {
                     patch(() => next);
                     setRaw(JSON.stringify(next, null, 2));
@@ -1053,7 +1102,11 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose,
                   />
                 </>
               )}
-              <details className="node-advanced" open={selectedNode.type !== 'browser'}>
+              <details
+                className="node-advanced"
+                key={selectedNode.id}
+                open={['http', 'file', 'excel', 'recruiting'].includes(selectedNode.type)}
+              >
                 <summary>高级配置 JSON</summary>
                 <label>节点配置 JSON</label>
                 <textarea
@@ -1085,13 +1138,18 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose,
         {tab === 'params' && (
           <>
             <h3>运行参数</h3>
-            <JsonInput
+            <ParameterConfiguration
               key={revision}
               value={r.flow.parameters}
-              onChange={(parameters) => setRecord({ ...r, flow: { ...r.flow, parameters } })}
+              change={updateParameters}
             />
-            <label>本机浏览器</label>
+            <details className="parameters-advanced">
+              <summary>参数 JSON · 高级</summary>
+              <JsonInput key={revision} value={r.flow.parameters} onChange={updateParameters} />
+            </details>
+            <label htmlFor="flow-browser-binding">本机浏览器</label>
             <select
+              id="flow-browser-binding"
               value={r.bindings.browserId ?? ''}
               onChange={(e) =>
                 setRecord({
@@ -1150,18 +1208,26 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose,
 function JsonInput({ value, onChange }: { value: any; onChange: (v: any) => void }) {
   const [text, setText] = useState(JSON.stringify(value, null, 2)),
     [err, setErr] = useState('');
+  useEffect(() => {
+    try {
+      if (JSON.stringify(JSON.parse(text)) === JSON.stringify(value)) return;
+    } catch {}
+    setText(JSON.stringify(value, null, 2));
+    setErr('');
+  }, [JSON.stringify(value)]);
   return (
     <>
       <textarea
         className="code-input small"
+        data-value-invalid={err || undefined}
         value={text}
         onChange={(e) => {
           setText(e.target.value);
           try {
             onChange(JSON.parse(e.target.value));
             setErr('');
-          } catch {
-            setErr('JSON 格式尚未完成');
+          } catch (error: any) {
+            setErr(error.message || 'JSON 格式尚未完成');
           }
         }}
       />
