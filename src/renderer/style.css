@@ -1730,3 +1730,44 @@ td small {
     white-space: nowrap;
   }
 }
+
+.draft-history {
+  display: flex;
+  gap: 2px;
+}
+.node-insert-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-block: 10px;
+}
+.node-insert-actions button {
+  padding: 7px 4px;
+  font-size: 12px;
+}
+.node-move-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.node-move-actions select {
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+}
+.node-move-actions button {
+  flex-shrink: 0;
+  padding: 7px 9px;
+}
+.inspector-heading h3 {
+  min-width: 0;
+  flex: 1;
+}
+.inspector-heading .icon-button {
+  flex-shrink: 0;
+  padding: 5px;
+}
+.inspector > .muted {
+  overflow-wrap: anywhere;
+}

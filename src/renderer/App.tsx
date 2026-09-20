@@ -1,12 +1,26 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useReducer, useRef, lazy, Suspense } from 'react';
 import { version as appVersion } from '../../package.json';
 import { ReactFlow, Background, Controls } from '@xyflow/react';
 import { buildDiagram } from './flow-diagram';
 import { flowNodeTypes, flowEdgeTypes, FitDiagram } from './FlowNode';
 import { kinds } from './node-kinds';
-import ActionLibrary from './ActionLibrary';
+import ActionLibrary, { destinationChoices } from './ActionLibrary';
+import {
+  flatten,
+  changeSteps,
+  locationOf,
+  insertStep,
+  duplicateStep,
+  moveStep,
+  moveSibling,
+  checkStructure,
+  type Destination,
+} from './flow-editing';
+import { draftHistory, emptyHistory } from './draft-history';
 import '@xyflow/react/dist/style.css';
 import {
+  Undo2,
+  Redo2,
   Workflow,
   Play,
   Plus,
@@ -80,56 +94,6 @@ const actions: Record<string, string> = {
 };
 const uid = () => crypto.randomUUID();
 
-function flatten(steps: Step[]): Step[] {
-  return steps.flatMap((n) => [
-    n,
-    ...(n.type === 'condition'
-      ? [...flatten(n.then), ...flatten(n.else)]
-      : n.type === 'loop'
-        ? flatten(n.body)
-        : []),
-  ]);
-}
-function changeSteps(steps: Step[], id: string, fn: (n: Step) => Step | null): Step[] {
-  return steps.flatMap((n) => {
-    if (n.id === id) {
-      const changed = fn(n);
-      return changed ? [changed] : [];
-    }
-    return [
-      n.type === 'condition'
-        ? {
-            ...n,
-            then: changeSteps(n.then, id, fn),
-            else: changeSteps(n.else, id, fn),
-          }
-        : n.type === 'loop'
-          ? { ...n, body: changeSteps(n.body, id, fn) }
-          : n,
-    ];
-  });
-}
-function moveStep(steps: Step[], id: string, direction: number): Step[] {
-  const index = steps.findIndex((step) => step.id === id);
-  if (index >= 0) {
-    const next = index + direction;
-    if (next < 0 || next >= steps.length) return steps;
-    const result = [...steps];
-    [result[index], result[next]] = [result[next], result[index]];
-    return result;
-  }
-  return steps.map((step) =>
-    step.type === 'condition'
-      ? {
-          ...step,
-          then: moveStep(step.then, id, direction),
-          else: moveStep(step.else, id, direction),
-        }
-      : step.type === 'loop'
-        ? { ...step, body: moveStep(step.body, id, direction) }
-        : step,
-  );
-}
 function badge(s: string) {
   return <span className={'badge state-' + s}>{status[s] ?? s}</span>;
 }
@@ -151,14 +115,27 @@ export default function App() {
   }, []);
   const [data, setData] = useState(initial),
     [section, setSection] = useState('flows'),
-    [edit, setEdit] = useState<FlowRecord | null>(null),
-    [selected, setSelected] = useState(''),
     [detail, setDetail] = useState<any>(null),
     [error, setError] = useState(''),
     [notice, setNotice] = useState(''),
     [busy, setBusy] = useState(false),
     [query, setQuery] = useState(''),
     [configOpen, setConfigOpen] = useState(false);
+  const [history, dispatchDraft] = useReducer(draftHistory, emptyHistory);
+  const edit = history.present?.record ?? null,
+    selected = history.present?.selected ?? '';
+  const inputGroup = useRef<string | undefined>(undefined);
+  const setEdit = (record: FlowRecord) =>
+    dispatchDraft({ type: 'change', record, group: inputGroup.current });
+  const setSelected = (selected: string) => dispatchDraft({ type: 'select', selected });
+  const undo = () => {
+    inputGroup.current = undefined;
+    dispatchDraft({ type: 'undo' });
+  };
+  const redo = () => {
+    inputGroup.current = undefined;
+    dispatchDraft({ type: 'redo' });
+  };
   const refresh = useCallback(async () => {
     try {
       setData(await api('bootstrap'));
@@ -195,8 +172,8 @@ export default function App() {
   }
   async function openFlow(r: FlowRecord) {
     setConfigOpen(false);
-    setEdit(structuredClone(r));
-    setSelected('');
+    inputGroup.current = undefined;
+    dispatchDraft({ type: 'open', record: r });
     setSection('editor');
     setDetail(null);
   }
@@ -407,7 +384,35 @@ export default function App() {
           </div>
         )}
         {section === 'editor' && edit && (
-          <div className="editor-page">
+          <div
+            className="editor-page"
+            onFocusCapture={(event) => {
+              const target = event.target as HTMLElement;
+              inputGroup.current = target.closest(
+                'input,textarea,select,[contenteditable="true"],.monaco-editor',
+              )
+                ? crypto.randomUUID()
+                : undefined;
+            }}
+            onKeyDown={(event) => {
+              if (
+                !(event.metaKey || event.ctrlKey) ||
+                event.altKey ||
+                event.key.toLowerCase() !== 'z'
+              )
+                return;
+              if (
+                (event.target as HTMLElement).closest(
+                  'input,textarea,select,[contenteditable="true"],.monaco-editor',
+                )
+              )
+                return;
+              event.preventDefault();
+              event.stopPropagation();
+              if (event.shiftKey) redo();
+              else undo();
+            }}
+          >
             <div className="editor-toolbar">
               <button
                 className="icon-button"
@@ -427,6 +432,26 @@ export default function App() {
                 }
               />
               <span className="muted">本地草稿</span>
+              <div className="draft-history" aria-label="草稿编辑历史">
+                <button
+                  className="icon-button"
+                  aria-label="撤销编辑"
+                  title="撤销编辑 · ⌘/Ctrl Z"
+                  disabled={!history.past.length || busy}
+                  onClick={undo}
+                >
+                  <Undo2 size={16} />
+                </button>
+                <button
+                  className="icon-button"
+                  aria-label="重做编辑"
+                  title="重做编辑 · ⌘/Ctrl Shift Z"
+                  disabled={!history.future.length || busy}
+                  onClick={redo}
+                >
+                  <Redo2 size={16} />
+                </button>
+              </div>
               <div className="spacer" />
               {edit.bindings.configuration && (
                 <button onClick={() => setConfigOpen(true)}>
@@ -477,6 +502,8 @@ export default function App() {
               />
             )}
             <Editor
+              key={edit.id}
+              revision={history.revision}
               record={edit}
               setRecord={setEdit}
               selected={selected}
@@ -709,37 +736,68 @@ function TemplateCard({ t, create }: { t: Template; create: () => void }) {
     </article>
   );
 }
-function Editor({ record: r, setRecord, selected, setSelected, browsers, choose }: any) {
+function Editor({ record: r, setRecord, selected, setSelected, browsers, choose, revision }: any) {
   const [tab, setTab] = useState('node');
+  const [destination, setDestination] = useState('main');
+  const [moveTo, setMoveTo] = useState('');
+  const [structureError, setStructureError] = useState('');
   const [raw, setRaw] = useState('');
   const [invalid, setInvalid] = useState('');
   const selectedNode = flatten(r.flow.steps).find((n: Step) => n.id === selected);
   useEffect(() => {
     setRaw(selectedNode ? JSON.stringify(selectedNode, null, 2) : '');
     setInvalid('');
-  }, [selected]);
+    setMoveTo('');
+    setStructureError('');
+  }, [selected, revision]);
   const patch = (fn: (n: Step) => Step | null) =>
     setRecord({
       ...r,
       flow: { ...r.flow, steps: changeSteps(r.flow.steps, selected, fn) },
     });
-  const append = (n: Step, owner?: string, branch?: 'then' | 'else' | 'body') => {
-    const steps =
-      owner && branch
-        ? changeSteps(r.flow.steps, owner, (old) => ({
-            ...old,
-            [branch]: [...(old as any)[branch], n],
-          }))
-        : [...r.flow.steps, n];
-    setRecord({ ...r, flow: { ...r.flow, steps } });
-    setSelected(n.id);
-    setTab('node');
+  const structure = (build: () => Step[], nextSelected = selected) => {
+    try {
+      const steps = build();
+      checkStructure(r.flow.steps, steps, r.flow.parameters);
+      setRecord({ ...r, flow: { ...r.flow, steps } });
+      setSelected(nextSelected);
+      setTab('node');
+      setStructureError('');
+      return true;
+    } catch (error: any) {
+      setStructureError(error.message);
+      return false;
+    }
   };
+  const append = (node: Step, target: Destination) => {
+    if (structure(() => insertStep(r.flow.steps, node, target), node.id) && target.side === 'after')
+      setDestination(node.id + ':after');
+  };
+  const duplicate = () => {
+    try {
+      const result = duplicateStep(r.flow.steps, selected);
+      structure(() => result.steps, result.id);
+    } catch (error: any) {
+      setStructureError(error.message);
+    }
+  };
+  const insertAt = (side: 'before' | 'after') => {
+    setDestination(selected + ':' + side);
+    document.querySelector<HTMLInputElement>('[aria-label="搜索动作"]')?.focus();
+  };
+  const location = locationOf(r.flow.steps, selected);
+  const targets = destinationChoices(r.flow.steps);
   const { nodes, edges, stepCount } = buildDiagram(r.flow.steps, selected);
   const layoutKey = nodes.map((n) => `${n.id}:${n.position.x}:${n.position.y}`).join('|');
   return (
     <div className="editor-layout">
-      <ActionLibrary key={r.id} steps={r.flow.steps} add={append} />
+      <ActionLibrary
+        key={r.id}
+        steps={r.flow.steps}
+        add={append}
+        destination={destination}
+        setDestination={setDestination}
+      />
       <div className="canvas">
         <ReactFlow
           nodes={nodes}
@@ -791,42 +849,76 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose 
                 <button
                   className="icon-button"
                   aria-label="节点上移"
-                  onClick={() =>
-                    setRecord({
-                      ...r,
-                      flow: { ...r.flow, steps: moveStep(r.flow.steps, selected, -1) },
-                    })
-                  }
+                  title="在当前分支上移"
+                  disabled={!location || location.index === 0}
+                  onClick={() => structure(() => moveSibling(r.flow.steps, selected, -1))}
                 >
                   <ArrowUp size={16} />
                 </button>
                 <button
                   className="icon-button"
                   aria-label="节点下移"
-                  onClick={() =>
-                    setRecord({
-                      ...r,
-                      flow: { ...r.flow, steps: moveStep(r.flow.steps, selected, 1) },
-                    })
-                  }
+                  title="在当前分支下移"
+                  disabled={!location || location.index === location.siblings.length - 1}
+                  onClick={() => structure(() => moveSibling(r.flow.steps, selected, 1))}
                 >
                   <ArrowDown size={16} />
                 </button>
                 <button
                   className="icon-button"
+                  aria-label="复制节点"
+                  title="复制到后面（包含子步骤）"
+                  onClick={duplicate}
+                >
+                  <Copy size={16} />
+                </button>
+                <button
+                  className="icon-button"
                   aria-label="删除节点"
-                  onClick={() => {
-                    patch(() => null);
-                    setSelected('');
-                  }}
+                  title="删除步骤（包含子步骤）"
+                  onClick={() =>
+                    structure(() => changeSteps(r.flow.steps, selected, () => null), '')
+                  }
                 >
                   <Trash2 size={16} />
                 </button>
               </div>
+              <div className="node-insert-actions" aria-label="步骤插入位置">
+                <button onClick={() => insertAt('before')}>在前面插入</button>
+                <button onClick={() => insertAt('after')}>在后面插入</button>
+              </div>
+              <div className="node-move-actions">
+                <select
+                  aria-label="步骤移动位置"
+                  value={moveTo}
+                  onChange={(event) => setMoveTo(event.target.value)}
+                >
+                  <option value="">移动到…</option>
+                  {targets.map((target) => (
+                    <option key={target.value} value={target.value}>
+                      {target.label}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  disabled={!moveTo}
+                  onClick={() => {
+                    const target = targets.find((target) => target.value === moveTo);
+                    if (target) structure(() => moveStep(r.flow.steps, selected, target));
+                  }}
+                >
+                  移动
+                </button>
+              </div>
+              {structureError && (
+                <p className="field-error" role="alert">
+                  {structureError}
+                </p>
+              )}
               <p className="muted">{selectedNode.id} · 修改后保存，下一次运行生效</p>
               {selectedNode.type === 'browser' && (
                 <BrowserNodeConfiguration
-                  key={selectedNode.id}
+                  key={selectedNode.id + ':' + revision}
                   node={selectedNode}
                   change={(next) => {
                     patch(() => next);
@@ -994,6 +1086,7 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose 
           <>
             <h3>运行参数</h3>
             <JsonInput
+              key={revision}
               value={r.flow.parameters}
               onChange={(parameters) => setRecord({ ...r, flow: { ...r.flow, parameters } })}
             />

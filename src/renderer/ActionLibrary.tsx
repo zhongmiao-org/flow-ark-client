@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Search, Plus, X } from 'lucide-react';
 import type { Step } from '../shared/types';
+import type { Destination } from './flow-editing';
 import { kinds } from './node-kinds';
 import { newStep } from './node-defaults';
 import { browserActions, newBrowserStep, type BrowserOperation } from './browser-actions';
@@ -25,13 +26,8 @@ const entries = [
       create: () => newStep(type),
     })),
 ];
-type Destination = {
-  value: string;
-  label: string;
-  owner?: string;
-  branch?: 'then' | 'else' | 'body';
-};
-function destinations(steps: Step[], path = ''): Destination[] {
+export type DestinationChoice = Destination & { value: string; label: string };
+export function destinations(steps: Step[], path = ''): DestinationChoice[] {
   return steps.flatMap((step, index) => {
     const name = `${path}${index + 1}. ${step.name || kinds[step.type]?.label || step.id}`;
     const branches =
@@ -40,27 +36,48 @@ function destinations(steps: Step[], path = ''): Destination[] {
         : step.type === 'loop'
           ? (['body'] as const)
           : [];
-    return branches.flatMap((branch) => {
-      const label = `${name} / ${{ then: '成立分支', else: '否则分支', body: '循环体' }[branch]}`;
-      return [
-        { value: `${step.id}:${branch}`, label, owner: step.id, branch },
-        ...destinations((step as any)[branch], `${label} / `),
-      ];
-    });
+    return [
+      {
+        value: `${step.id}:before`,
+        label: `${name} / 前面`,
+        anchor: step.id,
+        side: 'before' as const,
+      },
+      {
+        value: `${step.id}:after`,
+        label: `${name} / 后面`,
+        anchor: step.id,
+        side: 'after' as const,
+      },
+      ...branches.flatMap((branch) => {
+        const label = `${name} / ${{ then: '成立分支', else: '否则分支', body: '循环体' }[branch]}`;
+        return [
+          { value: `${step.id}:${branch}`, label, owner: step.id, branch },
+          ...destinations((step as any)[branch], `${label} / `),
+        ];
+      }),
+    ];
   });
 }
+export const destinationChoices = (steps: Step[]): DestinationChoice[] => [
+  { value: 'main', label: '主流程末尾' },
+  ...destinations(steps),
+];
 
 export default function ActionLibrary({
   steps,
   add,
+  destination,
+  setDestination,
 }: {
   steps: Step[];
-  add: (node: Step, owner?: string, branch?: Destination['branch']) => void;
+  add: (node: Step, destination: Destination) => void;
+  destination: string;
+  setDestination: (destination: string) => void;
 }) {
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState('全部');
-  const [destination, setDestination] = useState('main');
-  const targets: Destination[] = [{ value: 'main', label: '主流程末尾' }, ...destinations(steps)];
+  const targets = destinationChoices(steps);
   const target = targets.find((item) => item.value === destination);
   const terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
   const matches = entries.filter((entry) =>
@@ -129,7 +146,7 @@ export default function ActionLibrary({
               aria-label={`添加 ${entry.label}`}
               title={`${entry.detail} · ${target?.label ?? '请选择添加位置'}`}
               disabled={!target}
-              onClick={() => target && add(entry.create(), target.owner, target.branch)}
+              onClick={() => target && add(entry.create(), target)}
             >
               <Icon size={15} aria-hidden="true" />
               <span>{entry.label}</span>
