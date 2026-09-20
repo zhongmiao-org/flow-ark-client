@@ -584,9 +584,23 @@ test('invalid legacy HTTP body references cannot save, enter a run or schedule, 
       { values: ['fixture', 42, 'a', 0] },
       { values: ['fixture', 42, 'b', 1] },
     ]);
-    const history = await runtime.request('run.detail', { id: run.id });
+    const { execution: beforeObservation, ...history } = await runtime.request('run.detail', {
+      id: run.id,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 5));
     await assert.rejects(runtime.request('flow.run', { id: bad.id }), /steps.missing/);
-    assert.deepEqual(await runtime.request('run.detail', { id: run.id }), history);
+    const { execution: afterObservation, ...afterHistory } = await runtime.request('run.detail', {
+      id: run.id,
+    });
+    assert.deepEqual(afterHistory, history);
+    for (const observation of [beforeObservation, afterObservation]) {
+      assert.equal(new Date(observation.observedAt).toISOString(), observation.observedAt);
+      if (observation.active !== null) {
+        assert.equal(observation.active.runId, run.id);
+        assert.ok(['executing', 'closing'].includes(observation.active.phase));
+      }
+    }
+    assert.ok(Date.parse(afterObservation.observedAt) > Date.parse(beforeObservation.observedAt));
   } finally {
     await runtime.shutdown();
     runtime.store.close();
