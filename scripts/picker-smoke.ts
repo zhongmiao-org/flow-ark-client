@@ -18,9 +18,27 @@ try {
     '跨站 iframe 应由独立目标会话承载',
   );
   evidence.crossSite = true;
-  const clickTarget = async (selector: string, path: string[] = []) =>
+  const zoom = (factor: number) =>
+    h.app.evaluate(async (_electron, factor) => {
+      const wc = (globalThis as any).embeddedFixture.view.webContents;
+      const expected =
+        ((await wc.executeJavaScript('devicePixelRatio')) / wc.getZoomFactor()) * factor;
+      wc.setZoomFactor(factor);
+      const until = Date.now() + 5000;
+      while (Math.abs((await wc.executeJavaScript('devicePixelRatio')) - expected) > 0.01) {
+        if (Date.now() > until) throw new Error('网页缩放未完成绘制更新');
+        await new Promise((r) => setTimeout(r, 20));
+      }
+    }, factor);
+  await h.app.evaluate(async () => {
+    await (globalThis as any).embeddedFixture.view.webContents.executeJavaScript(`
+      window.pickerMouseEvents=[];
+      for(const type of ['mousedown','mouseup','click']) document.addEventListener(type,e=>window.pickerMouseEvents.push(e.type),true);
+    `);
+  });
+  const clickTarget = async (selector: string, path: string[] = [], native = false) =>
     h.app.evaluate(
-      async (_electron, { selector, path }) => {
+      async (_electron, { selector, path, native }) => {
         const fixture = (globalThis as any).embeddedFixture,
           page = fixture.page;
         const scope = await page.scope(path, () => 5000);
@@ -40,6 +58,32 @@ try {
         }
         point.x = Math.round(point.x);
         point.y = Math.round(point.y);
+        if (native) {
+          // A real click may arrive without any preceding hover/mouse-move.
+          const zoom = fixture.view.webContents.getZoomFactor();
+          const bounds = fixture.view.getBounds(),
+            origin = fixture.window.getContentBounds();
+          const input = {
+            x: point.x * zoom,
+            y: point.y * zoom,
+            globalX: origin.x + bounds.x + point.x * zoom,
+            globalY: origin.y + bounds.y + point.y * zoom,
+          };
+          fixture.view.webContents.sendInputEvent({
+            type: 'mouseDown',
+            ...input,
+            button: 'left',
+            clickCount: 1,
+          });
+          fixture.view.webContents.sendInputEvent({
+            type: 'mouseUp',
+            ...input,
+            button: 'left',
+            clickCount: 1,
+          });
+          await page.send('Runtime.releaseObject', { objectId: object }, scope.session);
+          return;
+        }
         await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...point });
         await new Promise((resolve) => setTimeout(resolve, 150));
         await page.send('Input.dispatchMouseEvent', {
@@ -56,7 +100,7 @@ try {
         });
         await page.send('Runtime.releaseObject', { objectId: object }, scope.session);
       },
-      { selector, path },
+      { selector, path, native },
     );
   const selected = async (requestId: string): Promise<ElementTarget> => {
     const end = Date.now() + 10000;
@@ -68,6 +112,58 @@ try {
     }
     throw new Error('拾取超时：' + requestId);
   };
+  for (const [name, selector, path] of [
+    ['stationary-top', '#name', []],
+    ['stationary-nested', '#name', ['#outer', '#inner']],
+    ['stationary-button', '#action', ['#outer', '#inner']],
+  ] as [string, string, string[]][]) {
+    await h.system('browser.embedded.pick.start', { requestId: name });
+    await clickTarget(selector, path, true);
+    const target = await selected(name);
+    assert.equal(target.selector, selector);
+    assert.deepEqual(target.framePath, path);
+    assert.equal(lab.state.clicks.length, 0);
+    evidence.checks.push({ name, target });
+  }
+  await h.system('browser.embedded.pick.start', { requestId: 'stale-hover' });
+  await h.app.evaluate(async () => {
+    const wc = (globalThis as any).embeddedFixture.view.webContents;
+    const point = await wc.executeJavaScript(
+      `(()=>{const r=document.querySelector('#action').getBoundingClientRect();return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()`,
+    );
+    wc.sendInputEvent({ type: 'mouseMove', ...point });
+  });
+  await clickTarget('#name', [], true);
+  assert.equal((await selected('stale-hover')).selector, '#name');
+  evidence.checks.push({ name: 'stale-hover-replaced-by-click-position' });
+  await h.system('browser.embedded.viewport', { x: 110, y: 60, width: 900, height: 700 });
+  await zoom(1.25);
+  await h.system('browser.embedded.pick.start', { requestId: 'zoomed-frame' });
+  await clickTarget('#name', ['#outer', '#inner'], true);
+  const zoomed = await selected('zoomed-frame');
+  assert.deepEqual(zoomed.framePath, ['#outer', '#inner']);
+  assert.equal(zoomed.selector, '#name');
+  evidence.checks.push({ name: 'offset-viewport-zoomed-frame', target: zoomed });
+  await zoom(1);
+  await h.system('browser.embedded.viewport', { x: 0, y: 0, width: 1100, height: 800 });
+  await h.app.evaluate(() => {
+    const wc = (globalThis as any).embeddedFixture.view.webContents;
+    const original = wc.debugger.sendCommand.bind(wc.debugger);
+    (globalThis as any).restorePickerCommand = () => {
+      wc.debugger.sendCommand = original;
+    };
+    wc.debugger.sendCommand = (method: string, args: any, session: any) => {
+      if (method === 'DOM.getDocument')
+        return Promise.reject(new Error('fixture hit-test failure'));
+      return original(method, args, session);
+    };
+  });
+  await h.system('browser.embedded.pick.start', { requestId: 'hit-failure' });
+  await clickTarget('#action', [], true);
+  await assert.rejects(selected('hit-failure'), /fixture hit-test failure/);
+  await h.app.evaluate(() => (globalThis as any).restorePickerCommand());
+  assert.equal(await h.perform({ operation: 'read', selector: '#echo' }), 'top unchanged');
+  evidence.checks.push({ name: 'hit-failure-does-not-click' });
   for (const [name, selector, path] of [
     ['top', '#name', []],
     ['nested', '#name', ['#outer', '#inner']],
@@ -157,6 +253,14 @@ try {
   );
   await h.visibility(true);
   await h.system('browser.embedded.pick.start', { requestId: 'execute' });
+  assert.deepEqual(
+    await h.app.evaluate(() =>
+      (globalThis as any).embeddedFixture.view.webContents.executeJavaScript(
+        'window.pickerMouseEvents',
+      ),
+    ),
+    [],
+  );
   await h.perform({ operation: 'click', selector: '#action', framePath: ['#outer', '#inner'] });
   await new Promise((r) => setTimeout(r, 200));
   assert.deepEqual(lab.state.clicks, ['first']);

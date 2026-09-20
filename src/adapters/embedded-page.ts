@@ -1,4 +1,4 @@
-import type { WebContents } from 'electron';
+import type { MouseInputEvent, WebContents } from 'electron';
 import { writeFile } from 'node:fs/promises';
 import type { BrowserCommand } from '../shared/types';
 import { commandBudget } from './browser-scope';
@@ -24,13 +24,17 @@ export class EmbeddedPage {
   readonly picker: EmbeddedPicker;
   private abort = new AbortController();
   private frames = new Map<string, string>();
-  constructor(readonly contents: WebContents) {
+  constructor(
+    readonly contents: WebContents,
+    coordinates: (mouse: MouseInputEvent) => { x: number; y: number },
+  ) {
     contents.debugger.attach('1.3');
     this.picker = new EmbeddedPicker(
       contents,
       (m, p, s) => this.send(m, p, s),
       this.frames,
       (selector, path) => this.inspectTarget(selector, path, false),
+      coordinates,
     );
     contents.debugger.on('message', (_event, method, params) => {
       if (method === 'Target.attachedToTarget' && params.targetInfo.type === 'iframe') {
