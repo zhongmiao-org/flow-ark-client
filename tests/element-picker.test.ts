@@ -58,6 +58,7 @@ test('late cancellation and overlapping setup cannot turn off a newer element pi
     async () => {
       throw new Error('not selected');
     },
+    (mouse) => mouse,
   );
   const first = picker.start('first');
   await new Promise((r) => setImmediate(r));
@@ -73,4 +74,65 @@ test('late cancellation and overlapping setup cannot turn off a newer element pi
   await picker.cancel('second');
   assert.equal(picker.status('second').phase, 'cancelled');
   assert.equal(modes.at(-1), 'disabled');
+});
+
+test('cancelling a stationary click preserves a newer picker and releases the next normal gesture', async () => {
+  const contents = new EventEmitter() as any;
+  contents.debugger = new EventEmitter();
+  contents.getZoomFactor = () => 1;
+  let release!: () => void, entered!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const hitStarted = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  const modes: string[] = [];
+  const picker = new EmbeddedPicker(
+    contents,
+    async (method, args) => {
+      if (method === 'DOM.getDocument') {
+        entered();
+        await gate;
+      }
+      if (method === 'Overlay.setInspectMode') modes.push(args.mode);
+      return {};
+    },
+    new Map(),
+    async () => {
+      throw new Error('cancelled target must not be inspected');
+    },
+    (mouse) => mouse,
+  );
+  const mouse = (type: string) => {
+    let prevented = false;
+    contents.emit(
+      'before-mouse-event',
+      {
+        preventDefault: () => {
+          prevented = true;
+        },
+      },
+      { type, button: 'left', x: 20, y: 30 },
+    );
+    return prevented;
+  };
+  await picker.start('stationary');
+  assert.equal(mouse('mouseDown'), true);
+  await hitStarted;
+  const cancelled = picker.cancel('stationary');
+  const newer = picker.start('newer');
+  release();
+  await Promise.all([cancelled, newer]);
+  assert.equal(picker.status('stationary').phase, 'cancelled');
+  assert.equal(picker.status('newer').phase, 'picking');
+  assert.equal(modes.at(-1), 'searchForNode');
+  assert.equal(mouse('mouseUp'), true);
+  await picker.cancel('newer');
+  // A lost release outside the hidden view must not swallow a later real click.
+  await picker.start('lost-release');
+  assert.equal(mouse('mouseDown'), true);
+  await picker.cancel('lost-release');
+  assert.equal(mouse('mouseDown'), false);
+  assert.equal(mouse('mouseUp'), false);
 });

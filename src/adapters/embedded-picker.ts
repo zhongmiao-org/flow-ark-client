@@ -1,4 +1,4 @@
-import type { WebContents } from 'electron';
+import type { MouseInputEvent, WebContents } from 'electron';
 import type { ElementTarget, PickerState } from '../shared/element-picker';
 import { describeElement } from './element-description';
 type Send = (method: string, params?: any, session?: string) => Promise<any>;
@@ -14,6 +14,9 @@ export class EmbeddedPicker {
   private queue: Promise<void> = Promise.resolve();
   private selecting?: PickerState;
   private processing: Promise<void> = Promise.resolve();
+  private pointAbort?: () => void;
+  private pointMove?: { state: PickerState; x: number; y: number };
+  private pressed = new Set<string | undefined>();
   private serialize(task: () => Promise<void>) {
     const next = this.queue.then(task, task);
     this.queue = next.catch(() => {});
@@ -24,18 +27,63 @@ export class EmbeddedPicker {
     private send: Send,
     private sessions: Map<string, string>,
     private validate: (selector: string, path: string[]) => Promise<ElementTarget>,
+    private coordinates: (mouse: MouseInputEvent) => { x: number; y: number },
   ) {
     contents.debugger.on('message', (_event, method, params, session) => {
       const state = this.state;
       if (state?.phase !== 'picking') return;
       if (method === 'Overlay.inspectNodeRequested' && this.selecting !== state) {
-        this.processing = this.select(state, params.backendNodeId, session || undefined);
+        this.processing = this.select(state, async () => ({
+          backendNodeId: params.backendNodeId,
+          session: session || undefined,
+        }));
       } else if (method === 'Overlay.inspectModeCanceled' && this.selecting !== state) {
         void this.cancel(state.requestId);
       } else if (method === 'Target.attachedToTarget' && params.targetInfo.type === 'iframe') {
         void this.serialize(async () => {
           if (this.state === state && this.selecting !== state) await this.enable(params.sessionId);
         }).catch(() => {});
+      }
+    });
+    contents.on('before-mouse-event', (event, mouse) => {
+      // Inspect mode only consumes a mouse-down after a hover. A stationary click
+      // must never reach the page, including its release after selection finishes.
+      if (mouse.type === 'mouseUp' && this.pressed.delete(mouse.button)) {
+        event.preventDefault();
+        return;
+      }
+      const state = this.state;
+      if (state?.phase !== 'picking') {
+        // The release may have happened outside this view while it was hidden.
+        // A new ordinary press starts a fresh gesture and must not lose its release.
+        if (mouse.type === 'mouseDown') this.pressed.delete(mouse.button);
+        return;
+      }
+      if (mouse.type === 'mouseDown') {
+        event.preventDefault();
+        this.pressed.add(mouse.button);
+        if (mouse.button === 'left' && this.selecting !== state) {
+          const point = this.coordinates(mouse);
+          this.pointMove = { state, ...point };
+          this.processing = this.select(state, () =>
+            this.pointTarget(
+              state,
+              point.x / contents.getZoomFactor(),
+              point.y / contents.getZoomFactor(),
+            ),
+          );
+        }
+      } else if (
+        mouse.type === 'mouseUp' ||
+        (mouse.type === 'mouseMove' &&
+          this.selecting === state &&
+          !(
+            this.pointMove?.state === state &&
+            Math.abs(this.coordinates(mouse).x - this.pointMove.x) < 1 &&
+            Math.abs(this.coordinates(mouse).y - this.pointMove.y) < 1
+          ))
+      ) {
+        event.preventDefault();
       }
     });
     contents.on('did-start-navigation', (_event, _url, inPlace) => {
@@ -67,6 +115,7 @@ export class EmbeddedPicker {
     if (requestId && this.state?.requestId !== requestId) return true;
     const cancelled: PickerState = { requestId: this.state?.requestId ?? '', phase: 'cancelled' };
     this.state = cancelled;
+    this.pointAbort?.();
     clearTimeout(this.timer);
     const processing = this.processing;
     await this.serialize(async () => {
@@ -76,6 +125,7 @@ export class EmbeddedPicker {
     return true;
   }
   async start(requestId: string) {
+    this.pointAbort?.();
     clearTimeout(this.timer);
     const state: PickerState = { requestId, phase: 'picking' };
     this.state = state;
@@ -154,7 +204,56 @@ export class EmbeddedPicker {
       throw new Error(result.exceptionDetails.exception?.description ?? '目标定位失败');
     return result.result.value;
   }
-  private async select(state: PickerState, backendNodeId: number, session?: string) {
+  private async pointTarget(state: PickerState, x: number, y: number) {
+    type Hit = { backendNodeId: number; session?: string };
+    let resolve!: (hit: Hit) => void, reject!: (error: Error) => void;
+    const result = new Promise<Hit>((yes, no) => {
+      resolve = yes;
+      reject = no;
+    });
+    void result.catch(() => {});
+    const abort = () => reject(new Error('选取已取消'));
+    this.pointAbort = abort;
+    let listening = false,
+      resolving = false;
+    const listener = (_event: unknown, method: string, params: any, session?: string) => {
+      if (method !== 'Overlay.nodeHighlightRequested' || resolving || this.state !== state) return;
+      resolving = true;
+      void this.send('DOM.describeNode', { nodeId: params.nodeId }, session || undefined).then(
+        ({ node }) => resolve({ backendNodeId: node.backendNodeId, session: session || undefined }),
+        reject,
+      );
+    };
+    const timer = setTimeout(() => reject(new Error('未取得点击位置的元素，请重新选取')), 3000);
+    try {
+      // Reset stale hover targets, then let Chromium route one move through nested
+      // and cross-process frames. No mouse press/release is replayed to the site.
+      await this.serialize(async () => {
+        await this.clear();
+        if (this.state !== state) throw new Error('选取已取消');
+        await Promise.all(
+          [undefined, ...new Set(this.sessions.values())].map(async (session) => {
+            await this.enable(session);
+            // Register only the document root so hover notifications carry a node ID.
+            await this.send('DOM.getDocument', { depth: 0 }, session);
+          }),
+        );
+      });
+      if (this.state !== state) throw new Error('选取已取消');
+      this.contents.debugger.on('message', listener);
+      listening = true;
+      await this.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
+      return await result;
+    } finally {
+      clearTimeout(timer);
+      if (listening) this.contents.debugger.removeListener('message', listener);
+      if (this.pointAbort === abort) this.pointAbort = undefined;
+    }
+  }
+  private async select(
+    state: PickerState,
+    resolve: () => Promise<{ backendNodeId: number; session?: string }>,
+  ) {
     // Leave inspect mode before inspecting metadata; suppress a second selection event.
     if (this.state !== state || this.selecting === state) return;
     this.selecting = state;
@@ -172,6 +271,7 @@ export class EmbeddedPicker {
     }, 15000);
     timeout.unref();
     try {
+      const { backendNodeId, session } = await resolve();
       await this.serialize(() => this.clear());
       if (this.state !== pending) return;
       const { object } = await this.send(
@@ -236,6 +336,9 @@ export class EmbeddedPicker {
           target: { ...target, framePath: path },
         };
     } catch (e) {
+      if (this.state === pending) {
+        await this.serialize(() => this.clear());
+      }
       if (this.state === pending)
         this.state = {
           requestId: state.requestId,
@@ -244,6 +347,7 @@ export class EmbeddedPicker {
         };
     } finally {
       clearTimeout(timeout);
+      if (this.pointMove?.state === state) this.pointMove = undefined;
       await Promise.all(
         [undefined, ...new Set(this.sessions.values())].map((s) =>
           this.send('Runtime.releaseObjectGroup', { objectGroup: group }, s).catch(() => {}),
@@ -253,6 +357,7 @@ export class EmbeddedPicker {
   }
   dispose() {
     clearTimeout(this.timer);
+    this.pointAbort?.();
     if (this.state) this.state = { requestId: this.state.requestId, phase: 'cancelled' };
   }
 }

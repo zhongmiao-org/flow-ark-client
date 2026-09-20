@@ -1,6 +1,6 @@
 {
   "name": "flow-ark-client",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "FlowArk 序舟本地自动化工作台",
   "private": true,
   "type": "module",
@@ -8,7 +8,7 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "f4a5769c2c45877b92493dbda5976572d07e33fc",
+    "governanceBaseline": "440082a21aec5665e043289a7e91e9e6a553d60c",
     "contractsVersion": "0.7.0",
     "contractsTag": "contracts-v0.7.0"
   },

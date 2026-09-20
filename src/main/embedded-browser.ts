@@ -103,7 +103,20 @@ export class EmbeddedBrowser {
     wc.once('destroyed', gone);
     const start = (async () => {
       await wc.loadURL('about:blank');
-      const page = new EmbeddedPage(wc);
+      const page = new EmbeddedPage(wc, (mouse) => {
+        // Native input inside an OOPIF is frame-local. Screen coordinates stay
+        // stable, so convert once to this view's viewport before routing a hover.
+        if (mouse.globalX || mouse.globalY) {
+          const window = this.window.getContentBounds(),
+            bounds = view.getBounds();
+          return {
+            x: (mouse.globalX ?? 0) - window.x - bounds.x,
+            y: (mouse.globalY ?? 0) - window.y - bounds.y,
+          };
+        }
+        // sendInputEvent without screen coordinates uses view-local input.
+        return { x: mouse.x, y: mouse.y };
+      });
       this.page = page;
       await page.initialize();
       if (this.view !== view) throw new Error('网页会话已关闭');
