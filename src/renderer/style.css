@@ -1483,6 +1483,45 @@ td small {
   overflow: auto;
   padding: 12px 26px;
 }
+.template-form-fields {
+  border: 0;
+  margin: 0;
+  min-width: 0;
+}
+.template-save-error {
+  margin: 0 26px 14px;
+  overflow-wrap: anywhere;
+}
+.template-parameters {
+  margin-bottom: 18px;
+  min-width: 0;
+}
+.template-parameters dl {
+  margin: 12px 0;
+}
+.template-parameters dl > div {
+  margin-bottom: 12px;
+}
+.template-parameters dt {
+  font-size: 13px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.template-parameters dd {
+  margin: 6px 0 0;
+}
+.template-parameters pre {
+  margin: 0;
+  padding: 9px;
+  max-height: 200px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  border: 1px solid #d8e3df;
+  border-radius: 6px;
+  background: #f5f8f7;
+}
 .template-fieldset {
   border: 0;
   border-top: 1px solid #e3ebe8;
