@@ -1876,7 +1876,8 @@ td small {
   flex-shrink: 0;
   padding: 5px;
 }
-.inspector > .muted {
+.inspector > .muted,
+.inspector > fieldset > .muted {
   overflow-wrap: anywhere;
 }
 
