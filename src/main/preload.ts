@@ -5,6 +5,8 @@ const allowed = new Set([
   'flow.create',
   'flow.run',
   'run.detail',
+  'run.artifacts.preview',
+  'run.artifacts.clear',
   'artifact.reveal',
   'run.control',
   'browser.discover',

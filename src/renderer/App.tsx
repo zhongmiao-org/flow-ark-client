@@ -58,6 +58,7 @@ import TemplateConfiguration from './TemplateConfiguration';
 import ScriptPackages from './ScriptPackages';
 import EmbeddedBrowserPanel from './EmbeddedBrowserPanel';
 import BrowserSidebar from './BrowserSidebar';
+import ArtifactCleanupPanel from './ArtifactCleanupPanel';
 import { fileBindingNames } from './file-bindings';
 import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 import LogicNodeConfiguration from './LogicNodeConfiguration';
@@ -560,7 +561,9 @@ export default function App() {
             />
             {detail ? (
               <RunDetail
+                key={detail.run.id}
                 detail={detail}
+                reload={async () => setDetail(await api('run.detail', { id: detail.run.id }))}
                 back={() => setDetail(null)}
                 control={(id, a) => action(() => api('run.control', { id, action: a }))}
                 reveal={(id) => action(() => api('artifact.reveal', { id }))}
@@ -1267,8 +1270,10 @@ function RunDetail({
   back,
   control,
   reveal,
+  reload,
 }: {
   detail: any;
+  reload: () => Promise<void>;
   back: () => void;
   control: (id: string, a: string) => void;
   reveal: (id: string) => void;
@@ -1321,6 +1326,7 @@ function RunDetail({
         <span>{format(r.createdAt)}</span>
       </div>
       <p className="note">{r.business}</p>
+      <ArtifactCleanupPanel run={r} cleanup={d.artifactCleanup} changed={reload} />
       {r.debug && (
         <p className="note">逐步调试 · 每次执行下一步会实际操作页面；继续将连续运行剩余流程。</p>
       )}
@@ -1385,13 +1391,15 @@ function RunDetail({
                   {a.name} · {a.size} 字节
                 </p>
                 <span className={!a.available ? 'field-error' : undefined}>
-                  {a.integrity === 'verified'
-                    ? '已保存副本'
-                    : a.integrity === 'changed'
-                      ? '副本内容已改动'
-                      : a.integrity === 'unverified'
-                        ? '旧记录，未保存副本'
-                        : '文件已移动、删除或不可访问'}
+                  {a.integrity === 'cleared'
+                    ? '已清理'
+                    : a.integrity === 'verified'
+                      ? '已保存副本'
+                      : a.integrity === 'changed'
+                        ? '副本内容已改动'
+                        : a.integrity === 'unverified'
+                          ? '旧记录，未保存副本'
+                          : '文件已移动、删除或不可访问'}
                 </span>
                 <p className="path-text">{a.path}</p>
               </div>
