@@ -25,10 +25,24 @@ try {
         ((await wc.executeJavaScript('devicePixelRatio')) / wc.getZoomFactor()) * factor;
       wc.setZoomFactor(factor);
       const until = Date.now() + 5000;
-      while (Math.abs((await wc.executeJavaScript('devicePixelRatio')) - expected) > 0.01) {
+      const frames = wc.mainFrame.framesInSubtree;
+      while (
+        (
+          await Promise.all(frames.map((frame: any) => frame.executeJavaScript('devicePixelRatio')))
+        ).some((ratio: number) => Math.abs(ratio - expected) > 0.01)
+      ) {
         if (Date.now() > until) throw new Error('网页缩放未完成绘制更新');
         await new Promise((r) => setTimeout(r, 20));
       }
+      // The root's scale can change before OOPIF surfaces update their input routing.
+      // Click coordinates must describe the painted frames, not a transient layout.
+      await Promise.all(
+        frames.map((frame: any) =>
+          frame.executeJavaScript(
+            'new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))',
+          ),
+        ),
+      );
     }, factor);
   await h.app.evaluate(async () => {
     await (globalThis as any).embeddedFixture.view.webContents.executeJavaScript(`

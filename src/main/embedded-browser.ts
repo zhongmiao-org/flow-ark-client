@@ -10,7 +10,7 @@ export class EmbeddedBrowser {
   private visible = false;
   private bounds: Bounds = { x: 0, y: 0, width: 1, height: 1 };
   private busy = false;
-  private captureHost?: BrowserWindow;
+  private capture?: { host: BrowserWindow; view: WebContentsView };
   private stopOperation?: () => void;
   private download?: {
     owner: number;
@@ -133,7 +133,9 @@ export class EmbeddedBrowser {
     }
   }
   private layout() {
-    if (!this.view || this.window.isDestroyed() || this.captureHost) return;
+    // A cancelled capture can still be settling after a replacement page starts.
+    // Only the page actually reparented to the paint host must defer its layout.
+    if (!this.view || this.window.isDestroyed() || this.capture?.view === this.view) return;
     const [width, height] = this.window.getContentSize();
     const x = Math.max(0, Math.min(this.bounds.x, width - 1)),
       y = Math.max(0, Math.min(this.bounds.y, height - 1));
@@ -255,24 +257,25 @@ export class EmbeddedBrowser {
     });
     host.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     host.webContents.on('will-navigate', (event) => event.preventDefault());
+    const capture = { host, view };
     try {
       await host.loadURL('about:blank');
       if (this.view !== view) throw new Error('网页会话已关闭');
-      this.captureHost = host;
+      this.capture = capture;
       this.window.contentView.removeChildView(view);
       host.contentView.addChildView(view);
       view.setBounds({ x: 0, y: 0, width: bounds.width, height: bounds.height });
       view.setVisible(true);
       return await page.perform(command);
     } finally {
-      if (this.captureHost === host) {
-        this.captureHost = undefined;
+      if (this.capture === capture) {
+        this.capture = undefined;
         if (this.view === view) {
           host.contentView.removeChildView(view);
           this.window.contentView.addChildView(view);
           view.setBounds(bounds);
-          this.layout();
         }
+        this.layout();
       }
       if (!host.isDestroyed()) host.destroy();
     }
@@ -289,7 +292,8 @@ export class EmbeddedBrowser {
     this.download?.item?.cancel();
     this.download = undefined;
     if (view) {
-      (this.captureHost ?? this.window).contentView.removeChildView(view);
+      const parent = this.capture?.view === view ? this.capture.host : this.window;
+      parent.contentView.removeChildView(view);
       if (!view.webContents.isDestroyed()) view.webContents.close({ waitForBeforeUnload: false });
     }
     await this.websiteSession.cookies.flushStore().catch(() => {});
