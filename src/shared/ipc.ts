@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { runListSchema } from './run-history';
 const id = z.string().min(1).max(100);
 const empty = z.object({}).strict();
 const bindings = z
@@ -25,6 +26,7 @@ export const methods = {
   'flow.create': z.object({ templateId: id.optional() }).strict(),
   'flow.run': z.object({ id, debug: z.boolean().optional() }).strict(),
   'run.detail': z.object({ id }).strict(),
+  'run.list': runListSchema,
   'run.artifacts.preview': z.object({ id }).strict(),
   'run.artifacts.clear': z
     .object({ id, token: z.string().regex(/^[a-f0-9]{64}$/), reviewed: z.literal(true) })

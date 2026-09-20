@@ -1766,3 +1766,58 @@ test('real Worker artifacts can be cleared only after completion; history, later
     await rm(path, { recursive: true, force: true });
   }
 });
+
+test('real waiting Worker stays visible beyond 200 queued runs and history reaches its old result', async () => {
+  const path = await mkdtemp(join(tmpdir(), 'flowark-history-runtime-'));
+  const runtime = new Runtime(
+    path,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  try {
+    runtime.saveFlow(
+      {
+        ...base,
+        id: 'older-flow',
+        steps: [{ id: 'result', type: 'value', version: 1, value: 'older result' }],
+      },
+      { files: {}, credentials: [] },
+    );
+    const older = await runtime.enqueue('older-flow');
+    await until(
+      () =>
+        runtime.store.get<Run>('run', older.id)?.state === 'SUCCEEDED' && !(runtime as any).active,
+    );
+    runtime.saveFlow(
+      { ...base, steps: [{ id: 'wait', type: 'human', version: 1, message: 'fixture' }] },
+      { files: {}, credentials: [] },
+    );
+    const active = await runtime.enqueue(base.id);
+    await until(() => runtime.store.get<Run>('run', active.id)?.state === 'WAITING_INPUT');
+    for (let i = 0; i < 205; i++) await runtime.enqueue(base.id);
+    const data = await runtime.bootstrap();
+    assert.equal(data.runs.length, 200);
+    assert.ok(!data.runs.some((r) => r.id === active.id));
+    assert.equal(data.runOverview.active?.id, active.id);
+    assert.equal(data.runOverview.queued, 205);
+    assert.equal(data.runOverview.total, 207);
+    assert.equal(data.runOverview.latest.find((r) => r.flowId === 'older-flow')?.id, older.id);
+    const page = await runtime.request('run.list', { state: 'WAITING_INPUT' });
+    assert.deepEqual(
+      page.runs.map((r: Run) => r.id),
+      [active.id],
+    );
+    const history = await runtime.request('run.list', { query: older.id });
+    assert.equal(history.runs[0].id, older.id);
+    assert.equal(
+      (await runtime.request('run.detail', { id: older.id })).output.result,
+      'older result',
+    );
+  } finally {
+    await runtime.shutdown();
+    runtime.store.close();
+    await rm(path, { recursive: true, force: true });
+  }
+});

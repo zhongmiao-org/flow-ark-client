@@ -5,6 +5,7 @@ import { RecruitingCoordinator } from '../recruiting/coordinator';
 import { BossRecruitingAdapter, ZhaopinRecruitingAdapter } from '../recruiting/sites';
 import type { PreparedAction } from '../recruiting/actions';
 import { Store } from './store';
+import { listRuns, runOverview } from './run-history';
 import { ArtifactCleanup } from './artifact-cleanup';
 import { Sessions } from './sessions';
 import { child, killOwnedTree } from './processes';
@@ -121,11 +122,13 @@ export class Runtime {
     return id;
   }
   async bootstrap(): Promise<Bootstrap> {
+    const runs = this.store.list<Run>('run').reverse();
     return {
       flows: this.store
         .list<FlowRecord>('flow')
         .map((r) => ({ ...r, bindings: normalizeBindings(r.bindings) })),
-      runs: this.store.list<Run>('run').reverse().slice(0, 200),
+      runs: runs.slice(0, 200),
+      runOverview: runOverview(runs),
       browsers: this.store.list('browser'),
       schedules: this.store.list('schedule'),
       attention: this.store
@@ -717,6 +720,8 @@ export class Runtime {
       }
       case 'run.control':
         return this.control(args.id, args.action);
+      case 'run.list':
+        return listRuns(this.store, args);
       case 'run.artifacts.preview':
         return this.artifactCleanup.preview(args.id);
       case 'run.artifacts.clear':

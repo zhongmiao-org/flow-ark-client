@@ -1,4 +1,5 @@
 import type { FlowArkP1 as P1Contracts } from './contracts.generated';
+import type { RunOverview } from './run-history';
 export type Flow = NonNullable<P1Contracts['FlowDefinition']>;
 export type Step = Flow['steps'][number];
 export type Policy = NonNullable<P1Contracts['RecruitingPolicy']>;
@@ -81,6 +82,7 @@ export type Attention = {
 export type Bootstrap = {
   flows: FlowRecord[];
   runs: Run[];
+  runOverview: RunOverview;
   browsers: BrowserBinding[];
   schedules: Schedule[];
   attention: Attention[];
