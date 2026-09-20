@@ -11,6 +11,8 @@ import { listRuns, runOverview } from './run-history';
 import { ArtifactCleanup } from './artifact-cleanup';
 import { RunRerun, executionVersion } from './run-rerun';
 import { Sessions } from './sessions';
+import { ScriptProcesses } from './script-processes';
+import { ScriptProcessInterruptedError, type ScriptOwner } from '../shared/script-supervision';
 import type { CleanupResult } from '../shared/embedded-lifecycle';
 import { child, killOwnedTree } from './processes';
 import { Rpc } from '../shared/rpc';
@@ -52,6 +54,7 @@ type Active = {
   interruption?: string;
   sessionCleanup?: Promise<CleanupResult>;
   workerCleanup?: Promise<CleanupResult>;
+  scriptCleanup?: Promise<CleanupResult>;
   workerClosing?: boolean;
   cancelTimer?: NodeJS.Timeout;
   controlPending?: boolean;
@@ -61,6 +64,8 @@ type Active = {
 export class Runtime {
   readonly store: Store;
   readonly sessions: Sessions;
+  readonly scripts: ScriptProcesses;
+  readonly ready: Promise<void>;
   readonly recruiting: RecruitingCoordinator;
   private active?: Active;
   private artifactFiles: ArtifactFiles;
@@ -70,6 +75,7 @@ export class Runtime {
   private stopping = false;
   private suspended = false;
   private runtimeBlock?: string;
+  private recovering = true;
   private ticking = false;
   private lastTick = Date.now();
   private timer?: NodeJS.Timeout;
@@ -85,15 +91,28 @@ export class Runtime {
     this.artifactFiles = new ArtifactFiles(dataPath);
     this.store = new Store(join(dataPath, 'flowark.sqlite'), key);
     this.store.recover();
+    this.scripts = new ScriptProcesses({
+      store: this.store,
+      dir,
+      executable,
+      assertOwner: (owner) => this.assertScriptOwner(owner),
+      call: (owner, method, args) => this.scriptRequest(owner, method, args),
+    });
     this.artifactCleanup = new ArtifactCleanup(
       dataPath,
       this.store,
       (id) =>
-        this.stopping || this.active?.id === id || (this.pendingCapabilities.get(id) ?? 0) > 0,
+        this.stopping ||
+        this.active?.id === id ||
+        this.scripts.hasRun(id) ||
+        (this.pendingCapabilities.get(id) ?? 0) > 0,
     );
     this.reruns = new RunRerun(this.store, {
       assertAdmitting: () => this.assertAdmitting(),
-      busy: (id) => this.active?.id === id || (this.pendingCapabilities.get(id) ?? 0) > 0,
+      busy: (id) =>
+        this.active?.id === id ||
+        this.scripts.hasRun(id) ||
+        (this.pendingCapabilities.get(id) ?? 0) > 0,
       preflight: (record) => this.preflight(record),
       version: (record, prepared) => this.version(record, prepared),
       dispatch: () => this.dispatch(),
@@ -104,14 +123,24 @@ export class Runtime {
     this.sessions = new Sessions(dir, executable, dataPath, system);
     if (!this.store.list('flow').length)
       this.saveFlow(validateFlow(example), { files: {}, credentials: [] });
-    this.skipMissed('application-restart');
-    this.timer = setInterval(
-      () =>
-        void this.tick().catch((e) => {
-          this.store.fault = errorText(e);
-        }),
-      1000,
-    );
+    this.ready = this.scripts.ready.then(() => {
+      // A recovery probe can take several seconds. Plans missed during that
+      // interval are skipped before any timer or queued admission can proceed.
+      this.skipMissed('application-restart');
+      this.lastTick = Date.now();
+      this.recovering = false;
+      if (!this.stopping)
+        this.timer = setInterval(
+          () => void this.tick().catch((e) => (this.store.fault = errorText(e))),
+          1000,
+        );
+    });
+    // Keep direct Runtime users from producing an unhandled rejection while
+    // preserving the rejected ready promise for init and execution admission.
+    void this.ready.catch((error) => {
+      this.recovering = false;
+      this.store.fault ??= '脚本资源恢复核对失败：' + errorText(error);
+    });
   }
   saveFlow(flow: Flow, bindings: Bindings): FlowRecord {
     bindings = normalizeBindings(bindings);
@@ -137,6 +166,7 @@ export class Runtime {
     return id;
   }
   async bootstrap(): Promise<Bootstrap> {
+    await this.ready.catch(() => {});
     const runs = this.store.list<Run>('run').reverse();
     return {
       flows: this.store
@@ -208,6 +238,8 @@ export class Runtime {
       if (!(await this.system('credentials.list', {})).includes(id))
         throw new Error('未配置凭据：' + id);
     const scriptNodes = steps.filter((n) => n.type === 'script');
+    if (scriptNodes.length && !['darwin', 'linux'].includes(process.platform))
+      throw new Error('当前系统尚不支持脚本进程监护；请在 macOS 或 Linux 执行脚本流程');
     if (record.scriptBundles !== undefined) {
       if (
         !record.scripts ||
@@ -252,29 +284,63 @@ export class Runtime {
   }
   private blockExecution(reason: string) {
     this.runtimeBlock ??= redact(
-      `资源回收未确认，执行已停止。请完整退出并重新打开应用后核对运行结果。${reason}`,
+      `资源回收未确认，执行已停止。请核对运行结果。${reason}`,
       this.secrets,
     );
     return this.runtimeBlock;
   }
   private executionBlock() {
+    if (this.recovering) return '正在核对上次运行的脚本资源，请稍候';
+    if (this.scripts.recoveryError) this.blockExecution(this.scripts.recoveryError);
     if (this.sessions.recoveryError) this.blockExecution(this.sessions.recoveryError);
     return this.runtimeBlock;
   }
   private recordExecutionBlock(runId?: string) {
+    if (this.recovering) return;
     const reason = this.executionBlock();
     if (reason)
       this.store.attention(
         'limitation',
-        '资源回收未确认，请退出并重开后核对运行结果',
+        '资源回收未确认，请核对运行结果与恢复说明',
         { runId, reason },
         'runtime-resource-block',
       );
   }
   private checkActive(active: Active) {
     const blocked = this.executionBlock();
-    if (blocked || this.active !== active || active.cancelling)
+    if (
+      blocked ||
+      this.active !== active ||
+      active.cancelling ||
+      active.interruption ||
+      active.abort.signal.aborted
+    )
       throw new Error(blocked ?? active.interruption ?? '运行已停止');
+  }
+  private assertScriptOwner(owner: ScriptOwner) {
+    this.assertAdmitting();
+    const active = this.active;
+    if (!active || active.id !== owner.runId) throw new Error('脚本所属运行已停止');
+    this.checkActive(active);
+    if (active.interruption) throw new Error(active.interruption);
+    if (active.workerClosing || !active.child.connected) throw new Error('执行进程已断开');
+  }
+  private async scriptRequest(owner: ScriptOwner, method: string, args: any) {
+    this.assertScriptOwner(owner);
+    let result: unknown;
+    if (method === 'log' || method === 'progress')
+      result = await this.workerRequest(owner.runId, 'event', {
+        type: method,
+        nodeInstance: owner.nodeInstance,
+        data: args,
+      });
+    else if (method === 'artifact')
+      result = await this.workerRequest(owner.runId, 'artifact.create', args);
+    else if (method === 'credential')
+      result = await this.workerRequest(owner.runId, 'credential', args);
+    else throw new Error('脚本能力不在白名单');
+    this.assertScriptOwner(owner);
+    return result;
   }
   private async waitActive<T>(active: Active, pending: Promise<T>): Promise<T> {
     const signal = active.abort.signal;
@@ -308,10 +374,27 @@ export class Runtime {
     if (destroy) active.sessionCleanup = pending;
     return pending;
   }
+  private stopScripts(active: Active, reason?: string): Promise<CleanupResult> {
+    if (active.scriptCleanup) return active.scriptCleanup;
+    active.scriptCleanup = (async () => {
+      let result: CleanupResult;
+      try {
+        // stopRun revokes this Run synchronously, including invocations whose
+        // execute handlers have not yet resumed from their first await.
+        result = await this.scripts.stopRun(active.id, reason);
+      } catch (error) {
+        result = { confirmed: false, error: '脚本资源回收失败：' + errorText(error) };
+      }
+      if (!result.confirmed) this.blockExecution(result.error ?? '未取得脚本回收确认');
+      return result;
+    })();
+    return active.scriptCleanup;
+  }
   private stopWorker(active: Active): Promise<CleanupResult> {
     if (active.workerCleanup) return active.workerCleanup;
     active.workerClosing = true;
     active.workerCleanup = (async () => {
+      const scripts = this.stopScripts(active, active.interruption ?? '运行已停止');
       let error: string | undefined;
       try {
         await killOwnedTree(active.child);
@@ -324,7 +407,13 @@ export class Runtime {
         error = '执行进程回收未确认' + (error ? '：' + error : '');
         this.blockExecution(error);
       }
-      return { confirmed, ...(error ? { error } : {}) };
+      const scriptCleanup = await scripts;
+      const errors = [error, scriptCleanup.error].filter(Boolean);
+      return {
+        confirmed: confirmed && scriptCleanup.confirmed,
+        ...(errors.length ? { error: errors.join('\n') } : {}),
+        ...(scriptCleanup.warnings?.length ? { warnings: scriptCleanup.warnings } : {}),
+      };
     })();
     return active.workerCleanup;
   }
@@ -333,8 +422,9 @@ export class Runtime {
     if (active.cancelling) return;
     active.cancelling = true;
     active.abort.abort(new Error(active.interruption ?? '用户取消'));
+    void this.stopScripts(active, active.interruption ?? '用户取消');
     // This timer starts before any browser close await. A stuck page cannot keep
-    // an unresponsive Worker (or its script descendants) alive indefinitely.
+    // an unresponsive Worker alive indefinitely. Script cleanup runs independently.
     active.cancelTimer = setTimeout(() => {
       void this.stopWorker(active).then(() => active.rpc.close());
     }, 2000);
@@ -370,14 +460,16 @@ export class Runtime {
     scheduleRevision?: string,
     debug = false,
   ) {
-    this.assertAdmitting();
+    if (!this.recovering) this.assertAdmitting();
+    else if (this.stopping || this.store.fault) throw new Error(this.store.fault ?? '应用正在退出');
     // Capture the requested content before waiting, while serializing admission
     // so a cheap second preflight cannot overtake the first manual request.
     const record = this.store.get<FlowRecord>(versionId ? 'version' : 'flow', versionId ?? flowId);
     if (!record) throw new Error('流程或版本不存在');
-    const pending = this.admissions.then(() =>
-      this.admit(record, flowId, versionId, scheduleId, triggerId, scheduleRevision, debug),
-    );
+    const pending = this.admissions.then(async () => {
+      await this.ready;
+      return this.admit(record, flowId, versionId, scheduleId, triggerId, scheduleRevision, debug);
+    });
     this.admissions = pending.then(
       () => {},
       () => {},
@@ -439,6 +531,7 @@ export class Runtime {
     });
   }
   private async pump() {
+    await this.ready;
     if (this.active || this.stopping || this.suspended || this.store.fault || this.executionBlock())
       return;
     const run = this.store.list<Run>('run').find((r) => r.state === 'QUEUED');
@@ -462,11 +555,18 @@ export class Runtime {
     };
     this.active = active;
     proc.on('message', (m) => void rpc.receive(m as any));
-    proc.on('exit', () => {
-      if (!active.workerClosing && !active.cancelling) active.interruption ??= '执行进程意外退出';
+    const lost = () => {
+      if (!active.workerClosing && !active.cancelling) {
+        active.interruption ??= '执行进程意外退出';
+        active.abort.abort(new Error(active.interruption));
+        void this.stopScripts(active, active.interruption);
+        void this.releaseSession(active, true);
+      }
       rpc.close();
-    });
-    proc.on('error', () => rpc.close());
+    };
+    proc.on('exit', lost);
+    proc.on('disconnect', lost);
+    proc.on('error', lost);
     try {
       let failure: string | undefined;
       let outputs: unknown;
@@ -547,6 +647,7 @@ export class Runtime {
       rpc.close();
       this.secrets = [];
       if (this.active === active) this.active = undefined;
+      this.scripts.finishRun(run.id);
       settled();
       if (!this.stopping && !this.store.fault && !this.executionBlock()) this.dispatch();
     }
@@ -562,10 +663,40 @@ export class Runtime {
     }
   }
   private async performWorkerRequest(id: string, method: string, args: any): Promise<any> {
+    // A cancellation can overtake execute or arrive after the Run was revoked.
+    // Its exact invocation tombstone must be recorded before normal owner checks.
+    if (method === 'script.cancel') return this.scripts.cancel(id, args.invocationId);
     if (this.active?.id !== id) throw new Error('运行已停止');
     this.checkActive(this.active);
     const runSignal = this.active.abort.signal;
-    const snapshot = this.store.get<FlowRecord>('snapshot', id)!;
+    const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', id)!;
+    if (method === 'script.execute') {
+      const active = this.active;
+      const node = walk(snapshot.flow.steps).find((step) => step.id === args.nodeId);
+      const bundle = snapshot.scriptBundles?.find((item) => item.nodeId === args.nodeId);
+      const compiled = snapshot.scripts?.[args.nodeId];
+      if (!node || node.type !== 'script' || !bundle || !compiled)
+        throw new Error('脚本节点或固定编译快照不存在');
+      try {
+        return await this.scripts.execute({
+          runId: id,
+          invocationId: args.invocationId,
+          nodeId: node.id,
+          nodeInstance: args.nodeInstance,
+          compiled,
+          sha256: bundle.sha256,
+          input: args.input,
+        });
+      } catch (error) {
+        if (error instanceof ScriptProcessInterruptedError) {
+          active.interruption ??= redact(errorText(error), this.secrets);
+          active.abort.abort(error);
+          void this.stopScripts(active, active.interruption);
+          void this.releaseSession(active, true);
+        }
+        throw error;
+      }
+    }
     if (method === 'event') {
       if (!['node-start', 'node-end', 'log', 'progress', 'error'].includes(args.type))
         throw new Error('事件类型无效');
@@ -757,6 +888,7 @@ export class Runtime {
       }
   }
   async tick(time = Date.now()) {
+    await this.ready;
     if (
       this.stopping ||
       this.suspended ||
@@ -887,9 +1019,13 @@ export class Runtime {
       case 'run.list':
         return listRuns(this.store, args);
       case 'run.rerun.preview':
+        await this.ready;
         return this.reruns.preview(args);
       case 'run.rerun.confirm': {
-        const pending = this.admissions.then(() => this.reruns.confirm(args));
+        const pending = this.admissions.then(async () => {
+          await this.ready;
+          return this.reruns.confirm(args);
+        });
         this.admissions = pending.then(
           () => {},
           () => {},
@@ -1000,6 +1136,7 @@ export class Runtime {
       }
       case 'schedule.save': {
         args = scheduleCreateSchema.parse(args);
+        await this.ready;
         this.assertAdmitting();
         const r = this.store.get<FlowRecord>('flow', args.flowId);
         if (!r) throw new Error('流程不存在');
@@ -1021,6 +1158,7 @@ export class Runtime {
       }
       case 'schedule.update': {
         const update = scheduleUpdateSchema.parse(args);
+        await this.ready;
         this.assertAdmitting();
         const previous = this.store.get<Schedule>('schedule', update.id);
         if (!previous) throw new Error('计划不存在');
@@ -1059,7 +1197,10 @@ export class Runtime {
         });
       }
       case 'schedule.toggle': {
-        if (args.enabled) this.assertAdmitting();
+        if (args.enabled) {
+          await this.ready;
+          this.assertAdmitting();
+        }
         const s = this.store.get<Schedule>('schedule', args.id);
         if (!s) throw new Error('计划不存在');
         this.store.put('schedule', s.id, {
@@ -1120,6 +1261,14 @@ export class Runtime {
     this.stopping = true;
     clearInterval(this.timer);
     const errors: unknown[] = [];
+    // Revoke every script immediately, even if SQLite rejects a subsequent
+    // cancellation record or there is no longer an active Worker.
+    const scriptCleanup = this.scripts.shutdown().catch(
+      (error): CleanupResult => ({
+        confirmed: false,
+        error: '脚本退出回收失败：' + errorText(error),
+      }),
+    );
     try {
       for (const r of this.store.list<Run>('run'))
         if (r.state === 'QUEUED') {
@@ -1150,6 +1299,13 @@ export class Runtime {
       cleanup = { confirmed: false, error: '浏览器退出回收失败：' + errorText(error) };
     }
     if (!cleanup.confirmed) this.blockExecution(cleanup.error ?? '退出时资源回收未确认');
+    const scripts = await scriptCleanup;
+    if (!scripts.confirmed) this.blockExecution(scripts.error ?? '退出时脚本回收未确认');
+    try {
+      await this.ready;
+    } catch (error) {
+      errors.push(error);
+    }
     try {
       this.recordExecutionBlock(active?.id);
     } catch (error) {

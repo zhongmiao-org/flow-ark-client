@@ -4,8 +4,11 @@ import { RunControl } from '../core/run-control';
 import { runScript } from '../adapters/script';
 import { fileOperation } from '../adapters/files';
 import { runRecruitingBatch } from '../recruiting/batch';
-import { dirname } from 'node:path';
 import type { Step } from '../shared/types';
+import {
+  SCRIPT_CLEANUP_TIMEOUT_MS,
+  SCRIPT_EXECUTE_RPC_TIMEOUT_MS,
+} from '../shared/script-supervision';
 const abort = new AbortController();
 let control: RunControl | undefined;
 let pendingPause = false;
@@ -64,22 +67,18 @@ const rpc = new Rpc(
         if (n.type === 'browser') return rpc.call('browser', resolved, timeout + 5000);
         if (n.type === 'script')
           return runScript({
-            compiled: args.scripts[n.id],
-            sha256: args.scriptBundles.find((bundle: any) => bundle.nodeId === n.id)?.sha256,
+            nodeId: n.id,
+            nodeInstance: instance,
             input: resolved.input,
-            dir: dirname(process.argv[1]),
-            executable: args.executable,
             signal,
-            call: async (method, value) => {
-              signal.throwIfAborted();
-              if (method === 'log' || method === 'progress') {
-                await emit(method === 'log' ? 'log' : 'progress', instance, value);
-                return true;
-              }
-              if (method === 'artifact') return rpc.call('artifact.create', value);
-              if (method === 'credential') return rpc.call('credential', value);
-              throw new Error('脚本能力不在白名单');
-            },
+            call: (method, value) =>
+              rpc.call(
+                method,
+                value,
+                method === 'script.execute'
+                  ? SCRIPT_EXECUTE_RPC_TIMEOUT_MS
+                  : SCRIPT_CLEANUP_TIMEOUT_MS + 1000,
+              ),
           });
         if (n.type === 'recruiting')
           return runRecruitingBatch(
@@ -104,6 +103,6 @@ process.on('message', (m: any) => {
 process.on('disconnect', () => {
   rpc.close();
   abort.abort(new Error('运行宿主已断开'));
-  // Allow the script adapter to terminate its owned child before leaving.
+  // Script supervisors belong to Host and receive EOF independently of this Worker.
   setTimeout(() => process.exit(1), 1800).unref();
 });

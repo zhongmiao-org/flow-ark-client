@@ -11,6 +11,7 @@ await build({
     worker: 'src/workers/runner.ts',
     browser: 'src/workers/browser.ts',
     script: 'src/workers/script.ts',
+    'script-supervisor': 'src/workers/script-supervisor.ts',
   },
   outdir: 'dist',
   outExtension: { '.js': '.cjs' },

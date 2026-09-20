@@ -24,6 +24,7 @@ const rpc = new Rpc(send, async (method, args) => {
               : 65000,
         ),
     );
+    await runtime.ready;
     return true;
   }
   if (!runtime) throw new Error('宿主尚未就绪');
