@@ -59,6 +59,7 @@ import ScriptPackages from './ScriptPackages';
 import EmbeddedBrowserPanel from './EmbeddedBrowserPanel';
 import BrowserSidebar from './BrowserSidebar';
 import ArtifactCleanupPanel from './ArtifactCleanupPanel';
+import Schedules from './Schedules';
 import { fileBindingNames } from './file-bindings';
 import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 import LogicNodeConfiguration from './LogicNodeConfiguration';
@@ -1383,71 +1384,6 @@ function RunDetail({
         </>
       )}
     </>
-  );
-}
-function Schedules({ data, action }: any) {
-  const [flowId, setFlow] = useState(''),
-    [minutes, setMinutes] = useState(30);
-  return (
-    <div className="page">
-      <Heading title="让流程按时开始" text="仅在应用驻留时生效。退出或休眠期间不补跑。" />
-      <div className="panel">
-        <div className="row">
-          <select value={flowId} onChange={(e) => setFlow(e.target.value)}>
-            <option value="">选择流程</option>
-            {data.flows.map((r: FlowRecord) => (
-              <option key={r.id} value={r.id}>
-                {r.flow.name}
-              </option>
-            ))}
-          </select>
-          <span>每</span>
-          <input
-            type="number"
-            min={1}
-            value={minutes}
-            onChange={(e) => setMinutes(Number(e.target.value))}
-            style={{ width: 90 }}
-          />
-          <span>分钟</span>
-          <button
-            className="primary"
-            disabled={!flowId}
-            onClick={() =>
-              action(
-                () =>
-                  api('schedule.save', {
-                    flowId,
-                    intervalMinutes: minutes,
-                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                  }),
-                '计划已创建，固定引用当前版本',
-              )
-            }
-          >
-            <Plus size={15} />
-            创建计划
-          </button>
-        </div>
-      </div>
-      {data.schedules.map((s: any) => (
-        <div className="schedule" key={s.id}>
-          <Clock />
-          <div>
-            <b>{data.flows.find((f: FlowRecord) => f.id === s.flowId)?.flow.name}</b>
-            <p>
-              每 {s.intervalMinutes} 分钟 · {s.timezone} · 固定版本 {s.versionId.slice(0, 8)}
-            </p>
-            <small>下次：{format(new Date(s.nextAt).toISOString())}</small>
-          </div>
-          <button
-            onClick={() => action(() => api('schedule.toggle', { id: s.id, enabled: !s.enabled }))}
-          >
-            {s.enabled ? '暂停计划' : '启用计划'}
-          </button>
-        </div>
-      ))}
-    </div>
   );
 }
 function SettingsView({ data, action }: any) {

@@ -23,6 +23,7 @@ const allowed = new Set([
   'script.package.inspect',
   'browser.bind',
   'schedule.save',
+  'schedule.update',
   'schedule.toggle',
   'attention.read',
   'action.confirm',

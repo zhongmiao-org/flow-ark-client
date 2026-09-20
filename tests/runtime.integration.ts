@@ -1821,3 +1821,279 @@ test('real waiting Worker stays visible beyond 200 queued runs and history reach
     await rm(path, { recursive: true, force: true });
   }
 });
+
+test('schedule edits preserve paused state and frozen queued work; adopting a saved draft is explicit', async () => {
+  const path = await mkdtemp(join(tmpdir(), 'flowark-schedule-edit-'));
+  const key = randomBytes(32);
+  let runtime = new Runtime(
+    path,
+    resolve('dist'),
+    process.execPath,
+    Buffer.from(key),
+    async () => [],
+  );
+  const bindings = { files: {}, credentials: [] };
+  const flow = (value: string): Flow => ({
+    ...base,
+    steps: [
+      { id: 'value', type: 'value', version: 1, value },
+      { id: 'wait', type: 'human', version: 1, message: 'fixture' },
+    ],
+  });
+  try {
+    runtime.saveFlow(flow('original'), bindings);
+    const plan = await runtime.request('schedule.save', {
+      flowId: base.id,
+      intervalMinutes: 30,
+      timezone: 'UTC',
+    });
+    const first = await runtime.enqueue(base.id, plan.versionId, plan.id, 'first', plan.revision);
+    await until(() => runtime.store.get<Run>('run', first.id)?.state === 'WAITING_INPUT');
+    const queued = await runtime.enqueue(base.id, plan.versionId, plan.id, 'second', plan.revision);
+    const saved = runtime.saveFlow(flow('updated'), bindings);
+    await runtime.request('schedule.toggle', { id: plan.id, enabled: false });
+    const paused = runtime.store.get('schedule', plan.id);
+    const unchanged = await runtime.request('schedule.update', {
+      id: plan.id,
+      revision: paused.revision,
+      intervalMinutes: 5,
+      timezone: 'Asia/Tokyo',
+      adoptLatest: false,
+    });
+    assert.equal(unchanged.enabled, false);
+    assert.equal(unchanged.versionId, plan.versionId);
+    assert.notEqual(unchanged.revision, paused.revision);
+    const beforeAdopt = Date.now();
+    const changed = await runtime.request('schedule.update', {
+      id: plan.id,
+      revision: unchanged.revision,
+      intervalMinutes: 6,
+      timezone: 'Asia/Shanghai',
+      adoptLatest: true,
+      flowUpdatedAt: saved.updatedAt,
+    });
+    assert.equal(changed.enabled, false);
+    assert.notEqual(changed.versionId, plan.versionId);
+    assert.ok(changed.nextAt >= beforeAdopt + 360000);
+    assert.equal(runtime.store.get('snapshot', first.id).versionId, plan.versionId);
+    assert.equal(runtime.store.get('snapshot', queued.id).versionId, plan.versionId);
+    assert.equal(runtime.store.list('run').length, 2);
+    for (const id of [first.id, queued.id]) {
+      await until(() => runtime.store.get<Run>('run', id)?.state === 'WAITING_INPUT');
+      await runtime.control(id, 'resume');
+      await until(() => runtime.store.get<Run>('run', id)?.state === 'SUCCEEDED');
+      assert.equal((await runtime.request('run.detail', { id })).output.value, 'original');
+    }
+    await assert.rejects(
+      runtime.request('schedule.update', {
+        id: plan.id,
+        revision: unchanged.revision,
+        intervalMinutes: 10,
+        timezone: 'UTC',
+        adoptLatest: false,
+      }),
+      /计划已改变/,
+    );
+    assert.deepEqual(runtime.store.get('schedule', plan.id), changed);
+    await runtime.request('schedule.toggle', { id: plan.id, enabled: true });
+    const enabled = runtime.store.get('schedule', plan.id);
+    const updated = await runtime.request('schedule.update', {
+      id: plan.id,
+      revision: enabled.revision,
+      intervalMinutes: 12,
+      timezone: 'UTC',
+      adoptLatest: false,
+    });
+    assert.equal(updated.enabled, true);
+    assert.equal(updated.versionId, changed.versionId);
+    const latest = await runtime.enqueue(
+      base.id,
+      changed.versionId,
+      plan.id,
+      'third',
+      updated.revision,
+    );
+    await until(() => runtime.store.get<Run>('run', latest.id)?.state === 'WAITING_INPUT');
+    await runtime.control(latest.id, 'resume');
+    await until(() => runtime.store.get<Run>('run', latest.id)?.state === 'SUCCEEDED');
+    assert.equal((await runtime.request('run.detail', { id: latest.id })).output.value, 'updated');
+    await runtime.shutdown();
+    runtime.store.close();
+    runtime = new Runtime(
+      path,
+      resolve('dist'),
+      process.execPath,
+      Buffer.from(key),
+      async () => [],
+    );
+    assert.deepEqual(runtime.store.get('schedule', plan.id), updated);
+    const legacy = { ...updated };
+    delete legacy.revision;
+    runtime.store.put('schedule', plan.id, legacy);
+    const migrated = await runtime.request('schedule.update', {
+      id: plan.id,
+      revision: null,
+      intervalMinutes: 12,
+      timezone: 'UTC',
+      adoptLatest: false,
+    });
+    assert.ok(migrated.revision);
+    assert.equal(migrated.versionId, updated.versionId);
+  } finally {
+    await runtime.shutdown();
+    runtime.store.close();
+    key.fill(0);
+  }
+});
+
+test('schedule update rejects failed preflight and invalid input without replacing the original plan', async () => {
+  const runtime = new Runtime(
+    await mkdtemp(join(tmpdir(), 'flowark-schedule-invalid-')),
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  try {
+    runtime.saveFlow(
+      { ...base, steps: [{ id: 'v', type: 'value', version: 1, value: 'old' }] },
+      { files: {}, credentials: [] },
+    );
+    const plan = await runtime.request('schedule.save', {
+      flowId: base.id,
+      intervalMinutes: 30,
+      timezone: 'UTC',
+    });
+    const args = {
+      id: plan.id,
+      revision: plan.revision,
+      intervalMinutes: 5,
+      timezone: 'UTC',
+      adoptLatest: false,
+    };
+    for (const change of [
+      { timezone: 'Invalid/Zone' },
+      { intervalMinutes: -1 },
+      { enabled: false },
+      { id: 'missing' },
+    ]) {
+      await assert.rejects(runtime.request('schedule.update', { ...args, ...change }));
+      assert.deepEqual(runtime.store.get('schedule', plan.id), plan);
+    }
+    const record = runtime.saveFlow(
+      {
+        ...base,
+        steps: [
+          {
+            id: 'open',
+            type: 'browser',
+            version: 3,
+            operation: 'navigate',
+            selector: '',
+            framePath: [],
+            value: 'http://127.0.0.1',
+          },
+        ],
+      },
+      { files: {}, credentials: [] },
+    );
+    await assert.rejects(
+      runtime.request('schedule.update', {
+        ...args,
+        adoptLatest: true,
+        flowUpdatedAt: record.updatedAt,
+      }),
+      /浏览器/,
+    );
+    assert.deepEqual(runtime.store.get('schedule', plan.id), plan);
+    const preserved = await runtime.request('schedule.update', args);
+    assert.equal(
+      preserved.versionId,
+      plan.versionId,
+      'timing-only edit must not preflight a different draft',
+    );
+    assert.equal(runtime.store.list('run').length, 0);
+  } finally {
+    await runtime.shutdown();
+    runtime.store.close();
+  }
+});
+
+test('schedule update cannot overwrite a pause, competing edit, timer trigger, or saved-flow change during preflight', async () => {
+  const runtime = new Runtime(
+    await mkdtemp(join(tmpdir(), 'flowark-schedule-update-races-')),
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  const original = runtime.preflight.bind(runtime);
+  let release = () => {};
+  try {
+    for (const scenario of ['pause', 'edit', 'trigger', 'draft'] as const) {
+      runtime.preflight = original;
+      const record = runtime.saveFlow(
+        { ...base, steps: [{ id: 'v', type: 'value', version: 1, value: scenario }] },
+        { files: {}, credentials: [] },
+      );
+      const plan = await runtime.request('schedule.save', {
+        flowId: base.id,
+        intervalMinutes: 30,
+        timezone: 'UTC',
+      });
+      if (scenario === 'trigger') {
+        plan.nextAt = Date.now() - 1;
+        runtime.store.put('schedule', plan.id, plan);
+      }
+      let entered = false;
+      const gate = new Promise<void>((r) => {
+        release = r;
+      });
+      runtime.preflight = async (r) => {
+        entered = true;
+        await gate;
+        return original(r);
+      };
+      const pending = runtime.request('schedule.update', {
+        id: plan.id,
+        revision: plan.revision,
+        intervalMinutes: 10,
+        timezone: 'UTC',
+        adoptLatest: true,
+        flowUpdatedAt: record.updatedAt,
+      });
+      const rejected = assert.rejects(
+        pending,
+        scenario === 'draft' ? /流程已改变/ : /计划已改变/,
+        scenario,
+      );
+      await until(() => entered);
+      if (scenario === 'pause')
+        await runtime.request('schedule.toggle', { id: plan.id, enabled: false });
+      if (scenario === 'edit')
+        await runtime.request('schedule.update', {
+          id: plan.id,
+          revision: plan.revision,
+          intervalMinutes: 7,
+          timezone: 'Asia/Tokyo',
+          adoptLatest: false,
+        });
+      if (scenario === 'draft')
+        runtime.saveFlow({ ...record.flow, name: 'different saved draft' }, record.bindings);
+      if (scenario === 'trigger') {
+        // Actual tick, but an injected due time: race test, not wall-clock acceptance.
+        runtime.preflight = original;
+        await runtime.tick();
+      }
+      const expected = runtime.store.get('schedule', plan.id);
+      release();
+      await rejected;
+      assert.deepEqual(runtime.store.get('schedule', plan.id), expected);
+      await runtime.request('schedule.toggle', { id: plan.id, enabled: false });
+    }
+  } finally {
+    release();
+    await runtime.shutdown();
+    runtime.store.close();
+  }
+});
