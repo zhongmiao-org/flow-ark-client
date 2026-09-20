@@ -206,17 +206,20 @@ export class RunRerun {
   }
 
   // Runtime serializes this method with all manual and scheduled admissions.
-  async confirm(input: unknown): Promise<Run> {
+  async confirm(input: unknown, assertAdmission: () => void = () => {}): Promise<Run> {
     const args = runRerunConfirmSchema.parse(input);
     const fingerprint = digest({ ...args, debug: !!args.debug });
     const previous = this.previous(args, fingerprint);
     if (previous) return previous;
+    assertAdmission();
     const captured = await this.prepare(args);
+    assertAdmission();
     if (captured.preview.token !== args.token)
       throw new Error('重新运行预览已过期，请重新预览并核对');
     const run = this.store.tx(() => {
       const duplicate = this.previous(args, fingerprint);
       if (duplicate) return duplicate;
+      assertAdmission();
       if (this.capture(args).signature !== captured.signature)
         throw new Error('重新运行预览已过期，请重新预览并核对');
       const time = now();

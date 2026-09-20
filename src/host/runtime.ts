@@ -75,6 +75,8 @@ export class Runtime {
   private pendingCapabilities = new Map<string, number>();
   private stopping = false;
   private suspended = false;
+  private admissionEpoch = 0;
+  private suspension?: Promise<boolean>;
   private runtimeBlock?: string;
   private recovering = true;
   private ticking = false;
@@ -305,6 +307,11 @@ export class Runtime {
     if (this.suspended) throw new Error('系统正在休眠，恢复后请重新开始运行');
     if (this.stopping || this.store.fault) throw new Error(this.store.fault ?? '应用正在退出');
   }
+  private assertAdmission(epoch: number) {
+    if (epoch !== this.admissionEpoch)
+      throw new Error('系统挂起已撤销本次运行请求，恢复后请重新开始');
+    this.assertAdmitting();
+  }
   private blockExecution(reason: string) {
     this.runtimeBlock ??= redact(
       `资源回收未确认，执行已停止。请核对运行结果。${reason}`,
@@ -483,6 +490,8 @@ export class Runtime {
     scheduleRevision?: string,
     debug = false,
   ) {
+    const epoch = this.admissionEpoch;
+    if (this.suspended) throw new Error('系统正在休眠，恢复后请重新开始运行');
     if (!this.recovering) this.assertAdmitting();
     else if (this.stopping || this.store.fault) throw new Error(this.store.fault ?? '应用正在退出');
     // Capture the requested content before waiting, while serializing admission
@@ -491,7 +500,16 @@ export class Runtime {
     if (!record) throw new Error('流程或版本不存在');
     const pending = this.admissions.then(async () => {
       await this.ready;
-      return this.admit(record, flowId, versionId, scheduleId, triggerId, scheduleRevision, debug);
+      return this.admit(
+        epoch,
+        record,
+        flowId,
+        versionId,
+        scheduleId,
+        triggerId,
+        scheduleRevision,
+        debug,
+      );
     });
     this.admissions = pending.then(
       () => {},
@@ -500,6 +518,7 @@ export class Runtime {
     return pending;
   }
   private async admit(
+    epoch: number,
     record: FlowRecord,
     flowId: string,
     versionId?: string,
@@ -509,7 +528,7 @@ export class Runtime {
     debug = false,
   ) {
     const check = () => {
-      this.assertAdmitting();
+      this.assertAdmission(epoch);
       if (scheduleId) {
         const schedule = this.store.get<Schedule>('schedule', scheduleId);
         if (
@@ -911,8 +930,11 @@ export class Runtime {
       }
   }
   async tick(time = Date.now()) {
+    if (this.suspended) return;
+    const epoch = this.admissionEpoch;
     await this.ready;
     if (
+      epoch !== this.admissionEpoch ||
       this.stopping ||
       this.suspended ||
       this.ticking ||
@@ -926,7 +948,14 @@ export class Runtime {
       this.lastTick = time;
       for (const s of this.store.list<Schedule>('schedule'))
         if (s.enabled && s.nextAt <= time) {
-          if (this.executionBlock() || this.stopping || this.suspended || this.store.fault) break;
+          if (
+            epoch !== this.admissionEpoch ||
+            this.executionBlock() ||
+            this.stopping ||
+            this.suspended ||
+            this.store.fault
+          )
+            break;
           const triggerId = s.id + ':' + s.nextAt;
           this.store.put('schedule', s.id, {
             ...s,
@@ -955,33 +984,86 @@ export class Runtime {
       this.ticking = false;
     }
   }
+  private suspend(): Promise<boolean> {
+    if (this.suspended) return this.suspension ?? Promise.resolve(true);
+    this.suspended = true;
+    this.admissionEpoch++;
+    // Capture the actual owner before any historical read or diagnostic write.
+    this.suspension = this.finishSuspend(this.active);
+    return this.suspension;
+  }
+  private async finishSuspend(active: Active | undefined): Promise<boolean> {
+    const errors: unknown[] = [];
+    const ids = new Set<string>(active ? [active.id] : []);
+    if (active) {
+      try {
+        this.stop(active);
+      } catch (error) {
+        // stop revokes resources before its CANCELLING write; keep that error.
+        errors.push(error);
+      }
+    }
+    let runs: Run[] = [];
+    try {
+      runs = this.store.list<Run>('run').filter((run) => !terminal.has(run.state));
+      for (const run of runs) ids.add(run.id);
+    } catch (error) {
+      errors.push(error);
+    }
+    for (const id of ids) {
+      try {
+        this.store.event(id, 'system-suspend', '', {
+          reason: '休眠停止运行；外部结果需核对，不自动重放',
+        });
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+    for (const run of runs) {
+      if (run.state !== 'QUEUED') continue;
+      try {
+        this.store.state(run.id, 'CANCELLED');
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+    // Use the existing cooperative cancellation, timeout and cleanup result.
+    // A rejected diagnostic must not return before the actual owner finishes.
+    if (active) await active.done;
+    if (this.store.fault && !errors.length) errors.push(new Error(this.store.fault));
+    if (ids.size) {
+      try {
+        this.store.attention(
+          'limitation',
+          this.executionBlock()
+            ? '休眠后资源回收未确认，请核对运行结果'
+            : '休眠已停止任务，请核对结果后重新运行',
+          { runIds: [...ids] },
+          'suspend:' + [...ids].join(','),
+        );
+        void this.system('notification', {}).catch(() => {});
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+    if (errors.length)
+      throw new AggregateError(errors, '休眠收尾遇到本地记录错误，请核对最后保存的状态与运行结果');
+    return true;
+  }
   async request(method: string, args: any = {}): Promise<any> {
     switch (method) {
-      case 'system.suspend': {
-        this.suspended = true;
-        const runs = this.store.list<Run>('run').filter((r) => !terminal.has(r.state));
-        for (const run of runs) {
-          this.store.event(run.id, 'system-suspend', '', {
-            reason: '休眠停止运行；外部结果需核对，不自动重放',
-          });
-          await this.control(run.id, 'cancel');
-        }
-        if (runs.length) {
-          this.store.attention(
-            'limitation',
-            '休眠已停止任务，请核对结果后重新运行',
-            { runIds: runs.map((r) => r.id) },
-            'suspend:' + runs.map((r) => r.id).join(','),
-          );
-          void this.system('notification', {}).catch(() => {});
-        }
-        return true;
-      }
-      case 'system.resume':
+      case 'system.suspend':
+        return this.suspend();
+      case 'system.resume': {
+        if (!this.suspended) return true;
+        const epoch = this.admissionEpoch;
+        await this.suspension?.catch(() => {});
+        if (epoch !== this.admissionEpoch) return false;
         this.skipMissed('system-resume');
         this.lastTick = Date.now();
         this.suspended = false;
         return true;
+      }
       case 'ai.test': {
         const input = {
           provider: args.provider,
@@ -1045,9 +1127,14 @@ export class Runtime {
         await this.ready;
         return this.reruns.preview(args);
       case 'run.rerun.confirm': {
+        const epoch = this.admissionEpoch;
+        const suspended = this.suspended;
         const pending = this.admissions.then(async () => {
           await this.ready;
-          return this.reruns.confirm(args);
+          return this.reruns.confirm(args, () => {
+            if (suspended) throw new Error('系统正在休眠，恢复后请重新开始运行');
+            this.assertAdmission(epoch);
+          });
         });
         this.admissions = pending.then(
           () => {},
