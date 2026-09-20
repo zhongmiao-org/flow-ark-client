@@ -17,7 +17,7 @@ import { join, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
 import { Runtime } from '../src/host/runtime';
-import type { Flow, Run } from '../src/shared/types';
+import type { Flow, Run, Step } from '../src/shared/types';
 import { Store } from '../src/host/store';
 import { child, killOwnedTree } from '../src/host/processes';
 import { Rpc } from '../src/shared/rpc';
@@ -37,6 +37,226 @@ async function until(fn: () => boolean, timeout = 12000) {
     await new Promise((r) => setTimeout(r, 20));
   }
 }
+test('real Worker enforces human, branch and whole-loop deadlines then releases its run slot', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'flowark-node-timeout-'));
+  let requests = 0;
+  const server = createServer((_request, response) => {
+    requests++;
+    setTimeout(() => response.end('fictional response'), 100);
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const url = 'http://127.0.0.1:' + (server.address() as any).port;
+  const runtime = new Runtime(
+    directory,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  const wait: Step = { id: 'wait', type: 'human', version: 1, message: 'timeout fixture' };
+  const cases: Step[] = [
+    { ...wait, timeoutMs: 200 },
+    {
+      id: 'branch',
+      type: 'condition',
+      version: 1,
+      timeoutMs: 200,
+      actual: true,
+      operator: 'equals',
+      expected: true,
+      then: [wait],
+      else: [],
+    },
+    {
+      id: 'loop',
+      type: 'loop',
+      version: 1,
+      timeoutMs: 400,
+      items: [1, 2, 3, 4, 5, 6],
+      body: [
+        {
+          id: 'request',
+          type: 'http',
+          version: 1,
+          method: 'GET',
+          url,
+          headers: {},
+          body: null,
+          timeoutMs: 2000,
+        },
+      ],
+    },
+  ];
+  try {
+    runtime.saveFlow(
+      { ...base, id: 'recovery', steps: [{ id: 'value', type: 'value', version: 1, value: true }] },
+      { files: {}, credentials: [] },
+    );
+    for (const node of cases) {
+      runtime.saveFlow(
+        {
+          ...base,
+          steps: [
+            node,
+            {
+              id: 'never',
+              type: 'file',
+              version: 1,
+              operation: 'write',
+              binding: 'work',
+              name: 'must-not-write.txt',
+              content: 'unexpected',
+            },
+          ],
+        },
+        { files: { work: directory }, credentials: [] },
+      );
+      const run = await runtime.enqueue(base.id);
+      await until(() =>
+        ['FAILED', 'INTERRUPTED', 'SUCCEEDED'].includes(
+          runtime.store.get<Run>('run', run.id)!.state,
+        ),
+      );
+      const finished = runtime.store.get<Run>('run', run.id)!;
+      assert.equal(finished.state, 'FAILED', JSON.stringify(finished));
+      assert.match(finished.error!, new RegExp(`节点超时：${node.id}（${node.timeoutMs} 毫秒）`));
+      assert.ok(!runtime.store.events(run.id).some((event) => event.nodeInstance === 'never'));
+      assert.ok(
+        !runtime.store
+          .events(run.id)
+          .some((event) => event.nodeInstance === node.id && event.type === 'node-end'),
+      );
+      await assert.rejects(access(join(directory, 'must-not-write.txt')), { code: 'ENOENT' });
+      const next = await runtime.enqueue('recovery');
+      await until(() => runtime.store.get<Run>('run', next.id)?.state === 'SUCCEEDED');
+    }
+    assert.ok(requests > 0 && requests < 6, `loop must stop before all six requests: ${requests}`);
+  } finally {
+    await runtime.shutdown();
+    runtime.store.close();
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('real Worker leaves unconfigured human waiting and still records user cancellation as CANCELLED', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'flowark-human-no-deadline-'));
+  const runtime = new Runtime(
+    directory,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  try {
+    runtime.saveFlow(
+      { ...base, steps: [{ id: 'wait', type: 'human', version: 1, message: 'fixture' }] },
+      { files: {}, credentials: [] },
+    );
+    const unlimited = await runtime.enqueue(base.id);
+    await until(() => runtime.store.get<Run>('run', unlimited.id)?.state === 'WAITING_INPUT');
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    assert.equal(runtime.store.get<Run>('run', unlimited.id)?.state, 'WAITING_INPUT');
+    await runtime.control(unlimited.id, 'resume');
+    await until(() => runtime.store.get<Run>('run', unlimited.id)?.state === 'SUCCEEDED');
+    runtime.saveFlow(
+      {
+        ...base,
+        steps: [{ id: 'wait', type: 'human', version: 1, message: 'fixture', timeoutMs: 10000 }],
+      },
+      { files: {}, credentials: [] },
+    );
+    const cancelled = await runtime.enqueue(base.id);
+    await until(() => runtime.store.get<Run>('run', cancelled.id)?.state === 'WAITING_INPUT');
+    await runtime.control(cancelled.id, 'cancel');
+    await until(() => runtime.store.get<Run>('run', cancelled.id)?.state === 'CANCELLED');
+    assert.ok(!runtime.store.events(cancelled.id).some((event) => event.type === 'node-end'));
+  } finally {
+    await runtime.shutdown();
+    runtime.store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('parent deadline terminates its real script process and does not execute following side effects', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'flowark-timeout-script-'));
+  const pidFile = join(directory, 'owned.pid');
+  const lateFile = join(directory, 'late.txt');
+  const runtime = new Runtime(
+    directory,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  let pid = 0;
+  try {
+    runtime.saveFlow(
+      {
+        ...base,
+        steps: [
+          {
+            id: 'branch',
+            type: 'condition',
+            version: 1,
+            timeoutMs: 2000,
+            actual: true,
+            operator: 'equals',
+            expected: true,
+            else: [],
+            then: [
+              {
+                id: 'script',
+                type: 'script',
+                version: 1,
+                language: 'js',
+                dependencies: [],
+                timeoutMs: 10000,
+                input: { pidFile, lateFile },
+                code: 'import {writeFile} from "node:fs/promises"; export default async ({input}) => { await writeFile(input.pidFile,String(process.pid)); await new Promise(r=>setTimeout(r,4000)); await writeFile(input.lateFile,"unexpected"); }',
+              },
+              { id: 'never', type: 'value', version: 1, value: 'unexpected' },
+            ],
+          },
+        ],
+      },
+      { files: {}, credentials: [] },
+    );
+    const run = await runtime.enqueue(base.id);
+    for (let attempt = 0; attempt < 100 && !pid; attempt++) {
+      pid = Number(await readFile(pidFile, 'utf8').catch(() => ''));
+      if (!pid) await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    assert.ok(pid, 'the real script must start before its parent deadline');
+    await until(() =>
+      ['FAILED', 'INTERRUPTED', 'SUCCEEDED'].includes(runtime.store.get<Run>('run', run.id)!.state),
+    );
+    const result = runtime.store.get<Run>('run', run.id)!;
+    assert.equal(result.state, 'FAILED', JSON.stringify(result));
+    assert.match(result.error!, /branch（2000 毫秒）/);
+    await until(() => {
+      try {
+        process.kill(pid, 0);
+        return false;
+      } catch {
+        return true;
+      }
+    });
+    await assert.rejects(access(lateFile), { code: 'ENOENT' });
+    assert.ok(
+      !runtime.store
+        .events(run.id)
+        .some((event) => event.type === 'node-end' || event.nodeInstance.endsWith('/never')),
+    );
+  } finally {
+    await runtime.shutdown();
+    runtime.store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('upload-only directories and parameter descriptors are checked before admission without requiring future output files', async () => {
   const path = await mkdtemp(join(tmpdir(), 'flowark-upload-admission-'));
   const browser = { id: 'embedded', product: 'embedded', version: 'fixture' };
