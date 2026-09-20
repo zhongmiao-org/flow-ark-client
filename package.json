@@ -1,6 +1,6 @@
 {
   "name": "flow-ark-client",
-  "version": "0.1.27",
+  "version": "0.1.28",
   "description": "FlowArk 序舟本地自动化工作台",
   "private": true,
   "type": "module",
@@ -8,7 +8,7 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "2a41434fa40265f72a6bc2a8f4e439a80924bfb0",
+    "governanceBaseline": "0e2df726f07518b4f69fce585e6bdc7543ba68b8",
     "contractsVersion": "0.7.0",
     "contractsTag": "contracts-v0.7.0"
   },
@@ -23,7 +23,7 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "test:runtime": "node --import tsx --test tests/runtime.integration.ts",
+    "test:runtime": "node --import tsx --test tests/runtime.integration.ts tests/run-rerun.integration.ts",
     "check": "pnpm typecheck && pnpm test && pnpm build",
     "contracts:generate": "node scripts/generate-contracts.mjs",
     "test:browser": "node --import tsx scripts/browser-smoke.ts",
@@ -59,7 +59,8 @@
     "test:quit-confirmation": "node --import tsx scripts/quit-confirmation-smoke.ts",
     "test:flow-export": "node --import tsx scripts/flow-export-smoke.ts",
     "test:node-timeout": "node --import tsx scripts/node-timeout-smoke.ts",
-    "test:invalid-node-json": "node --import tsx scripts/invalid-node-json-smoke.ts"
+    "test:invalid-node-json": "node --import tsx scripts/invalid-node-json-smoke.ts",
+    "test:run-rerun": "node --import tsx scripts/run-rerun-smoke.ts"
   },
   "build": {
     "appId": "org.zhongmiao.flowark",

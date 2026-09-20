@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { runListSchema } from './run-history';
 import { scheduleCreateSchema, scheduleUpdateSchema } from './schedules';
 import { flowExportSchema } from './flow-export';
+import { runRerunPreviewSchema, runRerunConfirmSchema } from './run-rerun';
 const id = z.string().min(1).max(100);
 const empty = z.object({}).strict();
 const bindings = z
@@ -28,6 +29,8 @@ export const methods = {
   'flow.create': z.object({ templateId: id.optional() }).strict(),
   'flow.run': z.object({ id, debug: z.boolean().optional() }).strict(),
   'run.detail': z.object({ id }).strict(),
+  'run.rerun.preview': runRerunPreviewSchema,
+  'run.rerun.confirm': runRerunConfirmSchema,
   'run.list': runListSchema,
   'run.artifacts.preview': z.object({ id }).strict(),
   'run.artifacts.clear': z

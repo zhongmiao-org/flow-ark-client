@@ -187,7 +187,7 @@ export default function RunHistory({
                 <td>
                   <span className={'badge state-' + r.state}>{runStateLabels[r.state]}</span>
                 </td>
-                <td>{r.source === 'manual' ? '手动' : '本机计划'}</td>
+                <td>{r.rerun ? '手动 · 重新运行' : r.source === 'manual' ? '手动' : '本机计划'}</td>
                 <td>{new Date(r.createdAt).toLocaleString('zh-CN')}</td>
                 <td>
                   <code>{r.versionId.slice(0, 10)}</code>
