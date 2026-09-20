@@ -1,6 +1,6 @@
 {
   "name": "flow-ark-client",
-  "version": "0.1.23",
+  "version": "0.1.24",
   "description": "FlowArk 序舟本地自动化工作台",
   "private": true,
   "type": "module",
@@ -8,7 +8,7 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "44ec75bf473de8bda2d8f8ef5f3340bad97ebb3b",
+    "governanceBaseline": "5a49614c01cabd894b3449f4c7d212d25aa2fac0",
     "contractsVersion": "0.7.0",
     "contractsTag": "contracts-v0.7.0"
   },
@@ -54,7 +54,8 @@
     "test:artifact-history": "node --import tsx scripts/artifact-history-smoke.ts",
     "test:artifact-cleanup": "node --import tsx scripts/artifact-cleanup-smoke.ts",
     "test:run-history": "node --import tsx scripts/run-history-smoke.ts",
-    "test:schedule-residency": "node --import tsx scripts/schedule-residency-smoke.ts"
+    "test:schedule-residency": "node --import tsx scripts/schedule-residency-smoke.ts",
+    "test:schedule-editing": "node --import tsx scripts/schedule-editing-smoke.ts"
   },
   "build": {
     "appId": "org.zhongmiao.flowark",

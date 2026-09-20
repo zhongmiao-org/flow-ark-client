@@ -5,6 +5,7 @@ import { RecruitingCoordinator } from '../recruiting/coordinator';
 import { BossRecruitingAdapter, ZhaopinRecruitingAdapter } from '../recruiting/sites';
 import type { PreparedAction } from '../recruiting/actions';
 import { Store } from './store';
+import { scheduleCreateSchema, scheduleUpdateSchema } from '../shared/schedules';
 import { listRuns, runOverview } from './run-history';
 import { ArtifactCleanup } from './artifact-cleanup';
 import { Sessions } from './sessions';
@@ -811,6 +812,7 @@ export class Runtime {
         return b;
       }
       case 'schedule.save': {
+        args = scheduleCreateSchema.parse(args);
         this.assertAdmitting();
         const r = this.store.get<FlowRecord>('flow', args.flowId);
         if (!r) throw new Error('流程不存在');
@@ -818,7 +820,7 @@ export class Runtime {
         this.assertAdmitting();
         new Intl.DateTimeFormat('en', { timeZone: args.timezone });
         const s = {
-          id: args.id ?? uid(),
+          id: uid(),
           flowId: r.id,
           versionId: this.version(r, prepared),
           intervalMinutes: args.intervalMinutes,
@@ -829,6 +831,45 @@ export class Runtime {
         };
         this.store.put('schedule', s.id, s);
         return s;
+      }
+      case 'schedule.update': {
+        const update = scheduleUpdateSchema.parse(args);
+        this.assertAdmitting();
+        const previous = this.store.get<Schedule>('schedule', update.id);
+        if (!previous) throw new Error('计划不存在');
+        if ((previous.revision ?? null) !== update.revision)
+          throw new Error('计划已改变，请取消编辑后重新核对');
+        const originalPlan = digest(previous);
+        let record: FlowRecord | undefined;
+        let prepared: PreparedScripts | undefined;
+        if (update.adoptLatest) {
+          record = this.store.get<FlowRecord>('flow', previous.flowId);
+          if (!record || record.updatedAt !== update.flowUpdatedAt)
+            throw new Error('已保存的流程已改变，请取消编辑后重新核对');
+          const originalFlow = digest(record);
+          prepared = await this.preflight(record);
+          this.assertAdmitting();
+          const currentFlow = this.store.get<FlowRecord>('flow', previous.flowId);
+          if (!currentFlow || digest(currentFlow) !== originalFlow)
+            throw new Error('已保存的流程已改变，请取消编辑后重新核对');
+        }
+        const current = this.store.get<Schedule>('schedule', update.id);
+        if (!current || digest(current) !== originalPlan)
+          throw new Error('计划已改变，请取消编辑后重新核对');
+        // Version publication and plan replacement are one synchronous transaction.
+        // Existing Run snapshots and the plan's enabled state are never rewritten.
+        return this.store.tx(() => {
+          const next: Schedule = {
+            ...current,
+            versionId: record && prepared ? this.version(record, prepared) : current.versionId,
+            intervalMinutes: update.intervalMinutes,
+            timezone: update.timezone,
+            nextAt: Date.now() + update.intervalMinutes * 60000,
+            revision: uid(),
+          };
+          this.store.put('schedule', next.id, next);
+          return next;
+        });
       }
       case 'schedule.toggle': {
         const s = this.store.get<Schedule>('schedule', args.id);

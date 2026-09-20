@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { runListSchema } from './run-history';
+import { scheduleCreateSchema, scheduleUpdateSchema } from './schedules';
 const id = z.string().min(1).max(100);
 const empty = z.object({}).strict();
 const bindings = z
@@ -70,14 +71,8 @@ export const methods = {
       driver: z.string().max(4096).optional(),
     })
     .strict(),
-  'schedule.save': z
-    .object({
-      id: id.optional(),
-      flowId: id,
-      intervalMinutes: z.number().int().min(1).max(525600),
-      timezone: z.string().max(100),
-    })
-    .strict(),
+  'schedule.save': scheduleCreateSchema,
+  'schedule.update': scheduleUpdateSchema,
   'schedule.toggle': z.object({ id, enabled: z.boolean() }).strict(),
   'attention.read': z.object({ id }).strict(),
   'action.confirm': z.object({ id, policyHash: z.string().length(64) }).strict(),
