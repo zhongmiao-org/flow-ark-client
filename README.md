@@ -1,6 +1,6 @@
 # FlowArk · 序舟
 
-通用的本地 RPA 工作台，用于编排、运行和查看自动化流程。当前为 **macOS Apple Silicon 0.1.12 元素拾取预览版**。
+通用的本地 RPA 工作台，用于编排、运行和查看自动化流程。当前为 **macOS Apple Silicon 0.1.13 元素拾取预览版**。
 
 ## 使用
 
@@ -41,3 +41,5 @@ pnpm package:mac
 浏览器回归默认使用内置网页；本机 Chrome 兼容检查需显式运行 `pnpm test:chrome` 或 `pnpm test:chrome-recovery`。
 
 元素拾取验证：`pnpm test:picker` 覆盖内置网页定位与取消，`pnpm test:picker-ui` 覆盖从空白草稿搭建、保存和逐步执行，`pnpm test:picker-lifecycle` 验证点选中的关闭、恢复与重复使用。
+
+编排布局验证：`pnpm test:editor-layout` 覆盖网页面板展开、收起、窗口尺寸变化，以及选中节点、未保存配置和网页会话的保留。小窗口打开网页时，节点库移至画布上方，可横向滚动选择节点。

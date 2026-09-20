@@ -840,7 +840,7 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose 
         >
           <Background gap={22} color="#d7e0de" />
           <Controls showInteractive={false} />
-          <FitDiagram layoutKey={layoutKey} />
+          <FitDiagram layoutKey={layoutKey} selected={selected} />
         </ReactFlow>
         <div className="canvas-legend" aria-label="流程图图例">
           <span className="legend-decision" />

@@ -1,6 +1,6 @@
 {
   "name": "flow-ark-client",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "FlowArk 序舟本地自动化工作台",
   "private": true,
   "type": "module",
@@ -8,7 +8,7 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "310203b8a57787715f6608067aaf12ef860b9504",
+    "governanceBaseline": "61dab8ab51eb3fba44287165325a902f14a3f5c3",
     "contractsVersion": "0.7.0",
     "contractsTag": "contracts-v0.7.0"
   },
@@ -33,6 +33,7 @@
     "forms:serve": "node --import tsx scripts/form-lab-server.ts",
     "test:forms": "node --import tsx scripts/form-lab-smoke.ts",
     "test:desktop": "node scripts/desktop-smoke.mjs",
+    "test:editor-layout": "node --import tsx scripts/editor-layout-smoke.ts",
     "test:install": "node scripts/install-smoke.mjs",
     "test:vault": "node --import tsx scripts/vault-smoke.mjs",
     "package:mac": "pnpm build && electron-builder --mac zip --arm64 --publish never --config.electronDist=node_modules/electron/dist && node scripts/package-dmg.mjs",
