@@ -23,32 +23,42 @@ export class RunControl {
       this.waiting?.();
     }
   }
-  async boundary(location: Location) {
+  async boundary(location: Location, signal = this.signal) {
     this.signal.throwIfAborted();
-    if (!this.continuous && !this.permit) await this.wait('PAUSED', location);
+    signal.throwIfAborted();
+    if (!this.continuous && !this.permit) await this.wait('PAUSED', location, signal);
     this.signal.throwIfAborted();
+    signal.throwIfAborted();
     this.permit = false;
   }
-  async human(message: string) {
-    await this.wait('WAITING_INPUT', { message });
+  async human(message: string, signal = this.signal) {
+    await this.wait('WAITING_INPUT', { message }, signal);
     return { confirmed: true };
   }
-  private async wait(state: string, data: Location | { message: string }) {
+  private async wait(state: string, data: Location | { message: string }, signal: AbortSignal) {
     this.signal.throwIfAborted();
+    signal.throwIfAborted();
     let release!: () => void;
     const waiting = new Promise<void>((resolve) => {
       release = resolve;
     });
     this.waiting = release;
-    const aborted = () => release();
-    this.signal.addEventListener('abort', aborted, { once: true });
+    const signals = [...new Set([this.signal, signal])];
+    let aborted!: () => void;
+    const interrupted = new Promise<never>((_resolve, reject) => {
+      aborted = () => reject(this.signal.aborted ? this.signal.reason : signal.reason);
+      for (const source of signals) source.addEventListener('abort', aborted, { once: true });
+    });
     try {
-      await this.publish(state, data);
-      await waiting;
+      await Promise.race([this.publish(state, data), interrupted]);
+      await Promise.race([waiting, interrupted]);
       this.signal.throwIfAborted();
-      await this.publish('RUNNING');
+      signal.throwIfAborted();
+      await Promise.race([this.publish('RUNNING'), interrupted]);
+      this.signal.throwIfAborted();
+      signal.throwIfAborted();
     } finally {
-      this.signal.removeEventListener('abort', aborted);
+      for (const source of signals) source.removeEventListener('abort', aborted);
       if (this.waiting === release) this.waiting = undefined;
     }
   }
