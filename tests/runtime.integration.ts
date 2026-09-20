@@ -941,9 +941,12 @@ test('concurrent manual requests stay FIFO and retain content captured before sl
     assert.equal(runtime.store.list('run').length, 0);
     release();
     const runs = await Promise.all([first, second]);
-    await until(() =>
-      runs.every((r) => runtime.store.get<Run>('run', r.id)!.state === 'SUCCEEDED'),
-    );
+    await until(() => {
+      const states = runs.map((r) => runtime.store.get<Run>('run', r.id)!);
+      const failed = states.find((r) => ['FAILED', 'INTERRUPTED', 'CANCELLED'].includes(r.state));
+      assert.equal(failed, undefined, 'FIFO execution stopped: ' + JSON.stringify(failed));
+      return states.every((r) => r.state === 'SUCCEEDED');
+    });
     assert.deepEqual(
       runtime.store.list<Run>('run').map((r) => r.flowId),
       ['slow', 'fast'],
@@ -1662,8 +1665,15 @@ test('cancelled registration discards a late completed copy without publishing o
     const run = await runtime.enqueue(base.id);
     await until(() => !!copied);
     await runtime.control(run.id, 'cancel');
+    await until(
+      () =>
+        runtime.store.get<Run>('run', run.id)?.state === 'CANCELLED' && !(runtime as any).active,
+    );
+    await assert.rejects(runtime.request('run.artifacts.preview', { id: run.id }), /仍在收尾/);
     release();
     await until(() => discarded && runtime.store.get<Run>('run', run.id)?.state === 'CANCELLED');
+    await until(() => !(runtime as any).pendingCapabilities.has(run.id));
+    assert.equal((await runtime.request('run.artifacts.preview', { id: run.id })).count, 0);
     assert.equal(runtime.store.list('artifact').length, 0);
     assert.equal(runtime.store.events(run.id).filter((e) => e.type === 'artifact').length, 0);
     assert.ok(!runtime.store.events(run.id).some((e) => e.nodeInstance === 'later'));
@@ -1673,6 +1683,86 @@ test('cancelled registration discards a late completed copy without publishing o
     release();
     await runtime.shutdown();
     runtime.store.close();
+    await rm(path, { recursive: true, force: true });
+  }
+});
+
+test('real Worker artifacts can be cleared only after completion; history, later run and business output survive restart', async () => {
+  const path = await realpath(await mkdtemp(join(tmpdir(), 'flowark-cleanup-runtime-')));
+  const key = randomBytes(32);
+  const start = () =>
+    new Runtime(path, resolve('dist'), process.execPath, Buffer.from(key), async () => []);
+  let runtime = start();
+  try {
+    const write: Flow['steps'][number] = {
+      id: 'write',
+      type: 'file',
+      version: 1,
+      operation: 'write',
+      binding: 'work',
+      name: 'result.txt',
+      content: 'first',
+    };
+    runtime.saveFlow(
+      {
+        ...base,
+        steps: [write, { id: 'human', type: 'human', version: 1, message: 'fixture wait' }],
+      },
+      { files: { work: path }, credentials: [] },
+    );
+    const first = await runtime.enqueue(base.id);
+    await until(() => runtime.store.get<Run>('run', first.id)?.state === 'WAITING_INPUT');
+    await assert.rejects(runtime.request('run.artifacts.preview', { id: first.id }), /尚未结束/);
+    await runtime.control(first.id, 'resume');
+    await until(
+      () =>
+        runtime.store.get<Run>('run', first.id)?.state === 'SUCCEEDED' && !(runtime as any).active,
+    );
+    runtime.saveFlow(
+      { ...base, steps: [{ ...write, content: 'later' } as any] },
+      { files: { work: path }, credentials: [] },
+    );
+    const second = await runtime.enqueue(base.id);
+    await until(
+      () =>
+        runtime.store.get<Run>('run', second.id)?.state === 'SUCCEEDED' && !(runtime as any).active,
+    );
+    const before = await runtime.request('run.detail', { id: first.id });
+    const other = await runtime.request('run.detail', { id: second.id });
+    const preview = await runtime.request('run.artifacts.preview', { id: first.id });
+    assert.equal(preview.count, 1);
+    const result = await runtime.request('run.artifacts.clear', {
+      id: first.id,
+      token: preview.token,
+      reviewed: true,
+    });
+    assert.equal(result.state, 'completed');
+    await assert.rejects(
+      runtime.request('artifact.resolve', { id: before.artifacts[0].artifactId }),
+      /已清理/,
+    );
+    assert.equal(await readFile(other.artifacts[0].path, 'utf8'), 'later');
+    assert.equal(await readFile(join(path, 'result.txt'), 'utf8'), 'later');
+    await runtime.shutdown();
+    runtime.store.close();
+    runtime = start();
+    const after = await runtime.request('run.detail', { id: first.id });
+    assert.deepEqual(after.run, before.run);
+    assert.deepEqual(after.snapshot, before.snapshot);
+    assert.deepEqual(after.output, before.output);
+    assert.deepEqual(after.events.slice(0, -1), before.events);
+    assert.equal(after.events.at(-1).data.action, 'cleanup');
+    assert.equal(after.artifacts[0].integrity, 'cleared');
+    assert.equal(after.artifacts[0].available, false);
+    assert.equal(after.artifactCleanup.state, 'completed');
+    assert.equal(
+      (await runtime.request('run.detail', { id: second.id })).artifacts[0].integrity,
+      'verified',
+    );
+  } finally {
+    await runtime.shutdown();
+    runtime.store.close();
+    key.fill(0);
     await rm(path, { recursive: true, force: true });
   }
 });

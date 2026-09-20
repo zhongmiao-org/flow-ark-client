@@ -9,8 +9,9 @@ export type ArtifactFile = {
   path: string;
   storage?: 'snapshot-v1';
   sha256?: string;
+  clearedAt?: string;
 };
-type Integrity = 'verified' | 'changed' | 'missing' | 'unverified';
+type Integrity = 'verified' | 'changed' | 'missing' | 'unverified' | 'cleared';
 const signature = (s: BigIntStats) => [s.dev, s.ino, s.size, s.mtimeNs, s.ctimeNs].join(':');
 
 /** Owns history copies; business output paths remain available to subsequent steps. */
@@ -84,6 +85,7 @@ export class ArtifactFiles {
     item: ArtifactFile,
     force = false,
   ): Promise<{ available: boolean; integrity: Integrity }> {
+    if (item.clearedAt) return { available: false, integrity: 'cleared' };
     let integrity: Integrity = 'missing';
     try {
       if ((await realpath(item.path)) !== item.path) return { available: false, integrity };

@@ -5,6 +5,7 @@ import { RecruitingCoordinator } from '../recruiting/coordinator';
 import { BossRecruitingAdapter, ZhaopinRecruitingAdapter } from '../recruiting/sites';
 import type { PreparedAction } from '../recruiting/actions';
 import { Store } from './store';
+import { ArtifactCleanup } from './artifact-cleanup';
 import { Sessions } from './sessions';
 import { child, killOwnedTree } from './processes';
 import { Rpc } from '../shared/rpc';
@@ -52,6 +53,8 @@ export class Runtime {
   readonly recruiting: RecruitingCoordinator;
   private active?: Active;
   private artifactFiles: ArtifactFiles;
+  private artifactCleanup: ArtifactCleanup;
+  private pendingCapabilities = new Map<string, number>();
   private stopping = false;
   private suspended = false;
   private ticking = false;
@@ -69,6 +72,12 @@ export class Runtime {
     this.artifactFiles = new ArtifactFiles(dataPath);
     this.store = new Store(join(dataPath, 'flowark.sqlite'), key);
     this.store.recover();
+    this.artifactCleanup = new ArtifactCleanup(
+      dataPath,
+      this.store,
+      (id) =>
+        this.stopping || this.active?.id === id || (this.pendingCapabilities.get(id) ?? 0) > 0,
+    );
     this.recruiting = new RecruitingCoordinator(this.store, () =>
       this.system('notification', { title: 'FlowArk 有新的联系方式待办' }),
     );
@@ -377,6 +386,16 @@ export class Runtime {
     }
   }
   private async workerRequest(id: string, method: string, args: any): Promise<any> {
+    this.pendingCapabilities.set(id, (this.pendingCapabilities.get(id) ?? 0) + 1);
+    try {
+      return await this.performWorkerRequest(id, method, args);
+    } finally {
+      const remaining = this.pendingCapabilities.get(id)! - 1;
+      if (remaining) this.pendingCapabilities.set(id, remaining);
+      else this.pendingCapabilities.delete(id);
+    }
+  }
+  private async performWorkerRequest(id: string, method: string, args: any): Promise<any> {
     if (this.active?.id !== id || this.active.cancelling) throw new Error('运行已停止');
     const runSignal = this.active.abort.signal;
     const snapshot = this.store.get<FlowRecord>('snapshot', id)!;
@@ -698,9 +717,14 @@ export class Runtime {
       }
       case 'run.control':
         return this.control(args.id, args.action);
+      case 'run.artifacts.preview':
+        return this.artifactCleanup.preview(args.id);
+      case 'run.artifacts.clear':
+        return this.artifactCleanup.clear(args.id, args.token, args.reviewed);
       case 'run.detail':
         return {
           run: this.store.get('run', args.id),
+          artifactCleanup: this.artifactCleanup.status(args.id),
           events: this.store.events(args.id),
           artifacts: await Promise.all(
             this.store
@@ -718,9 +742,11 @@ export class Runtime {
         const status = await this.artifactFiles.inspect(item, true);
         if (!status.available)
           throw new Error(
-            status.integrity === 'changed'
-              ? '产物副本内容已改动，无法核对当时结果'
-              : '产物文件已移动、删除或不可访问',
+            status.integrity === 'cleared'
+              ? '产物已清理，无法定位'
+              : status.integrity === 'changed'
+                ? '产物副本内容已改动，无法核对当时结果'
+                : '产物文件已移动、删除或不可访问',
           );
         return item.path;
       }

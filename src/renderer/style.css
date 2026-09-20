@@ -1992,3 +1992,50 @@ td small {
   outline: 2px solid #428574;
   outline-offset: -2px;
 }
+
+.artifact-cleanup {
+  border: 1px solid #dbe5e0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin: 18px 0;
+}
+.artifact-cleanup p {
+  margin: 6px 0;
+}
+.artifact-cleanup .section-row {
+  flex-wrap: wrap;
+}
+.artifact-cleanup-preview {
+  border-top: 1px solid #dbe5e0;
+  margin-top: 16px;
+  padding-top: 12px;
+}
+.artifact-cleanup-files {
+  max-height: 220px;
+  overflow: auto;
+  padding: 0;
+  list-style: none;
+}
+.artifact-cleanup-files li {
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #e6edeb;
+}
+.artifact-cleanup-files code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.artifact-cleanup-files span {
+  white-space: nowrap;
+}
+.artifact-cleanup-confirm {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0;
+}
+.artifact-cleanup-confirm input {
+  width: auto;
+}
