@@ -1,11 +1,11 @@
-import { memo, useEffect, type CSSProperties } from 'react';
+import { memo, useEffect, useRef, type CSSProperties } from 'react';
 import {
   Handle,
   Position,
   BaseEdge,
   EdgeLabelRenderer,
   useReactFlow,
-  useNodesInitialized,
+  useStore,
   type NodeProps,
   type EdgeProps,
 } from '@xyflow/react';
@@ -183,15 +183,29 @@ function RoutedEdge({
 }
 export const flowNodeTypes = { semantic: FlowNode };
 export const flowEdgeTypes = { routed: RoutedEdge };
-export function FitDiagram({ layoutKey }: { layoutKey: string }) {
-  const ready = useNodesInitialized();
-  const { fitView } = useReactFlow();
+export function FitDiagram({ layoutKey, selected }: { layoutKey: string; selected: string }) {
+  // Projection nodes already declare their sizes; only the viewport must be ready.
+  const { fitView, viewportInitialized: ready } = useReactFlow();
+  const width = useStore((state) => state.width);
+  const height = useStore((state) => state.height);
+  const previous = useRef<{ layoutKey: string; width: number; height: number } | null>(null);
   useEffect(() => {
-    if (!ready) return;
-    const frame = requestAnimationFrame(
-      () => void fitView({ padding: 0.2, minZoom: 0.15, maxZoom: 1 }),
-    );
+    if (!ready || !width || !height) return;
+    const before = previous.current;
+    if (before?.layoutKey === layoutKey && before.width === width && before.height === height)
+      return;
+    const frame = requestAnimationFrame(() => {
+      previous.current = { layoutKey, width, height };
+      // A panel resize keeps the edited step in view, including in long flows.
+      // Selection or parameter edits alone must not undo a user's pan or zoom.
+      void fitView({
+        padding: 0.2,
+        minZoom: 0.15,
+        maxZoom: 1,
+        nodes: before?.layoutKey === layoutKey && selected ? [{ id: selected }] : undefined,
+      });
+    });
     return () => cancelAnimationFrame(frame);
-  }, [ready, layoutKey, fitView]);
+  }, [ready, layoutKey, selected, width, height, fitView]);
   return null;
 }
