@@ -16,9 +16,11 @@ const wait = async (predicate: () => Promise<boolean>, message: string) => {
 const click = async () =>
   h.app.evaluate(async () => {
     const wc = (globalThis as any).embeddedFixture.view.webContents;
-    const point = await wc.executeJavaScript(
+    let point = await wc.executeJavaScript(
       `(()=>{const e=document.querySelector('#full-name'); e.scrollIntoView({block:'center'}); const r=e.getBoundingClientRect(); return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()`,
     );
+    const scale = (globalThis as any).embeddedFixture.view.getBounds().width / 1920;
+    point = { x: Math.round(point.x * scale), y: Math.round(point.y * scale) };
     wc.sendInputEvent({ type: 'mouseMove', ...point });
     wc.sendInputEvent({ type: 'mouseDown', ...point, button: 'left', clickCount: 1 });
     wc.sendInputEvent({ type: 'mouseUp', ...point, button: 'left', clickCount: 1 });

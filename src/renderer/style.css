@@ -1623,6 +1623,8 @@ td small {
 }
 /* Keep the editor, inspector and native page usable together at laptop widths. */
 .with-browser .browser-sidebar {
+  /* Chromium page zoom has a 25% floor: 480 content px preserve a 1920px layout. */
+  min-width: 481px;
   flex-basis: min(42vw, 620px);
   width: min(42vw, 620px);
 }
@@ -1686,8 +1688,8 @@ td small {
     flex-basis: 152px;
   }
   .with-browser .inspector {
-    width: 260px;
-    flex-basis: 260px;
+    width: 240px;
+    flex-basis: 240px;
   }
 }
 @media (max-width: 1200px) {

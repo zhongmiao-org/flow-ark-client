@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Globe, X, ArrowRight, RefreshCw } from 'lucide-react';
+import { desktopViewportWidth } from '../shared/browser-viewport';
 const api = (method: string, args?: unknown) => window.flowark.request(method, args);
 export default function BrowserSidebar({
   close,
@@ -90,7 +91,9 @@ export default function BrowserSidebar({
         <div>
           <Globe size={18} />
           <strong>内置浏览器</strong>
-          <span className="badge">{running ? '任务执行中' : '网页工作区'}</span>
+          <span className="badge">
+            {running ? '任务执行中' : `桌面宽度 ${desktopViewportWidth}`}
+          </span>
         </div>
         <button title="关闭网页面板" aria-label="关闭网页面板" onClick={close}>
           <X size={17} />

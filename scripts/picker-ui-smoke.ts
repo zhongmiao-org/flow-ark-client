@@ -38,6 +38,9 @@ try {
     await page.waitForTimeout(300);
     await app.evaluate(({ BrowserWindow }, point) => {
       const wc = (BrowserWindow.getAllWindows()[0].contentView.children[0] as any).webContents;
+      const scale =
+        (BrowserWindow.getAllWindows()[0].contentView.children[0] as any).getBounds().width / 1920;
+      point = { x: Math.round(point.x * scale), y: Math.round(point.y * scale) };
       wc.sendInputEvent({ type: 'mouseMove', ...point });
       wc.sendInputEvent({ type: 'mouseDown', ...point, button: 'left', clickCount: 1 });
       wc.sendInputEvent({ type: 'mouseUp', ...point, button: 'left', clickCount: 1 });
