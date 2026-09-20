@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { runListSchema } from './run-history';
 import { scheduleCreateSchema, scheduleUpdateSchema } from './schedules';
+import { flowExportSchema } from './flow-export';
 const id = z.string().min(1).max(100);
 const empty = z.object({}).strict();
 const bindings = z
@@ -76,7 +77,7 @@ export const methods = {
   'schedule.toggle': z.object({ id, enabled: z.boolean() }).strict(),
   'attention.read': z.object({ id }).strict(),
   'action.confirm': z.object({ id, policyHash: z.string().length(64) }).strict(),
-  'flow.export': z.object({ id, reviewed: z.literal(true) }).strict(),
+  'flow.export': flowExportSchema,
   'flow.import': empty,
   'file.choose': z.object({ kind: z.enum(['directory', 'browser', 'file', 'driver']) }).strict(),
   'credentials.set': z

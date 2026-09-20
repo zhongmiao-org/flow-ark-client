@@ -196,12 +196,12 @@ export default function App() {
     const r = await action(() => api('flow.create', { templateId }));
     if (r) void openFlow(r);
   }
-  function checkEditorInput() {
+  function checkEditorInput(operation = '保存或运行') {
     if (section !== 'editor') return;
     const invalid = document.querySelector<HTMLElement>('.editor-page [data-value-invalid]');
     if (invalid) {
       invalid.querySelector<HTMLElement>('textarea,input')?.focus();
-      throw new Error('请先修正未完成的值配置，再保存或运行');
+      throw new Error('请先修正未完成的值配置，再' + operation);
     }
   }
   async function save() {
@@ -210,6 +210,21 @@ export default function App() {
         checkEditorInput();
         return api('flow.save', { flow: edit.flow, bindings: edit.bindings });
       }, '已保存本地草稿');
+  }
+  async function exportDraft() {
+    if (edit)
+      return action(() => {
+        checkEditorInput('导出');
+        const configuration = edit.bindings.configuration;
+        const snapshot = structuredClone({
+          flow: edit.flow,
+          ...(configuration
+            ? { configuration: { adapter: configuration.adapter, schema: configuration.schema } }
+            : {}),
+          reviewed: true as const,
+        });
+        return api('flow.export', snapshot);
+      });
   }
   async function run(r: FlowRecord, debug = false) {
     await action(async () => {
@@ -499,7 +514,8 @@ export default function App() {
                 </button>
               )}
               <button
-                onClick={() => action(() => api('flow.export', { id: edit.id, reviewed: true }))}
+                onClick={exportDraft}
+                disabled={busy}
                 title="导出前请确认流程字面量和脚本中没有个人数据；本地绑定和参数值不导出"
               >
                 <Download size={15} />
