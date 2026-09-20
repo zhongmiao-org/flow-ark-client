@@ -1,6 +1,6 @@
 {
   "name": "flow-ark-client",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "FlowArk 序舟本地自动化工作台",
   "private": true,
   "type": "module",
@@ -8,7 +8,7 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "440082a21aec5665e043289a7e91e9e6a553d60c",
+    "governanceBaseline": "310203b8a57787715f6608067aaf12ef860b9504",
     "contractsVersion": "0.7.0",
     "contractsTag": "contracts-v0.7.0"
   },
@@ -43,7 +43,8 @@
     "test:embedded-isolation": "node --import tsx scripts/embedded-isolation.ts",
     "test:picker": "node --import tsx scripts/picker-smoke.ts",
     "test:picker-ui": "node --import tsx scripts/picker-ui-smoke.ts",
-    "test:picker-lifecycle": "node --import tsx scripts/picker-lifecycle-smoke.ts"
+    "test:picker-lifecycle": "node --import tsx scripts/picker-lifecycle-smoke.ts",
+    "test:embedded-capture": "node --import tsx scripts/embedded-capture-lifecycle.ts"
   },
   "build": {
     "appId": "org.zhongmiao.flowark",
