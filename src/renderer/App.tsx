@@ -61,6 +61,7 @@ import BrowserSidebar from './BrowserSidebar';
 import { fileBindingNames } from './file-bindings';
 import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 import LogicNodeConfiguration from './LogicNodeConfiguration';
+import ResourceNodeConfiguration from './ResourceNodeConfiguration';
 import ParameterConfiguration from './ParameterConfiguration';
 import { referenceChoices } from './value-references';
 import { referenceIssues } from '../shared/flow-references';
@@ -129,6 +130,7 @@ export default function App() {
   const edit = history.present?.record ?? null,
     selected = history.present?.selected ?? '';
   const inputGroup = useRef<string | undefined>(undefined);
+  const inputTarget = useRef<Element | null>(null);
   const setEdit = (record: FlowRecord) =>
     dispatchDraft({ type: 'change', record, group: inputGroup.current });
   const setSelected = (selected: string) => dispatchDraft({ type: 'select', selected });
@@ -400,12 +402,26 @@ export default function App() {
           <div
             className="editor-page"
             onFocusCapture={(event) => {
-              const target = event.target as HTMLElement;
-              inputGroup.current = target.closest(
+              const control = (event.target as HTMLElement).closest(
                 'input,textarea,select,[contenteditable="true"],.monaco-editor',
-              )
-                ? crypto.randomUUID()
-                : undefined;
+              );
+              inputTarget.current = control;
+              inputGroup.current = control ? crypto.randomUUID() : undefined;
+            }}
+            onChangeCapture={(event) => {
+              const control = (event.target as HTMLElement).closest(
+                'input,textarea,select,[contenteditable="true"],.monaco-editor',
+              );
+              if (control && (control !== inputTarget.current || !inputGroup.current)) {
+                inputTarget.current = control;
+                inputGroup.current = crypto.randomUUID();
+              }
+            }}
+            onClickCapture={(event) => {
+              if ((event.target as HTMLElement).closest('button')) {
+                inputTarget.current = null;
+                inputGroup.current = undefined;
+              }
             }}
             onKeyDown={(event) => {
               if (
@@ -976,58 +992,14 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose,
                   }}
                 />
               )}
-              {(selectedNode.type === 'file' || selectedNode.type === 'excel') && (
-                <>
-                  <label htmlFor="file-operation">操作</label>
-                  <select
-                    id="file-operation"
-                    value={selectedNode.operation}
-                    onChange={(e) => {
-                      const operation = e.target.value;
-                      const isExcel = selectedNode.type === 'excel';
-                      const extra = isExcel
-                        ? operation === 'fill'
-                          ? {
-                              version: 2,
-                              name: 'filled.xlsx',
-                              templateName: 'template.xlsx',
-                              sheet: '',
-                              cells: { A1: '示例' },
-                            }
-                          : { version: 1, name: 'result.xlsx', rows: [] }
-                        : operation === 'archive'
-                          ? { version: 2, name: 'archive.zip', files: ['result.txt'] }
-                          : {
-                              version: 1,
-                              name: 'result.txt',
-                              content: operation === 'copy' ? 'source.txt' : '',
-                            };
-                      const next = {
-                        id: selectedNode.id,
-                        type: selectedNode.type,
-                        binding: selectedNode.binding,
-                        ...(selectedNode.timeoutMs ? { timeoutMs: selectedNode.timeoutMs } : {}),
-                        operation,
-                        ...extra,
-                      } as Step;
-                      patch(() => next);
-                      setRaw(JSON.stringify(next, null, 2));
-                      setInvalid('');
-                    }}
-                  >
-                    <option value="read">读取</option>
-                    <option value="write">写入</option>
-                    {selectedNode.type === 'excel' ? (
-                      <option value="fill">填充工作簿模板</option>
-                    ) : (
-                      <>
-                        <option value="copy">复制文件</option>
-                        <option value="archive">归档为 ZIP</option>
-                      </>
-                    )}
-                  </select>
-                </>
-              )}
+              <ResourceNodeConfiguration
+                key={selectedNode.id + ':resource:' + revision}
+                node={selectedNode}
+                choices={choices}
+                change={updateNode}
+                bindings={r.bindings}
+                choose={choose}
+              />
               {selectedNode.type === 'script' && (
                 <>
                   <label>可信脚本 · 独立进程执行</label>
@@ -1105,7 +1077,7 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose,
               <details
                 className="node-advanced"
                 key={selectedNode.id}
-                open={['http', 'file', 'excel', 'recruiting'].includes(selectedNode.type)}
+                open={selectedNode.type === 'recruiting'}
               >
                 <summary>高级配置 JSON</summary>
                 <label>节点配置 JSON</label>
