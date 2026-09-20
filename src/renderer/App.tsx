@@ -64,12 +64,15 @@ import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 import LogicNodeConfiguration from './LogicNodeConfiguration';
 import ResourceNodeConfiguration from './ResourceNodeConfiguration';
 import ParameterConfiguration from './ParameterConfiguration';
+import RunHistory from './RunHistory';
+import { runStateLabels } from '../shared/run-history';
 import { referenceChoices } from './value-references';
 import { referenceIssues } from '../shared/flow-references';
 const CodeEditor = lazy(() => import('./CodeEditor'));
 const initial: Bootstrap = {
   flows: [],
   runs: [],
+  runOverview: { total: 0, queued: 0, active: null, latest: [] },
   browsers: [],
   schedules: [],
   attention: [],
@@ -78,17 +81,7 @@ const initial: Bootstrap = {
   dataPath: '',
 };
 const api = (method: string, args: any = {}) => window.flowark.request(method, args);
-const status: Record<string, string> = {
-  QUEUED: '排队中',
-  RUNNING: '正在运行',
-  PAUSED: '已暂停',
-  WAITING_INPUT: '等待人工',
-  CANCELLING: '正在取消',
-  CANCELLED: '已取消',
-  INTERRUPTED: '已中断',
-  SUCCEEDED: '执行完成',
-  FAILED: '执行失败',
-};
+const status: Record<string, string> = runStateLabels;
 const actions: Record<string, string> = {
   apply: '投递 / 发起沟通',
   resume: '发送指定简历',
@@ -157,11 +150,25 @@ export default function App() {
   }, [refresh]);
   useEffect(() => {
     if (!detail) return;
-    const timer = setInterval(
-      async () => setDetail(await api('run.detail', { id: detail.run.id })),
-      1500,
-    );
-    return () => clearInterval(timer);
+    const id = detail.run.id;
+    let live = true,
+      pending = false;
+    const timer = setInterval(async () => {
+      if (pending) return;
+      pending = true;
+      try {
+        const next = await api('run.detail', { id });
+        if (live) setDetail((current: any) => (current?.run.id === id ? next : current));
+      } catch (e: any) {
+        if (live) setError(e.message);
+      } finally {
+        pending = false;
+      }
+    }, 1500);
+    return () => {
+      live = false;
+      clearInterval(timer);
+    };
   }, [detail?.run?.id]);
   async function action(fn: () => Promise<any>, message?: string) {
     setBusy(true);
@@ -221,9 +228,7 @@ export default function App() {
     ['inbox', '待办与提醒', Bell],
     ['settings', '本地设置', Settings],
   ] as const;
-  const active = data.runs.find((r) =>
-    ['RUNNING', 'PAUSED', 'WAITING_INPUT', 'CANCELLING'].includes(r.state),
-  );
+  const active = data.runOverview.active;
   return (
     <div className={`app ${browserOpen ? 'with-browser' : ''}`}>
       <aside className="sidebar">
@@ -319,7 +324,10 @@ export default function App() {
               <div>
                 <span>正在执行</span>
                 <strong>{active ? '01' : '00'}</strong>
-                <small>{active ? active.name : '运行槽空闲，可以开始新任务'}</small>
+                <small>
+                  {active ? active.name : '运行槽空闲，可以开始新任务'}
+                  {data.runOverview.queued > 0 && ` · ${data.runOverview.queued} 个排队中`}
+                </small>
               </div>
               <div>
                 <span>待处理事项</span>
@@ -361,7 +369,7 @@ export default function App() {
                   <FlowCard
                     key={r.id}
                     record={r}
-                    run={data.runs.find((x) => x.flowId === r.id)}
+                    run={data.runOverview.latest.find((x) => x.flowId === r.id)}
                     onEdit={() => openFlow(r)}
                     onRun={() => run(r)}
                   />
@@ -559,56 +567,20 @@ export default function App() {
               title="每一次运行，都有迹可循"
               text="执行快照、步骤事件与外部业务结果分别记录。"
             />
-            {detail ? (
+            <RunHistory visible={!detail} open={setDetail} />
+            {detail && (
               <RunDetail
                 key={detail.run.id}
                 detail={detail}
-                reload={async () => setDetail(await api('run.detail', { id: detail.run.id }))}
+                reload={async () => {
+                  const id = detail.run.id;
+                  const next = await api('run.detail', { id });
+                  setDetail((current: any) => (current?.run.id === id ? next : current));
+                }}
                 back={() => setDetail(null)}
                 control={(id, a) => action(() => api('run.control', { id, action: a }))}
                 reveal={(id) => action(() => api('artifact.reveal', { id }))}
               />
-            ) : (
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>流程</th>
-                      <th>状态</th>
-                      <th>触发方式</th>
-                      <th>开始时间</th>
-                      <th>版本快照</th>
-                      <th />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.runs.map((r) => (
-                      <tr key={r.id}>
-                        <td>
-                          <b>{r.name}</b>
-                          <small>{r.id.slice(0, 8)}</small>
-                        </td>
-                        <td>{badge(r.state)}</td>
-                        <td>{r.source === 'manual' ? '手动' : '本机计划'}</td>
-                        <td>{format(r.createdAt)}</td>
-                        <td>
-                          <code>{r.versionId.slice(0, 10)}</code>
-                        </td>
-                        <td>
-                          <button
-                            onClick={() =>
-                              action(async () => setDetail(await api('run.detail', { id: r.id })))
-                            }
-                          >
-                            查看 <ChevronRight size={13} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {!data.runs.length && <Empty text="还没有运行记录。试着运行「第一个流程」。" />}
-              </div>
             )}
           </div>
         )}

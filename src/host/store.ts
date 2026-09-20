@@ -94,6 +94,38 @@ export class Store {
   remove(kind: string, id: string) {
     this.write(() => this.db.prepare('DELETE FROM documents WHERE kind=? AND id=?').run(kind, id));
   }
+  lastPosition(kind: string): number {
+    const row = this.db
+      .prepare('SELECT COALESCE(MAX(rowid),0) n FROM documents WHERE kind=?')
+      .get(kind) as any;
+    const n = Number(row.n);
+    if (!Number.isSafeInteger(n) || n < 0 || n >= Number.MAX_SAFE_INTEGER)
+      throw new Error('本地记录位置超出支持范围');
+    return n;
+  }
+  count(kind: string, after = 0): number {
+    return Number(
+      (
+        this.db
+          .prepare('SELECT COUNT(*) n FROM documents WHERE kind=? AND rowid>?')
+          .get(kind, after) as any
+      ).n,
+    );
+  }
+  page<T>(
+    kind: string,
+    ceiling: number,
+    before: number,
+    limit: number,
+  ): { position: number; value: T }[] {
+    return (
+      this.db
+        .prepare(
+          'SELECT rowid AS position,payload FROM documents NOT INDEXED WHERE kind=? AND rowid<=? AND rowid<? ORDER BY rowid DESC LIMIT ?',
+        )
+        .all(kind, ceiling, before, limit) as any[]
+    ).map((r) => ({ position: Number(r.position), value: this.open(r.payload) }));
+  }
   event(runId: string, type: string, nodeInstance: string, data: any): Event {
     const sequence = Number(
       (
