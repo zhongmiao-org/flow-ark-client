@@ -59,6 +59,7 @@ import ScriptPackages from './ScriptPackages';
 import EmbeddedBrowserPanel from './EmbeddedBrowserPanel';
 import BrowserSidebar from './BrowserSidebar';
 import ArtifactCleanupPanel from './ArtifactCleanupPanel';
+import RunRerunPanel from './RunRerunPanel';
 import Schedules from './Schedules';
 import { fileBindingNames } from './file-bindings';
 import BrowserNodeConfiguration from './BrowserNodeConfiguration';
@@ -626,6 +627,9 @@ export default function App() {
               <RunDetail
                 key={detail.run.id}
                 detail={detail}
+                open={(next) =>
+                  setDetail((current: any) => (current?.run.id === detail.run.id ? next : current))
+                }
                 reload={async () => {
                   const id = detail.run.id;
                   const next = await api('run.detail', { id });
@@ -1346,8 +1350,10 @@ function RunDetail({
   control,
   reveal,
   reload,
+  open,
 }: {
   detail: any;
+  open: (detail: any) => void;
   reload: () => Promise<void>;
   back: () => void;
   control: (id: string, a: string) => void;
@@ -1401,6 +1407,7 @@ function RunDetail({
         <span>{format(r.createdAt)}</span>
       </div>
       <p className="note">{r.business}</p>
+      <RunRerunPanel run={r} related={d.rerun} open={open} />
       <ArtifactCleanupPanel run={r} cleanup={d.artifactCleanup} changed={reload} />
       {r.debug && (
         <p className="note">逐步调试 · 每次执行下一步会实际操作页面；继续将连续运行剩余流程。</p>

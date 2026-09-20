@@ -1,5 +1,6 @@
 import type { FlowArkP1 as P1Contracts } from './contracts.generated';
 import type { RunOverview } from './run-history';
+import type { RunRerunMode } from './run-rerun';
 export type Flow = NonNullable<P1Contracts['FlowDefinition']>;
 export type Step = Flow['steps'][number];
 export type Policy = NonNullable<P1Contracts['RecruitingPolicy']>;
@@ -41,6 +42,7 @@ export type Run = {
   source: string;
   debug?: boolean;
   scheduleId?: string;
+  rerun?: { runId: string; mode: RunRerunMode; reviewedAt: string };
   error?: string;
   business: string;
 };

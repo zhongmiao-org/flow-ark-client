@@ -9,6 +9,7 @@ import { scheduleCreateSchema, scheduleUpdateSchema } from '../shared/schedules'
 import { flowExportSchema, templateContentLimit } from '../shared/flow-export';
 import { listRuns, runOverview } from './run-history';
 import { ArtifactCleanup } from './artifact-cleanup';
+import { RunRerun, executionVersion } from './run-rerun';
 import { Sessions } from './sessions';
 import { child, killOwnedTree } from './processes';
 import { Rpc } from '../shared/rpc';
@@ -58,6 +59,7 @@ export class Runtime {
   private active?: Active;
   private artifactFiles: ArtifactFiles;
   private artifactCleanup: ArtifactCleanup;
+  private reruns: RunRerun;
   private pendingCapabilities = new Map<string, number>();
   private stopping = false;
   private suspended = false;
@@ -82,6 +84,13 @@ export class Runtime {
       (id) =>
         this.stopping || this.active?.id === id || (this.pendingCapabilities.get(id) ?? 0) > 0,
     );
+    this.reruns = new RunRerun(this.store, {
+      assertAdmitting: () => this.assertAdmitting(),
+      busy: (id) => this.active?.id === id || (this.pendingCapabilities.get(id) ?? 0) > 0,
+      preflight: (record) => this.preflight(record),
+      version: (record, prepared) => this.version(record, prepared),
+      dispatch: () => this.dispatch(),
+    });
     this.recruiting = new RecruitingCoordinator(this.store, () =>
       this.system('notification', { title: 'FlowArk 有新的联系方式待办' }),
     );
@@ -115,11 +124,7 @@ export class Runtime {
     return record;
   }
   private version(record: FlowRecord, prepared: PreparedScripts) {
-    const id = digest({
-      flow: record.flow,
-      bindings: record.bindings,
-      scriptBundles: prepared.scriptBundles,
-    });
+    const id = executionVersion(record, prepared);
     if (!this.store.get('version', id))
       this.store.put('version', id, { ...record, ...prepared, versionId: id });
     return id;
@@ -350,7 +355,9 @@ export class Runtime {
     try {
       this.store.state(run.id, 'RUNNING');
       const s = this.store.get<FlowRecord & PreparedScripts>('snapshot', run.id)!;
+      this.reruns.checkExecution(run, s);
       const prepared = await this.preflight(s); // Revalidate resources, never recompile a fixed bundle.
+      this.reruns.checkExecution(run, s);
       const outputs = await rpc.call(
         'execute',
         {
@@ -725,6 +732,16 @@ export class Runtime {
         return this.control(args.id, args.action);
       case 'run.list':
         return listRuns(this.store, args);
+      case 'run.rerun.preview':
+        return this.reruns.preview(args);
+      case 'run.rerun.confirm': {
+        const pending = this.admissions.then(() => this.reruns.confirm(args));
+        this.admissions = pending.then(
+          () => {},
+          () => {},
+        );
+        return pending;
+      }
       case 'run.artifacts.preview':
         return this.artifactCleanup.preview(args.id);
       case 'run.artifacts.clear':
@@ -732,6 +749,7 @@ export class Runtime {
       case 'run.detail':
         return {
           run: this.store.get('run', args.id),
+          rerun: this.reruns.details(args.id),
           artifactCleanup: this.artifactCleanup.status(args.id),
           events: this.store.events(args.id),
           artifacts: await Promise.all(
