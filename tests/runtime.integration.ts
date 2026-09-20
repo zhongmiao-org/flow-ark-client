@@ -1225,7 +1225,10 @@ test('queued scripts and reopened schedules retain frozen local dependencies whi
       assert.equal(detail.output.script, expected);
       assert.deepEqual(detail.scriptBundles[0].dependencies, [declaration]);
     }
-    const exported = await runtime.request('flow.export', { id: base.id });
+    const exported = await runtime.request('flow.export', {
+      flow: runtime.store.get<any>('flow', base.id).flow,
+      reviewed: true,
+    });
     assert.ok(!exported.includes(pkg));
     assert.ok(!exported.includes('scriptPackages'));
     const imported = await runtime.request('flow.import', { content: exported });

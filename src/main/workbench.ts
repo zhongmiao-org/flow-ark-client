@@ -23,6 +23,7 @@ import { errorText } from '../shared/utils';
 let win: BrowserWindow;
 let tray: Tray;
 let quitting = false;
+let quitPending = false;
 let rpc: Rpc;
 let host: Electron.UtilityProcess;
 let startupError = '';
@@ -35,31 +36,34 @@ app.on('second-instance', () => {
 });
 const page = pathToFileURL(join(__dirname, 'renderer', 'index.html')).href;
 async function quit() {
-  if (quitting) return;
+  if (quitting || quitPending) return;
+  quitPending = true;
   try {
-    const data = await rpc.call('bootstrap');
-    const active = data.runs.filter(
-      (r: any) => !['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(r.state),
-    );
-    if (active.length) {
-      const { response } = await dialog.showMessageBox(win, {
-        type: 'question',
-        buttons: ['继续运行', '停止任务并退出'],
-        defaultId: 0,
-        cancelId: 0,
-        message: `退出会停止 ${active.length} 个运行及驻留计划`,
-        detail: '外部操作结果未知时不会自动重试，重新打开后可查看历史。',
-      });
-      if (response !== 1) return;
-    }
-  } catch {}
-  quitting = true;
-  try {
-    await rpc.call('shutdown', {}, 15000);
-  } catch {}
-  await embedded?.close();
-  host?.kill();
-  app.quit();
+    try {
+      const data = await rpc.call('bootstrap');
+      const activeCount = data.runOverview.queued + (data.runOverview.active ? 1 : 0);
+      if (activeCount) {
+        const { response } = await dialog.showMessageBox(win, {
+          type: 'question',
+          buttons: ['继续运行', '停止任务并退出'],
+          defaultId: 0,
+          cancelId: 0,
+          message: `退出会停止 ${activeCount} 个运行及驻留计划`,
+          detail: '外部操作结果未知时不会自动重试，重新打开后可查看历史。',
+        });
+        if (response !== 1) return;
+      }
+    } catch {}
+    quitting = true;
+    try {
+      await rpc.call('shutdown', {}, 15000);
+    } catch {}
+    await embedded?.close();
+    host?.kill();
+    app.quit();
+  } finally {
+    quitPending = false;
+  }
 }
 app.on('before-quit', (e) => {
   if (!quitting) {
@@ -178,16 +182,16 @@ app
         return true;
       }
       if (method === 'flow.export') {
+        const content = await rpc.call(method, args);
         const review = await dialog.showMessageBox(win, {
           buttons: ['取消', '已审阅，导出模板'],
           defaultId: 0,
           cancelId: 0,
           message: '确认已审阅流程中的字面量与脚本',
           detail:
-            '账号、简历事实、动作权限、本地绑定和运行历史不会导出；运行参数值也会清空。节点字面量和代码仍会保留，请先确认其中没有个人数据或密钥。',
+            '导出点击时的编辑内容，未保存修改不会写入本地草稿。账号、简历事实、动作权限、本地绑定和运行历史不会导出；运行参数值也会清空。节点字面量、代码和配置定义仍会保留，请先确认其中没有个人数据或密钥。',
         });
         if (review.response !== 1) return false;
-        const content = await rpc.call(method, args);
         const r = await dialog.showSaveDialog(win, {
           defaultPath: 'flowark-template.json',
           filters: [{ name: 'FlowArk 模板', extensions: ['json'] }],

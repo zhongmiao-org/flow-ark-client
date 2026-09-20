@@ -15,14 +15,15 @@ export function packageFlow(
   flow: Flow,
   source = 'local',
   configuration?: Template['manifest']['configuration'],
-  version = '1.1.0',
+  version?: string,
 ): Template {
+  const contentDigest = templateDigest(flow, configuration);
   return {
     manifest: {
       id: flow.id,
-      version,
+      version: version ?? '0.0.0-local.sha256-' + contentDigest,
       source,
-      digest: templateDigest(flow, configuration),
+      digest: contentDigest,
       ...(configuration ? { configuration } : {}),
       formatVersion: '1.0',
       parametersSchema: { type: 'object' },

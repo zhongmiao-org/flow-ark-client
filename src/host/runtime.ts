@@ -6,6 +6,7 @@ import { BossRecruitingAdapter, ZhaopinRecruitingAdapter } from '../recruiting/s
 import type { PreparedAction } from '../recruiting/actions';
 import { Store } from './store';
 import { scheduleCreateSchema, scheduleUpdateSchema } from '../shared/schedules';
+import { flowExportSchema, templateContentLimit } from '../shared/flow-export';
 import { listRuns, runOverview } from './run-history';
 import { ArtifactCleanup } from './artifact-cleanup';
 import { Sessions } from './sessions';
@@ -38,6 +39,7 @@ import type {
   BrowserBinding,
   Bootstrap,
   PreparedScripts,
+  Template,
 } from '../shared/types';
 const terminal = new Set(['SUCCEEDED', 'FAILED', 'INTERRUPTED', 'CANCELLED']);
 type Active = {
@@ -896,16 +898,22 @@ export class Runtime {
         return true;
       }
       case 'flow.export': {
-        const r = this.store.get<FlowRecord>('flow', args.id);
-        if (!r) throw new Error('流程不存在');
-        const f = structuredClone(r.flow);
+        const request = flowExportSchema.parse(args);
+        const f = structuredClone(validateFlow(request.flow));
         f.parameters = Object.fromEntries(Object.keys(f.parameters).map((k) => [k, null]));
-        const config = r.bindings.configuration;
-        return JSON.stringify(
-          packageFlow(f, 'local', config && { adapter: config.adapter, schema: config.schema }),
+        const configuration =
+          request.configuration &&
+          validateObject<NonNullable<Template['manifest']['configuration']>>(
+            'TemplateConfiguration',
+            request.configuration,
+          );
+        const content = JSON.stringify(
+          validateTemplate(packageFlow(f, 'local', configuration)),
           null,
           2,
         );
+        if (content.length > templateContentLimit) throw new Error('导出模板超过 2 MiB');
+        return content;
       }
       case 'flow.import': {
         const p = validateTemplate(JSON.parse(args.content));
