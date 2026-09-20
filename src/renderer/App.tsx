@@ -1140,7 +1140,7 @@ function Editor({ record: r, setRecord, selected, setSelected, browsers, choose,
                 </option>
               ))}
             </select>
-            {fileBindingNames(r.flow.steps, r.bindings.files).map((binding) => (
+            {fileBindingNames(r.flow.steps, r.bindings.files, r.flow.parameters).map((binding) => (
               <section key={binding} className="file-binding">
                 <label>{binding} 文件目录</label>
                 <p className="path-text">{r.bindings.files[binding] ?? '尚未选择'}</p>

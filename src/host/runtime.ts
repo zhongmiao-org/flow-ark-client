@@ -13,7 +13,8 @@ import { validateFlow, validateObject, walk } from '../core/validate';
 import { assertBrowserOperations } from '../adapters/browser-scope';
 import { discoverBrowsers, inspectBrowser, validateBinding } from '../adapters/browsers';
 import { compileScript, inspectScriptPackage, verifyScriptBundle } from '../adapters/script-bundle';
-import { artifactPath, scopedPath } from '../adapters/files';
+import { artifactPath, scopedTarget, uploadPath } from '../adapters/files';
+import { staticUploadFields, uploadSource, uploadText } from '../shared/upload-source';
 import { templates, instantiate, packageFlow, validateTemplate } from '../recruiting/templates';
 import {
   configureTemplate,
@@ -155,12 +156,23 @@ export class Runtime {
         steps.filter((n) => n.type === 'browser'),
       );
     }
-    for (const n of steps)
-      if (n.type === 'file' || n.type === 'excel') {
-        const path = record.bindings.files[n.binding];
-        if (!path) throw new Error('未绑定文件目录：' + n.binding);
-        if (!(await stat(path)).isDirectory()) throw new Error('文件绑定必须是目录');
+    for (const n of steps) {
+      if (n.type === 'file' || n.type === 'excel')
+        await this.fileDirectory(record.bindings, n.binding);
+      if (n.type === 'browser' && n.operation === 'upload') {
+        try {
+          const source = staticUploadFields(n.value, flow.parameters);
+          const name = source?.name.known ? uploadText(source.name.value, 'name') : undefined;
+          if (source?.binding.known) {
+            const binding = uploadText(source.binding.value, 'binding');
+            const root = await this.fileDirectory(record.bindings, binding);
+            if (name !== undefined) scopedTarget(root, name);
+          }
+        } catch (e) {
+          throw new Error(`上传步骤 ${n.id}：${errorText(e)}`);
+        }
       }
+    }
     for (const id of record.bindings.credentials)
       if (!(await this.system('credentials.list', {})).includes(id))
         throw new Error('未配置凭据：' + id);
@@ -204,6 +216,17 @@ export class Runtime {
   private assertAdmitting() {
     if (this.suspended) throw new Error('系统正在休眠，恢复后请重新开始运行');
     if (this.stopping || this.store.fault) throw new Error(this.store.fault ?? '应用正在退出');
+  }
+  private async fileDirectory(bindings: Bindings, binding: string) {
+    if (!Object.hasOwn(bindings.files, binding) || !bindings.files[binding])
+      throw new Error('未绑定文件目录：' + binding);
+    try {
+      const root = await realpath(bindings.files[binding]);
+      if (!(await stat(root)).isDirectory()) throw new Error('not a directory');
+      return root;
+    } catch {
+      throw new Error('文件目录不可用，请重新选择：' + binding);
+    }
   }
   async enqueue(
     flowId: string,
@@ -390,10 +413,9 @@ export class Runtime {
         timeoutMs: args.timeoutMs,
       };
       if (args.operation === 'upload') {
-        const v = args.value;
-        if (!v || typeof v !== 'object' || typeof v.binding !== 'string')
-          throw new Error('上传必须使用本地文件绑定 {binding,name}');
-        command.value = await scopedPath(snapshot.bindings.files[v.binding], v.name);
+        const source = uploadSource(args.value);
+        const root = await this.fileDirectory(snapshot.bindings, source.binding);
+        command.value = await uploadPath(root, source.name);
       }
       if (args.operation === 'screenshot' || args.operation === 'download')
         command.value = await artifactPath(

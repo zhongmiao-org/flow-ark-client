@@ -8,7 +8,9 @@ import {
   open,
   rename,
   rm,
+  access,
 } from 'node:fs/promises';
+import { constants } from 'node:fs';
 import { resolve, relative, dirname, join, basename, sep } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import ExcelJS from 'exceljs';
@@ -17,10 +19,7 @@ import type { Bindings } from '../shared/types';
 export async function scopedPath(root: string, name: string, writing = false) {
   if (!root) throw new Error('文件目录尚未绑定');
   const base = await realpath(root);
-  const target = resolve(base, name);
-  const rel = relative(base, target);
-  if (rel === '..' || rel.startsWith('..' + sep) || target === base)
-    throw new Error('文件必须位于已绑定目录内');
+  const target = scopedTarget(base, name);
   const actual = await realpath(target).catch(async () =>
     writing
       ? join(await realpath(dirname(target)), basename(target))
@@ -29,6 +28,22 @@ export async function scopedPath(root: string, name: string, writing = false) {
   if (actual !== base && !actual.startsWith(base + sep))
     throw new Error('符号链接超出文件授权目录');
   return actual;
+}
+/** Lexical range check does not require a file that preceding steps may create. */
+export function scopedTarget(base: string, name: string) {
+  if (typeof name !== 'string' || !name || name.includes('\0'))
+    throw new Error('文件名必须为非空文本');
+  const target = resolve(base, name);
+  const rel = relative(base, target);
+  if (rel === '..' || rel.startsWith('..' + sep) || target === base)
+    throw new Error('文件必须位于已绑定目录内');
+  return target;
+}
+export async function uploadPath(root: string, name: string) {
+  const path = await scopedPath(root, name);
+  if (!(await stat(path)).isFile()) throw new Error('上传目标必须是普通文件');
+  await access(path, constants.R_OK);
+  return path;
 }
 async function atomicWrite(path: string, write: (temporary: string) => Promise<unknown>) {
   const temporary = join(dirname(path), '.flowark-' + randomUUID() + '.tmp');
