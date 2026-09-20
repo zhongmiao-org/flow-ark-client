@@ -1,4 +1,4 @@
-import { uid } from './utils';
+import { uid, redactedErrorText } from './utils';
 type Message = {
   rpc?: string;
   method?: string;
@@ -20,6 +20,7 @@ export class Rpc {
   constructor(
     private send: (m: any) => void,
     private handler: (method: string, args: any) => Promise<any>,
+    private formatError: (error: unknown) => string = redactedErrorText,
   ) {}
   async receive(m: Message) {
     if (this.closed || !m?.rpc) return;
@@ -39,11 +40,15 @@ export class Rpc {
       reply = {
         rpc: m.rpc,
         reply: true,
-        error: e instanceof Error ? e.message : '请求失败',
+        error: this.formatError(e),
       };
     }
     if (!this.closed) {
-      try { this.send(reply); } catch { this.close(); }
+      try {
+        this.send(reply);
+      } catch {
+        this.close();
+      }
     }
   }
   call(method: string, args: any = {}, timeoutMs = 65000): Promise<any> {
@@ -52,7 +57,7 @@ export class Rpc {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(id);
-        reject(new Error('进程请求超时：' + method));
+        reject(new Error(this.formatError(new Error('进程请求超时：' + method))));
       }, timeoutMs);
       this.pending.set(id, { resolve, reject, timer });
       try {
