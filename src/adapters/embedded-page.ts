@@ -49,7 +49,8 @@ export class EmbeddedPage {
     });
     contents.once('destroyed', () => this.abort.abort(new Error('网页会话已关闭')));
   }
-  private send(method: string, params: any = {}, session?: string) {
+  private async send(method: string, params: any = {}, session?: string) {
+    // Disposal must reject like transport failure so best-effort cleanup can catch it.
     this.abort.signal.throwIfAborted();
     return this.contents.debugger.sendCommand(method, params, session);
   }
