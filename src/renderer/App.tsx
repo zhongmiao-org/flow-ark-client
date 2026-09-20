@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useReducer, useRef, lazy, Suspense } from 'react';
 import { version as appVersion } from '../../package.json';
-import { ReactFlow, Background, Controls } from '@xyflow/react';
 import { buildDiagram } from './flow-diagram';
-import { flowNodeTypes, flowEdgeTypes, FitDiagram } from './FlowNode';
+import DiagramCanvas from './DiagramCanvas';
 import { kinds } from './node-kinds';
 import ActionLibrary, { destinationChoices } from './ActionLibrary';
 import {
@@ -879,7 +878,6 @@ function Editor({
     setRecord({ ...r, flow: { ...r.flow, parameters } });
   };
   const { nodes, edges, stepCount } = buildDiagram(r.flow.steps, selected);
-  const layoutKey = nodes.map((n) => `${n.id}:${n.position.x}:${n.position.y}`).join('|');
   return (
     <div className="editor-layout">
       <ActionLibrary
@@ -890,28 +888,17 @@ function Editor({
         setDestination={setDestination}
       />
       <div className="canvas">
-        <ReactFlow
+        <DiagramCanvas
+          key={r.id}
           nodes={nodes}
           edges={edges}
-          nodeTypes={flowNodeTypes}
-          edgeTypes={flowEdgeTypes}
-          deleteKeyCode={null}
-          onNodeClick={(_e, n) => {
-            if (!n.data.step) return;
+          selected={selected}
+          select={(id) => {
             if (!guardInvalidNodeJson()) return;
-            setSelected(n.id);
+            setSelected(id);
             setTab('node');
           }}
-          fitView
-          fitViewOptions={{ maxZoom: 1 }}
-          nodesConnectable={false}
-          minZoom={0.15}
-          elementsSelectable
-        >
-          <Background gap={22} color="#d7e0de" />
-          <Controls showInteractive={false} />
-          <FitDiagram layoutKey={layoutKey} selected={selected} />
-        </ReactFlow>
+        />
         <div className="canvas-legend" aria-label="流程图图例">
           <span className="legend-decision" />
           条件
