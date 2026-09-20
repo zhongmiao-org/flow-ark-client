@@ -1,4 +1,4 @@
-import { join, dirname, basename } from 'node:path';
+import { join, dirname } from 'node:path';
 import { access, stat, writeFile, realpath } from 'node:fs/promises';
 import type { ChildProcess } from 'node:child_process';
 import { RecruitingCoordinator } from '../recruiting/coordinator';
@@ -13,6 +13,7 @@ import { validateFlow, validateObject, walk } from '../core/validate';
 import { assertBrowserOperations } from '../adapters/browser-scope';
 import { discoverBrowsers, inspectBrowser, validateBinding } from '../adapters/browsers';
 import { compileScript, inspectScriptPackage, verifyScriptBundle } from '../adapters/script-bundle';
+import { ArtifactFiles } from '../adapters/artifacts';
 import { artifactPath, scopedTarget, uploadPath } from '../adapters/files';
 import { staticUploadFields, uploadSource, uploadText } from '../shared/upload-source';
 import { templates, instantiate, packageFlow, validateTemplate } from '../recruiting/templates';
@@ -50,6 +51,7 @@ export class Runtime {
   readonly sessions: Sessions;
   readonly recruiting: RecruitingCoordinator;
   private active?: Active;
+  private artifactFiles: ArtifactFiles;
   private stopping = false;
   private suspended = false;
   private ticking = false;
@@ -64,6 +66,7 @@ export class Runtime {
     key: Buffer,
     private system: (method: string, args: any) => Promise<any>,
   ) {
+    this.artifactFiles = new ArtifactFiles(dataPath);
     this.store = new Store(join(dataPath, 'flowark.sqlite'), key);
     this.store.recover();
     this.recruiting = new RecruitingCoordinator(this.store, () =>
@@ -425,14 +428,14 @@ export class Runtime {
         );
       const result = await this.sessions.use(binding, id, command, runSignal);
       if (args.operation === 'screenshot' || args.operation === 'download')
-        return this.registerArtifact(id, command.value);
+        return this.registerArtifact(id, command.value, runSignal);
       return result;
     }
-    if (method === 'artifact.register') return this.registerArtifact(id, args.path);
+    if (method === 'artifact.register') return this.registerArtifact(id, args.path, runSignal);
     if (method === 'artifact.create') {
       const path = await artifactPath(this.dataPath, id, args.name);
       await writeFile(path, args.content, { mode: 0o600 });
-      return this.registerArtifact(id, path);
+      return this.registerArtifact(id, path, runSignal);
     }
     if (method === 'credential') {
       if (!snapshot.bindings.credentials.includes(args.id)) throw new Error('凭据未授权给此流程');
@@ -493,32 +496,26 @@ export class Runtime {
     }
     throw new Error('Worker 方法未授权：' + method);
   }
-  private async registerArtifact(runId: string, path: string) {
-    const actual = await realpath(path);
-    const item = {
-      artifactId: uid(),
-      runId,
-      name: basename(actual),
-      path: actual,
-      size: (await stat(actual)).size,
-      time: now(),
-    };
-    this.store.put('artifact', item.artifactId, item);
-    this.store.tx(() =>
-      this.store.event(runId, 'artifact', '', {
-        artifactId: item.artifactId,
-        name: item.name,
-        size: item.size,
-      }),
-    );
-    return { artifactId: item.artifactId, runId };
-  }
-  private async artifactAvailable(item: { path: string }) {
+  private async registerArtifact(runId: string, path: string, signal: AbortSignal) {
+    const artifactId = uid();
+    const copy = await this.artifactFiles.capture(runId, artifactId, path, signal);
+    const item = { ...copy, artifactId, runId, time: now() };
     try {
-      return (await realpath(item.path)) === item.path && (await stat(item.path)).isFile();
-    } catch {
-      return false;
+      signal.throwIfAborted();
+      if (this.active?.id !== runId || this.active.cancelling) throw new Error('运行已停止');
+      this.store.tx(() => {
+        this.store.put('artifact', artifactId, item);
+        this.store.event(runId, 'artifact', '', {
+          artifactId,
+          name: item.name,
+          size: item.size,
+        });
+      });
+    } catch (error) {
+      await this.artifactFiles.discard(copy);
+      throw error;
     }
+    return { artifactId, runId };
   }
   async control(id: string, action: 'pause' | 'resume' | 'step' | 'cancel') {
     const run = this.store.get<Run>('run', id);
@@ -709,7 +706,7 @@ export class Runtime {
             this.store
               .list<any>('artifact')
               .filter((a) => a.runId === args.id)
-              .map(async (a) => ({ ...a, available: await this.artifactAvailable(a) })),
+              .map(async (a) => ({ ...a, ...(await this.artifactFiles.inspect(a)) })),
           ),
           output: redact(this.store.get('output', args.id)),
           snapshot: this.store.get('snapshot', args.id)?.flow,
@@ -718,8 +715,13 @@ export class Runtime {
       case 'artifact.resolve': {
         const item = this.store.get<any>('artifact', args.id);
         if (!item) throw new Error('产物不存在');
-        if (!(await this.artifactAvailable(item)))
-          throw new Error('产物文件已移动、删除或不可访问');
+        const status = await this.artifactFiles.inspect(item, true);
+        if (!status.available)
+          throw new Error(
+            status.integrity === 'changed'
+              ? '产物副本内容已改动，无法核对当时结果'
+              : '产物文件已移动、删除或不可访问',
+          );
         return item.path;
       }
       case 'browser.embedded.enable': {
