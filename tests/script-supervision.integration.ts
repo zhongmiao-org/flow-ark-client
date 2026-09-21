@@ -199,8 +199,8 @@ async function fixture(t: TestContext) {
     process.execPath,
     [
       '-e',
-      `const fs=require('node:fs');let tick=0;
-    const beat=()=>fs.writeFileSync(${JSON.stringify(sentinelFile)},JSON.stringify({pid:process.pid,nonce:${JSON.stringify(nonce)},tick:++tick}));
+      `const fs=require('node:fs');let tick=0;const target=${JSON.stringify(sentinelFile)};
+    const beat=()=>{fs.writeFileSync(target+'.tmp',JSON.stringify({pid:process.pid,nonce:${JSON.stringify(nonce)},tick:++tick}));fs.renameSync(target+'.tmp',target);};
     beat();setInterval(beat,50);`,
     ],
     {
@@ -364,11 +364,17 @@ async function fixture(t: TestContext) {
     t.diagnostic('Process evidence: ' + join(directory, 'evidence.json'));
     if (errors.length) throw new AggregateError(errors, 'fixture cleanup incomplete');
   });
+  let heartbeat: { nonce: string; pid: number; tick: number } | undefined;
   await until(async () => {
     if (sentinelError) throw sentinelError;
-    return (await jsonFile(sentinelFile))?.nonce === nonce;
+    heartbeat = await jsonFile(sentinelFile);
+    return (
+      heartbeat?.nonce === nonce &&
+      heartbeat.pid === sentinel.pid &&
+      Number.isSafeInteger(heartbeat.tick)
+    );
   }, 'sentinel startup failed');
-  const firstTick = (await jsonFile(sentinelFile)).tick;
+  let lastTick = heartbeat!.tick;
   function ownedChildrenHasPid(pid: number) {
     return [...ownedChildren].some((proc) => proc.pid === pid);
   }
@@ -450,13 +456,19 @@ async function fixture(t: TestContext) {
   };
   const sentinelAlive = async () => {
     assert.equal((await probe(sentinel.pid!)).state, 'running');
-    await until(
-      async () => (await jsonFile(sentinelFile)).tick > firstTick,
-      'sentinel heartbeat stopped',
-    );
+    await until(async () => {
+      heartbeat = await jsonFile(sentinelFile);
+      return (
+        heartbeat?.nonce === nonce &&
+        heartbeat.pid === sentinel.pid &&
+        Number.isSafeInteger(heartbeat.tick) &&
+        heartbeat.tick > lastTick
+      );
+    }, 'sentinel heartbeat stopped');
+    lastTick = heartbeat!.tick;
     evidence.sentinel = {
       process: await probe(sentinel.pid!),
-      heartbeat: await jsonFile(sentinelFile),
+      heartbeat,
     };
   };
   const assertReceiptsStopped = () => {
