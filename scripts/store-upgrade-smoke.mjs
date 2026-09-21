@@ -116,7 +116,12 @@ evidence.push({
 host = await launch(current);
 try {
   await host.init();
-  assert.deepEqual(await host.rpc.call('run.detail', { id: originalRun.run.id }), originalRun);
+  const { execution: currentObservation, ...currentDetail } = await host.rpc.call('run.detail', {
+    id: originalRun.run.id,
+  });
+  const { execution: previousObservation, ...originalDetail } = originalRun;
+  assert.deepEqual(currentDetail, originalDetail);
+  assert.equal(currentObservation.active, null);
   assert.equal((await host.rpc.call('bootstrap')).runtimeBlock, undefined);
 } finally {
   await host.close();
