@@ -1,0 +1,305 @@
+{
+  "valid": [
+    {
+      "formatVersion": "1.0",
+      "kind": "plan",
+      "summary": "先产生示例值，再核对它。",
+      "flow": {
+        "formatVersion": "1.0",
+        "id": "fictional-task",
+        "name": "示例值核对",
+        "description": "仅用于契约校验",
+        "parameters": {},
+        "steps": [
+          {
+            "id": "value",
+            "type": "value",
+            "version": 1,
+            "value": "fictional"
+          },
+          {
+            "id": "check",
+            "type": "assert",
+            "version": 1,
+            "actual": {
+              "$ref": "steps.value"
+            },
+            "operator": "equals",
+            "expected": "fictional"
+          }
+        ],
+        "requiredCapabilities": [
+          "value",
+          "assert"
+        ]
+      },
+      "questions": [],
+      "limitations": []
+    },
+    {
+      "formatVersion": "1.0",
+      "kind": "clarify",
+      "summary": "需要明确输出位置",
+      "flow": null,
+      "questions": [
+        {
+          "id": "output",
+          "prompt": "结果保存到哪里？",
+          "options": [
+            "选一个目录",
+            "暂时只看结果"
+          ]
+        }
+      ],
+      "limitations": []
+    },
+    {
+      "formatVersion": "1.0",
+      "kind": "unsupported",
+      "summary": "当前缺少所需能力",
+      "flow": null,
+      "questions": [],
+      "limitations": [
+        "未连接应用窗口能力"
+      ]
+    }
+  ],
+  "invalid": [
+    {
+      "name": "plan requires complete flow",
+      "value": {
+        "formatVersion": "1.0",
+        "kind": "plan",
+        "summary": "先产生示例值，再核对它。",
+        "flow": null,
+        "questions": [],
+        "limitations": []
+      }
+    },
+    {
+      "name": "plan does not contain unanswered questions",
+      "value": {
+        "formatVersion": "1.0",
+        "kind": "plan",
+        "summary": "先产生示例值，再核对它。",
+        "flow": {
+          "formatVersion": "1.0",
+          "id": "fictional-task",
+          "name": "示例值核对",
+          "description": "仅用于契约校验",
+          "parameters": {},
+          "steps": [
+            {
+              "id": "value",
+              "type": "value",
+              "version": 1,
+              "value": "fictional"
+            },
+            {
+              "id": "check",
+              "type": "assert",
+              "version": 1,
+              "actual": {
+                "$ref": "steps.value"
+              },
+              "operator": "equals",
+              "expected": "fictional"
+            }
+          ],
+          "requiredCapabilities": [
+            "value",
+            "assert"
+          ]
+        },
+        "questions": [
+          {
+            "id": "output",
+            "prompt": "结果保存到哪里？",
+            "options": [
+              "选一个目录",
+              "暂时只看结果"
+            ]
+          }
+        ],
+        "limitations": []
+      }
+    },
+    {
+      "name": "clarification cannot execute a flow",
+      "value": {
+        "formatVersion": "1.0",
+        "kind": "clarify",
+        "summary": "先产生示例值，再核对它。",
+        "flow": {
+          "formatVersion": "1.0",
+          "id": "fictional-task",
+          "name": "示例值核对",
+          "description": "仅用于契约校验",
+          "parameters": {},
+          "steps": [
+            {
+              "id": "value",
+              "type": "value",
+              "version": 1,
+              "value": "fictional"
+            },
+            {
+              "id": "check",
+              "type": "assert",
+              "version": 1,
+              "actual": {
+                "$ref": "steps.value"
+              },
+              "operator": "equals",
+              "expected": "fictional"
+            }
+          ],
+          "requiredCapabilities": [
+            "value",
+            "assert"
+          ]
+        },
+        "questions": [
+          {
+            "id": "output",
+            "prompt": "结果保存到哪里？",
+            "options": [
+              "选一个目录",
+              "暂时只看结果"
+            ]
+          }
+        ],
+        "limitations": []
+      }
+    },
+    {
+      "name": "unsupported requires a reason",
+      "value": {
+        "formatVersion": "1.0",
+        "kind": "unsupported",
+        "summary": "先产生示例值，再核对它。",
+        "flow": null,
+        "questions": [],
+        "limitations": []
+      }
+    },
+    {
+      "name": "unknown result fields rejected",
+      "value": {
+        "formatVersion": "1.0",
+        "kind": "plan",
+        "summary": "先产生示例值，再核对它。",
+        "flow": {
+          "formatVersion": "1.0",
+          "id": "fictional-task",
+          "name": "示例值核对",
+          "description": "仅用于契约校验",
+          "parameters": {},
+          "steps": [
+            {
+              "id": "value",
+              "type": "value",
+              "version": 1,
+              "value": "fictional"
+            },
+            {
+              "id": "check",
+              "type": "assert",
+              "version": 1,
+              "actual": {
+                "$ref": "steps.value"
+              },
+              "operator": "equals",
+              "expected": "fictional"
+            }
+          ],
+          "requiredCapabilities": [
+            "value",
+            "assert"
+          ]
+        },
+        "questions": [],
+        "limitations": [],
+        "execute": true
+      }
+    },
+    {
+      "name": "unsupported protocol version",
+      "value": {
+        "formatVersion": "2.0",
+        "kind": "plan",
+        "summary": "先产生示例值，再核对它。",
+        "flow": {
+          "formatVersion": "1.0",
+          "id": "fictional-task",
+          "name": "示例值核对",
+          "description": "仅用于契约校验",
+          "parameters": {},
+          "steps": [
+            {
+              "id": "value",
+              "type": "value",
+              "version": 1,
+              "value": "fictional"
+            },
+            {
+              "id": "check",
+              "type": "assert",
+              "version": 1,
+              "actual": {
+                "$ref": "steps.value"
+              },
+              "operator": "equals",
+              "expected": "fictional"
+            }
+          ],
+          "requiredCapabilities": [
+            "value",
+            "assert"
+          ]
+        },
+        "questions": [],
+        "limitations": []
+      }
+    },
+    {
+      "name": "unknown node type rejected",
+      "value": {
+        "formatVersion": "1.0",
+        "kind": "plan",
+        "summary": "先产生示例值，再核对它。",
+        "flow": {
+          "formatVersion": "1.0",
+          "id": "fictional-task",
+          "name": "示例值核对",
+          "description": "仅用于契约校验",
+          "parameters": {},
+          "steps": [
+            {
+              "id": "value",
+              "type": "invented-mcp",
+              "version": 1,
+              "value": "fictional"
+            },
+            {
+              "id": "check",
+              "type": "assert",
+              "version": 1,
+              "actual": {
+                "$ref": "steps.value"
+              },
+              "operator": "equals",
+              "expected": "fictional"
+            }
+          ],
+          "requiredCapabilities": [
+            "value",
+            "assert"
+          ]
+        },
+        "questions": [],
+        "limitations": []
+      }
+    }
+  ]
+}

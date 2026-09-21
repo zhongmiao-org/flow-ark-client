@@ -1,0 +1,52 @@
+{
+  "request": {
+    "formatVersion": "1.0",
+    "flowId": "fictional-task",
+    "description": "生成一个返回示例值并核对的流程",
+    "context": [],
+    "answers": {},
+    "baseFlow": null,
+    "capabilities": [
+      "value",
+      "assert",
+      "condition",
+      "loop"
+    ]
+  },
+  "result": {
+    "formatVersion": "1.0",
+    "kind": "plan",
+    "summary": "先产生示例值，再核对它。",
+    "flow": {
+      "formatVersion": "1.0",
+      "id": "fictional-task",
+      "name": "示例值核对",
+      "description": "仅用于契约校验",
+      "parameters": {},
+      "steps": [
+        {
+          "id": "value",
+          "type": "value",
+          "version": 1,
+          "value": "fictional"
+        },
+        {
+          "id": "check",
+          "type": "assert",
+          "version": 1,
+          "actual": {
+            "$ref": "steps.value"
+          },
+          "operator": "equals",
+          "expected": "fictional"
+        }
+      ],
+      "requiredCapabilities": [
+        "value",
+        "assert"
+      ]
+    },
+    "questions": [],
+    "limitations": []
+  }
+}

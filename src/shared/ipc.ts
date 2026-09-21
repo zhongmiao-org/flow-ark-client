@@ -3,6 +3,7 @@ import { runListSchema } from './run-history';
 import { scheduleCreateSchema, scheduleUpdateSchema } from './schedules';
 import { flowExportSchema } from './flow-export';
 import { runRerunPreviewSchema, runRerunConfirmSchema } from './run-rerun';
+import { taskMethods } from './planning';
 const id = z.string().min(1).max(100);
 const empty = z.object({}).strict();
 const bindings = z
@@ -46,6 +47,7 @@ const bindings = z
   })
   .strict();
 export const methods = {
+  ...taskMethods,
   bootstrap: empty,
   'flow.save': z.object({ flow: z.unknown(), bindings }).strict(),
   'flow.create': empty,

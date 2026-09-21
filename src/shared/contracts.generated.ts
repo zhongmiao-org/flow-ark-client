@@ -208,6 +208,168 @@ export type RunState =
   | 'INTERRUPTED'
   | 'SUCCEEDED'
   | 'FAILED';
+export type AIPlanningResult = {
+  formatVersion: '1.0';
+  kind: 'plan' | 'clarify' | 'unsupported';
+  summary: string;
+  flow: FlowDefinition | null;
+  /**
+   * @minItems 0
+   * @maxItems 6
+   */
+  questions:
+    | []
+    | [AIPlanningQuestion]
+    | [AIPlanningQuestion, AIPlanningQuestion]
+    | [AIPlanningQuestion, AIPlanningQuestion, AIPlanningQuestion]
+    | [AIPlanningQuestion, AIPlanningQuestion, AIPlanningQuestion, AIPlanningQuestion]
+    | [AIPlanningQuestion, AIPlanningQuestion, AIPlanningQuestion, AIPlanningQuestion, AIPlanningQuestion]
+    | [
+        AIPlanningQuestion,
+        AIPlanningQuestion,
+        AIPlanningQuestion,
+        AIPlanningQuestion,
+        AIPlanningQuestion,
+        AIPlanningQuestion
+      ];
+  /**
+   * @minItems 0
+   * @maxItems 20
+   */
+  limitations:
+    | []
+    | [string]
+    | [string, string]
+    | [string, string, string]
+    | [string, string, string, string]
+    | [string, string, string, string, string]
+    | [string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string, string, string, string, string, string, string]
+    | [
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string
+      ]
+    | [
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string
+      ]
+    | [
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string
+      ]
+    | [
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string
+      ]
+    | [
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string
+      ]
+    | [
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string
+      ];
+};
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -228,6 +390,10 @@ export interface FlowArkP1 {
   AIRequest?: AIRequest;
   AIResult?: AIResult;
   TemplateInstanceRef?: TemplateInstanceRef;
+  AIPlanningContext?: AIPlanningContext;
+  AIPlanningQuestion?: AIPlanningQuestion;
+  AIPlanningRequest?: AIPlanningRequest;
+  AIPlanningResult?: AIPlanningResult;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -432,4 +598,269 @@ export interface TemplateInstanceRef {
   digest: string;
   instanceId: string;
   entryId: string;
+}
+export interface AIPlanningContext {
+  id: string;
+  kind: 'text' | 'web' | 'file' | 'image' | 'application' | 'mcp';
+  label: string;
+  text: string;
+}
+export interface AIPlanningQuestion {
+  id: string;
+  prompt: string;
+  /**
+   * @minItems 0
+   * @maxItems 6
+   */
+  options:
+    | []
+    | [string]
+    | [string, string]
+    | [string, string, string]
+    | [string, string, string, string]
+    | [string, string, string, string, string]
+    | [string, string, string, string, string, string];
+}
+export interface AIPlanningRequest {
+  formatVersion: '1.0';
+  flowId: string;
+  description: string;
+  /**
+   * @minItems 0
+   * @maxItems 20
+   */
+  context:
+    | []
+    | [AIPlanningContext]
+    | [AIPlanningContext, AIPlanningContext]
+    | [AIPlanningContext, AIPlanningContext, AIPlanningContext]
+    | [AIPlanningContext, AIPlanningContext, AIPlanningContext, AIPlanningContext]
+    | [AIPlanningContext, AIPlanningContext, AIPlanningContext, AIPlanningContext, AIPlanningContext]
+    | [AIPlanningContext, AIPlanningContext, AIPlanningContext, AIPlanningContext, AIPlanningContext, AIPlanningContext]
+    | [
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext
+      ]
+    | [
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext
+      ]
+    | [
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext
+      ]
+    | [
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext
+      ]
+    | [
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext
+      ]
+    | [
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext
+      ]
+    | [
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext
+      ]
+    | [
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext
+      ]
+    | [
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext
+      ]
+    | [
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext
+      ]
+    | [
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext
+      ]
+    | [
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext
+      ]
+    | [
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext
+      ]
+    | [
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext,
+        AIPlanningContext
+      ];
+  answers: {
+    [k: string]: string;
+  };
+  baseFlow: FlowDefinition | null;
+  /**
+   * @minItems 0
+   * @maxItems 100
+   */
+  capabilities: string[];
 }

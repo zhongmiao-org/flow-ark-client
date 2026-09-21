@@ -37,6 +37,132 @@ async function until(fn: () => boolean, timeout = 12000) {
     await new Promise((r) => setTimeout(r, 20));
   }
 }
+test('AI proposal adoption shares the real workflow while active snapshots stay fixed; suspend and quit abort planning', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'flowark-planning-runtime-'));
+  const requests: any[] = [];
+  const signals: AbortSignal[] = [];
+  let value = 'first',
+    hold = false;
+  t.mock.method(globalThis, 'fetch', async (_url: unknown, init: RequestInit) => {
+    const body = JSON.parse(init.body as string);
+    const input = JSON.parse(body.messages[1].content).request;
+    requests.push(input);
+    signals.push(init.signal!);
+    if (hold)
+      return new Promise((_resolve, reject) =>
+        init.signal!.addEventListener('abort', () => reject(new Error('fixture aborted')), {
+          once: true,
+        }),
+      );
+    const flow = {
+      ...base,
+      id: input.flowId,
+      steps: [
+        { id: 'value', type: 'value', version: 1, value },
+        { id: 'wait', type: 'human', version: 1, message: 'review test boundary' },
+        { id: 'finish', type: 'value', version: 1, value: { $ref: 'steps.value' } },
+      ],
+    };
+    const output = {
+      formatVersion: '1.0',
+      kind: 'plan',
+      summary: 'fixture proposal',
+      flow,
+      questions: [],
+      limitations: [],
+    };
+    return Response.json({
+      choices: [
+        {
+          finish_reason: 'stop',
+          message: { content: JSON.stringify({ resultJson: JSON.stringify(output) }) },
+        },
+      ],
+    });
+  });
+  const runtime = new Runtime(
+    directory,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async (method) => (method === 'credentials.get' ? 'sk-fictional-planning-runtime-key' : []),
+  );
+  let shut = false;
+  try {
+    const created = await runtime.request('task.create', {});
+    let d = await runtime.request('task.save', {
+      id: created.task.id,
+      revision: 1,
+      description: 'only this selected task',
+      context: [],
+      answers: {},
+    });
+    const generate = async () => {
+      await runtime.request('task.generate', {
+        id: d.task.id,
+        revision: d.task.revision,
+        provider: 'deepseek',
+        model: 'fixture',
+        reviewed: true,
+      });
+      await until(() => runtime.planning.detail(d.task.id).task.status !== 'generating');
+      d = runtime.planning.detail(d.task.id);
+    };
+    await generate();
+    assert.equal(d.task.status, 'plan');
+    assert.equal(runtime.store.count('run'), 0);
+    assert.equal(runtime.store.count('flow'), 0);
+    const adopt = async () => {
+      d = await runtime.request('task.adopt', {
+        id: d.task.id,
+        revision: d.task.revision,
+        proposalId: d.proposal.id,
+      });
+    };
+    await adopt();
+    const run = await runtime.enqueue(d.task.flowId);
+    await until(() => runtime.store.get<Run>('run', run.id)?.state === 'WAITING_INPUT');
+    value = 'second';
+    await generate();
+    assert.equal(runtime.store.count('run'), 1);
+    await adopt();
+    assert.equal(runtime.store.get<any>('flow', d.task.flowId).flow.steps[0].value, 'second');
+    await runtime.control(run.id, 'resume');
+    await until(() => runtime.store.get<Run>('run', run.id)?.state === 'SUCCEEDED');
+    assert.equal((await runtime.request('run.detail', { id: run.id })).output.finish, 'first');
+    hold = true;
+    await runtime.request('task.generate', {
+      id: d.task.id,
+      revision: d.task.revision,
+      provider: 'deepseek',
+      model: 'fixture',
+      reviewed: true,
+    });
+    await until(() => requests.length === 3);
+    await runtime.request('system.suspend');
+    assert.equal(signals[2].aborted, true);
+    assert.equal(runtime.planning.detail(d.task.id).task.status, 'cancelled');
+    await runtime.request('system.resume');
+    assert.equal(requests.length, 3, 'resume cannot retry a planning request');
+    await runtime.request('task.generate', {
+      id: d.task.id,
+      revision: d.task.revision,
+      provider: 'deepseek',
+      model: 'fixture',
+      reviewed: true,
+    });
+    await until(() => requests.length === 4);
+    await runtime.shutdown();
+    shut = true;
+    assert.equal(signals[3].aborted, true);
+    assert.equal(runtime.store.count('run'), 1);
+    assert.equal(runtime.planning.detail(d.task.id).task.status, 'cancelled');
+  } finally {
+    if (!shut) await runtime.shutdown();
+    runtime.store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
 test('real Worker enforces human, branch and whole-loop deadlines then releases its run slot', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'flowark-node-timeout-'));
   let requests = 0;
@@ -1253,7 +1379,7 @@ test('SQLite event write failure stops admissions and preserves existing history
     Buffer.from(key),
     async () => [],
   );
-  runtime.saveFlow({...base,id:'hello'},{files:{},credentials:[]});
+  runtime.saveFlow({ ...base, id: 'hello' }, { files: {}, credentials: [] });
   const original = runtime.store.list('flow');
   // Actual SQLite write rejection, rather than a mock store that cannot exercise rollback.
   (runtime.store as any).db.exec('PRAGMA query_only=ON');
@@ -1343,7 +1469,7 @@ test('shutdown during preflight rejects a late admission without creating a run'
     return original(record);
   };
   try {
-    runtime.saveFlow({...base,id:'hello'},{files:{},credentials:[]});
+    runtime.saveFlow({ ...base, id: 'hello' }, { files: {}, credentials: [] });
     const pending = runtime.enqueue('hello');
     const rejected = assert.rejects(pending, /退出/);
     await until(() => entered);
@@ -1434,7 +1560,7 @@ test('large wall-clock gaps skip missed windows using the observed clock', async
   );
   try {
     const plan = await runtime.request('schedule.save', {
-      flowId: runtime.saveFlow({...base,id:'hello'},{files:{},credentials:[]}).id,
+      flowId: runtime.saveFlow({ ...base, id: 'hello' }, { files: {}, credentials: [] }).id,
       intervalMinutes: 1,
       timezone: 'Asia/Shanghai',
     });
@@ -1590,10 +1716,14 @@ test('queued scripts and reopened schedules retain frozen local dependencies whi
       assert.equal(detail.output.script, expected);
       assert.deepEqual(detail.scriptBundles[0].dependencies, [declaration]);
     }
-    await assert.rejects(runtime.request('flow.export', {
-      flow: runtime.store.get<any>('flow', base.id).flow,
-      reviewed: true,path:join(path,'export.zip'),
-    }),/静态打包/);
+    await assert.rejects(
+      runtime.request('flow.export', {
+        flow: runtime.store.get<any>('flow', base.id).flow,
+        reviewed: true,
+        path: join(path, 'export.zip'),
+      }),
+      /静态打包/,
+    );
     await writeFile(
       join(pkg, 'package.json'),
       JSON.stringify({ name: 'fixture-package', version: '2.0.0', main: 'index.cjs' }),

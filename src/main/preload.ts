@@ -1,6 +1,15 @@
 import { contextBridge, ipcRenderer } from 'electron';
 const allowed = new Set([
   'bootstrap',
+  'task.create',
+  'task.list',
+  'task.detail',
+  'task.save',
+  'task.generate',
+  'task.cancel',
+  'task.adopt',
+  'task.reject',
+  'task.undo',
   'flow.save',
   'flow.create',
   'flow.run',

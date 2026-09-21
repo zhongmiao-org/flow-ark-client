@@ -48,6 +48,7 @@ import type {
   PreparedScripts,
   ExecutionObservation,
 } from '../shared/types';
+import { Planning } from './planning';
 const terminal = new Set(['SUCCEEDED', 'FAILED', 'INTERRUPTED', 'CANCELLED']);
 type Active = {
   id: string;
@@ -70,6 +71,7 @@ export class Runtime {
   readonly scripts: ScriptProcesses;
   readonly ready: Promise<void>;
   readonly templates: Templates;
+  readonly planning: Planning;
   private active?: Active;
   private artifactFiles: ArtifactFiles;
   private artifactCleanup: ArtifactCleanup;
@@ -96,6 +98,15 @@ export class Runtime {
     this.artifactFiles = new ArtifactFiles(dataPath);
     this.store = new Store(join(dataPath, 'flowark.sqlite'), key);
     this.store.recover();
+    this.planning = new Planning(this.store, {
+      key: (provider) => this.system('credentials.get', { id: provider }),
+      save: (flow, bindings) => this.saveFlow(flow, bindings),
+      assertAvailable: () => {
+        if (this.stopping || this.suspended)
+          throw new Error('应用正在退出或休眠，不能开始新的规划操作');
+        if (this.store.fault) throw new Error(this.store.fault);
+      },
+    });
     this.scripts = new ScriptProcesses({
       store: this.store,
       dir,
@@ -979,6 +990,11 @@ export class Runtime {
   }
   private async finishSuspend(active: Active | undefined): Promise<boolean> {
     const errors: unknown[] = [];
+    try {
+      this.planning.cancelAll();
+    } catch (error) {
+      errors.push(error);
+    }
     const ids = new Set<string>(active ? [active.id] : []);
     if (active) {
       try {
@@ -1036,6 +1052,10 @@ export class Runtime {
     return true;
   }
   async request(method: string, args: any = {}): Promise<any> {
+    if (method.startsWith('task.')) {
+      await this.ready;
+      return this.planning.request(method, args);
+    }
     switch (method) {
       case 'system.suspend':
         return this.suspend();
@@ -1384,9 +1404,16 @@ export class Runtime {
   }
   async shutdown() {
     this.stopping = true;
+    let planningError: unknown;
+    try {
+      this.planning.cancelAll();
+    } catch (error) {
+      planningError = error;
+    }
     await this.templates.library.dispose();
     clearInterval(this.timer);
     const errors: unknown[] = [];
+    if (planningError) errors.push(planningError);
     // Revoke every script immediately, even if SQLite rejects a subsequent
     // cancellation record or there is no longer an active Worker.
     const scriptCleanup = this.scripts.shutdown().catch(
