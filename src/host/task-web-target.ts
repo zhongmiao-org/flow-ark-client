@@ -86,7 +86,7 @@ export class TaskWebTargets {
       throw new Error('流程的网页选择已变化，旧版本不能继承新目标');
     if (record.bindings.browserId !== 'embedded' || current?.bindings.browserId !== 'embedded')
       throw new Error('所选网页必须使用原内置浏览器绑定');
-    assertWebFlow(record.flow, target);
+    assertWebFlow(record.flow, target, record.outputTarget);
     await this.verify(target, expected);
     const after = this.store.get<FlowRecord>('flow', record.id);
     if (

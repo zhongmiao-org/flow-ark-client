@@ -11,6 +11,7 @@ export const planningFlowHash = (flow: FlowRecord | null) =>
           flow: flow.flow,
           bindings: flow.bindings,
           ...(flow.webTarget ? { webTarget: flow.webTarget } : {}),
+          ...(flow.outputTarget ? { outputTarget: flow.outputTarget } : {}),
         }
       : null,
   );

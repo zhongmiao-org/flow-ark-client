@@ -4,6 +4,8 @@ import type { PlanningContext } from './planning';
 import type { Flow, Step } from './types';
 import { resolveValue } from '../core/engine';
 
+import { selectedOutputWrite, type TaskOutputTarget } from './task-output';
+
 export type WebPageIdentity = {
   resourceId: string;
   documentRevision: number;
@@ -75,7 +77,7 @@ export const sameWebPage = (a: WebPageIdentity, b: WebPageIdentity) =>
   a.documentRevision === b.documentRevision &&
   a.url === b.url &&
   a.title === b.title;
-export function webContext(target: TaskWebTarget): PlanningContext {
+export function webContext(target: TaskWebTarget, output?: TaskOutputTarget): PlanningContext {
   return {
     id: WEB_CONTEXT_ID,
     kind: 'web',
@@ -86,7 +88,10 @@ export function webContext(target: TaskWebTarget): PlanningContext {
         title: target.page.title,
         account: '未核对',
         workspace: '本机内置浏览器',
-        access: '只读取本次选择的网页，可新建本地文本文件；不提交表单、不发送消息、不覆盖文件。',
+        access:
+          output?.onConflict === 'overwrite'
+            ? '只读取本次选择的网页；不提交表单、不发送消息。仅用户另行确认的 task_output 文件可覆盖。'
+            : '只读取本次选择的网页，可新建本地文本文件；不提交表单、不发送消息、不覆盖文件。',
       },
       null,
       2,
@@ -102,7 +107,7 @@ export function assertWebContext(context: readonly PlanningContext[], target: Ta
   )
     throw new Error('包含网页资料的上下文超过文本上限，请缩短资料后重新选择');
 }
-export function assertWebFlow(flow: Flow, target: TaskWebTarget) {
+export function assertWebFlow(flow: Flow, target: TaskWebTarget, output?: TaskOutputTarget) {
   const block = (steps: Step[]) => {
     for (const n of steps) {
       if (n.type === 'browser') {
@@ -115,7 +120,8 @@ export function assertWebFlow(flow: Flow, target: TaskWebTarget) {
             throw new Error('网页目标只允许打开已选地址，不能使用其他或动态网址');
         } else if (!['read', 'wait'].includes(n.operation))
           throw new Error('已选网页为只读范围，不能提交表单、填写或执行其他网页操作');
-      } else if (n.type === 'file' && n.operation === 'create') continue;
+      } else if (n.type === 'file' && (n.operation === 'create' || selectedOutputWrite(n, output)))
+        continue;
       else if (n.type === 'condition') {
         block(n.then);
         block(n.else);

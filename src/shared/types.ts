@@ -23,6 +23,7 @@ export type Bindings = {
   configuration?: { adapter: string; schema: Json; values: Json };
 };
 export type FlowRecord = {
+  outputTarget?: import('./task-output').TaskOutputTarget;
   webTarget?: import('./task-web-target').TaskWebTarget;
   id: string;
   flow: Flow;

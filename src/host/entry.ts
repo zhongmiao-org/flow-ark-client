@@ -24,7 +24,9 @@ const rpc = new Rpc(
               ? (a.command.timeoutMs ?? 15000) + 5000
               : m === 'browser.embedded.close'
                 ? EMBEDDED_CLOSE_RPC_TIMEOUT_MS
-                : 65000,
+                : m === 'task.output.directory'
+                  ? 55000
+                  : 65000,
           ),
       );
       await runtime.ready;

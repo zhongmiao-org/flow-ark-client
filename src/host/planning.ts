@@ -17,7 +17,11 @@ import type { RepairReference } from '../shared/task-repair';
 import { scopedDescription } from '../shared/planning-scope';
 import { checkScope, planningFlowHash as flowHash, validateScopedPlan } from './planning-scope';
 import type { TaskWebTargets } from './task-web-target';
-import { webContext, assertWebFlow, assertWebContext } from '../shared/task-web-target';
+import { assertWebFlow, assertWebContext } from '../shared/task-web-target';
+
+import type { TaskOutputs } from './task-output';
+import { assertOutputFlow, OUTPUT_BINDING } from '../shared/task-output';
+import { taskPlanningContext } from '../shared/planning-context';
 
 type SavedTask = PlanningTask & {
   proposal?: PlanningProposal;
@@ -30,6 +34,7 @@ type Dependencies = {
     plan: (task: PlanningTask, flowHash: string) => void;
   };
   web?: TaskWebTargets;
+  output?: TaskOutputs;
   repair?: PlanningRepair;
   key: (provider: string) => Promise<string>;
   save: (flow: Flow, bindings: Bindings) => FlowRecord;
@@ -113,7 +118,8 @@ export class Planning {
     this.deps.assertAvailable();
     const flow = flowId ? this.store.get<FlowRecord>('flow', flowId) : null;
     if (flowId && !flow) throw new Error('关联流程已不存在');
-    if (flow?.webTarget) throw new Error('此流程已有网页来源，请从原任务继续');
+    if (flow?.webTarget || flow?.outputTarget)
+      throw new Error('此流程已有任务来源，请从原任务继续');
     const task: SavedTask = {
       id: uid(),
       flowId: flowId ?? uid(),
@@ -159,6 +165,47 @@ export class Planning {
       )
         throw new Error('任务已变化或操作已取消，请重新核对');
     };
+    if (method.startsWith('task.output.')) {
+      if (!this.deps.output) throw new Error('输出选择不可用');
+      if (task.scope) throw new Error('请先退出单步修改，再更换整个任务的输出');
+      this.deps.output.assertSelectable(task);
+      let outputTarget = task.outputTarget;
+      if (method === 'task.output.choose') {
+        const selected = await this.deps.output.choose(task, {
+          name: args.name,
+          onConflict: args.onConflict,
+        });
+        unchanged();
+        if (!selected) return this.detail(task.id);
+        outputTarget = selected;
+      } else if (method === 'task.output.configure') {
+        if (!outputTarget) throw new Error('请先选择输出目录');
+        outputTarget = {
+          ...outputTarget,
+          selectionId: uid(),
+          name: args.name,
+          onConflict: args.onConflict,
+          selectedAt: now(),
+        };
+      } else outputTarget = undefined;
+      taskPlanningContext(task.context, task.webTarget, outputTarget);
+      if (outputTarget) await this.deps.output.verify(outputTarget);
+      unchanged();
+      this.deps.output.assertSelectable(task);
+      this.abort(task.id);
+      this.put({
+        ...task,
+        outputTarget,
+        revision: task.revision + 1,
+        status: 'draft',
+        error: undefined,
+        requestId: undefined,
+        proposal: undefined,
+        undo: undefined,
+        appliedRepair: undefined,
+      });
+      return this.detail(task.id);
+    }
     if (method.startsWith('task.web.')) {
       if (!this.deps.web) throw new Error('网页对象选择不可用');
       if (task.scope) throw new Error('请先退出单步修改，再更换整个任务的对象');
@@ -166,6 +213,7 @@ export class Planning {
       const webTarget =
         method === 'task.web.select' ? await this.deps.web.select(task, args.token) : undefined;
       unchanged();
+      taskPlanningContext(task.context, webTarget, task.outputTarget);
       this.abort(task.id);
       this.store.tx(() => {
         this.put({
@@ -190,6 +238,7 @@ export class Planning {
     }
     if (method === 'task.save') {
       if (task.webTarget) assertWebContext(args.context, task.webTarget);
+      taskPlanningContext(args.context, task.webTarget, task.outputTarget);
       if (args.scope) checkScope(args.scope, this.flow(task));
       this.abort(task.id);
       this.put({
@@ -219,9 +268,11 @@ export class Planning {
         formatVersion: '1.0',
         flowId: task.flowId,
         description: task.scope ? scopedDescription(task.scope) : task.description,
-        context: task.webTarget
-          ? ([...task.context, webContext(task.webTarget)] as PlanningInput['context'])
-          : task.context,
+        context: taskPlanningContext(
+          task.context,
+          task.webTarget,
+          task.outputTarget,
+        ) as PlanningInput['context'],
         answers: task.answers,
         baseFlow: baseline?.flow ?? null,
         capabilities: task.webTarget
@@ -242,6 +293,13 @@ export class Planning {
             )
           : [...capabilities],
       };
+      if (task.outputTarget) {
+        if (!this.deps.output) throw new Error('输出校验不可用');
+        await this.deps.output.verify(task.outputTarget);
+        unchanged();
+        if (flowHash(this.flow(task)) !== flowHash(baseline))
+          throw new Error('流程已变化，请重新生成');
+      }
       let repair: RepairReference | undefined;
       if (task.webTarget) {
         if (!this.deps.web) throw new Error('网页对象校验不可用');
@@ -261,6 +319,11 @@ export class Planning {
           token: args.token,
         };
         request = (await this.deps.repair.verify(task, repair)).input;
+        request.context = taskPlanningContext(
+          request.context,
+          undefined,
+          task.outputTarget,
+        ) as PlanningInput['context'];
         if (
           this.cancellationEpoch !== cancellationEpoch ||
           (this.operationEpoch.get(task.id) ?? 0) !== operationEpoch ||
@@ -306,15 +369,25 @@ export class Planning {
       )
         throw new Error('完整方案已变化，请重新生成');
       const before = this.flow(task);
-      if (before?.webTarget && before.webTarget.taskId !== task.id)
-        throw new Error('此流程由其他网页任务绑定，请从原任务继续');
+      if (
+        (before?.webTarget && before.webTarget.taskId !== task.id) ||
+        (before?.outputTarget && before.outputTarget.taskId !== task.id)
+      )
+        throw new Error('此流程由其他任务绑定，请从原任务继续');
       if (proposal.baseRevision !== task.revision || proposal.baseFlowHash !== flowHash(before))
         throw new Error('流程或资源绑定已修改，请基于当前版本重新生成；未覆盖手动编辑');
       this.validatePlan(proposal.result, task.flowId, proposal.baseFlow);
       if (task.webTarget) {
         if (!this.deps.web) throw new Error('网页对象校验不可用');
-        assertWebFlow(proposal.result.flow, task.webTarget);
+        assertWebFlow(proposal.result.flow, task.webTarget, task.outputTarget);
         await this.deps.web.verify(task.webTarget);
+        unchanged();
+        if (flowHash(this.flow(task)) !== flowHash(before)) throw new Error('核对期间流程已变化');
+      }
+      if (task.outputTarget) {
+        if (!this.deps.output) throw new Error('输出校验不可用');
+        assertOutputFlow(proposal.result.flow, task.outputTarget);
+        await this.deps.output.verify(task.outputTarget);
         unchanged();
         if (flowHash(this.flow(task)) !== flowHash(before)) throw new Error('核对期间流程已变化');
       }
@@ -350,13 +423,22 @@ export class Planning {
         };
       }
       this.store.tx(() => {
+        const bindings = task.outputTarget
+          ? this.deps.output!.bindings(task.outputTarget, before)
+          : before?.outputTarget
+            ? {
+                ...before.bindings,
+                files: Object.fromEntries(
+                  Object.entries(before.bindings.files).filter(([key]) => key !== OUTPUT_BINDING),
+                ),
+              }
+            : (before?.bindings ?? { files: {}, credentials: [] });
         const saved = this.deps.save(
           proposal.result.flow!,
-          task.webTarget
-            ? { ...(before?.bindings ?? { files: {}, credentials: [] }), browserId: 'embedded' }
-            : (before?.bindings ?? { files: {}, credentials: [] }),
+          task.webTarget ? { ...bindings, browserId: 'embedded' } : bindings,
         );
         saved.webTarget = task.webTarget;
+        saved.outputTarget = task.outputTarget;
         this.store.put('flow', saved.id, saved);
         this.deps.learning?.plan(task, flowHash(saved));
         if (canonical(saved.flow) !== canonical(proposal.result.flow))
@@ -382,7 +464,11 @@ export class Planning {
       this.store.tx(() => {
         if (undo.before) {
           const restored = this.deps.save(undo.before.flow, undo.before.bindings);
-          this.store.put('flow', restored.id, { ...restored, webTarget: undo.before.webTarget });
+          this.store.put('flow', restored.id, {
+            ...restored,
+            webTarget: undo.before.webTarget,
+            outputTarget: undo.before.outputTarget,
+          });
         } else this.store.remove('flow', task.flowId);
         this.put({
           ...task,
@@ -435,7 +521,8 @@ export class Planning {
       if (typeof key !== 'string' || !key) throw new Error('请先配置所选 AI 服务');
       if (task.scope) checkScope(task.scope, this.flow(task));
       if (task.webTarget) await this.deps.web!.verify(task.webTarget);
-      if (task.webTarget && flowHash(this.flow(task)) !== baseline)
+      if (task.outputTarget) await this.deps.output!.verify(task.outputTarget);
+      if ((task.webTarget || task.outputTarget) && flowHash(this.flow(task)) !== baseline)
         throw new Error('凭据等待期间流程或绑定已变化，请重新生成');
       if (repair) await this.deps.repair!.verify(task, repair);
       if (!this.current(task, job)) return;
@@ -453,10 +540,16 @@ export class Planning {
       if (serialized.includes(key)) throw new Error('AI 返回包含敏感凭据，结果已拒绝');
       this.validatePlan(result, task.flowId, input.baseFlow);
       if (task.webTarget) {
-        if (result.kind === 'plan') assertWebFlow(result.flow!, task.webTarget);
+        if (result.kind === 'plan') assertWebFlow(result.flow!, task.webTarget, task.outputTarget);
         await this.deps.web!.verify(task.webTarget);
         if (!this.current(task, job)) return;
         if (flowHash(this.flow(task)) !== baseline) throw new Error('网页规划期间流程或绑定已变化');
+      }
+      if (task.outputTarget) {
+        if (result.kind === 'plan') assertOutputFlow(result.flow!, task.outputTarget);
+        await this.deps.output!.verify(task.outputTarget);
+        if (!this.current(task, job)) return;
+        if (flowHash(this.flow(task)) !== baseline) throw new Error('输出规划期间流程或绑定已变化');
       }
       if (task.scope) {
         checkScope(task.scope, this.flow(task));

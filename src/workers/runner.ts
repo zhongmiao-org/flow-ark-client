@@ -3,6 +3,8 @@ import { execute } from '../core/engine';
 import { RunControl } from '../core/run-control';
 import { runScript } from '../adapters/script';
 import { fileOperation } from '../adapters/files';
+import { validateCreatedText } from '../shared/file-create';
+import { OUTPUT_BINDING } from '../shared/task-output';
 import type { Step } from '../shared/types';
 import {
   SCRIPT_CLEANUP_TIMEOUT_MS,
@@ -30,6 +32,7 @@ const rpc = new Rpc(
           signal,
         );
         if (args.webTarget) await rpc.call('web-target.boundary', {});
+        if (args.outputTarget) await rpc.call('output-target.boundary', {});
         signal.throwIfAborted();
       },
       emit,
@@ -63,6 +66,8 @@ const rpc = new Rpc(
             return text;
           }
         }
+        if (args.outputTarget && n.type === 'file' && n.binding === OUTPUT_BINDING)
+          validateCreatedText(resolved.content);
         if (n.type === 'file' || n.type === 'excel')
           return fileOperation(
             resolved,

@@ -8,7 +8,7 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "fe3b3389d582e55f9801b9254647759daf298b70",
+    "governanceBaseline": "c9e2e03dfd4dc5c661bae4d17066e12b506530c3",
     "contractsVersion": "0.12.0",
     "contractsTag": "contracts-v0.12.0"
   },
@@ -23,7 +23,7 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "test:runtime": "node --import tsx --test tests/runtime.integration.ts tests/run-rerun.integration.ts tests/run-review.integration.ts tests/embedded-cleanup.integration.ts tests/script-supervision.integration.ts tests/storage-full.integration.ts tests/system-suspend.integration.ts tests/redaction.integration.ts tests/template-runtime.integration.ts tests/task-web-target.integration.ts tests/learning.integration.ts",
+    "test:runtime": "node --import tsx --test tests/runtime.integration.ts tests/run-rerun.integration.ts tests/run-review.integration.ts tests/embedded-cleanup.integration.ts tests/script-supervision.integration.ts tests/storage-full.integration.ts tests/system-suspend.integration.ts tests/redaction.integration.ts tests/template-runtime.integration.ts tests/task-web-target.integration.ts tests/learning.integration.ts tests/task-output.integration.ts",
     "check": "pnpm typecheck && pnpm test && pnpm build",
     "contracts:generate": "node scripts/generate-contracts.mjs",
     "test:browser": "node --import tsx scripts/browser-smoke.ts",

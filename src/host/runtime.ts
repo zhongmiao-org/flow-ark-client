@@ -78,6 +78,8 @@ type Active = {
   done: Promise<void>;
   abort: AbortController;
 };
+import { TaskOutputs } from './task-output';
+
 export class Runtime {
   readonly store: Store;
   readonly sessions: Sessions;
@@ -87,6 +89,7 @@ export class Runtime {
   readonly planning: Planning;
   readonly learning: Learning;
   readonly webTargets: TaskWebTargets;
+  readonly outputs: TaskOutputs;
   private active?: Active;
   private artifactFiles: ArtifactFiles;
   private artifactCleanup: ArtifactCleanup;
@@ -122,6 +125,18 @@ export class Runtime {
           throw new Error('请等待当前运行和收尾结束后，再选择网页对象');
       },
     });
+    this.outputs = new TaskOutputs(this.store, {
+      choose: () => this.system('task.output.directory', {}),
+      assertSelectable: (task) => {
+        this.assertAdmitting();
+        const active = this.active && this.store.get<Run>('run', this.active.id);
+        if (
+          (active && active.flowId === task.flowId) ||
+          this.store.list<Run>('run').some((r) => r.flowId === task.flowId && r.state === 'QUEUED')
+        )
+          throw new Error('请等待本任务运行和收尾结束，再更换输出');
+      },
+    });
     this.learning = new Learning(this.store, {
       busy: (id) => {
         const task = this.store.get('ai-task', id);
@@ -138,6 +153,7 @@ export class Runtime {
     this.planning = new Planning(this.store, {
       learning: this.learning,
       web: this.webTargets,
+      output: this.outputs,
       repair: new PlanningRepair(this.store, {
         epoch: () => this.admissionEpoch,
         assertAvailable: () => {
@@ -250,6 +266,7 @@ export class Runtime {
     validateFlow(flow);
     const record = {
       ...(previous?.webTarget ? { webTarget: previous.webTarget } : {}),
+      ...(previous?.outputTarget ? { outputTarget: previous.outputTarget } : {}),
       id: flow.id,
       flow: structuredClone(flow),
       bindings: structuredClone(bindings),
@@ -309,6 +326,7 @@ export class Runtime {
   async preflight(record: FlowRecord & Partial<PreparedScripts>): Promise<PreparedScripts> {
     const flow = validateFlow(record.flow);
     await this.webTargets.record(record);
+    await this.outputs.record(record);
     await this.templates.preflight(record);
     const steps = walk(flow.steps);
     if (steps.some((n) => n.type === 'browser')) {
@@ -360,6 +378,7 @@ export class Runtime {
         await verifyScriptBundle(record.scripts[n.id], bundle.sha256);
       }
       await this.webTargets.record(record);
+      await this.outputs.record(record);
       return { scripts: record.scripts, scriptBundles: record.scriptBundles };
     }
     if (record.versionId && scriptNodes.some((n) => n.dependencies.length))
@@ -382,6 +401,7 @@ export class Runtime {
         });
       }
     await this.webTargets.record(record);
+    await this.outputs.record(record);
     return prepared;
   }
   private assertAdmitting() {
@@ -814,6 +834,12 @@ export class Runtime {
     this.checkActive(this.active);
     const runSignal = this.active.abort.signal;
     const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', id)!;
+    if (method === 'output-target.boundary') {
+      if (!snapshot.outputTarget) throw new Error('运行没有所选输出');
+      await this.outputs.record(snapshot);
+      this.checkActive(this.active!);
+      return true;
+    }
     if (method === 'web-target.boundary') {
       if (!snapshot.webTarget) throw new Error('运行没有所选网页');
       await this.webTargets.record(snapshot, this.sessions.selectedPage(id));

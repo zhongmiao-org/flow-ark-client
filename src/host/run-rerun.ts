@@ -25,6 +25,7 @@ export function executionVersion(record: FlowRecord, prepared: PreparedScripts) 
     flow: record.flow,
     bindings: record.bindings,
     ...(record.webTarget ? { webTarget: record.webTarget } : {}),
+    ...(record.outputTarget ? { outputTarget: record.outputTarget } : {}),
     scriptBundles: prepared.scriptBundles,
   });
 }
@@ -139,6 +140,7 @@ export class RunRerun {
       flow: structuredClone(selected.flow),
       bindings: structuredClone(selected.bindings),
       ...(selected.webTarget ? { webTarget: structuredClone(selected.webTarget) } : {}),
+      ...(selected.outputTarget ? { outputTarget: structuredClone(selected.outputTarget) } : {}),
       updatedAt: selected.updatedAt,
       ...(args.mode === 'snapshot'
         ? {

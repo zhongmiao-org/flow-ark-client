@@ -27,6 +27,7 @@ let win: BrowserWindow;
 let tray: Tray;
 let quitting = false;
 let quitPending = false;
+let outputDialogPending = false;
 let rpc: Rpc;
 let host: Electron.UtilityProcess;
 let startupError = '';
@@ -314,6 +315,20 @@ app
                 version: process.versions.chrome,
               };
             if (method.startsWith('browser.embedded.')) return embedded.system(method, args);
+            if (method === 'task.output.directory') {
+              if (outputDialogPending || quitting || hostStopped)
+                throw new Error('目录选择暂不可用');
+              outputDialogPending = true;
+              try {
+                const selected = await dialog.showOpenDialog(win, {
+                  title: '选择任务输出目录',
+                  properties: ['openDirectory'],
+                });
+                return selected.canceled ? null : (selected.filePaths[0] ?? null);
+              } finally {
+                outputDialogPending = false;
+              }
+            }
             if (method === 'credentials.list') return vault.list();
             if (method === 'credentials.get') {
               const value = await vault.get(args.id);
