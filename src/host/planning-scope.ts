@@ -5,7 +5,15 @@ import { canonical, digest } from '../shared/utils';
 import { validateFlow, walk } from '../core/validate';
 
 export const planningFlowHash = (flow: FlowRecord | null) =>
-  digest(flow ? { flow: flow.flow, bindings: flow.bindings } : null);
+  digest(
+    flow
+      ? {
+          flow: flow.flow,
+          bindings: flow.bindings,
+          ...(flow.webTarget ? { webTarget: flow.webTarget } : {}),
+        }
+      : null,
+  );
 
 export function checkScope(scope: PlanningScope, flow: FlowRecord | null) {
   if (!flow || planningFlowHash(flow) !== scope.baseFlowHash)

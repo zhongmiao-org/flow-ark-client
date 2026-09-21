@@ -21,6 +21,7 @@ import { canonical, errorText } from '../shared/utils';
 import type { RepairSelection } from '../shared/task-repair';
 import { confirmWebContentsClosed } from './native-webcontents-close';
 import type { EmbeddedReview } from '../shared/run-review';
+import { pageIdentity, sameWebPage, type WebPageIdentity } from '../shared/task-web-target';
 
 type Bounds = { x: number; y: number; width: number; height: number };
 type Operation = { stop: () => void };
@@ -382,7 +383,7 @@ export class EmbeddedBrowser {
     this.assertResource(resource);
     return this.perform({ operation: 'navigate', value: url, timeoutMs: 20000 }, resource.token);
   }
-  async perform(command: BrowserCommand, token?: string) {
+  async perform(command: BrowserCommand, token?: string, expected?: WebPageIdentity) {
     this.assertAvailable();
     const resource = this.resource;
     if (
@@ -393,6 +394,19 @@ export class EmbeddedBrowser {
     )
       throw new Error('网页会话不可用、正被占用或租约已失效');
     this.assertResource(resource);
+    const selected = () => pageIdentity({ ...this.review(), blocked: undefined });
+    const verifySelected = () => {
+      if (expected && !sameWebPage(expected, selected()))
+        throw new Error('所选网页已变化，请重新选择目标');
+    };
+    verifySelected();
+    if (
+      expected &&
+      (command.operation === 'navigate'
+        ? command.value !== expected.url
+        : !['read', 'wait'].includes(command.operation))
+    )
+      throw new Error('操作超出所选网页的只读范围');
     let stop!: () => void;
     const stopped = new Promise<never>(
       (_, reject) => (stop = () => reject(new Error('网页会话已关闭'))),
@@ -402,15 +416,42 @@ export class EmbeddedBrowser {
     const page = resource.page;
     let timer: NodeJS.Timeout | undefined;
     let timedOut = false;
+    let idle: (() => void) | undefined;
+    let selectedNavigations = 0;
+    let unexpectedNavigation = false;
+    const navigation = (
+      _event: Electron.Event,
+      url: string,
+      _inPlace: boolean,
+      mainFrame: boolean,
+    ) => {
+      if (mainFrame) {
+        selectedNavigations++;
+        unexpectedNavigation ||= url !== expected?.url || selectedNavigations > 1;
+      }
+    };
+    if (expected && command.operation === 'navigate')
+      resource.contents!.on('did-start-navigation', navigation);
     const task = async () => {
       await page.picker.cancel();
       this.assertOperation(resource, operation);
+      verifySelected();
       if (
         command.operation === 'screenshot' &&
         (!this.window.isVisible() || this.window.isMinimized() || !this.visible)
       )
         return this.backgroundCapture(resource, operation, command);
-      if (command.operation !== 'download') return page.perform(command);
+      if (command.operation !== 'download') {
+        const result = await page.perform(command);
+        // loadURL resolves at did-finish-load, before isLoading necessarily clears.
+        // Keep the selected navigation within its operation/deadline until idle.
+        if (expected && command.operation === 'navigate' && resource.contents!.isLoading())
+          await new Promise<void>((resolve) => {
+            idle = resolve;
+            resource.contents!.once('did-stop-loading', idle);
+          });
+        return result;
+      }
       let resolve!: () => void, reject!: (error: Error) => void;
       const done = new Promise<void>((yes, no) => {
         resolve = yes;
@@ -441,12 +482,26 @@ export class EmbeddedBrowser {
         }),
       ]);
       this.assertOperation(resource, operation);
+      if (expected) {
+        if (command.operation === 'navigate' && (unexpectedNavigation || selectedNavigations !== 1))
+          throw new Error('所选网页发生额外导航，结果未采用');
+        const after = selected();
+        if (
+          after.resourceId !== expected.resourceId ||
+          after.url !== expected.url ||
+          (command.operation !== 'navigate' && !sameWebPage(after, expected))
+        )
+          throw new Error('所选网页在操作期间改变，结果未采用');
+        return { result, page: after };
+      }
       return result;
     } catch (error) {
       if (timedOut) await this.closeResource(resource);
       throw error;
     } finally {
       clearTimeout(timer);
+      resource.contents!.removeListener('did-start-navigation', navigation);
+      if (idle) resource.contents!.removeListener('did-stop-loading', idle);
       if (resource.download?.operation === operation) {
         try {
           resource.download.item?.cancel();
@@ -692,6 +747,12 @@ export class EmbeddedBrowser {
         return this.start(args.token);
       case 'browser.embedded.perform':
         return this.perform(args.command, args.token);
+      case 'browser.embedded.perform.selected':
+        return this.perform(
+          args.command,
+          args.token,
+          pageIdentity({ ...args.expected, started: true, loading: false }),
+        );
       case 'browser.embedded.close':
         return this.close(args.token, args.resourceId);
       case 'browser.embedded.visibility':

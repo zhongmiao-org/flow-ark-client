@@ -8,7 +8,7 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "410d75b7d5375dcb42f73cebfb88ba06281b335c",
+    "governanceBaseline": "c69dabe73684c2c89d9ddcc11b47c6c57a9a5a3a",
     "contractsVersion": "0.11.0",
     "contractsTag": "contracts-v0.11.0"
   },
@@ -23,7 +23,7 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "test:runtime": "node --import tsx --test tests/runtime.integration.ts tests/run-rerun.integration.ts tests/run-review.integration.ts tests/embedded-cleanup.integration.ts tests/script-supervision.integration.ts tests/storage-full.integration.ts tests/system-suspend.integration.ts tests/redaction.integration.ts tests/template-runtime.integration.ts",
+    "test:runtime": "node --import tsx --test tests/runtime.integration.ts tests/run-rerun.integration.ts tests/run-review.integration.ts tests/embedded-cleanup.integration.ts tests/script-supervision.integration.ts tests/storage-full.integration.ts tests/system-suspend.integration.ts tests/redaction.integration.ts tests/template-runtime.integration.ts tests/task-web-target.integration.ts",
     "check": "pnpm typecheck && pnpm test && pnpm build",
     "contracts:generate": "node scripts/generate-contracts.mjs",
     "test:browser": "node --import tsx scripts/browser-smoke.ts",
@@ -75,7 +75,8 @@
     "test:flow-outline": "node --import tsx scripts/flow-outline-smoke.ts",
     "test:excel-mapping": "node --import tsx scripts/excel-mapping-smoke.ts",
     "test:ai-step-edit": "node --import tsx scripts/ai-step-edit-smoke.ts",
-    "test:file-create": "node --import tsx scripts/file-create-smoke.ts"
+    "test:file-create": "node --import tsx scripts/file-create-smoke.ts",
+    "test:task-web-target": "node --import tsx scripts/task-web-target-smoke.ts"
   },
   "build": {
     "appId": "org.zhongmiao.flowark",

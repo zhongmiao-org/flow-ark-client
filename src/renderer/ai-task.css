@@ -561,3 +561,72 @@
     min-height: 0;
   }
 }
+
+/* Figma 23:2440: 420/708 columns, 24 gap, 700 minimum panel height. */
+.task-web-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 420fr) minmax(0, 708fr);
+  gap: 24px;
+  align-items: stretch;
+}
+.task-web-columns > .ai-task-card {
+  min-height: 700px;
+}
+.topbar .context-back.task-target-back {
+  width: 92px;
+}
+.task-web-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+  margin-bottom: 20px;
+}
+.task-web-tabs [aria-current] {
+  color: var(--fa-action-primary);
+}
+.task-web-object {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  min-width: 0;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+}
+.task-web-object h2 {
+  font-size: 16px;
+  line-height: 24px;
+}
+.task-web-object p,
+.task-web-url {
+  color: var(--fa-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+.task-web-object button {
+  align-self: start;
+  min-width: 160px;
+}
+.task-web-current {
+  background: var(--fa-action-subtle);
+}
+.task-web-columns > .ai-task-card > label[for] {
+  margin-bottom: -8px;
+}
+.task-web-columns > .ai-task-card > input {
+  width: 100%;
+}
+.task-web-columns .ai-task-checkbox {
+  margin: 4px 0;
+}
+@container (max-width: 950px) {
+  .task-web-columns {
+    grid-template-columns: 1fr;
+  }
+  .task-web-columns > .ai-task-card {
+    min-height: auto;
+  }
+}

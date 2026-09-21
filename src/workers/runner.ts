@@ -24,11 +24,14 @@ const rpc = new Rpc(
     return execute(args.flow, args.parameters, {
       signal: abort.signal,
       captureResults: Boolean(args.debug),
-      boundary: (instance, node, signal) =>
-        control!.boundary(
+      boundary: async (instance, node, signal) => {
+        await control!.boundary(
           { nodeInstance: instance, nodeName: String(node.name || node.id) },
           signal,
-        ),
+        );
+        if (args.webTarget) await rpc.call('web-target.boundary', {});
+        signal.throwIfAborted();
+      },
       emit,
       human: (message, signal) => control!.human(message, signal),
       perform: async (n: Step, resolved: any, instance: string, signal: AbortSignal) => {

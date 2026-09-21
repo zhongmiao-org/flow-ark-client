@@ -24,6 +24,7 @@ export function executionVersion(record: FlowRecord, prepared: PreparedScripts) 
   return digest({
     flow: record.flow,
     bindings: record.bindings,
+    ...(record.webTarget ? { webTarget: record.webTarget } : {}),
     scriptBundles: prepared.scriptBundles,
   });
 }
@@ -57,8 +58,18 @@ export function assertRerunBindings(original: Bindings, current: Bindings) {
     )
       changed('原脚本包绑定 ' + name + ' ');
   if (
-    digest({ template: before.template, resources:before.resources, grants:before.grants, configuration: configurationAuthority(before) }) !==
-    digest({ template: after.template, resources:after.resources, grants:after.grants, configuration: configurationAuthority(after) })
+    digest({
+      template: before.template,
+      resources: before.resources,
+      grants: before.grants,
+      configuration: configurationAuthority(before),
+    }) !==
+    digest({
+      template: after.template,
+      resources: after.resources,
+      grants: after.grants,
+      configuration: configurationAuthority(after),
+    })
   )
     changed('原策略或模板配置定义');
 }
@@ -127,6 +138,7 @@ export class RunRerun {
       id: selected.id,
       flow: structuredClone(selected.flow),
       bindings: structuredClone(selected.bindings),
+      ...(selected.webTarget ? { webTarget: structuredClone(selected.webTarget) } : {}),
       updatedAt: selected.updatedAt,
       ...(args.mode === 'snapshot'
         ? {

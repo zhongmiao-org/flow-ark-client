@@ -59,6 +59,7 @@ import type {
 } from '../shared/types';
 import { Planning } from './planning';
 import { PlanningRepair } from './planning-repair';
+import { TaskWebTargets } from './task-web-target';
 const terminal = new Set(['SUCCEEDED', 'FAILED', 'INTERRUPTED', 'CANCELLED']);
 type Active = {
   id: string;
@@ -82,6 +83,7 @@ export class Runtime {
   readonly ready: Promise<void>;
   readonly templates: Templates;
   readonly planning: Planning;
+  readonly webTargets: TaskWebTargets;
   private active?: Active;
   private artifactFiles: ArtifactFiles;
   private artifactCleanup: ArtifactCleanup;
@@ -109,13 +111,24 @@ export class Runtime {
     this.artifactFiles = new ArtifactFiles(dataPath);
     this.store = new Store(join(dataPath, 'flowark.sqlite'), key);
     this.store.recover();
+    this.webTargets = new TaskWebTargets(this.store, {
+      page: () => this.system('browser.embedded.review', {}),
+      assertSelectable: () => {
+        this.assertAdmitting();
+        if (this.active || this.store.list<Run>('run').some((r) => r.state === 'QUEUED'))
+          throw new Error('请等待当前运行和收尾结束后，再选择网页对象');
+      },
+    });
     this.planning = new Planning(this.store, {
+      web: this.webTargets,
       repair: new PlanningRepair(this.store, {
         epoch: () => this.admissionEpoch,
         assertAvailable: () => {
           if (this.executionBlock()) throw new Error(this.executionBlock());
           if (
-            this.stopping || this.suspended || this.active ||
+            this.stopping ||
+            this.suspended ||
+            this.active ||
             this.store.list<Run>('run').some((r) => r.state === 'QUEUED')
           )
             throw new Error('请等待当前运行和收尾结束后，再检查目标修复');
@@ -161,7 +174,10 @@ export class Runtime {
     );
     this.sessions = new Sessions(dir, executable, dataPath, system);
     this.runReview = new RunReview(this.store, {
-      busy: (id) => this.active?.id === id || this.scripts.hasRun(id) || (this.pendingCapabilities.get(id) ?? 0) > 0,
+      busy: (id) =>
+        this.active?.id === id ||
+        this.scripts.hasRun(id) ||
+        (this.pendingCapabilities.get(id) ?? 0) > 0,
       target: (selection) => this.system('browser.embedded.target.verify', { selection }),
       assertAdmitting: () => this.assertAdmitting(),
       epoch: () => this.admissionEpoch,
@@ -215,6 +231,7 @@ export class Runtime {
       flow = { ...flow, parameters: bindings.configuration.values as any };
     validateFlow(flow);
     const record = {
+      ...(previous?.webTarget ? { webTarget: previous.webTarget } : {}),
       id: flow.id,
       flow: structuredClone(flow),
       bindings: structuredClone(bindings),
@@ -273,6 +290,7 @@ export class Runtime {
   }
   async preflight(record: FlowRecord & Partial<PreparedScripts>): Promise<PreparedScripts> {
     const flow = validateFlow(record.flow);
+    await this.webTargets.record(record);
     await this.templates.preflight(record);
     const steps = walk(flow.steps);
     if (steps.some((n) => n.type === 'browser')) {
@@ -323,6 +341,7 @@ export class Runtime {
         validateObject('ScriptBundle', bundle);
         await verifyScriptBundle(record.scripts[n.id], bundle.sha256);
       }
+      await this.webTargets.record(record);
       return { scripts: record.scripts, scriptBundles: record.scriptBundles };
     }
     if (record.versionId && scriptNodes.some((n) => n.dependencies.length))
@@ -344,6 +363,7 @@ export class Runtime {
           dependencies: bundle.dependencies,
         });
       }
+    await this.webTargets.record(record);
     return prepared;
   }
   private assertAdmitting() {
@@ -776,6 +796,12 @@ export class Runtime {
     this.checkActive(this.active);
     const runSignal = this.active.abort.signal;
     const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', id)!;
+    if (method === 'web-target.boundary') {
+      if (!snapshot.webTarget) throw new Error('运行没有所选网页');
+      await this.webTargets.record(snapshot, this.sessions.selectedPage(id));
+      this.checkActive(this.active!);
+      return true;
+    }
     if (method === 'script.execute') {
       const active = this.active;
       const node = walk(snapshot.flow.steps).find((step) => step.id === args.nodeId);
@@ -871,7 +897,7 @@ export class Runtime {
           id,
           args.operation === 'screenshot' ? uid() + '.png' : String(args.value),
         );
-      const result = await this.sessions.use(binding, id, command, runSignal);
+      const result = await this.sessions.use(binding, id, command, runSignal, snapshot.webTarget);
       if (args.operation === 'screenshot' || args.operation === 'download')
         return this.registerArtifact(id, command.value, runSignal);
       return result;

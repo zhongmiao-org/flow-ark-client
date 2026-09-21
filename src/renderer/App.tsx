@@ -131,15 +131,24 @@ export default function App() {
     return () => query.removeEventListener('change', change);
   }, []);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
-  const [taskNavigation, setTaskNavigation] = useState<{ title: string; back?: () => void }>({
+  const [taskNavigation, setTaskNavigation] = useState<{
+    title: string;
+    back?: () => void;
+    backLabel?: string;
+  }>({
     title: '开始任务',
   });
   const taskTitle = taskNavigation.title;
-  const updateTaskNavigation = useCallback((title: string, back?: () => void) => {
-    setTaskNavigation((previous) =>
-      previous.title === title && previous.back === back ? previous : { title, back },
-    );
-  }, []);
+  const updateTaskNavigation = useCallback(
+    (title: string, back?: () => void, backLabel?: string) => {
+      setTaskNavigation((previous) =>
+        previous.title === title && previous.back === back && previous.backLabel === backLabel
+          ? previous
+          : { title, back, backLabel },
+      );
+    },
+    [],
+  );
   const [taskReturn, setTaskReturn] = useState(false);
   const [taskEntry, setTaskEntry] = useState<{ key: string; record: FlowRecord; nodeId: string }>();
   const [taskSource, setTaskSource] = useState<{
@@ -537,8 +546,11 @@ export default function App() {
             }
           >
             {section === 'tasks' && taskNavigation.back && (
-              <button className="context-back" onClick={taskNavigation.back}>
-                ← 返回确认方案
+              <button
+                className={`context-back${taskNavigation.backLabel ? ' task-target-back' : ''}`}
+                onClick={taskNavigation.back}
+              >
+                {taskNavigation.backLabel ? '← 返回' : '← 返回确认方案'}
               </button>
             )}
             {taskReturn && ['settings', 'editor'].includes(section) && (
@@ -617,7 +629,7 @@ export default function App() {
                       taskNavigation.back?.();
                     }}
                   >
-                    确认任务方案
+                    {taskNavigation.backLabel ?? '确认任务方案'}
                   </a>
                   <span aria-hidden="true">/</span>
                 </>
@@ -805,6 +817,7 @@ export default function App() {
           )}
           {loaded && (
             <AITaskWorkspace
+              showBrowser={setBrowserOpen}
               entry={taskEntry}
               entryHandled={() => setTaskEntry(undefined)}
               sourceFlowId={taskSource?.record.id}

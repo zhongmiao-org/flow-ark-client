@@ -9,6 +9,8 @@ import RunReviewPage from './RunReviewPage';
 import type { TaskRunIntent } from './task-run-presentation';
 import { scopedDescription, type PlanningScope } from '../shared/planning-scope';
 import { stepTitle } from './flow-outline';
+import TaskWebTargetPage from './TaskWebTargetPage';
+import { webContext } from '../shared/task-web-target';
 
 const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
@@ -36,13 +38,14 @@ const draftOf = (detail: TaskDetail): Draft => ({
 const text = (value: unknown): string =>
   typeof value === 'string' ? value : (JSON.stringify(value, null, 2) ?? '无');
 type Props = {
+  showBrowser: (visible: boolean) => void;
   entry?: { key: string; record: FlowRecord; nodeId: string };
   entryHandled: () => void;
   sourceFlowId?: string;
   returnToSource: (record: FlowRecord) => Promise<void>;
   active: boolean;
   data: Bootstrap;
-  onNavigation: (title: string, back?: () => void) => void;
+  onNavigation: (title: string, back?: () => void, backLabel?: string) => void;
   openRun: (detail: any, back: (intent?: TaskRunIntent) => void) => void;
   settings: (provider: 'deepseek' | 'openai-codex', model: string) => void;
   flows: () => void;
@@ -58,7 +61,8 @@ export default function AITaskWorkspace(props: Props) {
   const [saved, setSaved] = useState('');
   const [revision, setRevision] = useState(0);
   const [homeText, setHomeText] = useState('');
-  const [page, setPage] = useState<'home' | 'brief' | 'review' | 'check'>('home');
+  const [page, setPage] = useState<'home' | 'brief' | 'target' | 'review' | 'check'>('home');
+  const backToBrief = useCallback(() => setPage('brief'), []);
   const location = useRef({ active: props.active, page });
   location.current = { active: props.active, page };
   const planScroll = useRef(0);
@@ -98,23 +102,30 @@ export default function AITaskWorkspace(props: Props) {
   const scopedProposal = result?.kind === 'plan' && !!detail?.proposal?.scope;
   const scopeDiffView = scopedProposal && !editingProposal;
   const title =
-    page === 'check'
-      ? '试运行前，最后确认一次'
-      : page === 'home'
-        ? '开始任务'
-        : page === 'brief'
-          ? '描述需求，带上必要资料'
-          : result?.kind === 'clarify'
-            ? '我理解你要……'
-            : result?.kind === 'unsupported'
-              ? '这项任务还需要支持'
-              : result?.kind === 'plan' && detail?.proposal?.baseFlow
-                ? '检查 AI 提议的修改'
-                : '先看看任务步骤';
+    page === 'target'
+      ? '这次要操作哪里？'
+      : page === 'check'
+        ? '试运行前，最后确认一次'
+        : page === 'home'
+          ? '开始任务'
+          : page === 'brief'
+            ? '描述需求，带上必要资料'
+            : result?.kind === 'clarify'
+              ? '我理解你要……'
+              : result?.kind === 'unsupported'
+                ? '这项任务还需要支持'
+                : result?.kind === 'plan' && detail?.proposal?.baseFlow
+                  ? '检查 AI 提议的修改'
+                  : '先看看任务步骤';
 
   useEffect(() => {
-    if (props.active) props.onNavigation(title, page === 'check' ? backToPlan : undefined);
-  }, [props.active, title, page, backToPlan, props.onNavigation]);
+    if (props.active)
+      props.onNavigation(
+        title,
+        page === 'check' ? backToPlan : page === 'target' ? backToBrief : undefined,
+        page === 'target' ? '描述与附件' : undefined,
+      );
+  }, [props.active, title, page, backToPlan, backToBrief, props.onNavigation]);
   useEffect(() => {
     if (!props.active) return;
     let live = true;
@@ -327,6 +338,14 @@ export default function AITaskWorkspace(props: Props) {
       setPage('home');
     });
   }
+  async function openTarget() {
+    await run(async () => {
+      await save();
+      setReviewed(false);
+      props.showBrowser(false);
+      setPage('target');
+    });
+  }
   const providerName = provider === 'deepseek' ? 'DeepSeek' : 'OpenAI';
   const inputDisabled = busy || generating;
 
@@ -355,7 +374,7 @@ export default function AITaskWorkspace(props: Props) {
 
   const workspace = (
     <div
-      className={`page ai-task-page${scope ? ' ai-task-scoped' : ''}${scopeDiffView ? ' ai-task-scoped-diff' : ''}`}
+      className={`page ai-task-page${page === 'target' ? ' ai-task-web-target' : ''}${scope ? ' ai-task-scoped' : ''}${scopeDiffView ? ' ai-task-scoped-diff' : ''}`}
       hidden={!props.active || page === 'check'}
     >
       <div className="page-heading ai-task-heading">
@@ -364,14 +383,16 @@ export default function AITaskWorkspace(props: Props) {
           <p>
             {page === 'home'
               ? '用一句话开始。FlowArk 先给你看步骤，由你决定何时执行。'
-              : generating
-                ? '正在理解本次任务，你可以取消生成。'
-                : scope
-                  ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : scope.nodeId} · 尚未执行`
-                  : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
+              : page === 'target'
+                ? '第 2 步 / 选目标 · 只有你明确选择的对象会进入任务上下文'
+                : generating
+                  ? '正在理解本次任务，你可以取消生成。'
+                  : scope
+                    ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : scope.nodeId} · 尚未执行`
+                    : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
           </p>
         </div>
-        {page !== 'home' && (
+        {page !== 'home' && page !== 'target' && (
           <div className="ai-task-actions">
             {detail?.flow && detail.flow.id === props.sourceFlowId && (
               <button
@@ -479,6 +500,20 @@ export default function AITaskWorkspace(props: Props) {
             </button>
           </div>
         </>
+      ) : page === 'target' && detail ? (
+        <TaskWebTargetPage
+          task={detail.task}
+          back={backToBrief}
+          changed={props.changed}
+          showBrowser={() => props.showBrowser(true)}
+          selected={(next) => {
+            epoch.current++;
+            accept(next);
+            setReviewed(false);
+            setPage('brief');
+            props.showBrowser(false);
+          }}
+        />
       ) : (
         detail && (
           <>
@@ -587,7 +622,10 @@ export default function AITaskWorkspace(props: Props) {
                       <>
                         <div className="ai-task-actions">
                           <button
-                            disabled={inputDisabled || draft.context.length >= 20}
+                            disabled={
+                              inputDisabled ||
+                              draft.context.length >= (detail.task.webTarget ? 19 : 20)
+                            }
                             onClick={() =>
                               edit({
                                 ...draft,
@@ -605,8 +643,16 @@ export default function AITaskWorkspace(props: Props) {
                           >
                             附加文本资料
                           </button>
+                          <button
+                            disabled={inputDisabled || !!scope}
+                            onClick={() => void openTarget()}
+                          >
+                            网页链接与对象
+                          </button>
                         </div>
-                        <h2>已选上下文 · {draft.context.length} 项</h2>
+                        <h2>
+                          已选上下文 · {draft.context.length + Number(!!detail.task.webTarget)} 项
+                        </h2>
                         {draft.context.map((entry, index) => (
                           <fieldset
                             key={entry.id}
@@ -658,6 +704,19 @@ export default function AITaskWorkspace(props: Props) {
                           </fieldset>
                         ))}
                       </>
+                    )}
+                    {detail.task.webTarget && (
+                      <div className="ai-task-note" aria-label="已选网页来源">
+                        <b>{detail.task.webTarget.page.title || '未命名网页'}</b>
+                        <p>{detail.task.webTarget.page.url}</p>
+                        <p>只读取此网页 · 账号未核对 · 本机内置浏览器</p>
+                        <button
+                          disabled={inputDisabled || !!scope}
+                          onClick={() => void openTarget()}
+                        >
+                          查看或更换网页目标
+                        </button>
+                      </div>
                     )}
                     {result?.kind === 'clarify' &&
                       result.questions.map((question) => (
@@ -747,7 +806,7 @@ export default function AITaskWorkspace(props: Props) {
                       <p>
                         {scope
                           ? '所选步骤的修改要求与范围、已选资料、补问答案、当前完整流程及支持的能力说明。原任务描述和本机绑定不会额外加入。'
-                          : '描述、所选文本、补问答案、当前已采纳流程及支持的能力说明。'}
+                          : '描述、所选资料与网页元数据、补问答案、当前已采纳流程及支持的能力说明。'}
                       </p>
                       <h3>描述</h3>
                       <pre>{scope ? scopedDescription(scope) : draft.description}</pre>
@@ -757,6 +816,12 @@ export default function AITaskWorkspace(props: Props) {
                           <pre>{entry.text}</pre>
                         </div>
                       ))}
+                      {detail.task.webTarget && (
+                        <div>
+                          <h3>已选网页 · 只读</h3>
+                          <pre>{webContext(detail.task.webTarget).text}</pre>
+                        </div>
+                      )}
                       {Object.keys(draft.answers).length > 0 && (
                         <>
                           <h3>补问答案</h3>

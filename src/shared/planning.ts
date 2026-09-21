@@ -4,6 +4,7 @@ import type { Flow, FlowRecord } from './types';
 import type { RepairSelection } from './task-repair';
 import { repairGenerateSchema, repairPreviewSchema, type RepairReference } from './task-repair';
 import { planningScopeSchema, type PlanningScope } from './planning-scope';
+import { webTargetMethods, WEB_CONTEXT_ID, type TaskWebTarget } from './task-web-target';
 
 export type PlanningInput = NonNullable<FlowArkP1['AIPlanningRequest']>;
 export type PlanningResult = NonNullable<FlowArkP1['AIPlanningResult']>;
@@ -17,6 +18,7 @@ export type TaskStatus =
   | 'failed'
   | 'cancelled';
 export type PlanningTask = {
+  webTarget?: TaskWebTarget;
   scope?: PlanningScope;
   appliedRepair?: {
     proposalId: string;
@@ -84,6 +86,7 @@ const context = z
   })
   .strict();
 export const taskMethods = {
+  ...webTargetMethods,
   'task.repair.preview': repairPreviewSchema,
   'task.repair.generate': repairGenerateSchema,
   'task.create': z.object({ flowId: id.optional() }).strict(),
@@ -104,6 +107,10 @@ export const taskMethods = {
         .refine(
           (entries) => new Set(entries.map((e) => e.id)).size === entries.length,
           '上下文 ID 重复',
+        )
+        .refine(
+          (entries) => entries.every((e) => e.id !== WEB_CONTEXT_ID),
+          '网页来源必须通过选择目标取得，不能伪造系统资料',
         ),
       answers: z
         .record(id, z.string().max(3000))
