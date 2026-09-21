@@ -224,6 +224,7 @@ export class Planning {
                 'browser-forms-v1',
                 'file',
                 'file-create-v1',
+                'file-create-numbered-v1',
                 'human',
                 'condition',
                 'loop',

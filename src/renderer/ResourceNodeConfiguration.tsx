@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Bindings, Json, Step } from '../shared/types';
 import ValueField from './ValueField';
 import { MappingValues, MatrixValues } from './StructuredValues';
-import { resourceOperation } from './resource-form-model';
+import { resourceOperation, fileConflictPolicy } from './resource-form-model';
 import { type ReferenceChoice } from './value-references';
 export default function ResourceNodeConfiguration({
   node,
@@ -140,9 +140,23 @@ export default function ResourceNodeConfiguration({
         (node.operation === 'write' || node.operation === 'create') &&
         field('content', '写入内容', node.content)}
       {node.type === 'file' && node.operation === 'create' && (
-        <p className="note">
-          仅接受文本，UTF-8 内容最多 10 MiB；同名文件存在时停止，不覆盖、不自动改名。
-        </p>
+        <>
+          <label htmlFor="file-conflict">已有同名文件时</label>
+          <select
+            id="file-conflict"
+            value={node.version === 4 ? 'number' : 'error'}
+            onChange={(e) => change(fileConflictPolicy(node, e.target.value))}
+          >
+            <option value="error">停止并提示，保留原文件</option>
+            <option value="number">新建带序号的文件，保留原文件</option>
+          </select>
+          <p className="note">
+            仅接受文本，UTF-8 内容最多 10 MiB；
+            {node.version === 4
+              ? '同名自动加序号，不覆盖。实际文件名在结果中显示。'
+              : '同名文件存在时停止，不覆盖、不自动改名。'}
+          </p>
+        </>
       )}
       {node.type === 'file' &&
         node.operation === 'copy' &&

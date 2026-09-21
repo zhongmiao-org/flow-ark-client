@@ -1,5 +1,15 @@
 import type { Json, Step } from '../shared/types';
 export type FileNode = Extract<Step, { type: 'file' | 'excel' }>;
+export function fileConflictPolicy(
+  node: Extract<Step, { type: 'file'; operation: 'create' }>,
+  policy: string,
+): FileNode {
+  if (!['error', 'number'].includes(policy)) throw new Error('未知同名文件策略');
+  const { onConflict: _policy, ...base } = node as typeof node & { onConflict?: string };
+  return policy === 'number'
+    ? { ...base, version: 4, onConflict: 'number' }
+    : { ...base, version: 3 };
+}
 export function resourceOperation(node: FileNode, operation: string): FileNode {
   const excel = node.type === 'excel';
   if (

@@ -223,6 +223,7 @@ test('selected source is host-built, constrained and versioned; adoption and und
     /private-resource-id|selectionId|documentRevision|selectedAt|sk-fixture/,
   );
   assert.ok(!input.capabilities.includes('script'));
+  assert.ok(input.capabilities.includes('file-create-numbered-v1'));
   const accepted = await f.adopt(proposed),
     record = accepted.flow!;
   assert.deepEqual(record.webTarget, d.task.webTarget);
@@ -338,6 +339,26 @@ test('web policy rejects side effects recursively and allows only the chosen sta
     value: target.page.url,
   } as const;
   assert.doesNotThrow(() => assertWebFlow({ ...base, steps: [nav] }, target));
+  assert.doesNotThrow(() =>
+    assertWebFlow(
+      {
+        ...base,
+        steps: [
+          {
+            id: 'save',
+            type: 'file',
+            version: 4,
+            operation: 'create',
+            onConflict: 'number',
+            binding: 'output',
+            name: 'title.txt',
+            content: 'read-only result',
+          },
+        ],
+      },
+      target,
+    ),
+  );
   assert.doesNotThrow(() =>
     assertWebFlow(
       {

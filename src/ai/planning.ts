@@ -44,6 +44,7 @@ export async function generatePlan(
         '不要创建凭据、授权或本地路径绑定，不要把方案总结成已经完成的结果。',
         '需要修改时返回完整新流程，不返回补丁。问题 ID 稳定且不重复。',
         '新建且不覆盖文本文件使用 file version 3 operation create，并声明 file-create-v1 能力；content 解析后必须是文本，不把 create 降级成可能覆盖的 write。',
+        '用户选择同名自动加序号时使用 file version 4 operation create、onConflict:number，并声明 file-create-numbered-v1；保留原文件，实际名称由执行后的结果确定，不预先猜测序号。',
         '按提供的 resultSchema 生成完整 JSON，再将其序列化为 resultJson 字符串。',
       ].join('\n'),
       input: { request: input as any, resultSchema: resultSchema() as any },

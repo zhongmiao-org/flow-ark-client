@@ -78,7 +78,9 @@ export function planningResources(flow: Flow): string[] {
     ...new Set(
       [...nodes(flow).values()].flatMap(({ node: n }) => {
         if (n.type === 'file' && n.operation === 'create')
-          return [`文件 · ${n.binding} · 新建文本，同名停止，不覆盖`];
+          return [
+            `文件 · ${n.binding} · 新建文本，${n.version === 4 ? '同名自动加序号' : '同名停止'}，不覆盖`,
+          ];
         if (n.type === 'file' || n.type === 'excel')
           return [`${n.type} · ${n.binding} · ${n.operation}`];
         if (n.type === 'browser') return [`网页 · ${n.operation}`];

@@ -2,6 +2,16 @@ import { resolveValue } from '../core/engine';
 import type { Flow, Step } from './types';
 
 export const MAX_TEXT_BYTES = 10 * 1024 * 1024;
+export const MAX_CREATED_NAMES = 1000;
+export function numberedFilename(name: string, index: number): string {
+  if (!Number.isInteger(index) || index < 0 || index >= MAX_CREATED_NAMES)
+    throw new Error('文件序号超出支持范围');
+  if (!index) return name;
+  const slash = name.lastIndexOf('/');
+  const dot = name.lastIndexOf('.');
+  const split = dot > slash + 1 ? dot : name.length;
+  return name.slice(0, split) + ` (${index})` + name.slice(split);
+}
 export function validateCreatedName(name: unknown): asserts name is string {
   if (
     typeof name !== 'string' ||
@@ -20,7 +30,7 @@ export function validateCreatedText(content: unknown): asserts content is string
 }
 /** Do not execute earlier steps to inspect their output. Known parameters still validate now. */
 export function validateFileCreate(
-  node: Extract<Step, { type: 'file'; version: 3 }>,
+  node: Extract<Step, { type: 'file'; operation: 'create' }>,
   parameters: Flow['parameters'],
 ) {
   const check = (value: unknown, validate: (value: unknown) => void) => {

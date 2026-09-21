@@ -9,6 +9,7 @@ import {
   mkdir,
   writeFile,
   access,
+  readdir,
 } from 'node:fs/promises';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
@@ -2661,4 +2662,97 @@ test('real Worker creates text from a fixed snapshot; repeated explicit runs fai
   assert.equal(await readFile(join(output, 'title.txt'), 'utf8'), flow.parameters.title);
   assert.equal(runtime.store.list('run').length, 2);
   assert.equal(await readFile(first[0].path, 'utf8'), flow.parameters.title);
+});
+
+test('numbered Worker output keeps its fixed conflict policy and actual artifact across draft edits and explicit runs', async (t) => {
+  const path = await realpath(await mkdtemp(join(tmpdir(), 'flowark-numbered-worker-')));
+  const output = join(path, 'output');
+  await mkdir(output);
+  await writeFile(join(output, 'title.txt'), 'original protected bytes');
+  const runtime = new Runtime(
+    path,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  t.after(async () => {
+    await runtime.shutdown();
+    runtime.store.close();
+    await rm(path, { recursive: true, force: true });
+  });
+  const save: Step = {
+    id: 'save',
+    type: 'file',
+    version: 4,
+    operation: 'create',
+    onConflict: 'number',
+    binding: 'output',
+    name: { $ref: 'params.name' },
+    content: { $ref: 'steps.title' },
+  };
+  const flow: Flow = {
+    ...base,
+    parameters: { name: 'title.txt', title: '固定序号策略的网页标题 💡' },
+    requiredCapabilities: ['file-create-numbered-v1'],
+    steps: [
+      { id: 'title', type: 'value', version: 1, value: { $ref: 'params.title' } },
+      { id: 'wait', type: 'human', version: 1, message: '等待修改下一次策略' },
+      save,
+    ],
+  };
+  const { onConflict: _, ...stop } = save;
+  const stopFlow: Flow = {
+    ...flow,
+    requiredCapabilities: ['file-create-v1'],
+    steps: [...flow.steps.slice(0, 2), { ...stop, version: 3 }],
+  };
+  const bindings = { files: { output }, credentials: [] };
+  runtime.saveFlow(flow, bindings);
+  const first = await runtime.enqueue(flow.id);
+  await until(() => runtime.store.get<Run>('run', first.id)?.state === 'WAITING_INPUT');
+  const snapshot = runtime.store.get('snapshot', first.id);
+  runtime.saveFlow(stopFlow, bindings);
+  await runtime.control(first.id, 'resume');
+  await until(() =>
+    ['SUCCEEDED', 'FAILED'].includes(runtime.store.get<Run>('run', first.id)!.state),
+  );
+  const firstDetail = await runtime.request('run.detail', { id: first.id });
+  assert.equal(firstDetail.run.state, 'SUCCEEDED', firstDetail.run.error);
+  assert.deepEqual(runtime.store.get('snapshot', first.id), snapshot);
+  assert.equal(firstDetail.artifacts.length, 1);
+  assert.equal(firstDetail.artifacts[0].name, 'title (1).txt');
+  assert.equal(firstDetail.artifacts[0].integrity, 'verified');
+  assert.equal(await readFile(join(output, 'title (1).txt'), 'utf8'), flow.parameters.title);
+  const second = await runtime.enqueue(flow.id);
+  await until(() => runtime.store.get<Run>('run', second.id)?.state === 'WAITING_INPUT');
+  const stopSnapshot = runtime.store.get('snapshot', second.id);
+  runtime.saveFlow({ ...flow, parameters: { ...flow.parameters, title: '显式新运行' } }, bindings);
+  await runtime.control(second.id, 'resume');
+  await until(() =>
+    ['SUCCEEDED', 'FAILED'].includes(runtime.store.get<Run>('run', second.id)!.state),
+  );
+  const secondDetail = await runtime.request('run.detail', { id: second.id });
+  assert.equal(secondDetail.run.state, 'FAILED');
+  assert.match(secondDetail.run.error!, /已存在/);
+  assert.equal(secondDetail.artifacts.length, 0);
+  assert.deepEqual(runtime.store.get('snapshot', second.id), stopSnapshot);
+  const third = await runtime.enqueue(flow.id);
+  await until(() => runtime.store.get<Run>('run', third.id)?.state === 'WAITING_INPUT');
+  await runtime.control(third.id, 'resume');
+  await until(() =>
+    ['SUCCEEDED', 'FAILED'].includes(runtime.store.get<Run>('run', third.id)!.state),
+  );
+  const thirdDetail = await runtime.request('run.detail', { id: third.id });
+  assert.equal(thirdDetail.run.state, 'SUCCEEDED', thirdDetail.run.error);
+  assert.equal(thirdDetail.artifacts.length, 1);
+  assert.equal(thirdDetail.artifacts[0].name, 'title (2).txt');
+  assert.equal(thirdDetail.artifacts[0].integrity, 'verified');
+  assert.equal(await readFile(join(output, 'title (2).txt'), 'utf8'), '显式新运行');
+  assert.equal(await readFile(thirdDetail.artifacts[0].path, 'utf8'), '显式新运行');
+  await writeFile(join(output, 'title (1).txt'), 'external later edit');
+  assert.equal(await readFile(firstDetail.artifacts[0].path, 'utf8'), flow.parameters.title);
+  assert.equal(await readFile(join(output, 'title.txt'), 'utf8'), 'original protected bytes');
+  assert.deepEqual((await readdir(output)).sort(), ['title (1).txt', 'title (2).txt', 'title.txt']);
+  assert.equal(runtime.store.list('run').length, 3);
 });

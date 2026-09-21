@@ -1429,7 +1429,10 @@ function Editor({
     const steps = changeSteps(r.flow.steps, selected, fn);
     const mapped = flatten(steps).some((node) => node.type === 'excel' && node.operation === 'map');
     const createsText = flatten(steps).some(
-      (node) => node.type === 'file' && node.operation === 'create',
+      (node) => node.type === 'file' && node.operation === 'create' && node.version === 3,
+    );
+    const numbersText = flatten(steps).some(
+      (node) => node.type === 'file' && node.operation === 'create' && node.version === 4,
     );
     setRecord({
       ...r,
@@ -1441,6 +1444,7 @@ function Editor({
             ...r.flow.requiredCapabilities,
             ...(mapped ? ['excel-mapping-v1'] : []),
             ...(createsText ? ['file-create-v1'] : []),
+            ...(numbersText ? ['file-create-numbered-v1'] : []),
           ]),
         ],
       },

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.11.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.12.0/p1.schema.json",
   "title": "FlowArk P1",
   "$defs": {
     "Json": {
@@ -942,6 +942,53 @@
             "binding",
             "name",
             "content"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "type": {
+              "const": "file"
+            },
+            "version": {
+              "const": 4
+            },
+            "name": {
+              "$ref": "#/$defs/Value"
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 3600000
+            },
+            "operation": {
+              "const": "create"
+            },
+            "binding": {
+              "type": "string",
+              "maxLength": 100000
+            },
+            "content": {
+              "$ref": "#/$defs/Value"
+            },
+            "onConflict": {
+              "const": "number"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "version",
+            "operation",
+            "binding",
+            "name",
+            "content",
+            "onConflict"
           ],
           "additionalProperties": false
         }

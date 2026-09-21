@@ -108,7 +108,7 @@ FLOWARK_TEST_EXECUTABLE=/absolute/path/FlowArk.app/Contents/MacOS/FlowArk pnpm t
 
 `test:flow-outline` 验证真实 40 步流程的搜索／折叠、条件和循环实例、草稿与固定快照隔离、详情返回及延迟状态；结束时取消自身未完成的运行并确认测试实例退出。
 
-`test:excel-mapping` 验证字段冲突、预览失效、保存与放弃、静态和运行期来源、不可变快照，以及真实 Worker 工作簿输出与不覆盖已有文件。当前客户端消费 contracts-v0.11.0，包内保留规范副本和校验摘要。
+`test:excel-mapping` 验证字段冲突、预览失效、保存与放弃、静态和运行期来源、不可变快照，以及真实 Worker 工作簿输出与不覆盖已有文件。当前客户端消费 contracts-v0.12.0，包内保留规范副本和校验摘要。
 
 `test:ai-step-edit` 使用本机 HTTP 模型夹具，验证真实任务/IPC/宿主的单步范围、补问、取消、差异、采纳/撤销、基线冲突、大纲返回及串行重开。该检查不代表真实 DeepSeek/OpenAI 调用通过。
 

@@ -64,10 +64,15 @@ const rpc = new Rpc(
           }
         }
         if (n.type === 'file' || n.type === 'excel')
-          return fileOperation(resolved, args.bindings, (path) => {
-            signal.throwIfAborted();
-            return rpc.call('artifact.register', { path });
-          });
+          return fileOperation(
+            resolved,
+            args.bindings,
+            (path) => {
+              signal.throwIfAborted();
+              return rpc.call('artifact.register', { path });
+            },
+            signal,
+          );
         if (n.type === 'browser') return rpc.call('browser', resolved, timeout + 5000);
         if (n.type === 'script')
           return runScript({

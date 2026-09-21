@@ -211,6 +211,17 @@ export type Node =
       operation: 'create';
       binding: string;
       content: Value;
+    }
+  | {
+      id: string;
+      type: 'file';
+      version: 4;
+      name: Value;
+      timeoutMs?: number;
+      operation: 'create';
+      binding: string;
+      content: Value;
+      onConflict: 'number';
     };
 export type Value =
   | Json

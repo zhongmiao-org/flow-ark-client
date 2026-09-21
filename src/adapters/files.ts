@@ -19,6 +19,7 @@ import JSZip from 'jszip';
 import type { Bindings } from '../shared/types';
 import { mappedRows, validateMappedFilename } from '../shared/excel-mapping';
 import { validateCreatedName, validateCreatedText } from '../shared/file-create';
+import { createText } from './create-text';
 export async function scopedPath(root: string, name: string, writing = false) {
   if (!root) throw new Error('文件目录尚未绑定');
   const base = await realpath(root);
@@ -126,10 +127,27 @@ export async function fileOperation(
   n: any,
   bindings: Bindings,
   artifact: (path: string) => Promise<any>,
+  signal?: AbortSignal,
 ) {
   if (n.type === 'file' && n.operation === 'create') {
     validateCreatedName(n.name);
     validateCreatedText(n.content);
+    if (n.version !== 3 && (n.version !== 4 || n.onConflict !== 'number'))
+      throw new Error('文本新建版本或同名策略无效');
+    const root = bindings.files[n.binding];
+    if (!root) throw new Error('文件目录尚未绑定');
+    const base = await realpath(root);
+    const target = scopedTarget(base, n.name);
+    const parent = await realpath(dirname(target));
+    if (parent !== base && !parent.startsWith(base + sep))
+      throw new Error('符号链接超出文件授权目录');
+    const path = await createText(
+      join(parent, basename(target)),
+      n.content,
+      n.version === 4,
+      signal,
+    );
+    return artifact(path);
   }
   if (n.type === 'excel' && n.operation === 'map') validateMappedFilename(n.name);
   if (n.version === 2) {
@@ -201,15 +219,7 @@ export async function fileOperation(
     if ((await stat(path)).size > 10 * 1024 * 1024) throw new Error('文本文件超过 10 MiB');
     return readFile(path, 'utf8');
   }
-  if (n.operation === 'create') {
-    try {
-      await atomicWrite(path, (temporary) => writeFile(temporary, n.content, 'utf8'), true);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'EEXIST')
-        throw new Error('输出文件已存在，请更换文件名；原文件未覆盖');
-      throw error;
-    }
-  } else if (n.operation === 'write')
+  if (n.operation === 'write')
     await atomicWrite(path, (temporary) =>
       writeFile(temporary, typeof n.content === 'string' ? n.content : JSON.stringify(n.content)),
     );

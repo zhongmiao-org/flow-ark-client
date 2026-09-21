@@ -18,7 +18,7 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
         if (node.operation === 'create')
           return effect(
             'write',
-            `在目录“${node.binding}”新建文本文件${file}；同名文件存在时停止，不覆盖。`,
+            `在目录“${node.binding}”新建文本文件${file}；${node.version === 4 ? '同名自动加序号，不覆盖，实际名称在执行后确定' : '同名文件存在时停止，不覆盖'}。`,
           );
         if (node.operation === 'map')
           return effect(

@@ -23,6 +23,7 @@ export const capabilities = [
   'script',
   'file',
   'file-create-v1',
+  'file-create-numbered-v1',
   'excel',
   'excel-mapping-v1',
   'browser',
@@ -51,8 +52,9 @@ export function validateFlow(value: unknown): Flow {
       if (++count > 1000 || all.has(n.id)) throw new Error('节点数量过多或 ID 重复：' + n.id);
       all.add(n.id);
       if (n.type === 'file' && n.operation === 'create') {
-        if (!flow.requiredCapabilities.includes('file-create-v1'))
-          throw new Error('新建文本文件需要声明 file-create-v1 能力');
+        const capability = n.version === 4 ? 'file-create-numbered-v1' : 'file-create-v1';
+        if (!flow.requiredCapabilities.includes(capability))
+          throw new Error('新建文本文件需要声明 ' + capability + ' 能力');
         validateFileCreate(n, flow.parameters);
       }
       if (n.type === 'excel' && n.operation === 'map') {
