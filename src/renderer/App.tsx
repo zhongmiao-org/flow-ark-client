@@ -50,7 +50,6 @@ import {
   Search,
   ShieldCheck,
   CircleHelp,
-  Sparkles,
 } from 'lucide-react';
 import type { Bootstrap, FlowRecord, Step } from '../shared/types';
 import TemplateLibrary from './TemplateLibrary';
@@ -287,7 +286,7 @@ export default function App() {
   }
   const unread = data.attention.filter((a) => !a.read).length;
   const nav = [
-    ['tasks', '开始任务', Sparkles],
+    ['tasks', '开始任务', Workflow],
     ['flows', '我的流程', Workflow],
     ['templates', '模板库', LayoutTemplate],
     ['runs', '运行记录', History],
