@@ -8,7 +8,7 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "937a865f71a092d49f34da499778e68ef37caa05",
+    "governanceBaseline": "c12f335c2ee1ece2c1bcabae51bcd58356d1ab1d",
     "contractsVersion": "0.10.0",
     "contractsTag": "contracts-v0.10.0"
   },
@@ -73,7 +73,8 @@
     "test:figma-editor": "node --import tsx scripts/figma-editor-smoke.ts",
     "test:script-editor": "node --import tsx scripts/script-editor-smoke.ts",
     "test:flow-outline": "node --import tsx scripts/flow-outline-smoke.ts",
-    "test:excel-mapping": "node --import tsx scripts/excel-mapping-smoke.ts"
+    "test:excel-mapping": "node --import tsx scripts/excel-mapping-smoke.ts",
+    "test:ai-step-edit": "node --import tsx scripts/ai-step-edit-smoke.ts"
   },
   "build": {
     "appId": "org.zhongmiao.flowark",

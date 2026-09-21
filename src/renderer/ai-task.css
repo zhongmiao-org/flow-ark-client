@@ -337,9 +337,80 @@
   gap: 16px;
   text-align: center;
 }
+.ai-task-scope-source {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+.ai-task-scope-source small {
+  color: var(--fa-text-secondary);
+}
+.ai-step-user {
+  padding: 16px;
+  min-height: 116px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-canvas);
+}
+.ai-step-user p {
+  margin-top: 12px;
+}
+.ai-step-reply {
+  min-height: 152px;
+}
+.ai-task-scoped-diff .ai-task-result {
+  height: 700px;
+  overflow: auto;
+}
+.ai-step-diff-values > section > p {
+  margin-top: 12px;
+  color: var(--fa-text-secondary);
+}
+.ai-task-scoped-diff .ai-task-columns.ai-task-review {
+  grid-template-columns: minmax(0, 400fr) minmax(0, 728fr);
+}
+.ai-step-diff-values {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ai-step-diff-values > section {
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  padding: 16px;
+  min-height: 108px;
+}
+.ai-step-before {
+  background: var(--fa-status-error-bg);
+}
+.ai-step-after {
+  background: var(--fa-status-success-bg);
+}
+.ai-step-diff-values h3 {
+  font-size: 14px;
+  margin: 12px 0 4px;
+}
+.ai-step-diff-values pre {
+  background: transparent;
+  margin: 0;
+  padding: 0;
+  max-height: 240px;
+}
+.ai-task-scoped-diff .ai-task-result > .ai-task-actions .primary {
+  min-width: 168px;
+}
+.ai-task-scoped-diff .ai-task-result > .ai-task-actions button:not(.primary) {
+  min-width: 144px;
+}
+.ai-task-scoped-diff .ai-task-result > button {
+  align-self: flex-start;
+  min-width: 192px;
+}
 @container (max-width: 850px) {
   .ai-task-columns,
-  .ai-task-columns.ai-task-review {
+  .ai-task-columns.ai-task-review,
+  .ai-task-scoped-diff .ai-task-columns.ai-task-review {
     grid-template-columns: minmax(0, 1fr);
   }
   .ai-task-columns > .ai-task-card {
@@ -351,6 +422,16 @@
   }
   .ai-task-examples > button {
     min-height: 104px;
+  }
+}
+@media (max-width: 1199px) {
+  .ai-task-scoped .ai-task-columns,
+  .ai-task-scoped-diff .ai-task-columns.ai-task-review {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ai-task-scoped .ai-task-columns > .ai-task-card {
+    min-height: 0;
+    height: auto;
   }
 }
 

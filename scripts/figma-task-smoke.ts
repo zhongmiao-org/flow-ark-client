@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import type { ChildProcess } from 'node:child_process';
 import { createServer, type ServerResponse } from 'node:http';
 import { build } from 'esbuild';
 import { cp, mkdir, mkdtemp, writeFile } from 'node:fs/promises';
@@ -122,6 +123,7 @@ await build({
   },
 });
 let app: ElectronApplication | undefined;
+let child: ChildProcess | undefined;
 let page!: Page;
 const button = (name: string) => page.getByRole('button', { name, exact: true });
 const call = (method: string, args: any = {}): Promise<any> =>
@@ -148,12 +150,17 @@ const bounded = async <T>(promise: Promise<T>, ms: number): Promise<T> => {
 };
 const errors: string[] = [];
 async function launch() {
-  assert.equal(app, undefined, 'never launch a second app before the first exits');
+  assert.equal(app, undefined);
+  assert.ok(
+    !child || child.exitCode !== null || child.signalCode !== null,
+    'previous process must exit',
+  );
   app = await electron.launch({
     executablePath: electronPath as unknown as string,
     args: [appPath],
     env: { ...process.env, FLOWARK_DATA_DIR: data },
   });
+  child = app.process();
   page = await app.firstWindow();
   page.setDefaultTimeout(15000);
   page.on('pageerror', (e) => errors.push(e.message));
@@ -168,8 +175,9 @@ async function launch() {
   await page.evaluate(() => document.fonts.ready);
 }
 async function close() {
-  if (!app) return;
-  const owned = app;
+  if (!app || !child) return;
+  const owned = app,
+    process = child;
   try {
     await bounded(
       (async () => {
@@ -177,19 +185,25 @@ async function close() {
         for (const run of (await call('bootstrap')).runs)
           if (['QUEUED', 'RUNNING', 'PAUSED', 'WAITING_INPUT', 'CANCELLING'].includes(run.state))
             await call('run.control', { id: run.id, action: 'cancel' });
-        await wait(
-          async () => !(await call('bootstrap')).execution?.active,
-          'test run did not exit',
-        );
+        await wait(async () => {
+          const state = await call('bootstrap');
+          return !state.execution?.active && !state.runOverview.queued;
+        }, 'owned run still active');
         await owned.close();
+        await wait(
+          async () => process.exitCode !== null || process.signalCode !== null,
+          'process did not exit',
+        );
       })(),
-      20000,
+      30000,
     );
-  } catch (error) {
-    owned.process().kill('SIGKILL');
-    throw error;
   } finally {
+    if (process.exitCode === null && process.signalCode === null) {
+      process.kill('SIGKILL');
+      await bounded(new Promise<void>((done) => process.once('exit', () => done())), 5000);
+    }
     app = undefined;
+    evidence.closed = process.exitCode !== null || process.signalCode !== null;
   }
 }
 async function capture(name: string) {

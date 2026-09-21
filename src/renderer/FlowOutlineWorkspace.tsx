@@ -36,6 +36,7 @@ export default function FlowOutlineWorkspace({
   selected,
   select,
   edit,
+  editAI,
   activeRunId,
   saved,
   save,
@@ -47,6 +48,7 @@ export default function FlowOutlineWorkspace({
   selected: string;
   select: (id: string) => void;
   edit: (id: string) => void;
+  editAI: (id: string) => void;
   activeRunId?: string;
   saved: boolean;
   save: () => void;
@@ -464,7 +466,13 @@ export default function FlowOutlineWorkspace({
                 <pre>{format(nodeReferenceValues(entry.step))}</pre>
               </details>
               {mode === 'draft' ? (
-                <button onClick={() => edit(entry.step.id)}>编辑步骤配置</button>
+                <>
+                  <button onClick={() => edit(entry.step.id)}>编辑步骤配置</button>
+                  <button data-ai-edit-step disabled={!saved} onClick={() => editAI(entry.step.id)}>
+                    AI 只修改这一步
+                  </button>
+                  {!saved && <p>先保存草稿，再使用 AI 修改。</p>}
+                </>
               ) : (
                 <>
                   {selectedRows.map((row) => (

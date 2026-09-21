@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Bootstrap, FlowRecord, Step } from '../shared/types';
-import type { PlanningContext, PlanningTask, TaskDetail } from '../shared/planning';
+import type { PlanningChange, PlanningContext, PlanningTask, TaskDetail } from '../shared/planning';
 import { buildDiagram } from './flow-diagram';
 import DiagramCanvas from './DiagramCanvas';
 import { kinds } from './node-kinds';
 import { flatten } from './flow-editing';
 import RunReviewPage from './RunReviewPage';
 import type { TaskRunIntent } from './task-run-presentation';
+import { scopedDescription, type PlanningScope } from '../shared/planning-scope';
+import { stepTitle } from './flow-outline';
 
 const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
@@ -19,15 +21,25 @@ const status: Record<PlanningTask['status'], string> = {
   failed: '生成失败',
   cancelled: '已取消生成',
 };
-type Draft = { description: string; context: PlanningContext[]; answers: Record<string, string> };
+type Draft = {
+  description: string;
+  context: PlanningContext[];
+  answers: Record<string, string>;
+  scope?: PlanningScope;
+};
 const draftOf = (detail: TaskDetail): Draft => ({
   description: detail.task.description,
   context: detail.task.context,
   answers: detail.task.answers,
+  ...(detail.task.scope ? { scope: detail.task.scope } : {}),
 });
 const text = (value: unknown): string =>
   typeof value === 'string' ? value : (JSON.stringify(value, null, 2) ?? '无');
 type Props = {
+  entry?: { key: string; record: FlowRecord; nodeId: string };
+  entryHandled: () => void;
+  sourceFlowId?: string;
+  returnToSource: (record: FlowRecord) => Promise<void>;
   active: boolean;
   data: Bootstrap;
   onNavigation: (title: string, back?: () => void) => void;
@@ -70,6 +82,7 @@ export default function AITaskWorkspace(props: Props) {
   const [reviewed, setReviewed] = useState(false);
   const [view, setView] = useState<'list' | 'graph'>('list');
   const [selected, setSelected] = useState('');
+  const [editingProposal, setEditingProposal] = useState(false);
   const dirty = !!detail && JSON.stringify(draft) !== saved;
   const generating = detail?.task.status === 'generating';
   const stale = !!detail && detail.task.revision !== revision;
@@ -77,6 +90,13 @@ export default function AITaskWorkspace(props: Props) {
   const flow = result?.kind === 'plan' ? result.flow : detail?.flow?.flow;
   const diagram = useMemo(() => buildDiagram(flow?.steps ?? [], selected), [flow, selected]);
   const selectedStep = flow && flatten(flow.steps).find((step) => step.id === selected);
+  const scope = draft.scope;
+  const scopedSteps = flatten(detail?.flow?.flow.steps ?? []);
+  const scopeIndex = scopedSteps.findIndex((step) => step.id === scope?.nodeId);
+  const scopedStep = scopedSteps[scopeIndex];
+  const scopeConflict = !!scope && scope.baseFlowHash !== detail?.flowHash;
+  const scopedProposal = result?.kind === 'plan' && !!detail?.proposal?.scope;
+  const scopeDiffView = scopedProposal && !editingProposal;
   const title =
     page === 'check'
       ? '试运行前，最后确认一次'
@@ -140,6 +160,35 @@ export default function AITaskWorkspace(props: Props) {
       clearInterval(timer);
     };
   }, [props.active, detail?.task.id, detail?.task.status]);
+
+  useEffect(() => {
+    setReviewed(false);
+  }, [detail?.flowHash]);
+
+  useEffect(() => {
+    if (!props.active || !props.entry || lock.current) return;
+    const entry = props.entry;
+    void run(async () => {
+      if (detail && dirty) await save();
+      const list: PlanningTask[] = await api('task.list');
+      const existing = list.find((task) => task.flowId === entry.record.id);
+      const next: TaskDetail = existing
+        ? await api('task.detail', { id: existing.id })
+        : await api('task.create', { flowId: entry.record.id });
+      accept(next);
+      setPage('review');
+      setSelected(entry.nodeId);
+      setProvider(next.task.provider ?? 'deepseek');
+      setModel(next.task.model ?? 'deepseek-flash');
+      setReviewed(false);
+      if (
+        JSON.stringify(next.flow?.flow) !== JSON.stringify(entry.record.flow) ||
+        JSON.stringify(next.flow?.bindings) !== JSON.stringify(entry.record.bindings)
+      )
+        throw new Error('来源流程已变化，请返回重新读取，未发送任何请求');
+      await chooseScope(next, entry.nodeId);
+    }).finally(props.entryHandled);
+  }, [props.active, props.entry?.key, busy]);
 
   function accept(next: TaskDetail) {
     selectedTask.current = next.task.id;
@@ -212,6 +261,7 @@ export default function AITaskWorkspace(props: Props) {
     await run(async () => {
       if (!reviewed) throw new Error('请先核对本次发送的内容');
       const next = await save();
+      setEditingProposal(false);
       accept(
         await api('task.generate', {
           id: next.task.id,
@@ -224,6 +274,31 @@ export default function AITaskWorkspace(props: Props) {
       setReviewed(false);
     });
   }
+  async function chooseScope(next: TaskDetail, nodeId: string) {
+    if (next.task.status === 'generating' || next.proposal)
+      throw new Error('请先取消生成，或采纳/不采纳当前提案，再选择单步修改');
+    if (!next.flow || !flatten(next.flow.flow.steps).some((step) => step.id === nodeId))
+      throw new Error('所选步骤已不存在，请重新选择');
+    const current = next.task.scope;
+    if (current && current.nodeId !== nodeId)
+      throw new Error('先完成当前单步修改，或明确改为完整任务修改，再选择另一步');
+    accept(
+      await api('task.save', {
+        id: next.task.id,
+        revision: next.task.revision,
+        ...draftOf(next),
+        answers: current ? next.task.answers : {},
+        scope: { nodeId, baseFlowHash: next.flowHash, instruction: current?.instruction ?? '' },
+      }),
+    );
+    setSelected(nodeId);
+    setEditingProposal(false);
+    setReviewed(false);
+    setPage('review');
+    requestAnimationFrame(() =>
+      document.querySelector<HTMLTextAreaElement>('#task-description')?.focus(),
+    );
+  }
   async function proposalAction(method: 'adopt' | 'reject' | 'undo') {
     await run(async () => {
       if (!detail || dirty || stale) throw new Error('请先保存修改并重新生成方案');
@@ -233,6 +308,7 @@ export default function AITaskWorkspace(props: Props) {
         ...(method !== 'undo' ? { proposalId: detail.proposal?.id } : {}),
       });
       accept(next);
+      setEditingProposal(false);
       setReviewed(false);
       setMessage(
         method === 'adopt'
@@ -278,7 +354,10 @@ export default function AITaskWorkspace(props: Props) {
   };
 
   const workspace = (
-    <div className="page ai-task-page" hidden={!props.active || page === 'check'}>
+    <div
+      className={`page ai-task-page${scope ? ' ai-task-scoped' : ''}${scopeDiffView ? ' ai-task-scoped-diff' : ''}`}
+      hidden={!props.active || page === 'check'}
+    >
       <div className="page-heading ai-task-heading">
         <div>
           <h1>{page === 'home' ? '你想完成什么？' : title}</h1>
@@ -287,13 +366,30 @@ export default function AITaskWorkspace(props: Props) {
               ? '用一句话开始。FlowArk 先给你看步骤，由你决定何时执行。'
               : generating
                 ? '正在理解本次任务，你可以取消生成。'
-                : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
+                : scope
+                  ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : scope.nodeId} · 尚未执行`
+                  : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
           </p>
         </div>
         {page !== 'home' && (
-          <button disabled={busy} onClick={() => void back()}>
-            返回开始任务
-          </button>
+          <div className="ai-task-actions">
+            {detail?.flow && detail.flow.id === props.sourceFlowId && (
+              <button
+                disabled={busy}
+                onClick={() =>
+                  void run(async () => {
+                    const next = scopeConflict ? detail : await save();
+                    if (next.flow) await props.returnToSource(next.flow);
+                  })
+                }
+              >
+                返回来源步骤
+              </button>
+            )}
+            <button disabled={busy} onClick={() => void back()}>
+              返回开始任务
+            </button>
+          </div>
         )}
       </div>
       {error && (
@@ -386,12 +482,14 @@ export default function AITaskWorkspace(props: Props) {
       ) : (
         detail && (
           <>
-            <div className="ai-task-state" role="status">
-              <span>{status[detail.task.status]}</span>
-              <span>
-                {dirty ? '有未保存修改' : '草稿已保存'} · 修订 {revision}
-              </span>
-            </div>
+            {!scopeDiffView && (
+              <div className="ai-task-state" role="status">
+                <span>{status[detail.task.status]}</span>
+                <span>
+                  {dirty ? '有未保存修改' : '草稿已保存'} · 修订 {revision}
+                </span>
+              </div>
+            )}
             {stale && (
               <div className="alert error" role="alert">
                 <span>任务已在其他位置修改；重新读取会替换当前未保存输入。</span>
@@ -413,259 +511,350 @@ export default function AITaskWorkspace(props: Props) {
                 {detail.task.error}
               </p>
             )}
+            {scopeConflict && (
+              <p className="ai-task-note ai-task-failure" role="alert">
+                单步修改的基线已变化。请返回来源核对，或明确改为完整任务修改；当前要求已保留。
+              </p>
+            )}
             <div className={`ai-task-columns ${page === 'review' ? 'ai-task-review' : ''}`}>
               <section className="ai-task-card ai-task-input">
-                <label htmlFor="task-description">你的需求</label>
-                <textarea
-                  id="task-description"
-                  disabled={inputDisabled}
-                  value={draft.description}
-                  maxLength={20000}
-                  onChange={(e) => edit({ ...draft, description: e.target.value })}
-                />
-                {result && (
-                  <div className="ai-task-note">
-                    <b>FlowArk</b>
-                    <p>{result.summary}</p>
-                  </div>
-                )}
-                {page === 'brief' && (
+                {scopeDiffView ? (
                   <>
-                    <div className="ai-task-actions">
-                      <button
-                        disabled={inputDisabled || draft.context.length >= 20}
-                        onClick={() =>
-                          edit({
-                            ...draft,
-                            context: [
-                              ...draft.context,
-                              {
-                                id: crypto.randomUUID(),
-                                kind: 'text',
-                                label: '补充资料',
-                                text: '',
-                              },
-                            ],
-                          })
-                        }
-                      >
-                        附加文本资料
-                      </button>
+                    <div className="ai-step-user">
+                      <b>你</b>
+                      <p>{scope?.instruction}</p>
                     </div>
-                    <h2>已选上下文 · {draft.context.length} 项</h2>
-                    {draft.context.map((entry, index) => (
-                      <fieldset key={entry.id} className="ai-task-context" disabled={inputDisabled}>
-                        <label>
-                          资料名称
-                          <input
-                            aria-label={`资料 ${index + 1} 名称`}
-                            value={entry.label}
-                            maxLength={200}
-                            onChange={(e) =>
-                              edit({
-                                ...draft,
-                                context: draft.context.map((c) =>
-                                  c.id === entry.id ? { ...c, label: e.target.value } : c,
-                                ),
-                              })
-                            }
-                          />
-                        </label>
-                        <label>
-                          资料内容
-                          <textarea
-                            aria-label={`资料 ${index + 1} 内容`}
-                            value={entry.text}
-                            maxLength={50000}
-                            onChange={(e) =>
-                              edit({
-                                ...draft,
-                                context: draft.context.map((c) =>
-                                  c.id === entry.id ? { ...c, text: e.target.value } : c,
-                                ),
-                              })
-                            }
-                          />
-                        </label>
-                        <button
-                          onClick={() =>
-                            edit({
-                              ...draft,
-                              context: draft.context.filter((c) => c.id !== entry.id),
-                            })
-                          }
-                        >
-                          移除资料 {index + 1}
-                        </button>
-                      </fieldset>
-                    ))}
+                    <div className="ai-task-note ai-step-reply">
+                      <b>FlowArk</b>
+                      <p>{result?.summary}</p>
+                      <p>已核对：只调整所选步骤，其他步骤、结构、静态资源与现有授权保持不变。</p>
+                    </div>
+                    <p className="ai-task-note">
+                      采纳只更新草稿，当前运行和已建立计划仍使用原快照。
+                    </p>
+                    <details className="ai-task-disclosure">
+                      <summary>本次提案来源</summary>
+                      <p>
+                        任务修订 {revision} · 步骤 {detail.proposal!.scope!.nodeId} · 基线{' '}
+                        {detail.proposal!.baseFlowHash.slice(0, 12)}
+                      </p>
+                      <p>
+                        {detail.task.provider} · {detail.task.model}
+                      </p>
+                    </details>
                   </>
-                )}
-                {result?.kind === 'clarify' &&
-                  result.questions.map((question) => (
-                    <fieldset
-                      className="ai-task-question"
-                      key={question.id}
+                ) : (
+                  <>
+                    {scope && (
+                      <div className="ai-task-scope-source">
+                        <b>
+                          仅修改第 {scopeIndex + 1} 步 ·{' '}
+                          {scopedStep ? stepTitle(scopedStep) : scope.nodeId}
+                        </b>
+                        <small>
+                          步骤 {scope.nodeId} · 基线 {scope.baseFlowHash.slice(0, 12)}
+                        </small>
+                        <p>其他步骤、子步骤和静态资源保持不变。采纳只更新草稿。</p>
+                      </div>
+                    )}
+                    <label htmlFor="task-description">{scope ? '这一步怎么改' : '你的需求'}</label>
+                    <textarea
+                      id="task-description"
                       disabled={inputDisabled}
-                    >
-                      <legend>{question.prompt}</legend>
-                      <div className="ai-task-options">
-                        {question.options.map((option) => (
+                      value={scope ? scope.instruction : draft.description}
+                      maxLength={scope ? 10000 : 20000}
+                      onChange={(e) =>
+                        edit(
+                          scope
+                            ? { ...draft, scope: { ...scope, instruction: e.target.value } }
+                            : { ...draft, description: e.target.value },
+                        )
+                      }
+                    />
+                    {scope && (
+                      <details className="ai-task-disclosure">
+                        <summary>原任务描述</summary>
+                        <p>{draft.description || '此任务从已保存流程开始。'}</p>
+                      </details>
+                    )}
+                    {result && (
+                      <div className="ai-task-note">
+                        <b>FlowArk</b>
+                        <p>{result.summary}</p>
+                      </div>
+                    )}
+                    {page === 'brief' && (
+                      <>
+                        <div className="ai-task-actions">
                           <button
-                            type="button"
-                            key={option}
-                            aria-pressed={draft.answers[question.id] === option}
+                            disabled={inputDisabled || draft.context.length >= 20}
                             onClick={() =>
                               edit({
                                 ...draft,
-                                answers: { ...draft.answers, [question.id]: option },
+                                context: [
+                                  ...draft.context,
+                                  {
+                                    id: crypto.randomUUID(),
+                                    kind: 'text',
+                                    label: '补充资料',
+                                    text: '',
+                                  },
+                                ],
                               })
                             }
                           >
-                            {option}
+                            附加文本资料
                           </button>
+                        </div>
+                        <h2>已选上下文 · {draft.context.length} 项</h2>
+                        {draft.context.map((entry, index) => (
+                          <fieldset
+                            key={entry.id}
+                            className="ai-task-context"
+                            disabled={inputDisabled}
+                          >
+                            <label>
+                              资料名称
+                              <input
+                                aria-label={`资料 ${index + 1} 名称`}
+                                value={entry.label}
+                                maxLength={200}
+                                onChange={(e) =>
+                                  edit({
+                                    ...draft,
+                                    context: draft.context.map((c) =>
+                                      c.id === entry.id ? { ...c, label: e.target.value } : c,
+                                    ),
+                                  })
+                                }
+                              />
+                            </label>
+                            <label>
+                              资料内容
+                              <textarea
+                                aria-label={`资料 ${index + 1} 内容`}
+                                value={entry.text}
+                                maxLength={50000}
+                                onChange={(e) =>
+                                  edit({
+                                    ...draft,
+                                    context: draft.context.map((c) =>
+                                      c.id === entry.id ? { ...c, text: e.target.value } : c,
+                                    ),
+                                  })
+                                }
+                              />
+                            </label>
+                            <button
+                              onClick={() =>
+                                edit({
+                                  ...draft,
+                                  context: draft.context.filter((c) => c.id !== entry.id),
+                                })
+                              }
+                            >
+                              移除资料 {index + 1}
+                            </button>
+                          </fieldset>
                         ))}
+                      </>
+                    )}
+                    {result?.kind === 'clarify' &&
+                      result.questions.map((question) => (
+                        <fieldset
+                          className="ai-task-question"
+                          key={question.id}
+                          disabled={inputDisabled}
+                        >
+                          <legend>{question.prompt}</legend>
+                          <div className="ai-task-options">
+                            {question.options.map((option) => (
+                              <button
+                                type="button"
+                                key={option}
+                                aria-pressed={draft.answers[question.id] === option}
+                                onClick={() =>
+                                  edit({
+                                    ...draft,
+                                    answers: { ...draft.answers, [question.id]: option },
+                                  })
+                                }
+                              >
+                                {option}
+                              </button>
+                            ))}
+                          </div>
+                          <textarea
+                            aria-label={question.prompt}
+                            value={draft.answers[question.id] ?? ''}
+                            maxLength={3000}
+                            placeholder="也可以直接补充说明"
+                            onChange={(e) =>
+                              edit({
+                                ...draft,
+                                answers: { ...draft.answers, [question.id]: e.target.value },
+                              })
+                            }
+                          />
+                        </fieldset>
+                      ))}
+                    <fieldset className="ai-task-provider" disabled={inputDisabled}>
+                      <label>
+                        AI 服务
+                        <select
+                          value={provider}
+                          onChange={(e) => {
+                            const p = e.target.value as typeof provider;
+                            setProvider(p);
+                            setModel(p === 'deepseek' ? 'deepseek-flash' : 'gpt-5.3-codex');
+                            setReviewed(false);
+                          }}
+                        >
+                          <option value="deepseek">DeepSeek</option>
+                          <option value="openai-codex">OpenAI · Codex</option>
+                        </select>
+                      </label>
+                      <label>
+                        模型 ID
+                        <input
+                          value={model}
+                          maxLength={100}
+                          onChange={(e) => {
+                            setModel(e.target.value);
+                            setReviewed(false);
+                          }}
+                        />
+                      </label>
+                    </fieldset>
+                    {!props.data.credentials.includes(provider) && (
+                      <div className="ai-task-note">
+                        <p>{providerName} 尚未配置，先保存草稿，再配置服务。</p>
+                        <button
+                          disabled={busy}
+                          onClick={() =>
+                            void run(async () => {
+                              await save();
+                              props.settings(provider, model);
+                            })
+                          }
+                        >
+                          配置 AI 服务
+                        </button>
                       </div>
-                      <textarea
-                        aria-label={question.prompt}
-                        value={draft.answers[question.id] ?? ''}
-                        maxLength={3000}
-                        placeholder="也可以直接补充说明"
-                        onChange={(e) =>
-                          edit({
-                            ...draft,
-                            answers: { ...draft.answers, [question.id]: e.target.value },
+                    )}
+                    <details className="ai-task-disclosure">
+                      <summary>查看本次发送给 {providerName} 的内容</summary>
+                      <p>
+                        {scope
+                          ? '所选步骤的修改要求与范围、已选资料、补问答案、当前完整流程及支持的能力说明。原任务描述和本机绑定不会额外加入。'
+                          : '描述、所选文本、补问答案、当前已采纳流程及支持的能力说明。'}
+                      </p>
+                      <h3>描述</h3>
+                      <pre>{scope ? scopedDescription(scope) : draft.description}</pre>
+                      {draft.context.map((entry) => (
+                        <div key={entry.id}>
+                          <h3>{entry.label}</h3>
+                          <pre>{entry.text}</pre>
+                        </div>
+                      ))}
+                      {Object.keys(draft.answers).length > 0 && (
+                        <>
+                          <h3>补问答案</h3>
+                          <pre>{text(draft.answers)}</pre>
+                        </>
+                      )}
+                      {detail.flow && (
+                        <>
+                          <h3>当前流程 · {detail.flow.flow.name}</h3>
+                          <pre>{text(detail.flow.flow)}</pre>
+                        </>
+                      )}
+                    </details>
+                    <label className="ai-task-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={reviewed}
+                        disabled={inputDisabled}
+                        onChange={(e) => setReviewed(e.target.checked)}
+                      />
+                      我已核对本次内容，将发送给 {providerName}
+                    </label>
+                    <div className="ai-task-actions">
+                      {generating ? (
+                        <button
+                          disabled={busy}
+                          onClick={() =>
+                            void run(async () => {
+                              accept(await api('task.cancel', { id: detail.task.id }));
+                              setReviewed(false);
+                            })
+                          }
+                        >
+                          取消生成
+                        </button>
+                      ) : (
+                        <button
+                          className="primary"
+                          disabled={
+                            busy ||
+                            stale ||
+                            !(scope?.instruction ?? draft.description).trim() ||
+                            scopeConflict ||
+                            !model.trim() ||
+                            !reviewed ||
+                            !props.data.credentials.includes(provider)
+                          }
+                          onClick={() => void generate()}
+                        >
+                          {result?.kind === 'clarify'
+                            ? '确认并生成方案'
+                            : result || detail.flow
+                              ? scope
+                                ? '生成这一步的修改'
+                                : '生成修改方案'
+                              : '理解我的任务'}
+                        </button>
+                      )}
+                      <button
+                        disabled={inputDisabled || !dirty || stale}
+                        onClick={() =>
+                          void run(async () => {
+                            await save();
+                            setMessage('任务草稿已保存。');
                           })
                         }
-                      />
-                    </fieldset>
-                  ))}
-                <fieldset className="ai-task-provider" disabled={inputDisabled}>
-                  <label>
-                    AI 服务
-                    <select
-                      value={provider}
-                      onChange={(e) => {
-                        const p = e.target.value as typeof provider;
-                        setProvider(p);
-                        setModel(p === 'deepseek' ? 'deepseek-flash' : 'gpt-5.3-codex');
-                        setReviewed(false);
-                      }}
-                    >
-                      <option value="deepseek">DeepSeek</option>
-                      <option value="openai-codex">OpenAI · Codex</option>
-                    </select>
-                  </label>
-                  <label>
-                    模型 ID
-                    <input
-                      value={model}
-                      maxLength={100}
-                      onChange={(e) => {
-                        setModel(e.target.value);
-                        setReviewed(false);
-                      }}
-                    />
-                  </label>
-                </fieldset>
-                {!props.data.credentials.includes(provider) && (
-                  <div className="ai-task-note">
-                    <p>{providerName} 尚未配置，先保存草稿，再配置服务。</p>
-                    <button
-                      disabled={busy}
-                      onClick={() =>
-                        void run(async () => {
-                          await save();
-                          props.settings(provider, model);
-                        })
-                      }
-                    >
-                      配置 AI 服务
-                    </button>
-                  </div>
-                )}
-                <details className="ai-task-disclosure">
-                  <summary>查看本次发送给 {providerName} 的内容</summary>
-                  <p>描述、所选文本、补问答案、当前已采纳流程及支持的能力说明。</p>
-                  <h3>描述</h3>
-                  <pre>{draft.description}</pre>
-                  {draft.context.map((entry) => (
-                    <div key={entry.id}>
-                      <h3>{entry.label}</h3>
-                      <pre>{entry.text}</pre>
+                      >
+                        保存任务草稿
+                      </button>
                     </div>
-                  ))}
-                  {Object.keys(draft.answers).length > 0 && (
-                    <>
-                      <h3>补问答案</h3>
-                      <pre>{text(draft.answers)}</pre>
-                    </>
-                  )}
-                  {detail.flow && (
-                    <>
-                      <h3>当前流程 · {detail.flow.flow.name}</h3>
-                      <pre>{text(detail.flow.flow)}</pre>
-                    </>
-                  )}
-                </details>
-                <label className="ai-task-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={reviewed}
-                    disabled={inputDisabled}
-                    onChange={(e) => setReviewed(e.target.checked)}
-                  />
-                  我已核对本次内容，将发送给 {providerName}
-                </label>
-                <div className="ai-task-actions">
-                  {generating ? (
-                    <button
-                      disabled={busy}
-                      onClick={() =>
-                        void run(async () => {
-                          accept(await api('task.cancel', { id: detail.task.id }));
-                          setReviewed(false);
-                        })
-                      }
-                    >
-                      取消生成
-                    </button>
-                  ) : (
-                    <button
-                      className="primary"
-                      disabled={
-                        busy ||
-                        stale ||
-                        !draft.description.trim() ||
-                        !model.trim() ||
-                        !reviewed ||
-                        !props.data.credentials.includes(provider)
-                      }
-                      onClick={() => void generate()}
-                    >
-                      {result?.kind === 'clarify'
-                        ? '确认并生成方案'
-                        : result || detail.flow
-                          ? '生成修改方案'
-                          : '理解我的任务'}
-                    </button>
-                  )}
-                  <button
-                    disabled={inputDisabled || !dirty || stale}
-                    onClick={() =>
-                      void run(async () => {
-                        await save();
-                        setMessage('任务草稿已保存。');
-                      })
-                    }
-                  >
-                    保存任务草稿
-                  </button>
-                </div>
-                {page === 'review' && (
-                  <button disabled={busy} onClick={() => setPage('brief')}>
-                    编辑描述与资料
-                  </button>
+                    {page === 'review' && (
+                      <button disabled={busy} onClick={() => setPage('brief')}>
+                        编辑描述与资料
+                      </button>
+                    )}
+                    {scope && (
+                      <button
+                        disabled={inputDisabled}
+                        onClick={() =>
+                          void run(async () => {
+                            const { scope: _scope, ...whole } = draft;
+                            accept(
+                              await api('task.save', {
+                                id: detail.task.id,
+                                revision,
+                                ...whole,
+                                answers: {},
+                              }),
+                            );
+                            setReviewed(false);
+                            setMessage('已退出单步范围。接下来将按完整任务需求生成，请重新核对。');
+                          })
+                        }
+                      >
+                        改为修改完整任务
+                      </button>
+                    )}
+                  </>
                 )}
               </section>
               <section className="ai-task-card ai-task-result">
@@ -692,6 +881,55 @@ export default function AITaskWorkspace(props: Props) {
                       <h2>执行前再次检查</h2>
                       <p>采纳后检查目标与权限，由你决定何时执行。</p>
                     </div>
+                  </>
+                ) : scopedProposal && flow ? (
+                  <>
+                    <h2>
+                      修改范围 ·{' '}
+                      {new Set(detail.changes.map((change) => change.nodeId).filter(Boolean)).size}{' '}
+                      / {flatten(flow.steps).length} 步
+                    </h2>
+                    <ScopedChanges
+                      changes={detail.changes}
+                      before={flatten(detail.proposal!.baseFlow!.steps).find(
+                        (step) => step.id === detail.proposal!.scope!.nodeId,
+                      )}
+                      after={flatten(flow.steps).find(
+                        (step) => step.id === detail.proposal!.scope!.nodeId,
+                      )}
+                    />
+                    <p>已核对：其他步骤、结构和静态资源保持不变；现有绑定和权限不增加。</p>
+                    {detail.conflict && (
+                      <p className="ai-task-note ai-task-failure" role="alert">
+                        原流程或绑定已变化，请重新核对；不能采纳旧提案。
+                      </p>
+                    )}
+                    <div className="ai-task-actions">
+                      <button
+                        className="primary"
+                        disabled={busy || dirty || stale || detail.conflict}
+                        onClick={() => void proposalAction('adopt')}
+                      >
+                        采纳修改
+                      </button>
+                      <button
+                        disabled={busy || dirty || stale}
+                        onClick={() => void proposalAction('reject')}
+                      >
+                        不采纳
+                      </button>
+                    </div>
+                    <button
+                      disabled={inputDisabled}
+                      onClick={() => {
+                        setEditingProposal(true);
+                        requestAnimationFrame(() =>
+                          document.querySelector<HTMLTextAreaElement>('#task-description')?.focus(),
+                        );
+                      }}
+                    >
+                      继续描述修改
+                    </button>
                   </>
                 ) : flow ? (
                   <>
@@ -724,6 +962,14 @@ export default function AITaskWorkspace(props: Props) {
                           · {selectedStep.id}
                         </summary>
                         <pre>{text(selectedStep)}</pre>
+                        {!scope && (
+                          <button
+                            disabled={inputDisabled || dirty || stale || !!detail.proposal}
+                            onClick={() => void run(() => chooseScope(detail, selectedStep.id))}
+                          >
+                            用 AI 修改此步
+                          </button>
+                        )}
                       </details>
                     )}
                     {detail.proposal && (
@@ -793,7 +1039,7 @@ export default function AITaskWorkspace(props: Props) {
                       <div className="ai-task-actions">
                         <button
                           className="primary"
-                          disabled={busy || dirty || stale || generating}
+                          disabled={busy || dirty || stale || generating || !!scope}
                           ref={trialButton}
                           data-run-review-start
                           onClick={() => {
@@ -890,6 +1136,77 @@ export default function AITaskWorkspace(props: Props) {
       />
     </>
   );
+}
+
+function ScopedChanges({
+  changes,
+  before,
+  after,
+}: {
+  changes: PlanningChange[];
+  before?: Step;
+  after?: Step;
+}) {
+  const labels: Record<string, string> = {
+    actual: '判断内容',
+    operator: '判断方式',
+    expected: '预期值',
+    value: '值',
+    items: '循环来源',
+    rows: '数据来源',
+    mappings: '字段映射',
+    includeHeaders: '表头',
+    sheet: '工作表',
+    code: '代码',
+    input: '输入',
+    language: '语言',
+    timeoutMs: '超时',
+    name: '名称',
+    message: '提示内容',
+    content: '写入内容',
+    cells: '单元格',
+    files: '输出内容',
+    body: '请求内容',
+  };
+  return (
+    <div className="ai-step-diff-values">
+      {(['before', 'after'] as const).map((side) => (
+        <section key={side} className={`ai-step-${side}`}>
+          <h2>{side === 'before' ? '原配置' : '新配置'}</h2>
+          {before?.type === 'condition' &&
+          after?.type === 'condition' &&
+          changes.every((change) =>
+            ['actual', 'operator', 'expected'].includes(change.path.split('/').at(-1)!),
+          ) ? (
+            <p>{conditionText(side === 'before' ? before : after)}</p>
+          ) : (
+            changes.map((change) => (
+              <div key={change.path}>
+                <h3>{labels[change.path.split('/').at(-1)!] ?? change.path}</h3>
+                <pre>{text(change[side])}</pre>
+              </div>
+            ))
+          )}
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function conditionText(step: Extract<Step, { type: 'condition' }>) {
+  const values = (value: unknown) =>
+    value === '' ? '空文本' : value === null ? '空值' : text(value);
+  const operators: Record<string, string> = {
+    equals: '等于',
+    notEquals: '不等于',
+    contains: '包含',
+    greaterThan: '大于',
+    lessThan: '小于',
+    exists: '存在',
+    notEmpty: '不为空',
+    truthy: '为真',
+  };
+  return `${values(step.actual)} ${operators[step.operator] ?? step.operator} ${values(step.expected)}`;
 }
 
 function StepList({

@@ -1,6 +1,6 @@
 import { Store } from './store';
 import { capabilities, validateFlow, validateObject } from '../core/validate';
-import { canonical, digest, now, redactedErrorText, uid } from '../shared/utils';
+import { canonical, now, redactedErrorText, uid } from '../shared/utils';
 import {
   taskMethods,
   type PlanningInput,
@@ -14,6 +14,8 @@ import { planningDiff, planningResources } from './planning-diff';
 import { generatePlan } from '../ai/planning';
 import type { PlanningRepair } from './planning-repair';
 import type { RepairReference } from '../shared/task-repair';
+import { scopedDescription } from '../shared/planning-scope';
+import { checkScope, planningFlowHash as flowHash, validateScopedPlan } from './planning-scope';
 
 type SavedTask = PlanningTask & {
   proposal?: PlanningProposal;
@@ -28,8 +30,6 @@ type Dependencies = {
   generate?: typeof generatePlan;
 };
 const kind = 'ai-task';
-const flowHash = (flow: FlowRecord | null) =>
-  digest(flow ? { flow: flow.flow, bindings: flow.bindings } : null);
 
 export class Planning {
   private jobs = new Map<string, Job>();
@@ -68,6 +68,7 @@ export class Planning {
     const flow = this.flow(task);
     const result = proposal?.result;
     return {
+      flowHash: flowHash(flow),
       task,
       flow,
       proposal,
@@ -144,10 +145,12 @@ export class Planning {
       return this.deps.repair.preview(args);
     }
     if (method === 'task.save') {
+      if (args.scope) checkScope(args.scope, this.flow(task));
       this.abort(task.id);
       this.put({
         ...task,
         description: args.description,
+        scope: args.scope,
         appliedRepair: undefined,
         context: args.context,
         answers: args.answers,
@@ -159,12 +162,17 @@ export class Planning {
       });
     } else if (method === 'task.generate' || method === 'task.repair.generate') {
       if (this.jobs.has(task.id)) throw new Error('该任务正在生成，请先取消或等待结果');
-      if (!task.description.trim()) throw new Error('请先描述你想完成的任务');
+      if (!(task.scope?.instruction ?? task.description).trim())
+        throw new Error(task.scope ? '请描述所选步骤需要怎样修改' : '请先描述你想完成的任务');
       const baseline = this.flow(task);
+      if (task.scope) {
+        if (method !== 'task.generate') throw new Error('请先退出单步修改，再进行网页目标修复');
+        checkScope(task.scope, baseline);
+      }
       let request: PlanningInput = {
         formatVersion: '1.0',
         flowId: task.flowId,
-        description: task.description,
+        description: task.scope ? scopedDescription(task.scope) : task.description,
         context: task.context,
         answers: task.answers,
         baseFlow: baseline?.flow ?? null,
@@ -228,6 +236,10 @@ export class Planning {
       if (proposal.baseRevision !== task.revision || proposal.baseFlowHash !== flowHash(before))
         throw new Error('流程或资源绑定已修改，请基于当前版本重新生成；未覆盖手动编辑');
       this.validatePlan(proposal.result, task.flowId, proposal.baseFlow);
+      if (proposal.scope) {
+        checkScope(proposal.scope, before);
+        validateScopedPlan(proposal.result, proposal.baseFlow!, proposal.scope);
+      }
       let appliedRepair: PlanningTask['appliedRepair'];
       if (proposal.repair) {
         if (!this.deps.repair) throw new Error('网页目标修复不可用');
@@ -265,6 +277,7 @@ export class Planning {
         this.put({
           ...task,
           revision: task.revision + 1,
+          scope: undefined,
           proposal: undefined,
           status: 'draft',
           error: undefined,
@@ -286,6 +299,7 @@ export class Planning {
           ...task,
           revision: task.revision + 1,
           undo: undefined,
+          scope: undefined,
           appliedRepair: undefined,
           proposal: undefined,
           status: 'draft',
@@ -330,6 +344,7 @@ export class Planning {
       if (!this.current(task, job)) return;
       this.deps.assertAvailable();
       if (typeof key !== 'string' || !key) throw new Error('请先配置所选 AI 服务');
+      if (task.scope) checkScope(task.scope, this.flow(task));
       if (repair) await this.deps.repair!.verify(task, repair);
       if (!this.current(task, job)) return;
       const result = await (this.deps.generate ?? generatePlan)(
@@ -345,6 +360,10 @@ export class Planning {
       if (Buffer.byteLength(serialized) > 1024 * 1024) throw new Error('AI 方案超过 1 MiB');
       if (serialized.includes(key)) throw new Error('AI 返回包含敏感凭据，结果已拒绝');
       this.validatePlan(result, task.flowId, input.baseFlow);
+      if (task.scope) {
+        checkScope(task.scope, this.flow(task));
+        validateScopedPlan(result, input.baseFlow!, task.scope);
+      }
       if (repair) {
         const verified = await this.deps.repair!.verify(task, repair);
         if (!this.current(task, job)) return;
@@ -368,6 +387,7 @@ export class Planning {
           result,
           createdAt: now(),
           ...(repair ? { repair } : {}),
+          ...(task.scope ? { scope: task.scope } : {}),
         },
       });
     } catch (error) {

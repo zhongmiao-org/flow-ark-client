@@ -141,6 +141,13 @@ export default function App() {
     );
   }, []);
   const [taskReturn, setTaskReturn] = useState(false);
+  const [taskEntry, setTaskEntry] = useState<{ key: string; record: FlowRecord; nodeId: string }>();
+  const [taskSource, setTaskSource] = useState<{
+    record: FlowRecord;
+    nodeId: string;
+    scroll: number;
+    browserOpen: boolean;
+  }>();
   const [taskAISettings, setTaskAISettings] = useState({
     provider: 'deepseek',
     model: 'deepseek-flash',
@@ -798,6 +805,28 @@ export default function App() {
           )}
           {loaded && (
             <AITaskWorkspace
+              entry={taskEntry}
+              entryHandled={() => setTaskEntry(undefined)}
+              sourceFlowId={taskSource?.record.id}
+              returnToSource={async (record) => {
+                if (!taskSource || JSON.stringify(edit) !== JSON.stringify(taskSource.record))
+                  throw new Error('来源编辑器已变化，请先保存其中的修改，未覆盖当前编辑');
+                inputGroup.current = undefined;
+                setEdit(record);
+                dispatchDraft({ type: 'select', selected: taskSource.nodeId });
+                setTaskSource({ ...taskSource, record });
+                setSection('editor');
+                setBrowserOpen(taskSource.browserOpen);
+                await refresh();
+                requestAnimationFrame(() =>
+                  requestAnimationFrame(() => {
+                    document.querySelector('main')?.scrollTo({ top: taskSource.scroll });
+                    document
+                      .querySelector<HTMLButtonElement>('[data-ai-edit-step]')
+                      ?.focus({ preventScroll: true });
+                  }),
+                );
+              }}
               active={section === 'tasks'}
               data={data}
               onNavigation={updateTaskNavigation}
@@ -1049,6 +1078,25 @@ export default function App() {
                 activeRunId={active?.flowId === edit.id ? active.id : undefined}
                 draftSaved={draftSaved}
                 save={save}
+                openStepAI={(nodeId: string) => {
+                  if (!guardInvalidNodeJson()) return;
+                  if (!draftSaved) {
+                    setError('请先保存当前流程草稿，再让 AI 修改所选步骤');
+                    return;
+                  }
+                  setSelected(nodeId);
+                  setTaskSource({
+                    record: structuredClone(edit),
+                    nodeId,
+                    browserOpen,
+                    scroll: document.querySelector('main')?.scrollTop ?? 0,
+                  });
+                  setTaskEntry({ key: uid(), record: structuredClone(edit), nodeId });
+                  setTaskReturn(false);
+                  setSection('tasks');
+                  setBrowserOpen(false);
+                  document.querySelector('main')?.scrollTo(0, 0);
+                }}
                 showRun={(next: any) => {
                   setDetail(next);
                   setRunOrigin('editor');
@@ -1339,6 +1387,7 @@ function Editor({
   browserPanel,
   openScript,
   openExcel,
+  openStepAI,
   outlineOpen,
   outlineMemory,
   closeOutline,
@@ -1451,6 +1500,7 @@ function Editor({
             setTab('node');
             closeOutline('node');
           }}
+          editAI={openStepAI}
           activeRunId={activeRunId}
           saved={draftSaved}
           save={save}
@@ -1644,6 +1694,14 @@ function Editor({
                         </p>
                       )}
                       <p className="muted">{selectedNode.id} · 修改后保存，下一次运行生效</p>
+                      <button
+                        data-ai-edit-step
+                        disabled={!draftSaved}
+                        onClick={() => openStepAI(selectedNode.id)}
+                      >
+                        用 AI 修改此步
+                      </button>
+                      {!draftSaved && <p className="muted">保存草稿后可使用 AI 单步修改。</p>}
                       {!['file', 'excel'].includes(selectedNode.type) && (
                         <>
                           <label htmlFor="step-name">步骤名称</label>

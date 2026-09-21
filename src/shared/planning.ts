@@ -3,6 +3,7 @@ import type { FlowArkP1 } from './contracts.generated';
 import type { Flow, FlowRecord } from './types';
 import type { RepairSelection } from './task-repair';
 import { repairGenerateSchema, repairPreviewSchema, type RepairReference } from './task-repair';
+import { planningScopeSchema, type PlanningScope } from './planning-scope';
 
 export type PlanningInput = NonNullable<FlowArkP1['AIPlanningRequest']>;
 export type PlanningResult = NonNullable<FlowArkP1['AIPlanningResult']>;
@@ -16,6 +17,7 @@ export type TaskStatus =
   | 'failed'
   | 'cancelled';
 export type PlanningTask = {
+  scope?: PlanningScope;
   appliedRepair?: {
     proposalId: string;
     runId: string;
@@ -37,6 +39,7 @@ export type PlanningTask = {
   error?: string;
 };
 export type PlanningProposal = {
+  scope?: PlanningScope;
   repair?: RepairReference;
   id: string;
   baseRevision: number;
@@ -54,6 +57,7 @@ export type PlanningChange = {
   after: unknown;
 };
 export type TaskDetail = {
+  flowHash: string;
   task: PlanningTask;
   flow: FlowRecord | null;
   proposal?: PlanningProposal;
@@ -89,6 +93,7 @@ export const taskMethods = {
     .object({
       ...version,
       description: z.string().max(20000),
+      scope: planningScopeSchema.optional(),
       context: z
         .array(context)
         .max(20)
