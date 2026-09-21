@@ -3,7 +3,6 @@ import { execute } from '../core/engine';
 import { RunControl } from '../core/run-control';
 import { runScript } from '../adapters/script';
 import { fileOperation } from '../adapters/files';
-import { runRecruitingBatch } from '../recruiting/batch';
 import type { Step } from '../shared/types';
 import {
   SCRIPT_CLEANUP_TIMEOUT_MS,
@@ -35,6 +34,8 @@ const rpc = new Rpc(
       perform: async (n: Step, resolved: any, instance: string, signal: AbortSignal) => {
         const timeout = n.timeoutMs ?? 60000;
         signal.throwIfAborted();
+        if (args.bindings.template)
+          await rpc.call('node.authorize', { id: n.id, binding: resolved.binding });
         if (n.type === 'http') {
           const u = new URL(resolved.url);
           if (!['http:', 'https:'].includes(u.protocol)) throw new Error('HTTP 节点仅支持 HTTP(S)');
@@ -80,13 +81,6 @@ const rpc = new Rpc(
                   : SCRIPT_CLEANUP_TIMEOUT_MS + 1000,
               ),
           });
-        if (n.type === 'recruiting')
-          return runRecruitingBatch(
-            n.platform,
-            n.batchLimit,
-            { request: (m, a) => rpc.call(m, a, 65000) },
-            signal,
-          );
         throw new Error('节点不支持');
       },
     });

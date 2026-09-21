@@ -6,7 +6,7 @@ import { mkdtemp, mkdir, writeFile, readFile, access } from 'node:fs/promises';
 import { resolve, join, basename } from 'node:path';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
-import { startFormLab } from './fixtures/form-lab';
+import { startFormLab } from './fixtures/platform-page';
 const data = await mkdtemp('/private/tmp/flowark-resources-');
 const lab = await startFormLab();
 const received: any[] = [];

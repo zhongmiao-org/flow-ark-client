@@ -37,7 +37,6 @@ export function shapeOf(step: Step): FlowShape {
     case 'human':
       return 'manual';
     case 'script':
-    case 'recruiting':
       return 'subprocess';
     case 'file':
       return 'document';

@@ -21,5 +21,4 @@ export const kinds: Record<string, { label: string; icon: LucideIcon; color: str
   human: { label: '等待人工', icon: Hand, color: '#bb843f' },
   condition: { label: '条件分支', icon: GitBranch, color: '#87669d' },
   loop: { label: '串行循环', icon: Repeat, color: '#a17857' },
-  recruiting: { label: '模板动作', icon: Workflow, color: '#257c71' },
 };

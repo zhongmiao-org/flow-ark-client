@@ -3,7 +3,7 @@ import { _electron as electron } from 'playwright-core';
 import electronPath from 'electron';
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { startFormLab } from './fixtures/form-lab';
+import { startFormLab } from './fixtures/platform-page';
 import type { Step } from '../src/shared/types';
 
 const data = await mkdtemp('/private/tmp/flowark-editor-layout-');

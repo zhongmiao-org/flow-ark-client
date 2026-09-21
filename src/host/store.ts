@@ -194,10 +194,10 @@ export class Store {
             reason: 'host-restarted',
           });
         }
-      for (const a of this.list<any>('action'))
-        if (a.state === 'SUBMITTING') {
-          this.put('action', a.id, { ...a, state: 'UNKNOWN' });
-          this.attention('unknown-result', '外发结果待核对', { actionId: a.id }, 'unknown:' + a.id);
+      for (const a of this.list<any>('template-effect'))
+        if (a.state === 'submitting') {
+          this.put('template-effect', a.id, {...a,state:'unknown'});
+          this.attention('unknown-result','操作结果待核对',{effectId:a.id},'unknown:'+a.id);
         }
     });
   }

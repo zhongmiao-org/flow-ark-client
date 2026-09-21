@@ -30,7 +30,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ ! "$PR_BRANCH" =~ ^(feat|fix|docs|chore|refactor|perf|test|style|build|revert|ci)/[a-z0-9][a-z0-9._/-]*$ ]]; then
+          if [[ ! "$PR_BRANCH" =~ ^(feat|fix|docs|chore|refactor|perf|test|style|build|revert|ci)/[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
             echo 'Branch must use a type prefix, for example feat/client-initial.'
             exit 1
           fi

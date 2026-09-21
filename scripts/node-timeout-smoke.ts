@@ -5,8 +5,8 @@ import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import type { Run, Step } from '../src/shared/types';
-import { startFormLab } from './fixtures/form-lab';
-import { formBrowser } from './fixtures/form-lab-flow';
+import { startFormLab } from './fixtures/platform-page';
+import { formBrowser } from './fixtures/platform-flow';
 
 // Actual host/Worker deadlines and embedded form actions; no clocks, states, or browser
 // results are mocked. The isolated app contains only fictional flows and localhost pages.

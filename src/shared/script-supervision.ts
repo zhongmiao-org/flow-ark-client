@@ -18,7 +18,7 @@ export type ScriptExecution = ScriptOwner & {
   sha256: string;
   input: unknown;
 };
-export type ScriptCall = 'log' | 'progress' | 'artifact' | 'credential';
+export type ScriptCall = 'log' | 'progress' | 'artifact' | 'credential' | 'template';
 export type ScriptCleanupResult = CleanupResult;
 export type ScriptLease = ScriptOwner & {
   recordVersion: 1;

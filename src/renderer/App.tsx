@@ -52,7 +52,8 @@ import {
   Search,
   ShieldCheck,
 } from 'lucide-react';
-import type { Bootstrap, FlowRecord, Step, Run, Event, Template } from '../shared/types';
+import type { Bootstrap, FlowRecord, Step, Run, Event } from '../shared/types';
+import TemplateLibrary from './TemplateLibrary';
 import TemplateConfiguration from './TemplateConfiguration';
 import ScriptPackages from './ScriptPackages';
 import EmbeddedBrowserPanel from './EmbeddedBrowserPanel';
@@ -81,20 +82,12 @@ const initial: Bootstrap = {
   schedules: [],
   attention: [],
   templates: [],
+  instances: [],
   credentials: [],
   dataPath: '',
 };
 const api = (method: string, args: any = {}) => window.flowark.request(method, args);
 const status: Record<string, string> = runStateLabels;
-const actions: Record<string, string> = {
-  apply: '投递 / 发起沟通',
-  resume: '发送指定简历',
-  reply: 'AI 回复',
-  requestWechat: '请求微信',
-  acceptWechat: '接受微信',
-  requestPhone: '请求手机号',
-  acceptPhone: '接受手机号',
-};
 const uid = () => crypto.randomUUID();
 
 function badge(s: string) {
@@ -200,9 +193,9 @@ export default function App() {
     setSection('editor');
     setDetail(null);
   }
-  async function create(templateId?: string) {
+  async function create() {
     if (!guardInvalidNodeJson()) return;
-    const r = await action(() => api('flow.create', { templateId }));
+    const r = await action(() => api('flow.create', {}));
     if (r) void openFlow(r);
   }
   function focusInvalidInput(invalid: HTMLElement) {
@@ -436,7 +429,7 @@ export default function App() {
                     onChange={(e) => setQuery(e.target.value)}
                   />
                 </div>
-                <button onClick={() => action(() => api('flow.import'), '模板已导入为独立草稿')}>
+                <button onClick={() => setSection('templates')}>
                   <Upload size={15} />
                   导入
                 </button>
@@ -465,8 +458,8 @@ export default function App() {
                 <LayoutTemplate />
               </span>
               <div>
-                <b>从招聘模板开始</b>
-                <p>BOSS 直聘与智联招聘模板，可独立配置简历与动作权限。</p>
+                <b>从模板开始</b>
+                <p>导入独立模板包，配置资源后选择操作入口。</p>
               </div>
               <button onClick={() => setSection('templates')}>
                 浏览模板 <ArrowUpRight size={16} />
@@ -474,19 +467,7 @@ export default function App() {
             </div>
           </div>
         )}
-        {section === 'templates' && (
-          <div className="page">
-            <Heading title="从模板出发" text="创建独立流程，自行绑定本机浏览器、简历与 AI。" />
-            <div className="flow-grid">
-              {data.templates.map((t) => (
-                <TemplateCard key={t.manifest.id} t={t} create={() => create(t.manifest.id)} />
-              ))}
-            </div>
-            <div className="note">
-              模板创建后不会自动运行。两站真实网页适配和业务闭环仍待验证，外发默认需要确认。
-            </div>
-          </div>
-        )}
+        {section === 'templates' && <TemplateLibrary data={data} action={action} />}
         {section === 'editor' && edit && (
           <div
             className="editor-page"
@@ -576,7 +557,10 @@ export default function App() {
               {edit.bindings.configuration && (
                 <button
                   onClick={() => {
-                    if (guardInvalidNodeJson()) setConfigOpen(true);
+                    if (guardInvalidNodeJson()) {
+                      if (edit.bindings.template) setSection('templates');
+                      else setConfigOpen(true);
+                    }
                   }}
                 >
                   <Settings size={15} />
@@ -642,7 +626,10 @@ export default function App() {
               setSelected={setSelected}
               guardInvalidNodeJson={guardInvalidNodeJson}
               editConfiguration={() => {
-                if (guardInvalidNodeJson()) setConfigOpen(true);
+                if (guardInvalidNodeJson()) {
+                  if (edit.bindings.template) setSection('templates');
+                  else setConfigOpen(true);
+                }
               }}
               browsers={data.browsers}
               choose={async (binding: string) => {
@@ -691,7 +678,7 @@ export default function App() {
           <div className="page">
             <Heading title="需要你看一眼" text="联系方式、待确认动作和异常结果会保存在这里。" />
             {!data.attention.length ? (
-              <Empty text="目前没有待办。取得实际微信号后，会在这里提醒。" />
+              <Empty text="目前没有待办。流程需要人工处理时，会在这里提醒。" />
             ) : (
               data.attention.map((a) => (
                 <div className={'attention ' + (a.read ? 'read' : '')} key={a.id}>
@@ -721,22 +708,8 @@ export default function App() {
                   <button onClick={() => action(() => api('attention.read', { id: a.id }))}>
                     {a.read ? '已读' : '标为已读'}
                   </button>
-                  {a.detail?.actionState === 'PENDING_CONFIRMATION' && (
-                    <button
-                      className="primary"
-                      onClick={() =>
-                        action(
-                          () =>
-                            api('action.confirm', {
-                              id: a.detail.actionId,
-                              policyHash: a.detail.policyHash,
-                            }),
-                          '已确认具体内容，下一轮运行将重新核对账号和会话',
-                        )
-                      }
-                    >
-                      确认此动作
-                    </button>
+                  {a.kind === 'template-input' && !a.detail?.answered && (
+                    <TemplateAnswer item={a} action={action} />
                   )}
                 </div>
               ))
@@ -820,26 +793,6 @@ function FlowCard({
           运行
         </button>
       </footer>
-    </article>
-  );
-}
-function TemplateCard({ t, create }: { t: Template; create: () => void }) {
-  return (
-    <article className="template-card">
-      <span className="template-logo">
-        <LayoutTemplate size={25} />
-      </span>
-      <span className="badge">本地模板 · v{t.manifest.version}</span>
-      <h3>{t.flow.name}</h3>
-      <p>{t.flow.description}</p>
-      <div className="tags">
-        <span>{t.manifest.requiredCapabilities.length} 项能力</span>
-        <span>{t.manifest.source}</span>
-      </div>
-      <button className="primary" onClick={create}>
-        <Plus size={15} />
-        使用模板
-      </button>
     </article>
   );
 }
@@ -1177,7 +1130,6 @@ function Editor({
                 className="node-advanced"
                 data-value-invalid={invalid || undefined}
                 key={selectedNode.id}
-                open={selectedNode.type === 'recruiting'}
               >
                 <summary>高级配置 JSON</summary>
                 <label>节点配置 JSON</label>
@@ -1332,61 +1284,50 @@ function JsonInput({ value, onChange }: { value: any; onChange: (v: any) => void
     </>
   );
 }
-function AttentionContent({ detail: d }: { detail: any }) {
-  const p = d.proposal ?? d;
-  if (p.company || p.contact || p.content || p.value)
-    return (
-      <div className="attention-detail">
-        <p>
-          {p.platform === 'boss' ? 'BOSS 直聘' : p.platform === 'zhaopin' ? '智联招聘' : ''} ·{' '}
-          {p.company} · {p.job}
-        </p>
-        {p.contact && <p>联系人：{p.contact}</p>}
-        {p.account && <p>使用账号：{p.account}</p>}
-        {p.target && <p>职位 / 会话：{p.target}</p>}
-        {p.jobSnapshot && (
-          <div className="job-evidence">
-            <p>
-              城市：{p.jobSnapshot.city ?? '未明确'} · 工作方式：
-              {(
-                { onsite: '现场办公', hybrid: '混合办公', remote: '远程办公' } as Record<
-                  string,
-                  string
-                >
-              )[p.jobSnapshot.workMode] ?? '未明确'}
-            </p>
-            <p>
-              页面薪资：
-              {p.jobSnapshot.salary
-                ? `${p.jobSnapshot.salary.minimum}–${p.jobSnapshot.salary.maximum} ${p.jobSnapshot.salary.currency} / ${({ month: '月', year: '年', day: '天', hour: '小时' } as Record<string, string>)[p.jobSnapshot.salary.period]}`
-                : '未明确'}
-            </p>
-            <p className="path-text">岗位来源：{p.jobSnapshot.source}</p>
-            {p.jobSnapshot.observedAt && (
-              <small>读取时间：{format(p.jobSnapshot.observedAt)}</small>
-            )}
-          </div>
-        )}
-        {p.content && (
-          <>
-            <b>{actions[p.kind] ?? '拟发送内容'}</b>
-            <pre>{p.content}</pre>
-          </>
-        )}
-        {p.sharedValue && <p>将分享：{p.sharedValue}</p>}
-        {p.value && (
-          <p>
-            {p.kind === 'wechat' ? '微信号' : '手机号'}：<strong>{p.value}</strong>
-          </p>
-        )}
-        {p.source && <small>来源：{p.source}</small>}
-        {d.reason && <p>{d.reason}</p>}
-        {d.actionState === 'READY' && <p>已确认，等待下一轮核对并执行</p>}
-        {d.actionState === 'UNKNOWN' && <p>结果未知，请先在原页面人工核对</p>}
-      </div>
-    );
-  return <pre>{d.reason ?? d.reasons?.join('；') ?? JSON.stringify(d, null, 2)}</pre>;
+function AttentionContent({ detail }: { detail: any }) {
+  return (
+    <div className="attention-detail">
+      <pre>{JSON.stringify(detail, null, 2)}</pre>
+    </div>
+  );
 }
+function TemplateAnswer({ item, action }: any) {
+  const [value, setValue] = useState('');
+  const [error, setError] = useState('');
+  const send = (value: any) => action(() => api('template.answer', { id: item.id, value }));
+  if (item.detail.schema?.type === 'boolean')
+    return (
+      <>
+        <button onClick={() => send(true)}>确认</button>
+        <button onClick={() => send(false)}>拒绝</button>
+      </>
+    );
+  return (
+    <div>
+      <textarea
+        aria-label="处理结果 JSON"
+        placeholder="输入符合 Schema 的 JSON"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+      />
+      <button
+        onClick={() => {
+          try {
+            const parsed = JSON.parse(value);
+            setError('');
+            send(parsed);
+          } catch {
+            setError('请输入有效 JSON');
+          }
+        }}
+      >
+        提交结果
+      </button>
+      <small>{error}</small>
+    </div>
+  );
+}
+
 function RunDetail({
   detail: d,
   fault,

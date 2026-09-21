@@ -222,40 +222,39 @@ app
           return true;
         }
         if (method === 'flow.export') {
-          const content = await rpc.call(method, args);
           const review = await dialog.showMessageBox(win, {
             buttons: ['取消', '已审阅，导出模板'],
             defaultId: 0,
             cancelId: 0,
             message: '确认已审阅流程中的字面量与脚本',
             detail:
-              '导出点击时的编辑内容，未保存修改不会写入本地草稿。账号、简历事实、动作权限、本地绑定和运行历史不会导出；运行参数值也会清空。节点字面量、代码和配置定义仍会保留，请先确认其中没有个人数据或密钥。',
+              '导出点击时的编辑内容，未保存修改不会写入本地草稿。实例配置、动作权限、本地绑定和运行历史不会导出；运行参数值也会清空。节点字面量、代码和配置定义仍会保留，请先确认其中没有个人数据或密钥。',
           });
           if (review.response !== 1) return false;
           const r = await dialog.showSaveDialog(win, {
-            defaultPath: 'flowark-template.json',
-            filters: [{ name: 'FlowArk 模板', extensions: ['json'] }],
+            defaultPath: 'local-template-1.0.0.flowark-template.zip',
+            filters: [{ name: 'FlowArk 模板', extensions: ['zip'] }],
           });
           if (r.canceled || !r.filePath) return false;
-          await writeFile(r.filePath, content, { mode: 0o600 });
+          await rpc.call(method, { ...args, path: r.filePath });
           return true;
         }
-        if (method === 'flow.import') {
-          const r = await dialog.showOpenDialog(win, {
+        if (method === 'template.inspect') {
+          const picked = await dialog.showOpenDialog(win, {
             properties: ['openFile'],
-            filters: [{ name: 'FlowArk 模板', extensions: ['json'] }],
+            filters: [{ name: 'FlowArk 模板包', extensions: ['zip', 'json'] }],
           });
-          if (r.canceled) return null;
-          const content = await readFile(r.filePaths[0], 'utf8');
-          if (content.length > 2 * 1024 * 1024) throw new Error('模板超过 2 MiB');
-          const answer = await dialog.showMessageBox(win, {
-            buttons: ['取消', '导入为新草稿'],
-            defaultId: 0,
-            cancelId: 0,
-            message: '确认模板来源可信',
-            detail: '模板可能包含可信脚本。导入只创建草稿，运行前请审阅所有节点和代码。',
+          if (picked.canceled) return null;
+          return rpc.call('template.inspect', { path: picked.filePaths[0] });
+        }
+        if (method === 'template.export') {
+          const picked = await dialog.showSaveDialog(win, {
+            defaultPath: args.key + '.flowark-template.zip',
+            filters: [{ name: 'FlowArk 模板包', extensions: ['zip'] }],
           });
-          return answer.response === 1 ? await rpc.call(method, { content }) : null;
+          if (picked.canceled || !picked.filePath) return false;
+          await rpc.call('template.export', { key: args.key, path: picked.filePath });
+          return true;
         }
         return await rpc.call(method, args);
       } catch (error) {

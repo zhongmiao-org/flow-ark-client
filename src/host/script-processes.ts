@@ -384,7 +384,7 @@ export class ScriptProcesses {
       (message) => this.send(record, { kind: 'script-rpc', nonce: record.lease!.nonce, message }),
       async (method, args) => {
         this.live(record);
-        if (!['log', 'progress', 'artifact', 'credential'].includes(method))
+        if (!['log', 'progress', 'artifact', 'credential', 'template'].includes(method))
           throw new Error('脚本能力不在白名单');
         const result = await this.options.call(record.owner, method as ScriptCall, args);
         this.live(record);

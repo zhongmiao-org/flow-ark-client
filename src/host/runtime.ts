@@ -1,9 +1,8 @@
+import { exportDefinition } from '../templates/export';
+import { writeArchive } from '../templates/archive';
 import { join, dirname } from 'node:path';
 import { access, stat, writeFile, realpath } from 'node:fs/promises';
 import type { ChildProcess } from 'node:child_process';
-import { RecruitingCoordinator } from '../recruiting/coordinator';
-import { BossRecruitingAdapter, ZhaopinRecruitingAdapter } from '../recruiting/sites';
-import type { PreparedAction } from '../recruiting/actions';
 import { Store } from './store';
 import { scheduleCreateSchema, scheduleUpdateSchema } from '../shared/schedules';
 import { flowExportSchema, templateContentLimit } from '../shared/flow-export';
@@ -24,15 +23,20 @@ import { compileScript, inspectScriptPackage, verifyScriptBundle } from '../adap
 import { ArtifactFiles } from '../adapters/artifacts';
 import { artifactPath, scopedTarget, uploadPath } from '../adapters/files';
 import { staticUploadFields, uploadSource, uploadText } from '../shared/upload-source';
-import { templates, instantiate, packageFlow, validateTemplate } from '../recruiting/templates';
-import {
-  configureTemplate,
-  normalizeBindings,
-  policyOf,
-  validateConfiguration,
-} from './configuration';
-import { draftReply, validateDraft } from '../recruiting/ai';
-import example from '../../contracts/example.flow.json';
+import { packageFlow, validateTemplate } from '../templates/flow';
+import { Templates } from '../templates/service';
+import { version as clientVersion } from '../../package.json';
+import { configureTemplate, normalizeBindings, validateConfiguration } from './configuration';
+import { generate } from '../ai/providers';
+const example = {
+  formatVersion: '1.0',
+  id: 'empty',
+  name: '未命名流程',
+  description: '',
+  parameters: {},
+  steps: [],
+  requiredCapabilities: [],
+} as Flow;
 import type {
   Flow,
   FlowRecord,
@@ -67,7 +71,7 @@ export class Runtime {
   readonly sessions: Sessions;
   readonly scripts: ScriptProcesses;
   readonly ready: Promise<void>;
-  readonly recruiting: RecruitingCoordinator;
+  readonly templates: Templates;
   private active?: Active;
   private artifactFiles: ArtifactFiles;
   private artifactCleanup: ArtifactCleanup;
@@ -120,24 +124,24 @@ export class Runtime {
       version: (record, prepared) => this.version(record, prepared),
       dispatch: () => this.dispatch(),
     });
-    this.recruiting = new RecruitingCoordinator(this.store, () =>
-      this.system('notification', { title: 'FlowArk 有新的联系方式待办' }),
+    this.templates = new Templates(this.store, dataPath, clientVersion, () =>
+      this.system('notification', { title: 'FlowArk 有新的待办' }),
     );
     this.sessions = new Sessions(dir, executable, dataPath, system);
-    if (!this.store.list('flow').length)
-      this.saveFlow(validateFlow(example), { files: {}, credentials: [] });
-    this.ready = this.scripts.ready.then(() => {
-      // A recovery probe can take several seconds. Plans missed during that
-      // interval are skipped before any timer or queued admission can proceed.
-      this.skipMissed('application-restart');
-      this.lastTick = Date.now();
-      this.recovering = false;
-      if (!this.stopping)
-        this.timer = setInterval(
-          () => void this.tick().catch((e) => (this.store.fault = this.redactError(e))),
-          1000,
-        );
-    });
+    this.ready = Promise.all([this.scripts.ready, this.templates.library.cleanStaging()]).then(
+      () => {
+        // A recovery probe can take several seconds. Plans missed during that
+        // interval are skipped before any timer or queued admission can proceed.
+        this.skipMissed('application-restart');
+        this.lastTick = Date.now();
+        this.recovering = false;
+        if (!this.stopping)
+          this.timer = setInterval(
+            () => void this.tick().catch((e) => (this.store.fault = this.redactError(e))),
+            1000,
+          );
+      },
+    );
     // Keep direct Runtime users from producing an unhandled rejection while
     // preserving the rejected ready promise for init and execution admission.
     void this.ready.catch((error) => {
@@ -149,13 +153,17 @@ export class Runtime {
     return redactedErrorText(error, this.secrets);
   }
   saveFlow(flow: Flow, bindings: Bindings): FlowRecord {
+    const previous = this.store.get<FlowRecord>('flow', flow.id);
+    if (previous?.bindings.template) {
+      if (JSON.stringify(bindings) !== JSON.stringify(previous.bindings))
+        throw new Error('模板实例资源与授权请在实例配置中修改');
+      bindings = previous.bindings;
+    } else if (bindings.template) throw new Error('不能伪造模板实例绑定');
     bindings = normalizeBindings(bindings);
     validateConfiguration(bindings);
     if (bindings.configuration?.adapter === 'flow-parameters-v1')
       flow = { ...flow, parameters: bindings.configuration.values as any };
     validateFlow(flow);
-    const policy = policyOf(bindings);
-    if (policy) validateObject('RecruitingPolicy', policy);
     const record = {
       id: flow.id,
       flow: structuredClone(flow),
@@ -203,26 +211,9 @@ export class Runtime {
       runOverview: runOverview(runs),
       browsers: this.store.list('browser'),
       schedules: this.store.list('schedule'),
-      attention: this.store
-        .list<any>('attention')
-        .reverse()
-        .map((item) => {
-          const a =
-            item.detail?.actionId && this.store.get<PreparedAction>('action', item.detail.actionId);
-          return a
-            ? {
-                ...item,
-                detail: {
-                  ...item.detail,
-                  actionState: a.state,
-                  policyHash: a.policyHash,
-                  proposal: a,
-                  reason: a.reason,
-                },
-              }
-            : item;
-        }),
-      templates,
+      attention: this.store.list<any>('attention').reverse(),
+      templates: this.templates.list(),
+      instances: this.templates.instances(),
       credentials,
       fault: this.store.fault ? redact(this.store.fault, this.secrets) : undefined,
       runtimeBlock: this.executionBlock(),
@@ -232,8 +223,9 @@ export class Runtime {
   }
   async preflight(record: FlowRecord & Partial<PreparedScripts>): Promise<PreparedScripts> {
     const flow = validateFlow(record.flow);
+    await this.templates.preflight(record);
     const steps = walk(flow.steps);
-    if (steps.some((n) => n.type === 'browser' || n.type === 'recruiting')) {
+    if (steps.some((n) => n.type === 'browser')) {
       const b = this.store.get<BrowserBinding>('browser', record.bindings.browserId ?? '');
       if (!b) throw new Error('请先选择本机浏览器');
       const current =
@@ -369,9 +361,23 @@ export class Runtime {
       });
     else if (method === 'artifact')
       result = await this.workerRequest(owner.runId, 'artifact.create', args);
-    else if (method === 'credential')
+    else if (method === 'credential') {
+      if (this.store.get<FlowRecord>('snapshot', owner.runId)?.bindings.template)
+        throw new Error('模板脚本不能直接读取凭据，请使用绑定的 AI 能力');
       result = await this.workerRequest(owner.runId, 'credential', args);
-    else throw new Error('脚本能力不在白名单');
+    } else if (method === 'template') {
+      const snapshot = this.store.get<FlowRecord>('snapshot', owner.runId)!;
+      result = await this.templates.call(snapshot, owner.runId, args, this.active!.abort.signal, {
+        browser: async (bindingId, command) => {
+          const binding = this.store.get<BrowserBinding>('browser', bindingId);
+          if (!binding) throw new Error('浏览器不存在');
+          return this.sessions.use(binding, owner.runId, command, this.active!.abort.signal);
+        },
+        credential: async (id) => this.workerRequest(owner.runId, 'credential', { id }),
+        artifact: async (name, content) =>
+          this.workerRequest(owner.runId, 'artifact.create', { name, content }),
+      });
+    } else throw new Error('脚本能力不在白名单');
     this.assertScriptOwner(owner);
     return result;
   }
@@ -633,6 +639,7 @@ export class Runtime {
           },
           24 * 3600000,
         );
+        await this.templates.complete(s, run.id, outputs);
       } catch (error) {
         failure = errorText(error);
       }
@@ -668,6 +675,7 @@ export class Runtime {
       ];
       const old = this.store.get<Run>('run', run.id);
       if (old && !terminal.has(old.state)) {
+        this.templates.finish(run.id);
         if (state === 'SUCCEEDED') this.store.put('output', run.id, redact(outputs, this.secrets));
         this.store.state(
           run.id,
@@ -742,6 +750,26 @@ export class Runtime {
         throw error;
       }
     }
+    if (method === 'node.authorize') {
+      if (!snapshot.bindings.template) return true;
+      const node = walk(snapshot.flow.steps).find((n) => n.id === args.id);
+      if (!node) throw new Error('节点不属于当前快照');
+      const { entry, pkg } = await this.templates.context(snapshot);
+      if (!entry.capabilities.includes(node.type)) throw new Error('入口未声明节点能力');
+      if (node.type === 'file' || node.type === 'excel') {
+        const binding = args.binding;
+        const resource = pkg.manifest.resources.find((r) => r.id === binding);
+        if (!entry.resources.includes(binding) || !resource || resource.kind !== 'directory')
+          throw new Error('节点资源未由入口声明');
+        const write = node.operation !== 'read';
+        if (!(write ? ['write', 'readwrite'] : ['read', 'readwrite']).includes(resource.access))
+          throw new Error('文件操作超出资源声明');
+        if (write) await this.templates.canWrite(snapshot, id, runSignal);
+      }
+      if (node.type === 'http' && node.method !== 'GET')
+        await this.templates.canWrite(snapshot, id, runSignal);
+      return true;
+    }
     if (method === 'event') {
       if (!['node-start', 'node-end', 'log', 'progress', 'error'].includes(args.type))
         throw new Error('事件类型无效');
@@ -768,6 +796,8 @@ export class Runtime {
       return true;
     }
     if (method === 'browser') {
+      if (['click', 'fill', 'select', 'check', 'press', 'upload'].includes(args.operation))
+        await this.templates.canWrite(snapshot, id, runSignal);
       const binding = this.store.get<BrowserBinding>('browser', snapshot.bindings.browserId ?? '');
       if (!binding) throw new Error('未选择浏览器');
       const command = {
@@ -804,52 +834,6 @@ export class Runtime {
       const secret = await this.system('credentials.get', { id: args.id });
       this.secrets.push(secret);
       return secret;
-    }
-    if (method === 'recruiting.policy') {
-      const policy = policyOf(snapshot.bindings);
-      if (!policy || policy.platform !== args.platform) throw new Error('招聘配置缺失');
-      return policy;
-    }
-    if (method === 'recruiting.batch') {
-      const policy = policyOf(snapshot.bindings);
-      if (!policy || policy.platform !== args.platform) throw new Error('招聘配置缺失');
-      const binding = this.store.get<BrowserBinding>('browser', snapshot.bindings.browserId ?? '');
-      if (!binding) throw new Error('请先绑定本机浏览器');
-      const driver = {
-        perform: (command: any) => this.sessions.use(binding, id, command, runSignal),
-        close: async () => {},
-      };
-      const site =
-        policy.platform === 'boss'
-          ? new BossRecruitingAdapter(driver)
-          : new ZhaopinRecruitingAdapter(driver);
-      const result = await this.recruiting.run({
-        flowId: snapshot.id,
-        policy,
-        limit: args.limit,
-        site,
-        signal: this.active.abort.signal,
-        currentPolicy: () => {
-          const record = this.store.get<FlowRecord>('flow', snapshot.id);
-          return record && policyOf(record.bindings);
-        },
-        draft: async (input, signal) => {
-          if (!snapshot.bindings.credentials.includes(policy.provider))
-            throw new Error('此流程未授权使用所选 AI 密钥');
-          const key = await this.system('credentials.get', { id: policy.provider });
-          this.secrets.push(key);
-          return draftReply(input, key, signal);
-        },
-      });
-      this.store.put('recruiting-batch', id + ':' + policy.platform, result);
-      const run = this.store.get<Run>('run', id)!;
-      this.store.put('run', id, {
-        ...run,
-        business: result.verified
-          ? `批次已结束：提交 ${result.submitted}，待处理 ${result.waiting}，被阻止 ${result.blocked}；业务结果见动作记录`
-          : '站点网页尚未验证，本批次未执行外发；限制已保存到待办',
-      });
-      return result;
     }
     if (method === 'attention') {
       const item = this.store.attention(args.kind, args.title, args.detail, args.key);
@@ -1071,18 +1055,18 @@ export class Runtime {
         const input = {
           provider: args.provider,
           model: args.model,
-          facts: [{ id: 'skill', text: '我有三年 TypeScript 开发经验。' }],
-          conversation: [{ role: 'peer' as const, text: '你好，请介绍你的开发经验。' }],
-          job: '虚构的开发岗位，用于接口验证',
-          contextHash: 'test-context',
-          resumeVersion: 'fictional-v1',
+          instructions: '仅返回输入中的 value，不添加内容。输出 JSON。',
+          input: { value: 'fictional-check' },
+          schema: {
+            type: 'object',
+            properties: { value: { type: 'string', const: 'fictional-check' } },
+            required: ['value'],
+            additionalProperties: false,
+          },
         };
         const key = await this.system('credentials.get', { id: args.provider });
         try {
-          const result = await draftReply(input, key, new AbortController().signal);
-          const reasons = validateDraft(result, input);
-          if (reasons.length)
-            throw new Error('API 已返回，但草稿未通过校验：' + reasons.join('；'));
+          const result = await generate(input, key, new AbortController().signal);
           this.store.put('ai-validation', args.provider, {
             provider: result.provider,
             model: result.model,
@@ -1113,19 +1097,10 @@ export class Runtime {
           args.debug === true,
         );
       case 'flow.create': {
-        const t = templates.find((x) => x.manifest.id === args.templateId);
-        const flow = t
-          ? instantiate(t)
-          : ({
-              ...structuredClone(example),
-              id: uid(),
-              name: '未命名流程',
-            } as Flow);
-        return this.saveFlow(flow, {
-          files: {},
-          credentials: [],
-          ...(t ? { configuration: configureTemplate(t) } : {}),
-        });
+        return this.saveFlow(
+          { ...structuredClone(example), id: uid() },
+          { files: {}, credentials: [] },
+        );
       }
       case 'run.control':
         return this.control(args.id, args.action);
@@ -1278,6 +1253,7 @@ export class Runtime {
         this.assertAdmitting();
         const r = this.store.get<FlowRecord>('flow', args.flowId);
         if (!r) throw new Error('流程不存在');
+        await this.templates.preflight(r, true);
         const prepared = await this.preflight(r);
         this.assertAdmitting();
         new Intl.DateTimeFormat('en', { timeZone: args.timezone });
@@ -1310,6 +1286,7 @@ export class Runtime {
           if (!record || record.updatedAt !== update.flowUpdatedAt)
             throw new Error('已保存的流程已改变，请取消编辑后重新核对');
           const originalFlow = digest(record);
+          await this.templates.preflight(record, true);
           prepared = await this.preflight(record);
           this.assertAdmitting();
           const currentFlow = this.store.get<FlowRecord>('flow', previous.flowId);
@@ -1354,40 +1331,48 @@ export class Runtime {
         if (a) this.store.put('attention', a.id, { ...a, read: true });
         return true;
       }
-      case 'action.confirm': {
-        const a = this.store.get<PreparedAction>('action', args.id);
-        const record = a?.flowId && this.store.get<FlowRecord>('flow', a.flowId);
-        const policy = record && policyOf(record.bindings);
-        if (!policy) throw new Error('原流程或招聘配置不存在');
-        this.recruiting.actions.confirm(args.id, policy, args.policyHash);
-        return true;
-      }
+      case 'template.inspect':
+        return this.templates.library.inspect(args.path);
+      case 'template.cancelImport':
+        return this.templates.library.cancel(args.token);
+      case 'template.install':
+        return this.templates.install(args.token);
+      case 'template.remove':
+        return this.templates.remove(args.key);
+      case 'template.export':
+        return this.templates.library.export(args.key, args.path);
+      case 'template.create':
+        return this.templates.create(args.key, args.copyFrom);
+      case 'template.detail':
+        return this.templates.detail(args.id);
+      case 'template.configure':
+        return this.templates.configure(args.id, args.configuration, args.resources, args.grants);
+      case 'template.input':
+        return this.templates.input(args.id, args.entryId, args.value);
+      case 'template.answer':
+        return this.templates.answer(args.id, args.value);
       case 'flow.export': {
-        const request = flowExportSchema.parse(args);
-        const f = structuredClone(validateFlow(request.flow));
-        f.parameters = Object.fromEntries(Object.keys(f.parameters).map((k) => [k, null]));
-        const configuration =
-          request.configuration &&
-          validateObject<NonNullable<Template['manifest']['configuration']>>(
-            'TemplateConfiguration',
-            request.configuration,
-          );
-        const content = JSON.stringify(
-          validateTemplate(packageFlow(f, 'local', configuration)),
-          null,
-          2,
+        const { path, ...payload } = args;
+        const request = flowExportSchema.parse(payload);
+        if (typeof path !== 'string') throw new Error('导出路径由 Main 选择');
+        const record = this.store.get<FlowRecord>('flow', (request.flow as Flow).id);
+        const ref = record?.bindings.template;
+        const source = ref ? await this.templates.library.load(ref.packageKey) : undefined;
+        const pkg = await exportDefinition(
+          request.flow as Flow,
+          request.configuration,
+          source,
+          ref?.entryId,
         );
-        if (content.length > templateContentLimit) throw new Error('导出模板超过 2 MiB');
-        return content;
+        await writeArchive(pkg, path);
+        return {
+          id: pkg.manifest.id,
+          version: pkg.manifest.version,
+          digest: pkg.manifest.contentDigest,
+        };
       }
-      case 'flow.import': {
-        const p = validateTemplate(JSON.parse(args.content));
-        return this.saveFlow(instantiate(p), {
-          files: {},
-          credentials: [],
-          configuration: configureTemplate(p),
-        });
-      }
+      case 'flow.import':
+        throw new Error('旧 JSON 模板不再支持，请导入标准 ZIP 模板');
       case 'shutdown':
         await this.shutdown();
         return true;
@@ -1397,6 +1382,7 @@ export class Runtime {
   }
   async shutdown() {
     this.stopping = true;
+    await this.templates.library.dispose();
     clearInterval(this.timer);
     const errors: unknown[] = [];
     // Revoke every script immediately, even if SQLite rejects a subsequent

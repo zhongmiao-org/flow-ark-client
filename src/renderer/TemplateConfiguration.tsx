@@ -4,7 +4,7 @@ import type { Bindings, Json } from '../shared/types';
 import { schemaDefaults } from '../shared/template-config';
 
 /** A generic, data-only form. Business field labels and options live in the package. */
-function Field({ schema: s, value, change, label }: any) {
+export function Field({ schema: s, value, change, label }: any) {
   const id = useId();
   if (Object.hasOwn(s, 'const') || s.readOnly) return null;
   const title = s.title ?? label;

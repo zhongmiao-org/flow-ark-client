@@ -2,12 +2,10 @@ import type { Flow, Template } from '../shared/types';
 import { digest, uid } from '../shared/utils';
 import { validateFlow, validateObject, walk } from '../core/validate';
 import { declaredDependencies } from '../core/script-dependencies';
-import { recruitingConfigurationSchema } from './template-schema';
 import {
   validateConfigurationSchema,
   supportedConfigurationAdapters,
 } from '../shared/template-config';
-export { defaultPolicy } from './policy';
 export function templateDigest(flow: Flow, configuration?: Template['manifest']['configuration']) {
   return digest(configuration ? { flow, configuration } : flow);
 }
@@ -36,34 +34,6 @@ export function packageFlow(
     flow,
   };
 }
-export const templates: Template[] = (['boss', 'zhaopin'] as const).map((platform) => {
-  const flow: Flow = {
-    id: platform + '-resume-apply',
-    formatVersion: '1.0',
-    name: platform === 'boss' ? 'BOSS 直聘投递简历' : '智联招聘投递简历',
-    description: '有限批次检查职位与会话；按独立动作权限执行，取得微信号后建立本地待办。',
-    parameters: {},
-    requiredCapabilities: ['browser', 'recruiting', platform, 'recruiting-job-filter-v1'],
-    steps: [
-      {
-        id: 'recruiting_batch',
-        type: 'recruiting',
-        version: 1,
-        platform,
-        batchLimit: 5,
-      },
-    ],
-  };
-  return packageFlow(
-    flow,
-    'flowark-builtin',
-    {
-      adapter: 'recruiting-policy-v1',
-      schema: recruitingConfigurationSchema(platform),
-    },
-    '1.2.0',
-  );
-});
 export function validateTemplate(value: unknown): Template {
   const p = validateObject<Template>('TemplatePackage', value);
   validateFlow(p.flow);

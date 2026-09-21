@@ -4,7 +4,7 @@ import electronPath from 'electron';
 import { mkdtemp, mkdir, readFile, writeFile, access } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { Store } from '../src/host/store';
-import { startFormLab } from './fixtures/form-lab';
+import { startFormLab } from './fixtures/platform-page';
 import type { Run } from '../src/shared/types';
 const data = await mkdtemp('/private/tmp/flowark-run-history-ui-');
 const lab = await startFormLab();

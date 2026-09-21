@@ -4,8 +4,8 @@ import electronPath from 'electron';
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { Bootstrap, Run, Step } from '../src/shared/types';
-import { startFormLab } from './fixtures/form-lab';
-import { formBrowser } from './fixtures/form-lab-flow';
+import { startFormLab } from './fixtures/platform-page';
+import { formBrowser } from './fixtures/platform-flow';
 
 // Only native close and dialog responses are fault-injected in isolated processes.
 // Host/Worker execution, persistence, UI diagnostics and application quit are real.

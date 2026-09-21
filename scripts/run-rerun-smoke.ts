@@ -5,8 +5,8 @@ import electronPath from 'electron';
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { FlowRecord, Run, Step } from '../src/shared/types';
-import { startFormLab } from './fixtures/form-lab';
-import { formBrowser } from './fixtures/form-lab-flow';
+import { startFormLab } from './fixtures/platform-page';
+import { formBrowser } from './fixtures/platform-flow';
 
 const data = await mkdtemp('/private/tmp/flowark-rerun-ui-');
 const lab = await startFormLab();

@@ -3,8 +3,8 @@ import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { _electron as electron } from 'playwright-core';
 import electronPath from 'electron';
-import { startFormLab } from './fixtures/form-lab';
-import { formBrowser, formLabFlow } from './fixtures/form-lab-flow';
+import { startFormLab } from './fixtures/platform-page';
+import { formBrowser, formLabFlow } from './fixtures/platform-flow';
 
 const data = await mkdtemp('/private/tmp/flowark-capture-lifecycle-');
 const lab = await startFormLab();

@@ -183,15 +183,6 @@ export type Node =
        * @maxItems 1000
        */
       body: Node[];
-    }
-  | {
-      id: string;
-      type: 'recruiting';
-      version: 1;
-      name?: string;
-      timeoutMs?: number;
-      platform: 'boss' | 'zhaopin';
-      batchLimit: number;
     };
 export type Value =
   | Json
@@ -229,19 +220,14 @@ export interface FlowArkP1 {
   RunSnapshot?: RunSnapshot;
   ScriptBundle?: ScriptBundle;
   RunEvent?: RunEvent;
-  RecruitingPolicy?: RecruitingPolicy;
-  AIReplyDraft?: AIReplyDraft;
-  AIReplyRequest?: AIReplyRequest;
-  AIReplyResult?: AIReplyResult;
-  RecruitingAction?: RecruitingAction;
-  ContactExchangeResult?: ContactExchangeResult;
   UserAttentionItem?: UserAttentionItem;
-  RecruitingJobFilter?: RecruitingJobFilter;
-  JobSalary?: JobSalary;
-  RecruitingJobSnapshot?: RecruitingJobSnapshot;
   TemplateManifest?: TemplateManifest;
   TemplateConfiguration?: TemplateConfiguration;
   TemplatePackage?: TemplatePackage;
+  TemplateArchiveManifest?: TemplateArchiveManifest;
+  AIRequest?: AIRequest;
+  AIResult?: AIResult;
+  TemplateInstanceRef?: TemplateInstanceRef;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -309,168 +295,6 @@ export interface RunEvent {
   nodeInstance: string;
   data: Json;
 }
-export interface RecruitingPolicy {
-  platform: 'boss' | 'zhaopin';
-  account: string;
-  /**
-   * @maxItems 1000
-   */
-  keywords: string[];
-  /**
-   * @maxItems 1000
-   */
-  excludedCompanies: string[];
-  /**
-   * @maxItems 1000
-   */
-  allowedTargets: string[];
-  resumeVersion: string;
-  resumeBinding: string;
-  /**
-   * @maxItems 1000
-   */
-  facts: {
-    id: string;
-    text: string;
-  }[];
-  actions: {
-    apply: 'deny' | 'confirm' | 'auto';
-    resume: 'deny' | 'confirm' | 'auto';
-    reply: 'deny' | 'confirm' | 'auto';
-    requestWechat: 'deny' | 'confirm' | 'auto';
-    acceptWechat: 'deny' | 'confirm' | 'auto';
-    requestPhone: 'deny' | 'confirm' | 'auto';
-    acceptPhone: 'deny' | 'confirm' | 'auto';
-  };
-  dailyLimit: number;
-  batchLimit: number;
-  startHour: number;
-  endHour: number;
-  timezone: string;
-  ownWechat: string;
-  ownPhone: string;
-  provider: 'openai-codex' | 'deepseek';
-  model: string;
-  contextRevision: string;
-  jobFilter?: RecruitingJobFilter;
-}
-export interface RecruitingJobFilter {
-  /**
-   * @maxItems 1000
-   */
-  cities: string[];
-  /**
-   * @maxItems 1000
-   */
-  includedCompanies: string[];
-  /**
-   * @maxItems 1000
-   */
-  excludedKeywords: string[];
-  /**
-   * @maxItems 1000
-   */
-  workModes: ('onsite' | 'hybrid' | 'remote')[];
-  salary: {
-    enabled: boolean;
-    minimumMonthly: number;
-    maximumMonthly: number;
-    currency: 'CNY';
-  };
-}
-export interface AIReplyDraft {
-  body: string;
-  /**
-   * @maxItems 1000
-   */
-  factIds: string[];
-  /**
-   * @maxItems 1000
-   */
-  claims: {
-    text: string;
-    factId: string;
-  }[];
-  containsContact: boolean;
-  containsCommitment: boolean;
-  /**
-   * @maxItems 1000
-   */
-  needsHuman: string[];
-}
-export interface AIReplyRequest {
-  provider: 'openai-codex' | 'deepseek';
-  model: string;
-  /**
-   * @maxItems 1000
-   */
-  facts: {
-    id: string;
-    text: string;
-  }[];
-  /**
-   * @maxItems 1000
-   */
-  conversation: {
-    role: 'self' | 'peer';
-    text: string;
-  }[];
-  job: string;
-  contextHash: string;
-  resumeVersion: string;
-}
-export interface AIReplyResult {
-  provider: string;
-  model: string;
-  contextHash: string;
-  resumeVersion: string;
-  draft: AIReplyDraft;
-  requestId: string;
-  usage: Json;
-}
-export interface RecruitingAction {
-  id: string;
-  platform: 'boss' | 'zhaopin';
-  account: string;
-  target: string;
-  kind: 'apply' | 'resume' | 'reply' | 'requestWechat' | 'acceptWechat' | 'requestPhone' | 'acceptPhone';
-  contextHash: string;
-  contentHash: string;
-  dedupeKey: string;
-  state:
-    'PENDING_CONFIRMATION' | 'READY' | 'SUBMITTING' | 'CONFIRMED' | 'WAITING_PEER' | 'FAILED' | 'UNKNOWN' | 'BLOCKED';
-  evidence: string;
-  jobSnapshot?: RecruitingJobSnapshot;
-}
-export interface RecruitingJobSnapshot {
-  title: string;
-  company: string;
-  city: string | null;
-  workMode: ('onsite' | 'hybrid' | 'remote') | null;
-  salary: JobSalary | null;
-  source: string;
-  observedAt: string;
-}
-export interface JobSalary {
-  minimum: number;
-  maximum: number;
-  currency: string;
-  period: 'month' | 'year' | 'day' | 'hour';
-}
-export interface ContactExchangeResult {
-  platform: 'boss' | 'zhaopin';
-  account: string;
-  target: string;
-  company: string;
-  job: string;
-  contact: string;
-  kind: 'wechat' | 'phone';
-  state: 'requested' | 'accepted' | 'rejected' | 'visible' | 'needs-human';
-  value: string;
-  source: string;
-  owner: 'peer' | 'self' | 'unknown';
-  time: string;
-}
 export interface UserAttentionItem {
   id: string;
   kind: 'contact' | 'confirmation' | 'unknown-result' | 'limitation' | 'login';
@@ -511,4 +335,101 @@ export interface TemplateConfiguration {
 export interface TemplatePackage {
   manifest: TemplateManifest;
   flow: FlowDefinition;
+}
+export interface TemplateArchiveManifest {
+  packageFormat: '2.0';
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  author: string;
+  source: string;
+  minimumClientVersion: string;
+  sdkVersion: '1.0';
+  configurationSchema: string;
+  stateSchema: string;
+  /**
+   * @maxItems 50
+   */
+  entries: {
+    id: string;
+    name: string;
+    flow: string;
+    inputSchema: string;
+    resultSchema: string;
+    schedulable: boolean;
+    /**
+     * @maxItems 100
+     */
+    capabilities: string[];
+    /**
+     * @maxItems 100
+     */
+    resources: string[];
+    /**
+     * @maxItems 100
+     */
+    actions: string[];
+  }[];
+  /**
+   * @maxItems 100
+   */
+  resources: {
+    id: string;
+    name: string;
+    kind: 'file' | 'directory' | 'browser' | 'ai';
+    access: 'read' | 'write' | 'readwrite' | 'use';
+    required: boolean;
+  }[];
+  /**
+   * @maxItems 100
+   */
+  actions: {
+    id: string;
+    name: string;
+    description: string;
+    default: 'deny';
+  }[];
+  /**
+   * @maxItems 512
+   */
+  files: {
+    path: string;
+    size: number;
+    sha256: string;
+  }[];
+  /**
+   * @maxItems 512
+   */
+  scripts: string[];
+  /**
+   * @maxItems 512
+   */
+  dependencies: {
+    name: string;
+    version: string;
+    license: string;
+  }[];
+  contentDigest: string;
+}
+export interface AIRequest {
+  provider: 'openai-codex' | 'deepseek';
+  model: string;
+  instructions: string;
+  input: Json;
+  schema: Json;
+}
+export interface AIResult {
+  provider: 'openai-codex' | 'deepseek';
+  model: string;
+  requestId: string;
+  output: Json;
+  usage: Json;
+}
+export interface TemplateInstanceRef {
+  packageId: string;
+  version: string;
+  digest: string;
+  instanceId: string;
+  entryId: string;
 }

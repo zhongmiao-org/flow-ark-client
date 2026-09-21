@@ -3,14 +3,8 @@ import type { RunOverview } from './run-history';
 import type { RunRerunMode } from './run-rerun';
 export type Flow = NonNullable<P1Contracts['FlowDefinition']>;
 export type Step = Flow['steps'][number];
-export type Policy = NonNullable<P1Contracts['RecruitingPolicy']>;
-export type JobSnapshot = NonNullable<P1Contracts['RecruitingJobSnapshot']>;
-export type JobFilter = NonNullable<P1Contracts['RecruitingJobFilter']>;
-export type Draft = NonNullable<P1Contracts['AIReplyDraft']>;
-export type AIRequest = NonNullable<P1Contracts['AIReplyRequest']>;
-export type AIResult = NonNullable<P1Contracts['AIReplyResult']>;
-export type Action = NonNullable<P1Contracts['RecruitingAction']>;
-export type Contact = NonNullable<P1Contracts['ContactExchangeResult']>;
+export type AIRequest = NonNullable<P1Contracts['AIRequest']>;
+export type AIResult = NonNullable<P1Contracts['AIResult']>;
 export type Template = NonNullable<P1Contracts['TemplatePackage']>;
 export type RunState = NonNullable<P1Contracts['RunState']>;
 export type ScriptBundle = NonNullable<P1Contracts['ScriptBundle']>;
@@ -21,7 +15,12 @@ export type Bindings = {
   files: Record<string, string>;
   credentials: string[];
   scriptPackages?: Record<string, { path: string; version: string }>;
-  policy?: Policy;
+  template?: { instanceId: string; packageKey: string; entryId: string; digest: string };
+  resources?: Record<
+    string,
+    { path?: string; browserId?: string; provider?: 'deepseek' | 'openai-codex'; model?: string }
+  >;
+  grants?: Record<string, 'deny' | 'confirm' | 'auto'>;
   configuration?: { adapter: string; schema: Json; values: Json };
 };
 export type FlowRecord = {
@@ -93,7 +92,8 @@ export type Bootstrap = {
   browsers: BrowserBinding[];
   schedules: Schedule[];
   attention: Attention[];
-  templates: Template[];
+  templates: import('../templates/archive').InstalledPackage[];
+  instances: import('../templates/types').TemplateInstance[];
   credentials: string[];
   fault?: string;
   execution?: ExecutionObservation;

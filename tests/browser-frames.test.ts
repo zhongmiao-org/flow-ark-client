@@ -5,7 +5,7 @@ import { validateFlow } from '../src/core/validate';
 import { framePathOf } from '../src/core/browser-command';
 import { assertBrowserOperations } from '../src/adapters/browser-scope';
 import { SeleniumDriver } from '../src/adapters/selenium';
-import { packageFlow, instantiate } from '../src/recruiting/templates';
+import { packageFlow, instantiate } from '../src/templates/flow';
 import example from '../contracts/example.frames.flow.json';
 
 test('browser v2 preserves frame scope in templates; v1 never accepts a frame path', () => {
