@@ -4,6 +4,7 @@ import type { Flow, Step } from '../shared/types';
 import { framePathOf, validateFormCommand } from './browser-command';
 import { declaredDependencies } from './script-dependencies';
 import { referenceIssues } from '../shared/flow-references';
+import { mappingPreview } from '../shared/excel-mapping';
 const ajv = new Ajv2020({ strict: false, allErrors: true });
 ajv.addSchema(schema);
 export function validateObject<T>(name: string, value: unknown): T {
@@ -21,6 +22,7 @@ export const capabilities = [
   'script',
   'file',
   'excel',
+  'excel-mapping-v1',
   'browser',
   'browser-frames-v1',
   'browser-forms-v1',
@@ -46,6 +48,11 @@ export function validateFlow(value: unknown): Flow {
     for (const n of steps) {
       if (++count > 1000 || all.has(n.id)) throw new Error('节点数量过多或 ID 重复：' + n.id);
       all.add(n.id);
+      if (n.type === 'excel' && n.operation === 'map') {
+        if (!flow.requiredCapabilities.includes('excel-mapping-v1'))
+          throw new Error('Excel 字段映射需要声明 excel-mapping-v1 能力');
+        mappingPreview(n, flow.parameters);
+      }
       if (n.type === 'browser') {
         framePathOf(n);
         validateFormCommand(n, true);

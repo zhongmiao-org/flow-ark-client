@@ -183,6 +183,24 @@ export type Node =
        * @maxItems 1000
        */
       body: Node[];
+    }
+  | {
+      id: string;
+      type: 'excel';
+      version: 3;
+      operation: 'map';
+      binding: string;
+      name: Value;
+      sheet: string;
+      rows: Value;
+      /**
+       * @minItems 1
+       * @maxItems 256
+       */
+      mappings: [ExcelColumnMapping, ...ExcelColumnMapping[]];
+      includeHeaders: boolean;
+      nullPolicy: 'blank';
+      timeoutMs?: number;
     };
 export type Value =
   | Json
@@ -394,6 +412,7 @@ export interface FlowArkP1 {
   AIPlanningQuestion?: AIPlanningQuestion;
   AIPlanningRequest?: AIPlanningRequest;
   AIPlanningResult?: AIPlanningResult;
+  ExcelColumnMapping?: ExcelColumnMapping;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -401,6 +420,12 @@ export interface CredentialRef {
 export interface ArtifactRef {
   artifactId: string;
   runId: string;
+}
+export interface ExcelColumnMapping {
+  source: string;
+  column: string;
+  header: string;
+  type: 'text' | 'number' | 'boolean';
 }
 export interface FlowDefinition {
   formatVersion: '1.0';

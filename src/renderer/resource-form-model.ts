@@ -3,19 +3,31 @@ export type FileNode = Extract<Step, { type: 'file' | 'excel' }>;
 export function resourceOperation(node: FileNode, operation: string): FileNode {
   const excel = node.type === 'excel';
   if (
-    !(excel ? ['read', 'write', 'fill'] : ['read', 'write', 'copy', 'archive']).includes(operation)
+    !(excel ? ['read', 'write', 'fill', 'map'] : ['read', 'write', 'copy', 'archive']).includes(
+      operation,
+    )
   )
     throw new Error('未知文件操作');
   const extra = excel
-    ? operation === 'fill'
+    ? operation === 'map'
       ? {
-          version: 2,
-          name: 'filled.xlsx',
-          templateName: 'template.xlsx',
-          sheet: '',
-          cells: { A1: '示例' },
+          version: 3,
+          name: 'mapped.xlsx',
+          sheet: 'Sheet1',
+          rows: [],
+          mappings: [{ source: 'title', column: 'A', header: '标题', type: 'text' }],
+          includeHeaders: true,
+          nullPolicy: 'blank',
         }
-      : { version: 1, name: 'result.xlsx', rows: [] }
+      : operation === 'fill'
+        ? {
+            version: 2,
+            name: 'filled.xlsx',
+            templateName: 'template.xlsx',
+            sheet: '',
+            cells: { A1: '示例' },
+          }
+        : { version: 1, name: 'result.xlsx', rows: [] }
     : operation === 'archive'
       ? { version: 2, name: 'archive.zip', files: ['result.txt'] }
       : { version: 1, name: 'result.txt', content: operation === 'copy' ? 'source.txt' : '' };

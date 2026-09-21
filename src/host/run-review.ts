@@ -154,7 +154,7 @@ export class RunReview {
       if (node.type === 'file' || node.type === 'excel')
         directory(
           node.binding,
-          node.operation !== 'write' || node.type === 'excel',
+          node.operation !== 'map' && (node.operation !== 'write' || node.type === 'excel'),
           node.operation !== 'read',
         );
       if (node.type === 'browser') {

@@ -87,7 +87,10 @@ export default function ResourceNodeConfiguration({
         <option value="read">读取</option>
         <option value="write">写入</option>
         {isExcel ? (
-          <option value="fill">填充工作簿模板</option>
+          <>
+            <option value="map">字段映射 · 新建工作簿</option>
+            <option value="fill">填充工作簿模板</option>
+          </>
         ) : (
           <>
             <option value="copy">复制文件</option>
@@ -167,6 +170,9 @@ export default function ResourceNodeConfiguration({
           choices={choices}
           change={(rows) => change({ ...node, rows })}
         />
+      )}
+      {node.type === 'excel' && node.operation === 'map' && (
+        <p className="note">字段映射在完整编辑页配置；输出只新建，不覆盖同名文件。</p>
       )}
       {node.type === 'excel' && node.operation === 'fill' && (
         <>

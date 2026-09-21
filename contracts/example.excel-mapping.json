@@ -1,0 +1,60 @@
+{
+  "formatVersion": "1.0",
+  "id": "mapping_example",
+  "name": "字段映射示例",
+  "description": "虚构记录，需用户绑定输出目录后才能运行",
+  "requiredCapabilities": [
+    "excel",
+    "excel-mapping-v1"
+  ],
+  "parameters": {
+    "records": [
+      {
+        "title": "项目 A",
+        "amount": 12,
+        "enabled": true
+      },
+      {
+        "title": "项目 B",
+        "amount": null,
+        "enabled": false
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "mapped",
+      "type": "excel",
+      "version": 3,
+      "operation": "map",
+      "binding": "output",
+      "name": "summary.xlsx",
+      "sheet": "汇总",
+      "rows": {
+        "$ref": "params.records"
+      },
+      "mappings": [
+        {
+          "source": "title",
+          "column": "A",
+          "header": "标题",
+          "type": "text"
+        },
+        {
+          "source": "amount",
+          "column": "C",
+          "header": "数量",
+          "type": "number"
+        },
+        {
+          "source": "enabled",
+          "column": "D",
+          "header": "启用",
+          "type": "boolean"
+        }
+      ],
+      "includeHeaders": true,
+      "nullPolicy": "blank"
+    }
+  ]
+}

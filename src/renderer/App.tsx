@@ -56,6 +56,7 @@ import TemplateLibrary from './TemplateLibrary';
 import TemplateConfiguration from './TemplateConfiguration';
 import ScriptPackages from './ScriptPackages';
 import ScriptEditorPage, { type ScriptNavigation } from './ScriptEditorPage';
+import ExcelMappingPage from './ExcelMappingPage';
 import FlowOutlineWorkspace, { type OutlineLocation } from './FlowOutlineWorkspace';
 import EmbeddedBrowserPanel from './EmbeddedBrowserPanel';
 import BrowserSidebar from './BrowserSidebar';
@@ -107,13 +108,14 @@ export default function App() {
   const [outlineOpen, setOutlineOpen] = useState(false);
   const outlineBrowser = useRef(false);
   const outlineMemory = useRef(new Map<string, OutlineLocation>());
-  const [scriptSession, setScriptSession] = useState<{
+  const [nodeSession, setNodeSession] = useState<{
+    kind: 'script' | 'excel';
     record: FlowRecord;
     nodeId: string;
     browserOpen: boolean;
     scroll: number;
   }>();
-  const scriptNavigation = useRef<ScriptNavigation | undefined>(undefined);
+  const nodeNavigation = useRef<ScriptNavigation | undefined>(undefined);
   const [editorPanel, setEditorPanel] = useState('canvas');
   const [runPage, setRunPage] = useState(1);
   const [runFilter, setRunFilter] = useState(false);
@@ -337,9 +339,9 @@ export default function App() {
     setSection('flows');
     setDetail(null);
   };
-  const closeScript = (next?: () => void) => {
-    const source = scriptSession;
-    setScriptSession(undefined);
+  const closeNodeEditor = (next?: () => void) => {
+    const source = nodeSession;
+    setNodeSession(undefined);
     if (next) next();
     else {
       setBrowserOpen(source?.browserOpen ?? false);
@@ -348,7 +350,11 @@ export default function App() {
         requestAnimationFrame(() => {
           document.querySelector('main')?.scrollTo({ top: source?.scroll ?? 0 });
           document
-            .querySelector<HTMLElement>('[aria-label="打开完整脚本编辑器"]')
+            .querySelector<HTMLElement>(
+              source?.kind === 'excel'
+                ? '[aria-label="打开 Excel 映射编辑器"]'
+                : '[aria-label="打开完整脚本编辑器"]',
+            )
             ?.focus({ preventScroll: true });
         }),
       );
@@ -374,7 +380,7 @@ export default function App() {
     <div className="application-shell">
       <div className="window-titlebar">FlowArk · 个人工作空间</div>
       <div
-        className={`app ${browserOpen ? 'with-browser' : ''} ${section === 'editor' && !scriptSession && !outlineOpen ? 'editing-workspace' : ''}`}
+        className={`app ${browserOpen ? 'with-browser' : ''} ${section === 'editor' && !nodeSession && !outlineOpen ? 'editing-workspace' : ''}`}
       >
         <aside className="sidebar">
           <div className="brand">
@@ -410,8 +416,8 @@ export default function App() {
                     : undefined
                 }
                 onClick={() => {
-                  if (scriptSession) {
-                    scriptNavigation.current?.(() => {
+                  if (nodeSession) {
+                    nodeNavigation.current?.(() => {
                       setTaskReturn(false);
                       setSection(id);
                       setDetail(null);
@@ -436,7 +442,7 @@ export default function App() {
             <p>仅在这台 Mac 上运行</p>
             <button
               className="sidebar-guide"
-              disabled={!!scriptSession || (section === 'editor' && outlineOpen)}
+              disabled={!!nodeSession || (section === 'editor' && outlineOpen)}
               onClick={() =>
                 action(async () => {
                   await api('browser.embedded.navigate', {
@@ -452,9 +458,9 @@ export default function App() {
           </div>
         </aside>
         <main>
-          {scriptSession && (
+          {nodeSession && (
             <header className="topbar">
-              <button className="context-back" onClick={() => scriptNavigation.current?.()}>
+              <button className="context-back" onClick={() => nodeNavigation.current?.()}>
                 ← 返回流程编排
               </button>
               <nav className="breadcrumbs" aria-label="当前位置">
@@ -462,7 +468,7 @@ export default function App() {
                   href="#flows"
                   onClick={(event) => {
                     event.preventDefault();
-                    scriptNavigation.current?.(() => {
+                    nodeNavigation.current?.(() => {
                       setSection('flows');
                       setTaskReturn(false);
                     });
@@ -475,17 +481,19 @@ export default function App() {
                   href="#editor"
                   onClick={(event) => {
                     event.preventDefault();
-                    scriptNavigation.current?.();
+                    nodeNavigation.current?.();
                   }}
                 >
-                  {scriptSession.record.flow.name}
+                  {nodeSession.record.flow.name}
                 </a>
                 <span aria-hidden="true">/</span>
-                <span aria-current="page">脚本配置</span>
+                <span aria-current="page">
+                  {nodeSession.kind === 'excel' ? 'Excel 字段映射' : '脚本配置'}
+                </span>
               </nav>
             </header>
           )}
-          {section === 'editor' && outlineOpen && !scriptSession && (
+          {section === 'editor' && outlineOpen && !nodeSession && (
             <header className="topbar">
               <button className="context-back" onClick={() => closeOutline()}>
                 ← 返回流程编排
@@ -518,9 +526,7 @@ export default function App() {
           <header
             className="topbar"
             style={
-              scriptSession || (section === 'editor' && outlineOpen)
-                ? { display: 'none' }
-                : undefined
+              nodeSession || (section === 'editor' && outlineOpen) ? { display: 'none' } : undefined
             }
           >
             {section === 'tasks' && taskNavigation.back && (
@@ -856,7 +862,7 @@ export default function App() {
           {section === 'editor' && edit && (
             <div
               className={'editor-page' + (outlineOpen ? ' is-outline' : '')}
-              style={scriptSession ? { display: 'none' } : undefined}
+              style={nodeSession ? { display: 'none' } : undefined}
               onFocusCapture={(event) => {
                 const control = (event.target as HTMLElement).closest(
                   'input,textarea,select,[contenteditable="true"],.monaco-editor',
@@ -1036,7 +1042,7 @@ export default function App() {
               )}
               <Editor
                 key={edit.id}
-                active={!scriptSession}
+                active={!nodeSession}
                 outlineOpen={outlineOpen}
                 outlineMemory={outlineMemory}
                 closeOutline={closeOutline}
@@ -1060,7 +1066,25 @@ export default function App() {
                     setError((e as Error).message);
                     return;
                   }
-                  setScriptSession({
+                  setNodeSession({
+                    kind: 'script',
+                    record: structuredClone(edit),
+                    nodeId,
+                    browserOpen,
+                    scroll: document.querySelector('main')?.scrollTop ?? 0,
+                  });
+                  setBrowserOpen(false);
+                  document.querySelector('main')?.scrollTo(0, 0);
+                }}
+                openExcel={(nodeId: string) => {
+                  try {
+                    checkEditorInput('打开 Excel 映射编辑器');
+                  } catch (e) {
+                    setError((e as Error).message);
+                    return;
+                  }
+                  setNodeSession({
+                    kind: 'excel',
                     record: structuredClone(edit),
                     nodeId,
                     browserOpen,
@@ -1106,15 +1130,15 @@ export default function App() {
               />
             </div>
           )}
-          {section === 'editor' && scriptSession && (
+          {section === 'editor' && nodeSession?.kind === 'script' && (
             <ScriptEditorPage
-              key={scriptSession.record.id + ':' + scriptSession.nodeId}
-              record={scriptSession.record}
-              nodeId={scriptSession.nodeId}
-              navigation={scriptNavigation}
-              close={closeScript}
+              key={nodeSession.record.id + ':' + nodeSession.nodeId}
+              record={nodeSession.record}
+              nodeId={nodeSession.nodeId}
+              navigation={nodeNavigation}
+              close={closeNodeEditor}
               save={async (record) => {
-                if (JSON.stringify(edit) !== JSON.stringify(scriptSession.record))
+                if (JSON.stringify(edit) !== JSON.stringify(nodeSession.record))
                   throw new Error(
                     '来源流程草稿已经变化，请保留脚本内容并返回重新打开，避免覆盖其他修改',
                   );
@@ -1125,6 +1149,29 @@ export default function App() {
                 inputGroup.current = undefined;
                 setEdit(saved);
                 setNotice('已保存脚本及流程草稿');
+                await refresh();
+              }}
+            />
+          )}
+          {section === 'editor' && nodeSession?.kind === 'excel' && (
+            <ExcelMappingPage
+              key={nodeSession.record.id + ':' + nodeSession.nodeId}
+              record={nodeSession.record}
+              nodeId={nodeSession.nodeId}
+              navigation={nodeNavigation}
+              close={closeNodeEditor}
+              save={async (record) => {
+                if (JSON.stringify(edit) !== JSON.stringify(nodeSession.record))
+                  throw new Error(
+                    '来源流程草稿已经变化，请保留映射并返回重新打开，避免覆盖其他修改',
+                  );
+                const saved = await api('flow.save', {
+                  flow: record.flow,
+                  bindings: record.bindings,
+                });
+                inputGroup.current = undefined;
+                setEdit(saved);
+                setNotice('已保存 Excel 映射及流程草稿');
                 await refresh();
               }}
             />
@@ -1291,6 +1338,7 @@ function Editor({
   browserOpen,
   browserPanel,
   openScript,
+  openExcel,
   outlineOpen,
   outlineMemory,
   closeOutline,
@@ -1315,11 +1363,20 @@ function Editor({
     setMoveTo('');
     setStructureError('');
   }, [selected, revision]);
-  const patch = (fn: (n: Step) => Step | null) =>
+  const patch = (fn: (n: Step) => Step | null) => {
+    const steps = changeSteps(r.flow.steps, selected, fn);
+    const mapped = flatten(steps).some((node) => node.type === 'excel' && node.operation === 'map');
     setRecord({
       ...r,
-      flow: { ...r.flow, steps: changeSteps(r.flow.steps, selected, fn) },
+      flow: {
+        ...r.flow,
+        steps,
+        requiredCapabilities: mapped
+          ? [...new Set([...r.flow.requiredCapabilities, 'excel-mapping-v1'])]
+          : r.flow.requiredCapabilities,
+      },
     });
+  };
   const structure = (build: () => Step[], nextSelected = selected) => {
     if (!guardInvalidNodeJson()) return false;
     try {
@@ -1616,6 +1673,15 @@ function Editor({
                             setInvalid('');
                           }}
                         />
+                      )}
+                      {selectedNode.type === 'excel' && selectedNode.operation === 'map' && (
+                        <button
+                          className="primary"
+                          aria-label="打开 Excel 映射编辑器"
+                          onClick={() => openExcel(selectedNode.id)}
+                        >
+                          打开 Excel 映射编辑器
+                        </button>
                       )}
                       <ResourceNodeConfiguration
                         key={selectedNode.id + ':resource:' + revision}

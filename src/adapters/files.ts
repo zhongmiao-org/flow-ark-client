@@ -9,6 +9,7 @@ import {
   rename,
   rm,
   access,
+  link,
 } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { resolve, relative, dirname, join, basename, sep } from 'node:path';
@@ -16,6 +17,7 @@ import { randomUUID } from 'node:crypto';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import type { Bindings } from '../shared/types';
+import { mappedRows, validateMappedFilename } from '../shared/excel-mapping';
 export async function scopedPath(root: string, name: string, writing = false) {
   if (!root) throw new Error('文件目录尚未绑定');
   const base = await realpath(root);
@@ -45,13 +47,18 @@ export async function uploadPath(root: string, name: string) {
   await access(path, constants.R_OK);
   return path;
 }
-async function atomicWrite(path: string, write: (temporary: string) => Promise<unknown>) {
+async function atomicWrite(
+  path: string,
+  write: (temporary: string) => Promise<unknown>,
+  createOnly = false,
+) {
   const temporary = join(dirname(path), '.flowark-' + randomUUID() + '.tmp');
   const file = await open(temporary, 'wx', 0o600);
   await file.close();
   try {
     await write(temporary);
-    await rename(temporary, path);
+    if (createOnly) await link(temporary, path);
+    else await rename(temporary, path);
   } finally {
     await rm(temporary, { force: true });
   }
@@ -119,6 +126,7 @@ export async function fileOperation(
   bindings: Bindings,
   artifact: (path: string) => Promise<any>,
 ) {
+  if (n.type === 'excel' && n.operation === 'map') validateMappedFilename(n.name);
   if (n.version === 2) {
     assertRelativeName(n.name);
     if (n.operation === 'fill') assertRelativeName(n.templateName);
@@ -126,6 +134,18 @@ export async function fileOperation(
   const path = await scopedPath(bindings.files[n.binding], String(n.name), n.operation !== 'read');
   if (n.type === 'excel') {
     const workbook = new ExcelJS.Workbook();
+    if (n.operation === 'map') {
+      const rows = mappedRows(n, n.rows);
+      workbook.addWorksheet(n.sheet).addRows(rows);
+      try {
+        await atomicWrite(path, (temporary) => workbook.xlsx.writeFile(temporary), true);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'EEXIST')
+          throw new Error('输出文件已存在，请更换文件名；原文件未覆盖');
+        throw error;
+      }
+      return artifact(path);
+    }
     if (n.operation === 'read') {
       await workbook.xlsx.readFile(path);
       const sheet = workbook.worksheets[0];

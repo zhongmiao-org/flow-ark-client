@@ -27,6 +27,8 @@
 
 点击「长流程大纲」可按名称、步骤编号或动作类型搜索，展开所在分组和条件／循环分支；清单与流程图可切换。草稿与只读运行快照分别展示，「聚焦当前执行」只定位近期确认的实际执行步骤；循环的多次执行单独列出，编号不代表完成进度。查看运行详情后返回会保留大纲位置。画布的「聚焦所选步骤」恢复可读视图，参数输入保留手动缩放和平移。
 
+Excel 的「字段映射 · 新建工作簿」操作提供完整编辑页：记录字段或数组索引映射到指定列，分别设置表头和文本／数字／布尔类型。预览验证所有可解析记录并显示前三行；运行期来源只标记待执行核对。空值保留、重复列与类型冲突阻止保存，输出只新建 `.xlsx`，同名文件存在时停止。保存和取消只影响草稿，不写文件或改写已开始的运行；使用前需绑定输出目录。
+
 点击右上角「打开网页面板」即可在主窗口右侧输入网址、查看和操作网页，无需先运行流程。网页按 1920 像素桌面宽度排版，等比缩放至面板，高度随可视区域调整；窄面板中文字也会缩小。在流程资源中选择 FlowArk 内置浏览器后，可运行或逐步调试。收起面板、最小化工作台后任务继续；恢复窗口后仍在原网页。系统休眠或明确退出会停止任务，恢复后不自动重放。当前使用复杂表单验证功能，招聘站点校准暂停。
 
 休眠会撤销尚未完成的运行请求，恢复后需要重新发起；旧的计划触发和重跑确认不会继续创建任务。若本地记录写入失败，仍会停止实际执行资源，并保留存储故障和最后保存状态供核对。
@@ -91,6 +93,7 @@ pnpm test:runtime
 pnpm test:embedded-pointer
 pnpm test:script-editor
 pnpm test:flow-outline
+pnpm test:excel-mapping
 pnpm test:desktop
 FLOWARK_TEST_EXECUTABLE=/absolute/path/FlowArk.app/Contents/MacOS/FlowArk pnpm test:install
 FLOWARK_TEST_EXECUTABLE=/absolute/path/FlowArk.app/Contents/MacOS/FlowArk pnpm test:template-parameters
@@ -101,6 +104,8 @@ FLOWARK_TEST_EXECUTABLE=/absolute/path/FlowArk.app/Contents/MacOS/FlowArk pnpm t
 `test:script-editor` 验证 JS/TS 语法检查、脚本草稿保存/放弃、输入与超时校验，以及真实运行的历史输出；预览和语法检查不会执行脚本。
 
 `test:flow-outline` 验证真实 40 步流程的搜索／折叠、条件和循环实例、草稿与固定快照隔离、详情返回及延迟状态；结束时取消自身未完成的运行并确认测试实例退出。
+
+`test:excel-mapping` 验证字段冲突、预览失效、保存与放弃、静态和运行期来源、不可变快照，以及真实 Worker 工作簿输出与不覆盖已有文件。Excel 映射消费 contracts-v0.10.0，包内保留规范副本和校验摘要。
 
 完整业务／表单演示通过模板仓库的 `pnpm test:client` 验证，仅消费标准包和安装版公共接口。客户端保留最小生命周期、IPC、编辑器与进程夹具。本轮未重新验收所有历史桌面脚本或外部浏览器。
 
