@@ -11,6 +11,8 @@ import { scopedDescription, type PlanningScope } from '../shared/planning-scope'
 import { stepTitle } from './flow-outline';
 import TaskWebTargetPage from './TaskWebTargetPage';
 import FirstTaskGuide from './FirstTaskGuide';
+import TaskUnderstandingPage, { type OutputOptions } from './TaskUnderstandingPage';
+import { outputContext } from '../shared/task-output';
 import { learningSteps, type LearningStatus } from '../shared/learning';
 import { webContext } from '../shared/task-web-target';
 
@@ -62,13 +64,18 @@ export default function AITaskWorkspace(props: Props) {
   const [detail, setDetail] = useState<TaskDetail | null>(null);
   const [draft, setDraft] = useState<Draft>({ description: '', context: [], answers: {} });
   const [saved, setSaved] = useState('');
+  const [outputOptions, setOutputOptions] = useState<OutputOptions>({
+    name: '结果.txt',
+    onConflict: 'number',
+  });
+  const [savedOutput, setSavedOutput] = useState('');
   const [revision, setRevision] = useState(0);
   const [homeText, setHomeText] = useState('');
   const [learning, setLearning] = useState<LearningStatus>();
   const handledGuide = useRef(0);
-  const [page, setPage] = useState<'home' | 'guide' | 'brief' | 'target' | 'review' | 'check'>(
-    'home',
-  );
+  const [page, setPage] = useState<
+    'home' | 'guide' | 'brief' | 'target' | 'understand' | 'review' | 'check'
+  >('home');
   const backToBrief = useCallback(() => setPage('brief'), []);
   const location = useRef({ active: props.active, page });
   location.current = { active: props.active, page };
@@ -94,7 +101,9 @@ export default function AITaskWorkspace(props: Props) {
   const [view, setView] = useState<'list' | 'graph'>('list');
   const [selected, setSelected] = useState('');
   const [editingProposal, setEditingProposal] = useState(false);
-  const dirty = !!detail && JSON.stringify(draft) !== saved;
+  const contentDirty = !!detail && JSON.stringify(draft) !== saved;
+  const outputDirty = !!detail?.task.outputTarget && JSON.stringify(outputOptions) !== savedOutput;
+  const dirty = contentDirty || outputDirty;
   const generating = detail?.task.status === 'generating';
   const stale = !!detail && detail.task.revision !== revision;
   const result = detail?.proposal?.result;
@@ -109,23 +118,25 @@ export default function AITaskWorkspace(props: Props) {
   const scopedProposal = result?.kind === 'plan' && !!detail?.proposal?.scope;
   const scopeDiffView = scopedProposal && !editingProposal;
   const title =
-    page === 'guide'
-      ? '第一次，让我们一起完成'
-      : page === 'target'
-        ? '这次要操作哪里？'
-        : page === 'check'
-          ? '试运行前，最后确认一次'
-          : page === 'home'
-            ? '开始任务'
-            : page === 'brief'
-              ? '描述需求，带上必要资料'
-              : result?.kind === 'clarify'
-                ? '我理解你要……'
-                : result?.kind === 'unsupported'
-                  ? '这项任务还需要支持'
-                  : result?.kind === 'plan' && detail?.proposal?.baseFlow
-                    ? '检查 AI 提议的修改'
-                    : '先看看任务步骤';
+    page === 'understand'
+      ? '我理解你要……'
+      : page === 'guide'
+        ? '第一次，让我们一起完成'
+        : page === 'target'
+          ? '这次要操作哪里？'
+          : page === 'check'
+            ? '试运行前，最后确认一次'
+            : page === 'home'
+              ? '开始任务'
+              : page === 'brief'
+                ? '描述需求，带上必要资料'
+                : result?.kind === 'clarify'
+                  ? '我理解你要……'
+                  : result?.kind === 'unsupported'
+                    ? '这项任务还需要支持'
+                    : result?.kind === 'plan' && detail?.proposal?.baseFlow
+                      ? '检查 AI 提议的修改'
+                      : '先看看任务步骤';
 
   useEffect(() => {
     if (props.active)
@@ -133,16 +144,35 @@ export default function AITaskWorkspace(props: Props) {
         title,
         page === 'check'
           ? backToPlan
+          : page === 'understand'
+            ? () => void openTarget()
+            : page === 'target'
+              ? backToBrief
+              : page === 'guide'
+                ? () => {
+                    void back();
+                  }
+                : undefined,
+        page === 'understand'
+          ? '选择操作对象'
           : page === 'target'
-            ? backToBrief
+            ? '描述与附件'
             : page === 'guide'
-              ? () => {
-                  void back();
-                }
+              ? '开始任务'
               : undefined,
-        page === 'target' ? '描述与附件' : page === 'guide' ? '开始任务' : undefined,
       );
-  }, [props.active, title, page, backToPlan, backToBrief, props.onNavigation]);
+  }, [
+    props.active,
+    title,
+    page,
+    backToPlan,
+    backToBrief,
+    props.onNavigation,
+    draft,
+    outputOptions,
+    revision,
+    busy,
+  ]);
   useEffect(() => {
     if (!props.active) return;
     let live = true;
@@ -175,7 +205,11 @@ export default function AITaskWorkspace(props: Props) {
             next.task.status !== 'generating' &&
             next.proposal
           )
-            setPage('review');
+            setPage(
+              next.proposal?.result.kind === 'clarify' && !next.task.scope
+                ? 'understand'
+                : 'review',
+            );
         }
       } catch (e: any) {
         if (live) setError(e.message);
@@ -254,13 +288,21 @@ export default function AITaskWorkspace(props: Props) {
     }).finally(props.entryHandled);
   }, [props.active, props.entry?.key, busy]);
 
-  function accept(next: TaskDetail) {
+  function accept(next: TaskDetail, preserveOutput = false) {
     selectedTask.current = next.task.id;
     setDetail(next);
     const nextDraft = draftOf(next);
     setDraft(nextDraft);
     setSaved(JSON.stringify(nextDraft));
     setRevision(next.task.revision);
+    const options: OutputOptions = {
+      name:
+        next.task.outputTarget?.name ??
+        (learning?.taskId === next.task.id ? '页面标题.txt' : '结果.txt'),
+      onConflict: next.task.outputTarget?.onConflict ?? 'number',
+    };
+    setSavedOutput(JSON.stringify(options));
+    if (!preserveOutput) setOutputOptions(options);
   }
   function edit(next: Draft) {
     setDraft(next);
@@ -286,9 +328,19 @@ export default function AITaskWorkspace(props: Props) {
   async function save(): Promise<TaskDetail> {
     if (!detail) throw new Error('请先创建任务');
     if (stale) throw new Error('任务已在其他位置修改，请重新读取后继续');
-    if (!dirty) return detail;
-    const next: TaskDetail = await api('task.save', { id: detail.task.id, revision, ...draft });
-    accept(next);
+    let next = detail;
+    if (contentDirty) {
+      next = await api('task.save', { id: detail.task.id, revision, ...draft });
+      accept(next, true);
+    }
+    if (outputDirty) {
+      next = await api('task.output.configure', {
+        id: next.task.id,
+        revision: next.task.revision,
+        ...outputOptions,
+      });
+      accept(next);
+    }
     return next;
   }
   async function open(id: string) {
@@ -300,7 +352,15 @@ export default function AITaskWorkspace(props: Props) {
       setSelected('');
       setProvider(next.task.provider ?? 'deepseek');
       setModel(next.task.model ?? 'deepseek-flash');
-      setPage(next.proposal || next.flow ? 'review' : 'brief');
+      setPage(
+        next.proposal?.result.kind === 'clarify' && !next.task.scope
+          ? 'understand'
+          : next.proposal || next.flow
+            ? 'review'
+            : next.task.webTarget || next.task.outputTarget
+              ? 'understand'
+              : 'brief',
+      );
     });
   }
   async function create(description: string) {
@@ -399,6 +459,34 @@ export default function AITaskWorkspace(props: Props) {
       setPage('target');
     });
   }
+  async function understand() {
+    await run(async () => {
+      await save();
+      props.showBrowser(false);
+      setPage('understand');
+      setReviewed(false);
+    });
+  }
+  async function chooseOutput() {
+    await run(async () => {
+      if (!detail || stale) throw new Error('请重新读取任务后选择');
+      let next = detail;
+      if (contentDirty) {
+        next = await api('task.save', { id: detail.task.id, revision, ...draft });
+        accept(next, true);
+      }
+      props.showBrowser(false);
+      const chosen: TaskDetail = await api('task.output.choose', {
+        id: next.task.id,
+        revision: next.task.revision,
+        ...outputOptions,
+      });
+      if (chosen.task.outputTarget?.selectionId !== next.task.outputTarget?.selectionId) {
+        accept(chosen);
+        setReviewed(false);
+      }
+    });
+  }
   async function showGuide() {
     await run(async () => {
       if (detail && dirty) await save();
@@ -417,7 +505,15 @@ export default function AITaskWorkspace(props: Props) {
       setReviewed(false);
       setProvider(next.detail.task.provider ?? 'deepseek');
       setModel(next.detail.task.model ?? 'deepseek-flash');
-      setPage(next.detail.proposal || next.detail.flow ? 'review' : 'brief');
+      setPage(
+        next.detail.proposal?.result.kind === 'clarify'
+          ? 'understand'
+          : next.detail.proposal || next.detail.flow
+            ? 'review'
+            : next.detail.task.webTarget || next.detail.task.outputTarget
+              ? 'understand'
+              : 'brief',
+      );
       if (next.learning.latestRunId) {
         const result = await api('run.detail', { id: next.learning.latestRunId });
         if (result.run)
@@ -460,6 +556,201 @@ export default function AITaskWorkspace(props: Props) {
       });
   };
 
+  const planningControls = detail && (
+    <>
+      {page === 'understand' ? (
+        <details className="task-understanding-provider">
+          <summary>
+            AI 服务 · {providerName} · {model}
+          </summary>{' '}
+          <fieldset className="ai-task-provider" disabled={inputDisabled}>
+            <label>
+              AI 服务
+              <select
+                value={provider}
+                onChange={(e) => {
+                  const p = e.target.value as typeof provider;
+                  setProvider(p);
+                  setModel(p === 'deepseek' ? 'deepseek-flash' : 'gpt-5.3-codex');
+                  setReviewed(false);
+                }}
+              >
+                <option value="deepseek">DeepSeek</option>
+                <option value="openai-codex">OpenAI · Codex</option>
+              </select>
+            </label>
+            <label>
+              模型 ID
+              <input
+                value={model}
+                maxLength={100}
+                onChange={(e) => {
+                  setModel(e.target.value);
+                  setReviewed(false);
+                }}
+              />
+            </label>
+          </fieldset>
+        </details>
+      ) : (
+        <fieldset className="ai-task-provider" disabled={inputDisabled}>
+          <label>
+            AI 服务
+            <select
+              value={provider}
+              onChange={(e) => {
+                const p = e.target.value as typeof provider;
+                setProvider(p);
+                setModel(p === 'deepseek' ? 'deepseek-flash' : 'gpt-5.3-codex');
+                setReviewed(false);
+              }}
+            >
+              <option value="deepseek">DeepSeek</option>
+              <option value="openai-codex">OpenAI · Codex</option>
+            </select>
+          </label>
+          <label>
+            模型 ID
+            <input
+              value={model}
+              maxLength={100}
+              onChange={(e) => {
+                setModel(e.target.value);
+                setReviewed(false);
+              }}
+            />
+          </label>
+        </fieldset>
+      )}
+      {!props.data.credentials.includes(provider) && (
+        <div className="ai-task-note">
+          <p>{providerName} 尚未配置，先保存草稿，再配置服务。</p>
+          <button
+            disabled={busy}
+            onClick={() =>
+              void run(async () => {
+                await save();
+                props.settings(provider, model);
+              })
+            }
+          >
+            配置 AI 服务
+          </button>
+        </div>
+      )}
+      <details className="ai-task-disclosure">
+        <summary>查看本次发送给 {providerName} 的内容</summary>
+        <p>
+          {scope
+            ? '所选步骤的修改要求与范围、已选资料、补问答案、当前完整流程及支持的能力说明。原任务描述和本机绑定不会额外加入。'
+            : '描述、所选资料与网页元数据、补问答案、当前已采纳流程及支持的能力说明。'}
+        </p>
+        <h3>描述</h3>
+        <pre>{scope ? scopedDescription(scope) : draft.description}</pre>
+        {draft.context.map((entry) => (
+          <div key={entry.id}>
+            <h3>{entry.label}</h3>
+            <pre>{entry.text}</pre>
+          </div>
+        ))}
+        {detail.task.webTarget && (
+          <div>
+            <h3>已选网页 · 只读</h3>
+            <pre>
+              {
+                webContext(
+                  detail.task.webTarget,
+                  detail.task.outputTarget
+                    ? { ...detail.task.outputTarget, ...outputOptions }
+                    : undefined,
+                ).text
+              }
+            </pre>
+          </div>
+        )}
+        {detail.task.outputTarget && (
+          <div>
+            <h3>已选输出 · 路径留在本机</h3>
+            <pre>{outputContext({ ...detail.task.outputTarget, ...outputOptions }).text}</pre>
+          </div>
+        )}
+        {Object.keys(draft.answers).length > 0 && (
+          <>
+            <h3>补问答案</h3>
+            <pre>{text(draft.answers)}</pre>
+          </>
+        )}
+        {detail.flow && (
+          <>
+            <h3>当前流程 · {detail.flow.flow.name}</h3>
+            <pre>{text(detail.flow.flow)}</pre>
+          </>
+        )}
+      </details>
+      <label className="ai-task-checkbox">
+        <input
+          type="checkbox"
+          checked={reviewed}
+          disabled={inputDisabled}
+          onChange={(e) => setReviewed(e.target.checked)}
+        />
+        我已核对本次内容，将发送给 {providerName}
+      </label>
+      <div className="ai-task-actions">
+        {generating ? (
+          <button
+            disabled={busy}
+            onClick={() =>
+              void run(async () => {
+                accept(await api('task.cancel', { id: detail.task.id }));
+                setReviewed(false);
+              })
+            }
+          >
+            取消生成
+          </button>
+        ) : (
+          <button
+            className="primary"
+            disabled={
+              busy ||
+              stale ||
+              !(scope?.instruction ?? draft.description).trim() ||
+              scopeConflict ||
+              !model.trim() ||
+              !reviewed ||
+              !props.data.credentials.includes(provider) ||
+              (page === 'understand' &&
+                learning?.taskId === detail.task.id &&
+                !detail.task.outputTarget) ||
+              (!!detail.task.outputTarget && !outputOptions.name.trim())
+            }
+            onClick={() => void generate()}
+          >
+            {page === 'understand' || result?.kind === 'clarify'
+              ? '确认并生成方案'
+              : result || detail.flow
+                ? scope
+                  ? '生成这一步的修改'
+                  : '生成修改方案'
+                : '理解我的任务'}
+          </button>
+        )}
+        <button
+          disabled={inputDisabled || !dirty || stale}
+          onClick={() =>
+            void run(async () => {
+              await save();
+              setMessage('任务草稿已保存。');
+            })
+          }
+        >
+          保存任务草稿
+        </button>
+      </div>
+    </>
+  );
+
   const workspace = (
     <div
       className={`page ai-task-page${page === 'target' ? ' ai-task-web-target' : ''}${scope ? ' ai-task-scoped' : ''}${scopeDiffView ? ' ai-task-scoped-diff' : ''}`}
@@ -473,16 +764,18 @@ export default function AITaskWorkspace(props: Props) {
               ? '大约 2 分钟 · 使用无账号的示例网页和你选择的输出目录'
               : page === 'home'
                 ? '用一句话开始。FlowArk 先给你看步骤，由你决定何时执行。'
-                : page === 'target'
-                  ? '第 2 步 / 选目标 · 只有你明确选择的对象会进入任务上下文'
-                  : generating
-                    ? '正在理解本次任务，你可以取消生成。'
-                    : scope
-                      ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : scope.nodeId} · 尚未执行`
-                      : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
+                : page === 'understand'
+                  ? '第 3 步 / 确认理解 · 缺少的信息用简单选择补齐'
+                  : page === 'target'
+                    ? '第 2 步 / 选目标 · 只有你明确选择的对象会进入任务上下文'
+                    : generating
+                      ? '正在理解本次任务，你可以取消生成。'
+                      : scope
+                        ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : scope.nodeId} · 尚未执行`
+                        : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
           </p>
         </div>
-        {page !== 'home' && page !== 'target' && page !== 'guide' && (
+        {page !== 'home' && page !== 'target' && page !== 'guide' && page !== 'understand' && (
           <div className="ai-task-actions">
             {detail?.flow && detail.flow.id === props.sourceFlowId && (
               <button
@@ -629,14 +922,14 @@ export default function AITaskWorkspace(props: Props) {
             epoch.current++;
             accept(next);
             setReviewed(false);
-            setPage('brief');
+            setPage('understand');
             props.showBrowser(false);
           }}
         />
       ) : (
         detail && (
           <>
-            {learning?.taskId === detail.task.id && (
+            {page !== 'understand' && learning?.taskId === detail.task.id && (
               <div className="learning-progress" aria-label="教学进度">
                 {learningSteps.map((label, i) => (
                   <span
@@ -654,7 +947,7 @@ export default function AITaskWorkspace(props: Props) {
                 <small>学习记录与运行进度分开保存</small>
               </div>
             )}
-            {!scopeDiffView && (
+            {!scopeDiffView && page !== 'understand' && (
               <div className="ai-task-state" role="status">
                 <span>{status[detail.task.status]}</span>
                 <span>
@@ -688,617 +981,551 @@ export default function AITaskWorkspace(props: Props) {
                 单步修改的基线已变化。请返回来源核对，或明确改为完整任务修改；当前要求已保留。
               </p>
             )}
-            <div className={`ai-task-columns ${page === 'review' ? 'ai-task-review' : ''}`}>
-              <section className="ai-task-card ai-task-input">
-                {scopeDiffView ? (
-                  <>
-                    <div className="ai-step-user">
-                      <b>你</b>
-                      <p>{scope?.instruction}</p>
-                    </div>
-                    <div className="ai-task-note ai-step-reply">
-                      <b>FlowArk</b>
-                      <p>{result?.summary}</p>
-                      <p>已核对：只调整所选步骤，其他步骤、结构、静态资源与现有授权保持不变。</p>
-                    </div>
-                    <p className="ai-task-note">
-                      采纳只更新草稿，当前运行和已建立计划仍使用原快照。
-                    </p>
-                    <details className="ai-task-disclosure">
-                      <summary>本次提案来源</summary>
-                      <p>
-                        任务修订 {revision} · 步骤 {detail.proposal!.scope!.nodeId} · 基线{' '}
-                        {detail.proposal!.baseFlowHash.slice(0, 12)}
-                      </p>
-                      <p>
-                        {detail.task.provider} · {detail.task.model}
-                      </p>
-                    </details>
-                  </>
-                ) : (
-                  <>
-                    {scope && (
-                      <div className="ai-task-scope-source">
-                        <b>
-                          仅修改第 {scopeIndex + 1} 步 ·{' '}
-                          {scopedStep ? stepTitle(scopedStep) : scope.nodeId}
-                        </b>
-                        <small>
-                          步骤 {scope.nodeId} · 基线 {scope.baseFlowHash.slice(0, 12)}
-                        </small>
-                        <p>其他步骤、子步骤和静态资源保持不变。采纳只更新草稿。</p>
+            {page === 'understand' ? (
+              <TaskUnderstandingPage
+                task={detail.task}
+                description={draft.description}
+                result={result}
+                answers={draft.answers}
+                options={outputOptions}
+                busy={inputDisabled || stale}
+                requiredOutput={learning?.taskId === detail.task.id}
+                changed={(options) => {
+                  setOutputOptions(options);
+                  setReviewed(false);
+                  setMessage('');
+                }}
+                answer={(id, value) =>
+                  edit({ ...draft, answers: { ...draft.answers, [id]: value } })
+                }
+                choose={() => void chooseOutput()}
+                clear={() =>
+                  void run(async () => {
+                    if (!detail || stale) return;
+                    const next: TaskDetail = await api('task.output.clear', {
+                      id: detail.task.id,
+                      revision,
+                    });
+                    // Keep unsaved answers while adopting the new output revision.
+                    const currentDraft = draft;
+                    accept(next);
+                    setDraft(currentDraft);
+                    setReviewed(false);
+                  })
+                }
+                describe={() =>
+                  void run(async () => {
+                    await save();
+                    setPage('brief');
+                    setReviewed(false);
+                  })
+                }
+                target={() => void openTarget()}
+                controls={planningControls}
+              />
+            ) : (
+              <div className={`ai-task-columns ${page === 'review' ? 'ai-task-review' : ''}`}>
+                <section className="ai-task-card ai-task-input">
+                  {scopeDiffView ? (
+                    <>
+                      <div className="ai-step-user">
+                        <b>你</b>
+                        <p>{scope?.instruction}</p>
                       </div>
-                    )}
-                    <label htmlFor="task-description">{scope ? '这一步怎么改' : '你的需求'}</label>
-                    <textarea
-                      id="task-description"
-                      disabled={inputDisabled}
-                      value={scope ? scope.instruction : draft.description}
-                      maxLength={scope ? 10000 : 20000}
-                      onChange={(e) =>
-                        edit(
-                          scope
-                            ? { ...draft, scope: { ...scope, instruction: e.target.value } }
-                            : { ...draft, description: e.target.value },
-                        )
-                      }
-                    />
-                    {scope && (
-                      <details className="ai-task-disclosure">
-                        <summary>原任务描述</summary>
-                        <p>{draft.description || '此任务从已保存流程开始。'}</p>
-                      </details>
-                    )}
-                    {result && (
-                      <div className="ai-task-note">
+                      <div className="ai-task-note ai-step-reply">
                         <b>FlowArk</b>
-                        <p>{result.summary}</p>
+                        <p>{result?.summary}</p>
+                        <p>已核对：只调整所选步骤，其他步骤、结构、静态资源与现有授权保持不变。</p>
                       </div>
-                    )}
-                    {page === 'brief' && (
-                      <>
-                        <div className="ai-task-actions">
-                          <button
-                            disabled={
-                              inputDisabled ||
-                              draft.context.length >= (detail.task.webTarget ? 19 : 20)
-                            }
-                            onClick={() =>
-                              edit({
-                                ...draft,
-                                context: [
-                                  ...draft.context,
-                                  {
-                                    id: crypto.randomUUID(),
-                                    kind: 'text',
-                                    label: '补充资料',
-                                    text: '',
-                                  },
-                                ],
-                              })
-                            }
-                          >
-                            附加文本资料
-                          </button>
+                      <p className="ai-task-note">
+                        采纳只更新草稿，当前运行和已建立计划仍使用原快照。
+                      </p>
+                      <details className="ai-task-disclosure">
+                        <summary>本次提案来源</summary>
+                        <p>
+                          任务修订 {revision} · 步骤 {detail.proposal!.scope!.nodeId} · 基线{' '}
+                          {detail.proposal!.baseFlowHash.slice(0, 12)}
+                        </p>
+                        <p>
+                          {detail.task.provider} · {detail.task.model}
+                        </p>
+                      </details>
+                    </>
+                  ) : (
+                    <>
+                      {scope && (
+                        <div className="ai-task-scope-source">
+                          <b>
+                            仅修改第 {scopeIndex + 1} 步 ·{' '}
+                            {scopedStep ? stepTitle(scopedStep) : scope.nodeId}
+                          </b>
+                          <small>
+                            步骤 {scope.nodeId} · 基线 {scope.baseFlowHash.slice(0, 12)}
+                          </small>
+                          <p>其他步骤、子步骤和静态资源保持不变。采纳只更新草稿。</p>
+                        </div>
+                      )}
+                      <label htmlFor="task-description">
+                        {scope ? '这一步怎么改' : '你的需求'}
+                      </label>
+                      <textarea
+                        id="task-description"
+                        disabled={inputDisabled}
+                        value={scope ? scope.instruction : draft.description}
+                        maxLength={scope ? 10000 : 20000}
+                        onChange={(e) =>
+                          edit(
+                            scope
+                              ? { ...draft, scope: { ...scope, instruction: e.target.value } }
+                              : { ...draft, description: e.target.value },
+                          )
+                        }
+                      />
+                      {scope && (
+                        <details className="ai-task-disclosure">
+                          <summary>原任务描述</summary>
+                          <p>{draft.description || '此任务从已保存流程开始。'}</p>
+                        </details>
+                      )}
+                      {result && (
+                        <div className="ai-task-note">
+                          <b>FlowArk</b>
+                          <p>{result.summary}</p>
+                        </div>
+                      )}
+                      {page === 'brief' && (
+                        <>
+                          <div className="ai-task-actions">
+                            <button
+                              disabled={
+                                inputDisabled ||
+                                draft.context.length >=
+                                  20 -
+                                    Number(!!detail.task.webTarget) -
+                                    Number(!!detail.task.outputTarget)
+                              }
+                              onClick={() =>
+                                edit({
+                                  ...draft,
+                                  context: [
+                                    ...draft.context,
+                                    {
+                                      id: crypto.randomUUID(),
+                                      kind: 'text',
+                                      label: '补充资料',
+                                      text: '',
+                                    },
+                                  ],
+                                })
+                              }
+                            >
+                              附加文本资料
+                            </button>
+                            <button
+                              disabled={inputDisabled || !!scope}
+                              onClick={() => void openTarget()}
+                            >
+                              网页链接与对象
+                            </button>
+                            <button
+                              disabled={inputDisabled || !!scope}
+                              onClick={() => void understand()}
+                            >
+                              理解与输出位置
+                            </button>
+                          </div>
+                          <h2>
+                            已选上下文 ·{' '}
+                            {draft.context.length +
+                              Number(!!detail.task.webTarget) +
+                              Number(!!detail.task.outputTarget)}{' '}
+                            项
+                          </h2>
+                          {draft.context.map((entry, index) => (
+                            <fieldset
+                              key={entry.id}
+                              className="ai-task-context"
+                              disabled={inputDisabled}
+                            >
+                              <label>
+                                资料名称
+                                <input
+                                  aria-label={`资料 ${index + 1} 名称`}
+                                  value={entry.label}
+                                  maxLength={200}
+                                  onChange={(e) =>
+                                    edit({
+                                      ...draft,
+                                      context: draft.context.map((c) =>
+                                        c.id === entry.id ? { ...c, label: e.target.value } : c,
+                                      ),
+                                    })
+                                  }
+                                />
+                              </label>
+                              <label>
+                                资料内容
+                                <textarea
+                                  aria-label={`资料 ${index + 1} 内容`}
+                                  value={entry.text}
+                                  maxLength={50000}
+                                  onChange={(e) =>
+                                    edit({
+                                      ...draft,
+                                      context: draft.context.map((c) =>
+                                        c.id === entry.id ? { ...c, text: e.target.value } : c,
+                                      ),
+                                    })
+                                  }
+                                />
+                              </label>
+                              <button
+                                onClick={() =>
+                                  edit({
+                                    ...draft,
+                                    context: draft.context.filter((c) => c.id !== entry.id),
+                                  })
+                                }
+                              >
+                                移除资料 {index + 1}
+                              </button>
+                            </fieldset>
+                          ))}
+                        </>
+                      )}
+                      {detail.task.webTarget && (
+                        <div className="ai-task-note" aria-label="已选网页来源">
+                          <b>{detail.task.webTarget.page.title || '未命名网页'}</b>
+                          <p>{detail.task.webTarget.page.url}</p>
+                          <p>只读取此网页 · 账号未核对 · 本机内置浏览器</p>
                           <button
                             disabled={inputDisabled || !!scope}
                             onClick={() => void openTarget()}
                           >
-                            网页链接与对象
+                            查看或更换网页目标
                           </button>
                         </div>
-                        <h2>
-                          已选上下文 · {draft.context.length + Number(!!detail.task.webTarget)} 项
-                        </h2>
-                        {draft.context.map((entry, index) => (
+                      )}
+                      {result?.kind === 'clarify' &&
+                        result.questions.map((question) => (
                           <fieldset
-                            key={entry.id}
-                            className="ai-task-context"
+                            className="ai-task-question"
+                            key={question.id}
                             disabled={inputDisabled}
                           >
-                            <label>
-                              资料名称
-                              <input
-                                aria-label={`资料 ${index + 1} 名称`}
-                                value={entry.label}
-                                maxLength={200}
-                                onChange={(e) =>
-                                  edit({
-                                    ...draft,
-                                    context: draft.context.map((c) =>
-                                      c.id === entry.id ? { ...c, label: e.target.value } : c,
-                                    ),
-                                  })
-                                }
-                              />
-                            </label>
-                            <label>
-                              资料内容
-                              <textarea
-                                aria-label={`资料 ${index + 1} 内容`}
-                                value={entry.text}
-                                maxLength={50000}
-                                onChange={(e) =>
-                                  edit({
-                                    ...draft,
-                                    context: draft.context.map((c) =>
-                                      c.id === entry.id ? { ...c, text: e.target.value } : c,
-                                    ),
-                                  })
-                                }
-                              />
-                            </label>
-                            <button
-                              onClick={() =>
+                            <legend>{question.prompt}</legend>
+                            <div className="ai-task-options">
+                              {question.options.map((option) => (
+                                <button
+                                  type="button"
+                                  key={option}
+                                  aria-pressed={draft.answers[question.id] === option}
+                                  onClick={() =>
+                                    edit({
+                                      ...draft,
+                                      answers: { ...draft.answers, [question.id]: option },
+                                    })
+                                  }
+                                >
+                                  {option}
+                                </button>
+                              ))}
+                            </div>
+                            <textarea
+                              aria-label={question.prompt}
+                              value={draft.answers[question.id] ?? ''}
+                              maxLength={3000}
+                              placeholder="也可以直接补充说明"
+                              onChange={(e) =>
                                 edit({
                                   ...draft,
-                                  context: draft.context.filter((c) => c.id !== entry.id),
+                                  answers: { ...draft.answers, [question.id]: e.target.value },
                                 })
                               }
-                            >
-                              移除资料 {index + 1}
-                            </button>
+                            />
                           </fieldset>
                         ))}
-                      </>
-                    )}
-                    {detail.task.webTarget && (
-                      <div className="ai-task-note" aria-label="已选网页来源">
-                        <b>{detail.task.webTarget.page.title || '未命名网页'}</b>
-                        <p>{detail.task.webTarget.page.url}</p>
-                        <p>只读取此网页 · 账号未核对 · 本机内置浏览器</p>
-                        <button
-                          disabled={inputDisabled || !!scope}
-                          onClick={() => void openTarget()}
-                        >
-                          查看或更换网页目标
+                      {planningControls}
+                      {page === 'review' && (
+                        <button disabled={busy} onClick={() => setPage('brief')}>
+                          编辑描述与资料
                         </button>
-                      </div>
-                    )}
-                    {result?.kind === 'clarify' &&
-                      result.questions.map((question) => (
-                        <fieldset
-                          className="ai-task-question"
-                          key={question.id}
+                      )}
+                      {scope && (
+                        <button
                           disabled={inputDisabled}
-                        >
-                          <legend>{question.prompt}</legend>
-                          <div className="ai-task-options">
-                            {question.options.map((option) => (
-                              <button
-                                type="button"
-                                key={option}
-                                aria-pressed={draft.answers[question.id] === option}
-                                onClick={() =>
-                                  edit({
-                                    ...draft,
-                                    answers: { ...draft.answers, [question.id]: option },
-                                  })
-                                }
-                              >
-                                {option}
-                              </button>
-                            ))}
-                          </div>
-                          <textarea
-                            aria-label={question.prompt}
-                            value={draft.answers[question.id] ?? ''}
-                            maxLength={3000}
-                            placeholder="也可以直接补充说明"
-                            onChange={(e) =>
-                              edit({
-                                ...draft,
-                                answers: { ...draft.answers, [question.id]: e.target.value },
-                              })
-                            }
-                          />
-                        </fieldset>
-                      ))}
-                    <fieldset className="ai-task-provider" disabled={inputDisabled}>
-                      <label>
-                        AI 服务
-                        <select
-                          value={provider}
-                          onChange={(e) => {
-                            const p = e.target.value as typeof provider;
-                            setProvider(p);
-                            setModel(p === 'deepseek' ? 'deepseek-flash' : 'gpt-5.3-codex');
-                            setReviewed(false);
-                          }}
-                        >
-                          <option value="deepseek">DeepSeek</option>
-                          <option value="openai-codex">OpenAI · Codex</option>
-                        </select>
-                      </label>
-                      <label>
-                        模型 ID
-                        <input
-                          value={model}
-                          maxLength={100}
-                          onChange={(e) => {
-                            setModel(e.target.value);
-                            setReviewed(false);
-                          }}
-                        />
-                      </label>
-                    </fieldset>
-                    {!props.data.credentials.includes(provider) && (
-                      <div className="ai-task-note">
-                        <p>{providerName} 尚未配置，先保存草稿，再配置服务。</p>
-                        <button
-                          disabled={busy}
                           onClick={() =>
                             void run(async () => {
-                              await save();
-                              props.settings(provider, model);
-                            })
-                          }
-                        >
-                          配置 AI 服务
-                        </button>
-                      </div>
-                    )}
-                    <details className="ai-task-disclosure">
-                      <summary>查看本次发送给 {providerName} 的内容</summary>
-                      <p>
-                        {scope
-                          ? '所选步骤的修改要求与范围、已选资料、补问答案、当前完整流程及支持的能力说明。原任务描述和本机绑定不会额外加入。'
-                          : '描述、所选资料与网页元数据、补问答案、当前已采纳流程及支持的能力说明。'}
-                      </p>
-                      <h3>描述</h3>
-                      <pre>{scope ? scopedDescription(scope) : draft.description}</pre>
-                      {draft.context.map((entry) => (
-                        <div key={entry.id}>
-                          <h3>{entry.label}</h3>
-                          <pre>{entry.text}</pre>
-                        </div>
-                      ))}
-                      {detail.task.webTarget && (
-                        <div>
-                          <h3>已选网页 · 只读</h3>
-                          <pre>{webContext(detail.task.webTarget).text}</pre>
-                        </div>
-                      )}
-                      {Object.keys(draft.answers).length > 0 && (
-                        <>
-                          <h3>补问答案</h3>
-                          <pre>{text(draft.answers)}</pre>
-                        </>
-                      )}
-                      {detail.flow && (
-                        <>
-                          <h3>当前流程 · {detail.flow.flow.name}</h3>
-                          <pre>{text(detail.flow.flow)}</pre>
-                        </>
-                      )}
-                    </details>
-                    <label className="ai-task-checkbox">
-                      <input
-                        type="checkbox"
-                        checked={reviewed}
-                        disabled={inputDisabled}
-                        onChange={(e) => setReviewed(e.target.checked)}
-                      />
-                      我已核对本次内容，将发送给 {providerName}
-                    </label>
-                    <div className="ai-task-actions">
-                      {generating ? (
-                        <button
-                          disabled={busy}
-                          onClick={() =>
-                            void run(async () => {
-                              accept(await api('task.cancel', { id: detail.task.id }));
+                              const { scope: _scope, ...whole } = draft;
+                              accept(
+                                await api('task.save', {
+                                  id: detail.task.id,
+                                  revision,
+                                  ...whole,
+                                  answers: {},
+                                }),
+                              );
                               setReviewed(false);
+                              setMessage(
+                                '已退出单步范围。接下来将按完整任务需求生成，请重新核对。',
+                              );
                             })
                           }
                         >
-                          取消生成
-                        </button>
-                      ) : (
-                        <button
-                          className="primary"
-                          disabled={
-                            busy ||
-                            stale ||
-                            !(scope?.instruction ?? draft.description).trim() ||
-                            scopeConflict ||
-                            !model.trim() ||
-                            !reviewed ||
-                            !props.data.credentials.includes(provider)
-                          }
-                          onClick={() => void generate()}
-                        >
-                          {result?.kind === 'clarify'
-                            ? '确认并生成方案'
-                            : result || detail.flow
-                              ? scope
-                                ? '生成这一步的修改'
-                                : '生成修改方案'
-                              : '理解我的任务'}
+                          改为修改完整任务
                         </button>
                       )}
-                      <button
-                        disabled={inputDisabled || !dirty || stale}
-                        onClick={() =>
-                          void run(async () => {
-                            await save();
-                            setMessage('任务草稿已保存。');
-                          })
-                        }
-                      >
-                        保存任务草稿
-                      </button>
-                    </div>
-                    {page === 'review' && (
-                      <button disabled={busy} onClick={() => setPage('brief')}>
-                        编辑描述与资料
-                      </button>
-                    )}
-                    {scope && (
-                      <button
-                        disabled={inputDisabled}
-                        onClick={() =>
-                          void run(async () => {
-                            const { scope: _scope, ...whole } = draft;
-                            accept(
-                              await api('task.save', {
-                                id: detail.task.id,
-                                revision,
-                                ...whole,
-                                answers: {},
-                              }),
-                            );
-                            setReviewed(false);
-                            setMessage('已退出单步范围。接下来将按完整任务需求生成，请重新核对。');
-                          })
-                        }
-                      >
-                        改为修改完整任务
-                      </button>
-                    )}
-                  </>
-                )}
-              </section>
-              <section className="ai-task-card ai-task-result">
-                {generating ? (
-                  <div className="ai-task-empty" role="status">
-                    <h2>正在理解你的任务</h2>
-                    <p>
-                      {providerName} · {model}
-                    </p>
-                    <p>收到完整方案后才能采纳。取消会保留原草稿。</p>
-                  </div>
-                ) : page === 'brief' && !flow ? (
-                  <>
-                    <h2>任务会怎样完成？</h2>
-                    <div className="ai-task-note">
-                      <h2>先理解，再执行</h2>
-                      <p>先明确输入、操作对象、修改范围与结果。</p>
-                    </div>
-                    <div className="ai-task-card">
-                      <h2>先展示方案</h2>
-                      <p>你可以补充要求，也可以切换到流程图。</p>
-                    </div>
-                    <div className="ai-task-card">
-                      <h2>执行前再次检查</h2>
-                      <p>采纳后检查目标与权限，由你决定何时执行。</p>
-                    </div>
-                  </>
-                ) : scopedProposal && flow ? (
-                  <>
-                    <h2>
-                      修改范围 ·{' '}
-                      {new Set(detail.changes.map((change) => change.nodeId).filter(Boolean)).size}{' '}
-                      / {flatten(flow.steps).length} 步
-                    </h2>
-                    <ScopedChanges
-                      changes={detail.changes}
-                      before={flatten(detail.proposal!.baseFlow!.steps).find(
-                        (step) => step.id === detail.proposal!.scope!.nodeId,
-                      )}
-                      after={flatten(flow.steps).find(
-                        (step) => step.id === detail.proposal!.scope!.nodeId,
-                      )}
-                    />
-                    <p>已核对：其他步骤、结构和静态资源保持不变；现有绑定和权限不增加。</p>
-                    {detail.conflict && (
-                      <p className="ai-task-note ai-task-failure" role="alert">
-                        原流程或绑定已变化，请重新核对；不能采纳旧提案。
+                    </>
+                  )}
+                </section>
+                <section className="ai-task-card ai-task-result">
+                  {generating ? (
+                    <div className="ai-task-empty" role="status">
+                      <h2>正在理解你的任务</h2>
+                      <p>
+                        {providerName} · {model}
                       </p>
-                    )}
-                    <div className="ai-task-actions">
-                      <button
-                        className="primary"
-                        disabled={busy || dirty || stale || detail.conflict}
-                        onClick={() => void proposalAction('adopt')}
-                      >
-                        采纳修改
-                      </button>
-                      <button
-                        disabled={busy || dirty || stale}
-                        onClick={() => void proposalAction('reject')}
-                      >
-                        不采纳
-                      </button>
+                      <p>收到完整方案后才能采纳。取消会保留原草稿。</p>
                     </div>
-                    <button
-                      disabled={inputDisabled}
-                      onClick={() => {
-                        setEditingProposal(true);
-                        requestAnimationFrame(() =>
-                          document.querySelector<HTMLTextAreaElement>('#task-description')?.focus(),
-                        );
-                      }}
-                    >
-                      继续描述修改
-                    </button>
-                  </>
-                ) : flow ? (
-                  <>
-                    <div className="ai-task-meta">
-                      <h2>{flow.name}</h2>
-                      <span className="badge">{detail.proposal ? '待采纳方案' : '已保存草稿'}</span>
-                    </div>
-                    <div className="ai-task-actions" aria-label="方案视图">
-                      <button aria-pressed={view === 'list'} onClick={() => setView('list')}>
-                        步骤清单
-                      </button>
-                      <button aria-pressed={view === 'graph'} onClick={() => setView('graph')}>
-                        流程图
-                      </button>
-                    </div>
-                    {view === 'list' ? (
-                      <StepList steps={flow.steps} selected={selected} select={setSelected} />
-                    ) : (
-                      <div className="ai-task-graph">
-                        <DiagramCanvas {...diagram} selected={selected} select={setSelected} />
+                  ) : page === 'brief' && !flow ? (
+                    <>
+                      <h2>任务会怎样完成？</h2>
+                      <div className="ai-task-note">
+                        <h2>先理解，再执行</h2>
+                        <p>先明确输入、操作对象、修改范围与结果。</p>
                       </div>
-                    )}
-                    {selectedStep && (
-                      <details open className="ai-task-disclosure">
-                        <summary>
-                          所选步骤 ·{' '}
-                          {typeof selectedStep.name === 'string' && selectedStep.name
-                            ? selectedStep.name
-                            : kinds[selectedStep.type]?.label}{' '}
-                          · {selectedStep.id}
-                        </summary>
-                        <pre>{text(selectedStep)}</pre>
-                        {!scope && (
-                          <button
-                            disabled={inputDisabled || dirty || stale || !!detail.proposal}
-                            onClick={() => void run(() => chooseScope(detail, selectedStep.id))}
-                          >
-                            用 AI 修改此步
-                          </button>
+                      <div className="ai-task-card">
+                        <h2>先展示方案</h2>
+                        <p>你可以补充要求，也可以切换到流程图。</p>
+                      </div>
+                      <div className="ai-task-card">
+                        <h2>执行前再次检查</h2>
+                        <p>采纳后检查目标与权限，由你决定何时执行。</p>
+                      </div>
+                    </>
+                  ) : scopedProposal && flow ? (
+                    <>
+                      <h2>
+                        修改范围 ·{' '}
+                        {
+                          new Set(detail.changes.map((change) => change.nodeId).filter(Boolean))
+                            .size
+                        }{' '}
+                        / {flatten(flow.steps).length} 步
+                      </h2>
+                      <ScopedChanges
+                        changes={detail.changes}
+                        before={flatten(detail.proposal!.baseFlow!.steps).find(
+                          (step) => step.id === detail.proposal!.scope!.nodeId,
                         )}
-                      </details>
-                    )}
-                    {detail.proposal && (
-                      <>
-                        <h2>资源与权限</h2>
-                        <ul className="ai-task-resources">
-                          {detail.resources.map((resource, i) => (
-                            <li key={i}>{resource}</li>
-                          ))}
-                          {!detail.resources.length && (
-                            <li>没有文件、浏览器、HTTP 或脚本资源操作。</li>
-                          )}
-                          <li>声明的能力：{flow.requiredCapabilities.join('、') || '无'}</li>
-                        </ul>
-                        <details className="ai-task-diff" open={!!detail.proposal.baseFlow}>
-                          <summary>检查修改 · {detail.changes.length} 项</summary>
-                          {detail.changes.map((change, index) => (
-                            <div className="ai-task-change" key={index}>
-                              <h3>
-                                {
-                                  {
-                                    added: '新增',
-                                    removed: '删除',
-                                    changed: '修改',
-                                    moved: '移动',
-                                  }[change.kind]
-                                }{' '}
-                                · {change.label}
-                              </h3>
-                              <small>{change.path}</small>
-                              <div>
-                                <section>
-                                  <b>原值</b>
-                                  <pre>{text(change.before)}</pre>
-                                </section>
-                                <section>
-                                  <b>新值</b>
-                                  <pre>{text(change.after)}</pre>
-                                </section>
-                              </div>
-                            </div>
-                          ))}
-                        </details>
-                        {detail.conflict && (
-                          <p className="ai-task-note ai-task-failure" role="alert">
-                            原流程或绑定已变化，请重新生成方案后再采纳。
-                          </p>
+                        after={flatten(flow.steps).find(
+                          (step) => step.id === detail.proposal!.scope!.nodeId,
                         )}
-                        <div className="ai-task-actions">
-                          <button
-                            className="primary"
-                            disabled={busy || dirty || stale || detail.conflict}
-                            onClick={() => void proposalAction('adopt')}
-                          >
-                            采纳方案
-                          </button>
-                          <button
-                            disabled={busy || dirty || stale}
-                            onClick={() => void proposalAction('reject')}
-                          >
-                            不采纳
-                          </button>
-                        </div>
-                      </>
-                    )}
-                    {!detail.proposal && detail.flow && (
+                      />
+                      <p>已核对：其他步骤、结构和静态资源保持不变；现有绑定和权限不增加。</p>
+                      {detail.conflict && (
+                        <p className="ai-task-note ai-task-failure" role="alert">
+                          原流程或绑定已变化，请重新核对；不能采纳旧提案。
+                        </p>
+                      )}
                       <div className="ai-task-actions">
                         <button
                           className="primary"
-                          disabled={busy || dirty || stale || generating || !!scope}
-                          ref={trialButton}
-                          data-run-review-start
-                          onClick={() => {
-                            planScroll.current = document.querySelector('main')?.scrollTop ?? 0;
-                            setMessage('');
-                            setError('');
-                            setPage('check');
-                          }}
+                          disabled={busy || dirty || stale || detail.conflict}
+                          onClick={() => void proposalAction('adopt')}
                         >
-                          确认方案，去试运行
+                          采纳修改
                         </button>
                         <button
-                          disabled={busy}
-                          onClick={() =>
-                            void run(async () => {
-                              const next = await save();
-                              if (next.flow) props.openFlow(next.flow);
-                            })
-                          }
+                          disabled={busy || dirty || stale}
+                          onClick={() => void proposalAction('reject')}
                         >
-                          打开流程编排
+                          不采纳
                         </button>
-                        {detail.canUndo && (
-                          <button
-                            disabled={busy || dirty || stale}
-                            onClick={() => void proposalAction('undo')}
-                          >
-                            撤销最近采纳
-                          </button>
-                        )}
                       </div>
-                    )}
-                    <p className="ai-task-note">
-                      采纳只更新草稿。当前运行和已建立的计划继续使用原快照。
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <h2>{result?.kind === 'clarify' ? '补充这些信息后继续' : '当前任务说明'}</h2>
-                    <p>{result?.summary || '保存描述后，核对本次内容并生成方案。'}</p>
-                    <button disabled={busy} onClick={() => setPage('brief')}>
-                      返回描述与资料
-                    </button>
-                  </>
-                )}
-                {result?.limitations.length ? (
-                  <div className="ai-task-note">
-                    <h2>需要注意的限制</h2>
-                    <ul>
-                      {result.limitations.map((limitation, index) => (
-                        <li key={index}>{limitation}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-              </section>
-            </div>
+                      <button
+                        disabled={inputDisabled}
+                        onClick={() => {
+                          setEditingProposal(true);
+                          requestAnimationFrame(() =>
+                            document
+                              .querySelector<HTMLTextAreaElement>('#task-description')
+                              ?.focus(),
+                          );
+                        }}
+                      >
+                        继续描述修改
+                      </button>
+                    </>
+                  ) : flow ? (
+                    <>
+                      <div className="ai-task-meta">
+                        <h2>{flow.name}</h2>
+                        <span className="badge">
+                          {detail.proposal ? '待采纳方案' : '已保存草稿'}
+                        </span>
+                      </div>
+                      <div className="ai-task-actions" aria-label="方案视图">
+                        <button aria-pressed={view === 'list'} onClick={() => setView('list')}>
+                          步骤清单
+                        </button>
+                        <button aria-pressed={view === 'graph'} onClick={() => setView('graph')}>
+                          流程图
+                        </button>
+                      </div>
+                      {view === 'list' ? (
+                        <StepList steps={flow.steps} selected={selected} select={setSelected} />
+                      ) : (
+                        <div className="ai-task-graph">
+                          <DiagramCanvas {...diagram} selected={selected} select={setSelected} />
+                        </div>
+                      )}
+                      {selectedStep && (
+                        <details open className="ai-task-disclosure">
+                          <summary>
+                            所选步骤 ·{' '}
+                            {typeof selectedStep.name === 'string' && selectedStep.name
+                              ? selectedStep.name
+                              : kinds[selectedStep.type]?.label}{' '}
+                            · {selectedStep.id}
+                          </summary>
+                          <pre>{text(selectedStep)}</pre>
+                          {!scope && (
+                            <button
+                              disabled={inputDisabled || dirty || stale || !!detail.proposal}
+                              onClick={() => void run(() => chooseScope(detail, selectedStep.id))}
+                            >
+                              用 AI 修改此步
+                            </button>
+                          )}
+                        </details>
+                      )}
+                      {detail.proposal && (
+                        <>
+                          <h2>资源与权限</h2>
+                          <ul className="ai-task-resources">
+                            {detail.resources.map((resource, i) => (
+                              <li key={i}>{resource}</li>
+                            ))}
+                            {!detail.resources.length && (
+                              <li>没有文件、浏览器、HTTP 或脚本资源操作。</li>
+                            )}
+                            <li>声明的能力：{flow.requiredCapabilities.join('、') || '无'}</li>
+                          </ul>
+                          <details className="ai-task-diff" open={!!detail.proposal.baseFlow}>
+                            <summary>检查修改 · {detail.changes.length} 项</summary>
+                            {detail.changes.map((change, index) => (
+                              <div className="ai-task-change" key={index}>
+                                <h3>
+                                  {
+                                    {
+                                      added: '新增',
+                                      removed: '删除',
+                                      changed: '修改',
+                                      moved: '移动',
+                                    }[change.kind]
+                                  }{' '}
+                                  · {change.label}
+                                </h3>
+                                <small>{change.path}</small>
+                                <div>
+                                  <section>
+                                    <b>原值</b>
+                                    <pre>{text(change.before)}</pre>
+                                  </section>
+                                  <section>
+                                    <b>新值</b>
+                                    <pre>{text(change.after)}</pre>
+                                  </section>
+                                </div>
+                              </div>
+                            ))}
+                          </details>
+                          {detail.conflict && (
+                            <p className="ai-task-note ai-task-failure" role="alert">
+                              原流程或绑定已变化，请重新生成方案后再采纳。
+                            </p>
+                          )}
+                          <div className="ai-task-actions">
+                            <button
+                              className="primary"
+                              disabled={busy || dirty || stale || detail.conflict}
+                              onClick={() => void proposalAction('adopt')}
+                            >
+                              采纳方案
+                            </button>
+                            <button
+                              disabled={busy || dirty || stale}
+                              onClick={() => void proposalAction('reject')}
+                            >
+                              不采纳
+                            </button>
+                          </div>
+                        </>
+                      )}
+                      {!detail.proposal && detail.flow && (
+                        <div className="ai-task-actions">
+                          <button
+                            className="primary"
+                            disabled={busy || dirty || stale || generating || !!scope}
+                            ref={trialButton}
+                            data-run-review-start
+                            onClick={() => {
+                              planScroll.current = document.querySelector('main')?.scrollTop ?? 0;
+                              setMessage('');
+                              setError('');
+                              setPage('check');
+                            }}
+                          >
+                            确认方案，去试运行
+                          </button>
+                          <button
+                            disabled={busy}
+                            onClick={() =>
+                              void run(async () => {
+                                const next = await save();
+                                if (next.flow) props.openFlow(next.flow);
+                              })
+                            }
+                          >
+                            打开流程编排
+                          </button>
+                          {detail.canUndo && (
+                            <button
+                              disabled={busy || dirty || stale}
+                              onClick={() => void proposalAction('undo')}
+                            >
+                              撤销最近采纳
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      <p className="ai-task-note">
+                        采纳只更新草稿。当前运行和已建立的计划继续使用原快照。
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h2>{result?.kind === 'clarify' ? '补充这些信息后继续' : '当前任务说明'}</h2>
+                      <p>{result?.summary || '保存描述后，核对本次内容并生成方案。'}</p>
+                      <button disabled={busy} onClick={() => setPage('brief')}>
+                        返回描述与资料
+                      </button>
+                    </>
+                  )}
+                  {result?.limitations.length ? (
+                    <div className="ai-task-note">
+                      <h2>需要注意的限制</h2>
+                      <ul>
+                        {result.limitations.map((limitation, index) => (
+                          <li key={index}>{limitation}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </section>
+              </div>
+            )}
           </>
         )
       )}

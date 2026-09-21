@@ -458,3 +458,28 @@ test('directory replacement, symlink overwrite, removed metadata and manual file
   );
   assert.deepEqual(f.planning.detail(d.task.id), d);
 });
+
+test('two pre-existing tasks sharing one flow cannot acquire conflicting output ownership', async (t) => {
+  const f = await fixture(t);
+  const original = await f.adopt(await f.generate(f.d));
+  const other = await f.call('task.create', { flowId: original.flow!.id });
+  const first = await f.choose(original);
+  await assert.rejects(f.choose(other), /其他任务/);
+  assert.equal(f.planning.detail(other.task.id).task.outputTarget, undefined);
+  const cleared = await f.call('task.output.clear', identity(first));
+  assert.equal(cleared.task.outputTarget, undefined);
+  const second = await f.choose(other);
+  assert.ok(second.task.outputTarget);
+  await assert.rejects(f.choose(cleared), /其他任务/);
+});
+
+test('clearing a selected output does not let a pre-existing task take over the still-bound flow', async (t) => {
+  const f = await fixture(t);
+  const original = await f.adopt(await f.generate(f.d));
+  const other = await f.call('task.create', { flowId: original.flow!.id });
+  const adopted = await f.adopt(await f.generate(await f.choose(original)));
+  const cleared = await f.call('task.output.clear', identity(adopted));
+  await assert.rejects(f.choose(other), /其他任务/);
+  await f.adopt(await f.generate(cleared));
+  assert.ok((await f.choose(other)).task.outputTarget);
+});

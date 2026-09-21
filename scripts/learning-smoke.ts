@@ -7,10 +7,11 @@ import { resolve, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { _electron as electron, type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
+import { OUTPUT_BINDING, OUTPUT_CONTEXT_ID } from '../src/shared/task-output';
 import type { PlanningInput, PlanningResult, TaskDetail } from '../src/shared/planning';
 
-// Renderer/Main/Host/Worker and local page are real. Only provider HTTP is redirected
-// in an ignored private build. This does not validate a live AI provider or account.
+// Renderer/Main/Host/Worker and local page are real. Provider HTTP and native
+// directory-dialog results are fixtures. Native OS interaction is a separate check.
 const data = await mkdtemp('/private/tmp/flowark-learning-ui-');
 const output = join(data, 'output');
 await mkdir(output);
@@ -25,6 +26,7 @@ const evidence: any = {
   layouts: [],
   processes: [],
   provider: 'local HTTP fixture',
+  directoryPicker: 'Main showOpenDialog result fixture; native OS interaction not covered',
 };
 const requests: PlanningInput[] = [];
 let url = '';
@@ -39,6 +41,10 @@ const server = createServer(async (req, res) => {
     for await (const chunk of req) raw += chunk;
     const input: PlanningInput = JSON.parse(JSON.parse(raw).messages[1].content).request;
     requests.push(input);
+    const selection = input.context.find((c) => c.id === OUTPUT_CONTEXT_ID);
+    assert.ok(selection, 'UI must select output before teaching generation');
+    const choice = JSON.parse(selection.text);
+    assert.equal(JSON.stringify(input).includes(output), false);
     const result: PlanningResult = {
       formatVersion: '1.0',
       kind: 'plan',
@@ -51,7 +57,11 @@ const server = createServer(async (req, res) => {
         name: '网页标题归档',
         description: '',
         parameters: {},
-        requiredCapabilities: ['browser', 'assert', 'file-create-numbered-v1'],
+        requiredCapabilities: [
+          'browser',
+          'assert',
+          choice.onConflict === 'number' ? 'file-create-numbered-v1' : 'file',
+        ],
         steps: [
           {
             id: 'open',
@@ -81,11 +91,11 @@ const server = createServer(async (req, res) => {
           {
             id: 'save',
             type: 'file',
-            version: 4,
-            operation: 'create',
-            onConflict: 'number',
-            binding: 'output',
-            name: '页面标题.txt',
+            ...(choice.onConflict === 'number'
+              ? { version: 4 as const, operation: 'create' as const, onConflict: 'number' as const }
+              : { version: 1 as const, operation: 'write' as const }),
+            binding: OUTPUT_BINDING,
+            name: choice.name,
             content: { $ref: 'steps.read' },
           },
         ],
@@ -176,6 +186,27 @@ async function launch() {
     win.setSize(1440, 1080);
     win.setTitle('FlowArk · 首次教学隔离验证（自动退出）');
   });
+}
+async function chooseDirectory(selected: string | null) {
+  await app!.evaluate(({ dialog }: any, selected) => {
+    dialog.showOpenDialog = async (_window: unknown, options: any) => {
+      if (
+        options.title !== '选择任务输出目录' ||
+        JSON.stringify(options.properties) !== '["openDirectory"]'
+      )
+        throw new Error('unexpected native picker request');
+      return { canceled: selected === null, filePaths: selected === null ? [] : [selected] };
+    };
+  }, selected);
+  await page!.getByLabel('结果保存到哪里？', { exact: true }).click();
+  await wait(
+    async () =>
+      !(await page!
+        .locator('.ai-task-page')
+        .getByRole('button', { name: '确认并生成方案', exact: true })
+        .isDisabled()) || !(await page!.locator('#task-output-directory').isDisabled()),
+    'directory choice did not settle',
+  );
 }
 async function closeOwned() {
   if (!app) return;
@@ -293,6 +324,98 @@ try {
   await wait(async () => button('使用这个目标').isEnabled(), 'page ready');
   await button('使用这个目标').click();
   await wait(async () => !!(await call('learning.status')).achieved.target, 'selected learning');
+  await page!.getByRole('heading', { name: '我理解你要……', exact: true }).waitFor();
+  const beforeChoice: TaskDetail = await call('task.detail', { id });
+  await chooseDirectory(null);
+  assert.equal((await call('task.detail', { id })).task.revision, beforeChoice.task.revision);
+  await page!
+    .getByRole('checkbox', { name: '我已核对本次内容，将发送给 DeepSeek', exact: true })
+    .check();
+  assert.equal(
+    await button('确认并生成方案').isEnabled(),
+    false,
+    'teaching requires a chosen output',
+  );
+  await chooseDirectory(output);
+  await wait(
+    async () => !!(await call('task.detail', { id })).task.outputTarget,
+    'output selected',
+  );
+  assert.equal((await call('task.detail', { id })).task.outputTarget.name, '页面标题.txt');
+  assert.equal(
+    await page!
+      .getByRole('checkbox', { name: '我已核对本次内容，将发送给 DeepSeek', exact: true })
+      .isChecked(),
+    false,
+  );
+  for (const width of [1440, 1280, 1040]) {
+    await app!.evaluate(
+      ({ BrowserWindow }, width) => BrowserWindow.getAllWindows()[0].setSize(width, 1080),
+      width,
+    );
+    await wait(async () => page!.evaluate((w) => innerWidth === w, width), 'understanding width');
+    await page!.evaluate(() => {
+      document.querySelector('main')?.scrollTo(0, 0);
+      return document.fonts.ready;
+    });
+    const layout = await page!.evaluate(() => ({
+      page: 'understanding',
+      width: innerWidth,
+      overflow: document.documentElement.scrollWidth > innerWidth,
+      columns: [...document.querySelectorAll('.task-understanding-columns > section')].map((e) => {
+        const b = e.getBoundingClientRect();
+        return {
+          x: b.x,
+          y: b.y,
+          width: b.width,
+          height: b.height,
+          overflow: e.scrollWidth > e.clientWidth,
+        };
+      }),
+    }));
+    assert.equal(layout.overflow, false);
+    assert.ok(layout.columns.every((c) => !c.overflow));
+    if (width === 1440) {
+      assert.equal(layout.columns[0].width, 420);
+      assert.equal(layout.columns[1].width, 708);
+      assert.equal(layout.columns[0].y, 230);
+      assert.equal(layout.columns[1].x, 700);
+      assert.equal(layout.columns[0].height, 710);
+      assert.equal(layout.columns[1].height, 710);
+    }
+    evidence.layouts.push(layout);
+    await page!.screenshot({ path: `test-results/figma/understanding-${width}.png`, scale: 'css' });
+  }
+  await app!.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1440, 1080));
+  await page!.getByRole('radio', { name: '覆盖原文件', exact: true }).check();
+  await page!.getByText('修改文件名或移除目录', { exact: true }).click();
+  await page!.getByLabel('输出文件名', { exact: true }).fill('自定义标题.txt');
+  await button('理解不对，重新描述').click();
+  assert.equal((await call('task.detail', { id })).task.outputTarget.name, '自定义标题.txt');
+  assert.equal((await call('task.detail', { id })).task.outputTarget.onConflict, 'overwrite');
+  await button('理解与输出位置').click();
+  await page!.getByText('修改文件名或移除目录', { exact: true }).click();
+  assert.equal(
+    await page!.getByLabel('输出文件名', { exact: true }).inputValue(),
+    '自定义标题.txt',
+  );
+  await button('移除输出目录').click();
+  await wait(async () => !(await call('task.detail', { id })).task.outputTarget, 'output cleared');
+  await chooseDirectory(output);
+  await page!.getByText('查看本次发送给 DeepSeek 的内容', { exact: true }).click();
+  const disclosure = await page!.locator('.ai-task-disclosure').innerText();
+  assert.match(disclosure, /task_output/);
+  assert.match(disclosure, /页面标题.txt/);
+  assert.equal(disclosure.includes(output), false);
+  assert.equal(
+    disclosure.includes((await call('task.detail', { id })).task.outputTarget.selectionId),
+    false,
+  );
+  assert.equal(requests.length, 0);
+  evidence.checks.push(
+    'understanding-layouts-native-dialog-cancel-and-select-main-fixture-output-requirement-filename-policy-save-clear-disclosure-no-local-path',
+  );
+
   await button('重新学习 · 2 分钟').click();
   await button('先跳过').click();
   assert.equal((await call('learning.status')).status, 'skipped');
@@ -319,16 +442,17 @@ try {
   await page!
     .getByRole('checkbox', { name: '我已核对本次内容，将发送给 DeepSeek', exact: true })
     .check();
-  await button('理解我的任务').click();
+  await button('确认并生成方案').click();
   await button('采纳方案').waitFor();
   assert.equal((await call('learning.status')).achieved.plan, undefined);
   await button('采纳方案').click();
   await wait(async () => !!(await call('learning.status')).achieved.plan, 'adopted learning');
   let d: TaskDetail = await call('task.detail', { id });
-  await call('flow.save', {
-    flow: d.flow!.flow,
-    bindings: { ...d.flow!.bindings, files: { output } },
-  });
+  assert.equal(
+    d.flow!.bindings.files[OUTPUT_BINDING],
+    output,
+    'directory must come from UI selection and adoption',
+  );
   await wait(
     async () =>
       page!
@@ -372,22 +496,66 @@ try {
   evidence.checks.push(
     'resume-same-task-reselect-stale-page-real-ai-fixture-adoption-confirmed-worker-run-authenticated-preview',
   );
+  await button('返回结果摘要').click();
+  await button('告诉 AI 怎么改').click();
+  await button('查看或更换网页目标').click();
+  await wait(async () => button('使用这个目标').isEnabled(), 'current page available');
+  await button('使用这个目标').click();
+  await page!.getByRole('radio', { name: '覆盖原文件', exact: true }).check();
+  await page!
+    .getByRole('checkbox', { name: '我已核对本次内容，将发送给 DeepSeek', exact: true })
+    .check();
+  await button('确认并生成方案').click();
+  await button('采纳方案').waitFor();
+  await button('采纳方案').click();
+  await writeFile(join(output, '页面标题.txt'), '旧文本，应由明确覆盖操作替换');
+  await button('确认方案，去试运行').click();
+  await button('检查新的试运行').click();
+  await wait(
+    async () =>
+      page!
+        .getByRole('checkbox', { name: '我已核对操作对象、可能更改和保存位置', exact: true })
+        .isEnabled(),
+    'overwrite review ready',
+  );
+  assert.match(await page!.locator('main').innerText(), /覆盖同名文件/);
+  await page!
+    .getByRole('checkbox', { name: '我已核对操作对象、可能更改和保存位置', exact: true })
+    .check();
+  await button('开始试运行').click();
+  await page!.locator('[data-task-run-id]').waitFor();
+  const overwritten = (await call('bootstrap')).runs.find((r: any) => r.id !== run.id);
+  await wait(
+    async () =>
+      ['SUCCEEDED', 'FAILED'].includes(
+        (await call('run.detail', { id: overwritten.id })).run.state,
+      ),
+    'UI overwrite result',
+  );
+  assert.equal((await call('run.detail', { id: overwritten.id })).run.state, 'SUCCEEDED');
+  assert.equal(await readFile(join(output, '页面标题.txt'), 'utf8'), title);
+  assert.equal(await readFile(completed.artifacts[0].path, 'utf8'), title);
+  assert.equal(requests.length, 2);
+  evidence.checks.push(
+    'explicit-overwrite-ui-generation-adoption-review-real-worker-keeps-prior-artifact',
+  );
+
   await closeOwned();
   if (failure) throw failure;
   await launch();
   await button('查看教学结果').click();
   assert.equal((await call('learning.status')).status, 'completed');
-  assert.equal((await call('bootstrap')).runs.length, 1);
-  assert.equal(requests.length, 1);
+  assert.equal((await call('bootstrap')).runs.length, 2);
+  assert.equal(requests.length, 2);
   await button('重新学习 · 2 分钟').click();
   await button('重新开始学习').click();
   const restarted = await call('learning.status');
   assert.notEqual(restarted.taskId, id);
   assert.deepEqual(restarted.achieved, {});
   assert.equal((await call('task.list')).length, 2);
-  assert.equal((await call('bootstrap')).runs.length, 1);
+  assert.equal((await call('bootstrap')).runs.length, 2);
   assert.equal(await readFile(completed.artifacts[0].path, 'utf8'), title);
-  assert.equal(requests.length, 1);
+  assert.equal(requests.length, 2);
   assert.deepEqual(errors, []);
   evidence.checks.push(
     'serial-reopen-persists-completion-restart-keeps-old-task-run-file-no-model-or-run-replay',

@@ -307,7 +307,7 @@ try {
   assert.equal((await call('bootstrap')).runs.length, 0);
   mode = 'plan';
   await review();
-  await button('理解我的任务').click();
+  await button('确认并生成方案').click();
   await generated(taskId);
   assert.equal(requests.at(-1)!.answers.output, '仅保留运行结果');
   const listIds = await page

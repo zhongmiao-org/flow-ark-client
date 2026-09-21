@@ -734,3 +734,179 @@
 .learning-practice > .ai-task-actions > button:not(.primary) {
   min-width: 144px;
 }
+
+/* Figma 23:2766: 420/708 columns, 24 gap and 710 minimum panel height. */
+.task-understanding-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 420fr) minmax(0, 708fr);
+  gap: 24px;
+  align-items: stretch;
+}
+.task-understanding-columns > .ai-task-card {
+  min-height: 710px;
+}
+.task-understanding-reply {
+  min-height: 152px;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-canvas);
+  font-size: 13px;
+  line-height: 22px;
+}
+.task-understanding-reply > b {
+  color: var(--fa-action-primary);
+  font-weight: 500;
+}
+.task-understanding-reply > p {
+  color: var(--fa-text-primary);
+  margin-top: 8px;
+}
+.task-understanding-directory {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.task-understanding-directory > label {
+  font-size: 13px;
+  line-height: 20px;
+}
+.task-understanding-directory > button {
+  width: 100%;
+  min-height: 40px;
+  justify-content: flex-start;
+  text-align: left;
+  color: var(--fa-text-secondary);
+  padding: 8px 12px;
+}
+.task-understanding-directory > small {
+  color: var(--fa-text-secondary);
+}
+.ai-task-page .task-output-policy {
+  margin: 12px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.task-output-policy > legend {
+  margin-bottom: 16px;
+  font-size: 13px;
+  line-height: 20px;
+}
+.ai-task-page .task-output-policy label {
+  flex-direction: row;
+  align-items: center;
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 20px;
+  gap: 10px;
+}
+.task-output-policy input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--fa-action-primary);
+}
+.task-understanding-fact {
+  min-height: 108px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  padding: 16px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.task-understanding-fact h3 {
+  font-size: 16px;
+  line-height: 24px;
+  margin: 0;
+}
+.task-understanding-fact p {
+  color: var(--fa-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+}
+.task-understanding-fact button {
+  align-self: flex-start;
+}
+.task-understanding-fact .task-understanding-url,
+.task-understanding-fact .task-understanding-path {
+  font-size: 12px;
+  line-height: 18px;
+}
+.task-understanding-fact details {
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+}
+.task-understanding-fact details > label {
+  margin: 12px 0;
+}
+.task-understanding-fact details input {
+  width: 100%;
+}
+.task-understanding-fact details > button {
+  margin-top: 8px;
+}
+.task-understanding-describe {
+  align-self: flex-start;
+  width: 228px;
+}
+.task-understanding-provider {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.task-understanding-provider .ai-task-provider {
+  margin-top: 12px;
+}
+.task-understanding-input > .ai-task-checkbox {
+  font-size: 12px;
+  line-height: 18px;
+}
+.task-understanding-input > .ai-task-actions > .primary {
+  min-width: 212px;
+}
+.task-understanding-input > .ai-task-actions > button:not(.primary) {
+  font-size: 12px;
+}
+@container (max-width: 950px) {
+  .task-understanding-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .task-understanding-columns > .ai-task-card {
+    min-height: auto;
+  }
+}
+.task-understanding-fact-heading > button {
+  min-height: 28px;
+  height: 28px;
+  padding: 3px 10px;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.task-understanding-fact {
+  position: relative;
+}
+.task-understanding-fact-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.task-understanding-output-options:not([open]) {
+  position: absolute;
+  top: 18px;
+  right: 16px;
+}
+.task-understanding-output-options[open] .task-understanding-path {
+  margin: 12px 0;
+}
+@container (max-width: 550px) {
+  .task-understanding-fact-heading {
+    flex-wrap: wrap;
+  }
+  .task-understanding-output-options:not([open]) {
+    position: static;
+  }
+}

@@ -17,6 +17,15 @@ export class TaskOutputs {
   ) {}
   assertSelectable(task: PlanningTask) {
     this.deps.assertSelectable(task);
+    const flow = this.store.get<FlowRecord>('flow', task.flowId);
+    if (flow?.outputTarget && flow.outputTarget.taskId !== task.id)
+      throw new Error('此流程的输出属于其他任务，请从原任务继续');
+    if (
+      this.store
+        .list<PlanningTask>('ai-task')
+        .some((other) => other.id !== task.id && other.flowId === task.flowId && other.outputTarget)
+    )
+      throw new Error('此流程已有其他任务的输出选择，请从原任务继续');
   }
   async choose(task: PlanningTask, options: Pick<TaskOutputTarget, 'name' | 'onConflict'>) {
     this.assertSelectable(task);
