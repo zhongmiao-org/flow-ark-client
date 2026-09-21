@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ScriptBundle } from './types';
+import type { Run, ScriptBundle } from './types';
 
 const selection = {
   id: z.string().min(1).max(100),
@@ -23,6 +23,7 @@ export const runReviewConfirmSchema = z
   .strict();
 export type RunReviewInput = z.infer<typeof runReviewPreviewSchema>;
 export type RunReviewConfirmation = z.infer<typeof runReviewConfirmSchema>;
+export type RunReviewOutcome = Run | { rejected: true; message: string };
 /** Main -> Host only. Reading this never starts or borrows a browser session. */
 export type EmbeddedReview = {
   resourceId?: string;

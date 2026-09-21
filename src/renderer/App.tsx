@@ -104,7 +104,8 @@ export default function App() {
   const [runPage, setRunPage] = useState(1);
   const [runFilter, setRunFilter] = useState(false);
   const [runTab, setRunTab] = useState<RunTab>('current');
-  const [runOrigin, setRunOrigin] = useState<'history' | 'editor'>('history');
+  const [runOrigin, setRunOrigin] = useState<'history' | 'editor' | 'task'>('history');
+  const taskRunBack = useRef<(() => void) | undefined>(undefined);
   const [compactEditor, setCompactEditor] = useState(() => window.innerWidth < 1440);
   useEffect(() => {
     const query = window.matchMedia('(max-width: 1439px)');
@@ -113,7 +114,15 @@ export default function App() {
     return () => query.removeEventListener('change', change);
   }, []);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
-  const [taskTitle, setTaskTitle] = useState('开始任务');
+  const [taskNavigation, setTaskNavigation] = useState<{ title: string; back?: () => void }>({
+    title: '开始任务',
+  });
+  const taskTitle = taskNavigation.title;
+  const updateTaskNavigation = useCallback((title: string, back?: () => void) => {
+    setTaskNavigation((previous) =>
+      previous.title === title && previous.back === back ? previous : { title, back },
+    );
+  }, []);
   const [taskReturn, setTaskReturn] = useState(false);
   const [taskAISettings, setTaskAISettings] = useState({
     provider: 'deepseek',
@@ -375,6 +384,11 @@ export default function App() {
         </aside>
         <main>
           <header className="topbar">
+            {section === 'tasks' && taskNavigation.back && (
+              <button className="context-back" onClick={taskNavigation.back}>
+                ← 返回确认方案
+              </button>
+            )}
             {taskReturn && ['settings', 'editor'].includes(section) && (
               <button
                 className="context-back"
@@ -399,15 +413,21 @@ export default function App() {
                   else if (detail) {
                     setDetail(null);
                     if (runOrigin === 'editor' && edit) setSection('editor');
+                    else if (runOrigin === 'task') {
+                      setSection('tasks');
+                      taskRunBack.current?.();
+                    }
                   } else setRunFilter(false);
                 }}
               >
                 {detail
                   ? runTab !== 'current'
                     ? '← 返回运行详情'
-                    : runOrigin === 'editor' && edit
-                      ? '← 返回流程编排'
-                      : `← 返回记录第 ${runPage} 页`
+                    : runOrigin === 'task'
+                      ? '← 返回 AI 任务'
+                      : runOrigin === 'editor' && edit
+                        ? '← 返回流程编排'
+                        : `← 返回记录第 ${runPage} 页`
                   : '← 返回运行记录'}
               </button>
             )}
@@ -430,6 +450,20 @@ export default function App() {
               </button>
             )}
             <nav className="breadcrumbs" aria-label="当前位置">
+              {section === 'tasks' && taskNavigation.back && (
+                <>
+                  <a
+                    href="#task-plan"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      taskNavigation.back?.();
+                    }}
+                  >
+                    确认任务方案
+                  </a>
+                  <span aria-hidden="true">/</span>
+                </>
+              )}
               {section === 'runs' && (detail || runFilter) && (
                 <>
                   <a
@@ -576,7 +610,16 @@ export default function App() {
             <AITaskWorkspace
               active={section === 'tasks'}
               data={data}
-              onTitle={setTaskTitle}
+              onNavigation={updateTaskNavigation}
+              openRun={(next, back) => {
+                taskRunBack.current = back;
+                setDetail(next);
+                setRunOrigin('task');
+                setRunTab('current');
+                setRunFilter(false);
+                setTaskReturn(false);
+                setSection('runs');
+              }}
               settings={(provider, model) => {
                 setTaskAISettings({ provider, model });
                 setTaskReturn(true);

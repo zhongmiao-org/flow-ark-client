@@ -13,13 +13,19 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
     });
     switch (node.type) {
       case 'file':
-      case 'excel':
+      case 'excel': {
+        const file = typeof node.name === 'string' ? `“${node.name}”` : '执行时确定名称的文件';
+        const operation = {
+          write: '写入',
+          copy: '复制',
+          archive: '打包保存',
+          fill: '填写表格并保存',
+          read: '读取',
+        }[node.operation];
         return node.operation === 'read'
-          ? effect('read', `从目录绑定“${node.binding}”读取文件；动态文件名在执行时确定。`)
-          : effect(
-              'write',
-              `在目录绑定“${node.binding}”执行 ${node.operation}，可能覆盖同名文件；动态文件名在执行时确定。`,
-            );
+          ? effect('read', `读取目录“${node.binding}”中的${file}。`)
+          : effect('write', `在目录“${node.binding}”${operation}${file}，可能覆盖同名文件。`);
+      }
       case 'browser':
         if (node.operation === 'upload')
           return effect('network', '读取所绑定文件并上传到网页，可能向网站发送文件内容。');
@@ -27,14 +33,18 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
           return effect('write', '从网页下载并保存到本次运行产物目录。');
         if (node.operation === 'screenshot')
           return effect('write', '读取网页画面并保存截图到本次运行产物目录。');
-        if (['read', 'inputValue', 'wait'].includes(node.operation))
+        if (node.operation === 'read') return effect('read', '读取本步骤指定的网页文字。');
+        if (node.operation === 'inputValue')
+          return effect('read', '读取本步骤指定的表单输入内容。');
+        if (node.operation === 'wait') return effect('read', '等待本步骤指定的网页元素出现。');
+        if (node.operation === 'navigate')
           return effect(
-            'read',
-            `读取或等待网页（${node.operation}）；不代表页面身份或业务结果已经核对。`,
+            'network',
+            typeof node.value === 'string' ? '打开网页：' + node.value : '打开执行时确定的网址。',
           );
         return effect(
           'network',
-          `执行网页 ${node.operation}，可能导航、改变表单或向网站提交操作。`,
+          `${{ click: '点击网页元素', fill: '填写网页表单', select: '选择表单选项', check: '更改勾选状态', press: '向网页发送按键' }[node.operation]}，可能改变表单或触发网站操作。`,
         );
       case 'http':
         return effect(
@@ -54,7 +64,10 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
         return effect('control', '等待人工处理后继续。');
       case 'value':
       case 'assert':
-        return effect('control', `执行本地 ${node.type} 步骤。`);
+        return effect(
+          'control',
+          node.type === 'value' ? '在本机处理步骤中的值。' : '在本机检查步骤结果是否满足条件。',
+        );
     }
   });
 }

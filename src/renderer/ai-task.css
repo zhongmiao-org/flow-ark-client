@@ -353,3 +353,130 @@
     min-height: 104px;
   }
 }
+
+/* Figma taskcheck 23:3799: five content cards and a separate confirmation column. */
+.run-review-page[hidden] {
+  display: none;
+}
+.run-review-page {
+  container-type: inline-size;
+}
+.run-review-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 680fr) minmax(0, 448fr);
+  gap: 24px;
+  align-items: start;
+}
+.run-review-columns > .ai-task-card {
+  min-height: 700px;
+}
+.run-review-card {
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  padding: 16px;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.run-review-page h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+.run-review-page p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.run-review-page ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-wrap: anywhere;
+}
+.run-review-page li {
+  color: var(--fa-text-secondary);
+}
+.run-review-page li b {
+  color: var(--fa-text-primary);
+  font-weight: 500;
+}
+.run-review-page details {
+  color: var(--fa-text-secondary);
+  min-width: 0;
+}
+.run-review-page summary {
+  cursor: pointer;
+  color: var(--fa-action-primary);
+}
+.run-review-limitations ul {
+  margin-top: 12px;
+  font-size: 12px;
+  line-height: 20px;
+}
+.run-review-version {
+  font: 12px/20px var(--fa-font-latin);
+  overflow-wrap: anywhere;
+}
+.run-review-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.run-review-check > span {
+  color: var(--fa-status-success);
+  width: 16px;
+  flex: 0 0 16px;
+}
+.run-review-check b {
+  font-weight: 500;
+}
+.run-review-check p {
+  margin-top: 8px;
+  color: var(--fa-text-secondary);
+}
+.run-review-check.failed > span,
+.run-review-error {
+  color: var(--fa-status-error);
+}
+.run-review-toggle {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--fa-text-primary);
+  margin: 0;
+}
+.run-review-toggle input {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin: 3px 0 0;
+  accent-color: var(--fa-action-primary);
+}
+.run-review-confirm > button {
+  width: 100%;
+}
+.run-review-receipt {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-status-success-bg);
+}
+.run-review-receipt > b {
+  overflow-wrap: anywhere;
+}
+@container (max-width: 850px) {
+  .run-review-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .run-review-columns > .ai-task-card {
+    min-height: 0;
+  }
+}

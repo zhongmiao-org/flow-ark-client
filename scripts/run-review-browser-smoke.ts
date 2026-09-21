@@ -105,7 +105,9 @@ try {
     return !current.loading && current.documentRevision > original.documentRevision;
   }, 'same URL reload revision');
   assert.equal((await browserReview()).url, original.url);
-  await assert.rejects(runtime.request('flow.run.confirm', confirmArgs(beforeReload)), /过期/);
+  const beforeReloadResult = await runtime.request('flow.run.confirm', confirmArgs(beforeReload));
+  assert.equal(beforeReloadResult.rejected, true);
+  assert.match(beforeReloadResult.message, /过期/);
   evidence.checks.push('same-url-native-reload-invalidates-token');
   const beforeFrame = await review(),
     frameRevision = (await browserReview()).documentRevision;
@@ -118,7 +120,9 @@ try {
     const current = await browserReview();
     return !current.loading && current.documentRevision > frameRevision;
   }, 'iframe revision');
-  await assert.rejects(runtime.request('flow.run.confirm', confirmArgs(beforeFrame)), /过期/);
+  const beforeFrameResult = await runtime.request('flow.run.confirm', confirmArgs(beforeFrame));
+  assert.equal(beforeFrameResult.rejected, true);
+  assert.match(beforeFrameResult.message, /过期/);
   evidence.checks.push('native-iframe-navigation-invalidates-token');
   const beforeSpa = await review(),
     spaRevision = (await browserReview()).documentRevision;
@@ -129,7 +133,9 @@ try {
     async () => (await browserReview()).documentRevision > spaRevision,
     'same document navigation',
   );
-  await assert.rejects(runtime.request('flow.run.confirm', confirmArgs(beforeSpa)), /过期/);
+  const beforeSpaResult = await runtime.request('flow.run.confirm', confirmArgs(beforeSpa));
+  assert.equal(beforeSpaResult.rejected, true);
+  assert.match(beforeSpaResult.message, /过期/);
   assert.equal(runtime.store.list('run').length, 0);
   evidence.checks.push('native-pushstate-invalidates-token-with-zero-run');
   const final = await review();

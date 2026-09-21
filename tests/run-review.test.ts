@@ -494,3 +494,30 @@ test('nested effects include both branches, loops, uploads, downloads and overwr
   assert.match(p.effects[4].detail, /产物目录/);
   assert.equal(p.flow.stepCount, 5);
 });
+
+test('explicit rejection differs from unknown storage and a post-commit failure still returns the created Run', async (t) => {
+  const f = fixture(t),
+    p = await f.service.preview({ id: f.record.id });
+  const rejected = await f.service.confirmOutcome(
+    { ...request(p), token: '0'.repeat(64) },
+    () => {},
+  );
+  assert.ok('rejected' in rejected && rejected.rejected);
+  assert.equal(f.store.list('run').length, 0);
+  f.state.blocked = '正在退出';
+  f.store.fault = 'fixture storage fault';
+  await assert.rejects(
+    f.service.confirmOutcome(request(p), () => {}),
+    /退出/,
+  );
+  f.store.fault = undefined;
+  f.state.blocked = '';
+  (f.service as any).deps.dispatch = () => {
+    throw new Error('fixture dispatch reply failure');
+  };
+  const input = request(p),
+    created = await f.service.confirmOutcome(input, () => {});
+  assert.ok('id' in created);
+  assert.equal(f.store.list('run').length, 1);
+  assert.deepEqual(await f.service.confirmOutcome(input, () => {}), created);
+});

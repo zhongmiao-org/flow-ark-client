@@ -1160,11 +1160,13 @@ export class Runtime {
         const suspended = this.suspended;
         const pending = this.admissions.then(async () => {
           await this.ready;
-          const service = method === 'flow.run.confirm' ? this.runReview : this.reruns;
-          return service.confirm(args, () => {
+          const check = () => {
             if (suspended) throw new Error('系统正在休眠，恢复后请重新开始运行');
             this.assertAdmission(epoch);
-          });
+          };
+          return method === 'flow.run.confirm'
+            ? this.runReview.confirmOutcome(args, check)
+            : this.reruns.confirm(args, check);
         });
         this.admissions = pending.then(
           () => {},

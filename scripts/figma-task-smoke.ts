@@ -336,16 +336,21 @@ try {
   await button('理解我的任务').click();
   await generated(taskId);
   await button('采纳方案').click();
-  await button('打开流程编排').click();
-  await page.locator('.editor-page').waitFor();
-  await button('运行').click();
+  await button('确认方案，去试运行').click();
+  await page
+    .locator('.run-review-page:not([hidden])')
+    .getByRole('heading', { name: '检查通过', exact: true })
+    .waitFor();
+  await page
+    .getByRole('checkbox', { name: '我已核对操作对象、可能更改和保存位置', exact: true })
+    .check();
+  await button('开始试运行').click();
   await wait(
     async () => (await call('bootstrap')).runs[0]?.state === 'SUCCEEDED',
     'real Worker did not finish',
   );
   const runId = (await call('bootstrap')).runs[0].id;
   assert.equal((await call('run.detail', { id: runId })).output.value, 'first');
-  await button('← 返回流程编排').click();
   await button('← 返回 AI 任务').click();
   value = 'second';
   await page.getByLabel('你的需求', { exact: true }).fill('把示例值改成 second，保留条件和循环。');

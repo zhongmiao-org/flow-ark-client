@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Bootstrap, FlowRecord, Step } from '../shared/types';
 import type { PlanningContext, PlanningTask, TaskDetail } from '../shared/planning';
 import { buildDiagram } from './flow-diagram';
 import DiagramCanvas from './DiagramCanvas';
 import { kinds } from './node-kinds';
 import { flatten } from './flow-editing';
+import RunReviewPage from './RunReviewPage';
 
 const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
@@ -28,7 +29,8 @@ const text = (value: unknown): string =>
 type Props = {
   active: boolean;
   data: Bootstrap;
-  onTitle: (title: string) => void;
+  onNavigation: (title: string, back?: () => void) => void;
+  openRun: (detail: any, back: () => void) => void;
   settings: (provider: 'deepseek' | 'openai-codex', model: string) => void;
   flows: () => void;
   createFlow: () => void;
@@ -43,7 +45,18 @@ export default function AITaskWorkspace(props: Props) {
   const [saved, setSaved] = useState('');
   const [revision, setRevision] = useState(0);
   const [homeText, setHomeText] = useState('');
-  const [page, setPage] = useState<'home' | 'brief' | 'review'>('home');
+  const [page, setPage] = useState<'home' | 'brief' | 'review' | 'check'>('home');
+  const location = useRef({ active: props.active, page });
+  location.current = { active: props.active, page };
+  const planScroll = useRef(0);
+  const trialButton = useRef<HTMLButtonElement>(null);
+  const backToPlan = useCallback(() => {
+    setPage('review');
+    requestAnimationFrame(() => {
+      document.querySelector('main')?.scrollTo({ top: planScroll.current });
+      trialButton.current?.focus({ preventScroll: true });
+    });
+  }, []);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -63,21 +76,23 @@ export default function AITaskWorkspace(props: Props) {
   const diagram = useMemo(() => buildDiagram(flow?.steps ?? [], selected), [flow, selected]);
   const selectedStep = flow && flatten(flow.steps).find((step) => step.id === selected);
   const title =
-    page === 'home'
-      ? '开始任务'
-      : page === 'brief'
-        ? '描述需求，带上必要资料'
-        : result?.kind === 'clarify'
-          ? '我理解你要……'
-          : result?.kind === 'unsupported'
-            ? '这项任务还需要支持'
-            : result?.kind === 'plan' && detail?.proposal?.baseFlow
-              ? '检查 AI 提议的修改'
-              : '先看看任务步骤';
+    page === 'check'
+      ? '试运行前，最后确认一次'
+      : page === 'home'
+        ? '开始任务'
+        : page === 'brief'
+          ? '描述需求，带上必要资料'
+          : result?.kind === 'clarify'
+            ? '我理解你要……'
+            : result?.kind === 'unsupported'
+              ? '这项任务还需要支持'
+              : result?.kind === 'plan' && detail?.proposal?.baseFlow
+                ? '检查 AI 提议的修改'
+                : '先看看任务步骤';
 
   useEffect(() => {
-    if (props.active) props.onTitle(title);
-  }, [props.active, title, props.onTitle]);
+    if (props.active) props.onNavigation(title, page === 'check' ? backToPlan : undefined);
+  }, [props.active, title, page, backToPlan, props.onNavigation]);
   useEffect(() => {
     if (!props.active) return;
     let live = true;
@@ -237,8 +252,8 @@ export default function AITaskWorkspace(props: Props) {
   const providerName = provider === 'deepseek' ? 'DeepSeek' : 'OpenAI';
   const inputDisabled = busy || generating;
 
-  return (
-    <div className="page ai-task-page" hidden={!props.active}>
+  const workspace = (
+    <div className="page ai-task-page" hidden={!props.active || page === 'check'}>
       <div className="page-heading ai-task-heading">
         <div>
           <h1>{page === 'home' ? '你想完成什么？' : title}</h1>
@@ -753,6 +768,19 @@ export default function AITaskWorkspace(props: Props) {
                       <div className="ai-task-actions">
                         <button
                           className="primary"
+                          disabled={busy || dirty || stale || generating}
+                          ref={trialButton}
+                          data-run-review-start
+                          onClick={() => {
+                            planScroll.current = document.querySelector('main')?.scrollTop ?? 0;
+                            setMessage('');
+                            setError('');
+                            setPage('check');
+                          }}
+                        >
+                          确认方案，去试运行
+                        </button>
+                        <button
                           disabled={busy}
                           onClick={() =>
                             void run(async () => {
@@ -802,6 +830,39 @@ export default function AITaskWorkspace(props: Props) {
         )
       )}
     </div>
+  );
+  return (
+    <>
+      {workspace}
+      <RunReviewPage
+        active={props.active && page === 'check'}
+        selection={
+          detail?.flow
+            ? { id: detail.flow.id, task: { id: detail.task.id, revision: detail.task.revision } }
+            : undefined
+        }
+        source={JSON.stringify(detail?.flow ?? null)}
+        back={backToPlan}
+        edit={() =>
+          void run(async () => {
+            const taskId = detail?.task.id;
+            await props.changed();
+            if (
+              location.current.active &&
+              location.current.page === 'check' &&
+              selectedTask.current === taskId &&
+              detail?.flow
+            )
+              props.openFlow(detail.flow);
+          })
+        }
+        openDetail={(next) => {
+          setPage('review');
+          props.openRun(next, backToPlan);
+          void props.changed();
+        }}
+      />
+    </>
   );
 }
 

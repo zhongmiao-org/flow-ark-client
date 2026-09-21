@@ -15,6 +15,7 @@ import {
   type RunReviewConfirmation,
   type RunReviewInput,
   type RunReviewPreview,
+  type RunReviewOutcome,
 } from '../shared/run-review';
 import { reviewEffects } from './run-review-effects';
 
@@ -346,6 +347,20 @@ export class RunReview {
     const run = this.store.get<Run>('run', previous.runId);
     if (!run) throw new Error('试运行确认记录不完整，已阻止重复执行');
     return run;
+  }
+  async confirmOutcome(input: unknown, assertAdmission: () => void): Promise<RunReviewOutcome> {
+    const args = runReviewConfirmSchema.parse(input);
+    try {
+      return await this.confirm(args, assertAdmission);
+    } catch (error) {
+      // A post-commit failure (including dispatch) must still report the Run that
+      // exists. Failed storage or an incomplete receipt cannot prove rejection.
+      const fingerprint = digest({ ...args, debug: !!args.debug });
+      const record = this.store.get<RequestRecord>('flow-run-request', args.requestId);
+      if (record?.fingerprint === fingerprint) return this.previous(args, fingerprint)!;
+      if (this.store.fault) throw error;
+      return { rejected: true, message: (this.deps.error ?? redactedErrorText)(error) };
+    }
   }
   /** Runtime serializes admissions. The durable request lookup precedes all admission checks. */
   async confirm(input: unknown, assertAdmission: () => void = () => {}): Promise<Run> {

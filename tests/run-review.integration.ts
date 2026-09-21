@@ -164,7 +164,7 @@ test('confirmed fixed snapshot executes real file work once; concurrent repeats 
   await f.reopen();
   assert.equal((await f.runtime.request('flow.run.confirm', input)).id, results[0].id);
   assert.equal(f.runtime.store.list('run').length, 1);
-  await assert.rejects(f.runtime.request('flow.run.confirm', args(p)), /过期/);
+  assert.match((await f.runtime.request('flow.run.confirm', args(p))).message, /过期/);
 });
 
 test('queued fixed body survives later editing; debug runs still wait for explicit step control', async (t) => {
@@ -246,20 +246,14 @@ test('suspend invalidates an in-flight confirmation and a second FIFO admission 
   const p1 = await preview(runtime, first.id),
     p2 = await preview(runtime, second.id),
     gate = f.gate();
-  const pending = runtime.request('flow.run.confirm', args(p1)).then(
-    () => false,
-    () => true,
-  );
+  const pending = runtime.request('flow.run.confirm', args(p1));
   await gate.entered.promise;
-  const later = runtime.request('flow.run.confirm', args(p2)).then(
-    () => false,
-    () => true,
-  );
+  const later = runtime.request('flow.run.confirm', args(p2));
   await runtime.request('system.suspend');
   await runtime.request('system.resume');
   gate.release.release();
-  assert.equal(await pending, true);
-  assert.equal(await later, true);
+  assert.equal((await pending).rejected, true);
+  assert.equal((await later).rejected, true);
   assert.equal(runtime.store.list('run').length, 0);
   const fresh = await preview(runtime, second.id),
     run = await runtime.request('flow.run.confirm', args(fresh));
