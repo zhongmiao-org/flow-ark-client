@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import type { ChildProcess } from 'node:child_process';
+import { execFileSync, type ChildProcess } from 'node:child_process';
 import { createServer, type ServerResponse } from 'node:http';
 import { build } from 'esbuild';
 import { cp, mkdir, mkdtemp, writeFile } from 'node:fs/promises';
@@ -150,6 +150,14 @@ const bounded = async <T>(promise: Promise<T>, ms: number): Promise<T> => {
 };
 const errors: string[] = [];
 async function launch() {
+  const active = execFileSync('ps', ['-axo', 'pid=,command='], { encoding: 'utf8' })
+    .split('\n')
+    .filter((line) =>
+      /^\s*\d+\s+\/.*\/(?:FlowArk|Electron)\.app\/Contents\/MacOS\/(?:FlowArk|Electron)(?:\s|$)/.test(
+        line,
+      ),
+    );
+  assert.deepEqual(active, [], 'existing GUI main process: do not launch another instance');
   assert.equal(app, undefined);
   assert.ok(
     !child || child.exitCode !== null || child.signalCode !== null,

@@ -49,7 +49,6 @@ import {
   Activity,
   Search,
   ShieldCheck,
-  CircleHelp,
 } from 'lucide-react';
 import type { Bootstrap, FlowRecord, Step } from '../shared/types';
 import TemplateLibrary from './TemplateLibrary';
@@ -131,6 +130,7 @@ export default function App() {
     return () => query.removeEventListener('change', change);
   }, []);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+  const [guideEntry, setGuideEntry] = useState(0);
   const [taskNavigation, setTaskNavigation] = useState<{
     title: string;
     back?: () => void;
@@ -455,21 +455,20 @@ export default function App() {
             ))}
           </nav>
           <div className="sidebar-bottom">
-            <p>仅在这台 Mac 上运行</p>
+            <p>只在本机执行</p>
             <button
               className="sidebar-guide"
+              title="重新学习 · 2 分钟"
               disabled={!!nodeSession || (section === 'editor' && outlineOpen)}
-              onClick={() =>
-                action(async () => {
-                  await api('browser.embedded.navigate', {
-                    url: 'https://github.com/zhongmiao-org/flow-ark-client#使用',
-                  });
-                  setBrowserOpen(true);
-                })
-              }
+              onClick={() => {
+                if (!guardInvalidNodeJson()) return;
+                setTaskReturn(false);
+                setSection('tasks');
+                setGuideEntry((n) => n + 1);
+                setBrowserOpen(false);
+              }}
             >
-              <CircleHelp size={18} strokeWidth={1.6} aria-hidden="true" />
-              使用指南
+              <span>重新学习 · 2 分钟</span>
             </button>
           </div>
         </aside>
@@ -840,6 +839,7 @@ export default function App() {
                   }),
                 );
               }}
+              guideEntry={guideEntry}
               active={section === 'tasks'}
               data={data}
               onNavigation={updateTaskNavigation}

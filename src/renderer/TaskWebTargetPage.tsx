@@ -5,19 +5,21 @@ const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
 export default function TaskWebTargetPage({
   task,
+  initialUrl,
   selected,
   back,
   showBrowser,
   changed,
 }: {
   task: PlanningTask;
+  initialUrl?: string;
   selected: (next: TaskDetail) => void;
   back: () => void;
   showBrowser: () => void;
   changed: () => Promise<void>;
 }) {
   const [preview, setPreview] = useState<TaskWebPreview>({ ready: false });
-  const [url, setUrl] = useState(task.webTarget?.page.url ?? '');
+  const [url, setUrl] = useState(task.webTarget?.page.url ?? initialUrl ?? '');
   const [busy, setBusy] = useState(false),
     [error, setError] = useState('');
   const epoch = useRef(0),

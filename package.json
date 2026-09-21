@@ -8,7 +8,7 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "1f1fc4771ddcf553b0748d28410b26c9ed4319ad",
+    "governanceBaseline": "fe3b3389d582e55f9801b9254647759daf298b70",
     "contractsVersion": "0.12.0",
     "contractsTag": "contracts-v0.12.0"
   },
@@ -23,7 +23,7 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "test:runtime": "node --import tsx --test tests/runtime.integration.ts tests/run-rerun.integration.ts tests/run-review.integration.ts tests/embedded-cleanup.integration.ts tests/script-supervision.integration.ts tests/storage-full.integration.ts tests/system-suspend.integration.ts tests/redaction.integration.ts tests/template-runtime.integration.ts tests/task-web-target.integration.ts",
+    "test:runtime": "node --import tsx --test tests/runtime.integration.ts tests/run-rerun.integration.ts tests/run-review.integration.ts tests/embedded-cleanup.integration.ts tests/script-supervision.integration.ts tests/storage-full.integration.ts tests/system-suspend.integration.ts tests/redaction.integration.ts tests/template-runtime.integration.ts tests/task-web-target.integration.ts tests/learning.integration.ts",
     "check": "pnpm typecheck && pnpm test && pnpm build",
     "contracts:generate": "node scripts/generate-contracts.mjs",
     "test:browser": "node --import tsx scripts/browser-smoke.ts",
@@ -76,6 +76,7 @@
     "test:excel-mapping": "node --import tsx scripts/excel-mapping-smoke.ts",
     "test:ai-step-edit": "node --import tsx scripts/ai-step-edit-smoke.ts",
     "test:file-create": "node --import tsx scripts/file-create-smoke.ts",
+    "test:learning": "node --import tsx scripts/learning-smoke.ts",
     "test:task-web-target": "node --import tsx scripts/task-web-target-smoke.ts"
   },
   "build": {

@@ -73,7 +73,10 @@ try {
   });
   assert.equal(bootstrap.runs.length, 0);
   const appVersion = await app.evaluate(({ app }) => app.getVersion());
-  assert.equal(await page.getByRole('button', { name: '使用指南', exact: true }).count(), 1);
+  assert.equal(
+    await page.getByRole('button', { name: '重新学习 · 2 分钟', exact: true }).count(),
+    1,
+  );
   const security = await app.evaluate(({ BrowserWindow }) => {
     const p = BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences();
     return {

@@ -1,3 +1,4 @@
+import type { LearningStatus } from '../shared/learning';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ArtifactPreview } from '../shared/artifact-preview';
 import type { TaskRunIntent, TaskRunView } from './task-run-presentation';
@@ -34,6 +35,7 @@ export default function TaskRunPage({
   open: (detail: any) => void;
 }) {
   const [, tick] = useState(0);
+  const [learning, setLearning] = useState<LearningStatus>();
   const [selected, setSelected] = useState<string>();
   const [preview, setPreview] = useState<ArtifactPreview>();
   const [loading, setLoading] = useState(false);
@@ -61,6 +63,28 @@ export default function TaskRunPage({
     item?.available && item.integrity === 'verified' && preview?.artifactId === selected
       ? preview
       : undefined;
+  useEffect(() => {
+    let live = true,
+      pending = false;
+    const refresh = async () => {
+      if (pending) return;
+      pending = true;
+      try {
+        const value = await window.flowark.request('learning.status');
+        if (live) setLearning(value);
+      } catch (e) {
+        if (live) setError((e as Error).message);
+      } finally {
+        pending = false;
+      }
+    };
+    void refresh();
+    const timer = setInterval(() => void refresh(), 1000);
+    return () => {
+      live = false;
+      clearInterval(timer);
+    };
+  }, [run.id]);
   useEffect(() => {
     const timer = setInterval(() => tick((n) => n + 1), 1000);
     return () => clearInterval(timer);
@@ -229,6 +253,13 @@ export default function TaskRunPage({
             </p>
           </div>
         </div>
+        {learning?.taskId && learning.taskId === run.task?.id && (
+          <p className="task-run-note" role="status" aria-label="教学进度">
+            {learning.status === 'completed'
+              ? '已完成第一次学习 · 已找到并预览真实结果。'
+              : '学习：已尝试运行。成功后预览文本文件，完成“找结果”；执行状态以下方记录为准。'}
+          </p>
+        )}
         {error && (
           <p className="alert error" role="alert">
             {error}

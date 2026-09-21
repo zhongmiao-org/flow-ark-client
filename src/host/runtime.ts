@@ -1,3 +1,5 @@
+import { Learning } from './learning';
+import { learningPrompt } from '../shared/learning';
 import { exportDefinition } from '../templates/export';
 import { writeArchive } from '../templates/archive';
 import { join, dirname } from 'node:path';
@@ -83,6 +85,7 @@ export class Runtime {
   readonly ready: Promise<void>;
   readonly templates: Templates;
   readonly planning: Planning;
+  readonly learning: Learning;
   readonly webTargets: TaskWebTargets;
   private active?: Active;
   private artifactFiles: ArtifactFiles;
@@ -119,7 +122,21 @@ export class Runtime {
           throw new Error('请等待当前运行和收尾结束后，再选择网页对象');
       },
     });
+    this.learning = new Learning(this.store, {
+      busy: (id) => {
+        const task = this.store.get('ai-task', id);
+        const active = this.active && this.store.get<Run>('run', this.active.id);
+        return !!active && (active.task?.id === id || active.flowId === task?.flowId);
+      },
+      create: () => this.planning.create(undefined, learningPrompt),
+      detail: (id) => this.planning.detail(id),
+      assertAvailable: () => {
+        if (this.stopping || this.suspended) throw new Error('应用正在退出或休眠');
+        if (this.store.fault) throw new Error(this.store.fault);
+      },
+    });
     this.planning = new Planning(this.store, {
+      learning: this.learning,
       web: this.webTargets,
       repair: new PlanningRepair(this.store, {
         epoch: () => this.admissionEpoch,
@@ -174,6 +191,7 @@ export class Runtime {
     );
     this.sessions = new Sessions(dir, executable, dataPath, system);
     this.runReview = new RunReview(this.store, {
+      learnedTrial: (run) => this.learning.trial(run),
       busy: (id) =>
         this.active?.id === id ||
         this.scripts.hasRun(id) ||
@@ -1122,6 +1140,10 @@ export class Runtime {
     return true;
   }
   async request(method: string, args: any = {}): Promise<any> {
+    if (method.startsWith('learning.')) {
+      await this.ready;
+      return this.learning.request(method, args);
+    }
     if (method.startsWith('task.')) {
       await this.ready;
       return this.planning.request(method, args);
@@ -1264,6 +1286,7 @@ export class Runtime {
         };
       }
       case 'artifact.preview': {
+        const attemptId = this.learning.status().attemptId;
         const item = this.store.get<any>('artifact', args.id);
         if (!item) throw new Error('产物不存在');
         const result = await this.artifactFiles.preview(item);
@@ -1272,6 +1295,7 @@ export class Runtime {
         if (!latest || digest(latest) !== digest(item))
           return { ...base, status: 'unavailable', reason: '产物记录已经变化，请重新读取' };
         if ('reason' in result) return { ...base, status: 'unavailable', reason: result.reason };
+        this.learning.result(attemptId, { runId: item.runId, artifactId: args.id }, result.text);
         return {
           ...base,
           status: 'text',

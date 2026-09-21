@@ -10,6 +10,8 @@ import type { TaskRunIntent } from './task-run-presentation';
 import { scopedDescription, type PlanningScope } from '../shared/planning-scope';
 import { stepTitle } from './flow-outline';
 import TaskWebTargetPage from './TaskWebTargetPage';
+import FirstTaskGuide from './FirstTaskGuide';
+import { learningSteps, type LearningStatus } from '../shared/learning';
 import { webContext } from '../shared/task-web-target';
 
 const api = (method: string, args: unknown = {}): Promise<any> =>
@@ -38,6 +40,7 @@ const draftOf = (detail: TaskDetail): Draft => ({
 const text = (value: unknown): string =>
   typeof value === 'string' ? value : (JSON.stringify(value, null, 2) ?? '无');
 type Props = {
+  guideEntry?: number;
   showBrowser: (visible: boolean) => void;
   entry?: { key: string; record: FlowRecord; nodeId: string };
   entryHandled: () => void;
@@ -61,7 +64,11 @@ export default function AITaskWorkspace(props: Props) {
   const [saved, setSaved] = useState('');
   const [revision, setRevision] = useState(0);
   const [homeText, setHomeText] = useState('');
-  const [page, setPage] = useState<'home' | 'brief' | 'target' | 'review' | 'check'>('home');
+  const [learning, setLearning] = useState<LearningStatus>();
+  const handledGuide = useRef(0);
+  const [page, setPage] = useState<'home' | 'guide' | 'brief' | 'target' | 'review' | 'check'>(
+    'home',
+  );
   const backToBrief = useCallback(() => setPage('brief'), []);
   const location = useRef({ active: props.active, page });
   location.current = { active: props.active, page };
@@ -102,28 +109,38 @@ export default function AITaskWorkspace(props: Props) {
   const scopedProposal = result?.kind === 'plan' && !!detail?.proposal?.scope;
   const scopeDiffView = scopedProposal && !editingProposal;
   const title =
-    page === 'target'
-      ? '这次要操作哪里？'
-      : page === 'check'
-        ? '试运行前，最后确认一次'
-        : page === 'home'
-          ? '开始任务'
-          : page === 'brief'
-            ? '描述需求，带上必要资料'
-            : result?.kind === 'clarify'
-              ? '我理解你要……'
-              : result?.kind === 'unsupported'
-                ? '这项任务还需要支持'
-                : result?.kind === 'plan' && detail?.proposal?.baseFlow
-                  ? '检查 AI 提议的修改'
-                  : '先看看任务步骤';
+    page === 'guide'
+      ? '第一次，让我们一起完成'
+      : page === 'target'
+        ? '这次要操作哪里？'
+        : page === 'check'
+          ? '试运行前，最后确认一次'
+          : page === 'home'
+            ? '开始任务'
+            : page === 'brief'
+              ? '描述需求，带上必要资料'
+              : result?.kind === 'clarify'
+                ? '我理解你要……'
+                : result?.kind === 'unsupported'
+                  ? '这项任务还需要支持'
+                  : result?.kind === 'plan' && detail?.proposal?.baseFlow
+                    ? '检查 AI 提议的修改'
+                    : '先看看任务步骤';
 
   useEffect(() => {
     if (props.active)
       props.onNavigation(
         title,
-        page === 'check' ? backToPlan : page === 'target' ? backToBrief : undefined,
-        page === 'target' ? '描述与附件' : undefined,
+        page === 'check'
+          ? backToPlan
+          : page === 'target'
+            ? backToBrief
+            : page === 'guide'
+              ? () => {
+                  void back();
+                }
+              : undefined,
+        page === 'target' ? '描述与附件' : page === 'guide' ? '开始任务' : undefined,
       );
   }, [props.active, title, page, backToPlan, backToBrief, props.onNavigation]);
   useEffect(() => {
@@ -171,6 +188,42 @@ export default function AITaskWorkspace(props: Props) {
       clearInterval(timer);
     };
   }, [props.active, detail?.task.id, detail?.task.status]);
+
+  useEffect(() => {
+    if (!props.active) return;
+    let live = true,
+      pending = false;
+    const refresh = async () => {
+      if (pending) return;
+      pending = true;
+      try {
+        const ticket = epoch.current;
+        const next = await api('learning.status');
+        if (live && ticket === epoch.current) setLearning(next);
+      } catch (e) {
+        if (live) setError((e as Error).message);
+      } finally {
+        pending = false;
+      }
+    };
+    void refresh();
+    const timer = setInterval(() => void refresh(), 1000);
+    return () => {
+      live = false;
+      clearInterval(timer);
+    };
+  }, [props.active, page]);
+  useEffect(() => {
+    if (
+      !props.active ||
+      !props.guideEntry ||
+      handledGuide.current === props.guideEntry ||
+      lock.current
+    )
+      return;
+    handledGuide.current = props.guideEntry;
+    void showGuide();
+  }, [props.active, props.guideEntry, busy]);
 
   useEffect(() => {
     setReviewed(false);
@@ -346,6 +399,41 @@ export default function AITaskWorkspace(props: Props) {
       setPage('target');
     });
   }
+  async function showGuide() {
+    await run(async () => {
+      if (detail && dirty) await save();
+      setLearning(await api('learning.status'));
+      props.showBrowser(false);
+      setPage('guide');
+    });
+  }
+  async function startLearning(mode: 'continue' | 'restart') {
+    await run(async () => {
+      if (!learning) return;
+      if (detail && dirty) await save();
+      const next = await api('learning.start', { revision: learning.revision, mode });
+      setLearning(next.learning);
+      accept(next.detail);
+      setReviewed(false);
+      setProvider(next.detail.task.provider ?? 'deepseek');
+      setModel(next.detail.task.model ?? 'deepseek-flash');
+      setPage(next.detail.proposal || next.detail.flow ? 'review' : 'brief');
+      if (next.learning.latestRunId) {
+        const result = await api('run.detail', { id: next.learning.latestRunId });
+        if (result.run)
+          props.openRun(result, (intent = 'plan') =>
+            returnToTask.current(next.detail.task.id, intent),
+          );
+      }
+    });
+  }
+  async function skipLearning() {
+    await run(async () => {
+      if (!learning) return;
+      setLearning(await api('learning.skip', { revision: learning.revision }));
+      setPage('home');
+    });
+  }
   const providerName = provider === 'deepseek' ? 'DeepSeek' : 'OpenAI';
   const inputDisabled = busy || generating;
 
@@ -381,18 +469,20 @@ export default function AITaskWorkspace(props: Props) {
         <div>
           <h1>{page === 'home' ? '你想完成什么？' : title}</h1>
           <p>
-            {page === 'home'
-              ? '用一句话开始。FlowArk 先给你看步骤，由你决定何时执行。'
-              : page === 'target'
-                ? '第 2 步 / 选目标 · 只有你明确选择的对象会进入任务上下文'
-                : generating
-                  ? '正在理解本次任务，你可以取消生成。'
-                  : scope
-                    ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : scope.nodeId} · 尚未执行`
-                    : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
+            {page === 'guide'
+              ? '大约 2 分钟 · 使用无账号的示例网页和你选择的输出目录'
+              : page === 'home'
+                ? '用一句话开始。FlowArk 先给你看步骤，由你决定何时执行。'
+                : page === 'target'
+                  ? '第 2 步 / 选目标 · 只有你明确选择的对象会进入任务上下文'
+                  : generating
+                    ? '正在理解本次任务，你可以取消生成。'
+                    : scope
+                      ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : scope.nodeId} · 尚未执行`
+                      : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
           </p>
         </div>
-        {page !== 'home' && page !== 'target' && (
+        {page !== 'home' && page !== 'target' && page !== 'guide' && (
           <div className="ai-task-actions">
             {detail?.flow && detail.flow.id === props.sourceFlowId && (
               <button
@@ -425,7 +515,14 @@ export default function AITaskWorkspace(props: Props) {
           {message}
         </p>
       )}
-      {page === 'home' ? (
+      {page === 'guide' ? (
+        <FirstTaskGuide
+          progress={learning}
+          busy={busy}
+          start={(mode) => void startLearning(mode)}
+          skip={() => void skipLearning()}
+        />
+      ) : page === 'home' ? (
         <>
           <section className="ai-task-composer">
             <label htmlFor="new-task-description">你想完成的任务</label>
@@ -454,8 +551,8 @@ export default function AITaskWorkspace(props: Props) {
           <div className="ai-task-examples">
             {[
               [
-                '网页标题归档',
-                '读取标题，检查后保存到文件。',
+                '跟着示例做一次',
+                '读网页标题 → 检查 → 保存文件',
                 '读取我指定网页的标题，非空时新建文本文件保存；为空时提醒我。请先问清网页和输出位置。',
               ],
               [
@@ -469,13 +566,34 @@ export default function AITaskWorkspace(props: Props) {
                 '请根据我接下来提供的文本，设计整理并保存结果的流程。先确认整理规则和输出位置。',
               ],
             ].map(([heading, description, prompt]) => (
-              <button key={heading} disabled={busy} onClick={() => void create(prompt)}>
+              <button
+                key={heading}
+                disabled={busy}
+                onClick={() => void (heading === '跟着示例做一次' ? showGuide() : create(prompt))}
+              >
                 <h2>{heading}</h2>
                 <p>{description}</p>
                 <small>用这个需求开始</small>
               </button>
             ))}
           </div>
+          {learning?.taskId && (
+            <section className="ai-task-card learning-home" aria-label="教学进度">
+              <h2>{learning.status === 'completed' ? '已完成第一次学习' : '继续上次学习'}</h2>
+              <p>
+                {learning.status === 'skipped' ? '已跳过 · ' : ''}已完成{' '}
+                {Object.keys(learning.achieved).length} / 4 项学习。运行状态和结果在原任务中查看。
+              </p>
+              <div className="ai-task-actions">
+                <button disabled={busy} onClick={() => void startLearning('continue')}>
+                  {learning.status === 'completed' ? '查看教学结果' : '继续教学'}
+                </button>
+                <button disabled={busy} onClick={() => void showGuide()}>
+                  重新学习
+                </button>
+              </div>
+            </section>
+          )}
           <section className="ai-task-card">
             <h2>继续你的任务</h2>
             {!tasks.length ? (
@@ -503,6 +621,7 @@ export default function AITaskWorkspace(props: Props) {
       ) : page === 'target' && detail ? (
         <TaskWebTargetPage
           task={detail.task}
+          initialUrl={learning?.taskId === detail.task.id ? 'https://example.com' : undefined}
           back={backToBrief}
           changed={props.changed}
           showBrowser={() => props.showBrowser(true)}
@@ -517,6 +636,24 @@ export default function AITaskWorkspace(props: Props) {
       ) : (
         detail && (
           <>
+            {learning?.taskId === detail.task.id && (
+              <div className="learning-progress" aria-label="教学进度">
+                {learningSteps.map((label, i) => (
+                  <span
+                    key={label}
+                    data-done={
+                      !!learning.achieved[(['target', 'plan', 'trial', 'result'] as const)[i]]
+                    }
+                  >
+                    {learning.achieved[(['target', 'plan', 'trial', 'result'] as const)[i]]
+                      ? '✓'
+                      : i + 1}{' '}
+                    {label}
+                  </span>
+                ))}
+                <small>学习记录与运行进度分开保存</small>
+              </div>
+            )}
             {!scopeDiffView && (
               <div className="ai-task-state" role="status">
                 <span>{status[detail.task.status]}</span>

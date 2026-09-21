@@ -55,6 +55,7 @@ type Authorization = {
 type Snapshot = FlowRecord & Partial<PreparedScripts> & { runReviewAuthorization?: Authorization };
 type RequestRecord = { requestId: string; fingerprint: string; runId: string };
 type Dependencies = {
+  learnedTrial?: (run: Run) => void;
   busy?: (runId: string) => boolean;
   target?: (selection: RepairSelection) => Promise<RepairSelection>;
   assertAdmitting: () => void;
@@ -456,6 +457,7 @@ export class RunReview {
         fingerprint,
         runId: next.id,
       } satisfies RequestRecord);
+      this.deps.learnedTrial?.(next);
       return next;
     });
     this.deps.dispatch();

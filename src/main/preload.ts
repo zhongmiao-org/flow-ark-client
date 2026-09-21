@@ -1,6 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron';
 const allowed = new Set([
   'bootstrap',
+  'learning.status',
+  'learning.start',
+  'learning.skip',
   'task.create',
   'task.web.preview',
   'task.web.select',

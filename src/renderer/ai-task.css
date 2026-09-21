@@ -630,3 +630,107 @@
     min-height: auto;
   }
 }
+
+/* Figma first-task 23:2106: 400/728 columns, 24 gap, 690 high at 1440. */
+.learning-columns {
+  display: grid;
+  grid-template-columns: 400px minmax(0, 1fr);
+  gap: 24px;
+}
+.learning-columns > .ai-task-card {
+  min-height: 690px;
+}
+.learning-intro > h2 {
+  font-size: 28px;
+  line-height: 36px;
+  margin-bottom: 4px;
+}
+.learning-intro > p {
+  margin-bottom: 0;
+}
+.learning-topic {
+  min-height: 90px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.learning-columns h3 {
+  font-size: 18px;
+  line-height: 26px;
+  margin: 0;
+  font-weight: 600;
+}
+.learning-topic p,
+.learning-step p {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--fa-text-secondary);
+}
+.learning-step {
+  display: flex;
+  min-height: 88px;
+  padding: 16px;
+  gap: 16px;
+  border-radius: 8px;
+  background: var(--fa-bg-canvas);
+}
+.learning-step > span {
+  color: var(--fa-action-primary);
+  font-size: 18px;
+  line-height: 26px;
+  width: 28px;
+  flex-shrink: 0;
+}
+.learning-step > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.learning-practice > .ai-task-actions > .primary {
+  min-width: 180px;
+}
+.learning-practice > .ai-task-note {
+  min-height: 72px;
+}
+.learning-home {
+  margin-bottom: 24px;
+}
+.learning-progress {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0 0 24px;
+  padding: 16px 24px;
+  background: var(--fa-action-subtle);
+  border-radius: var(--fa-radius-12);
+}
+.learning-progress span {
+  color: var(--fa-text-secondary);
+}
+.learning-progress span[data-done='true'] {
+  color: var(--fa-action-primary);
+}
+@container (max-width: 850px) {
+  .learning-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .learning-columns > .ai-task-card {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 1199px) {
+  .learning-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .learning-columns > .ai-task-card {
+    min-height: 0;
+  }
+}
+
+.learning-practice > .ai-task-actions > button:not(.primary) {
+  min-width: 144px;
+}

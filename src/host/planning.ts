@@ -25,6 +25,10 @@ type SavedTask = PlanningTask & {
 };
 type Job = { id: string; abort: AbortController };
 type Dependencies = {
+  learning?: {
+    target: (task: PlanningTask) => void;
+    plan: (task: PlanningTask, flowHash: string) => void;
+  };
   web?: TaskWebTargets;
   repair?: PlanningRepair;
   key: (provider: string) => Promise<string>;
@@ -105,6 +109,25 @@ export class Planning {
     }
     if (errors.length) throw new AggregateError(errors, '生成已取消，但本地状态未能完整保存');
   }
+  create(flowId?: string, description = ''): TaskDetail {
+    this.deps.assertAvailable();
+    const flow = flowId ? this.store.get<FlowRecord>('flow', flowId) : null;
+    if (flowId && !flow) throw new Error('关联流程已不存在');
+    if (flow?.webTarget) throw new Error('此流程已有网页来源，请从原任务继续');
+    const task: SavedTask = {
+      id: uid(),
+      flowId: flowId ?? uid(),
+      revision: 1,
+      description,
+      context: [],
+      answers: {},
+      status: 'draft',
+      updatedAt: now(),
+    };
+    this.put(task);
+    return this.detail(task.id);
+  }
+
   async request(method: string, input: unknown): Promise<any> {
     if (!Object.prototype.hasOwnProperty.call(taskMethods, method))
       throw new Error('任务接口不存在');
@@ -123,23 +146,7 @@ export class Planning {
         }));
     if (method === 'task.detail') return this.detail(args.id);
     if (method !== 'task.cancel') this.deps.assertAvailable();
-    if (method === 'task.create') {
-      const flow = args.flowId ? this.store.get<FlowRecord>('flow', args.flowId) : null;
-      if (args.flowId && !flow) throw new Error('关联流程已不存在');
-      if (flow?.webTarget) throw new Error('此流程已有网页来源，请从原任务继续');
-      const task: SavedTask = {
-        id: uid(),
-        flowId: args.flowId ?? uid(),
-        revision: 1,
-        description: '',
-        context: [],
-        answers: {},
-        status: 'draft',
-        updatedAt: now(),
-      };
-      this.put(task);
-      return this.detail(task.id);
-    }
+    if (method === 'task.create') return this.create(args.flowId);
     const task = this.task(args.id, args.revision);
     const operationEpoch = this.operationEpoch.get(task.id) ?? 0;
     const cancellationEpoch = this.cancellationEpoch;
@@ -160,16 +167,19 @@ export class Planning {
         method === 'task.web.select' ? await this.deps.web.select(task, args.token) : undefined;
       unchanged();
       this.abort(task.id);
-      this.put({
-        ...task,
-        webTarget,
-        revision: task.revision + 1,
-        status: 'draft',
-        error: undefined,
-        requestId: undefined,
-        proposal: undefined,
-        undo: undefined,
-        appliedRepair: undefined,
+      this.store.tx(() => {
+        this.put({
+          ...task,
+          webTarget,
+          revision: task.revision + 1,
+          status: 'draft',
+          error: undefined,
+          requestId: undefined,
+          proposal: undefined,
+          undo: undefined,
+          appliedRepair: undefined,
+        });
+        if (webTarget) this.deps.learning?.target({ ...task, webTarget });
       });
       return this.detail(task.id);
     }
@@ -348,6 +358,7 @@ export class Planning {
         );
         saved.webTarget = task.webTarget;
         this.store.put('flow', saved.id, saved);
+        this.deps.learning?.plan(task, flowHash(saved));
         if (canonical(saved.flow) !== canonical(proposal.result.flow))
           throw new Error('实例配置与提案参数不一致，请先核对配置');
         this.put({
