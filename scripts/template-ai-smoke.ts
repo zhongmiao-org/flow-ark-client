@@ -223,6 +223,14 @@ try {
   await app!.evaluate(({ dialog }, archive) => {
     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [archive] });
   }, archive);
+  await button('我的流程').click();
+  await button('导入模板包').click();
+  await page.getByRole('heading', { name: '安装预览：AI 来源核对' }).waitFor();
+  await button('取消').click();
+  assert.equal((await call('bootstrap')).instances.length, 0);
+  note(
+    'the empty flow workspace opens a ZIP preview in the retained template module; cancel creates no instance or run',
+  );
   const install = await call('template.install', { token: (await call('template.inspect')).token });
   const instance = await call('template.create', { key: install.key });
   const other = await call('template.create', { key: install.key });

@@ -23,6 +23,7 @@ export default function TemplateLibrary({
   useEffect(() => {
     if (initialPreview) {
       setPreview(initialPreview);
+      setEntryId(undefined);
       consumePreview?.();
     }
   }, [initialPreview, consumePreview]);
