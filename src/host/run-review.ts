@@ -7,6 +7,7 @@ import { staticUploadFields, uploadText } from '../shared/upload-source';
 import { digest, now, redactedErrorText, uid } from '../shared/utils';
 import type { BrowserBinding, FlowRecord, PreparedScripts, Run } from '../shared/types';
 import type { PlanningTask } from '../shared/planning';
+import type { RepairSelection } from '../shared/task-repair';
 import {
   runReviewConfirmSchema,
   runReviewPreviewSchema,
@@ -45,6 +46,7 @@ type PathIdentity = PathRequirement & {
   mtimeMs?: number;
 };
 type Authorization = {
+  target?: RepairSelection;
   paths: PathIdentity[];
   browsers: BrowserBinding[];
   embedded?: EmbeddedReview;
@@ -53,6 +55,8 @@ type Authorization = {
 type Snapshot = FlowRecord & Partial<PreparedScripts> & { runReviewAuthorization?: Authorization };
 type RequestRecord = { requestId: string; fingerprint: string; runId: string };
 type Dependencies = {
+  busy?: (runId: string) => boolean;
+  target?: (selection: RepairSelection) => Promise<RepairSelection>;
   assertAdmitting: () => void;
   epoch: () => number;
   preflight: (record: Snapshot) => Promise<PreparedScripts>;
@@ -89,9 +93,35 @@ export class RunReview {
       if (task.status === 'generating' || task.proposal)
         throw new Error('任务仍在生成或有未处理提案，请先核对并采纳或拒绝');
     }
+    let rerun: Run | undefined;
+    if (args.rerun) {
+      rerun = this.store.get<Run>('run', args.rerun.runId);
+      if (
+        !task ||
+        !rerun ||
+        rerun.flowId !== record.id ||
+        !['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(rerun.state)
+      )
+        throw new Error('原运行必须属于此任务且已经结束');
+      if (this.deps.busy?.(rerun.id)) throw new Error('原运行仍在收尾，请稍后重新检查');
+      if (rerun.task && rerun.task.id !== task.id) throw new Error('原运行不属于所选任务');
+      const snapshot = this.store.get<FlowRecord>('snapshot', rerun.id);
+      if (!snapshot || snapshot.id !== record.id || snapshot.flow.id !== record.id)
+        throw new Error('原运行快照不存在或来源不一致');
+    }
+    if (
+      task?.appliedRepair &&
+      task.appliedRepair.flowHash !== digest({ flow: record.flow, bindings: record.bindings })
+    )
+      throw new Error('修复后的草稿或绑定已改变，请回到任务重新核对');
     return {
       record,
+      target: task?.appliedRepair?.selection,
+      rerun,
       signature: digest({
+        rerun,
+        sourceSnapshot: rerun ? this.store.get('snapshot', rerun.id) : undefined,
+        sourceEvents: rerun ? this.store.events(rerun.id) : undefined,
         record,
         task,
         epoch: this.deps.epoch(),
@@ -101,7 +131,7 @@ export class RunReview {
     };
   }
 
-  private async environment(record: FlowRecord) {
+  private async environment(record: FlowRecord, target?: RepairSelection) {
     const paths = new Map<string, PathRequirement>();
     const resources: ReviewResource[] = [];
     const browserIds = new Set<string>();
@@ -264,6 +294,7 @@ export class RunReview {
     return {
       resources,
       authorization: {
+        ...(target ? { target: await this.verifyTarget(target) } : {}),
         paths: identities,
         browsers,
         ...(embedded ? { embedded } : {}),
@@ -274,11 +305,11 @@ export class RunReview {
 
   private async prepare(args: RunReviewInput) {
     const captured = this.capture(args);
-    const before = await this.environment(captured.record);
+    const before = await this.environment(captured.record, captured.target);
     if (this.capture(args).signature !== captured.signature)
       throw new Error('检查期间流程或任务已改变，请重新检查');
     const prepared = await this.deps.preflight(captured.record);
-    const after = await this.environment(captured.record);
+    const after = await this.environment(captured.record, captured.target);
     if (
       this.capture(args).signature !== captured.signature ||
       digest(before.authorization) !== digest(after.authorization)
@@ -324,6 +355,12 @@ export class RunReview {
       result.flow.versionId = executionVersion(prepared.record, prepared.prepared);
       result.flow.scriptBundles = prepared.prepared.scriptBundles;
       result.resources = prepared.resources;
+      if (prepared.rerun)
+        result.rerun = {
+          runId: prepared.rerun.id,
+          name: prepared.rerun.name,
+          state: prepared.rerun.state,
+        };
       result.checks.push({
         name: '当前流程与资源',
         passed: true,
@@ -370,7 +407,12 @@ export class RunReview {
     if (previous) return previous;
     assertAdmission();
     // Confirm's extra fields are not part of selection or the preview token.
-    const selection: RunReviewInput = { id: args.id, debug: args.debug, task: args.task };
+    const selection: RunReviewInput = {
+      id: args.id,
+      debug: args.debug,
+      task: args.task,
+      rerun: args.rerun,
+    };
     const captured = await this.prepare(selection);
     assertAdmission();
     if (captured.token !== args.token) throw new Error('试运行检查已过期，请重新检查并核对');
@@ -393,6 +435,10 @@ export class RunReview {
         source: 'manual',
         debug: !!args.debug,
         review: { reviewedAt: time },
+        ...(args.task ? { task: args.task } : {}),
+        ...(captured.rerun
+          ? { rerun: { runId: captured.rerun.id, mode: 'saved' as const, reviewedAt: time } }
+          : {}),
         business: '已核对后开始试运行；执行结果与外部业务核对分别记录',
       };
       this.store.put('snapshot', next.id, {
@@ -420,11 +466,18 @@ export class RunReview {
     if (!current || !snapshot.runReviewAuthorization)
       throw new Error('试运行授权已失效，请重新检查');
     assertRerunBindings(snapshot.bindings, current.bindings);
-    const environment = await this.environment(snapshot);
+    const environment = await this.environment(snapshot, snapshot.runReviewAuthorization.target);
     const latest = this.store.get<FlowRecord>('flow', run.flowId);
     if (!latest) throw new Error('当前流程已删除，试运行授权失效');
     assertRerunBindings(snapshot.bindings, latest.bindings);
     if (digest(snapshot.runReviewAuthorization) !== digest(environment.authorization))
       throw new Error('试运行资源或网页已改变，请重新检查');
+  }
+
+  private async verifyTarget(target: RepairSelection) {
+    if (!this.deps.target) throw new Error('修复目标复核不可用');
+    const current = await this.deps.target(target);
+    if (digest(current) !== digest(target)) throw new Error('修复目标已变化，请重新选择');
+    return current;
   }
 }

@@ -17,6 +17,8 @@ import type {
   RunReviewPreview,
 } from '../src/shared/run-review';
 import type { Flow, FlowRecord, PreparedScripts, Run } from '../src/shared/types';
+import type { RepairSelection } from '../src/shared/task-repair';
+import { digest } from '../src/shared/utils';
 
 const valueFlow = (): Flow => ({
   id: 'review-flow',
@@ -40,6 +42,7 @@ const request = (p: RunReviewPreview, requestId = randomUUID()): RunReviewConfir
   token: p.token!,
   requestId,
   reviewed: true,
+  ...(p.rerun ? { rerun: { runId: p.rerun.runId, reviewed: true as const } } : {}),
 });
 const kinds = [
   'flow',
@@ -56,6 +59,8 @@ function fixture(t: TestContext) {
   const directory = mkdtempSync(join(tmpdir(), 'flowark-review-unit-'));
   const store = new Store(join(directory, 'store.sqlite'), randomBytes(32));
   const state = {
+    busy: '',
+    target: async (selection: RepairSelection) => structuredClone(selection),
     epoch: 0,
     blocked: '',
     dispatched: 0,
@@ -76,6 +81,8 @@ function fixture(t: TestContext) {
   };
   const open = () =>
     new RunReview(store, {
+      busy: (id) => state.busy === id,
+      target: (selection) => state.target(selection),
       assertAdmitting: () => {
         if (state.blocked) throw new Error(state.blocked);
         if (store.fault) throw new Error(store.fault);
@@ -520,4 +527,106 @@ test('explicit rejection differs from unknown storage and a post-commit failure 
   assert.ok('id' in created);
   assert.equal(f.store.list('run').length, 1);
   assert.deepEqual(await f.service.confirmOutcome(input, () => {}), created);
+});
+
+test('full reviewed rerun binds task and source, preserves old evidence and deduplicates confirmation', async (t) => {
+  const f = fixture(t);
+  f.store.put('ai-task', 'task', { id: 'task', flowId: f.record.id, revision: 1, status: 'draft' });
+  const original = await f.service.confirm(
+    request(await f.service.preview({ id: f.record.id, task: { id: 'task', revision: 1 } })),
+  );
+  assert.deepEqual(original.task, { id: 'task', revision: 1 });
+  f.store.state(original.id, 'FAILED');
+  const before = {
+    run: f.store.get('run', original.id),
+    snapshot: f.store.get('snapshot', original.id),
+    events: f.store.events(original.id),
+  };
+  const selected: RunReviewInput = {
+    id: f.record.id,
+    task: { id: 'task', revision: 1 },
+    rerun: { runId: original.id, reviewed: true },
+  };
+  assert.throws(() =>
+    validateIPC('flow.run.preview', {
+      ...selected,
+      rerun: { runId: original.id, reviewed: false },
+    }),
+  );
+  assert.equal((await f.service.preview({ ...selected, task: undefined })).ready, false);
+  f.state.busy = original.id;
+  assert.equal((await f.service.preview(selected)).ready, false);
+  f.state.busy = '';
+  const p = await f.service.preview(selected);
+  assert.equal(p.ready, true);
+  assert.equal(f.store.list('run').length, 1);
+  const confirmation = request(p);
+  const next = await f.service.confirm(confirmation);
+  assert.equal((await f.service.confirm(confirmation)).id, next.id);
+  assert.equal(next.rerun?.runId, original.id);
+  assert.equal(next.rerun?.mode, 'saved');
+  assert.deepEqual(next.task, { id: 'task', revision: 1 });
+  assert.deepEqual(
+    {
+      run: f.store.get('run', original.id),
+      snapshot: f.store.get('snapshot', original.id),
+      events: f.store.events(original.id),
+    },
+    before,
+  );
+  assert.equal(f.store.list('run').length, 2);
+  assert.ok(f.store.get<any>('snapshot', next.id).runReviewAuthorization);
+});
+
+test('adopted repair target is read from Host and revalidated during review, confirmation and queued execution', async (t) => {
+  const f = fixture(t);
+  const target: RepairSelection = {
+    requestId: randomUUID(),
+    resourceId: 'web-1',
+    documentRevision: 1,
+    url: 'https://example.test/form',
+    title: '虚构页面',
+    target: {
+      selector: '#title',
+      framePath: [],
+      label: 'Title',
+      tag: 'h1',
+      inputType: '',
+      structural: false,
+    },
+  };
+  const task = {
+    id: 'task',
+    flowId: f.record.id,
+    revision: 1,
+    status: 'draft',
+    appliedRepair: {
+      proposalId: 'proposal',
+      runId: 'source',
+      nodeId: 'value',
+      selection: target,
+      flowHash: digest({ flow: f.record.flow, bindings: f.record.bindings }),
+    },
+  };
+  f.store.put('ai-task', 'task', task);
+  const input = { id: f.record.id, task: { id: 'task', revision: 1 } };
+  const p = await f.service.preview(input);
+  assert.equal(p.ready, true);
+  f.state.target = async () => {
+    throw new Error('target changed');
+  };
+  await assert.rejects(f.service.confirm(request(p)), /target changed/);
+  assert.equal(f.store.list('run').length, 0);
+  f.state.target = async (s) => structuredClone(s);
+  const run = await f.service.confirm(request(await f.service.preview(input)));
+  const snapshot = f.store.get<any>('snapshot', run.id);
+  assert.deepEqual(snapshot.runReviewAuthorization.target, target);
+  await f.service.checkExecution(run, snapshot);
+  f.state.target = async (s) => ({ ...s, documentRevision: 2 });
+  await assert.rejects(f.service.checkExecution(run, snapshot), /目标已变化/);
+  f.state.target = async (s) => structuredClone(s);
+  f.record.bindings.files.extra = '/manual';
+  f.save();
+  assert.equal((await f.service.preview(input)).ready, false);
+  assert.equal(f.store.list('run').length, 1);
 });

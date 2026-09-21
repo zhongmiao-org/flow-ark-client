@@ -258,6 +258,7 @@ export class RunRerun {
 
   checkExecution(run: Run, snapshot: Snapshot) {
     if (!run.rerun) return;
+    if (run.review) return; // Full reviewed snapshots are revalidated by RunReview.
     this.ready(run.rerun.runId);
     const current = this.store.get<FlowRecord>('flow', run.flowId);
     if (!current) throw new Error('当前已保存流程不存在，重新运行授权已失效');

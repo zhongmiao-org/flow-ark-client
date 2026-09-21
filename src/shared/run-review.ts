@@ -2,6 +2,10 @@ import { z } from 'zod';
 import type { Run, ScriptBundle } from './types';
 
 const selection = {
+  rerun: z
+    .object({ runId: z.string().min(1).max(100), reviewed: z.literal(true) })
+    .strict()
+    .optional(),
   id: z.string().min(1).max(100),
   debug: z.boolean().optional(),
   task: z
@@ -49,6 +53,7 @@ export type ReviewEffect = {
   detail: string;
 };
 export type RunReviewPreview = {
+  rerun?: { runId: string; name: string; state: string };
   ready: boolean;
   token?: string;
   debug: boolean;

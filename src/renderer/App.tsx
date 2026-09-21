@@ -594,6 +594,8 @@ export default function App() {
                     ? runOrigin === 'task'
                       ? taskRunView === 'details'
                         ? '结果详细信息'
+                        : taskRunView === 'repair'
+                          ? '修复任务'
                         : taskRunView === 'rerun'
                           ? '重新运行前检查'
                           : taskRunPresentation({ ...detail, fault: detail.fault ?? data.fault })
@@ -976,6 +978,7 @@ export default function App() {
                   control={(id, action) => api('run.control', { id, action })}
                   reveal={(id) => api('artifact.reveal', { id })}
                   showBrowser={() => setBrowserOpen(true)}
+                  hideBrowser={() => setBrowserOpen(false)}
                   open={(next) => {
                     setTaskRunView('overview');
                     setDetail((current: any) =>

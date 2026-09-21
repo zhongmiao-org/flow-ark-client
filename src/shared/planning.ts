@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { FlowArkP1 } from './contracts.generated';
 import type { Flow, FlowRecord } from './types';
+import type { RepairSelection } from './task-repair';
 import { repairGenerateSchema, repairPreviewSchema, type RepairReference } from './task-repair';
 
 export type PlanningInput = NonNullable<FlowArkP1['AIPlanningRequest']>;
@@ -15,6 +16,13 @@ export type TaskStatus =
   | 'failed'
   | 'cancelled';
 export type PlanningTask = {
+  appliedRepair?: {
+    proposalId: string;
+    runId: string;
+    nodeId: string;
+    selection: RepairSelection;
+    flowHash: string;
+  };
   id: string;
   revision: number;
   description: string;

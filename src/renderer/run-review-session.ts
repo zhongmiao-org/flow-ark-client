@@ -23,7 +23,8 @@ export type ReviewState = {
   attempt?: Attempt;
   error: string;
 };
-const context = (selection: RunReviewInput) => JSON.stringify([selection.id, selection.task?.id]);
+const context = (selection: RunReviewInput) =>
+  JSON.stringify([selection.id, selection.task?.id, selection.rerun?.runId]);
 const message = (error: unknown) => (error instanceof Error ? error.message : '请求未完成');
 
 /** One visible page, with receipts retained per task when the user navigates away. */

@@ -33,6 +33,15 @@ function Contents({ preview }: { preview: RunReviewPreview }) {
   const changes = preview.effects.filter((e) => ['write', 'network', 'unknown'].includes(e.kind));
   return (
     <>
+      {preview.rerun && (
+        <section className="run-review-card">
+          <h2>关联原运行，从头执行</h2>
+          <p>
+            {preview.rerun.name} · {preview.rerun.runId}
+          </p>
+          <p>已核对原输出与外部结果；新运行不恢复旧脚本内部现场，可能再次产生外部更改。</p>
+        </section>
+      )}
       <section className="run-review-card">
         <h2>操作对象</h2>
         {objects.length ? (

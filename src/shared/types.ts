@@ -30,6 +30,7 @@ export type FlowRecord = {
   versionId?: string;
 };
 export type Run = {
+  task?: { id: string; revision: number };
   id: string;
   flowId: string;
   versionId: string;

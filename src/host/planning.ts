@@ -148,6 +148,7 @@ export class Planning {
       this.put({
         ...task,
         description: args.description,
+        appliedRepair: undefined,
         context: args.context,
         answers: args.answers,
         revision: task.revision + 1,
@@ -227,6 +228,7 @@ export class Planning {
       if (proposal.baseRevision !== task.revision || proposal.baseFlowHash !== flowHash(before))
         throw new Error('流程或资源绑定已修改，请基于当前版本重新生成；未覆盖手动编辑');
       this.validatePlan(proposal.result, task.flowId, proposal.baseFlow);
+      let appliedRepair: PlanningTask['appliedRepair'];
       if (proposal.repair) {
         if (!this.deps.repair) throw new Error('网页目标修复不可用');
         const verified = await this.deps.repair.verify(task, proposal.repair);
@@ -245,6 +247,13 @@ export class Planning {
           proposal.repair.nodeId,
           verified.selection.target,
         );
+        appliedRepair = {
+          proposalId: proposal.id,
+          runId: proposal.repair.runId,
+          nodeId: proposal.repair.nodeId,
+          selection: verified.selection,
+          flowHash: '',
+        };
       }
       this.store.tx(() => {
         const saved = this.deps.save(
@@ -260,6 +269,9 @@ export class Planning {
           status: 'draft',
           error: undefined,
           undo: { before, afterHash: flowHash(saved) },
+          appliedRepair: appliedRepair
+            ? { ...appliedRepair, flowHash: flowHash(saved) }
+            : undefined,
         });
       });
     } else if (method === 'task.undo') {
@@ -274,6 +286,7 @@ export class Planning {
           ...task,
           revision: task.revision + 1,
           undo: undefined,
+          appliedRepair: undefined,
           proposal: undefined,
           status: 'draft',
           error: undefined,

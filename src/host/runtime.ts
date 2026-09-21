@@ -161,6 +161,8 @@ export class Runtime {
     );
     this.sessions = new Sessions(dir, executable, dataPath, system);
     this.runReview = new RunReview(this.store, {
+      busy: (id) => this.active?.id === id || this.scripts.hasRun(id) || (this.pendingCapabilities.get(id) ?? 0) > 0,
+      target: (selection) => this.system('browser.embedded.target.verify', { selection }),
       assertAdmitting: () => this.assertAdmitting(),
       epoch: () => this.admissionEpoch,
       preflight: (record) => this.preflight(record),

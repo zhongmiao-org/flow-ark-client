@@ -4,7 +4,7 @@ import { runTimeline } from './run-timeline';
 import { kinds } from './node-kinds';
 import { flatten } from './flow-editing';
 
-export type TaskRunView = 'overview' | 'details' | 'rerun';
+export type TaskRunView = 'overview' | 'details' | 'rerun' | 'repair';
 export type TaskRunIntent = 'plan' | 'modify' | 'home';
 export type RunArtifact = {
   artifactId: string;

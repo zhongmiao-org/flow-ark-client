@@ -12,7 +12,7 @@ import type { RepairInput, RepairPreview } from '../src/shared/task-repair';
 
 // Real Renderer IPC, Main picker, encrypted Host, provider adapter and Worker.
 // Only the provider HTTP endpoint is redirected inside an ignored private build.
-// This is not evidence of a real DeepSeek/OpenAI connection or the repair UI.
+// This is not evidence of a real DeepSeek/OpenAI connection.
 const data = await mkdtemp('/private/tmp/flowark-repair-native-');
 await mkdir('test-results/figma', { recursive: true });
 const appPath = await mkdtemp(resolve('test-results/repair-native-app-'));
@@ -88,6 +88,7 @@ const evidence: any = {
   data,
   appPath,
   checks: [],
+  layouts: [],
   provider: 'local HTTP fixture',
 };
 let app: ElectronApplication | undefined, page: Page | undefined, failure: unknown;
@@ -105,9 +106,7 @@ const site = (expression: string) =>
     const view = BrowserWindow.getAllWindows()[0].contentView.children[0] as any;
     return view.webContents.executeJavaScript(expression);
   }, expression);
-const pick = async () => {
-  const requestId = randomUUID();
-  await call('browser.embedded.pick.start', { requestId });
+const nativeClick = async () => {
   await app!.evaluate(async ({ BrowserWindow }) => {
     const view = BrowserWindow.getAllWindows()[0].contentView.children[0] as any;
     const wc = view.webContents;
@@ -121,11 +120,69 @@ const pick = async () => {
     wc.sendInputEvent({ type: 'mouseDown', ...point, button: 'left', clickCount: 1 });
     wc.sendInputEvent({ type: 'mouseUp', ...point, button: 'left', clickCount: 1 });
   });
+};
+const pick = async () => {
+  const requestId = randomUUID();
+  await call('browser.embedded.pick.start', { requestId });
+  await nativeClick();
   await wait(
     async () => (await call('browser.embedded.pick.status', { requestId })).phase === 'selected',
     'native pick did not select',
   );
   return requestId;
+};
+const repairPage = () => page!.locator('.task-repair-page:not([hidden])');
+const checkPage = () => page!.locator('.run-review-page:not([hidden])');
+const fixtureMode = (mode: string) =>
+  app!.evaluate((_, mode) => {
+    (globalThis as any).repairFixture.mode = mode;
+  }, mode);
+const pickInUI = async () => {
+  await app!.evaluate(() => {
+    (globalThis as any).repairFixture.pickId = '';
+  });
+  await repairPage().getByRole('button', { name: '从网页选取', exact: true }).click();
+  await wait(
+    async () => app!.evaluate(() => !!(globalThis as any).repairFixture.pickId),
+    'native picker did not start',
+  );
+  await nativeClick();
+  await repairPage().getByRole('heading', { name: '已选目标', exact: true }).waitFor();
+  await repairPage().getByRole('button', { name: '确认这个目标', exact: true }).click();
+  await repairPage().getByRole('heading', { name: '检查修复提议' }).waitFor();
+  await repairPage().getByLabel('模型', { exact: true }).fill('fixture-model');
+  await repairPage().getByRole('checkbox', { name: '我已核对发送内容、供应商和模型' }).check();
+  await repairPage().getByRole('button', { name: '让 AI 提议修复', exact: true }).click();
+  await repairPage().getByRole('heading', { name: '只改变目标引用', exact: true }).waitFor();
+};
+const capture = async (kind: string) => {
+  for (const [width, height] of [
+    [1440, 960],
+    [1920, 1080],
+    [1040, 700],
+  ]) {
+    await app!.evaluate(
+      ({ BrowserWindow }, size) => {
+        BrowserWindow.getAllWindows()[0].setSize(size[0], size[1]);
+      },
+      [width, height],
+    );
+    await page!.waitForFunction((w) => window.innerWidth === w, width);
+    await page!.evaluate(() => document.querySelector('main')?.scrollTo(0, 0));
+    const layout = await repairPage().evaluate((root) => ({
+      overflow: root.scrollWidth > root.clientWidth + 1,
+      rootOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+      columns: [...root.querySelectorAll('.task-run-columns > section')].map((n) => {
+        const r = n.getBoundingClientRect();
+        return { x: r.x, y: r.y, width: r.width, height: r.height };
+      }),
+    }));
+    assert.equal(layout.overflow, false, `${kind} ${width}`);
+    assert.equal(layout.rootOverflow, false, `${kind} root ${width}`);
+    evidence.layouts.push({ kind, width, height, ...layout });
+    await page!.screenshot({ path: `test-results/figma/task-${kind}-${width}.png`, scale: 'css' });
+  }
+  await app!.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1440, 960));
 };
 try {
   app = await electron.launch({
@@ -197,18 +254,18 @@ try {
     flow,
     bindings: { browserId: 'embedded', files: { work: output }, credentials: [] },
   });
-  const check = await call('flow.run.preview', {
-    id: flow.id,
-    task: { id: task.id, revision: task.revision },
-  });
-  assert.equal(check.ready, true, JSON.stringify(check.checks));
-  const run: Run = await call('flow.run.confirm', {
-    id: flow.id,
-    task: { id: task.id, revision: task.revision },
-    token: check.token,
-    requestId: randomUUID(),
-    reviewed: true,
-  });
+  await page.locator('.sidebar').getByRole('button', { name: '我的流程', exact: true }).click();
+  await page.locator('.sidebar').getByRole('button', { name: '开始任务', exact: true }).click();
+  await page.locator('.ai-task-recents button').filter({ hasText: task.description }).click();
+  await page.getByRole('button', { name: '确认方案，去试运行', exact: true }).click();
+  await checkPage().getByRole('heading', { name: '检查通过', exact: true }).waitFor();
+  await checkPage().getByRole('checkbox', { name: '我已核对操作对象、可能更改和保存位置' }).check();
+  await checkPage().getByRole('button', { name: '开始试运行', exact: true }).click();
+  const runPage = page.locator('.task-run-page');
+  await runPage.waitFor();
+  const run: Run = (
+    await call('run.detail', { id: await runPage.getAttribute('data-task-run-id') })
+  ).run;
   await wait(
     async () =>
       (await call('run.detail', { id: run.id })).run.state === 'FAILED' &&
@@ -243,6 +300,7 @@ try {
   );
   await assert.rejects(generate(first), /唯一|匹配/);
   await site(`document.querySelectorAll('#new-title')[1].remove()`);
+  await assert.rejects(generate(first), /变化|选取/);
   args.pickRequestId = await pick();
   const fresh = await preview();
   await call('browser.embedded.navigate', { url });
@@ -251,7 +309,10 @@ try {
   args.pickRequestId = await pick();
   const hidden = await preview();
   await call('browser.embedded.visibility', { visible: false });
-  await assert.rejects(generate(hidden), /展开|选取/);
+  assert.equal((await preview()).token, hidden.token);
+  assert.equal(requests.length, 0);
+  await call('browser.embedded.pick.cancel', { requestId: args.pickRequestId });
+  await assert.rejects(generate(hidden), /展开|选取|目标/);
   await call('browser.embedded.visibility', { visible: true });
   args.pickRequestId = await pick();
   const ready = await preview();
@@ -271,34 +332,92 @@ try {
     call('task.adopt', { id: task.id, revision: task.revision, proposalId: detail.proposal!.id }),
     /选取|目标/,
   );
-  args.pickRequestId = await pick();
-  await generate(await preview());
-  await wait(
-    async () => (await call('task.detail', { id: task.id })).task.status !== 'generating',
-    'second repair did not finish',
-  );
+  await app.evaluate(({ ipcMain }) => {
+    const handlers = (ipcMain as any)._invokeHandlers as Map<
+      string,
+      (...args: any[]) => Promise<any>
+    >;
+    const original = handlers.get('flowark:request')!;
+    const state: any = { original, mode: '', pickId: '', confirmations: [] };
+    (globalThis as any).repairFixture = state;
+    handlers.set('flowark:request', async (...args: any[]) => {
+      const method = args[1];
+      if (method === 'flow.run.confirm') state.confirmations.push(structuredClone(args[2]));
+      const result = await original(...args);
+      if (method === 'browser.embedded.pick.start' && result.phase === 'picking')
+        state.pickId = args[2].requestId;
+      if (
+        (state.mode === 'lose-adopt' && method === 'task.adopt') ||
+        (state.mode === 'lose-confirm' && method === 'flow.run.confirm')
+      ) {
+        state.mode = '';
+        throw new Error('fixture: reply lost after commit');
+      }
+      return result;
+    });
+  });
+  await page.getByRole('button', { name: '重新选择网页目标', exact: true }).click();
+  await repairPage().getByRole('heading', { name: '重新选择要修复的网页目标' }).waitFor();
+  await pickInUI();
   detail = await call('task.detail', { id: task.id });
   assert.equal(detail.task.status, 'plan', detail.task.error);
-  await call('task.adopt', {
-    id: task.id,
-    revision: task.revision,
-    proposalId: detail.proposal!.id,
-  });
+  assert.equal(requests.length, 2);
+  await capture('repair');
+  await site(`document.querySelector('#new-title').setAttribute('aria-label','目标暂时变化')`);
+  await repairPage().getByRole('button', { name: '采纳并检查起点', exact: true }).click();
+  await repairPage().getByRole('button', { name: '取消等待并核对当前方案', exact: true }).click();
+  await repairPage().getByRole('heading', { name: '重新选择要修复的网页目标' }).waitFor();
+  assert.equal((await call('task.detail', { id: task.id })).task.appliedRepair, undefined);
+  assert.equal((await call('bootstrap')).runs.length, 1);
+  await site(`document.querySelector('#new-title').removeAttribute('aria-label')`);
+  await pickInUI();
+  await fixtureMode('lose-adopt');
+  await repairPage().getByRole('button', { name: '采纳并检查起点', exact: true }).click();
+  await repairPage().getByRole('heading', { name: '修复后怎样重新执行？' }).waitFor();
   assert.equal((await call('bootstrap')).runs.length, 1);
   const still = await call('run.detail', { id: run.id });
   assert.deepEqual(still.run, original.run);
   assert.deepEqual(still.snapshot, original.snapshot);
   assert.deepEqual(still.events, original.events);
-  const repeat = await call('run.rerun.preview', { id: run.id, mode: 'saved' });
-  const confirmation = {
-    id: run.id,
-    mode: 'saved',
-    token: repeat.token,
-    requestId: randomUUID(),
-    reviewed: true,
-  };
-  const next: Run = await call('run.rerun.confirm', confirmation);
-  assert.equal((await call('run.rerun.confirm', confirmation)).id, next.id);
+  await capture('restart');
+  const prior = () =>
+    repairPage().getByRole('checkbox', {
+      name: '我已核对原运行的输出与外部结果，确认可以从头执行',
+    });
+  assert.equal(await prior().isChecked(), false);
+  assert.equal(
+    await repairPage().getByRole('button', { name: '确认，重新检查', exact: true }).isDisabled(),
+    true,
+  );
+  await prior().check();
+  await repairPage().getByRole('button', { name: '确认，重新检查', exact: true }).click();
+  await checkPage().getByRole('heading', { name: '检查通过', exact: true }).waitFor();
+  await checkPage().getByRole('heading', { name: '关联原运行，从头执行', exact: true }).waitFor();
+  await checkPage().getByRole('checkbox', { name: '我已核对操作对象、可能更改和保存位置' }).check();
+  await checkPage().getByRole('button', { name: '回去修改', exact: true }).click();
+  assert.equal(await prior().isChecked(), false);
+  await prior().check();
+  await repairPage().getByRole('button', { name: '确认，重新检查', exact: true }).click();
+  await checkPage().getByRole('heading', { name: '检查通过', exact: true }).waitFor();
+  const reviewed = checkPage().getByRole('checkbox', {
+    name: '我已核对操作对象、可能更改和保存位置',
+  });
+  assert.equal(await reviewed.isChecked(), false);
+  await reviewed.check();
+  await fixtureMode('lose-confirm');
+  await checkPage().getByRole('button', { name: '开始试运行', exact: true }).click();
+  await checkPage().getByRole('heading', { name: '确认结果尚未核对', exact: true }).waitFor();
+  await checkPage().getByRole('button', { name: '回去修改', exact: true }).click();
+  await prior().check();
+  await repairPage().getByRole('button', { name: '确认，重新检查', exact: true }).click();
+  await checkPage().getByRole('button', { name: '查询本次确认结果', exact: true }).click();
+  await wait(
+    async () => (await runPage.getAttribute('data-task-run-id')) !== run.id,
+    'new run page not opened',
+  );
+  const next: Run = (
+    await call('run.detail', { id: await runPage.getAttribute('data-task-run-id') })
+  ).run;
   await wait(
     async () =>
       (await call('run.detail', { id: next.id })).run.state === 'SUCCEEDED' &&
@@ -306,14 +425,21 @@ try {
     'repaired run did not succeed',
   );
   assert.equal(next.rerun?.runId, run.id);
+  assert.equal(next.task?.id, task.id);
+  assert.ok(next.review);
+  const confirmations = await app.evaluate(() => (globalThis as any).repairFixture.confirmations);
+  assert.equal(confirmations.length, 2);
+  assert.deepEqual(confirmations[0], confirmations[1]);
   assert.equal(await readFile(join(output, 'title.txt'), 'utf8'), '虚构新标题');
   assert.equal((await call('bootstrap')).runs.length, 2);
   evidence.checks.push(
     'real-native-selection-without-page-click',
-    'duplicate-target-refresh-hide-and-reselection-rejected',
+    'duplicate-target-refresh-cancel-and-reselection-rejected-confirmed-target-survives-hide',
     'provider-adapter-target-only-proposal-and-zero-run-adoption',
     'original-run-snapshot-and-events-unchanged',
-    'explicit-idempotent-linked-rerun-and-real-file',
+    'repair-restart-three-sizes-return-clears-both-approvals',
+    'failed-adoption-cancel-and-lost-adoption-receipt-recovery',
+    'full-reviewed-linked-rerun-lost-reply-same-request-and-real-file',
   );
   evidence.requestCount = requests.length;
   evidence.passed = true;
@@ -322,6 +448,10 @@ try {
 } finally {
   try {
     if (app && page) {
+      await app.evaluate(({ ipcMain }) => {
+        const state = (globalThis as any).repairFixture;
+        if (state) (ipcMain as any)._invokeHandlers.set('flowark:request', state.original);
+      });
       for (const task of await call('task.list')) await call('task.cancel', { id: task.id });
       for (const run of (await call('bootstrap')).runs as Run[])
         if (['QUEUED', 'RUNNING', 'PAUSED', 'WAITING_INPUT', 'CANCELLING'].includes(run.state))

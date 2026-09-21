@@ -161,6 +161,34 @@ test('a late successful confirmation is retained without stealing navigation, in
   assert.equal(f.opened.length, 0);
 });
 
+test('normal and linked trials keep separate receipts while the same source keeps its request after leaving', async () => {
+  const f = fixture();
+  await enter(f);
+  f.session.setReviewed(true);
+  await f.session.confirm();
+  const linked = { ...selection, rerun: { runId: 'failed-original', reviewed: true as const } };
+  f.session.enter(linked, 'repaired');
+  await settle();
+  assert.equal(f.session.snapshot().attempt, undefined);
+  f.session.setReviewed(true);
+  f.response.call = async () => {
+    throw new Error('reply lost');
+  };
+  await f.session.confirm();
+  const input = f.session.snapshot().attempt!.input;
+  f.session.leave();
+  f.session.enter({ ...linked, task: { id: 'task', revision: 2 } }, 'changed');
+  assert.deepEqual(f.session.snapshot().attempt!.input, input);
+  f.session.enter(
+    { ...linked, rerun: { runId: 'another-original', reviewed: true } },
+    'other source',
+  );
+  assert.equal(f.session.snapshot().attempt, undefined);
+  f.session.enter(selection, 'normal');
+  assert.equal(f.session.snapshot().attempt?.phase, 'created');
+  assert.notEqual(f.session.snapshot().attempt!.input.requestId, input.requestId);
+});
+
 test('detail failure keeps the created Run and retries only detail; a late detail cannot reopen the old page', async () => {
   const f = fixture();
   await enter(f);
