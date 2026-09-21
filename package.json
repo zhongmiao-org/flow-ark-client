@@ -70,7 +70,8 @@
     "test:task-repair-native": "node --import tsx scripts/task-repair-native-smoke.ts",
     "test:figma-run-review": "node --import tsx scripts/figma-run-review-smoke.ts",
     "test:figma-task": "node --import tsx scripts/figma-task-smoke.ts",
-    "test:figma-editor": "node --import tsx scripts/figma-editor-smoke.ts"
+    "test:figma-editor": "node --import tsx scripts/figma-editor-smoke.ts",
+    "test:script-editor": "node --import tsx scripts/script-editor-smoke.ts"
   },
   "build": {
     "appId": "org.zhongmiao.flowark",

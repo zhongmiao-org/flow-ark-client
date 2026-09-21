@@ -89,12 +89,15 @@ pnpm package:mac
 ```sh
 pnpm test:runtime
 pnpm test:embedded-pointer
+pnpm test:script-editor
 pnpm test:desktop
 FLOWARK_TEST_EXECUTABLE=/absolute/path/FlowArk.app/Contents/MacOS/FlowArk pnpm test:install
 FLOWARK_TEST_EXECUTABLE=/absolute/path/FlowArk.app/Contents/MacOS/FlowArk pnpm test:template-parameters
 ```
 
 桌面测试串行执行；确认上一脚本的隔离实例退出后，再启动下一项。`test:embedded-pointer` 使用虚构框架页面核对滚动后的点击、输入、遮挡、取消与单次动作回执。
+
+`test:script-editor` 验证 JS/TS 语法检查、脚本草稿保存/放弃、输入与超时校验，以及真实运行的历史输出；预览和语法检查不会执行脚本。
 
 完整业务／表单演示通过模板仓库的 `pnpm test:client` 验证，仅消费标准包和安装版公共接口。客户端保留最小生命周期、IPC、编辑器与进程夹具。本轮未重新验收所有历史桌面脚本或外部浏览器。
 

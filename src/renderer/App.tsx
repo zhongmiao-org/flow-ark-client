@@ -55,6 +55,7 @@ import type { Bootstrap, FlowRecord, Step } from '../shared/types';
 import TemplateLibrary from './TemplateLibrary';
 import TemplateConfiguration from './TemplateConfiguration';
 import ScriptPackages from './ScriptPackages';
+import ScriptEditorPage, { type ScriptNavigation } from './ScriptEditorPage';
 import EmbeddedBrowserPanel from './EmbeddedBrowserPanel';
 import BrowserSidebar from './BrowserSidebar';
 import Schedules from './Schedules';
@@ -102,6 +103,13 @@ function format(t: string) {
 }
 export default function App() {
   const [browserOpen, setBrowserOpen] = useState(false);
+  const [scriptSession, setScriptSession] = useState<{
+    record: FlowRecord;
+    nodeId: string;
+    browserOpen: boolean;
+    scroll: number;
+  }>();
+  const scriptNavigation = useRef<ScriptNavigation | undefined>(undefined);
   const [editorPanel, setEditorPanel] = useState('canvas');
   const [runPage, setRunPage] = useState(1);
   const [runFilter, setRunFilter] = useState(false);
@@ -324,11 +332,28 @@ export default function App() {
     setSection('flows');
     setDetail(null);
   };
+  const closeScript = (next?: () => void) => {
+    const source = scriptSession;
+    setScriptSession(undefined);
+    if (next) next();
+    else {
+      setBrowserOpen(source?.browserOpen ?? false);
+      setEditorPanel('node');
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          document.querySelector('main')?.scrollTo({ top: source?.scroll ?? 0 });
+          document
+            .querySelector<HTMLElement>('[aria-label="打开完整脚本编辑器"]')
+            ?.focus({ preventScroll: true });
+        }),
+      );
+    }
+  };
   return (
     <div className="application-shell">
       <div className="window-titlebar">FlowArk · 个人工作空间</div>
       <div
-        className={`app ${browserOpen ? 'with-browser' : ''} ${section === 'editor' ? 'editing-workspace' : ''}`}
+        className={`app ${browserOpen ? 'with-browser' : ''} ${section === 'editor' && !scriptSession ? 'editing-workspace' : ''}`}
       >
         <aside className="sidebar">
           <div className="brand">
@@ -364,6 +389,15 @@ export default function App() {
                     : undefined
                 }
                 onClick={() => {
+                  if (scriptSession) {
+                    scriptNavigation.current?.(() => {
+                      setTaskReturn(false);
+                      setSection(id);
+                      setDetail(null);
+                      setRunFilter(false);
+                    });
+                    return;
+                  }
                   if (!guardInvalidNodeJson()) return;
                   setTaskReturn(false);
                   setSection(id);
@@ -381,6 +415,7 @@ export default function App() {
             <p>仅在这台 Mac 上运行</p>
             <button
               className="sidebar-guide"
+              disabled={!!scriptSession}
               onClick={() =>
                 action(async () => {
                   await api('browser.embedded.navigate', {
@@ -396,7 +431,40 @@ export default function App() {
           </div>
         </aside>
         <main>
-          <header className="topbar">
+          {scriptSession && (
+            <header className="topbar">
+              <button className="context-back" onClick={() => scriptNavigation.current?.()}>
+                ← 返回流程编排
+              </button>
+              <nav className="breadcrumbs" aria-label="当前位置">
+                <a
+                  href="#flows"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    scriptNavigation.current?.(() => {
+                      setSection('flows');
+                      setTaskReturn(false);
+                    });
+                  }}
+                >
+                  我的流程
+                </a>
+                <span aria-hidden="true">/</span>
+                <a
+                  href="#editor"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    scriptNavigation.current?.();
+                  }}
+                >
+                  {scriptSession.record.flow.name}
+                </a>
+                <span aria-hidden="true">/</span>
+                <span aria-current="page">脚本配置</span>
+              </nav>
+            </header>
+          )}
+          <header className="topbar" style={scriptSession ? { display: 'none' } : undefined}>
             {section === 'tasks' && taskNavigation.back && (
               <button className="context-back" onClick={taskNavigation.back}>
                 ← 返回确认方案
@@ -596,10 +664,10 @@ export default function App() {
                         ? '结果详细信息'
                         : taskRunView === 'repair'
                           ? '修复任务'
-                        : taskRunView === 'rerun'
-                          ? '重新运行前检查'
-                          : taskRunPresentation({ ...detail, fault: detail.fault ?? data.fault })
-                              .title
+                          : taskRunView === 'rerun'
+                            ? '重新运行前检查'
+                            : taskRunPresentation({ ...detail, fault: detail.fault ?? data.fault })
+                                .title
                       : runTab === 'output'
                         ? '输出与产物'
                         : runTab === 'logs'
@@ -728,6 +796,7 @@ export default function App() {
           {section === 'editor' && edit && (
             <div
               className="editor-page"
+              style={scriptSession ? { display: 'none' } : undefined}
               onFocusCapture={(event) => {
                 const control = (event.target as HTMLElement).closest(
                   'input,textarea,select,[contenteditable="true"],.monaco-editor',
@@ -904,9 +973,26 @@ export default function App() {
               )}
               <Editor
                 key={edit.id}
+                active={!scriptSession}
                 revision={history.revision}
                 record={edit}
                 setRecord={setEdit}
+                openScript={(nodeId: string) => {
+                  try {
+                    checkEditorInput('打开脚本编辑器');
+                  } catch (e) {
+                    setError((e as Error).message);
+                    return;
+                  }
+                  setScriptSession({
+                    record: structuredClone(edit),
+                    nodeId,
+                    browserOpen,
+                    scroll: document.querySelector('main')?.scrollTop ?? 0,
+                  });
+                  setBrowserOpen(false);
+                  document.querySelector('main')?.scrollTo(0, 0);
+                }}
                 selected={selected}
                 setSelected={setSelected}
                 guardInvalidNodeJson={guardInvalidNodeJson}
@@ -943,6 +1029,29 @@ export default function App() {
                 }}
               />
             </div>
+          )}
+          {section === 'editor' && scriptSession && (
+            <ScriptEditorPage
+              key={scriptSession.record.id + ':' + scriptSession.nodeId}
+              record={scriptSession.record}
+              nodeId={scriptSession.nodeId}
+              navigation={scriptNavigation}
+              close={closeScript}
+              save={async (record) => {
+                if (JSON.stringify(edit) !== JSON.stringify(scriptSession.record))
+                  throw new Error(
+                    '来源流程草稿已经变化，请保留脚本内容并返回重新打开，避免覆盖其他修改',
+                  );
+                const saved = await api('flow.save', {
+                  flow: record.flow,
+                  bindings: record.bindings,
+                });
+                inputGroup.current = undefined;
+                setEdit(saved);
+                setNotice('已保存脚本及流程草稿');
+                await refresh();
+              }}
+            />
           )}
           {section === 'runs' && (
             <div className="page runs-page">
@@ -1090,6 +1199,7 @@ function Empty({ text }: { text: string }) {
   );
 }
 function Editor({
+  active,
   record: r,
   setRecord,
   selected,
@@ -1104,6 +1214,7 @@ function Editor({
   setPanel,
   browserOpen,
   browserPanel,
+  openScript,
 }: any) {
   const [tab, setTab] = useState('node');
   const [destination, setDestination] = useState('main');
@@ -1224,6 +1335,7 @@ function Editor({
           <div className="canvas">
             <DiagramCanvas
               key={r.id}
+              active={active}
               nodes={nodes}
               edges={edges}
               selected={selected}
@@ -1409,8 +1521,15 @@ function Editor({
                       bindings={r.bindings}
                       choose={choose}
                     />
-                    {selectedNode.type === 'script' && (
+                    {selectedNode.type === 'script' && active && (
                       <>
+                        <button
+                          className="primary"
+                          aria-label="打开完整脚本编辑器"
+                          onClick={() => openScript(selectedNode.id)}
+                        >
+                          打开脚本编辑器
+                        </button>
                         <label>可信脚本 · 独立进程执行</label>
                         <Suspense fallback={<p>加载编辑器…</p>}>
                           <CodeEditor

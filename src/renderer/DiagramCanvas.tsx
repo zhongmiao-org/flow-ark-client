@@ -13,13 +13,14 @@ import type { DiagramEdge, DiagramNode } from './flow-diagram';
 import { diagramGeometry, diagramViewport, nodeBounds } from './diagram-viewport';
 
 type Props = {
+  active?: boolean;
   nodes: DiagramNode[];
   edges: DiagramEdge[];
   selected: string;
   select: (id: string) => void;
 };
 
-function Canvas({ nodes, edges, selected, select }: Props) {
+function Canvas({ nodes, edges, selected, select, active = true }: Props) {
   const { setViewport, viewportInitialized: ready } = useReactFlow();
   const width = useStore((state) => state.width);
   const height = useStore((state) => state.height);
@@ -56,6 +57,11 @@ function Canvas({ nodes, edges, selected, select }: Props) {
       nodeTypes={flowNodeTypes}
       edgeTypes={flowEdgeTypes}
       deleteKeyCode={null}
+      panActivationKeyCode={active ? 'Space' : null}
+      selectionKeyCode={active ? 'Shift' : null}
+      multiSelectionKeyCode={active ? ['Meta', 'Control'] : null}
+      zoomActivationKeyCode={active ? ['Meta', 'Control'] : null}
+      disableKeyboardA11y={!active}
       onNodeClick={(_event, node) => {
         if (node.data.step) select(node.id);
       }}

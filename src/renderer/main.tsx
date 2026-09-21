@@ -9,6 +9,7 @@ import './workspace.css';
 import './editor-system.css';
 import './runs-system.css';
 import './ai-task.css';
+import './script-editor.css';
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
