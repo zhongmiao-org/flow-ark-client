@@ -2419,3 +2419,74 @@ td small {
   overflow-wrap: anywhere;
   min-width: 0;
 }
+
+/* Package library uses the same data-only controls as flow configuration. */
+.templates-page {
+  padding: 28px 32px 48px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+.templates-page .section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.templates-page .section-header p {
+  margin-top: 8px;
+  color: var(--muted);
+}
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin: 20px 0 28px;
+}
+.templates-page .template-card {
+  padding: 22px;
+  margin-bottom: 16px;
+}
+.templates-page .template-card p {
+  min-height: 0;
+  line-height: 1.7;
+  margin: 10px 0;
+}
+.templates-page .template-card .primary {
+  width: auto;
+}
+.templates-page .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.templates-page > button {
+  margin: 12px 8px 18px 0;
+}
+.templates-page h4 {
+  margin: 22px 0 12px;
+}
+.templates-page .field {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.templates-page .field > label,
+.templates-page .field > small {
+  flex-basis: 100%;
+}
+.templates-page .field > input {
+  flex: 1;
+  min-width: 220px;
+}
+@media (max-width: 860px) {
+  .templates-page {
+    padding: 20px;
+  }
+  .template-grid {
+    grid-template-columns: 1fr;
+  }
+}

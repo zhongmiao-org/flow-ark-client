@@ -3,8 +3,8 @@ import { _electron as electron } from 'playwright-core';
 import electronPath from 'electron';
 import { mkdtemp, mkdir, readFile, writeFile, access } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { startFormLab } from './fixtures/form-lab';
-import { formBrowser, formText } from './fixtures/form-lab-flow';
+import { startFormLab } from './fixtures/platform-page';
+import { formBrowser, formText } from './fixtures/platform-flow';
 const data = await mkdtemp('/private/tmp/flowark-artifact-cleanup-ui-');
 const lab = await startFormLab();
 const launch = () =>

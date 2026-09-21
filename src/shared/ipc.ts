@@ -16,7 +16,29 @@ const bindings = z
         z.object({ path: z.string().min(1).max(4096), version: z.string().max(100) }).strict(),
       )
       .optional(),
-    policy: z.unknown().optional(),
+    template: z
+      .object({
+        instanceId: id,
+        packageKey: z.string().min(1).max(240),
+        entryId: id,
+        digest: z.string().regex(/^[a-f0-9]{64}$/),
+      })
+      .strict()
+      .optional(),
+    resources: z
+      .record(
+        z.string(),
+        z
+          .object({
+            path: z.string().max(4096).optional(),
+            browserId: id.optional(),
+            provider: z.enum(['deepseek', 'openai-codex']).optional(),
+            model: z.string().max(100).optional(),
+          })
+          .strict(),
+      )
+      .optional(),
+    grants: z.record(z.string(), z.enum(['deny', 'confirm', 'auto'])).optional(),
     configuration: z
       .object({ adapter: z.string().max(100), schema: z.unknown(), values: z.unknown() })
       .strict()
@@ -26,7 +48,7 @@ const bindings = z
 export const methods = {
   bootstrap: empty,
   'flow.save': z.object({ flow: z.unknown(), bindings }).strict(),
-  'flow.create': z.object({ templateId: id.optional() }).strict(),
+  'flow.create': empty,
   'flow.run': z.object({ id, debug: z.boolean().optional() }).strict(),
   'run.detail': z.object({ id }).strict(),
   'run.rerun.preview': runRerunPreviewSchema,
@@ -79,7 +101,23 @@ export const methods = {
   'schedule.update': scheduleUpdateSchema,
   'schedule.toggle': z.object({ id, enabled: z.boolean() }).strict(),
   'attention.read': z.object({ id }).strict(),
-  'action.confirm': z.object({ id, policyHash: z.string().length(64) }).strict(),
+  'template.inspect': empty,
+  'template.cancelImport': z.object({ token: id }).strict(),
+  'template.install': z.object({ token: id }).strict(),
+  'template.remove': z.object({ key: z.string().max(240) }).strict(),
+  'template.export': z.object({ key: z.string().max(240) }).strict(),
+  'template.create': z.object({ key: z.string().max(240), copyFrom: id.optional() }).strict(),
+  'template.detail': z.object({ id }).strict(),
+  'template.configure': z
+    .object({
+      id,
+      configuration: z.unknown(),
+      resources: bindings.shape.resources.unwrap(),
+      grants: bindings.shape.grants.unwrap(),
+    })
+    .strict(),
+  'template.input': z.object({ id, entryId: id, value: z.unknown() }).strict(),
+  'template.answer': z.object({ id, value: z.unknown() }).strict(),
   'flow.export': flowExportSchema,
   'flow.import': empty,
   'file.choose': z.object({ kind: z.enum(['directory', 'browser', 'file', 'driver']) }).strict(),

@@ -27,12 +27,13 @@ export const capabilities = [
   'human',
   'condition',
   'loop',
-  'recruiting',
-  'recruiting-job-filter-v1',
-  'boss',
-  'zhaopin',
   'openai-codex',
   'deepseek',
+  'template-sdk-v1',
+  'ai',
+  'state',
+  'attention',
+  'effect',
 ];
 export function validateFlow(value: unknown): Flow {
   const flow = validateObject<Flow>('FlowDefinition', value);

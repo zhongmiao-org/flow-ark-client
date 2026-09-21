@@ -8,7 +8,7 @@ import { mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { templates, instantiate, validateTemplate } from '../src/recruiting/templates';
+import { packageFlow, instantiate, validateTemplate } from '../src/templates/flow';
 import { validateIPC } from '../src/shared/ipc';
 const flow = (steps: any[]) => validateFlow({ ...example, steps });
 async function run(f: any) {
@@ -116,16 +116,16 @@ test('cancellation at boundaries cannot execute next step', async () => {
   assert.deepEqual(started, ['a']);
 });
 test('templates create isolated drafts and tampering is rejected', () => {
-  const a = instantiate(templates[0]),
-    b = instantiate(templates[0]);
+  const a = instantiate(packageFlow(example as any, 'fixture')),
+    b = instantiate(packageFlow(example as any, 'fixture'));
   a.name = 'changed';
   assert.notEqual(a.id, b.id);
   assert.notEqual(a.name, b.name);
-  assert.equal(b.sourceTemplate?.id, 'boss-resume-apply');
+  assert.equal(b.sourceTemplate?.id, example.id);
   assert.throws(() =>
     validateTemplate({
-      ...templates[0],
-      flow: { ...templates[0].flow, name: 'tampered' },
+      ...packageFlow(example as any, 'fixture'),
+      flow: { ...example, name: 'tampered' },
     }),
   );
 });
@@ -163,10 +163,10 @@ test('encrypted SQLite, immutable versions and interrupted recovery without repl
   const s = new Store(path, Buffer.from(key));
   s.put('flow', 'f', { secret: 'private-fact-wechat-value' });
   s.put('run', 'r', { id: 'r', state: 'RUNNING' });
-  s.put('action', 'a', { id: 'a', state: 'SUBMITTING' });
+  s.put('template-effect', 'a', { id: 'a', state: 'submitting' });
   s.recover();
   assert.equal(s.get('run', 'r').state, 'INTERRUPTED');
-  assert.equal(s.get('action', 'a').state, 'UNKNOWN');
+  assert.equal(s.get('template-effect', 'a').state, 'unknown');
   assert.equal(s.list('attention').length, 1);
   s.close();
   assert.ok(!(await readFile(path)).includes(Buffer.from('private-fact-wechat-value')));

@@ -6,8 +6,8 @@ import { DatabaseSync } from 'node:sqlite';
 import { _electron as electron, type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
 import type { FlowRecord, Run, Step } from '../src/shared/types';
-import { startFormLab } from './fixtures/form-lab';
-import { formBrowser } from './fixtures/form-lab-flow';
+import { startFormLab } from './fixtures/platform-page';
+import { formBrowser } from './fixtures/platform-flow';
 
 // Real Vault IPC, Host, Worker, script SDK, persistence and embedded local form.
 // The separately labelled Main encryption failure replaces only safeStorage's

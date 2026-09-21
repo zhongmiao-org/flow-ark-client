@@ -1253,6 +1253,7 @@ test('SQLite event write failure stops admissions and preserves existing history
     Buffer.from(key),
     async () => [],
   );
+  runtime.saveFlow({...base,id:'hello'},{files:{},credentials:[]});
   const original = runtime.store.list('flow');
   // Actual SQLite write rejection, rather than a mock store that cannot exercise rollback.
   (runtime.store as any).db.exec('PRAGMA query_only=ON');
@@ -1342,6 +1343,7 @@ test('shutdown during preflight rejects a late admission without creating a run'
     return original(record);
   };
   try {
+    runtime.saveFlow({...base,id:'hello'},{files:{},credentials:[]});
     const pending = runtime.enqueue('hello');
     const rejected = assert.rejects(pending, /退出/);
     await until(() => entered);
@@ -1432,7 +1434,7 @@ test('large wall-clock gaps skip missed windows using the observed clock', async
   );
   try {
     const plan = await runtime.request('schedule.save', {
-      flowId: 'hello',
+      flowId: runtime.saveFlow({...base,id:'hello'},{files:{},credentials:[]}).id,
       intervalMinutes: 1,
       timezone: 'Asia/Shanghai',
     });
@@ -1588,15 +1590,10 @@ test('queued scripts and reopened schedules retain frozen local dependencies whi
       assert.equal(detail.output.script, expected);
       assert.deepEqual(detail.scriptBundles[0].dependencies, [declaration]);
     }
-    const exported = await runtime.request('flow.export', {
+    await assert.rejects(runtime.request('flow.export', {
       flow: runtime.store.get<any>('flow', base.id).flow,
-      reviewed: true,
-    });
-    assert.ok(!exported.includes(pkg));
-    assert.ok(!exported.includes('scriptPackages'));
-    const imported = await runtime.request('flow.import', { content: exported });
-    assert.equal(imported.bindings.scriptPackages, undefined);
-    await assert.rejects(runtime.enqueue(imported.id), /未绑定/);
+      reviewed: true,path:join(path,'export.zip'),
+    }),/静态打包/);
     await writeFile(
       join(pkg, 'package.json'),
       JSON.stringify({ name: 'fixture-package', version: '2.0.0', main: 'index.cjs' }),

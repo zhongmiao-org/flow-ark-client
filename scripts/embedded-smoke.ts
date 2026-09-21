@@ -4,8 +4,8 @@ import electronPath from 'electron';
 import { mkdtemp, mkdir, writeFile, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { startFormLab } from './fixtures/form-lab';
-import { formLabFlow, formBrowser, formText, formExpected } from './fixtures/form-lab-flow';
+import { startFormLab } from './fixtures/platform-page';
+import { formLabFlow, formBrowser, formText, formExpected } from './fixtures/platform-flow';
 
 const data = await mkdtemp(join(tmpdir(), 'flowark-embedded-desktop-'));
 const lab = await startFormLab();

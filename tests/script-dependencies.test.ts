@@ -20,7 +20,7 @@ import {
 } from '../src/adapters/script-bundle';
 import { validateFlow, validateObject } from '../src/core/validate';
 import { validateDependency } from '../src/core/script-dependencies';
-import { packageFlow, instantiate, validateTemplate } from '../src/recruiting/templates';
+import { packageFlow, instantiate, validateTemplate } from '../src/templates/flow';
 import { validateIPC } from '../src/shared/ipc';
 import type { Flow } from '../src/shared/types';
 

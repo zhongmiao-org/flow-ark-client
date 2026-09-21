@@ -4,7 +4,6 @@ import { randomUUID } from 'node:crypto';
 import { validateIPC } from '../src/shared/ipc';
 import { runRerunConfirmSchema, runRerunPreviewSchema } from '../src/shared/run-rerun';
 import { assertRerunBindings } from '../src/host/run-rerun';
-import { defaultPolicy } from '../src/recruiting/policy';
 import { normalizeBindings } from '../src/host/configuration';
 import type { Bindings } from '../src/shared/types';
 
@@ -105,11 +104,11 @@ test('rerun authority permits changed parameter values but rejects changed form 
   invalidValues.configuration!.values = { value: false };
   assert.throws(() => assertRerunBindings(original, invalidValues));
 
-  const legacy: Bindings = { files: {}, credentials: [], policy: defaultPolicy('boss') };
+  const legacy: Bindings = { files: {}, credentials: [], grants: { write: 'auto' } };
   const normalized = normalizeBindings(structuredClone(legacy));
   assert.doesNotThrow(() => assertRerunBindings(legacy, normalized));
   const revised = structuredClone(normalized);
-  (revised.configuration!.values as any).actions.reply = 'deny';
+  revised.grants!.write = 'deny';
   assert.throws(() => assertRerunBindings(legacy, revised));
 });
 

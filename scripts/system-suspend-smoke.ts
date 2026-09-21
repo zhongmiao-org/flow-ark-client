@@ -5,8 +5,8 @@ import { join, resolve } from 'node:path';
 import { _electron as electron, type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
 import type { Run, Step } from '../src/shared/types';
-import { startFormLab } from './fixtures/form-lab';
-import { formBrowser, formExpected, formLabFlow, formText } from './fixtures/form-lab-flow';
+import { startFormLab } from './fixtures/platform-page';
+import { formBrowser, formExpected, formLabFlow, formText } from './fixtures/platform-flow';
 
 // Real application/Host/Worker/WebContents and localhost receipts. powerMonitor
 // events are explicitly injected; this is not a hardware sleep/wake test.

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { embeddedHarness } from './fixtures/embedded-harness';
-import { startFormLab } from './fixtures/form-lab';
+import { startFormLab } from './fixtures/platform-page';
 const data = await mkdtemp('/private/tmp/flowark-picker-lifecycle-');
 const lab = await startFormLab();
 const h = await embeddedHarness(data);

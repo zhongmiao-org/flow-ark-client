@@ -87,9 +87,9 @@ const rpc = new Rpc(
       (message) => child!.send(message),
       async (capability, value) => {
         if (stopping || !process.connected) throw new Error('脚本调用已停止');
-        if (!['log', 'progress', 'artifact', 'credential'].includes(capability))
+        if (!['log', 'progress', 'artifact', 'credential', 'template'].includes(capability))
           throw new Error('脚本能力不在白名单');
-        return rpc.call(capability, value);
+        return rpc.call(capability, value, capability === 'template' ? 610000 : 65000);
       },
     );
     child.on('message', (message) => {

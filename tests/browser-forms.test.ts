@@ -4,7 +4,7 @@ import { validateFlow } from '../src/core/validate';
 import { framePathOf, validateFormCommand } from '../src/core/browser-command';
 import { SeleniumDriver } from '../src/adapters/selenium';
 import { PlaywrightDriver } from '../src/adapters/playwright';
-import { formLabFlow } from '../scripts/fixtures/form-lab-flow';
+import { formLabFlow } from '../scripts/fixtures/platform-flow';
 
 test('form nodes preserve legacy versions and reject malformed literal or resolved values', async () => {
   validateFlow(formLabFlow());

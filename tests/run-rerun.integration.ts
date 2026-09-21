@@ -1,3 +1,4 @@
+import {readArchive} from '../src/templates/archive';
 import test, { type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomBytes, randomUUID } from 'node:crypto';
@@ -6,7 +7,6 @@ import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { Runtime } from '../src/host/runtime';
-import { defaultPolicy } from '../src/recruiting/policy';
 import type { Bindings, Flow, FlowRecord, Run, Step } from '../src/shared/types';
 import type { RunRerunConfirmInput, RunRerunMode, RunRerunPreview } from '../src/shared/run-rerun';
 
@@ -462,13 +462,13 @@ test('snapshot rerun retains current authorization without inheriting unrelated 
   const next = await confirm(runtime, await preview(runtime, old.id));
   await completed(runtime, next.id);
   assert.deepEqual(runtime.store.get<FlowRecord>('snapshot', next.id)!.bindings, bindings);
-  const policy = defaultPolicy('boss');
+  const grants = { write: 'auto' as const };
   const policyFlow = { ...flow, id: 'policy-only-fixture' };
-  const policyRun = await source(runtime, policyFlow, { files: {}, credentials: [], policy });
+  const policyRun = await source(runtime, policyFlow, { files: {}, credentials: [], grants });
   runtime.saveFlow(policyFlow, {
     files: {},
     credentials: [],
-    policy: { ...policy, actions: { ...policy.actions, reply: 'deny' } },
+    grants: {write:'deny'},
   });
   await assert.rejects(preview(runtime, policyRun.id));
 });
@@ -828,10 +828,13 @@ test('rerun relations span old history and restart without entering exports or c
     [grandchild.id],
   );
   const before = records(runtime);
-  const content = await runtime.request('flow.export', {
+  const exportPath=join(f.directory,'export.zip');
+  await runtime.request('flow.export', {
+    path:exportPath,
     flow: runtime.store.get<FlowRecord>('flow', old.flowId)!.flow,
     reviewed: true,
   });
+  const content=JSON.stringify([...(await readArchive(exportPath)).files].map(([p,b])=>[p,b.toString()]));
   for (const hidden of [
     '"rerun"',
     '"requestId"',

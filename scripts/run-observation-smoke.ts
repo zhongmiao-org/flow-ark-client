@@ -5,8 +5,8 @@ import { join, resolve } from 'node:path';
 import { _electron as electron, type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
 import type { Run, Step } from '../src/shared/types';
-import { startFormLab } from './fixtures/form-lab';
-import { formBrowser } from './fixtures/form-lab-flow';
+import { startFormLab } from './fixtures/platform-page';
+import { formBrowser } from './fixtures/platform-flow';
 
 // Real Host, Worker, script supervision, persistence and embedded localhost form.
 // Only the separately labelled storage-fault presentation case replaces replies;

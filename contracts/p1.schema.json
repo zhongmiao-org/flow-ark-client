@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.7.0/p1.schema.json",
-  "title": "FlowArkP1",
+  "$id": "https://flowark.local/contracts/0.8.0/p1.schema.json",
+  "title": "FlowArk P1",
   "$defs": {
     "Json": {
       "anyOf": [
@@ -257,7 +257,7 @@
             },
             "code": {
               "type": "string",
-              "maxLength": 100000
+              "maxLength": 10485760
             },
             "input": {
               "$ref": "#/$defs/Value"
@@ -834,49 +834,6 @@
             "body"
           ],
           "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "id": {
-              "type": "string",
-              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
-            },
-            "type": {
-              "const": "recruiting"
-            },
-            "version": {
-              "const": 1
-            },
-            "name": {
-              "type": "string",
-              "maxLength": 100000
-            },
-            "timeoutMs": {
-              "type": "integer",
-              "minimum": 100,
-              "maximum": 3600000
-            },
-            "platform": {
-              "enum": [
-                "boss",
-                "zhaopin"
-              ]
-            },
-            "batchLimit": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 30
-            }
-          },
-          "required": [
-            "id",
-            "type",
-            "version",
-            "platform",
-            "batchLimit"
-          ],
-          "additionalProperties": false
         }
       ]
     },
@@ -1125,554 +1082,6 @@
       ],
       "additionalProperties": false
     },
-    "RecruitingPolicy": {
-      "type": "object",
-      "properties": {
-        "platform": {
-          "enum": [
-            "boss",
-            "zhaopin"
-          ]
-        },
-        "account": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "keywords": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "maxLength": 100000
-          },
-          "maxItems": 1000
-        },
-        "excludedCompanies": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "maxLength": 100000
-          },
-          "maxItems": 1000
-        },
-        "allowedTargets": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "maxLength": 100000
-          },
-          "maxItems": 1000
-        },
-        "resumeVersion": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "resumeBinding": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "facts": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "pattern": "^[a-zA-Z0-9_-]{1,100}$"
-              },
-              "text": {
-                "type": "string",
-                "maxLength": 100000
-              }
-            },
-            "required": [
-              "id",
-              "text"
-            ],
-            "additionalProperties": false
-          },
-          "maxItems": 1000
-        },
-        "actions": {
-          "type": "object",
-          "properties": {
-            "apply": {
-              "enum": [
-                "deny",
-                "confirm",
-                "auto"
-              ]
-            },
-            "resume": {
-              "enum": [
-                "deny",
-                "confirm",
-                "auto"
-              ]
-            },
-            "reply": {
-              "enum": [
-                "deny",
-                "confirm",
-                "auto"
-              ]
-            },
-            "requestWechat": {
-              "enum": [
-                "deny",
-                "confirm",
-                "auto"
-              ]
-            },
-            "acceptWechat": {
-              "enum": [
-                "deny",
-                "confirm",
-                "auto"
-              ]
-            },
-            "requestPhone": {
-              "enum": [
-                "deny",
-                "confirm",
-                "auto"
-              ]
-            },
-            "acceptPhone": {
-              "enum": [
-                "deny",
-                "confirm",
-                "auto"
-              ]
-            }
-          },
-          "required": [
-            "apply",
-            "resume",
-            "reply",
-            "requestWechat",
-            "acceptWechat",
-            "requestPhone",
-            "acceptPhone"
-          ],
-          "additionalProperties": false
-        },
-        "dailyLimit": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 500
-        },
-        "batchLimit": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 30
-        },
-        "startHour": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 23
-        },
-        "endHour": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 24
-        },
-        "timezone": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "ownWechat": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "ownPhone": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "provider": {
-          "enum": [
-            "openai-codex",
-            "deepseek"
-          ]
-        },
-        "model": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "contextRevision": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
-        },
-        "jobFilter": {
-          "$ref": "#/$defs/RecruitingJobFilter"
-        }
-      },
-      "required": [
-        "platform",
-        "account",
-        "keywords",
-        "excludedCompanies",
-        "allowedTargets",
-        "resumeVersion",
-        "resumeBinding",
-        "facts",
-        "actions",
-        "dailyLimit",
-        "batchLimit",
-        "startHour",
-        "endHour",
-        "timezone",
-        "ownWechat",
-        "ownPhone",
-        "provider",
-        "model",
-        "contextRevision"
-      ],
-      "additionalProperties": false
-    },
-    "AIReplyDraft": {
-      "type": "object",
-      "properties": {
-        "body": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "factIds": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "pattern": "^[a-zA-Z0-9_-]{1,100}$"
-          },
-          "maxItems": 1000
-        },
-        "claims": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "text": {
-                "type": "string",
-                "maxLength": 100000
-              },
-              "factId": {
-                "type": "string",
-                "pattern": "^[a-zA-Z0-9_-]{1,100}$"
-              }
-            },
-            "required": [
-              "text",
-              "factId"
-            ],
-            "additionalProperties": false
-          },
-          "maxItems": 1000
-        },
-        "containsContact": {
-          "type": "boolean"
-        },
-        "containsCommitment": {
-          "type": "boolean"
-        },
-        "needsHuman": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "maxLength": 100000
-          },
-          "maxItems": 1000
-        }
-      },
-      "required": [
-        "body",
-        "factIds",
-        "claims",
-        "containsContact",
-        "containsCommitment",
-        "needsHuman"
-      ],
-      "additionalProperties": false
-    },
-    "AIReplyRequest": {
-      "type": "object",
-      "properties": {
-        "provider": {
-          "enum": [
-            "openai-codex",
-            "deepseek"
-          ]
-        },
-        "model": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "facts": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "pattern": "^[a-zA-Z0-9_-]{1,100}$"
-              },
-              "text": {
-                "type": "string",
-                "maxLength": 100000
-              }
-            },
-            "required": [
-              "id",
-              "text"
-            ],
-            "additionalProperties": false
-          },
-          "maxItems": 1000
-        },
-        "conversation": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "role": {
-                "enum": [
-                  "self",
-                  "peer"
-                ]
-              },
-              "text": {
-                "type": "string",
-                "maxLength": 100000
-              }
-            },
-            "required": [
-              "role",
-              "text"
-            ],
-            "additionalProperties": false
-          },
-          "maxItems": 1000
-        },
-        "job": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "contextHash": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "resumeVersion": {
-          "type": "string",
-          "maxLength": 100000
-        }
-      },
-      "required": [
-        "provider",
-        "model",
-        "facts",
-        "conversation",
-        "job",
-        "contextHash",
-        "resumeVersion"
-      ],
-      "additionalProperties": false
-    },
-    "AIReplyResult": {
-      "type": "object",
-      "properties": {
-        "provider": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "model": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "contextHash": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "resumeVersion": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "draft": {
-          "$ref": "#/$defs/AIReplyDraft"
-        },
-        "requestId": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "usage": {
-          "$ref": "#/$defs/Json"
-        }
-      },
-      "required": [
-        "provider",
-        "model",
-        "contextHash",
-        "resumeVersion",
-        "draft",
-        "requestId",
-        "usage"
-      ],
-      "additionalProperties": false
-    },
-    "RecruitingAction": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
-        },
-        "platform": {
-          "enum": [
-            "boss",
-            "zhaopin"
-          ]
-        },
-        "account": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "target": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "kind": {
-          "enum": [
-            "apply",
-            "resume",
-            "reply",
-            "requestWechat",
-            "acceptWechat",
-            "requestPhone",
-            "acceptPhone"
-          ]
-        },
-        "contextHash": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "contentHash": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "dedupeKey": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "state": {
-          "enum": [
-            "PENDING_CONFIRMATION",
-            "READY",
-            "SUBMITTING",
-            "CONFIRMED",
-            "WAITING_PEER",
-            "FAILED",
-            "UNKNOWN",
-            "BLOCKED"
-          ]
-        },
-        "evidence": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "jobSnapshot": {
-          "$ref": "#/$defs/RecruitingJobSnapshot"
-        }
-      },
-      "required": [
-        "id",
-        "platform",
-        "account",
-        "target",
-        "kind",
-        "contextHash",
-        "contentHash",
-        "dedupeKey",
-        "state",
-        "evidence"
-      ],
-      "additionalProperties": false
-    },
-    "ContactExchangeResult": {
-      "type": "object",
-      "properties": {
-        "platform": {
-          "enum": [
-            "boss",
-            "zhaopin"
-          ]
-        },
-        "account": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "target": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "company": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "job": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "contact": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "kind": {
-          "enum": [
-            "wechat",
-            "phone"
-          ]
-        },
-        "state": {
-          "enum": [
-            "requested",
-            "accepted",
-            "rejected",
-            "visible",
-            "needs-human"
-          ]
-        },
-        "value": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "source": {
-          "type": "string",
-          "maxLength": 100000
-        },
-        "owner": {
-          "enum": [
-            "peer",
-            "self",
-            "unknown"
-          ]
-        },
-        "time": {
-          "type": "string",
-          "maxLength": 100000
-        }
-      },
-      "required": [
-        "platform",
-        "account",
-        "target",
-        "company",
-        "job",
-        "contact",
-        "kind",
-        "state",
-        "value",
-        "source",
-        "owner",
-        "time"
-      ],
-      "additionalProperties": false
-    },
     "UserAttentionItem": {
       "type": "object",
       "properties": {
@@ -1716,189 +1125,6 @@
         "dedupeKey",
         "read",
         "time"
-      ],
-      "additionalProperties": false
-    },
-    "RecruitingJobFilter": {
-      "type": "object",
-      "properties": {
-        "cities": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 200
-          },
-          "maxItems": 1000
-        },
-        "includedCompanies": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 200
-          },
-          "maxItems": 1000
-        },
-        "excludedKeywords": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 200
-          },
-          "maxItems": 1000
-        },
-        "workModes": {
-          "type": "array",
-          "items": {
-            "enum": [
-              "onsite",
-              "hybrid",
-              "remote"
-            ]
-          },
-          "maxItems": 1000
-        },
-        "salary": {
-          "type": "object",
-          "properties": {
-            "enabled": {
-              "type": "boolean"
-            },
-            "minimumMonthly": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 100000000
-            },
-            "maximumMonthly": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 100000000
-            },
-            "currency": {
-              "const": "CNY"
-            }
-          },
-          "required": [
-            "enabled",
-            "minimumMonthly",
-            "maximumMonthly",
-            "currency"
-          ],
-          "additionalProperties": false
-        }
-      },
-      "required": [
-        "cities",
-        "includedCompanies",
-        "excludedKeywords",
-        "workModes",
-        "salary"
-      ],
-      "additionalProperties": false
-    },
-    "JobSalary": {
-      "type": "object",
-      "properties": {
-        "minimum": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 100000000
-        },
-        "maximum": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 100000000
-        },
-        "currency": {
-          "type": "string",
-          "pattern": "^[A-Z]{3}$"
-        },
-        "period": {
-          "enum": [
-            "month",
-            "year",
-            "day",
-            "hour"
-          ]
-        }
-      },
-      "required": [
-        "minimum",
-        "maximum",
-        "currency",
-        "period"
-      ],
-      "additionalProperties": false
-    },
-    "RecruitingJobSnapshot": {
-      "type": "object",
-      "properties": {
-        "title": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 200
-        },
-        "company": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 200
-        },
-        "city": {
-          "anyOf": [
-            {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 200
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "workMode": {
-          "anyOf": [
-            {
-              "enum": [
-                "onsite",
-                "hybrid",
-                "remote"
-              ]
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "salary": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/JobSalary"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "source": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 2000
-        },
-        "observedAt": {
-          "type": "string",
-          "maxLength": 100000
-        }
-      },
-      "required": [
-        "title",
-        "company",
-        "city",
-        "workMode",
-        "salary",
-        "source",
-        "observedAt"
       ],
       "additionalProperties": false
     },
@@ -2012,6 +1238,383 @@
       "required": [
         "manifest",
         "flow"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateArchiveManifest": {
+      "type": "object",
+      "properties": {
+        "packageFormat": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,99}$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[a-zA-Z0-9.-]+)?$"
+        },
+        "author": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "minimumClientVersion": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[a-zA-Z0-9.-]+)?$"
+        },
+        "sdkVersion": {
+          "const": "1.0"
+        },
+        "configurationSchema": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]{0,239}$"
+        },
+        "stateSchema": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]{0,239}$"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,99}$"
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "flow": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]{0,239}$"
+              },
+              "inputSchema": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]{0,239}$"
+              },
+              "resultSchema": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]{0,239}$"
+              },
+              "schedulable": {
+                "type": "boolean"
+              },
+              "capabilities": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "maxItems": 100
+              },
+              "resources": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{0,99}$"
+                },
+                "maxItems": 100
+              },
+              "actions": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{0,99}$"
+                },
+                "maxItems": 100
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "flow",
+              "inputSchema",
+              "resultSchema",
+              "schedulable",
+              "capabilities",
+              "resources",
+              "actions"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 50
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,99}$"
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "kind": {
+                "enum": [
+                  "file",
+                  "directory",
+                  "browser",
+                  "ai"
+                ]
+              },
+              "access": {
+                "enum": [
+                  "read",
+                  "write",
+                  "readwrite",
+                  "use"
+                ]
+              },
+              "required": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "kind",
+              "access",
+              "required"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 100
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,99}$"
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "default": {
+                "const": "deny"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "description",
+              "default"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 100
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]{0,239}$"
+              },
+              "size": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10485760
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "path",
+              "size",
+              "sha256"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 512
+        },
+        "scripts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]{0,239}$"
+          },
+          "maxItems": 512
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "maxLength": 214
+              },
+              "version": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[a-zA-Z0-9.-]+)?$"
+              },
+              "license": {
+                "type": "string",
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "name",
+              "version",
+              "license"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 512
+        },
+        "contentDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "packageFormat",
+        "id",
+        "name",
+        "description",
+        "version",
+        "author",
+        "source",
+        "minimumClientVersion",
+        "sdkVersion",
+        "configurationSchema",
+        "stateSchema",
+        "entries",
+        "resources",
+        "actions",
+        "files",
+        "scripts",
+        "dependencies",
+        "contentDigest"
+      ],
+      "additionalProperties": false
+    },
+    "AIRequest": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "enum": [
+            "openai-codex",
+            "deepseek"
+          ]
+        },
+        "model": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "instructions": {
+          "type": "string",
+          "maxLength": 100000
+        },
+        "input": {
+          "$ref": "#/$defs/Json"
+        },
+        "schema": {
+          "$ref": "#/$defs/Json"
+        }
+      },
+      "required": [
+        "provider",
+        "model",
+        "instructions",
+        "input",
+        "schema"
+      ],
+      "additionalProperties": false
+    },
+    "AIResult": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "enum": [
+            "openai-codex",
+            "deepseek"
+          ]
+        },
+        "model": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "requestId": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "output": {
+          "$ref": "#/$defs/Json"
+        },
+        "usage": {
+          "$ref": "#/$defs/Json"
+        }
+      },
+      "required": [
+        "provider",
+        "model",
+        "requestId",
+        "output",
+        "usage"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateInstanceRef": {
+      "type": "object",
+      "properties": {
+        "packageId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,99}$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[a-zA-Z0-9.-]+)?$"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "instanceId": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "entryId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,99}$"
+        }
+      },
+      "required": [
+        "packageId",
+        "version",
+        "digest",
+        "instanceId",
+        "entryId"
       ],
       "additionalProperties": false
     }

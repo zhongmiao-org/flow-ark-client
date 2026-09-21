@@ -1,5 +1,5 @@
 import type { Store } from './store';
-import { normalizeBindings, policyOf, validateConfiguration } from './configuration';
+import { normalizeBindings, validateConfiguration } from './configuration';
 import { walk } from '../core/validate';
 import { digest, errorText, now, uid } from '../shared/utils';
 import {
@@ -57,8 +57,8 @@ export function assertRerunBindings(original: Bindings, current: Bindings) {
     )
       changed('原脚本包绑定 ' + name + ' ');
   if (
-    digest({ policy: policyOf(before), configuration: configurationAuthority(before) }) !==
-    digest({ policy: policyOf(after), configuration: configurationAuthority(after) })
+    digest({ template: before.template, resources:before.resources, grants:before.grants, configuration: configurationAuthority(before) }) !==
+    digest({ template: after.template, resources:after.resources, grants:after.grants, configuration: configurationAuthority(after) })
   )
     changed('原策略或模板配置定义');
 }
