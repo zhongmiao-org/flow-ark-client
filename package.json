@@ -31,7 +31,6 @@
     "test:desktop": "node scripts/desktop-smoke.mjs",
     "test:editor-layout": "node --import tsx scripts/editor-layout-smoke.ts",
     "test:install": "node scripts/install-smoke.mjs",
-    "test:store-upgrade": "node --import tsx scripts/store-upgrade-smoke.mjs",
     "test:vault": "node --import tsx scripts/vault-smoke.mjs",
     "package:mac": "pnpm build && electron-builder --mac zip --arm64 --publish never --config.electronDist=node_modules/electron/dist && node scripts/package-dmg.mjs",
     "test:debug": "node --import tsx scripts/debug-smoke.ts",

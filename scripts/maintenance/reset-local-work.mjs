@@ -51,7 +51,7 @@ export async function resetLocalWork(directory, { apply = false, assertStopped }
     db.exec('BEGIN IMMEDIATE');
     try {
       db.prepare('DELETE FROM documents WHERE kind NOT IN (?,?,?,?)').run(...keep);
-      db.exec('DELETE FROM events; COMMIT;');
+      db.exec('DELETE FROM events; PRAGMA user_version=2; COMMIT;');
     } catch (e) {
       db.exec('ROLLBACK');
       throw e;

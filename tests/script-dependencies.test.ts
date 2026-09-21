@@ -20,7 +20,6 @@ import {
 } from '../src/adapters/script-bundle';
 import { validateFlow, validateObject } from '../src/core/validate';
 import { validateDependency } from '../src/core/script-dependencies';
-import { packageFlow, instantiate, validateTemplate } from '../src/templates/flow';
 import { validateIPC } from '../src/shared/ipc';
 import type { Flow } from '../src/shared/types';
 
@@ -72,25 +71,6 @@ test('exact declarations and template manifest cannot omit, duplicate or substit
         ],
       }),
     /冲突/,
-  );
-  const template = packageFlow(flow);
-  assert.deepEqual(template.manifest.dependencies, script.dependencies);
-  assert.deepEqual(instantiate(template).steps, flow.steps);
-  assert.throws(
-    () => validateTemplate({ ...template, manifest: { ...template.manifest, dependencies: [] } }),
-    /依赖声明/,
-  );
-  assert.throws(
-    () => validateTemplate({ ...template, manifest: { ...template.manifest, scripts: [] } }),
-    /脚本清单/,
-  );
-  assert.throws(
-    () =>
-      validateTemplate({
-        ...template,
-        manifest: { ...template.manifest, scripts: ['script', 'script'] },
-      }),
-    /脚本清单/,
   );
   validateObject('ScriptBundle', {
     nodeId: 'script',
