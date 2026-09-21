@@ -10,6 +10,7 @@ export default function TaskWebTargetPage({
   back,
   showBrowser,
   changed,
+  openTools,
 }: {
   task: PlanningTask;
   initialUrl?: string;
@@ -17,6 +18,7 @@ export default function TaskWebTargetPage({
   back: () => void;
   showBrowser: () => void;
   changed: () => Promise<void>;
+  openTools: () => void;
 }) {
   const [preview, setPreview] = useState<TaskWebPreview>({ ready: false });
   const [url, setUrl] = useState(task.webTarget?.page.url ?? initialUrl ?? '');
@@ -84,9 +86,9 @@ export default function TaskWebTargetPage({
             <span aria-disabled="true" title="应用窗口连接尚不可用">
               应用窗口 · 暂不可用
             </span>
-            <span aria-disabled="true" title="应用与工具连接尚不可用">
-              已连接工具 · 暂不可用
-            </span>
+            <button disabled={busy} onClick={openTools}>
+              管理应用与工具
+            </button>
           </div>
           <div className="task-web-object task-web-current">
             <h2>{current?.title || (current ? '未命名网页' : '尚未取得网页')}</h2>

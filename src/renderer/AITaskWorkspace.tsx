@@ -44,6 +44,9 @@ const draftOf = (detail: TaskDetail): Draft => ({
 const text = (value: unknown): string =>
   typeof value === 'string' ? value : (JSON.stringify(value, null, 2) ?? '无');
 type Props = {
+  toolSelection?: { key: string; kind: 'web' | 'file' };
+  toolSelectionHandled: () => void;
+  openTools: () => void;
   guideEntry?: number;
   showBrowser: (visible: boolean) => void;
   entry?: { key: string; record: FlowRecord; nodeId: string };
@@ -102,6 +105,7 @@ export default function AITaskWorkspace(props: Props) {
   const lock = useRef(false);
   const epoch = useRef(0);
   const selectedTask = useRef<string | null>(null);
+  const handledTool = useRef<string | undefined>(undefined);
   const [provider, setProvider] = useState<'deepseek' | 'openai-codex'>('deepseek');
   const [model, setModel] = useState('deepseek-flash');
   const [reviewed, setReviewed] = useState(false);
@@ -388,6 +392,19 @@ export default function AITaskWorkspace(props: Props) {
       setHomeText('');
     });
   }
+  useEffect(() => {
+    const selection = props.toolSelection;
+    if (!props.active || !selection || busy || handledTool.current === selection.key) return;
+    handledTool.current = selection.key;
+    void run(async () => {
+      if (scope) throw new Error('当前是单步修改任务，请先返回完整任务再选择对象');
+      if (detail) {
+        if (dirty) await save();
+      } else accept(await api('task.create'));
+      setReviewed(false);
+      setPage(selection.kind === 'web' ? 'target' : 'brief');
+    }).finally(props.toolSelectionHandled);
+  }, [props.active, props.toolSelection?.key, busy]);
   async function generate() {
     await run(async () => {
       if (!reviewed) throw new Error('请先核对本次发送的内容');
@@ -996,6 +1013,7 @@ export default function AITaskWorkspace(props: Props) {
         </>
       ) : page === 'target' && detail ? (
         <TaskWebTargetPage
+          openTools={props.openTools}
           task={detail.task}
           initialUrl={learning?.taskId === detail.task.id ? 'https://example.com' : undefined}
           back={backToBrief}

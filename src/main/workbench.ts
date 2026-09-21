@@ -196,6 +196,14 @@ app
         typeof raw.value === 'string'
           ? [raw.value]
           : [];
+      if (
+        method === 'tool.connection.discover' &&
+        raw &&
+        typeof raw === 'object' &&
+        'bearerToken' in raw &&
+        typeof raw.bearerToken === 'string'
+      )
+        pending.push(raw.bearerToken);
       try {
         if (
           event.sender !== win.webContents ||
@@ -370,6 +378,26 @@ app
               }
             }
             if (method === 'credentials.list') return vault.list();
+            if (
+              method === 'tool.credentials.set' ||
+              method === 'tool.credentials.remove' ||
+              method === 'tool.credentials.get'
+            ) {
+              if (!/^mcp-[a-zA-Z0-9_-]{1,80}$/.test(args.id)) throw new Error('工具凭据 ID 无效');
+              if (method === 'tool.credentials.get') {
+                const value = await vault.get(args.id);
+                knownSecrets.add(value);
+                return value;
+              }
+              if (method === 'tool.credentials.remove') await vault.removeToolCredential(args.id);
+              else {
+                if (typeof args.value !== 'string' || !/^[\x21-\x7e]{1,8192}$/.test(args.value))
+                  throw new Error('工具凭据无效');
+                knownSecrets.add(args.value);
+                await vault.set(args.id, args.value);
+              }
+              return true;
+            }
             if (method === 'credentials.get') {
               const value = await vault.get(args.id);
               knownSecrets.add(value);

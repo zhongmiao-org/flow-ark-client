@@ -67,6 +67,24 @@ try {
       assert.ok(!encryptedKey.includes(Buffer.from(key)));
       checks.push('real system encryption round trip and file permissions');
 
+      await vault.set('mcp-fixture', 'fictional-connection-only');
+      assert.equal(await vault.get('mcp-fixture'), 'fictional-connection-only');
+      await assert.rejects(() => vault.removeToolCredential('data-key'), /工具凭据 ID 无效/);
+      await assert.rejects(() => vault.removeToolCredential('deepseek'), /工具凭据 ID 无效/);
+      const toolCiphertext = await readFile(join(dir, 'mcp-fixture.enc'));
+      safeStorage.isAsyncEncryptionAvailable = async () => false;
+      await assert.rejects(() => vault.removeToolCredential('mcp-fixture'), /系统安全存储不可用/);
+      assert.deepEqual(await readFile(join(dir, 'mcp-fixture.enc')), toolCiphertext);
+      safeStorage.isAsyncEncryptionAvailable = original.available;
+      await vault.removeToolCredential('mcp-fixture');
+      await vault.removeToolCredential('mcp-fixture');
+      await assert.rejects(() => readFile(join(dir, 'mcp-fixture.enc')), { code: 'ENOENT' });
+      assert.deepEqual(await readFile(join(dir, 'deepseek.enc')), credential);
+      assert.deepEqual(await readFile(keyPath), encryptedKey);
+      checks.push(
+        'MCP removal is namespace-limited and preserves provider credentials and data key',
+      );
+
       safeStorage.isAsyncEncryptionAvailable = async () => false;
       await assert.rejects(
         () => vault.set('deepseek', 'fictional-replacement'),

@@ -1,5 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron';
 const allowed = new Set([
+  'tool.connection.list',
+  'tool.connection.discover',
+  'tool.connection.cancel',
+  'tool.connection.save',
+  'tool.connection.disconnect',
+  'tool.connection.remove',
   'bootstrap',
   'learning.status',
   'learning.start',

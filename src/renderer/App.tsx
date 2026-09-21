@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useReducer, useRef, lazy, Suspense } from 'react';
 import FlowLibrary from './FlowLibrary';
 import AITaskWorkspace from './AITaskWorkspace';
+import ToolConnectionsPage, { type ToolNavigation } from './ToolConnectionsPage';
 import { buildDiagram } from './flow-diagram';
 import DiagramCanvas from './DiagramCanvas';
 import { kinds } from './node-kinds';
@@ -103,6 +104,8 @@ function format(t: string) {
   });
 }
 export default function App() {
+  const toolNavigation = useRef<ToolNavigation | undefined>(undefined);
+  const [toolSelection, setToolSelection] = useState<{ key: string; kind: 'web' | 'file' }>();
   const [browserOpen, setBrowserOpen] = useState(false);
   const [outlineOpen, setOutlineOpen] = useState(false);
   const outlineBrowser = useRef(false);
@@ -331,6 +334,7 @@ export default function App() {
   const nav = [
     ['tasks', '开始任务', Workflow],
     ['flows', '我的流程', Workflow],
+    ['tools', '应用与工具', Settings],
     ['templates', '模板库', LayoutTemplate],
     ['runs', '运行记录', History],
     ['schedules', '本机计划', Clock],
@@ -442,10 +446,14 @@ export default function App() {
                     return;
                   }
                   if (!guardInvalidNodeJson()) return;
-                  setTaskReturn(false);
-                  setSection(id);
-                  setDetail(null);
-                  setRunFilter(false);
+                  const navigate = () => {
+                    setTaskReturn(false);
+                    setSection(id);
+                    setDetail(null);
+                    setRunFilter(false);
+                  };
+                  if (section === 'tools') toolNavigation.current?.(navigate);
+                  else navigate();
                 }}
               >
                 <Icon size={20} strokeWidth={1.6} />
@@ -462,10 +470,14 @@ export default function App() {
               disabled={!!nodeSession || (section === 'editor' && outlineOpen)}
               onClick={() => {
                 if (!guardInvalidNodeJson()) return;
-                setTaskReturn(false);
-                setSection('tasks');
-                setGuideEntry((n) => n + 1);
-                setBrowserOpen(false);
+                const navigate = () => {
+                  setTaskReturn(false);
+                  setSection('tasks');
+                  setGuideEntry((n) => n + 1);
+                  setBrowserOpen(false);
+                };
+                if (section === 'tools') toolNavigation.current?.(navigate);
+                else navigate();
               }}
             >
               <span>重新学习 · 2 分钟</span>
@@ -541,7 +553,9 @@ export default function App() {
           <header
             className="topbar"
             style={
-              nodeSession || (section === 'editor' && outlineOpen) ? { display: 'none' } : undefined
+              nodeSession || section === 'tools' || (section === 'editor' && outlineOpen)
+                ? { display: 'none' }
+                : undefined
             }
           >
             {section === 'tasks' && taskNavigation.back && (
@@ -840,6 +854,12 @@ export default function App() {
                 );
               }}
               guideEntry={guideEntry}
+              toolSelection={toolSelection}
+              toolSelectionHandled={() => setToolSelection(undefined)}
+              openTools={() => {
+                setSection('tools');
+                setBrowserOpen(false);
+              }}
               active={section === 'tasks'}
               data={data}
               onNavigation={updateTaskNavigation}
@@ -873,6 +893,16 @@ export default function App() {
               changed={refresh}
             />
           )}
+          <ToolConnectionsPage
+            active={section === 'tools'}
+            navigation={toolNavigation}
+            leave={() => setSection('tasks')}
+            choose={(kind) => {
+              setToolSelection({ key: crypto.randomUUID(), kind });
+              setSection('tasks');
+              setBrowserOpen(false);
+            }}
+          />
           {section === 'flows' && (
             <FlowLibrary
               data={data}

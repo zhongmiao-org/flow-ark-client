@@ -80,6 +80,7 @@ type Active = {
 };
 import { TaskOutputs } from './task-output';
 import { TaskAttachments } from './task-attachments';
+import { ToolConnections } from './tool-connections';
 
 export class Runtime {
   readonly store: Store;
@@ -91,6 +92,7 @@ export class Runtime {
   readonly learning: Learning;
   readonly webTargets: TaskWebTargets;
   readonly outputs: TaskOutputs;
+  readonly toolConnections: ToolConnections;
   private active?: Active;
   private artifactFiles: ArtifactFiles;
   private artifactCleanup: ArtifactCleanup;
@@ -118,6 +120,17 @@ export class Runtime {
     this.artifactFiles = new ArtifactFiles(dataPath);
     this.store = new Store(join(dataPath, 'flowark.sqlite'), key);
     this.store.recover();
+    this.toolConnections = new ToolConnections(this.store, {
+      assertAvailable: () => {
+        if (this.stopping || this.suspended) throw new Error('应用正在退出或休眠');
+        if (this.store.fault) throw new Error(this.store.fault);
+      },
+      credentials: {
+        get: (id) => this.system('tool.credentials.get', { id }),
+        set: (id, value) => this.system('tool.credentials.set', { id, value }),
+        remove: (id) => this.system('tool.credentials.remove', { id }),
+      },
+    });
     this.webTargets = new TaskWebTargets(this.store, {
       page: () => this.system('browser.embedded.review', {}),
       assertSelectable: () => {
@@ -1109,6 +1122,9 @@ export class Runtime {
   }
   private async finishSuspend(active: Active | undefined): Promise<boolean> {
     const errors: unknown[] = [];
+    const toolCleanup = this.toolConnections.cancelAll().catch((error) => {
+      errors.push(error);
+    });
     try {
       this.planning.cancelAll();
     } catch (error) {
@@ -1150,6 +1166,7 @@ export class Runtime {
     // Use the existing cooperative cancellation, timeout and cleanup result.
     // A rejected diagnostic must not return before the actual owner finishes.
     if (active) await active.done;
+    await toolCleanup;
     if (this.store.fault && !errors.length) errors.push(new Error(this.store.fault));
     if (ids.size) {
       try {
@@ -1171,6 +1188,10 @@ export class Runtime {
     return true;
   }
   async request(method: string, args: any = {}): Promise<any> {
+    if (method.startsWith('tool.connection.')) {
+      await this.ready;
+      return this.toolConnections.request(method, args);
+    }
     if (method.startsWith('learning.')) {
       await this.ready;
       return this.learning.request(method, args);
@@ -1551,6 +1572,10 @@ export class Runtime {
   }
   async shutdown() {
     this.stopping = true;
+    const toolErrors: unknown[] = [];
+    const toolCleanup = this.toolConnections.cancelAll().catch((error) => {
+      toolErrors.push(error);
+    });
     let planningError: unknown;
     try {
       this.planning.cancelAll();
@@ -1601,6 +1626,8 @@ export class Runtime {
     if (!cleanup.confirmed) this.blockExecution(cleanup.error ?? '退出时资源回收未确认');
     const scripts = await scriptCleanup;
     if (!scripts.confirmed) this.blockExecution(scripts.error ?? '退出时脚本回收未确认');
+    await toolCleanup;
+    errors.push(...toolErrors);
     try {
       await this.ready;
     } catch (error) {

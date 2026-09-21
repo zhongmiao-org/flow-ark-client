@@ -1,9 +1,14 @@
 import { safeStorage } from 'electron';
-import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rename, rm } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 export class Vault {
   constructor(private dir: string) {}
+  async removeToolCredential(id: string) {
+    if (!/^mcp-[a-zA-Z0-9_-]{1,80}$/.test(id)) throw new Error('工具凭据 ID 无效');
+    await this.available();
+    await rm(this.path(id), { force: true });
+  }
   private async available() {
     if (
       !(await safeStorage.isAsyncEncryptionAvailable()) ||
