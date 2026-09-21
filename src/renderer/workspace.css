@@ -1,0 +1,472 @@
+/* Figma nodes 1:198 and 1:4023; other page interiors migrate independently. */
+.application-shell {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.window-titlebar {
+  flex: 0 0 40px;
+  height: 40px;
+  padding: 10px 74px;
+  background: var(--fa-bg-surface);
+  color: var(--fa-text-secondary);
+  font: 12px/20px var(--fa-font-body);
+  -webkit-app-region: drag;
+  user-select: none;
+}
+.app {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+}
+.app .sidebar {
+  width: 224px;
+  flex: 0 0 224px;
+  padding: 24px;
+  gap: 24px;
+  background: var(--fa-bg-nav);
+  color: var(--fa-text-nav);
+}
+.app .brand {
+  height: 40px;
+  padding: 0;
+  gap: 10px;
+  font: 600 22px/32px var(--fa-font-latin);
+  letter-spacing: 0;
+  color: var(--fa-text-inverse);
+}
+.app .brand-mark {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  background: var(--fa-action-primary);
+  border-radius: 8px;
+  color: var(--fa-text-inverse);
+}
+.app .workspace-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin: 0;
+  min-height: 52px;
+  color: var(--fa-text-inverse);
+  letter-spacing: 0;
+}
+.app .workspace-label span {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  font-size: 13px;
+  line-height: 20px;
+  letter-spacing: 0;
+}
+.app .workspace-label small {
+  color: var(--fa-text-nav);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.app .sidebar nav {
+  gap: 24px;
+  margin: 0;
+}
+.app .sidebar nav button {
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+  padding: 12px;
+  gap: 12px;
+  color: var(--fa-text-nav);
+  border: 0;
+  background: transparent;
+  white-space: nowrap;
+}
+.app .sidebar nav button:hover {
+  color: var(--fa-text-inverse);
+  background: #ffffff10;
+}
+.app .sidebar nav button.selected {
+  color: var(--fa-text-inverse);
+  background: var(--fa-action-primary);
+}
+.app .sidebar nav button svg {
+  flex-shrink: 0;
+}
+.app .sidebar nav button b {
+  background: var(--fa-bg-surface);
+  color: var(--fa-action-primary);
+}
+.app .sidebar-bottom {
+  padding: 0;
+  gap: 24px;
+  flex-direction: column;
+  align-items: flex-start;
+  color: var(--fa-text-nav);
+  line-height: 18px;
+  font-size: 12px;
+}
+.app .sidebar-bottom p {
+  color: var(--fa-text-nav);
+  font-size: 12px;
+  line-height: 18px;
+  margin: 0;
+}
+.sidebar-guide {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 28px;
+  padding: 0;
+  color: var(--fa-text-nav);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 400;
+  border: 0;
+  background: transparent;
+}
+.sidebar-guide:hover {
+  color: var(--fa-text-inverse);
+  background: transparent;
+}
+.topbar {
+  height: 56px;
+  min-height: 56px;
+  padding: 8px;
+  gap: 12px;
+  border: 0;
+  background: var(--fa-bg-surface);
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.topbar .breadcrumbs {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+.breadcrumbs a,
+.breadcrumbs > span:last-child {
+  padding: 4px;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.breadcrumbs a {
+  text-decoration: none;
+  color: var(--fa-action-primary);
+  background: transparent;
+  border: 0;
+  flex-shrink: 0;
+}
+.breadcrumbs > span:last-child {
+  color: var(--fa-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.topbar .context-back {
+  width: 168px;
+  flex-shrink: 0;
+}
+.topbar .embedded-show {
+  width: 136px;
+  flex-shrink: 0;
+  margin: 0;
+}
+.page {
+  padding: 32px;
+  max-width: none;
+  margin: 0;
+}
+.page-heading {
+  align-items: flex-start;
+  min-height: 78px;
+  margin: 0 0 24px;
+  gap: 24px;
+}
+.page-heading h1 {
+  margin: 0 0 8px;
+}
+.page-heading p {
+  font-size: 14px;
+  line-height: 22px;
+  margin: 0;
+}
+.page-heading > button {
+  width: 156px;
+  flex: 0 0 156px;
+}
+.flows-page .workspace-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.workspace-summary > div,
+.workspace-summary > button {
+  height: 112px;
+  min-width: 0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 4px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-surface);
+}
+.workspace-summary span,
+.workspace-summary small {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 400;
+}
+.workspace-summary small {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.workspace-summary strong {
+  font: 600 32px/40px var(--fa-font-latin);
+}
+.workspace-summary > div > *,
+.workspace-summary > button > * {
+  flex-shrink: 0;
+}
+.workspace-summary > button:hover {
+  border-color: var(--fa-action-primary);
+}
+.flow-filters {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  min-height: 48px;
+  margin-bottom: 24px;
+}
+.flow-tabs {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex: 1;
+}
+.flow-tabs button {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--fa-text-secondary);
+}
+.flow-tabs button[aria-pressed='true'] {
+  color: var(--fa-action-primary);
+}
+.flow-search {
+  width: 344px;
+  height: 40px;
+  margin: 0;
+  padding: 0 12px;
+  gap: 12px;
+  border-radius: 8px;
+  color: var(--fa-text-secondary);
+}
+.flow-search input {
+  width: 100%;
+  margin: 0;
+  font-size: 14px;
+  padding: 8px 0;
+}
+.flow-search:focus-within {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 2px;
+}
+.flow-search input:focus-visible {
+  outline: none;
+}
+.flows-page .flow-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px 16px;
+}
+.flows-page .flow-card {
+  min-width: 0;
+  height: 220px;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.flows-page .flow-card:hover {
+  transform: none;
+  box-shadow: none;
+}
+.flows-page .card-top {
+  height: 32px;
+  min-height: 32px;
+  margin: 0;
+  color: var(--fa-action-primary);
+}
+.flows-page .flow-card h2 {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.flows-page .flow-card > p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  min-height: 22px;
+  max-height: 22px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.flows-page .flow-card footer {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  gap: 8px;
+  min-height: 40px;
+}
+.flows-page .flow-card footer > span {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.flows-page .flow-card footer button {
+  width: 88px;
+  height: 40px;
+  flex: 0 0 88px;
+  padding: 9px 12px;
+  font-size: 13px;
+}
+.first-flow {
+  height: 470px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-surface);
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+.first-flow > svg {
+  color: var(--fa-action-primary);
+  flex-shrink: 0;
+}
+.first-flow h2 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 40px;
+  font-weight: 700;
+}
+.first-flow p {
+  margin: 0;
+}
+.first-flow .row {
+  gap: 16px;
+  height: 48px;
+  align-items: flex-start;
+}
+.first-flow button {
+  width: 170px;
+}
+.first-flow small {
+  color: var(--fa-text-secondary);
+}
+.flow-no-results {
+  text-align: center;
+  padding: 48px;
+}
+.app.editing-workspace .sidebar,
+.app.with-browser .sidebar {
+  width: 72px;
+  flex-basis: 72px;
+  padding: 16px;
+}
+.app.editing-workspace .brand-name,
+.app.with-browser .brand-name,
+.app.editing-workspace .workspace-label,
+.app.with-browser .workspace-label,
+.app.editing-workspace .nav-label,
+.app.with-browser .nav-label,
+.app.editing-workspace .sidebar-bottom,
+.app.with-browser .sidebar-bottom {
+  display: none;
+}
+.app.editing-workspace .sidebar nav button,
+.app.with-browser .sidebar nav button {
+  width: 40px;
+  padding: 8px;
+  position: relative;
+}
+@media (max-width: 1439px) {
+  .app .sidebar {
+    width: 72px;
+    flex-basis: 72px;
+    padding: 16px;
+  }
+  .app .brand-name,
+  .app .workspace-label,
+  .app .nav-label,
+  .app .sidebar-bottom {
+    display: none;
+  }
+  .app .sidebar nav button {
+    width: 40px;
+    padding: 8px;
+    position: relative;
+  }
+  .app .sidebar nav button b {
+    position: absolute;
+    top: -4px;
+    right: -6px;
+  }
+}
+@media (max-width: 1100px) {
+  .flows-page .flow-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .flow-tabs {
+    gap: 16px;
+  }
+  .flow-search {
+    width: 280px;
+  }
+}
+.with-browser .flows-page .flow-grid {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+.with-browser .flows-page .workspace-summary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.with-browser .flow-filters {
+  flex-wrap: wrap;
+}
+.with-browser .first-flow {
+  height: auto;
+  min-height: 470px;
+  padding: 32px;
+}
+.with-browser .first-flow .row {
+  flex-wrap: wrap;
+  height: auto;
+  justify-content: center;
+}

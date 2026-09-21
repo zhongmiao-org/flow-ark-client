@@ -5,6 +5,7 @@ import { child, killOwnedTree } from './processes';
 import { Rpc } from '../shared/rpc';
 import type { BrowserBinding, BrowserCommand } from '../shared/types';
 import { errorText } from '../shared/utils';
+import { sameWebPage, type TaskWebTarget, type WebPageIdentity } from '../shared/task-web-target';
 import {
   EMBEDDED_CLOSE_RPC_TIMEOUT_MS,
   type CleanupResult,
@@ -68,6 +69,10 @@ function combined(results: CleanupResult[]): CleanupResult {
   };
 }
 export class Sessions {
+  private selectedPages = new Map<string, WebPageIdentity>();
+  selectedPage(runId: string) {
+    return this.selectedPages.get(runId);
+  }
   private sessions = new Map<string, Session>();
   private closing = new Map<string, { session: Session; done: Promise<void> }>();
   private stopping = false;
@@ -85,13 +90,21 @@ export class Sessions {
   get recoveryError() {
     return this.embeddedRecoveryError;
   }
-  async use(binding: BrowserBinding, runId: string, command: BrowserCommand, signal?: AbortSignal) {
+  async use(
+    binding: BrowserBinding,
+    runId: string,
+    command: BrowserCommand,
+    signal?: AbortSignal,
+    target?: TaskWebTarget,
+  ) {
     const check = () => {
       signal?.throwIfAborted();
       if (this.stopping) throw new Error('浏览器会话管理器正在退出');
       if (this.recoveryError) throw new Error(this.recoveryError);
     };
     check();
+    if (target && binding.product !== 'embedded')
+      throw new Error('所选网页必须使用原内置浏览器绑定');
     if (binding.product === 'embedded') {
       if (this.embedded?.closing) await this.embedded.closing;
       check();
@@ -123,13 +136,29 @@ export class Sessions {
         check();
         if (this.embedded !== session || session.owner !== runId || session.phase !== 'ready')
           throw new Error('浏览器会话租约已失效');
+        const expected = target ? (this.selectedPages.get(runId) ?? target.page) : undefined;
         const result = await abortable(
-          this.system('browser.embedded.perform', { token: session.token, command }),
+          this.system(expected ? 'browser.embedded.perform.selected' : 'browser.embedded.perform', {
+            token: session.token,
+            command,
+            ...(expected ? { expected } : {}),
+          }),
           [signal, session.stop.signal],
         );
         check();
         if (this.embedded !== session || session.owner !== runId || session.lost)
           throw new Error('浏览器会话租约已失效');
+        if (expected) {
+          if (
+            !result?.page ||
+            result.page.resourceId !== expected.resourceId ||
+            result.page.url !== expected.url ||
+            (command.operation !== 'navigate' && !sameWebPage(result.page, expected))
+          )
+            throw new Error('所选网页在操作期间改变，结果未采用');
+          this.selectedPages.set(runId, result.page);
+          return result.result;
+        }
         return result;
       } catch (error) {
         if (this.ownsEmbedded(session, runId)) await this.closeEmbedded(session);
@@ -210,6 +239,7 @@ export class Sessions {
     return combined(results);
   }
   finishRun(runId: string) {
+    this.selectedPages.delete(runId);
     const session = this.embeddedRuns.get(runId);
     if (!session || session.phase === 'unknown' || session.phase === 'closing') return;
     this.embeddedRuns.delete(runId);

@@ -1,0 +1,168 @@
+/* Figma 23:4867 / 23:5493 / 23:8773 / 23:8920. */
+.tools-host[hidden] {
+  display: none;
+}
+.tools-host .topbar .context-back {
+  width: 92px;
+}
+.tool-dialog {
+  width: min(600px, calc(100vw - 48px));
+}
+.tools-page .page-heading p {
+  overflow-wrap: anywhere;
+}
+.tool-presets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.tool-presets > .ai-task-card {
+  min-height: 296px;
+}
+.tool-presets button {
+  width: 100%;
+}
+.tool-status {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--fa-radius-999);
+  padding: 5px 12px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.tool-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.tool-status.success {
+  color: var(--fa-status-success);
+  background: var(--fa-status-success-bg);
+}
+.tool-status.warning {
+  color: var(--fa-status-warning);
+  background: var(--fa-status-warning-bg);
+}
+.tool-catalog-bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.tool-catalog-bottom > .ai-task-card {
+  min-height: 184px;
+  padding: 16px;
+  gap: 10px;
+}
+.tool-catalog-bottom button {
+  align-self: flex-start;
+  min-width: 210px;
+}
+.tool-connection-row {
+  text-align: left;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tool-connection-row span {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.tool-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 650fr) minmax(0, 478fr);
+  gap: 24px;
+}
+.tool-columns > .ai-task-card {
+  min-height: 700px;
+}
+.tool-config > .ai-task-card {
+  min-height: 730px;
+}
+.tool-config > .ai-task-card:first-child {
+  gap: 24px;
+}
+.tool-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.tool-field input,
+.tool-field select,
+.tool-field textarea {
+  width: 100%;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 400;
+}
+.tool-field small {
+  color: var(--fa-text-secondary);
+  font-weight: 400;
+}
+.tool-definition {
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.tool-definition h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 28px;
+  overflow-wrap: anywhere;
+}
+.tool-definition pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 280px;
+  overflow: auto;
+  padding: 12px;
+  background: var(--fa-bg-subtle);
+  font-size: 12px;
+}
+.tool-definition details {
+  font-size: 12px;
+}
+.tool-disclaimer {
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+}
+.tool-warning {
+  color: var(--fa-status-warning);
+  background: var(--fa-status-warning-bg);
+}
+.tools-page .ai-task-checkbox {
+  align-items: flex-start;
+}
+.tools-page .ai-task-note {
+  margin: 0;
+}
+@container (max-width: 1000px) {
+  .tool-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .tool-columns > .ai-task-card {
+    min-height: auto;
+  }
+  .tool-presets {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .tool-presets > .ai-task-card {
+    min-height: 220px;
+  }
+  .tool-catalog-bottom {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

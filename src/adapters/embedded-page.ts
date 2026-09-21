@@ -134,7 +134,7 @@ export class EmbeddedPage {
         const box = await this.call(
           scope,
           element,
-          `function() { this.scrollIntoView({block:'center',inline:'center'}); const r=this.getBoundingClientRect(); return {x:r.x+this.clientLeft,y:r.y+this.clientTop}; }`,
+          `function() { this.scrollIntoView({block:'center',inline:'center',behavior:'instant'}); const r=this.getBoundingClientRect(); return {x:r.x+this.clientLeft,y:r.y+this.clientTop}; }`,
         );
         const { node } = await this.send('DOM.describeNode', { objectId: element }, scope.session);
         if (!node.frameId) throw new Error('目标不是可用框架：' + selector);
@@ -159,7 +159,7 @@ export class EmbeddedPage {
         objectId,
         `function(enabled) {
         if (!this.isConnected) throw new Error('目标元素已离开页面');
-        this.scrollIntoView({block:'center', inline:'center'});
+        this.scrollIntoView({block:'center', inline:'center', behavior:'instant'});
         const r=this.getBoundingClientRect(), s=getComputedStyle(this);
         if (!r.width || !r.height || s.visibility==='hidden' || s.display==='none' || (enabled && this.matches(':disabled'))) return null;
         const x=r.x+r.width/2,y=r.y+r.height/2;
@@ -171,32 +171,109 @@ export class EmbeddedPage {
       await new Promise((resolve) => setTimeout(resolve, Math.min(30, remaining())));
     }
   }
-  private async click(scope: Scope, objectId: string, remaining: () => number) {
-    const box = await this.visible(scope, objectId, remaining, true);
-    const hit = await this.call(
+  private async pointerGuard(scope: Scope, objectId: string) {
+    const result = await this.send(
+      'Runtime.callFunctionOn',
+      {
+        objectId,
+        functionDeclaration: `function() {
+        const target=this, state={hovered:false,pressed:false,blocked:false};
+        const listen=e=>{
+          if(!e.isTrusted) return;
+          const hit=target.isConnected && !target.matches(':disabled') && e.composedPath().includes(target);
+          if(e.type==='mousemove') { state.hovered=hit; return; }
+          if(!hit) { state.blocked=true; e.preventDefault(); e.stopImmediatePropagation(); }
+          else if(e.type==='mousedown') state.pressed=true;
+        };
+        const types=['mousemove','mousedown','mouseup','click'];
+        for(const type of types) window.addEventListener(type,listen,true);
+        return {
+          reset(){state.hovered=false;},
+          read(){return {...state};},
+          dispose(){for(const type of types) window.removeEventListener(type,listen,true);}
+        };
+      }`,
+        returnByValue: false,
+      },
+      scope.session,
+    );
+    if (result.exceptionDetails || !result.result.objectId) throw new Error('无法核对点击目标');
+    return result.result.objectId as string;
+  }
+  private async pointerPoint(scope: Scope, objectId: string) {
+    const box = await this.call(
       scope,
       objectId,
-      `function(x,y) { const hit=this.getRootNode().elementFromPoint(x,y); return hit===this || this.contains(hit); }`,
-      box.x,
-      box.y,
+      `function() {
+        if (!this.isConnected || this.matches(':disabled')) throw new Error('点击目标已失效');
+        const r=this.getBoundingClientRect(), x=r.x+r.width/2, y=r.y+r.height/2;
+        const hit=this.getRootNode().elementFromPoint(x,y);
+        if (!r.width || !r.height || (hit!==this && !this.contains(hit))) throw new Error('点击目标被其他元素遮挡');
+        return {x,y};
+      }`,
     );
-    if (!hit) throw new Error('点击目标被其他元素遮挡');
     let x = box.x,
       y = box.y;
     // Child scrolling can move every ancestor viewport; measure after scrollIntoView.
-    for (const ancestor of scope.ancestors) {
+    for (const ancestor of [...scope.ancestors].reverse()) {
       const offset = await this.evaluate(
         ancestor.scope,
-        `(() => { const el=(${query})(${JSON.stringify(ancestor.selector)}); if(!el) throw new Error('框架已离开页面'); const r=el.getBoundingClientRect(); return {x:r.x+el.clientLeft,y:r.y+el.clientTop}; })()`,
+        `(() => {
+          const el=(${query})(${JSON.stringify(ancestor.selector)}); if(!el) throw new Error('框架已离开页面');
+          const r=el.getBoundingClientRect(), x=r.x+el.clientLeft, y=r.y+el.clientTop;
+          if(el.getRootNode().elementFromPoint(x+${x},y+${y})!==el) throw new Error('点击框架被其他元素遮挡');
+          return {x,y};
+        })()`,
       );
       x += offset.x;
       y += offset.y;
     }
-    const point = { x, y, button: 'left', clickCount: 1 };
-    await this.send('Input.dispatchMouseEvent', { ...point, type: 'mouseMoved' });
-    await this.send('Input.dispatchMouseEvent', { ...point, type: 'mousePressed' });
-    await this.send('Input.dispatchMouseEvent', { ...point, type: 'mouseReleased' });
+    return { x, y };
   }
+  private async click(scope: Scope, objectId: string, remaining: () => number) {
+    await this.visible(scope, objectId, remaining, true);
+    const guard = await this.pointerGuard(scope, objectId);
+    let navigated = false;
+    const navigation = () => {
+      navigated = true;
+    };
+    this.contents.on('did-start-navigation', navigation);
+    try {
+      let point: { x: number; y: number };
+      for (;;) {
+        remaining();
+        point = await this.pointerPoint(scope, objectId);
+        await this.call(scope, guard, 'function(){this.reset();}');
+        // A trusted hover proves that Chromium has routed input into the target
+        // frame after scrolling. Unlike rAF, this works in hidden native views.
+        // Only moves repeat; a press/release is never retried.
+        await this.send('Input.dispatchMouseEvent', { ...point, type: 'mouseMoved' });
+        const state = await this.call(scope, guard, 'function(){return this.read();}');
+        if (state.hovered) {
+          const current = await this.pointerPoint(scope, objectId);
+          if (Math.abs(current.x - point.x) < 0.5 && Math.abs(current.y - point.y) < 0.5) break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, Math.min(20, remaining())));
+      }
+      remaining();
+      const input = { ...point, button: 'left', clickCount: 1 };
+      await this.send('Input.dispatchMouseEvent', { ...input, type: 'mousePressed' });
+      await this.send('Input.dispatchMouseEvent', { ...input, type: 'mouseReleased' });
+      let state;
+      try {
+        state = await this.call(scope, guard, 'function(){return this.read();}');
+      } catch (error) {
+        if (!navigated) throw error;
+      }
+      if (state && (state.blocked || !state.pressed))
+        throw new Error('点击期间目标发生变化，未确认点击结果');
+    } finally {
+      this.contents.removeListener('did-start-navigation', navigation);
+      await this.call(scope, guard, 'function(){this.dispose();}').catch(() => {});
+      await this.send('Runtime.releaseObject', { objectId: guard }, scope.session).catch(() => {});
+    }
+  }
+
   async perform(command: BrowserCommand): Promise<any> {
     validateFormCommand(command);
     const path = framePathOf(command),

@@ -1,0 +1,218 @@
+.excel-mapping-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-top: 30px;
+  min-width: 0;
+}
+.excel-mapping-page h1 {
+  font-size: 28px;
+  line-height: 40px;
+  margin: 0 0 12px;
+}
+.excel-mapping-page header p {
+  margin: 0;
+  color: var(--fa-text-secondary);
+}
+.excel-mapping-page fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.excel-workbook-fields {
+  display: grid;
+  grid-template-columns: 340fr 300fr 464fr;
+  gap: 24px;
+  min-height: 90px;
+  margin-top: 6px;
+}
+.excel-mapping-page label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--fa-text-primary);
+}
+.excel-mapping-page input,
+.excel-mapping-page select {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  margin-top: 0;
+}
+.excel-mapping-page .value-field {
+  margin: 0;
+}
+.excel-workbook-fields > .value-field {
+  position: relative;
+}
+.excel-workbook-fields > .value-field > .value-source-button {
+  position: absolute;
+  right: 0;
+  top: -4px;
+  min-height: 24px;
+  height: 24px;
+  margin: 0;
+  padding: 2px 6px;
+}
+.excel-mapping-page .value-source-button {
+  color: var(--fa-action-primary);
+  border-color: var(--fa-border-default);
+}
+.excel-mapping-page .reference-value {
+  background: var(--fa-bg-canvas);
+  border-color: var(--fa-action-primary);
+}
+.excel-mapping-page .reference-picker {
+  border-color: var(--fa-border-default);
+}
+.excel-mapping-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 600fr) minmax(0, 528fr);
+  gap: 24px;
+}
+.excel-mapping-columns > .ai-task-card {
+  min-width: 0;
+  height: 588px;
+  overflow: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+}
+.excel-mapping-columns h2 {
+  font-size: 18px;
+  line-height: 28px;
+  margin: 0;
+}
+.excel-mapping-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-height: 180px;
+  overflow: auto;
+  padding: 2px;
+}
+.excel-mapping-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4px 16px;
+  flex-shrink: 0;
+}
+.excel-column-options {
+  grid-column: 1/-1;
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+}
+.excel-column-options[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.excel-column-options summary,
+.excel-source-settings summary {
+  cursor: pointer;
+}
+.excel-column-options[open] summary,
+.excel-source-settings[open] summary {
+  margin-bottom: 12px;
+}
+.excel-source-settings {
+  border-top: 1px solid var(--fa-border-default);
+  padding-top: 12px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.excel-source-settings label {
+  margin-top: 12px;
+}
+.excel-mapping-page .check-label {
+  flex-direction: row;
+  align-items: center;
+}
+.excel-mapping-page .check-label input {
+  width: auto;
+  height: auto;
+}
+.excel-data-preview p {
+  color: var(--fa-text-secondary);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.excel-preview-scroll {
+  overflow: auto;
+  min-width: 0;
+}
+.excel-preview-scroll table {
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 12px;
+}
+.excel-preview-scroll th,
+.excel-preview-scroll td {
+  padding: 16px 12px;
+  background: var(--fa-bg-canvas);
+  text-align: left;
+  max-width: 240px;
+  overflow-wrap: anywhere;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--fa-text-primary);
+  border: 0;
+}
+.excel-data-preview .note {
+  background: none;
+  padding: 0;
+  font-size: 12px;
+}
+.excel-preview-scroll tr > :first-child {
+  border-radius: 6px 0 0 6px;
+}
+.excel-preview-scroll tr > :last-child {
+  border-radius: 0 6px 6px 0;
+}
+.excel-mapping-note {
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  color: var(--fa-action-primary);
+  background: var(--fa-action-subtle);
+}
+.excel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.excel-actions button {
+  min-width: 144px;
+}
+.excel-mapping-page footer .primary {
+  min-width: 200px;
+}
+@media (max-width: 1199px) {
+  .excel-mapping-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .excel-mapping-columns > .ai-task-card {
+    min-height: 0;
+    height: auto;
+  }
+  .excel-mapping-rows {
+    max-height: 440px;
+  }
+  .excel-workbook-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+  .excel-workbook-fields > :last-child {
+    grid-column: 1/-1;
+  }
+}

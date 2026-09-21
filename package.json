@@ -1,6 +1,6 @@
 {
   "name": "flow-ark-client",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "FlowArk 序舟本地自动化工作台",
   "private": true,
   "type": "module",
@@ -8,9 +8,9 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "8c1f90a1120b12fb7421bf0fca8a0e52afbe8c07",
-    "contractsVersion": "0.8.0",
-    "contractsTag": "contracts-v0.8.0"
+    "governanceBaseline": "873ccbc9950937fdc98e62679b5dd7f1ac6ba0d4",
+    "contractsVersion": "0.12.0",
+    "contractsTag": "contracts-v0.12.0"
   },
   "packageManager": "pnpm@10.14.0",
   "engines": {
@@ -23,7 +23,7 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "test:runtime": "node --import tsx --test tests/runtime.integration.ts tests/run-rerun.integration.ts tests/embedded-cleanup.integration.ts tests/script-supervision.integration.ts tests/storage-full.integration.ts tests/system-suspend.integration.ts tests/redaction.integration.ts tests/template-runtime.integration.ts",
+    "test:runtime": "node --import tsx --test tests/runtime.integration.ts tests/run-rerun.integration.ts tests/run-review.integration.ts tests/embedded-cleanup.integration.ts tests/script-supervision.integration.ts tests/storage-full.integration.ts tests/system-suspend.integration.ts tests/redaction.integration.ts tests/template-runtime.integration.ts tests/task-web-target.integration.ts tests/learning.integration.ts tests/task-output.integration.ts tests/tool-connections.integration.ts tests/ai-settings.integration.ts",
     "check": "pnpm typecheck && pnpm test && pnpm build",
     "contracts:generate": "node scripts/generate-contracts.mjs",
     "test:browser": "node --import tsx scripts/browser-smoke.ts",
@@ -44,6 +44,7 @@
     "test:embedded-capture": "node --import tsx scripts/embedded-capture-lifecycle.ts",
     "test:action-library": "node --import tsx scripts/action-library-smoke.ts",
     "test:browser-viewport": "node --import tsx scripts/browser-viewport-smoke.ts",
+    "test:embedded-pointer": "node --import tsx scripts/embedded-pointer-smoke.ts",
     "test:flow-editing": "node --import tsx scripts/flow-editing-smoke.ts",
     "test:value-editor": "node --import tsx scripts/value-editor-smoke.ts",
     "test:resource-editor": "node --import tsx scripts/resource-editor-smoke.ts",
@@ -56,13 +57,31 @@
     "test:flow-export": "node --import tsx scripts/template-package-smoke.ts",
     "test:node-timeout": "node --import tsx scripts/node-timeout-smoke.ts",
     "test:invalid-node-json": "node --import tsx scripts/invalid-node-json-smoke.ts",
+    "test:run-review-browser": "node --import tsx scripts/run-review-browser-smoke.ts",
     "test:run-rerun": "node --import tsx scripts/run-rerun-smoke.ts",
     "test:embedded-close": "node --import tsx scripts/embedded-close-lifecycle.ts",
     "test:embedded-cleanup": "node --import tsx scripts/embedded-cleanup-smoke.ts",
     "test:run-observation": "node --import tsx scripts/run-observation-smoke.ts",
     "test:system-suspend": "node --import tsx scripts/system-suspend-smoke.ts",
     "test:template-parameters": "node --import tsx scripts/template-package-smoke.ts",
-    "test:redaction": "node --import tsx scripts/redaction-smoke.ts"
+    "test:redaction": "node --import tsx scripts/redaction-smoke.ts",
+    "test:figma-home": "node --import tsx scripts/figma-home-smoke.ts",
+    "test:figma-task-result": "node --import tsx scripts/figma-task-result-smoke.ts",
+    "test:task-repair-native": "node --import tsx scripts/task-repair-native-smoke.ts",
+    "test:figma-run-review": "node --import tsx scripts/figma-run-review-smoke.ts",
+    "test:figma-task": "node --import tsx scripts/figma-task-smoke.ts",
+    "test:figma-editor": "node --import tsx scripts/figma-editor-smoke.ts",
+    "test:script-editor": "node --import tsx scripts/script-editor-smoke.ts",
+    "test:flow-outline": "node --import tsx scripts/flow-outline-smoke.ts",
+    "test:excel-mapping": "node --import tsx scripts/excel-mapping-smoke.ts",
+    "test:ai-step-edit": "node --import tsx scripts/ai-step-edit-smoke.ts",
+    "test:file-create": "node --import tsx scripts/file-create-smoke.ts",
+    "test:learning": "node --import tsx scripts/learning-smoke.ts",
+    "test:task-web-target": "node --import tsx scripts/task-web-target-smoke.ts",
+    "test:task-attachments": "node --import tsx scripts/task-attachments-smoke.ts",
+    "test:tool-connections": "node --import tsx scripts/tool-connections-smoke.ts",
+    "test:ai-settings": "node --import tsx scripts/ai-settings-smoke.ts",
+    "test:template-ai": "node --import tsx scripts/template-ai-smoke.ts"
   },
   "build": {
     "appId": "org.zhongmiao.flowark",
@@ -99,6 +118,9 @@
     ]
   },
   "dependencies": {
+    "@fontsource-variable/inter": "5.3.0",
+    "@fontsource-variable/noto-sans-sc": "5.3.0",
+    "@modelcontextprotocol/client": "2.0.0",
     "@monaco-editor/react": "4.7.0",
     "@xyflow/react": "12.11.6",
     "ajv": "8.20.0",

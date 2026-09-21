@@ -1,4 +1,4 @@
-import { _electron as electron } from 'playwright-core';
+import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -14,9 +14,13 @@ const app = await electron.launch({
   timeout: 30000,
 });
 const errors = [];
+let page;
 app.process().stderr.on('data', (b) => process.stderr.write(b));
 try {
-  const page = await app.firstWindow();
+  page = await app.firstWindow();
+  await app.evaluate(({ BrowserWindow }) => {
+    BrowserWindow.getAllWindows()[0].setTitle('FlowArk · 隔离测试（自动退出）');
+  });
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (message) => {
     if (/\[React Flow\].*(handle|node type|edge type)/i.test(message.text()))
@@ -64,9 +68,15 @@ try {
   );
   await page.reload();
   await page.waitForFunction(() => Boolean(window.flowark));
+  await page.evaluate(() => {
+    document.querySelector('.window-titlebar').textContent = 'FlowArk · 隔离测试（自动退出）';
+  });
   assert.equal(bootstrap.runs.length, 0);
   const appVersion = await app.evaluate(({ app }) => app.getVersion());
-  assert.equal(await page.locator('.sidebar-bottom span').textContent(), appVersion);
+  assert.equal(
+    await page.getByRole('button', { name: '重新学习 · 2 分钟', exact: true }).count(),
+    1,
+  );
   const security = await app.evaluate(({ BrowserWindow }) => {
     const p = BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences();
     return {
@@ -81,7 +91,9 @@ try {
     nodeIntegration: false,
   });
   assert.equal(await page.evaluate(() => typeof window.require), 'undefined');
-  await page.getByRole('button', { name: '运行', exact: true }).first().click();
+  await page.getByRole('button', { name: '我的流程', exact: true }).click();
+  await page.getByRole('button', { name: '编辑 第一个流程', exact: true }).click();
+  await page.getByRole('button', { name: '运行', exact: true }).click();
   console.log('Run submitted');
   const deadline = Date.now() + 20000;
   while (true) {
@@ -134,6 +146,8 @@ try {
   const packageNode = JSON.parse(await page.locator('.node-advanced .code-input').inputValue());
   assert.deepEqual(packageNode.dependencies, [{ name: '@desktop/fixture', version: '1.2.3' }]);
   packageNode.code = "import value from '@desktop/fixture'; export default async()=>value;";
+  const noticeClose = page.locator('.notice button');
+  if (await noticeClose.count()) await noticeClose.click();
   await page.locator('.node-advanced summary').click();
   await page.locator('.node-advanced .code-input').fill(JSON.stringify(packageNode, null, 2));
   await page.getByRole('region', { name: '脚本本地依赖' }).scrollIntoViewIfNeeded();
@@ -406,11 +420,43 @@ try {
   console.error('Desktop verification failed:', error);
   process.exitCode = 1;
 } finally {
+  const processHandle = app.process();
+  const ended =
+    processHandle.exitCode !== null || processHandle.signalCode !== null
+      ? Promise.resolve({ code: processHandle.exitCode, signal: processHandle.signalCode })
+      : new Promise((resolve) =>
+          processHandle.once('exit', (code, signal) => resolve({ code, signal })),
+        );
+  // Cancel only this isolated test profile's work before invoking normal quit.
+  // A failed test must not strand a native confirmation over the user's desktop.
+  const cleanupGuard = setTimeout(() => app.process().kill('SIGKILL'), 30000);
+  try {
+    if (page && !page.isClosed()) {
+      const snapshot = await page.evaluate(() => window.flowark.request('bootstrap'));
+      for (const run of snapshot.runs) {
+        if (['QUEUED', 'RUNNING', 'PAUSED', 'WAITING_INPUT', 'CANCELLING'].includes(run.state))
+          await page.evaluate(
+            (id) => window.flowark.request('run.control', { id, action: 'cancel' }),
+            run.id,
+          );
+      }
+      const deadline = Date.now() + 15000;
+      while (true) {
+        const state = await page.evaluate(() => window.flowark.request('bootstrap'));
+        if (!state.execution?.active && !state.runOverview.active && !state.runOverview.queued)
+          break;
+        if (Date.now() >= deadline) throw new Error('Isolated desktop tasks did not stop');
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+    }
+  } catch (error) {
+    console.error('Desktop cleanup failed:', error);
+    process.exitCode = 1;
+  }
+  clearTimeout(cleanupGuard);
   // Playwright's app.close invokes quit under the inspector. Invoke the app's menu
   // path so its asynchronous resource shutdown can complete before inspector exit.
-  const ended = new Promise((resolve) =>
-    app.process().once('exit', (code, signal) => resolve({ code, signal })),
-  );
+  const timer = setTimeout(() => app.process().kill('SIGKILL'), 10000);
   await app
     .evaluate(({ Menu }) => {
       setTimeout(
@@ -422,7 +468,6 @@ try {
       );
     })
     .catch(() => {});
-  const timer = setTimeout(() => app.process().kill('SIGKILL'), 10000);
   const exit = await ended;
   clearTimeout(timer);
   assert.equal(exit.signal, null, 'Application required a forced termination');

@@ -24,6 +24,8 @@ export function executionVersion(record: FlowRecord, prepared: PreparedScripts) 
   return digest({
     flow: record.flow,
     bindings: record.bindings,
+    ...(record.webTarget ? { webTarget: record.webTarget } : {}),
+    ...(record.outputTarget ? { outputTarget: record.outputTarget } : {}),
     scriptBundles: prepared.scriptBundles,
   });
 }
@@ -57,8 +59,18 @@ export function assertRerunBindings(original: Bindings, current: Bindings) {
     )
       changed('原脚本包绑定 ' + name + ' ');
   if (
-    digest({ template: before.template, resources:before.resources, grants:before.grants, configuration: configurationAuthority(before) }) !==
-    digest({ template: after.template, resources:after.resources, grants:after.grants, configuration: configurationAuthority(after) })
+    digest({
+      template: before.template,
+      resources: before.resources,
+      grants: before.grants,
+      configuration: configurationAuthority(before),
+    }) !==
+    digest({
+      template: after.template,
+      resources: after.resources,
+      grants: after.grants,
+      configuration: configurationAuthority(after),
+    })
   )
     changed('原策略或模板配置定义');
 }
@@ -127,6 +139,8 @@ export class RunRerun {
       id: selected.id,
       flow: structuredClone(selected.flow),
       bindings: structuredClone(selected.bindings),
+      ...(selected.webTarget ? { webTarget: structuredClone(selected.webTarget) } : {}),
+      ...(selected.outputTarget ? { outputTarget: structuredClone(selected.outputTarget) } : {}),
       updatedAt: selected.updatedAt,
       ...(args.mode === 'snapshot'
         ? {
@@ -258,6 +272,7 @@ export class RunRerun {
 
   checkExecution(run: Run, snapshot: Snapshot) {
     if (!run.rerun) return;
+    if (run.review) return; // Full reviewed snapshots are revalidated by RunReview.
     this.ready(run.rerun.runId);
     const current = this.store.get<FlowRecord>('flow', run.flowId);
     if (!current) throw new Error('当前已保存流程不存在，重新运行授权已失效');

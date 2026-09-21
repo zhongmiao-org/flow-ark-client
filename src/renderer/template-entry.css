@@ -1,0 +1,86 @@
+/* Figma 8:18463 / 8:18569. Shared Field renders package-defined input. */
+.template-entry-page .page-heading {
+  margin-bottom: 24px;
+}
+.template-entry-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 728fr) minmax(0, 400fr);
+  gap: 24px;
+}
+.template-entry-columns > .ai-task-card {
+  min-height: 664px;
+  gap: 16px;
+}
+.template-entry-columns .template-entry-input {
+  padding: 28px;
+}
+.template-entry-columns .template-entry-resources {
+  padding: 24px;
+}
+.template-entry-fields,
+.template-entry-fields .template-fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.template-entry-fields .template-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.template-entry-fields .template-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+.template-entry-fields input,
+.template-entry-resources select {
+  width: 100%;
+  height: 40px;
+  min-width: 0;
+  border-color: var(--fa-border-default);
+  color: var(--fa-text-primary);
+  font-size: 13px;
+}
+.template-entry-fields textarea {
+  width: 100%;
+  min-height: 128px;
+  resize: vertical;
+  padding: 12px;
+  border-color: var(--fa-border-default);
+  background: var(--fa-bg-canvas);
+  color: var(--fa-text-primary);
+  font-size: 13px;
+}
+.template-entry-ai-resource {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.template-entry-ai-resource + .template-entry-ai-resource {
+  border-top: 1px solid var(--fa-border-default);
+  padding-top: 16px;
+}
+.template-entry-page small {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--fa-text-secondary);
+}
+.template-entry-page h1,
+.template-entry-page p {
+  overflow-wrap: anywhere;
+}
+.template-entry-page .ai-task-actions button {
+  min-width: 180px;
+}
+@container (max-width: 1000px) {
+  .template-entry-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .template-entry-columns > .ai-task-card {
+    min-height: 0;
+  }
+}

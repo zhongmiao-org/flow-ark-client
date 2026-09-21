@@ -3,6 +3,8 @@ import { execute } from '../core/engine';
 import { RunControl } from '../core/run-control';
 import { runScript } from '../adapters/script';
 import { fileOperation } from '../adapters/files';
+import { validateCreatedText } from '../shared/file-create';
+import { OUTPUT_BINDING } from '../shared/task-output';
 import type { Step } from '../shared/types';
 import {
   SCRIPT_CLEANUP_TIMEOUT_MS,
@@ -24,11 +26,15 @@ const rpc = new Rpc(
     return execute(args.flow, args.parameters, {
       signal: abort.signal,
       captureResults: Boolean(args.debug),
-      boundary: (instance, node, signal) =>
-        control!.boundary(
+      boundary: async (instance, node, signal) => {
+        await control!.boundary(
           { nodeInstance: instance, nodeName: String(node.name || node.id) },
           signal,
-        ),
+        );
+        if (args.webTarget) await rpc.call('web-target.boundary', {});
+        if (args.outputTarget) await rpc.call('output-target.boundary', {});
+        signal.throwIfAborted();
+      },
       emit,
       human: (message, signal) => control!.human(message, signal),
       perform: async (n: Step, resolved: any, instance: string, signal: AbortSignal) => {
@@ -60,11 +66,18 @@ const rpc = new Rpc(
             return text;
           }
         }
+        if (args.outputTarget && n.type === 'file' && n.binding === OUTPUT_BINDING)
+          validateCreatedText(resolved.content);
         if (n.type === 'file' || n.type === 'excel')
-          return fileOperation(resolved, args.bindings, (path) => {
-            signal.throwIfAborted();
-            return rpc.call('artifact.register', { path });
-          });
+          return fileOperation(
+            resolved,
+            args.bindings,
+            (path) => {
+              signal.throwIfAborted();
+              return rpc.call('artifact.register', { path });
+            },
+            signal,
+          );
         if (n.type === 'browser') return rpc.call('browser', resolved, timeout + 5000);
         if (n.type === 'script')
           return runScript({

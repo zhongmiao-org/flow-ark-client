@@ -9,6 +9,7 @@ import {
   mkdir,
   writeFile,
   access,
+  readdir,
 } from 'node:fs/promises';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
@@ -37,6 +38,132 @@ async function until(fn: () => boolean, timeout = 12000) {
     await new Promise((r) => setTimeout(r, 20));
   }
 }
+test('AI proposal adoption shares the real workflow while active snapshots stay fixed; suspend and quit abort planning', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'flowark-planning-runtime-'));
+  const requests: any[] = [];
+  const signals: AbortSignal[] = [];
+  let value = 'first',
+    hold = false;
+  t.mock.method(globalThis, 'fetch', async (_url: unknown, init: RequestInit) => {
+    const body = JSON.parse(init.body as string);
+    const input = JSON.parse(body.messages[1].content).request;
+    requests.push(input);
+    signals.push(init.signal!);
+    if (hold)
+      return new Promise((_resolve, reject) =>
+        init.signal!.addEventListener('abort', () => reject(new Error('fixture aborted')), {
+          once: true,
+        }),
+      );
+    const flow = {
+      ...base,
+      id: input.flowId,
+      steps: [
+        { id: 'value', type: 'value', version: 1, value },
+        { id: 'wait', type: 'human', version: 1, message: 'review test boundary' },
+        { id: 'finish', type: 'value', version: 1, value: { $ref: 'steps.value' } },
+      ],
+    };
+    const output = {
+      formatVersion: '1.0',
+      kind: 'plan',
+      summary: 'fixture proposal',
+      flow,
+      questions: [],
+      limitations: [],
+    };
+    return Response.json({
+      choices: [
+        {
+          finish_reason: 'stop',
+          message: { content: JSON.stringify({ resultJson: JSON.stringify(output) }) },
+        },
+      ],
+    });
+  });
+  const runtime = new Runtime(
+    directory,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async (method) => (method === 'credentials.get' ? 'sk-fictional-planning-runtime-key' : []),
+  );
+  let shut = false;
+  try {
+    const created = await runtime.request('task.create', {});
+    let d = await runtime.request('task.save', {
+      id: created.task.id,
+      revision: 1,
+      description: 'only this selected task',
+      context: [],
+      answers: {},
+    });
+    const generate = async () => {
+      await runtime.request('task.generate', {
+        id: d.task.id,
+        revision: d.task.revision,
+        provider: 'deepseek',
+        model: 'fixture',
+        reviewed: true,
+      });
+      await until(() => runtime.planning.detail(d.task.id).task.status !== 'generating');
+      d = runtime.planning.detail(d.task.id);
+    };
+    await generate();
+    assert.equal(d.task.status, 'plan');
+    assert.equal(runtime.store.count('run'), 0);
+    assert.equal(runtime.store.count('flow'), 0);
+    const adopt = async () => {
+      d = await runtime.request('task.adopt', {
+        id: d.task.id,
+        revision: d.task.revision,
+        proposalId: d.proposal.id,
+      });
+    };
+    await adopt();
+    const run = await runtime.enqueue(d.task.flowId);
+    await until(() => runtime.store.get<Run>('run', run.id)?.state === 'WAITING_INPUT');
+    value = 'second';
+    await generate();
+    assert.equal(runtime.store.count('run'), 1);
+    await adopt();
+    assert.equal(runtime.store.get<any>('flow', d.task.flowId).flow.steps[0].value, 'second');
+    await runtime.control(run.id, 'resume');
+    await until(() => runtime.store.get<Run>('run', run.id)?.state === 'SUCCEEDED');
+    assert.equal((await runtime.request('run.detail', { id: run.id })).output.finish, 'first');
+    hold = true;
+    await runtime.request('task.generate', {
+      id: d.task.id,
+      revision: d.task.revision,
+      provider: 'deepseek',
+      model: 'fixture',
+      reviewed: true,
+    });
+    await until(() => requests.length === 3);
+    await runtime.request('system.suspend');
+    assert.equal(signals[2].aborted, true);
+    assert.equal(runtime.planning.detail(d.task.id).task.status, 'cancelled');
+    await runtime.request('system.resume');
+    assert.equal(requests.length, 3, 'resume cannot retry a planning request');
+    await runtime.request('task.generate', {
+      id: d.task.id,
+      revision: d.task.revision,
+      provider: 'deepseek',
+      model: 'fixture',
+      reviewed: true,
+    });
+    await until(() => requests.length === 4);
+    await runtime.shutdown();
+    shut = true;
+    assert.equal(signals[3].aborted, true);
+    assert.equal(runtime.store.count('run'), 1);
+    assert.equal(runtime.planning.detail(d.task.id).task.status, 'cancelled');
+  } finally {
+    if (!shut) await runtime.shutdown();
+    runtime.store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
 test('real Worker enforces human, branch and whole-loop deadlines then releases its run slot', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'flowark-node-timeout-'));
   let requests = 0;
@@ -1253,7 +1380,7 @@ test('SQLite event write failure stops admissions and preserves existing history
     Buffer.from(key),
     async () => [],
   );
-  runtime.saveFlow({...base,id:'hello'},{files:{},credentials:[]});
+  runtime.saveFlow({ ...base, id: 'hello' }, { files: {}, credentials: [] });
   const original = runtime.store.list('flow');
   // Actual SQLite write rejection, rather than a mock store that cannot exercise rollback.
   (runtime.store as any).db.exec('PRAGMA query_only=ON');
@@ -1343,7 +1470,7 @@ test('shutdown during preflight rejects a late admission without creating a run'
     return original(record);
   };
   try {
-    runtime.saveFlow({...base,id:'hello'},{files:{},credentials:[]});
+    runtime.saveFlow({ ...base, id: 'hello' }, { files: {}, credentials: [] });
     const pending = runtime.enqueue('hello');
     const rejected = assert.rejects(pending, /退出/);
     await until(() => entered);
@@ -1434,7 +1561,7 @@ test('large wall-clock gaps skip missed windows using the observed clock', async
   );
   try {
     const plan = await runtime.request('schedule.save', {
-      flowId: runtime.saveFlow({...base,id:'hello'},{files:{},credentials:[]}).id,
+      flowId: runtime.saveFlow({ ...base, id: 'hello' }, { files: {}, credentials: [] }).id,
       intervalMinutes: 1,
       timezone: 'Asia/Shanghai',
     });
@@ -1590,10 +1717,14 @@ test('queued scripts and reopened schedules retain frozen local dependencies whi
       assert.equal(detail.output.script, expected);
       assert.deepEqual(detail.scriptBundles[0].dependencies, [declaration]);
     }
-    await assert.rejects(runtime.request('flow.export', {
-      flow: runtime.store.get<any>('flow', base.id).flow,
-      reviewed: true,path:join(path,'export.zip'),
-    }),/静态打包/);
+    await assert.rejects(
+      runtime.request('flow.export', {
+        flow: runtime.store.get<any>('flow', base.id).flow,
+        reviewed: true,
+        path: join(path, 'export.zip'),
+      }),
+      /静态打包/,
+    );
     await writeFile(
       join(pkg, 'package.json'),
       JSON.stringify({ name: 'fixture-package', version: '2.0.0', main: 'index.cjs' }),
@@ -2459,4 +2590,169 @@ test('schedule update cannot overwrite a pause, competing edit, timer trigger, o
     await runtime.shutdown();
     runtime.store.close();
   }
+});
+
+test('real Worker creates text from a fixed snapshot; repeated explicit runs fail without overwriting or reporting artifacts', async (t) => {
+  const path = await realpath(await mkdtemp(join(tmpdir(), 'flowark-create-worker-')));
+  const output = join(path, 'output');
+  await mkdir(output);
+  const runtime = new Runtime(
+    path,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  t.after(async () => {
+    await runtime.shutdown();
+    runtime.store.close();
+    await rm(path, { recursive: true, force: true });
+  });
+  const flow: Flow = {
+    ...base,
+    parameters: { title: '已核对的网页标题 💡' },
+    requiredCapabilities: ['file-create-v1'],
+    steps: [
+      { id: 'title', type: 'value', version: 1, value: { $ref: 'params.title' } },
+      { id: 'wait', type: 'human', version: 1, message: '固定快照验收' },
+      {
+        id: 'save',
+        type: 'file',
+        version: 3,
+        operation: 'create',
+        binding: 'output',
+        name: 'title.txt',
+        content: { $ref: 'steps.title' },
+      },
+      { id: 'after', type: 'value', version: 1, value: 'reached only after success' },
+    ],
+  };
+  const bindings = { files: { output }, credentials: [] };
+  runtime.saveFlow(flow, bindings);
+  const run = await runtime.enqueue(flow.id);
+  await until(() => runtime.store.get<Run>('run', run.id)?.state === 'WAITING_INPUT');
+  const before = runtime.store.get<any>('snapshot', run.id);
+  runtime.saveFlow({ ...flow, parameters: { title: '下一次的文字' } }, bindings);
+  await runtime.control(run.id, 'resume');
+  await until(() => ['SUCCEEDED', 'FAILED'].includes(runtime.store.get<Run>('run', run.id)!.state));
+  assert.equal(
+    runtime.store.get<Run>('run', run.id)!.state,
+    'SUCCEEDED',
+    JSON.stringify(runtime.store.events(run.id)),
+  );
+  assert.equal(await readFile(join(output, 'title.txt'), 'utf8'), flow.parameters.title);
+  assert.deepEqual(runtime.store.get('snapshot', run.id), before);
+  const first = (await runtime.request('run.detail', { id: run.id })).artifacts;
+  assert.equal(first.length, 1);
+  assert.equal(first[0].integrity, 'verified');
+  const second = await runtime.enqueue(flow.id);
+  await until(() => runtime.store.get<Run>('run', second.id)?.state === 'WAITING_INPUT');
+  await runtime.control(second.id, 'resume');
+  await until(() =>
+    ['SUCCEEDED', 'FAILED'].includes(runtime.store.get<Run>('run', second.id)!.state),
+  );
+  assert.equal(runtime.store.get<Run>('run', second.id)!.state, 'FAILED');
+  assert.match(runtime.store.get<Run>('run', second.id)!.error!, /已存在/);
+  assert.equal((await runtime.request('run.detail', { id: second.id })).artifacts.length, 0);
+  assert.ok(
+    !runtime.store
+      .events(second.id)
+      .some((e) => e.type === 'node-start' && e.nodeInstance === 'after'),
+  );
+  assert.equal(await readFile(join(output, 'title.txt'), 'utf8'), flow.parameters.title);
+  assert.equal(runtime.store.list('run').length, 2);
+  assert.equal(await readFile(first[0].path, 'utf8'), flow.parameters.title);
+});
+
+test('numbered Worker output keeps its fixed conflict policy and actual artifact across draft edits and explicit runs', async (t) => {
+  const path = await realpath(await mkdtemp(join(tmpdir(), 'flowark-numbered-worker-')));
+  const output = join(path, 'output');
+  await mkdir(output);
+  await writeFile(join(output, 'title.txt'), 'original protected bytes');
+  const runtime = new Runtime(
+    path,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  t.after(async () => {
+    await runtime.shutdown();
+    runtime.store.close();
+    await rm(path, { recursive: true, force: true });
+  });
+  const save: Step = {
+    id: 'save',
+    type: 'file',
+    version: 4,
+    operation: 'create',
+    onConflict: 'number',
+    binding: 'output',
+    name: { $ref: 'params.name' },
+    content: { $ref: 'steps.title' },
+  };
+  const flow: Flow = {
+    ...base,
+    parameters: { name: 'title.txt', title: '固定序号策略的网页标题 💡' },
+    requiredCapabilities: ['file-create-numbered-v1'],
+    steps: [
+      { id: 'title', type: 'value', version: 1, value: { $ref: 'params.title' } },
+      { id: 'wait', type: 'human', version: 1, message: '等待修改下一次策略' },
+      save,
+    ],
+  };
+  const { onConflict: _, ...stop } = save;
+  const stopFlow: Flow = {
+    ...flow,
+    requiredCapabilities: ['file-create-v1'],
+    steps: [...flow.steps.slice(0, 2), { ...stop, version: 3 }],
+  };
+  const bindings = { files: { output }, credentials: [] };
+  runtime.saveFlow(flow, bindings);
+  const first = await runtime.enqueue(flow.id);
+  await until(() => runtime.store.get<Run>('run', first.id)?.state === 'WAITING_INPUT');
+  const snapshot = runtime.store.get('snapshot', first.id);
+  runtime.saveFlow(stopFlow, bindings);
+  await runtime.control(first.id, 'resume');
+  await until(() =>
+    ['SUCCEEDED', 'FAILED'].includes(runtime.store.get<Run>('run', first.id)!.state),
+  );
+  const firstDetail = await runtime.request('run.detail', { id: first.id });
+  assert.equal(firstDetail.run.state, 'SUCCEEDED', firstDetail.run.error);
+  assert.deepEqual(runtime.store.get('snapshot', first.id), snapshot);
+  assert.equal(firstDetail.artifacts.length, 1);
+  assert.equal(firstDetail.artifacts[0].name, 'title (1).txt');
+  assert.equal(firstDetail.artifacts[0].integrity, 'verified');
+  assert.equal(await readFile(join(output, 'title (1).txt'), 'utf8'), flow.parameters.title);
+  const second = await runtime.enqueue(flow.id);
+  await until(() => runtime.store.get<Run>('run', second.id)?.state === 'WAITING_INPUT');
+  const stopSnapshot = runtime.store.get('snapshot', second.id);
+  runtime.saveFlow({ ...flow, parameters: { ...flow.parameters, title: '显式新运行' } }, bindings);
+  await runtime.control(second.id, 'resume');
+  await until(() =>
+    ['SUCCEEDED', 'FAILED'].includes(runtime.store.get<Run>('run', second.id)!.state),
+  );
+  const secondDetail = await runtime.request('run.detail', { id: second.id });
+  assert.equal(secondDetail.run.state, 'FAILED');
+  assert.match(secondDetail.run.error!, /已存在/);
+  assert.equal(secondDetail.artifacts.length, 0);
+  assert.deepEqual(runtime.store.get('snapshot', second.id), stopSnapshot);
+  const third = await runtime.enqueue(flow.id);
+  await until(() => runtime.store.get<Run>('run', third.id)?.state === 'WAITING_INPUT');
+  await runtime.control(third.id, 'resume');
+  await until(() =>
+    ['SUCCEEDED', 'FAILED'].includes(runtime.store.get<Run>('run', third.id)!.state),
+  );
+  const thirdDetail = await runtime.request('run.detail', { id: third.id });
+  assert.equal(thirdDetail.run.state, 'SUCCEEDED', thirdDetail.run.error);
+  assert.equal(thirdDetail.artifacts.length, 1);
+  assert.equal(thirdDetail.artifacts[0].name, 'title (2).txt');
+  assert.equal(thirdDetail.artifacts[0].integrity, 'verified');
+  assert.equal(await readFile(join(output, 'title (2).txt'), 'utf8'), '显式新运行');
+  assert.equal(await readFile(thirdDetail.artifacts[0].path, 'utf8'), '显式新运行');
+  await writeFile(join(output, 'title (1).txt'), 'external later edit');
+  assert.equal(await readFile(firstDetail.artifacts[0].path, 'utf8'), flow.parameters.title);
+  assert.equal(await readFile(join(output, 'title.txt'), 'utf8'), 'original protected bytes');
+  assert.deepEqual((await readdir(output)).sort(), ['title (1).txt', 'title (2).txt', 'title.txt']);
+  assert.equal(runtime.store.list('run').length, 3);
 });

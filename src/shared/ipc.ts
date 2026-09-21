@@ -3,6 +3,11 @@ import { runListSchema } from './run-history';
 import { scheduleCreateSchema, scheduleUpdateSchema } from './schedules';
 import { flowExportSchema } from './flow-export';
 import { runRerunPreviewSchema, runRerunConfirmSchema } from './run-rerun';
+import { taskMethods } from './planning';
+import { learningMethods } from './learning';
+import { connectionMethods } from './tool-connections';
+import { aiConfigurationMethods } from './ai-settings';
+import { runReviewConfirmSchema, runReviewPreviewSchema } from './run-review';
 const id = z.string().min(1).max(100);
 const empty = z.object({}).strict();
 const bindings = z
@@ -46,10 +51,16 @@ const bindings = z
   })
   .strict();
 export const methods = {
+  ...aiConfigurationMethods,
+  ...connectionMethods,
+  ...taskMethods,
+  ...learningMethods,
   bootstrap: empty,
   'flow.save': z.object({ flow: z.unknown(), bindings }).strict(),
   'flow.create': empty,
   'flow.run': z.object({ id, debug: z.boolean().optional() }).strict(),
+  'flow.run.preview': runReviewPreviewSchema,
+  'flow.run.confirm': runReviewConfirmSchema,
   'run.detail': z.object({ id }).strict(),
   'run.rerun.preview': runRerunPreviewSchema,
   'run.rerun.confirm': runRerunConfirmSchema,
@@ -59,6 +70,7 @@ export const methods = {
     .object({ id, token: z.string().regex(/^[a-f0-9]{64}$/), reviewed: z.literal(true) })
     .strict(),
   'artifact.reveal': z.object({ id }).strict(),
+  'artifact.preview': z.object({ id }).strict(),
   'run.control': z.object({ id, action: z.enum(['pause', 'resume', 'step', 'cancel']) }).strict(),
   'browser.discover': empty,
   'browser.embedded.enable': empty,
@@ -121,18 +133,6 @@ export const methods = {
   'flow.export': flowExportSchema,
   'flow.import': empty,
   'file.choose': z.object({ kind: z.enum(['directory', 'browser', 'file', 'driver']) }).strict(),
-  'credentials.set': z
-    .object({
-      id: z.enum(['openai-codex', 'deepseek']),
-      value: z.string().min(8).max(1000),
-    })
-    .strict(),
-  'ai.test': z
-    .object({
-      provider: z.enum(['openai-codex', 'deepseek']),
-      model: z.string().min(1).max(100),
-    })
-    .strict(),
   'clipboard.copy': z.object({ value: z.string().max(20000) }).strict(),
   'app.showData': empty,
 };

@@ -1,0 +1,208 @@
+.task-run-page {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+.task-run-content:not([hidden]),
+.task-repair-page:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+.task-repair-columns {
+  grid-template-columns: minmax(0, 460fr) minmax(0, 668fr);
+}
+.task-restart-columns {
+  grid-template-columns: minmax(0, 650fr) minmax(0, 478fr);
+}
+.task-repair-columns > .ai-task-card,
+.task-restart-columns > .ai-task-card {
+  min-height: 700px;
+}
+.task-repair-box {
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-canvas);
+}
+.task-repair-box p {
+  margin-top: 8px;
+}
+.task-repair-new {
+  background: var(--fa-status-success-bg);
+}
+.task-repair-old {
+  background: var(--fa-status-error-bg);
+}
+.task-repair-speaker {
+  color: var(--fa-action-primary);
+}
+.task-repair-chat {
+  min-height: 152px;
+}
+.task-repair-new {
+  min-height: 108px;
+}
+.task-restart-columns .task-repair-box {
+  min-height: 132px;
+  background: var(--fa-action-subtle);
+}
+.task-repair-page .task-run-note {
+  color: var(--fa-action-primary);
+}
+.task-repair-page input:not([type='checkbox']) {
+  width: 100%;
+  min-width: 0;
+}
+.task-repair-pick {
+  min-height: 400px;
+}
+.task-run-page .page-heading {
+  margin-bottom: 0;
+}
+.task-run-page h2 {
+  font-size: 18px;
+  margin: 0;
+}
+.task-run-page h3 {
+  font-size: 16px;
+  margin: 0;
+}
+.task-run-page p {
+  margin: 0;
+  color: var(--fa-text-secondary);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.task-run-columns {
+  display: grid;
+  gap: 24px;
+  align-items: start;
+  min-width: 0;
+}
+.task-run-live {
+  grid-template-columns: minmax(0, 470fr) minmax(0, 658fr);
+}
+.task-run-stopped {
+  grid-template-columns: minmax(0, 620fr) minmax(0, 508fr);
+}
+.task-run-result {
+  grid-template-columns: minmax(0, 700fr) minmax(0, 428fr);
+}
+.task-run-details {
+  grid-template-columns: minmax(0, 680fr) minmax(0, 448fr);
+}
+.task-run-live > .ai-task-card,
+.task-run-stopped > .ai-task-card {
+  min-height: 700px;
+}
+.task-run-result > .ai-task-card {
+  min-height: 330px;
+}
+.task-run-details > .ai-task-card {
+  min-height: 700px;
+}
+.task-run-page .ai-task-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  min-width: 0;
+}
+.task-run-page .task-run-current,
+.task-run-banner h2 {
+  font-size: 28px;
+  line-height: 1.4;
+}
+.task-run-file {
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  min-width: 0;
+}
+.task-run-file p {
+  margin: 8px 0;
+}
+.task-run-path {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.task-run-banner {
+  padding: 24px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-status-success-bg);
+}
+.task-run-banner h2 {
+  color: var(--fa-status-success);
+}
+.task-run-note {
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-action-subtle);
+}
+.task-run-steps ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.task-run-steps li {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: var(--fa-bg-canvas);
+  border-radius: 8px;
+}
+.task-run-steps li[aria-current] {
+  outline: 1px solid var(--fa-action-primary);
+}
+.task-run-steps li div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.task-run-steps li p {
+  margin: 8px 0 0;
+}
+.task-run-index {
+  color: var(--fa-action-primary);
+  font-size: 18px;
+}
+.task-run-page pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 440px;
+  overflow: auto;
+}
+.task-run-page .task-file-preview {
+  min-height: 130px;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 8px;
+  background: var(--fa-bg-canvas);
+}
+.task-run-page select {
+  width: 100%;
+  min-width: 0;
+}
+.task-run-page .run-output {
+  margin-top: 16px;
+}
+@container (max-width: 850px) {
+  .task-run-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .task-run-columns > .ai-task-card {
+    min-height: auto;
+  }
+}
+
+.task-run-page .badge {
+  align-self: flex-start;
+}

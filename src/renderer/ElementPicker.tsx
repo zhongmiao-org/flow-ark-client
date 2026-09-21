@@ -10,7 +10,7 @@ export default function ElementPicker({
 }: {
   selector: string;
   framePath: string[];
-  onSelect: (target: ElementTarget) => void;
+  onSelect: (target: ElementTarget, requestId: string) => void;
   onInspect: (target: ElementTarget) => void;
 }) {
   const [picking, setPicking] = useState(false),
@@ -77,7 +77,7 @@ export default function ElementPicker({
         if (state.phase === 'selected' && state.target) {
           request.current = '';
           setPicking(false);
-          select.current(state.target);
+          select.current(state.target, requestId);
           setMessage('已选取 · ' + state.target.label);
           return;
         }

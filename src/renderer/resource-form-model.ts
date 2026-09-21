@@ -1,24 +1,50 @@
 import type { Json, Step } from '../shared/types';
 export type FileNode = Extract<Step, { type: 'file' | 'excel' }>;
+export function fileConflictPolicy(
+  node: Extract<Step, { type: 'file'; operation: 'create' }>,
+  policy: string,
+): FileNode {
+  if (!['error', 'number'].includes(policy)) throw new Error('未知同名文件策略');
+  const { onConflict: _policy, ...base } = node as typeof node & { onConflict?: string };
+  return policy === 'number'
+    ? { ...base, version: 4, onConflict: 'number' }
+    : { ...base, version: 3 };
+}
 export function resourceOperation(node: FileNode, operation: string): FileNode {
   const excel = node.type === 'excel';
   if (
-    !(excel ? ['read', 'write', 'fill'] : ['read', 'write', 'copy', 'archive']).includes(operation)
+    !(
+      excel ? ['read', 'write', 'fill', 'map'] : ['read', 'write', 'create', 'copy', 'archive']
+    ).includes(operation)
   )
     throw new Error('未知文件操作');
   const extra = excel
-    ? operation === 'fill'
+    ? operation === 'map'
       ? {
-          version: 2,
-          name: 'filled.xlsx',
-          templateName: 'template.xlsx',
-          sheet: '',
-          cells: { A1: '示例' },
+          version: 3,
+          name: 'mapped.xlsx',
+          sheet: 'Sheet1',
+          rows: [],
+          mappings: [{ source: 'title', column: 'A', header: '标题', type: 'text' }],
+          includeHeaders: true,
+          nullPolicy: 'blank',
         }
-      : { version: 1, name: 'result.xlsx', rows: [] }
+      : operation === 'fill'
+        ? {
+            version: 2,
+            name: 'filled.xlsx',
+            templateName: 'template.xlsx',
+            sheet: '',
+            cells: { A1: '示例' },
+          }
+        : { version: 1, name: 'result.xlsx', rows: [] }
     : operation === 'archive'
       ? { version: 2, name: 'archive.zip', files: ['result.txt'] }
-      : { version: 1, name: 'result.txt', content: operation === 'copy' ? 'source.txt' : '' };
+      : {
+          version: operation === 'create' ? 3 : 1,
+          name: 'result.txt',
+          content: operation === 'copy' ? 'source.txt' : '',
+        };
   return {
     id: node.id,
     type: node.type,

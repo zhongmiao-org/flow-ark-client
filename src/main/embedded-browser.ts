@@ -17,8 +17,11 @@ import {
   type EmbeddedLostNotice,
   type EmbeddedCleanupFailure,
 } from '../shared/embedded-lifecycle';
-import { errorText } from '../shared/utils';
+import { canonical, errorText } from '../shared/utils';
+import type { RepairSelection } from '../shared/task-repair';
 import { confirmWebContentsClosed } from './native-webcontents-close';
+import type { EmbeddedReview } from '../shared/run-review';
+import { pageIdentity, sameWebPage, type WebPageIdentity } from '../shared/task-web-target';
 
 type Bounds = { x: number; y: number; width: number; height: number };
 type Operation = { stop: () => void };
@@ -33,6 +36,9 @@ type Download = {
 };
 type Resource = {
   id: string;
+  documentRevision: number;
+  pickDocument?: { requestId: string; revision: number };
+  confirmedTarget?: RepairSelection;
   token?: string;
   phase: 'starting' | 'ready' | 'closing' | 'unknown' | 'closed';
   view?: WebContentsView;
@@ -170,7 +176,7 @@ export class EmbeddedBrowser {
     }
     let resource = this.resource;
     if (!resource) {
-      resource = { id: randomUUID(), token, phase: 'starting' };
+      resource = { id: randomUUID(), documentRevision: 0, token, phase: 'starting' };
       this.resource = resource;
       resource.starting = this.initialize(resource);
     } else if (token) {
@@ -210,6 +216,14 @@ export class EmbeddedBrowser {
       });
       wc.on('will-redirect', (event, url) => {
         if (!this.permitted(url)) event.preventDefault();
+      });
+      // Include iframe navigation, SPA navigation and same-URL reloads. URL alone
+      // is not the identity of the document the user reviewed.
+      wc.on('did-start-navigation', () => {
+        resource.documentRevision++;
+      });
+      wc.on('did-navigate-in-page', () => {
+        resource.documentRevision++;
       });
       wc.on('did-finish-load', () => {
         if (
@@ -337,6 +351,27 @@ export class EmbeddedBrowser {
       ...(this.blocked ? { blocked: this.blocked } : {}),
     };
   }
+  review(): EmbeddedReview {
+    const resource = this.resource,
+      wc = resource?.contents;
+    const alive = !!wc && !wc.isDestroyed();
+    const blocked =
+      this.blocked ||
+      (resource && !['ready', 'starting'].includes(resource.phase)
+        ? '内置网页正在关闭或状态未知'
+        : resource?.operation
+          ? '内置网页正在执行操作'
+          : undefined);
+    return {
+      ...(resource ? { resourceId: resource.id } : {}),
+      documentRevision: resource?.documentRevision ?? 0,
+      started: resource?.phase === 'ready' && alive,
+      loading: resource?.phase === 'starting' || (alive && wc.isLoading()),
+      url: alive ? wc.getURL() : '',
+      title: alive ? wc.getTitle() : '',
+      ...(blocked ? { blocked } : {}),
+    };
+  }
   async start(token: string): Promise<EmbeddedStartReceipt> {
     if (!token) throw new Error('缺少网页租约标识');
     const resource = await this.ensure(token);
@@ -348,7 +383,7 @@ export class EmbeddedBrowser {
     this.assertResource(resource);
     return this.perform({ operation: 'navigate', value: url, timeoutMs: 20000 }, resource.token);
   }
-  async perform(command: BrowserCommand, token?: string) {
+  async perform(command: BrowserCommand, token?: string, expected?: WebPageIdentity) {
     this.assertAvailable();
     const resource = this.resource;
     if (
@@ -359,6 +394,19 @@ export class EmbeddedBrowser {
     )
       throw new Error('网页会话不可用、正被占用或租约已失效');
     this.assertResource(resource);
+    const selected = () => pageIdentity({ ...this.review(), blocked: undefined });
+    const verifySelected = () => {
+      if (expected && !sameWebPage(expected, selected()))
+        throw new Error('所选网页已变化，请重新选择目标');
+    };
+    verifySelected();
+    if (
+      expected &&
+      (command.operation === 'navigate'
+        ? command.value !== expected.url
+        : !['read', 'wait'].includes(command.operation))
+    )
+      throw new Error('操作超出所选网页的只读范围');
     let stop!: () => void;
     const stopped = new Promise<never>(
       (_, reject) => (stop = () => reject(new Error('网页会话已关闭'))),
@@ -368,15 +416,42 @@ export class EmbeddedBrowser {
     const page = resource.page;
     let timer: NodeJS.Timeout | undefined;
     let timedOut = false;
+    let idle: (() => void) | undefined;
+    let selectedNavigations = 0;
+    let unexpectedNavigation = false;
+    const navigation = (
+      _event: Electron.Event,
+      url: string,
+      _inPlace: boolean,
+      mainFrame: boolean,
+    ) => {
+      if (mainFrame) {
+        selectedNavigations++;
+        unexpectedNavigation ||= url !== expected?.url || selectedNavigations > 1;
+      }
+    };
+    if (expected && command.operation === 'navigate')
+      resource.contents!.on('did-start-navigation', navigation);
     const task = async () => {
       await page.picker.cancel();
       this.assertOperation(resource, operation);
+      verifySelected();
       if (
         command.operation === 'screenshot' &&
         (!this.window.isVisible() || this.window.isMinimized() || !this.visible)
       )
         return this.backgroundCapture(resource, operation, command);
-      if (command.operation !== 'download') return page.perform(command);
+      if (command.operation !== 'download') {
+        const result = await page.perform(command);
+        // loadURL resolves at did-finish-load, before isLoading necessarily clears.
+        // Keep the selected navigation within its operation/deadline until idle.
+        if (expected && command.operation === 'navigate' && resource.contents!.isLoading())
+          await new Promise<void>((resolve) => {
+            idle = resolve;
+            resource.contents!.once('did-stop-loading', idle);
+          });
+        return result;
+      }
       let resolve!: () => void, reject!: (error: Error) => void;
       const done = new Promise<void>((yes, no) => {
         resolve = yes;
@@ -407,12 +482,26 @@ export class EmbeddedBrowser {
         }),
       ]);
       this.assertOperation(resource, operation);
+      if (expected) {
+        if (command.operation === 'navigate' && (unexpectedNavigation || selectedNavigations !== 1))
+          throw new Error('所选网页发生额外导航，结果未采用');
+        const after = selected();
+        if (
+          after.resourceId !== expected.resourceId ||
+          after.url !== expected.url ||
+          (command.operation !== 'navigate' && !sameWebPage(after, expected))
+        )
+          throw new Error('所选网页在操作期间改变，结果未采用');
+        return { result, page: after };
+      }
       return result;
     } catch (error) {
       if (timedOut) await this.closeResource(resource);
       throw error;
     } finally {
       clearTimeout(timer);
+      resource.contents!.removeListener('did-start-navigation', navigation);
+      if (idle) resource.contents!.removeListener('did-stop-loading', idle);
       if (resource.download?.operation === operation) {
         try {
           resource.download.item?.cancel();
@@ -592,6 +681,12 @@ export class EmbeddedBrowser {
   }
   async system(method: string, args: any) {
     switch (method) {
+      case 'browser.embedded.pick.capture':
+        return this.captureSelection(args.requestId);
+      case 'browser.embedded.target.verify':
+        return this.verifyTarget(args.selection);
+      case 'browser.embedded.review':
+        return this.review();
       case 'browser.embedded.pick.start':
       case 'browser.embedded.pick.validate': {
         this.assertAvailable();
@@ -603,7 +698,14 @@ export class EmbeddedBrowser {
         if (!resource.presented) throw new Error('请先展开内置网页面板');
         if (!this.permitted(resource.contents!.getURL())) throw new Error('请先打开测试网页');
         const page = resource.page!;
-        if (method.endsWith('.start')) return page.picker.start(args.requestId);
+        resource.confirmedTarget = undefined;
+        if (method.endsWith('.start')) {
+          resource.pickDocument = {
+            requestId: args.requestId,
+            revision: resource.documentRevision,
+          };
+          return page.picker.start(args.requestId);
+        }
         let stop!: () => void;
         const stopped = new Promise<never>(
           (_, reject) => (stop = () => reject(new Error('网页会话已关闭'))),
@@ -634,12 +736,23 @@ export class EmbeddedBrowser {
           }
         );
       case 'browser.embedded.pick.cancel':
+        if (
+          this.resource &&
+          (!args.requestId || this.resource.confirmedTarget?.requestId === args.requestId)
+        )
+          this.resource.confirmedTarget = undefined;
         await this.resource?.page?.picker.cancel(args.requestId).catch(() => {});
         return true;
       case 'browser.embedded.start':
         return this.start(args.token);
       case 'browser.embedded.perform':
         return this.perform(args.command, args.token);
+      case 'browser.embedded.perform.selected':
+        return this.perform(
+          args.command,
+          args.token,
+          pageIdentity({ ...args.expected, started: true, loading: false }),
+        );
       case 'browser.embedded.close':
         return this.close(args.token, args.resourceId);
       case 'browser.embedded.visibility':
@@ -652,6 +765,102 @@ export class EmbeddedBrowser {
         return this.navigate(args.url);
       default:
         throw new Error('未知网页方法');
+    }
+  }
+
+  private async captureSelection(requestId: string): Promise<RepairSelection> {
+    this.assertAvailable();
+    this.layout();
+    const resource = this.resource;
+    const before = this.review();
+    if (!resource || !before.started || before.loading || before.blocked)
+      throw new Error('请打开已就绪的内置网页并重新选择目标');
+    const confirmed = resource.confirmedTarget;
+    if (confirmed?.requestId === requestId) {
+      try {
+        const verified = await this.verifyTarget(confirmed);
+        if (resource.confirmedTarget !== confirmed) throw new Error('目标引用已取消或改变');
+        return verified;
+      } catch (error) {
+        if (resource.confirmedTarget === confirmed) {
+          resource.confirmedTarget = undefined;
+          resource.pickDocument = undefined;
+          void resource.page?.picker.cancel(requestId).catch(() => {});
+        }
+        throw error;
+      }
+    }
+    if (!resource.presented) throw new Error('请展开内置网页并重新选择目标');
+    const selected = resource.page!.picker.status(requestId);
+    if (
+      resource.pickDocument?.requestId !== requestId ||
+      resource.pickDocument.revision !== before.documentRevision
+    )
+      throw new Error('选取后的网页已变化，请重新选取');
+    if (selected.phase !== 'selected' || !selected.target)
+      throw new Error('没有此请求的已选网页目标，请重新选取');
+    const { selector, framePath, label, tag, inputType, structural } = selected.target;
+    const captured = await this.verifyTarget({
+      requestId,
+      resourceId: resource.id,
+      documentRevision: before.documentRevision,
+      url: before.url,
+      title: before.title,
+      target: { selector, framePath, label, tag, inputType, structural },
+    });
+    if (!resource.presented || resource.page!.picker.status(requestId) !== selected)
+      throw new Error('选取已取消或改变，请重新选取');
+    resource.confirmedTarget = captured;
+    return captured;
+  }
+
+  private async verifyTarget(selection: RepairSelection): Promise<RepairSelection> {
+    this.assertAvailable();
+    const resource = this.resource;
+    const before = this.review();
+    const identity = (value: typeof before) => ({
+      resourceId: value.resourceId,
+      documentRevision: value.documentRevision,
+      url: value.url,
+      title: value.title,
+    });
+    if (
+      !resource ||
+      !before.started ||
+      before.loading ||
+      before.blocked ||
+      canonical(identity(before)) !== canonical(identity({ ...before, ...selection }))
+    )
+      throw new Error('网页已变化，请重新选取目标');
+    let stop!: () => void;
+    const stopped = new Promise<never>(
+      (_, reject) => (stop = () => reject(new Error('网页会话已关闭'))),
+    );
+    const operation = { stop };
+    resource.operation = operation;
+    try {
+      const inspected = await Promise.race([
+        resource.page!.inspectTarget(selection.target.selector, selection.target.framePath, false),
+        stopped,
+      ]);
+      this.assertOperation(resource, operation);
+      const after = this.review();
+      if (after.loading || canonical(identity(before)) !== canonical(identity(after)))
+        throw new Error('网页已变化，请重新选取');
+      const { selector, framePath, label, tag, inputType } = inspected;
+      const target = {
+        selector,
+        framePath,
+        label,
+        tag,
+        inputType,
+        structural: inspected.structural || selection.target.structural,
+      };
+      if (canonical(target) !== canonical(selection.target))
+        throw new Error('所选元素内容或结构已变化，请重新选取');
+      return { ...selection, target };
+    } finally {
+      if (resource.operation === operation) resource.operation = undefined;
     }
   }
 }

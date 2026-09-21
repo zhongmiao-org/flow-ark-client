@@ -17,12 +17,14 @@ export default function RunRerunPanel({
   run,
   related,
   open,
+  initialMode = 'snapshot',
 }: {
   run: Run;
   related?: RunRerunDetails;
   open: (detail: any) => void;
+  initialMode?: RunRerunMode;
 }) {
-  const [mode, setMode] = useState<RunRerunMode>('snapshot');
+  const [mode, setMode] = useState<RunRerunMode>(initialMode);
   const [debug, setDebug] = useState(false);
   const [preview, setPreview] = useState<RunRerunPreview>();
   const [reviewed, setReviewed] = useState(false);

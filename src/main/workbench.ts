@@ -20,13 +20,18 @@ import { pathToFileURL } from 'node:url';
 import { readFile, writeFile } from 'node:fs/promises';
 import { Rpc } from '../shared/rpc';
 import { Vault } from './vault';
+import { ProviderConfigurations } from './provider-configurations';
+import { aiProvider } from '../shared/ai-settings';
 import { validateIPC } from '../shared/ipc';
-import { redactedErrorText } from '../shared/utils';
+import { imageInfo } from '../host/attachment-file';
+import { IMAGE_MAX_BYTES, TEXT_EXTENSIONS } from '../shared/task-attachments';
+import { redactArtifactText, redactedErrorText } from '../shared/utils';
 import type { EmbeddedCleanupFailure, EmbeddedLostNotice } from '../shared/embedded-lifecycle';
 let win: BrowserWindow;
 let tray: Tray;
 let quitting = false;
 let quitPending = false;
+let outputDialogPending = false;
 let rpc: Rpc;
 let host: Electron.UtilityProcess;
 let startupError = '';
@@ -105,8 +110,14 @@ app
   .whenReady()
   .then(async () => {
     win = new BrowserWindow({
-      width: 1380,
-      height: 900,
+      width: 1440,
+      height: 960,
+      ...(process.platform === 'darwin'
+        ? {
+            titleBarStyle: 'hiddenInset' as const,
+            trafficLightPosition: { x: 12, y: 14 },
+          }
+        : {}),
       minWidth: 1040,
       minHeight: 700,
       title: 'FlowArk · 序舟',
@@ -177,16 +188,27 @@ app
       ]),
     );
     const vault = new Vault(join(app.getPath('userData'), 'credentials'));
+    const providerConfigurations = new ProviderConfigurations(vault, (key) =>
+      knownSecrets.add(key),
+    );
     let ready: Promise<any>;
     ipcMain.handle('flowark:request', async (event, method: string, raw: unknown) => {
       const pending =
-        method === 'credentials.set' &&
+        method === 'ai.configuration.save' &&
         raw &&
         typeof raw === 'object' &&
-        'value' in raw &&
-        typeof raw.value === 'string'
-          ? [raw.value]
+        'apiKey' in raw &&
+        typeof raw.apiKey === 'string'
+          ? [raw.apiKey]
           : [];
+      if (
+        method === 'tool.connection.discover' &&
+        raw &&
+        typeof raw === 'object' &&
+        'bearerToken' in raw &&
+        typeof raw.bearerToken === 'string'
+      )
+        pending.push(raw.bearerToken);
       try {
         if (
           event.sender !== win.webContents ||
@@ -218,11 +240,13 @@ app
           shell.showItemInFolder(path);
           return true;
         }
-        if (method === 'credentials.set') {
-          await vault.set(args.id, args.value);
-          knownSecrets.add(args.value);
-          return true;
+        if (method === 'artifact.preview') {
+          const preview = await rpc.call(method, { ...args, redactionSecrets: [...knownSecrets] });
+          if (preview.status !== 'text') return preview;
+          const masked = redactArtifactText(preview.text, [...knownSecrets]);
+          return { ...preview, ...masked, truncated: preview.truncated || masked.truncated };
         }
+        if (method === 'ai.configuration.save' && args.apiKey) knownSecrets.add(args.apiKey);
         if (method === 'flow.export') {
           const review = await dialog.showMessageBox(win, {
             buttons: ['取消', '已审阅，导出 ZIP'],
@@ -256,7 +280,10 @@ app
             filters: [{ name: 'FlowArk 模板包', extensions: ['zip'] }],
           });
           if (picked.canceled || !picked.filePath) return false;
-          await rpc.call('template.export', { key: args.key, path: zipExportPath(picked.filePath) });
+          await rpc.call('template.export', {
+            key: args.key,
+            path: zipExportPath(picked.filePath),
+          });
           return true;
         }
         return await rpc.call(method, args);
@@ -299,9 +326,107 @@ app
                 version: process.versions.chrome,
               };
             if (method.startsWith('browser.embedded.')) return embedded.system(method, args);
+            if (method === 'task.attachment.image.validate') {
+              if (
+                typeof args.data !== 'string' ||
+                args.data.length > Math.ceil(IMAGE_MAX_BYTES / 3) * 4
+              )
+                throw new Error('图片超过限制');
+              const bytes = Buffer.from(args.data, 'base64');
+              const info = imageInfo(bytes);
+              const decoded = nativeImage.createFromBuffer(bytes);
+              const size = decoded.getSize();
+              return !decoded.isEmpty() && size.width === info.width && size.height === info.height;
+            }
+            if (method === 'task.attachment.file') {
+              if (outputDialogPending || quitting || hostStopped)
+                throw new Error('文件选择暂不可用');
+              if (!['file', 'image'].includes(args.kind)) throw new Error('附件类型无效');
+              outputDialogPending = true;
+              try {
+                const selected = await dialog.showOpenDialog(win, {
+                  title: args.kind === 'image' ? '选择目标截图' : '选择任务附件',
+                  properties: ['openFile'],
+                  filters: [
+                    {
+                      name: args.kind === 'image' ? 'PNG / JPEG 图片' : '文本与图片',
+                      extensions: [
+                        ...(args.kind === 'image' ? [] : TEXT_EXTENSIONS),
+                        'png',
+                        'jpg',
+                        'jpeg',
+                      ],
+                    },
+                  ],
+                });
+                return selected.canceled ? null : (selected.filePaths[0] ?? null);
+              } finally {
+                outputDialogPending = false;
+              }
+            }
+            if (method === 'task.output.directory') {
+              if (outputDialogPending || quitting || hostStopped)
+                throw new Error('目录选择暂不可用');
+              outputDialogPending = true;
+              try {
+                const selected = await dialog.showOpenDialog(win, {
+                  title: '选择任务输出目录',
+                  properties: ['openDirectory'],
+                });
+                return selected.canceled ? null : (selected.filePaths[0] ?? null);
+              } finally {
+                outputDialogPending = false;
+              }
+            }
             if (method === 'credentials.list') return vault.list();
+            if (method === 'ai.configuration.read') {
+              try {
+                return await providerConfigurations.get(aiProvider.parse(args.provider));
+              } catch {
+                throw new Error('AI 配置读取未完成，请检查系统保护存储后重试');
+              }
+            }
+            if (method === 'ai.configuration.write') {
+              if (args.update?.apiKey) knownSecrets.add(args.update.apiKey);
+              try {
+                return await providerConfigurations.change(
+                  aiProvider.parse(args.provider),
+                  args.revision,
+                  args.update,
+                );
+              } catch (error) {
+                if (error instanceof Error && error.message === 'AI 配置已变化，请重新读取后保存')
+                  throw error;
+                throw new Error(
+                  'AI 配置保存或移除未完成，原配置保持不变；请检查系统保护存储后重试',
+                );
+              }
+            }
+            if (
+              method === 'tool.credentials.set' ||
+              method === 'tool.credentials.remove' ||
+              method === 'tool.credentials.get'
+            ) {
+              if (!/^mcp-[a-zA-Z0-9_-]{1,80}$/.test(args.id)) throw new Error('工具凭据 ID 无效');
+              if (method === 'tool.credentials.get') {
+                const value = await vault.get(args.id);
+                knownSecrets.add(value);
+                return value;
+              }
+              if (method === 'tool.credentials.remove') await vault.removeToolCredential(args.id);
+              else {
+                if (typeof args.value !== 'string' || !/^[\x21-\x7e]{1,8192}$/.test(args.value))
+                  throw new Error('工具凭据无效');
+                knownSecrets.add(args.value);
+                await vault.set(args.id, args.value);
+              }
+              return true;
+            }
             if (method === 'credentials.get') {
-              const value = await vault.get(args.id);
+              const value = await providerConfigurations.key(
+                aiProvider.parse(args.id),
+                args.revision,
+              );
               knownSecrets.add(value);
               return value;
             }
