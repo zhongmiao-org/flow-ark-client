@@ -10,6 +10,7 @@ import './editor-system.css';
 import './runs-system.css';
 import './ai-task.css';
 import './script-editor.css';
+import './flow-outline.css';
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />

@@ -14,13 +14,14 @@ import { diagramGeometry, diagramViewport, nodeBounds } from './diagram-viewport
 
 type Props = {
   active?: boolean;
+  focusRequest?: number;
   nodes: DiagramNode[];
   edges: DiagramEdge[];
   selected: string;
   select: (id: string) => void;
 };
 
-function Canvas({ nodes, edges, selected, select, active = true }: Props) {
+function Canvas({ nodes, edges, selected, select, active = true, focusRequest }: Props) {
   const { setViewport, viewportInitialized: ready } = useReactFlow();
   const width = useStore((state) => state.width);
   const height = useStore((state) => state.height);
@@ -33,22 +34,43 @@ function Canvas({ nodes, edges, selected, select, active = true }: Props) {
     height,
   );
   const previous = useRef<{ layoutKey: string; width: number; height: number } | null>(null);
+  const focusedRequest = useRef<number | undefined>(undefined);
 
   useEffect(() => {
-    if (!ready || !fullViewport) return;
+    if (!active || !ready || !fullViewport) return;
+    const requested = focusRequest !== undefined && focusRequest !== focusedRequest.current;
     const before = previous.current;
-    if (before?.layoutKey === layoutKey && before.width === width && before.height === height)
+    if (
+      !requested &&
+      before?.layoutKey === layoutKey &&
+      before.width === width &&
+      before.height === height
+    )
       return;
     const frame = requestAnimationFrame(() => {
       previous.current = { layoutKey, width, height };
+      focusedRequest.current = focusRequest;
       // Resize keeps the edited step readable. Structural changes show the
       // complete new projection; selection and parameter edits keep manual pan/zoom.
       void setViewport(
-        before?.layoutKey === layoutKey && focusedViewport ? focusedViewport : fullViewport,
+        (requested || before?.layoutKey === layoutKey) && selectedNode && focusedViewport
+          ? focusedViewport
+          : fullViewport,
       );
     });
     return () => cancelAnimationFrame(frame);
-  }, [ready, layoutKey, width, height, fullViewport, focusedViewport, setViewport]);
+  }, [
+    active,
+    focusRequest,
+    ready,
+    layoutKey,
+    width,
+    height,
+    fullViewport,
+    focusedViewport,
+    selectedNode,
+    setViewport,
+  ]);
 
   return (
     <ReactFlow

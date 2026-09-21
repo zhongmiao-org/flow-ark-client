@@ -25,7 +25,7 @@
 
 运行结束并回收资源后，可在详情预览重新运行。默认采用原执行快照，也可明确选择当前已保存流程，并可逐步调试；核对已有输出与外部结果后，从首个节点创建关联的新运行。旧记录保持原样，已撤销的资源授权不会从历史恢复。同一次确认回复丢失时使用“重试此次确认”，不会再创建一个任务。
 
-长流程可通过画布的 Fit View 查看完整结构；选中步骤后，点击「聚焦所选步骤」恢复该步骤的可读视图。打开网页面板或调整窗口会保持正在编辑的步骤可见，参数输入保留手动缩放和平移。
+点击「长流程大纲」可按名称、步骤编号或动作类型搜索，展开所在分组和条件／循环分支；清单与流程图可切换。草稿与只读运行快照分别展示，「聚焦当前执行」只定位近期确认的实际执行步骤；循环的多次执行单独列出，编号不代表完成进度。查看运行详情后返回会保留大纲位置。画布的「聚焦所选步骤」恢复可读视图，参数输入保留手动缩放和平移。
 
 点击右上角「打开网页面板」即可在主窗口右侧输入网址、查看和操作网页，无需先运行流程。网页按 1920 像素桌面宽度排版，等比缩放至面板，高度随可视区域调整；窄面板中文字也会缩小。在流程资源中选择 FlowArk 内置浏览器后，可运行或逐步调试。收起面板、最小化工作台后任务继续；恢复窗口后仍在原网页。系统休眠或明确退出会停止任务，恢复后不自动重放。当前使用复杂表单验证功能，招聘站点校准暂停。
 
@@ -90,6 +90,7 @@ pnpm package:mac
 pnpm test:runtime
 pnpm test:embedded-pointer
 pnpm test:script-editor
+pnpm test:flow-outline
 pnpm test:desktop
 FLOWARK_TEST_EXECUTABLE=/absolute/path/FlowArk.app/Contents/MacOS/FlowArk pnpm test:install
 FLOWARK_TEST_EXECUTABLE=/absolute/path/FlowArk.app/Contents/MacOS/FlowArk pnpm test:template-parameters
@@ -98,6 +99,8 @@ FLOWARK_TEST_EXECUTABLE=/absolute/path/FlowArk.app/Contents/MacOS/FlowArk pnpm t
 桌面测试串行执行；确认上一脚本的隔离实例退出后，再启动下一项。`test:embedded-pointer` 使用虚构框架页面核对滚动后的点击、输入、遮挡、取消与单次动作回执。
 
 `test:script-editor` 验证 JS/TS 语法检查、脚本草稿保存/放弃、输入与超时校验，以及真实运行的历史输出；预览和语法检查不会执行脚本。
+
+`test:flow-outline` 验证真实 40 步流程的搜索／折叠、条件和循环实例、草稿与固定快照隔离、详情返回及延迟状态；结束时取消自身未完成的运行并确认测试实例退出。
 
 完整业务／表单演示通过模板仓库的 `pnpm test:client` 验证，仅消费标准包和安装版公共接口。客户端保留最小生命周期、IPC、编辑器与进程夹具。本轮未重新验收所有历史桌面脚本或外部浏览器。
 
