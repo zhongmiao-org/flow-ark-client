@@ -116,6 +116,10 @@ export default function App() {
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [taskTitle, setTaskTitle] = useState('开始任务');
   const [taskReturn, setTaskReturn] = useState(false);
+  const [taskAISettings, setTaskAISettings] = useState({
+    provider: 'deepseek',
+    model: 'deepseek-flash',
+  });
   const [importPreview, setImportPreview] = useState<any>();
   useEffect(() => {
     const open = () => setBrowserOpen(true);
@@ -574,7 +578,8 @@ export default function App() {
               active={section === 'tasks'}
               data={data}
               onTitle={setTaskTitle}
-              settings={() => {
+              settings={(provider, model) => {
+                setTaskAISettings({ provider, model });
                 setTaskReturn(true);
                 setSection('settings');
               }}
@@ -922,7 +927,9 @@ export default function App() {
               )}
             </div>
           )}
-          {section === 'settings' && <SettingsView data={data} action={action} />}
+          {section === 'settings' && (
+            <SettingsView data={data} action={action} initialAI={taskAISettings} />
+          )}
         </main>
         {browserOpen && section !== 'editor' && (
           <BrowserSidebar
@@ -1581,11 +1588,11 @@ function TemplateAnswer({ item, action }: any) {
   );
 }
 
-function SettingsView({ data, action }: any) {
+function SettingsView({ data, action, initialAI }: any) {
   const [candidates, setCandidates] = useState<any[]>([]),
-    [provider, setProvider] = useState('openai-codex'),
+    [provider, setProvider] = useState(initialAI.provider),
     [key, setKey] = useState(''),
-    [model, setModel] = useState('gpt-5.3-codex');
+    [model, setModel] = useState(initialAI.model);
   return (
     <div className="page settings-page">
       <Heading title="连接你的本机能力" text="选择内置或本机浏览器，配置自己的 AI 接口。" />

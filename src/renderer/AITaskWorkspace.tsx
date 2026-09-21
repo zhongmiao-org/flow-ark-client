@@ -29,7 +29,7 @@ type Props = {
   active: boolean;
   data: Bootstrap;
   onTitle: (title: string) => void;
-  settings: () => void;
+  settings: (provider: 'deepseek' | 'openai-codex', model: string) => void;
   flows: () => void;
   createFlow: () => void;
   openFlow: (flow: FlowRecord) => void;
@@ -288,7 +288,7 @@ export default function AITaskWorkspace(props: Props) {
               >
                 开始规划
               </button>
-              <button onClick={props.settings}>
+              <button onClick={() => props.settings('deepseek', 'deepseek-flash')}>
                 AI 服务 ·{' '}
                 {props.data.credentials.includes('deepseek') ? 'DeepSeek 已配置' : '配置服务'}
               </button>
@@ -536,7 +536,7 @@ export default function AITaskWorkspace(props: Props) {
                       onClick={() =>
                         void run(async () => {
                           await save();
-                          props.settings();
+                          props.settings(provider, model);
                         })
                       }
                     >

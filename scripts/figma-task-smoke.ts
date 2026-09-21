@@ -242,8 +242,13 @@ try {
   );
   assert.equal((await call('bootstrap')).flows.length, 0);
   await capture('brief-1440');
+  await page.locator('.ai-task-provider input').fill('fixture-model');
   await button('配置 AI 服务').click();
-  await page.locator('.settings-page').getByRole('combobox').selectOption('deepseek');
+  assert.equal(await page.locator('.settings-page').getByRole('combobox').inputValue(), 'deepseek');
+  assert.equal(
+    await page.locator('.settings-page').getByLabel('模型 ID', { exact: true }).inputValue(),
+    'fixture-model',
+  );
   await page.getByPlaceholder('输入或替换 API Key').fill('sk-only-local-fixture');
   await button('保存密钥').click();
   await wait(
@@ -251,6 +256,7 @@ try {
     'fixture key not saved',
   );
   await button('← 返回 AI 任务').click();
+  assert.equal(await page.locator('.ai-task-provider input').inputValue(), 'fixture-model');
   assert.equal(await page.getByLabel('资料 1 内容').inputValue(), '这是唯一选中的文本。');
   assert.equal(await button('理解我的任务').isEnabled(), false);
   await review();
