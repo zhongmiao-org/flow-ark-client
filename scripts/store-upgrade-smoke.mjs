@@ -105,7 +105,7 @@ try {
   await host.close();
 }
 original = readDatabase();
-assert.equal(original.version, 1, 'the previous package must use SQLite v1');
+assert.ok([1, 2].includes(original.version), 'the previous package must use SQLite v1 or v2');
 evidence.push({
   phase: 'previous',
   version: original.version,
@@ -122,7 +122,7 @@ try {
   await host.close();
 }
 const upgraded = readDatabase();
-assert.equal(upgraded.version, 2);
+assert.equal(upgraded.version, 3);
 assert.deepEqual(
   upgraded.documents,
   original.documents,
@@ -144,7 +144,7 @@ try {
 assert.deepEqual(
   readDatabase(),
   upgraded,
-  'rejected old reader must not alter or recover the v2 database',
+  'rejected old reader must not alter or recover the v3 database',
 );
 evidence.push({ phase: 'downgrade', rejected: true, databaseUnchanged: true });
 await mkdir('test-results', { recursive: true });

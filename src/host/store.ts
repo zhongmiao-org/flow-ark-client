@@ -5,21 +5,21 @@ import { dirname } from 'node:path';
 import { now, redact } from '../shared/utils';
 import type { Event, Run, RunState } from '../shared/types';
 
-// v2 has the same tables/encryption as v1, but readers must honor script leases.
-// Keeping v1 would let an older client execute beside an unconfirmed script.
+// v3 preserves tables/encryption but requires template authority and immutable packages.
+// Older readers must not execute native template flows without the new grant checks.
 export function migrateStore(db: DatabaseSync) {
   const version = (db.prepare('PRAGMA user_version').get() as { user_version: number })
     .user_version;
-  if (![0, 1, 2].includes(version))
+  if (![0, 1, 2, 3].includes(version))
     throw new Error('数据库版本比客户端新或不可识别，已阻止打开；未删除数据');
-  if (version === 2) return;
+  if (version === 3) return;
   db.exec('BEGIN IMMEDIATE');
   try {
     if (version === 0)
       db.exec(
         'CREATE TABLE documents(kind TEXT NOT NULL,id TEXT NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(kind,id)); CREATE TABLE events(run_id TEXT NOT NULL,seq INTEGER NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(run_id,seq));',
       );
-    db.exec('PRAGMA user_version=2; COMMIT;');
+    db.exec('PRAGMA user_version=3; COMMIT;');
   } catch (error) {
     db.exec('ROLLBACK');
     throw error;

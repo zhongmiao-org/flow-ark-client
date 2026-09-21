@@ -57,7 +57,7 @@ test('v1 upgrade preserves every encrypted document/event byte and their reader 
     for (const { kind, value } of values) assert.deepEqual(store.get(kind, kind), value);
     assert.deepEqual(store.events('run'), [event]);
     db = new DatabaseSync(path);
-    assert.equal(version(db), 2);
+    assert.equal(version(db), 3);
     assert.deepEqual(db.prepare('SELECT * FROM documents ORDER BY kind,id').all(), originalDocs);
     assert.deepEqual(db.prepare('SELECT * FROM events').all(), originalEvents);
     db.close();
@@ -78,14 +78,14 @@ test('a real read-only migration failure rolls back the version and original row
     assert.equal(db.prepare('SELECT payload FROM documents').get()!.payload, 'unchanged');
     db.exec('PRAGMA query_only=OFF');
     migrateStore(db);
-    assert.equal(version(db), 2);
+    assert.equal(version(db), 3);
     assert.equal(db.prepare('SELECT payload FROM documents').get()!.payload, 'unchanged');
   } finally {
     db.close();
   }
 });
 
-test('new stores use v2 and future readers fail without replacing database contents', () => {
+test('new stores use v3 and future readers fail without replacing database contents', () => {
   const dir = mkdtempSync(join(tmpdir(), 'flowark-store-future-'));
   const path = join(dir, 'flowark.sqlite');
   const key = randomBytes(32);
@@ -94,14 +94,36 @@ test('new stores use v2 and future readers fail without replacing database conte
     store.put('fixture', 'id', { value: 'retained' });
     store.close();
     const db = new DatabaseSync(path);
-    assert.equal(version(db), 2);
-    const original = db.prepare('SELECT * FROM documents').all();
-    db.exec('PRAGMA user_version=3');
-    assert.throws(() => new Store(path, key), /数据库版本.*已阻止打开/);
     assert.equal(version(db), 3);
+    const original = db.prepare('SELECT * FROM documents').all();
+    db.exec('PRAGMA user_version=4');
+    assert.throws(() => new Store(path, key), /数据库版本.*已阻止打开/);
+    assert.equal(version(db), 4);
     assert.deepEqual(db.prepare('SELECT * FROM documents').all(), original);
     db.close();
   } finally {
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('v2 to v3 retains encrypted rows and makes v2 readers refuse template-authorized data', () => {
+  const db = new DatabaseSync(':memory:');
+  try {
+    v1(db);
+    db.exec('PRAGMA user_version=2');
+    db.prepare('INSERT INTO documents VALUES(?,?,?)').run(
+      'template-instance',
+      'fixture',
+      'encrypted',
+    );
+    db.prepare('INSERT INTO events VALUES(?,?,?)').run('run', 1, 'encrypted-event');
+    const before = db.prepare('SELECT * FROM documents').all();
+    migrateStore(db);
+    assert.equal(version(db), 3);
+    assert.deepEqual(db.prepare('SELECT * FROM documents').all(), before);
+    assert.equal(db.prepare('SELECT payload FROM events').get()!.payload, 'encrypted-event');
+    assert.ok(![0, 1, 2].includes(Number(version(db))), 'legacy v2 reader rejects version 3');
+  } finally {
+    db.close();
   }
 });
