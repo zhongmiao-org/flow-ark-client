@@ -571,6 +571,7 @@ export default function App() {
             style={
               nodeSession ||
               section === 'tools' ||
+              section === 'templates' ||
               section === 'ai-settings' ||
               (section === 'editor' && outlineOpen)
                 ? { display: 'none' }
@@ -950,14 +951,21 @@ export default function App() {
               showAttention={() => setSection('inbox')}
             />
           )}
-          {section === 'templates' && (
+          <div hidden={section !== 'templates'}>
             <TemplateLibrary
+              active={section === 'templates'}
               data={data}
               action={action}
               initialPreview={importPreview}
               consumePreview={() => setImportPreview(undefined)}
+              settings={(entry) => {
+                setTaskAISettings(entry);
+                setTaskReturn(false);
+                setSection('ai-settings');
+                setBrowserOpen(false);
+              }}
             />
-          )}
+          </div>
           {section === 'editor' && edit && (
             <div
               className={'editor-page' + (outlineOpen ? ' is-outline' : '')}
@@ -1420,10 +1428,15 @@ export default function App() {
           <AISettingsPage
             active={section === 'ai-settings'}
             entry={taskAISettings}
+            home={() => setSection('settings')}
             navigation={aiSettingsNavigation}
             changed={refresh}
             onSaved={(configuration) => {
-              if (taskAISettings.source && configuration.configured)
+              if (
+                taskAISettings.source &&
+                taskAISettings.source.kind !== 'template' &&
+                configuration.configured
+              )
                 setConfiguredAI({
                   key: crypto.randomUUID(),
                   provider: configuration.provider,
@@ -1431,7 +1444,13 @@ export default function App() {
                 });
             }}
             back={() => {
-              setSection(taskAISettings.source ? 'tasks' : 'settings');
+              setSection(
+                taskAISettings.source?.kind === 'template'
+                  ? 'templates'
+                  : taskAISettings.source
+                    ? 'tasks'
+                    : 'settings',
+              );
               setTaskReturn(false);
             }}
           />

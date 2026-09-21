@@ -112,6 +112,7 @@ try {
   ];
   await call('flow.save', { flow: custom.flow, bindings: custom.bindings });
   await page.reload();
+  await page.getByRole('button', { name: '我的流程', exact: true }).click();
   await page.getByRole('button', { name: '编辑 Custom ZIP workflow', exact: true }).click();
   const customPath = join(data, 'custom-export');
   await app.evaluate(({ dialog }: any, path: string) => {
@@ -147,6 +148,9 @@ try {
     .getByRole('button', {
       name: new RegExp('Custom ZIP workflow · ' + customInstance.id.slice(0, 8)),
     })
+    .click();
+  await page
+    .getByRole('button', { name: `打开 ${customPackage.manifest.entries[0].name}`, exact: true })
     .click();
   await page.getByRole('textbox', { name: 'text', exact: true }).fill('roundtrip works');
   await page.getByRole('button', { name: '保存入口参数', exact: true }).click();

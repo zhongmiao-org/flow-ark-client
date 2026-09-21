@@ -19,7 +19,9 @@ export type AISettingsEntry = {
   key: string;
   provider: AIProviderId;
   model: string;
-  source?: { title: string; taskId?: string };
+  source?:
+    | { kind?: 'task'; title: string; taskId?: string }
+    | { kind: 'template'; title: string; instanceId: string; entryId: string; packageKey: string };
 };
 export type AISettingsNavigation = (next: () => void) => void;
 const providerName = (id: AIProviderId) => (id === 'deepseek' ? 'DeepSeek' : 'OpenAI');
@@ -32,6 +34,7 @@ export default function AISettingsPage({
   back,
   changed,
   onSaved,
+  home,
 }: {
   active: boolean;
   entry: AISettingsEntry;
@@ -39,6 +42,7 @@ export default function AISettingsPage({
   back: () => void;
   changed: () => Promise<void>;
   onSaved: (state: AIConfigurationState) => void;
+  home: () => void;
 }) {
   const [storedState, setState] = useState<AIConfigurationState>();
   const [loadedEntry, setLoadedEntry] = useState<string>();
@@ -57,6 +61,7 @@ export default function AISettingsPage({
   const title = useRef<HTMLHeadingElement>(null),
     dialog = useRef<HTMLDialogElement>(null);
   const provider = entry.provider,
+    fromTemplate = entry.source?.kind === 'template',
     name = providerName(provider),
     testing = busy === 'test' || state?.operation === 'testing';
   const reload = async () => {
@@ -293,22 +298,25 @@ export default function AISettingsPage({
           className={`context-back${entry.source ? ' from-task' : ''}`}
           onClick={returnToSource}
         >
-          ← 返回{entry.source ? '原任务' : '本地设置'}
+          ← 返回{fromTemplate ? '模板入口' : entry.source ? '原任务' : '本地设置'}
         </button>
         <nav className="breadcrumbs" aria-label="当前位置">
           <a
             href="#ai-source"
             onClick={(e) => {
               e.preventDefault();
-              returnToSource();
+              if (fromTemplate) go(home);
+              else returnToSource();
             }}
           >
-            {entry.source ? '开始任务' : '本地设置'}
+            {fromTemplate ? '本地设置' : entry.source ? '开始任务' : '本地设置'}
           </a>
           <span aria-hidden="true">/</span>
           {entry.source && (
             <>
-              <span className="ai-source-title">{entry.source.title}</span>
+              <span className="ai-source-title" title={entry.source.title}>
+                {entry.source.title}
+              </span>
               <span aria-hidden="true">/</span>
             </>
           )}
@@ -323,14 +331,16 @@ export default function AISettingsPage({
             </h1>
             <p>
               {entry.source
-                ? `来自：开始任务 / ${entry.source.title} · 配置后继续原草稿`
+                ? fromTemplate
+                  ? `来自：${entry.source.title} · 返回后保留本次输入`
+                  : `来自：开始任务 / ${entry.source.title} · 配置后继续原草稿`
                 : '配置这台 Mac 的模型服务，供已授权的流程和模板使用。'}
             </p>
           </div>
         </div>
-        {!entry.source && (
+        {(!entry.source || fromTemplate) && (
           <nav className="ai-settings-tabs" aria-label="设置分类">
-            <button onClick={returnToSource}>浏览器</button>
+            <button onClick={() => go(home)}>浏览器</button>
             <span aria-current="page">AI 服务</span>
             <span aria-disabled="true">凭据与文件</span>
             <span aria-disabled="true">脚本</span>
@@ -539,7 +549,7 @@ export default function AISettingsPage({
                 </>
               )}
               <button onClick={returnToSource}>
-                {entry.source ? '继续原任务' : '返回本地设置'}
+                {fromTemplate ? '返回模板入口' : entry.source ? '继续原任务' : '返回本地设置'}
               </button>
               <small>本页配置仅用于已授权的任务。</small>
             </section>

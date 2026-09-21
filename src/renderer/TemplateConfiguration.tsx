@@ -89,6 +89,15 @@ export function Field({ schema: s, value, change, label }: any) {
           checked={Boolean(value)}
           onChange={(e) => change(e.target.checked)}
         />
+      ) : s.type === 'string' && s.maxLength > 500 ? (
+        <textarea
+          aria-labelledby={id}
+          aria-describedby={s.description ? id + '-description' : undefined}
+          value={value ?? ''}
+          minLength={s.minLength}
+          maxLength={s.maxLength}
+          onChange={(e) => change(e.target.value)}
+        />
       ) : (
         <input
           aria-labelledby={id}
