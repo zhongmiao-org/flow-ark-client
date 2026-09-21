@@ -50,6 +50,18 @@ const bindings = z
       .optional(),
   })
   .strict();
+export const templateSaveSchema = z
+  .object({
+    id,
+    revision: z.string().regex(/^[a-f0-9]{64}$/),
+    name: z.string().trim().min(1).max(100),
+    configuration: z.unknown(),
+    resources: bindings.shape.resources.unwrap(),
+    grants: bindings.shape.grants.unwrap(),
+    inputs: z.record(id, z.unknown()),
+  })
+  .strict();
+export type TemplateSave = z.infer<typeof templateSaveSchema>;
 export const methods = {
   ...aiConfigurationMethods,
   ...connectionMethods,
@@ -120,15 +132,7 @@ export const methods = {
   'template.export': z.object({ key: z.string().max(240) }).strict(),
   'template.create': z.object({ key: z.string().max(240), copyFrom: id.optional() }).strict(),
   'template.detail': z.object({ id }).strict(),
-  'template.configure': z
-    .object({
-      id,
-      configuration: z.unknown(),
-      resources: bindings.shape.resources.unwrap(),
-      grants: bindings.shape.grants.unwrap(),
-    })
-    .strict(),
-  'template.input': z.object({ id, entryId: id, value: z.unknown() }).strict(),
+  'template.save': templateSaveSchema,
   'template.answer': z.object({ id, value: z.unknown() }).strict(),
   'flow.export': flowExportSchema,
   'flow.import': empty,

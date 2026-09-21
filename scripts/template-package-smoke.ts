@@ -158,8 +158,12 @@ try {
   await assert.rejects(call('flow.run', { id: customInstance.entryFlows.run }), /授权/);
   const output = join(data, 'output');
   await mkdir(output);
-  await call('template.configure', {
+  const customDetail = await call('template.detail', { id: customInstance.id });
+  await call('template.save', {
     id: customInstance.id,
+    revision: customDetail.revision,
+    name: customDetail.instance.name,
+    inputs: {},
     configuration: {},
     resources: { output: { path: output } },
     grants: { 'workflow-write': 'auto' },

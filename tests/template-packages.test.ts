@@ -134,7 +134,15 @@ test('instances share config only internally; entry preflight, deny defaults, fi
   await assert.rejects(service.preflight(remote), /授权/);
   await assert.rejects(service.preflight(remote, true), /定时/);
   await assert.rejects(service.remove(p.key), /引用/);
-  await service.configure(a.id, {}, {}, { write: 'auto' });
+  await service.save({
+    id: a.id,
+    revision: (await service.detail(a.id)).revision,
+    name: a.name,
+    configuration: {},
+    resources: {},
+    grants: { write: 'auto' },
+    inputs: {},
+  });
   assert.equal(store.get<any>('flow', a.entryFlows.network).bindings.grants.write, 'auto');
   assert.equal(store.get<any>('flow', b.entryFlows.network).bindings.grants.write, 'deny');
   await assert.rejects(

@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Bootstrap } from '../shared/types';
 import { Field } from './TemplateConfiguration';
 import TemplateEntry, { type TemplateDetail } from './TemplateEntry';
 import type { AISettingsEntry } from './AISettingsPage';
+import { templateSaveRequest, acceptTemplateSave, type TemplateSaveScope } from './template-draft';
 const api = (method: string, args: any = {}) => window.flowark.request(method, args);
 export default function TemplateLibrary({
   data,
@@ -55,6 +56,29 @@ export default function TemplateLibrary({
       setEntryId(undefined);
     }
   };
+  const saving = useRef(false);
+  const save = async (scope: TemplateSaveScope, inputId?: string) => {
+    if (!detail || !saved || saving.current) return false;
+    saving.current = true;
+    const submitted = structuredClone(detail);
+    const request = templateSaveRequest(submitted, saved, scope, inputId);
+    try {
+      const next: TemplateDetail | undefined = await work(
+        () => api('template.save', request),
+        scope === 'input' ? '入口参数已保存' : '实例配置已保存',
+      );
+      if (!next) return false;
+      setSaved(structuredClone(next));
+      setDetail((current) =>
+        current?.instance.id === next.instance.id
+          ? acceptTemplateSave(current, submitted, next, request, scope)
+          : current,
+      );
+      return true;
+    } finally {
+      saving.current = false;
+    }
+  };
   const instance = detail?.instance;
   if (detail && saved && entryId && detail.entries.some((e) => e.id === entryId))
     return (
@@ -66,6 +90,7 @@ export default function TemplateLibrary({
         entryId={entryId}
         change={setDetail}
         savedChange={setSaved}
+        save={save}
         work={work}
         busy={busy}
         back={() => setEntryId(undefined)}
@@ -312,23 +337,7 @@ export default function TemplateLibrary({
                 </select>
               </label>
             ))}
-            <button
-              className="primary"
-              disabled={busy}
-              onClick={async () => {
-                const next = await work(
-                  () =>
-                    api('template.configure', {
-                      id: instance.id,
-                      configuration: instance.configuration,
-                      resources: instance.resources,
-                      grants: instance.grants,
-                    }),
-                  '实例配置已保存',
-                );
-                if (next && saved) setSaved({ ...saved, instance: structuredClone(next) });
-              }}
-            >
+            <button className="primary" disabled={busy} onClick={() => void save('configuration')}>
               保存实例配置
             </button>
             <h4>操作入口</h4>

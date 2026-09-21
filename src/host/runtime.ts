@@ -1546,10 +1546,8 @@ export class Runtime {
         return this.templates.create(args.key, args.copyFrom);
       case 'template.detail':
         return this.templates.detail(args.id);
-      case 'template.configure':
-        return this.templates.configure(args.id, args.configuration, args.resources, args.grants);
-      case 'template.input':
-        return this.templates.input(args.id, args.entryId, args.value);
+      case 'template.save':
+        return this.templates.save(args);
       case 'template.answer':
         return this.templates.answer(args.id, args.value);
       case 'flow.export': {

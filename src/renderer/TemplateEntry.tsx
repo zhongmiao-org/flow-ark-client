@@ -1,11 +1,11 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import type { Templates } from '../templates/service';
+import type { TemplateDetail, TemplateSaveScope } from './template-draft';
 import type { AIConfigurationState, AIProviderId } from '../shared/ai-settings';
 import type { AISettingsEntry } from './AISettingsPage';
 import { Field } from './TemplateConfiguration';
 import './template-entry.css';
 
-export type TemplateDetail = Awaited<ReturnType<Templates['detail']>>;
+export type { TemplateDetail } from './template-draft';
 const api = (method: string, args: unknown): Promise<any> => window.flowark.request(method, args);
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const providerName = (provider: AIProviderId) => (provider === 'deepseek' ? 'DeepSeek' : 'OpenAI');
@@ -19,6 +19,7 @@ export default function TemplateEntry({
   entryId,
   change,
   savedChange,
+  save,
   work,
   busy,
   back,
@@ -31,6 +32,7 @@ export default function TemplateEntry({
   entryId: string;
   change: (detail: TemplateDetail) => void;
   savedChange: (detail: TemplateDetail) => void;
+  save: (scope: TemplateSaveScope, entryId?: string) => Promise<boolean>;
   work: (fn: () => Promise<any>, message?: string) => Promise<any>;
   busy: boolean;
   back: () => void;
@@ -74,6 +76,7 @@ export default function TemplateEntry({
         ) {
           setSourceError('原实例或入口已变化。当前输入仍保留，不会自动打开另一个入口。');
         } else if (
+          fresh.revision !== saved.revision ||
           !equal(fresh.instance, saved.instance) ||
           !equal(
             fresh.entries.map((e) => [e.id, e.values]),
@@ -127,32 +130,8 @@ export default function TemplateEntry({
   const denied = entry.actions.filter(
     (id) => !instance.grants[id] || instance.grants[id] === 'deny',
   );
-  const saveInput = async () => {
-    const values = structuredClone(entry.values);
-    if (
-      await work(
-        () => api('template.input', { id: instance.id, entryId, value: values }),
-        '入口参数已保存',
-      )
-    )
-      savedChange({
-        ...saved,
-        entries: saved.entries.map((e) => (e.id === entryId ? { ...e, values } : e)),
-      });
-  };
-  const saveConfiguration = async () => {
-    const next = await work(
-      () =>
-        api('template.configure', {
-          id: instance.id,
-          configuration: instance.configuration,
-          resources: instance.resources,
-          grants: instance.grants,
-        }),
-      '实例配置已保存',
-    );
-    if (next) savedChange({ ...saved, instance: structuredClone(next) });
-  };
+  const saveInput = () => save('input', entryId);
+  const saveConfiguration = () => save('configuration');
   const openSettings = (resourceId: string) => {
     scroll.current = document.querySelector('main')?.scrollTop ?? 0;
     const provider = selectedProvider(resourceId);

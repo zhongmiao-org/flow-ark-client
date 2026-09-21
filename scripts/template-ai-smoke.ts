@@ -351,6 +351,44 @@ try {
   note(
     'discard retains key; transient/changed source blocks writes and run while retaining input, retry restores same entry',
   );
+  // A real competing save must be rejected from both entry and shared-config views.
+  const baseline = await call('template.detail', { id: instance.id });
+  const authoritative = await call('template.save', {
+    id: instance.id,
+    revision: baseline.revision,
+    name: baseline.instance.name,
+    configuration: { shared: '另一处已保存的共享值' },
+    resources: baseline.instance.resources,
+    grants: baseline.instance.grants,
+    inputs: {},
+  });
+  await button('保存入口参数').click();
+  await page.getByRole('alert').filter({ hasText: '实例已变化' }).waitFor();
+  assert.equal(await page.getByLabel('主题', { exact: true }).inputValue(), '返回失效时保留的输入');
+  assert.deepEqual(await call('template.detail', { id: instance.id }), authoritative);
+  await button('共享配置').click();
+  await page.getByLabel('共享文本', { exact: true }).fill('不能覆盖新修订的旧页草稿');
+  await button('保存实例配置').click();
+  await page.getByRole('alert').filter({ hasText: '实例已变化' }).waitFor();
+  assert.equal(
+    await page.getByLabel('共享文本', { exact: true }).inputValue(),
+    '不能覆盖新修订的旧页草稿',
+  );
+  assert.deepEqual(await call('template.detail', { id: instance.id }), authoritative);
+  await button('打开 生成草稿').click();
+  await page.getByText('原实例的已保存内容已变化。当前输入仍保留，请核对后重新读取。').waitFor();
+  assert.equal(await button('保存入口参数').isDisabled(), true);
+  await button('放弃未保存内容并重新读取实例').click();
+  await button('打开 生成草稿').click();
+  await wait(
+    async () => await button('管理 AI 配置').isEnabled(),
+    'explicit reload after conflict',
+  );
+  assert.equal(await page.getByLabel('主题', { exact: true }).inputValue(), '未保存的本次主题');
+  assert.equal((await call('bootstrap')).runs.length, 0);
+  note(
+    'a competing real save rejects stale entry and shared-config writes without losing drafts; explicit reload adopts the new revision without executing',
+  );
   await button('← 返回模板库').click();
   await button(`AI 来源核对 · ${other.id.slice(0, 8)}`).click();
   await button('打开 只读查看').click();
