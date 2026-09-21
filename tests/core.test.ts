@@ -8,7 +8,6 @@ import { mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { packageFlow, instantiate, validateTemplate } from '../src/templates/flow';
 import { validateIPC } from '../src/shared/ipc';
 const flow = (steps: any[]) => validateFlow({ ...example, steps });
 async function run(f: any) {
@@ -115,20 +114,7 @@ test('cancellation at boundaries cannot execute next step', async () => {
   );
   assert.deepEqual(started, ['a']);
 });
-test('templates create isolated drafts and tampering is rejected', () => {
-  const a = instantiate(packageFlow(example as any, 'fixture')),
-    b = instantiate(packageFlow(example as any, 'fixture'));
-  a.name = 'changed';
-  assert.notEqual(a.id, b.id);
-  assert.notEqual(a.name, b.name);
-  assert.equal(b.sourceTemplate?.id, example.id);
-  assert.throws(() =>
-    validateTemplate({
-      ...packageFlow(example as any, 'fixture'),
-      flow: { ...example, name: 'tampered' },
-    }),
-  );
-});
+
 test('IPC refuses arbitrary methods, keys and invalid schedule interval', () => {
   assert.throws(() => validateIPC('shell.exec', { command: 'whoami' }));
   assert.throws(() => validateIPC('system.suspend', {}));

@@ -5,7 +5,6 @@ export type Flow = NonNullable<P1Contracts['FlowDefinition']>;
 export type Step = Flow['steps'][number];
 export type AIRequest = NonNullable<P1Contracts['AIRequest']>;
 export type AIResult = NonNullable<P1Contracts['AIResult']>;
-export type Template = NonNullable<P1Contracts['TemplatePackage']>;
 export type RunState = NonNullable<P1Contracts['RunState']>;
 export type ScriptBundle = NonNullable<P1Contracts['ScriptBundle']>;
 export type PreparedScripts = { scripts: Record<string, string>; scriptBundles: ScriptBundle[] };

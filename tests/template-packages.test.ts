@@ -150,3 +150,38 @@ test('instances share config only internally; entry preflight, deny defaults, fi
   assert.deepEqual(upgraded.resources, {});
   assert.equal(store.get<any>('flow', a.entryFlows.run).bindings.template.packageKey, p.key);
 });
+
+test('total expansion, file count and encrypted ZIP are refused; failed database installation removes the package', async (t) => {
+  const { dir, pkg } = await fixture(t);
+  seal(pkg);
+  const path = join(dir, 'limits.zip');
+  const many = new Map(pkg.files);
+  for (let i = 0; i < 513; i++) many.set('assets/file-' + i, Buffer.alloc(0));
+  await raw(path, many);
+  await assert.rejects(readArchive(path), /数量/);
+  const total = new Map(pkg.files);
+  for (let i = 0; i < 11; i++) total.set('assets/big-' + i, Buffer.alloc(LIMITS.file));
+  await raw(path, total);
+  await assert.rejects(readArchive(path), /实际解压/);
+  await writeArchive(pkg, path);
+  const encrypted = await readFile(path);
+  for (let i = 0; i < encrypted.length - 10; i++) {
+    if (encrypted.readUInt32LE(i) === 0x02014b50)
+      encrypted.writeUInt16LE(encrypted.readUInt16LE(i + 8) | 1, i + 8);
+  }
+  await writeFile(path, encrypted);
+  await assert.rejects(readArchive(path), /普通文件/);
+  await writeArchive(pkg, path);
+  const store = new Store(join(dir, 'failure.sqlite'), randomBytes(32));
+  t.after(() => store.close());
+  const service = new Templates(store, dir, '0.2.0');
+  const preview = await service.library.inspect(path);
+  (store as any).db.exec('PRAGMA query_only=ON');
+  await assert.rejects(service.install(preview.token));
+  assert.equal(store.list('template-package').length, 0);
+  assert.equal(store.list('flow').length, 0);
+  assert.deepEqual(
+    (await readdir(join(dir, 'template-packages'))).filter((n) => !n.startsWith('.')),
+    [],
+  );
+});

@@ -23,10 +23,9 @@ import { compileScript, inspectScriptPackage, verifyScriptBundle } from '../adap
 import { ArtifactFiles } from '../adapters/artifacts';
 import { artifactPath, scopedTarget, uploadPath } from '../adapters/files';
 import { staticUploadFields, uploadSource, uploadText } from '../shared/upload-source';
-import { packageFlow, validateTemplate } from '../templates/flow';
 import { Templates } from '../templates/service';
 import { version as clientVersion } from '../../package.json';
-import { configureTemplate, normalizeBindings, validateConfiguration } from './configuration';
+import { normalizeBindings, validateConfiguration } from './configuration';
 import { generate } from '../ai/providers';
 const example = {
   formatVersion: '1.0',
@@ -47,7 +46,6 @@ import type {
   BrowserBinding,
   Bootstrap,
   PreparedScripts,
-  Template,
   ExecutionObservation,
 } from '../shared/types';
 const terminal = new Set(['SUCCEEDED', 'FAILED', 'INTERRUPTED', 'CANCELLED']);

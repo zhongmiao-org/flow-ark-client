@@ -5,12 +5,11 @@ import { validateFlow } from '../src/core/validate';
 import { framePathOf } from '../src/core/browser-command';
 import { assertBrowserOperations } from '../src/adapters/browser-scope';
 import { SeleniumDriver } from '../src/adapters/selenium';
-import { packageFlow, instantiate } from '../src/templates/flow';
 import example from '../contracts/example.frames.flow.json';
 
-test('browser v2 preserves frame scope in templates; v1 never accepts a frame path', () => {
+test('browser v2 preserves frame scope in flows; v1 never accepts a frame path', () => {
   const f = validateFlow(example);
-  assert.deepEqual(instantiate(packageFlow(f)).steps, f.steps);
+  assert.deepEqual(f.steps, example.steps);
   for (const path of [null, '', [''], ['  '], Array(9).fill('#frame'), ['x'.repeat(2001)]]) {
     const bad = structuredClone(example) as any;
     bad.steps[1].framePath = path;

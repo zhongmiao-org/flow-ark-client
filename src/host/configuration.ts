@@ -1,19 +1,9 @@
 import Ajv from 'ajv/dist/2020.js';
-import type { Bindings, Template } from '../shared/types';
+import type { Bindings } from '../shared/types';
 import {
   validateConfigurationSchema,
-  schemaDefaults,
   supportedConfigurationAdapters,
 } from '../shared/template-config';
-export function configureTemplate(template: Template): Bindings['configuration'] {
-  const config = template.manifest.configuration;
-  if (!config) return undefined;
-  if (!supportedConfigurationAdapters.includes(config.adapter))
-    throw new Error('模板配置适配器尚未安装');
-  validateConfigurationSchema(config.schema);
-  let values = schemaDefaults(config.schema);
-  return { ...structuredClone(config), values };
-}
 export function normalizeBindings(bindings: Bindings): Bindings {
   return bindings;
 }

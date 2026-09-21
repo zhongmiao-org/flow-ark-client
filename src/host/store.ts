@@ -5,21 +5,17 @@ import { dirname } from 'node:path';
 import { now, redact } from '../shared/utils';
 import type { Event, Run, RunState } from '../shared/types';
 
-// v2 has the same tables/encryption as v1, but readers must honor script leases.
-// Keeping v1 would let an older client execute beside an unconfirmed script.
-export function migrateStore(db: DatabaseSync) {
+// Development storage has one current layout; no legacy migration runs at startup.
+export function initializeStore(db: DatabaseSync) {
   const version = (db.prepare('PRAGMA user_version').get() as { user_version: number })
     .user_version;
-  if (![0, 1, 2].includes(version))
-    throw new Error('数据库版本比客户端新或不可识别，已阻止打开；未删除数据');
   if (version === 2) return;
+  if (version !== 0) throw new Error('数据格式不支持；请先通过显式维护工具清理开发数据');
   db.exec('BEGIN IMMEDIATE');
   try {
-    if (version === 0)
-      db.exec(
-        'CREATE TABLE documents(kind TEXT NOT NULL,id TEXT NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(kind,id)); CREATE TABLE events(run_id TEXT NOT NULL,seq INTEGER NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(run_id,seq));',
-      );
-    db.exec('PRAGMA user_version=2; COMMIT;');
+    db.exec(
+      'CREATE TABLE documents(kind TEXT NOT NULL,id TEXT NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(kind,id)); CREATE TABLE events(run_id TEXT NOT NULL,seq INTEGER NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(run_id,seq)); PRAGMA user_version=2; COMMIT;',
+    );
   } catch (error) {
     db.exec('ROLLBACK');
     throw error;
@@ -37,7 +33,7 @@ export class Store {
     try {
       chmodSync(path, 0o600);
       this.db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
-      migrateStore(this.db);
+      initializeStore(this.db);
     } catch (error) {
       this.db.close();
       throw error;
@@ -196,8 +192,8 @@ export class Store {
         }
       for (const a of this.list<any>('template-effect'))
         if (a.state === 'submitting') {
-          this.put('template-effect', a.id, {...a,state:'unknown'});
-          this.attention('unknown-result','操作结果待核对',{effectId:a.id},'unknown:'+a.id);
+          this.put('template-effect', a.id, { ...a, state: 'unknown' });
+          this.attention('unknown-result', '操作结果待核对', { effectId: a.id }, 'unknown:' + a.id);
         }
     });
   }
