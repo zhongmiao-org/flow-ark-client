@@ -56,7 +56,7 @@ try {
     .getByRole('button', { name: new RegExp('Generic fixture · ' + instance.id.slice(0, 8)) })
     .click();
   await page.getByLabel('Fixture title', { exact: true }).fill('Changed');
-  await page.getByRole('button', { name: '保存实例配置', exact: true }).click();
+  await page.getByRole('button', { name: '保存配置', exact: true }).click();
   await page.waitForFunction(
     () =>
       document.querySelector('[role=alert]') ||
@@ -149,9 +149,7 @@ try {
       name: new RegExp('Custom ZIP workflow · ' + customInstance.id.slice(0, 8)),
     })
     .click();
-  await page
-    .getByRole('button', { name: `打开 ${customPackage.manifest.entries[0].name}`, exact: true })
-    .click();
+  await page.getByRole('button', { name: '操作入口', exact: true }).click();
   await page.getByRole('textbox', { name: 'text', exact: true }).fill('roundtrip works');
   await page.getByRole('button', { name: '保存入口参数', exact: true }).click();
   await page.getByRole('status').filter({ hasText: '入口参数已保存' }).waitFor();

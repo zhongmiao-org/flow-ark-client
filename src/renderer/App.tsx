@@ -58,6 +58,7 @@ import {
 } from 'lucide-react';
 import type { Bootstrap, FlowRecord, Step } from '../shared/types';
 import TemplateLibrary from './TemplateLibrary';
+import type { TemplateNavigation } from './TemplateInstancePage';
 import TemplateConfiguration from './TemplateConfiguration';
 import ScriptPackages from './ScriptPackages';
 import ScriptEditorPage, { type ScriptNavigation } from './ScriptEditorPage';
@@ -109,6 +110,7 @@ function format(t: string) {
   });
 }
 export default function App() {
+  const templateNavigation = useRef<TemplateNavigation | undefined>(undefined);
   const toolNavigation = useRef<ToolNavigation | undefined>(undefined);
   const aiSettingsNavigation = useRef<AISettingsNavigation | undefined>(undefined);
   const [configuredAI, setConfiguredAI] = useState<{
@@ -252,6 +254,17 @@ export default function App() {
       clearInterval(timer);
     };
   }, [detail?.run?.id]);
+  function leaveAIContext(next: () => void) {
+    if (taskAISettings.source?.kind !== 'template') {
+      next();
+      return;
+    }
+    setSection('templates');
+    // Restore the owner page before showing its draft guard from the AI subtask.
+    requestAnimationFrame(() =>
+      templateNavigation.current ? templateNavigation.current(next) : next(),
+    );
+  }
   async function action(fn: () => Promise<any>, message?: string) {
     setBusy(true);
     setError('');
@@ -467,7 +480,11 @@ export default function App() {
                     setRunFilter(false);
                   };
                   if (section === 'tools') toolNavigation.current?.(navigate);
-                  else if (section === 'ai-settings') aiSettingsNavigation.current?.(navigate);
+                  else if (section === 'ai-settings')
+                    aiSettingsNavigation.current?.(() =>
+                      id === 'templates' ? navigate() : leaveAIContext(navigate),
+                    );
+                  else if (section === 'templates') templateNavigation.current?.(navigate);
                   else navigate();
                 }}
               >
@@ -492,7 +509,9 @@ export default function App() {
                   setBrowserOpen(false);
                 };
                 if (section === 'tools') toolNavigation.current?.(navigate);
-                else if (section === 'ai-settings') aiSettingsNavigation.current?.(navigate);
+                else if (section === 'ai-settings')
+                  aiSettingsNavigation.current?.(() => leaveAIContext(navigate));
+                else if (section === 'templates') templateNavigation.current?.(navigate);
                 else navigate();
               }}
             >
@@ -953,6 +972,7 @@ export default function App() {
           )}
           <div hidden={section !== 'templates'}>
             <TemplateLibrary
+              navigation={templateNavigation}
               active={section === 'templates'}
               data={data}
               action={action}
@@ -1428,7 +1448,7 @@ export default function App() {
           <AISettingsPage
             active={section === 'ai-settings'}
             entry={taskAISettings}
-            home={() => setSection('settings')}
+            home={() => leaveAIContext(() => setSection('settings'))}
             navigation={aiSettingsNavigation}
             changed={refresh}
             onSaved={(configuration) => {

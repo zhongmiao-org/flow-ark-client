@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import type { Bindings, Json } from '../shared/types';
 import { schemaDefaults } from '../shared/template-config';
@@ -89,6 +89,8 @@ export function Field({ schema: s, value, change, label }: any) {
           checked={Boolean(value)}
           onChange={(e) => change(e.target.checked)}
         />
+      ) : s.type === 'number' || s.type === 'integer' ? (
+        <TemplateNumber schema={s} value={value} change={change} labelId={id} />
       ) : s.type === 'string' && s.maxLength > 500 ? (
         <textarea
           aria-labelledby={id}
@@ -103,21 +105,55 @@ export function Field({ schema: s, value, change, label }: any) {
           aria-labelledby={id}
           aria-describedby={s.description ? id + '-description' : undefined}
           value={value ?? ''}
-          type={s.type === 'number' || s.type === 'integer' ? 'number' : 'text'}
+          type="text"
           min={s.minimum}
           max={s.maximum}
           minLength={s.minLength}
           maxLength={s.maxLength}
-          step={s.type === 'integer' ? 1 : undefined}
-          onChange={(e) =>
-            change(
-              s.type === 'number' || s.type === 'integer' ? Number(e.target.value) : e.target.value,
-            )
-          }
+          onChange={(e) => change(e.target.value)}
         />
       )}
       {s.description && <small id={id + '-description'}>{s.description}</small>}
     </label>
+  );
+}
+function TemplateNumber({ schema, value, change, labelId }: any) {
+  const [text, setText] = useState(String(value ?? ''));
+  useEffect(() => setText(String(value ?? '')), [value]);
+  const number = Number(text);
+  const invalid =
+    !text.trim() ||
+    !Number.isFinite(number) ||
+    (schema.type === 'integer' && !Number.isInteger(number));
+  return (
+    <>
+      <input
+        aria-labelledby={labelId}
+        aria-invalid={invalid}
+        data-value-invalid={invalid || undefined}
+        aria-describedby={
+          invalid ? labelId + '-error' : schema.description ? labelId + '-description' : undefined
+        }
+        inputMode={schema.type === 'integer' ? 'numeric' : 'decimal'}
+        value={text}
+        onChange={(event) => {
+          const raw = event.target.value,
+            parsed = Number(raw);
+          setText(raw);
+          if (
+            raw.trim() &&
+            Number.isFinite(parsed) &&
+            (schema.type !== 'integer' || Number.isInteger(parsed))
+          )
+            change(parsed);
+        }}
+      />
+      {invalid && (
+        <small id={labelId + '-error'}>
+          请填写{schema.type === 'integer' ? '整数' : '有效数字'}
+        </small>
+      )}
+    </>
   );
 }
 export default function TemplateConfiguration({

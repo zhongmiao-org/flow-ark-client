@@ -1,15 +1,16 @@
 import type { Templates } from '../templates/service';
 import type { TemplateSave } from '../shared/ipc';
 export type TemplateDetail = Awaited<ReturnType<Templates['detail']>>;
-export type TemplateSaveScope = 'configuration' | 'input' | 'all';
-const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+export type TemplateSaveScope = 'configuration' | 'resources' | 'instance' | 'input' | 'all';
+export const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 export function templateSaveRequest(
   draft: TemplateDetail,
   saved: TemplateDetail,
   scope: TemplateSaveScope,
   entryId?: string,
 ): TemplateSave {
-  const instance = scope === 'input' ? saved.instance : draft.instance;
+  const instance = { ...saved.instance };
+  for (const field of templateFields(scope)) (instance as any)[field] = draft.instance[field];
   return {
     id: saved.instance.id,
     revision: saved.revision,
@@ -40,7 +41,10 @@ export function acceptTemplateSave(
 ): TemplateDetail {
   const instance = { ...next.instance };
   for (const field of ['name', 'configuration', 'resources', 'grants'] as const)
-    if (scope === 'input' || !equal(current.instance[field], submitted.instance[field]))
+    if (
+      !templateFields(scope).includes(field) ||
+      !equal(current.instance[field], submitted.instance[field])
+    )
       (instance as any)[field] = current.instance[field];
   return {
     ...next,
@@ -54,4 +58,23 @@ export function acceptTemplateSave(
         : entry;
     }),
   };
+}
+
+export function templateFields(scope: TemplateSaveScope) {
+  const fields = ['name', 'configuration', 'resources', 'grants'] as const;
+  return fields.filter(
+    (field) =>
+      scope === 'all' ||
+      scope === 'instance' ||
+      (scope === 'configuration' && (field === 'name' || field === 'configuration')) ||
+      (scope === 'resources' && (field === 'resources' || field === 'grants')),
+  );
+}
+export function templateDirty(draft: TemplateDetail, saved: TemplateDetail) {
+  return (
+    !equal(draft.instance, saved.instance) ||
+    draft.entries.some(
+      (entry) => !equal(entry.values, saved.entries.find((e) => e.id === entry.id)?.values),
+    )
+  );
 }

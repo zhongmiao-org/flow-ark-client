@@ -17,12 +17,13 @@ export default function TemplateEntry({
   detail,
   saved,
   entryId,
+  selectEntry,
   change,
-  savedChange,
+  sourceError,
+  sourceChecking,
   save,
   work,
   busy,
-  back,
   configure,
   settings,
 }: {
@@ -30,12 +31,13 @@ export default function TemplateEntry({
   detail: TemplateDetail;
   saved: TemplateDetail;
   entryId: string;
+  selectEntry: (entryId: string) => void;
   change: (detail: TemplateDetail) => void;
-  savedChange: (detail: TemplateDetail) => void;
+  sourceError: string;
+  sourceChecking: boolean;
   save: (scope: TemplateSaveScope, entryId?: string) => Promise<boolean>;
   work: (fn: () => Promise<any>, message?: string) => Promise<any>;
   busy: boolean;
-  back: () => void;
   configure: () => void;
   settings: (entry: AISettingsEntry) => void;
 }) {
@@ -44,12 +46,28 @@ export default function TemplateEntry({
   const [configurations, setConfigurations] = useState<
     Partial<Record<AIProviderId, AIConfigurationState>>
   >({});
-  const [checking, setChecking] = useState(true),
-    [sourceError, setSourceError] = useState('');
+  const [checking, setChecking] = useState(true);
   const [readError, setReadError] = useState(''),
     [reload, setReload] = useState(0);
   const [choices, setChoices] = useState<Record<string, AIProviderId>>({});
   const scroll = useRef(0);
+  const inputFields = useRef<HTMLFieldSetElement>(null);
+  const [invalidInput, setInvalidInput] = useState(false);
+  const hasInvalidInput = () => !!inputFields.current?.querySelector('[data-value-invalid]');
+  useLayoutEffect(() => {
+    const fields = inputFields.current;
+    if (!fields) return;
+    const update = () => setInvalidInput(hasInvalidInput());
+    const observer = new MutationObserver(update);
+    observer.observe(fields, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['data-value-invalid'],
+    });
+    update();
+    return () => observer.disconnect();
+  }, []);
   const aiResources = detail.manifest.resources.filter(
     (r) => r.kind === 'ai' && entry.resources.includes(r.id),
   );
@@ -63,32 +81,8 @@ export default function TemplateEntry({
     if (!active) return;
     let live = true;
     setChecking(true);
-    setSourceError('');
     setReadError('');
     setConfigurations({});
-    const source = api('template.detail', { id: instance.id })
-      .then((fresh: TemplateDetail) => {
-        if (!live) return;
-        if (
-          fresh.instance.packageKey !== instance.packageKey ||
-          fresh.instance.entryFlows[entryId] !== instance.entryFlows[entryId] ||
-          !fresh.entries.some((e) => e.id === entryId)
-        ) {
-          setSourceError('原实例或入口已变化。当前输入仍保留，不会自动打开另一个入口。');
-        } else if (
-          fresh.revision !== saved.revision ||
-          !equal(fresh.instance, saved.instance) ||
-          !equal(
-            fresh.entries.map((e) => [e.id, e.values]),
-            saved.entries.map((e) => [e.id, e.values]),
-          )
-        ) {
-          setSourceError('原实例的已保存内容已变化。当前输入仍保留，请核对后重新读取。');
-        }
-      })
-      .catch(() => {
-        if (live) setSourceError('暂时无法读取原实例或入口。当前输入仍保留，请重试或返回模板库。');
-      });
     const resources = Promise.all(
       providers
         ? providers.split(',').map(async (provider) => {
@@ -103,17 +97,22 @@ export default function TemplateEntry({
       .catch(() => {
         if (live) setReadError('AI 配置状态读取失败，请重试；未将读取失败当作未配置。');
       });
-    void Promise.all([source, resources]).finally(() => {
+    void Promise.all([resources]).finally(() => {
       if (live) {
         setChecking(false);
-        document.querySelector('main')?.scrollTo({ top: scroll.current });
       }
     });
     return () => {
       live = false;
     };
   }, [active, instance.id, entryId, providers, reload]);
-  const dirtyInput = !equal(entry.values, saved.entries.find((e) => e.id === entryId)?.values);
+  // Restore only after React has committed the loaded resource card height.
+  // Scrolling in the promise callback can clamp to the shorter loading page.
+  useLayoutEffect(() => {
+    if (active && !checking) document.querySelector('main')?.scrollTo({ top: scroll.current });
+  }, [active, checking]);
+  const dirtyInput =
+    invalidInput || !equal(entry.values, saved.entries.find((e) => e.id === entryId)?.values);
   const dirtyConfiguration = !equal(instance, saved.instance);
   const missing = entry.resources.filter((id) => {
     const declaration = detail.manifest.resources.find((r) => r.id === id)!;
@@ -131,7 +130,7 @@ export default function TemplateEntry({
     (id) => !instance.grants[id] || instance.grants[id] === 'deny',
   );
   const saveInput = () => save('input', entryId);
-  const saveConfiguration = () => save('configuration');
+  const saveConfiguration = () => save('instance');
   const openSettings = (resourceId: string) => {
     scroll.current = document.querySelector('main')?.scrollTop ?? 0;
     const provider = selectedProvider(resourceId);
@@ -152,80 +151,26 @@ export default function TemplateEntry({
       },
     });
   };
-  const blocked = busy || checking || !!sourceError;
+  const blocked = busy || checking || sourceChecking || !!sourceError;
   return (
     <>
-      <header className="topbar">
-        <button className="context-back" onClick={back}>
-          ← 返回模板库
-        </button>
-        <nav className="breadcrumbs" aria-label="当前位置">
-          <a
-            href="#templates"
-            onClick={(e) => {
-              e.preventDefault();
-              back();
-            }}
-          >
-            模板库
-          </a>
-          <span aria-hidden="true">/</span>
-          <span
-            className="ai-source-title"
-            title={`${instance.name} · ${instance.id} · ${entry.name}`}
-            aria-current="page"
-          >
-            {instance.name} · {instance.id.slice(0, 8)} · {entry.name}
-          </span>
-        </nav>
-      </header>
-      <section className="page ai-task-page template-entry-page">
-        <div className="page-heading">
-          <div>
-            <h1>
-              {instance.name} · {instance.id.slice(0, 8)}
-            </h1>
-            <p>
-              {entry.name}入口 · {detail.manifest.description}
-            </p>
-          </div>
-        </div>
-        <nav className="ai-settings-tabs" aria-label="实例分类">
-          <button onClick={configure}>共享配置</button>
-          <button onClick={configure}>资源与动作授权</button>
-          <span aria-current="page">操作入口</span>
-        </nav>
-        {(sourceError || readError) && (
+      <div className="template-entry-pane">
+        {readError && (
           <div className="ai-task-error" role="alert">
-            <p>{sourceError || readError}</p>
+            <p>{readError}</p>
             <button disabled={checking} onClick={() => setReload((v) => v + 1)}>
-              重新读取状态
+              重新读取 AI 状态
             </button>
-            {sourceError && (
-              <button
-                disabled={busy}
-                onClick={() =>
-                  void work(async () => {
-                    const fresh = await api('template.detail', { id: instance.id });
-                    change(fresh);
-                    savedChange(structuredClone(fresh));
-                    configure();
-                  })
-                }
-              >
-                放弃未保存内容并重新读取实例
-              </button>
-            )}
-            <button onClick={back}>返回模板库</button>
-            {aiResources.length > 0 && (
-              <button onClick={() => openSettings(aiResources[0].id)}>留在 AI 设置</button>
-            )}
           </div>
         )}
         <div className="template-entry-columns">
           <section className="ai-task-card template-entry-input">
             <h2>本次输入</h2>
-            <fieldset disabled={busy || !!sourceError} className="template-entry-fields">
+            <fieldset
+              ref={inputFields}
+              disabled={busy || !!sourceError}
+              className="template-entry-fields"
+            >
               <Field
                 schema={entry.input}
                 value={entry.values}
@@ -237,10 +182,21 @@ export default function TemplateEntry({
                 }
               />
             </fieldset>
-            <div className="ai-settings-field">
+            <label className="ai-settings-field">
               <span>操作入口</span>
-              <p>{entry.name}</p>
-            </div>
+              <select
+                aria-label="操作入口"
+                disabled={busy}
+                value={entryId}
+                onChange={(event) => selectEntry(event.target.value)}
+              >
+                {detail.entries.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             <p className="ai-task-note">进入设置不会运行此入口；返回后保留本页输入与所选入口。</p>
             <div className="ai-task-actions">
               <button disabled={blocked || !dirtyInput} onClick={() => void saveInput()}>
@@ -257,12 +213,13 @@ export default function TemplateEntry({
                   !!denied.length ||
                   !!entry.unavailable.length
                 }
-                onClick={() =>
+                onClick={() => {
+                  if (hasInvalidInput()) return;
                   void work(
                     () => api('flow.run', { id: instance.entryFlows[entryId] }),
                     '任务已创建',
-                  )
-                }
+                  );
+                }}
               >
                 运行此入口
               </button>
@@ -390,7 +347,7 @@ export default function TemplateEntry({
             )}
           </section>
         </div>
-      </section>
+      </div>
     </>
   );
 }

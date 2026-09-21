@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, type MutableRefObject } from 'react';
 import type { Bootstrap } from '../shared/types';
-import { Field } from './TemplateConfiguration';
-import TemplateEntry, { type TemplateDetail } from './TemplateEntry';
 import type { AISettingsEntry } from './AISettingsPage';
-import { templateSaveRequest, acceptTemplateSave, type TemplateSaveScope } from './template-draft';
+import type { TemplateDetail } from './template-draft';
+import TemplateInstancePage, { type TemplateNavigation } from './TemplateInstancePage';
 const api = (method: string, args: any = {}) => window.flowark.request(method, args);
 export default function TemplateLibrary({
   data,
@@ -12,7 +11,9 @@ export default function TemplateLibrary({
   consumePreview,
   active,
   settings,
+  navigation,
 }: {
+  navigation: MutableRefObject<TemplateNavigation | undefined>;
   data: Bootstrap;
   action: (fn: () => Promise<any>, message?: string) => Promise<any>;
   initialPreview?: any;
@@ -24,26 +25,16 @@ export default function TemplateLibrary({
   useEffect(() => {
     if (initialPreview) {
       setPreview(initialPreview);
-      setEntryId(undefined);
+      setDetail(undefined);
       consumePreview?.();
     }
   }, [initialPreview, consumePreview]);
   const [detail, setDetail] = useState<TemplateDetail>();
-  const [saved, setSaved] = useState<TemplateDetail>();
-  const [entryId, setEntryId] = useState<string>();
   const [busy, setBusy] = useState(false);
   const work = async (fn: () => Promise<any>, message?: string) => {
     setBusy(true);
     try {
-      return await action(() => {
-        if (
-          document.querySelector(
-            '.templates-page [data-value-invalid], .template-entry-page [data-value-invalid]',
-          )
-        )
-          throw new Error('请先修正未完成的字段值');
-        return fn();
-      }, message);
+      return await action(fn, message);
     } finally {
       setBusy(false);
     }
@@ -52,52 +43,23 @@ export default function TemplateLibrary({
     const d = await work(() => api('template.detail', { id }));
     if (d) {
       setDetail(d);
-      setSaved(structuredClone(d));
-      setEntryId(undefined);
     }
   };
-  const saving = useRef(false);
-  const save = async (scope: TemplateSaveScope, inputId?: string) => {
-    if (!detail || !saved || saving.current) return false;
-    saving.current = true;
-    const submitted = structuredClone(detail);
-    const request = templateSaveRequest(submitted, saved, scope, inputId);
-    try {
-      const next: TemplateDetail | undefined = await work(
-        () => api('template.save', request),
-        scope === 'input' ? '入口参数已保存' : '实例配置已保存',
-      );
-      if (!next) return false;
-      setSaved(structuredClone(next));
-      setDetail((current) =>
-        current?.instance.id === next.instance.id
-          ? acceptTemplateSave(current, submitted, next, request, scope)
-          : current,
-      );
-      return true;
-    } finally {
-      saving.current = false;
-    }
-  };
-  const instance = detail?.instance;
-  if (detail && saved && entryId && detail.entries.some((e) => e.id === entryId))
+  if (detail)
     return (
-      <TemplateEntry
-        key={detail.instance.id + ':' + entryId}
+      <TemplateInstancePage
+        key={detail.instance.id}
+        initial={detail}
         active={active}
-        detail={detail}
-        saved={saved}
-        entryId={entryId}
-        change={setDetail}
-        savedChange={setSaved}
-        save={save}
-        work={work}
-        busy={busy}
-        back={() => setEntryId(undefined)}
-        configure={() => setEntryId(undefined)}
+        data={data}
+        action={action}
+        navigation={navigation}
         settings={settings}
+        close={() => setDetail(undefined)}
+        choose={(id) => void edit(id)}
       />
     );
+  navigation.current = (next) => next();
   return (
     <>
       <header className="topbar">
@@ -234,131 +196,6 @@ export default function TemplateLibrary({
             {i.name} · {i.id.slice(0, 8)}
           </button>
         ))}
-        {instance && detail && (
-          <article className="template-card">
-            <h3>{instance.name} · 实例配置</h3>
-            <Field
-              schema={detail.configurationSchema}
-              value={instance.configuration}
-              change={(value: any) =>
-                setDetail({ ...detail, instance: { ...instance, configuration: value } })
-              }
-            />
-            <h4>本地资源</h4>
-            {detail.manifest.resources.map((r: any) => {
-              const b = instance.resources[r.id] ?? {};
-              const change = (v: any) =>
-                setDetail({
-                  ...detail,
-                  instance: { ...instance, resources: { ...instance.resources, [r.id]: v } },
-                });
-              return (
-                <div key={r.id} className="field">
-                  <label>
-                    {r.name} · {r.access}
-                    {r.required ? '（必需）' : '（可选）'}
-                  </label>
-                  {['file', 'directory'].includes(r.kind) ? (
-                    <>
-                      <input readOnly value={b.path ?? ''} aria-label={r.name} />
-                      <button
-                        onClick={async () => {
-                          const path = await api('file.choose', { kind: r.kind });
-                          if (path) change({ ...b, path });
-                        }}
-                      >
-                        选择
-                      </button>
-                    </>
-                  ) : r.kind === 'browser' ? (
-                    <>
-                      <select
-                        aria-label={r.name}
-                        value={b.browserId ?? ''}
-                        onChange={(e) => change({ browserId: e.target.value })}
-                      >
-                        <option value="">选择浏览器</option>
-                        {data.browsers.map((v) => (
-                          <option key={v.id} value={v.id}>
-                            {v.product} {v.version}
-                          </option>
-                        ))}
-                      </select>
-                      <button onClick={() => work(() => api('browser.embedded.enable'))}>
-                        启用内置浏览器
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <select
-                        aria-label={r.name + '供应商'}
-                        value={b.provider ?? ''}
-                        onChange={(e) => change({ ...b, provider: e.target.value })}
-                      >
-                        <option value="">选择 AI</option>
-                        {data.credentials.map((id) => (
-                          <option key={id} value={id}>
-                            {id}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        aria-label={r.name + '模型'}
-                        placeholder="模型 ID"
-                        value={b.model ?? ''}
-                        onChange={(e) => change({ ...b, model: e.target.value })}
-                      />
-                    </>
-                  )}
-                </div>
-              );
-            })}
-            <h4>动作授权</h4>
-            {detail.manifest.actions.map((a: any) => (
-              <label className="field" key={a.id}>
-                {a.name}
-                <small>{a.description}</small>
-                <select
-                  aria-label={a.name + '授权'}
-                  value={instance.grants[a.id] ?? 'deny'}
-                  onChange={(e) =>
-                    setDetail({
-                      ...detail,
-                      instance: {
-                        ...instance,
-                        grants: { ...instance.grants, [a.id]: e.target.value },
-                      },
-                    })
-                  }
-                >
-                  <option value="deny">禁止</option>
-                  <option value="confirm">每次确认</option>
-                  <option value="auto">配置范围内自动</option>
-                </select>
-              </label>
-            ))}
-            <button className="primary" disabled={busy} onClick={() => void save('configuration')}>
-              保存实例配置
-            </button>
-            <h4>操作入口</h4>
-            <p>运行使用已保存配置；运行中编辑不会改变当前任务。</p>
-            {detail.entries.map((e: any) => (
-              <div className="field" key={e.id}>
-                <b>{e.name}</b>
-                <small>
-                  {e.unavailable.length
-                    ? '缺少能力：' + e.unavailable.join('、')
-                    : e.schedulable
-                      ? '支持在流程的定时计划中配置'
-                      : '仅手动执行'}
-                </small>
-                <button disabled={busy} onClick={() => setEntryId(e.id)}>
-                  打开 {e.name}
-                </button>
-              </div>
-            ))}
-          </article>
-        )}
       </section>
     </>
   );

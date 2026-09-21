@@ -81,7 +81,8 @@
     "test:task-attachments": "node --import tsx scripts/task-attachments-smoke.ts",
     "test:tool-connections": "node --import tsx scripts/tool-connections-smoke.ts",
     "test:ai-settings": "node --import tsx scripts/ai-settings-smoke.ts",
-    "test:template-ai": "node --import tsx scripts/template-ai-smoke.ts"
+    "test:template-ai": "node --import tsx scripts/template-ai-smoke.ts",
+    "test:template-instance": "node --import tsx scripts/template-instance-smoke.ts"
   },
   "build": {
     "appId": "org.zhongmiao.flowark",

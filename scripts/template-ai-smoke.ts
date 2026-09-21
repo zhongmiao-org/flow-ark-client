@@ -120,6 +120,11 @@ const archive = join(data, 'fixture.zip');
 await writeArchive(pkg, archive);
 let app: ElectronApplication | undefined, page!: Page;
 const button = (name: string) => page.getByRole('button', { name, exact: true });
+const entry = () => page.locator('.template-entry-pane:visible');
+const openEntry = async (name: string) => {
+  await button('操作入口').click();
+  await entry().getByLabel('操作入口', { exact: true }).selectOption({ label: name });
+};
 const call = (method: string, args: any = {}): Promise<any> =>
   page.evaluate(({ method, args }) => window.flowark.request(method, args), { method, args });
 const note = (name: string) => {
@@ -237,9 +242,9 @@ try {
   await button('模板库').click();
   await button(`AI 来源核对 · ${instance.id.slice(0, 8)}`).click();
   await page.getByLabel('共享文本', { exact: true }).fill('未保存共享值');
-  await button('打开 生成草稿').click();
-  await page.getByLabel('主题', { exact: true }).fill('未保存的本次主题');
-  await page.getByLabel('资料摘要', { exact: true }).fill('未保存的虚构资料摘要');
+  await openEntry('生成草稿');
+  await entry().getByLabel('主题', { exact: true }).fill('未保存的本次主题');
+  await entry().getByLabel('资料摘要', { exact: true }).fill('未保存的虚构资料摘要');
   await wait(async () => await button('去配置 DeepSeek').isEnabled(), 'resource load');
   assert.equal(await button('运行此入口').isDisabled(), true);
   await screenshot('entry-missing');
@@ -278,9 +283,9 @@ try {
   );
   await button('返回模板入口').click();
   await wait(async () => await button('管理 AI 配置').isEnabled(), 'return to template');
-  assert.equal(await page.getByLabel('主题', { exact: true }).inputValue(), '未保存的本次主题');
+  assert.equal(await entry().getByLabel('主题', { exact: true }).inputValue(), '未保存的本次主题');
   assert.equal(
-    await page.getByLabel('资料摘要', { exact: true }).inputValue(),
+    await entry().getByLabel('资料摘要', { exact: true }).inputValue(),
     '未保存的虚构资料摘要',
   );
   const before = await call('template.detail', { id: instance.id });
@@ -289,7 +294,7 @@ try {
   assert.equal(before.entries.find((e: any) => e.id === 'draft').values.topic, '原始主题');
   assert.equal((await call('bootstrap')).runs.length, 0);
   assert.equal(requests, 0);
-  assert.match(await page.locator('.template-entry-resources').innerText(), /2K8M/);
+  assert.match(await entry().locator('.template-entry-resources').innerText(), /2K8M/);
   note(
     'same instance, entry and unsaved shared/input retained; protected save failure stays; return performs no template mutation, HTTP or run',
   );
@@ -301,6 +306,10 @@ try {
   await button('管理 AI 配置').click();
   await button('← 返回模板入口').click();
   await wait(async () => await button('管理 AI 配置').isEnabled(), 'narrow source return');
+  await wait(
+    async () => (await page.locator('main').evaluate((e) => e.scrollTop)) === sourceScroll,
+    'narrow scroll restoration',
+  );
   assert.equal(await page.locator('main').evaluate((e) => e.scrollTop), sourceScroll);
   await size(1440);
   await button('使用 DeepSeek · fixture-template-model').click();
@@ -331,13 +340,16 @@ try {
   await wait(async () => await button('管理 AI 配置').isEnabled(), 'discard return');
   assert.equal((await call('ai.configuration.get', { provider: 'deepseek' })).tail, '2K8M');
   // A transient source failure must retain the draft; a changed entry identity must not redirect or allow running.
-  await page.getByLabel('主题', { exact: true }).fill('返回失效时保留的输入');
+  await entry().getByLabel('主题', { exact: true }).fill('返回失效时保留的输入');
   await button('管理 AI 配置').click();
   await writeFile(faultPath, 'unavailable');
   await button('返回模板入口').click();
-  await page.getByRole('alert').waitFor();
+  await page.locator('.template-source-error').waitFor();
   assert.equal(await button('运行此入口').isDisabled(), true);
-  assert.equal(await page.getByLabel('主题', { exact: true }).inputValue(), '返回失效时保留的输入');
+  assert.equal(
+    await entry().getByLabel('主题', { exact: true }).inputValue(),
+    '返回失效时保留的输入',
+  );
   await writeFile(faultPath, 'identity');
   await button('重新读取状态').click();
   await page.getByText('原实例或入口已变化。当前输入仍保留，不会自动打开另一个入口。').waitFor();
@@ -345,7 +357,10 @@ try {
   await writeFile(faultPath, '');
   await button('重新读取状态').click();
   await wait(async () => await button('管理 AI 配置').isEnabled(), 'source recovery');
-  assert.equal(await page.getByLabel('主题', { exact: true }).inputValue(), '返回失效时保留的输入');
+  assert.equal(
+    await entry().getByLabel('主题', { exact: true }).inputValue(),
+    '返回失效时保留的输入',
+  );
   assert.equal(requests, 0);
   assert.equal((await call('bootstrap')).runs.length, 0);
   note(
@@ -363,40 +378,45 @@ try {
     inputs: {},
   });
   await button('保存入口参数').click();
-  await page.getByRole('alert').filter({ hasText: '实例已变化' }).waitFor();
-  assert.equal(await page.getByLabel('主题', { exact: true }).inputValue(), '返回失效时保留的输入');
+  await page
+    .locator('.template-instance-host')
+    .getByRole('alert')
+    .filter({ hasText: '实例已变化' })
+    .waitFor();
+  assert.equal(
+    await entry().getByLabel('主题', { exact: true }).inputValue(),
+    '返回失效时保留的输入',
+  );
   assert.deepEqual(await call('template.detail', { id: instance.id }), authoritative);
   await button('共享配置').click();
   await page.getByLabel('共享文本', { exact: true }).fill('不能覆盖新修订的旧页草稿');
-  await button('保存实例配置').click();
-  await page.getByRole('alert').filter({ hasText: '实例已变化' }).waitFor();
+  assert.equal(await button('保存配置').isDisabled(), true);
   assert.equal(
     await page.getByLabel('共享文本', { exact: true }).inputValue(),
     '不能覆盖新修订的旧页草稿',
   );
   assert.deepEqual(await call('template.detail', { id: instance.id }), authoritative);
-  await button('打开 生成草稿').click();
-  await page.getByText('原实例的已保存内容已变化。当前输入仍保留，请核对后重新读取。').waitFor();
+  await openEntry('生成草稿');
   assert.equal(await button('保存入口参数').isDisabled(), true);
   await button('放弃未保存内容并重新读取实例').click();
-  await button('打开 生成草稿').click();
+  await openEntry('生成草稿');
   await wait(
     async () => await button('管理 AI 配置').isEnabled(),
     'explicit reload after conflict',
   );
-  assert.equal(await page.getByLabel('主题', { exact: true }).inputValue(), '未保存的本次主题');
+  assert.equal(await entry().getByLabel('主题', { exact: true }).inputValue(), '未保存的本次主题');
   assert.equal((await call('bootstrap')).runs.length, 0);
   note(
     'a competing real save rejects stale entry and shared-config writes without losing drafts; explicit reload adopts the new revision without executing',
   );
   await button('← 返回模板库').click();
   await button(`AI 来源核对 · ${other.id.slice(0, 8)}`).click();
-  await button('打开 只读查看').click();
+  await openEntry('只读查看');
   await wait(
     async () => await button('运行此入口').isEnabled(),
     'read-only entry must not depend on AI',
   );
-  assert.match(await page.locator('.template-entry-resources').innerText(), /此入口不需要 AI/);
+  assert.match(await entry().locator('.template-entry-resources').innerText(), /此入口不需要 AI/);
   assert.equal(await button('去配置 DeepSeek').count(), 0);
   await button('运行此入口').click();
   await wait(
@@ -413,10 +433,10 @@ try {
   assert.equal(requests, 0);
   await button('模板库').click();
   await button(`AI 来源核对 · ${instance.id.slice(0, 8)}`).click();
-  await button('打开 生成草稿').click();
+  await openEntry('生成草稿');
   await wait(async () => await button('管理 AI 配置').isEnabled(), 'reopen entry');
-  assert.equal(await page.getByLabel('主题', { exact: true }).inputValue(), '未保存的本次主题');
-  assert.match(await page.locator('.template-entry-resources').innerText(), /2K8M/);
+  assert.equal(await entry().getByLabel('主题', { exact: true }).inputValue(), '未保存的本次主题');
+  assert.match(await entry().locator('.template-entry-resources').innerText(), /2K8M/);
   assert.equal(requests, 0);
   await close();
   note(

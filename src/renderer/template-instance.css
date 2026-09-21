@@ -1,0 +1,132 @@
+/* Figma 2:973 and 2:1083; shared tokens and field components. */
+.template-instance-host [hidden] {
+  display: none !important;
+}
+.template-instance-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 728fr) minmax(0, 400fr);
+  gap: 24px;
+}
+.template-instance-columns > .ai-task-card {
+  min-height: 652px;
+  gap: 16px;
+}
+.template-instance-columns .template-instance-form {
+  padding: 28px;
+}
+.template-instance-columns .template-instance-guide {
+  padding: 24px;
+}
+.template-instance-form > .template-entry-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.template-instance-form h2,
+.template-instance-guide h2 {
+  font-size: 18px;
+  line-height: 28px;
+}
+.template-instance-form h3,
+.template-instance-guide h3 {
+  font-size: 16px;
+  line-height: 24px;
+}
+.template-instance-columns p {
+  font-size: 13px;
+  line-height: 22px;
+  color: var(--fa-text-secondary);
+  margin: 0;
+}
+.template-instance-columns p.ai-task-note {
+  color: var(--fa-action-primary);
+}
+.template-instance-guide > button {
+  width: 100%;
+}
+.template-instance-form .template-field input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  align-self: flex-start;
+}
+.template-source-error {
+  margin-bottom: 24px;
+}
+.template-resource-fields {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.template-resource {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.template-resource > button {
+  align-self: flex-start;
+}
+.template-resource input,
+.template-resource select,
+.template-action-grant select {
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  font-size: 13px;
+  color: var(--fa-text-primary);
+  background: var(--fa-bg-canvas);
+}
+.template-action-grant {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.template-action-grant strong {
+  font-size: 13px;
+}
+.template-grant-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.template-grant-options > button {
+  flex: 1;
+}
+.template-entry-check {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 8px;
+}
+.template-other-instances {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.template-source-details {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 12px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 22px;
+}
+.template-source-details dt {
+  color: var(--fa-text-secondary);
+}
+.template-source-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+@container (max-width: 1000px) {
+  .template-instance-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .template-instance-columns > .ai-task-card {
+    min-height: 0;
+  }
+}

@@ -21,7 +21,14 @@ export type AISettingsEntry = {
   model: string;
   source?:
     | { kind?: 'task'; title: string; taskId?: string }
-    | { kind: 'template'; title: string; instanceId: string; entryId: string; packageKey: string };
+    | {
+        kind: 'template';
+        title: string;
+        instanceId: string;
+        entryId: string;
+        packageKey: string;
+        view?: 'resources' | 'entry';
+      };
 };
 export type AISettingsNavigation = (next: () => void) => void;
 const providerName = (id: AIProviderId) => (id === 'deepseek' ? 'DeepSeek' : 'OpenAI');
@@ -62,6 +69,10 @@ export default function AISettingsPage({
     dialog = useRef<HTMLDialogElement>(null);
   const provider = entry.provider,
     fromTemplate = entry.source?.kind === 'template',
+    templateLabel =
+      fromTemplate && entry.source?.kind === 'template' && entry.source.view === 'resources'
+        ? '实例授权'
+        : '模板入口',
     name = providerName(provider),
     testing = busy === 'test' || state?.operation === 'testing';
   const reload = async () => {
@@ -298,7 +309,7 @@ export default function AISettingsPage({
           className={`context-back${entry.source ? ' from-task' : ''}`}
           onClick={returnToSource}
         >
-          ← 返回{fromTemplate ? '模板入口' : entry.source ? '原任务' : '本地设置'}
+          ← 返回{fromTemplate ? templateLabel : entry.source ? '原任务' : '本地设置'}
         </button>
         <nav className="breadcrumbs" aria-label="当前位置">
           <a
@@ -549,7 +560,11 @@ export default function AISettingsPage({
                 </>
               )}
               <button onClick={returnToSource}>
-                {fromTemplate ? '返回模板入口' : entry.source ? '继续原任务' : '返回本地设置'}
+                {fromTemplate
+                  ? '返回' + templateLabel
+                  : entry.source
+                    ? '继续原任务'
+                    : '返回本地设置'}
               </button>
               <small>本页配置仅用于已授权的任务。</small>
             </section>

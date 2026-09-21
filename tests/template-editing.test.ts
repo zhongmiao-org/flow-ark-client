@@ -333,3 +333,36 @@ test('an unavailable independent entry does not block creation or configuration 
     /缺少能力/,
   );
 });
+
+test('configuration and authorization tabs save only their own fields; leave-all includes both and every changed input', async (t) => {
+  const { service, detail } = await fixture(t);
+  const draft = structuredClone(detail);
+  draft.instance.name = 'Local name';
+  draft.instance.configuration = { shared: 'local config' };
+  draft.instance.resources = { output: { path: '/local/output' } };
+  draft.instance.grants = { write: 'auto' };
+  draft.entries[0].values = { text: 'local input' };
+  const config = templateSaveRequest(draft, detail, 'configuration');
+  assert.deepEqual(config.resources, {});
+  assert.equal(config.grants.write, 'deny');
+  const savedConfig = await service.save(config);
+  const afterConfig = acceptTemplateSave(draft, draft, savedConfig, config, 'configuration');
+  assert.equal(afterConfig.instance.grants.write, 'auto');
+  assert.deepEqual(afterConfig.entries[0].values, draft.entries[0].values);
+  afterConfig.instance.name = 'Still unsaved';
+  const resource = templateSaveRequest(afterConfig, savedConfig, 'resources');
+  assert.equal(resource.name, 'Local name');
+  assert.deepEqual(resource.inputs, {});
+  const savedResource = await service.save(resource);
+  const afterResource = acceptTemplateSave(
+    afterConfig,
+    afterConfig,
+    savedResource,
+    resource,
+    'resources',
+  );
+  assert.equal(afterResource.instance.name, 'Still unsaved');
+  const all = templateSaveRequest(afterResource, savedResource, 'all');
+  assert.equal(all.name, 'Still unsaved');
+  assert.deepEqual(all.inputs, { run: { text: 'local input' } });
+});
