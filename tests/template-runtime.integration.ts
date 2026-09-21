@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, mkdir, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomBytes } from 'node:crypto';
@@ -16,6 +16,69 @@ async function wait(fn: () => any) {
   }
   throw new Error('模板运行等待超时');
 }
+test('a custom workflow ZIP reinstalls with editable input and explicit file authorization before real execution', async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), 'custom-zip-runtime-'));
+  const runtime = new Runtime(
+    dir,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  t.after(async () => {
+    await runtime.shutdown();
+    runtime.store.close();
+    await rm(dir, { recursive: true, force: true });
+  });
+  await runtime.ready;
+  const original: any = {
+    id: 'custom',
+    name: 'Custom file workflow',
+    description: '',
+    formatVersion: '1.0',
+    parameters: { text: 'private original input' },
+    requiredCapabilities: [],
+    steps: [
+      {
+        id: 'write',
+        type: 'file',
+        version: 1,
+        operation: 'write',
+        binding: 'output',
+        name: 'result.txt',
+        content: { $ref: 'params.text' },
+      },
+    ],
+  };
+  const path = join(dir, 'custom.zip');
+  await runtime.request('flow.export', { flow: original, reviewed: true, path });
+  const installed = await runtime.request('template.install', {
+    token: (await runtime.request('template.inspect', { path })).token,
+  });
+  const instance = await runtime.templates.create(installed.key);
+  await assert.rejects(
+    runtime.enqueue(instance.entryFlows.run),
+    /参数|类型|数据|授权|schema|must/i,
+  );
+  await runtime.templates.input(instance.id, 'run', { text: 'new portable input' });
+  await assert.rejects(runtime.enqueue(instance.entryFlows.run), /授权/);
+  const output = join(dir, 'output');
+  await mkdir(output);
+  const action = Object.keys(instance.grants)[0];
+  await runtime.templates.configure(
+    instance.id,
+    instance.configuration,
+    { output: { path: output } },
+    { [action]: 'auto' },
+  );
+  const run = await runtime.enqueue(instance.entryFlows.run);
+  await wait(() =>
+    ['SUCCEEDED', 'FAILED', 'INTERRUPTED'].includes(runtime.store.get<any>('run', run.id)?.state),
+  );
+  assert.equal(runtime.store.get<any>('run', run.id).state, 'SUCCEEDED');
+  assert.equal(await readFile(join(output, 'result.txt'), 'utf8'), 'new portable input');
+  assert.equal(original.parameters.text, 'private original input');
+});
 test('real packaged scripts share only their instance state; human grants and persisted effects survive restart without replay', async (t) => {
   const dir = await mkdtemp(join(tmpdir(), 'template-runtime-'));
   const key = randomBytes(32);

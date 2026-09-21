@@ -1350,7 +1350,7 @@ export class Runtime {
       case 'template.answer':
         return this.templates.answer(args.id, args.value);
       case 'flow.export': {
-        const { path, ...payload } = args;
+        const { path, identity, ...payload } = args;
         const request = flowExportSchema.parse(payload);
         if (typeof path !== 'string') throw new Error('导出路径由 Main 选择');
         const record = this.store.get<FlowRecord>('flow', (request.flow as Flow).id);
@@ -1361,6 +1361,7 @@ export class Runtime {
           request.configuration,
           source,
           ref?.entryId,
+          identity,
         );
         await writeArchive(pkg, path);
         return {

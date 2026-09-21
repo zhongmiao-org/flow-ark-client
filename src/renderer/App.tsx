@@ -573,7 +573,7 @@ export default function App() {
                 title="导出前请确认流程字面量和脚本中没有个人数据；本地绑定和参数值不导出"
               >
                 <Download size={15} />
-                导出
+                导出 ZIP
               </button>
               <button onClick={save} disabled={busy}>
                 <Save size={15} />

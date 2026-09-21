@@ -2,12 +2,15 @@ import { useId, useRef, useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import type { Bindings, Json } from '../shared/types';
 import { schemaDefaults } from '../shared/template-config';
+import { LiteralValue } from './ValueField';
 
 /** A generic, data-only form. Business field labels and options live in the package. */
 export function Field({ schema: s, value, change, label }: any) {
   const id = useId();
   if (Object.hasOwn(s, 'const') || s.readOnly) return null;
   const title = s.title ?? label;
+  if (!s.type && !s.enum && !s.oneOf)
+    return <LiteralValue label={title ?? '值'} value={value ?? null} change={change} />;
   if (s.type === 'object')
     return (
       <fieldset className="template-fieldset">
@@ -157,6 +160,8 @@ export default function TemplateConfiguration({
             setSaving(true);
             setError('');
             try {
+              if (e.currentTarget.querySelector('[data-value-invalid]'))
+                throw new Error('请先修正未完成的字段值');
               await apply(values);
               close();
             } catch (error: unknown) {

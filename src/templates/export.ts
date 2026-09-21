@@ -9,6 +9,7 @@ import {
   type Manifest,
 } from '../../contracts/package-format';
 import { validateFlow, walk } from '../core/validate';
+import { declareNativeBoundaries, parameterSchema } from './export-boundaries';
 import { validateConfigurationSchema } from '../shared/template-config';
 import type { Flow } from '../shared/types';
 /** A local fork contains definitions only. Source values and author identity are not inherited. */
@@ -17,6 +18,7 @@ export async function exportDefinition(
   configuration?: any,
   source?: PackageData,
   entryId?: string,
+  identity = 'local-' + randomUUID(),
 ): Promise<PackageData> {
   const f = structuredClone(validateFlow(flow));
   delete f.sourceTemplate;
@@ -28,7 +30,7 @@ export async function exportDefinition(
     ? structuredClone(source.manifest)
     : {
         packageFormat: '2.0',
-        id: 'local-' + randomUUID(),
+        id: identity,
         name: f.name,
         description: f.description ?? '',
         version: '1.0.0',
@@ -58,7 +60,8 @@ export async function exportDefinition(
         dependencies: [],
         contentDigest: '',
       };
-  m.id = 'local-' + randomUUID();
+  if (!/^local-[a-z0-9-]+$/.test(identity)) throw new Error('本地模板身份无效');
+  m.id = identity;
   m.version = '1.0.0';
   m.author = 'local';
   m.source = 'local';
@@ -66,7 +69,7 @@ export async function exportDefinition(
   if (!source) {
     json(m.configurationSchema, configuration?.schema ?? { type: 'object', properties: {} });
     json(m.stateSchema, { type: 'object' });
-    json('schemas/input.json', { type: 'object' });
+    json('schemas/input.json', parameterSchema(flow.parameters));
     json('schemas/result.json', {});
   }
   if (configuration) {
@@ -74,7 +77,7 @@ export async function exportDefinition(
     json(m.configurationSchema, configuration.schema);
   }
   const entry = m.entries.find((e) => e.id === entryId) ?? m.entries[0];
-  entry.capabilities = [...new Set([...entry.capabilities, ...f.requiredCapabilities])];
+  declareNativeBoundaries(f, m, entry.id);
   for (const n of walk(f.steps))
     if (n.type === 'script') {
       if (n.dependencies.length) throw new Error('导出前须静态打包脚本依赖');
