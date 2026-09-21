@@ -19,10 +19,12 @@ try {
   );
   evidence.crossSite = true;
   const zoom = (factor: number) =>
-    h.app.evaluate(async (_electron, factor) => {
+    h.app.evaluate(async ({ screen }, factor) => {
       const wc = (globalThis as any).embeddedFixture.resource.view.webContents;
-      const expected =
-        ((await wc.executeJavaScript('devicePixelRatio')) / wc.getZoomFactor()) * factor;
+      // A preceding viewport change can update getZoomFactor before the page's
+      // devicePixelRatio. Use the window's display rather than mixing those epochs.
+      const window = (globalThis as any).embeddedFixture.window;
+      const expected = screen.getDisplayMatching(window.getBounds()).scaleFactor * factor;
       wc.setZoomFactor(factor);
       const until = Date.now() + 5000;
       const frames = wc.mainFrame.framesInSubtree;
@@ -39,7 +41,10 @@ try {
       await Promise.all(
         frames.map((frame: any) =>
           frame.executeJavaScript(
-            'new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))',
+            `new Promise((resolve,reject) => {
+              const timeout=setTimeout(()=>reject(new Error('网页绘制等待超时')),5000);
+              requestAnimationFrame(() => requestAnimationFrame(()=>{clearTimeout(timeout);resolve(true)}));
+            })`,
           ),
         ),
       );
