@@ -28,7 +28,7 @@ type SavedTask = PlanningTask & {
   proposal?: PlanningProposal;
   undo?: { before: FlowRecord | null; afterHash: string };
 };
-type Job = { id: string; abort: AbortController };
+type Job = { id: string; abort: AbortController; provider: string };
 type Dependencies = {
   attachments?: TaskAttachments;
   learning?: {
@@ -49,6 +49,9 @@ export class Planning {
   private jobs = new Map<string, Job>();
   private operationEpoch = new Map<string, number>();
   private cancellationEpoch = 0;
+  usesProvider(provider: string) {
+    return [...this.jobs.values()].some((job) => job.provider === provider);
+  }
   constructor(
     private store: Store,
     private deps: Dependencies,
@@ -402,7 +405,7 @@ export class Planning {
       validateObject('AIPlanningRequest', request);
       if (Buffer.byteLength(JSON.stringify(request)) > 2 * 1024 * 1024)
         throw new Error('规划上下文与基线流程合计超过 2 MiB，请缩小本次修改范围');
-      const job = { id: uid(), abort: new AbortController() };
+      const job = { id: uid(), abort: new AbortController(), provider: args.provider };
       this.put({
         ...task,
         status: 'generating',

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Bootstrap, FlowRecord, Step } from '../shared/types';
 import type { PlanningChange, PlanningContext, PlanningTask, TaskDetail } from '../shared/planning';
 import { buildDiagram } from './flow-diagram';
@@ -44,6 +44,8 @@ const draftOf = (detail: TaskDetail): Draft => ({
 const text = (value: unknown): string =>
   typeof value === 'string' ? value : (JSON.stringify(value, null, 2) ?? '无');
 type Props = {
+  configuredAI?: { key: string; provider: 'deepseek' | 'openai-codex'; model: string };
+  configuredAIHandled: () => void;
   toolSelection?: { key: string; kind: 'web' | 'file' };
   toolSelectionHandled: () => void;
   openTools: () => void;
@@ -57,7 +59,11 @@ type Props = {
   data: Bootstrap;
   onNavigation: (title: string, back?: () => void, backLabel?: string) => void;
   openRun: (detail: any, back: (intent?: TaskRunIntent) => void) => void;
-  settings: (provider: 'deepseek' | 'openai-codex', model: string) => void;
+  settings: (
+    provider: 'deepseek' | 'openai-codex',
+    model: string,
+    source?: { title: string; taskId?: string },
+  ) => void;
   flows: () => void;
   createFlow: () => void;
   openFlow: (flow: FlowRecord) => void;
@@ -80,8 +86,19 @@ export default function AITaskWorkspace(props: Props) {
   const [learning, setLearning] = useState<LearningStatus>();
   const handledGuide = useRef(0);
   const [page, setPage] = useState<
-    'home' | 'guide' | 'brief' | 'target' | 'understand' | 'review' | 'check'
+    'home' | 'guide' | 'brief' | 'target' | 'understand' | 'review' | 'check' | 'missing-ai'
   >('home');
+  const missingOrigin = useRef<'brief' | 'understand' | 'review'>('brief');
+  const settingsReturnScroll = useRef<number | undefined>(undefined);
+  useLayoutEffect(() => {
+    if (!props.active || settingsReturnScroll.current === undefined || page === 'missing-ai')
+      return;
+    const scroll = settingsReturnScroll.current;
+    settingsReturnScroll.current = undefined;
+    requestAnimationFrame(() => {
+      document.querySelector('main')?.scrollTo({ top: scroll });
+    });
+  }, [props.active]);
   const backToBrief = useCallback(() => setPage('brief'), []);
   useEffect(
     () => setAttachmentPreview(undefined),
@@ -106,8 +123,19 @@ export default function AITaskWorkspace(props: Props) {
   const epoch = useRef(0);
   const selectedTask = useRef<string | null>(null);
   const handledTool = useRef<string | undefined>(undefined);
+  const handledConfiguration = useRef<string | undefined>(undefined);
   const [provider, setProvider] = useState<'deepseek' | 'openai-codex'>('deepseek');
   const [model, setModel] = useState('deepseek-flash');
+  useLayoutEffect(() => {
+    const configuration = props.configuredAI;
+    if (!props.active || !configuration || handledConfiguration.current === configuration.key)
+      return;
+    handledConfiguration.current = configuration.key;
+    setProvider(configuration.provider);
+    setModel(configuration.model);
+    setReviewed(false);
+    props.configuredAIHandled();
+  }, [props.active, props.configuredAI?.key]);
   const [reviewed, setReviewed] = useState(false);
   const [view, setView] = useState<'list' | 'graph'>('list');
   const [selected, setSelected] = useState('');
@@ -135,42 +163,48 @@ export default function AITaskWorkspace(props: Props) {
         ? '第一次，让我们一起完成'
         : page === 'target'
           ? '这次要操作哪里？'
-          : page === 'check'
-            ? '试运行前，最后确认一次'
-            : page === 'home'
-              ? '开始任务'
-              : page === 'brief'
-                ? '描述需求，带上必要资料'
-                : result?.kind === 'clarify'
-                  ? '我理解你要……'
-                  : result?.kind === 'unsupported'
-                    ? '这项任务还需要支持'
-                    : result?.kind === 'plan' && detail?.proposal?.baseFlow
-                      ? '检查 AI 提议的修改'
-                      : '先看看任务步骤';
+          : page === 'missing-ai'
+            ? '先连接 AI，需求会为你保留'
+            : page === 'check'
+              ? '试运行前，最后确认一次'
+              : page === 'home'
+                ? '开始任务'
+                : page === 'brief'
+                  ? '描述需求，带上必要资料'
+                  : result?.kind === 'clarify'
+                    ? '我理解你要……'
+                    : result?.kind === 'unsupported'
+                      ? '这项任务还需要支持'
+                      : result?.kind === 'plan' && detail?.proposal?.baseFlow
+                        ? '检查 AI 提议的修改'
+                        : '先看看任务步骤';
 
   useEffect(() => {
     if (props.active)
       props.onNavigation(
         title,
-        page === 'check'
-          ? backToPlan
+        page === 'missing-ai'
+          ? () => setPage(missingOrigin.current)
+          : page === 'check'
+            ? backToPlan
+            : page === 'understand'
+              ? () => void openTarget()
+              : page === 'target'
+                ? backToBrief
+                : page === 'guide' || page === 'brief'
+                  ? () => {
+                      void back();
+                    }
+                  : undefined,
+        page === 'missing-ai'
+          ? '任务草稿'
           : page === 'understand'
-            ? () => void openTarget()
+            ? '选择操作对象'
             : page === 'target'
-              ? backToBrief
+              ? '描述与附件'
               : page === 'guide' || page === 'brief'
-                ? () => {
-                    void back();
-                  }
+                ? '开始任务'
                 : undefined,
-        page === 'understand'
-          ? '选择操作对象'
-          : page === 'target'
-            ? '描述与附件'
-            : page === 'guide' || page === 'brief'
-              ? '开始任务'
-              : undefined,
       );
   }, [
     props.active,
@@ -696,7 +730,9 @@ export default function AITaskWorkspace(props: Props) {
             onClick={() =>
               void run(async () => {
                 await save();
-                props.settings(provider, model);
+                settingsReturnScroll.current = document.querySelector('main')?.scrollTop ?? 0;
+                missingOrigin.current = page === 'understand' || page === 'review' ? page : 'brief';
+                setPage('missing-ai');
               })
             }
           >
@@ -840,24 +876,27 @@ export default function AITaskWorkspace(props: Props) {
         <div>
           <h1>{page === 'home' ? '你想完成什么？' : title}</h1>
           <p>
-            {page === 'guide'
-              ? '大约 2 分钟 · 使用无账号的示例网页和你选择的输出目录'
-              : page === 'home'
-                ? '用一句话开始。FlowArk 先给你看步骤，由你决定何时执行。'
-                : page === 'understand'
-                  ? '第 3 步 / 确认理解 · 缺少的信息用简单选择补齐'
-                  : page === 'brief' && !scope
-                    ? '第 1 步 / 描述 · 对话和附件作为本次任务草稿保留'
-                    : page === 'target'
-                      ? '第 2 步 / 选目标 · 只有你明确选择的对象会进入任务上下文'
-                      : generating
-                        ? '正在理解本次任务，你可以取消生成。'
-                        : scope
-                          ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : scope.nodeId} · 尚未执行`
-                          : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
+            {page === 'missing-ai'
+              ? '任务描述与已选附件仍在草稿中'
+              : page === 'guide'
+                ? '大约 2 分钟 · 使用无账号的示例网页和你选择的输出目录'
+                : page === 'home'
+                  ? '用一句话开始。FlowArk 先给你看步骤，由你决定何时执行。'
+                  : page === 'understand'
+                    ? '第 3 步 / 确认理解 · 缺少的信息用简单选择补齐'
+                    : page === 'brief' && !scope
+                      ? '第 1 步 / 描述 · 对话和附件作为本次任务草稿保留'
+                      : page === 'target'
+                        ? '第 2 步 / 选目标 · 只有你明确选择的对象会进入任务上下文'
+                        : generating
+                          ? '正在理解本次任务，你可以取消生成。'
+                          : scope
+                            ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : scope.nodeId} · 尚未执行`
+                            : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
           </p>
         </div>
         {page !== 'home' &&
+          page !== 'missing-ai' &&
           page !== 'target' &&
           page !== 'guide' &&
           page !== 'understand' &&
@@ -915,6 +954,40 @@ export default function AITaskWorkspace(props: Props) {
           start={(mode) => void startLearning(mode)}
           skip={() => void skipLearning()}
         />
+      ) : page === 'missing-ai' ? (
+        <section className="ai-task-card ai-missing-card">
+          <span className="ai-config-status warning">
+            {providerName} · {props.data.credentials.includes(provider) ? '已配置' : '未配置'}
+          </span>
+          <h2>配置一次，就能继续规划任务</h2>
+          <p>在本地设置中填写 Key 与模型并测试连接。返回时继续本次任务，不需要重新描述。</p>
+          <article className="ai-missing-draft">
+            <h3>当前草稿</h3>
+            <p>{draft.description || '尚未填写需求'}</p>
+          </article>
+          <div className="ai-task-actions">
+            <button
+              className="primary"
+              onClick={() => {
+                setPage(missingOrigin.current);
+                props.settings(provider, model, {
+                  title: draft.description.slice(0, 40) || '当前任务',
+                  taskId: detail?.task.id,
+                });
+              }}
+            >
+              去配置 AI 服务
+            </button>
+            <button
+              onClick={() => {
+                if (detail?.flow) props.openFlow(detail.flow);
+                else props.createFlow();
+              }}
+            >
+              先手动搭建
+            </button>
+          </div>
+        </section>
       ) : page === 'home' ? (
         <>
           <section className="ai-task-composer">

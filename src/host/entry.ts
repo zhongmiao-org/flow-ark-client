@@ -26,7 +26,9 @@ const rpc = new Rpc(
                 ? EMBEDDED_CLOSE_RPC_TIMEOUT_MS
                 : m === 'task.output.directory' ||
                     m.startsWith('task.attachment.') ||
-                    m.startsWith('tool.credentials.')
+                    m.startsWith('tool.credentials.') ||
+                    m.startsWith('ai.configuration.') ||
+                    m === 'credentials.get'
                   ? 55000
                   : 65000,
           ),

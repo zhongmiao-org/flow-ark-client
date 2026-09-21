@@ -201,7 +201,12 @@ try {
       'FlowArk · 目标修复隔离测试（自动退出）';
   });
   await call('browser.embedded.enable');
-  await call('credentials.set', { id: 'deepseek', value: 'sk-repair-native-fixture' });
+  await call('ai.configuration.save', {
+    provider: 'deepseek',
+    revision: null,
+    model: 'deepseek-flash',
+    apiKey: 'sk-repair-native-fixture',
+  });
   const created = (await call('task.create')).task;
   const task = (
     await call('task.save', {

@@ -155,21 +155,16 @@ const state = async (id: string, expected: string, nodeInstance?: string) => {
 };
 const openRun = async (id: string) => {
   await button('运行记录').click();
-  if (await button('全部记录').count()) await button('全部记录').click();
+  await page.getByRole('button', { name: /^(所有流程|已筛选流程)$/ }).click();
   await page.getByLabel('搜索运行记录', { exact: true }).fill(id);
-  await button('查询').click();
-  const row = page
-    .locator('.run-history tbody tr')
-    .filter({ has: page.locator(`small[title="${id}"]`) });
-  await row.getByRole('button', { name: '查看', exact: true }).click();
+  await button('应用筛选').click();
+  await page.locator(`.run-history button[data-run-id="${id}"]`).click();
   await page.getByRole('region', { name: '运行概览', exact: true }).waitFor();
-  await wait(
-    async () => (await page.locator('.run-meta').innerText()).includes(id.slice(0, 8)),
-    '运行详情',
-  );
+  await page.locator(`.run-detail-heading span[title="${id}"]`).waitFor();
 };
 const showSavedOutput = async (id: string) => {
   await openRun(id);
+  await page.getByRole('tab', { name: '输出与产物', exact: true }).click();
   await output().locator('pre').waitFor();
   if (await output().getByRole('button', { name: '展开完整输出', exact: true }).count())
     await output().getByRole('button', { name: '展开完整输出', exact: true }).click();
@@ -228,7 +223,7 @@ const nativeForm = () =>
     const view = BrowserWindow.getAllWindows()[0].contentView
       .children[0] as Electron.WebContentsView;
     return view.webContents.executeJavaScript(
-      `({width:innerWidth,name:document.querySelector('#full-name').value})`,
+      `({width:innerWidth,name:document.querySelector('#fullName').value})`,
     );
   });
 const restoreEncryption = async () => {
@@ -245,24 +240,26 @@ const restoreEncryption = async () => {
 try {
   await launch();
   await button('本地设置').click();
-  await page.getByLabel(/^Provider/).selectOption('deepseek');
-  const keyInput = page.getByPlaceholder('输入或替换 API Key', { exact: true });
+  await button('管理 DeepSeek').click();
+  const keyInput = page.getByPlaceholder('输入 DeepSeek API Key', { exact: true });
   await keyInput.fill(original);
-  await button('保存密钥').click();
-  await wait(async () => (await keyInput.inputValue()) === '', '真实 Vault 保存');
+  await button('保存配置').click();
+  await page.locator('.ai-saved-key').waitFor();
+  assert.equal(await keyInput.count(), 0);
   assert.ok((await call('bootstrap')).credentials.includes('deepseek'));
   const ciphertext = await readFile(join(data, 'credentials', 'deepseek.enc'));
   assert.equal(ciphertext.includes(Buffer.from(original)), false);
   note('actual-vault-save-clears-input-and-keeps-plaintext-out-of-ciphertext');
 
+  await button('返回本地设置').click();
   await button('打开网页面板').click();
   const normalFlow = await create(
     '脱敏：真实 SDK 与本地表单',
     [
       script(),
       formBrowser('open', 'navigate', '', lab.url),
-      formBrowser('fill', 'fill', '#full-name', '虚构脱敏测试用户'),
-      formBrowser('read', 'inputValue', '#full-name'),
+      formBrowser('fill', 'fill', '#fullName', '虚构脱敏测试用户'),
+      formBrowser('read', 'inputValue', '#fullName'),
       {
         id: 'verify',
         type: 'assert',
@@ -369,8 +366,9 @@ try {
   note('host-validation-and-preflight-rejections-remain-errors-with-zero-execution-records');
 
   await button('本地设置').click();
-  await page.getByLabel(/^Provider/).selectOption('deepseek');
-  const replacementInput = page.getByPlaceholder('输入或替换 API Key', { exact: true });
+  await button('管理 DeepSeek').click();
+  await button('替换 Key').click();
+  const replacementInput = page.getByPlaceholder('输入新 Key，留空则保留原 Key', { exact: true });
   await replacementInput.fill(pending);
   const countsBeforeVaultFailure = executionCounts();
   await app!.evaluate(({ safeStorage }, known) => {
@@ -380,12 +378,12 @@ try {
     };
   }, original);
   try {
-    await button('保存密钥').click();
-    const alert = page.getByRole('alert').filter({ hasText: 'fictional-encrypt-failure' });
+    await button('保存配置').click();
+    const alert = page.getByRole('alert').filter({ hasText: '系统保护存储' });
     await alert.waitFor();
     const text = await alert.innerText();
     absent(text, 'Main Vault failure UI');
-    assert.match(text, /\[REDACTED\]/);
+    assert.ok(!text.includes('fictional-encrypt-failure'));
     assert.equal(
       await replacementInput.inputValue(),
       pending,
@@ -398,7 +396,6 @@ try {
       text,
     };
     await alert.screenshot({ path: join(data, 'vault-failure.png') });
-    await alert.getByRole('button', { name: '关闭', exact: true }).click();
   } finally {
     await restoreEncryption();
   }

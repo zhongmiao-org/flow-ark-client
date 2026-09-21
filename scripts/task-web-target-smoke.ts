@@ -318,7 +318,12 @@ try {
   evidence.checks.push(
     'real-source-open-select-return-disclosure-no-hidden-page-read-or-run-three-widths',
   );
-  await call('credentials.set', { id: 'deepseek', value: 'sk-only-local-web-fixture' });
+  await call('ai.configuration.save', {
+    provider: 'deepseek',
+    revision: null,
+    model: 'deepseek-flash',
+    apiKey: 'sk-only-local-web-fixture',
+  });
   d = await generate(d);
   assert.equal(requests[0].context.length, 1);
   assert.doesNotMatch(JSON.stringify(requests), /resourceId|selectionId|documentRevision/);

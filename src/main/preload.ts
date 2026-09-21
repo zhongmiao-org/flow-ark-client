@@ -73,8 +73,11 @@ const allowed = new Set([
   'flow.export',
   'flow.import',
   'file.choose',
-  'credentials.set',
-  'ai.test',
+  'ai.configuration.get',
+  'ai.configuration.save',
+  'ai.configuration.remove',
+  'ai.configuration.test',
+  'ai.configuration.cancel',
   'clipboard.copy',
   'app.showData',
 ]);

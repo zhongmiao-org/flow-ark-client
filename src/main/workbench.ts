@@ -20,6 +20,8 @@ import { pathToFileURL } from 'node:url';
 import { readFile, writeFile } from 'node:fs/promises';
 import { Rpc } from '../shared/rpc';
 import { Vault } from './vault';
+import { ProviderConfigurations } from './provider-configurations';
+import { aiProvider } from '../shared/ai-settings';
 import { validateIPC } from '../shared/ipc';
 import { imageInfo } from '../host/attachment-file';
 import { IMAGE_MAX_BYTES, TEXT_EXTENSIONS } from '../shared/task-attachments';
@@ -186,15 +188,18 @@ app
       ]),
     );
     const vault = new Vault(join(app.getPath('userData'), 'credentials'));
+    const providerConfigurations = new ProviderConfigurations(vault, (key) =>
+      knownSecrets.add(key),
+    );
     let ready: Promise<any>;
     ipcMain.handle('flowark:request', async (event, method: string, raw: unknown) => {
       const pending =
-        method === 'credentials.set' &&
+        method === 'ai.configuration.save' &&
         raw &&
         typeof raw === 'object' &&
-        'value' in raw &&
-        typeof raw.value === 'string'
-          ? [raw.value]
+        'apiKey' in raw &&
+        typeof raw.apiKey === 'string'
+          ? [raw.apiKey]
           : [];
       if (
         method === 'tool.connection.discover' &&
@@ -241,11 +246,7 @@ app
           const masked = redactArtifactText(preview.text, [...knownSecrets]);
           return { ...preview, ...masked, truncated: preview.truncated || masked.truncated };
         }
-        if (method === 'credentials.set') {
-          await vault.set(args.id, args.value);
-          knownSecrets.add(args.value);
-          return true;
-        }
+        if (method === 'ai.configuration.save' && args.apiKey) knownSecrets.add(args.apiKey);
         if (method === 'flow.export') {
           const review = await dialog.showMessageBox(win, {
             buttons: ['取消', '已审阅，导出 ZIP'],
@@ -378,6 +379,29 @@ app
               }
             }
             if (method === 'credentials.list') return vault.list();
+            if (method === 'ai.configuration.read') {
+              try {
+                return await providerConfigurations.get(aiProvider.parse(args.provider));
+              } catch {
+                throw new Error('AI 配置读取未完成，请检查系统保护存储后重试');
+              }
+            }
+            if (method === 'ai.configuration.write') {
+              if (args.update?.apiKey) knownSecrets.add(args.update.apiKey);
+              try {
+                return await providerConfigurations.change(
+                  aiProvider.parse(args.provider),
+                  args.revision,
+                  args.update,
+                );
+              } catch (error) {
+                if (error instanceof Error && error.message === 'AI 配置已变化，请重新读取后保存')
+                  throw error;
+                throw new Error(
+                  'AI 配置保存或移除未完成，原配置保持不变；请检查系统保护存储后重试',
+                );
+              }
+            }
             if (
               method === 'tool.credentials.set' ||
               method === 'tool.credentials.remove' ||
@@ -399,7 +423,10 @@ app
               return true;
             }
             if (method === 'credentials.get') {
-              const value = await vault.get(args.id);
+              const value = await providerConfigurations.key(
+                aiProvider.parse(args.id),
+                args.revision,
+              );
               knownSecrets.add(value);
               return value;
             }

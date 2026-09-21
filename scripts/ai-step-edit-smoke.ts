@@ -312,13 +312,14 @@ try {
   assert.equal((await detail()).task.scope?.nodeId, 'decision');
   await page.locator('.ai-task-provider input').fill('fixture-model');
   await button('配置 AI 服务').click();
-  await page.getByPlaceholder('输入或替换 API Key').fill('sk-only-local-step-fixture');
-  await button('保存密钥').click();
+  await button('去配置 AI 服务').click();
+  await page.getByPlaceholder('输入 DeepSeek API Key').fill('sk-only-local-step-fixture');
+  await button('保存配置').click();
   await wait(
     async () => (await call('bootstrap')).credentials.includes('deepseek'),
     'key not saved',
   );
-  await button('← 返回 AI 任务').click();
+  await button('← 返回原任务').click();
   assert.equal(
     await page.getByLabel('这一步怎么改').inputValue(),
     '只把条件改为标题包含项目，其他步骤不动',

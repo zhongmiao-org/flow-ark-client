@@ -2,6 +2,12 @@ import { useState, useEffect, useCallback, useReducer, useRef, lazy, Suspense } 
 import FlowLibrary from './FlowLibrary';
 import AITaskWorkspace from './AITaskWorkspace';
 import ToolConnectionsPage, { type ToolNavigation } from './ToolConnectionsPage';
+import AISettingsPage, {
+  AISettingsSummary,
+  type AISettingsEntry,
+  type AISettingsNavigation,
+} from './AISettingsPage';
+import type { AIProviderId } from '../shared/ai-settings';
 import { buildDiagram } from './flow-diagram';
 import DiagramCanvas from './DiagramCanvas';
 import { kinds } from './node-kinds';
@@ -49,7 +55,6 @@ import {
   Trash2,
   Activity,
   Search,
-  ShieldCheck,
 } from 'lucide-react';
 import type { Bootstrap, FlowRecord, Step } from '../shared/types';
 import TemplateLibrary from './TemplateLibrary';
@@ -105,6 +110,12 @@ function format(t: string) {
 }
 export default function App() {
   const toolNavigation = useRef<ToolNavigation | undefined>(undefined);
+  const aiSettingsNavigation = useRef<AISettingsNavigation | undefined>(undefined);
+  const [configuredAI, setConfiguredAI] = useState<{
+    key: string;
+    provider: AIProviderId;
+    model: string;
+  }>();
   const [toolSelection, setToolSelection] = useState<{ key: string; kind: 'web' | 'file' }>();
   const [browserOpen, setBrowserOpen] = useState(false);
   const [outlineOpen, setOutlineOpen] = useState(false);
@@ -160,7 +171,8 @@ export default function App() {
     scroll: number;
     browserOpen: boolean;
   }>();
-  const [taskAISettings, setTaskAISettings] = useState({
+  const [taskAISettings, setTaskAISettings] = useState<AISettingsEntry>({
+    key: 'initial',
     provider: 'deepseek',
     model: 'deepseek-flash',
   });
@@ -423,7 +435,8 @@ export default function App() {
                   (section === 'runs' && detail && runOrigin === 'task'
                     ? id === 'tasks'
                     : section === id) ||
-                  (section === 'editor' && id === 'flows')
+                  (section === 'editor' && id === 'flows') ||
+                  (section === 'ai-settings' && id === 'settings')
                     ? 'selected'
                     : ''
                 }
@@ -431,7 +444,8 @@ export default function App() {
                   (section === 'runs' && detail && runOrigin === 'task'
                     ? id === 'tasks'
                     : section === id) ||
-                  (section === 'editor' && id === 'flows')
+                  (section === 'editor' && id === 'flows') ||
+                  (section === 'ai-settings' && id === 'settings')
                     ? 'page'
                     : undefined
                 }
@@ -453,6 +467,7 @@ export default function App() {
                     setRunFilter(false);
                   };
                   if (section === 'tools') toolNavigation.current?.(navigate);
+                  else if (section === 'ai-settings') aiSettingsNavigation.current?.(navigate);
                   else navigate();
                 }}
               >
@@ -477,6 +492,7 @@ export default function App() {
                   setBrowserOpen(false);
                 };
                 if (section === 'tools') toolNavigation.current?.(navigate);
+                else if (section === 'ai-settings') aiSettingsNavigation.current?.(navigate);
                 else navigate();
               }}
             >
@@ -553,7 +569,10 @@ export default function App() {
           <header
             className="topbar"
             style={
-              nodeSession || section === 'tools' || (section === 'editor' && outlineOpen)
+              nodeSession ||
+              section === 'tools' ||
+              section === 'ai-settings' ||
+              (section === 'editor' && outlineOpen)
                 ? { display: 'none' }
                 : undefined
             }
@@ -854,6 +873,8 @@ export default function App() {
                 );
               }}
               guideEntry={guideEntry}
+              configuredAI={configuredAI}
+              configuredAIHandled={() => setConfiguredAI(undefined)}
               toolSelection={toolSelection}
               toolSelectionHandled={() => setToolSelection(undefined)}
               openTools={() => {
@@ -873,10 +894,16 @@ export default function App() {
                 setTaskReturn(false);
                 setSection('runs');
               }}
-              settings={(provider, model) => {
-                setTaskAISettings({ provider, model });
+              settings={(provider, model, source) => {
+                setTaskAISettings({
+                  provider,
+                  model,
+                  source: source ?? { title: '开始任务' },
+                  key: crypto.randomUUID(),
+                });
                 setTaskReturn(true);
-                setSection('settings');
+                setSection('ai-settings');
+                setBrowserOpen(false);
               }}
               flows={() => {
                 setTaskReturn(false);
@@ -1379,8 +1406,35 @@ export default function App() {
             </div>
           )}
           {section === 'settings' && (
-            <SettingsView data={data} action={action} initialAI={taskAISettings} />
+            <SettingsView
+              data={data}
+              action={action}
+              openAI={(provider: AIProviderId, model: string) => {
+                setTaskAISettings({ key: crypto.randomUUID(), provider, model });
+                setTaskReturn(false);
+                setSection('ai-settings');
+                setBrowserOpen(false);
+              }}
+            />
           )}
+          <AISettingsPage
+            active={section === 'ai-settings'}
+            entry={taskAISettings}
+            navigation={aiSettingsNavigation}
+            changed={refresh}
+            onSaved={(configuration) => {
+              if (taskAISettings.source && configuration.configured)
+                setConfiguredAI({
+                  key: crypto.randomUUID(),
+                  provider: configuration.provider,
+                  model: configuration.model,
+                });
+            }}
+            back={() => {
+              setSection(taskAISettings.source ? 'tasks' : 'settings');
+              setTaskReturn(false);
+            }}
+          />
         </main>
         {browserOpen && section !== 'editor' && (
           <BrowserSidebar
@@ -2120,11 +2174,8 @@ function TemplateAnswer({ item, action }: any) {
   );
 }
 
-function SettingsView({ data, action, initialAI }: any) {
-  const [candidates, setCandidates] = useState<any[]>([]),
-    [provider, setProvider] = useState(initialAI.provider),
-    [key, setKey] = useState(''),
-    [model, setModel] = useState(initialAI.model);
+function SettingsView({ data, action, openAI }: any) {
+  const [candidates, setCandidates] = useState<any[]>([]);
   return (
     <div className="page settings-page">
       <Heading title="连接你的本机能力" text="选择内置或本机浏览器，配置自己的 AI 接口。" />
@@ -2200,69 +2251,7 @@ function SettingsView({ data, action, initialAI }: any) {
           <div className="note">尚未绑定浏览器。纯数据流程可以直接运行。</div>
         )}
       </section>
-      <section className="panel">
-        <div className="row">
-          <ShieldCheck size={22} />
-          <h2>AI 与安全存储</h2>
-        </div>
-        <p>密钥由 macOS 安全存储保护，只显示配置状态。API 调用需要你的独立 API Key。</p>
-        <div className="form-grid">
-          <label>
-            Provider
-            <select
-              value={provider}
-              onChange={(e) => {
-                setProvider(e.target.value);
-                setModel(e.target.value === 'deepseek' ? 'deepseek-flash' : 'gpt-5.3-codex');
-                setKey('');
-              }}
-            >
-              <option value="openai-codex">Codex · OpenAI Responses</option>
-              <option value="deepseek">DeepSeek · Chat Completions</option>
-            </select>
-          </label>
-          <label>
-            模型 ID
-            <input value={model} onChange={(e) => setModel(e.target.value)} />
-          </label>
-          <label>
-            API Key{' '}
-            <span className="muted">
-              {data.credentials.includes(provider) ? '已安全保存' : '未配置'}
-            </span>
-            <input
-              type="password"
-              autoComplete="off"
-              value={key}
-              placeholder="输入或替换 API Key"
-              onChange={(e) => setKey(e.target.value)}
-            />
-          </label>
-          <div className="row">
-            <button
-              className="primary"
-              disabled={!key}
-              onClick={() =>
-                action(async () => {
-                  await api('credentials.set', { id: provider, value: key });
-                  setKey('');
-                }, '密钥已安全保存')
-              }
-            >
-              保存密钥
-            </button>
-            <button
-              disabled={!data.credentials.includes(provider)}
-              onClick={() =>
-                action(() => api('ai.test', { provider, model }), 'AI 连通及草稿格式测试通过')
-              }
-            >
-              验证接口
-            </button>
-          </div>
-        </div>
-        <p className="note">验证接口使用虚构事实，会发起一次真实 API 请求。不自动切换供应商。</p>
-      </section>
+      <AISettingsSummary open={openAI} />
       <section className="panel">
         <h2>本地数据</h2>
         <p className="path-text">{data.dataPath || '正在初始化安全存储…'}</p>

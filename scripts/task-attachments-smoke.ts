@@ -256,7 +256,12 @@ try {
   await choose('目标截图', picture);
   const expectedImage = (await readFile(picture)).toString('base64');
   await rm(picture);
-  await call('credentials.set', { id: 'deepseek', value: 'sk-local-attachments-fixture' });
+  await call('ai.configuration.save', {
+    provider: 'deepseek',
+    revision: null,
+    model: 'deepseek-flash',
+    apiKey: 'sk-local-attachments-fixture',
+  });
   await page!.getByText('查看本次发送给 DeepSeek 的内容', { exact: true }).click();
   const disclosure = await page!.locator('.ai-task-disclosure').innerText();
   assert.match(disclosure, /已选资料.txt/);

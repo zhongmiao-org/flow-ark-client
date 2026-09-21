@@ -329,7 +329,12 @@ try {
 
   // Prevent Renderer bootstrap polling from consuming the credential gate. Any
   // already-started Vault list must settle before arming the target flow.run.
-  await call('credentials.set', { id: 'deepseek', value: 'fictional-suspend-credential' });
+  await call('ai.configuration.save', {
+    provider: 'deepseek',
+    revision: null,
+    model: 'deepseek-flash',
+    apiKey: 'fictional-suspend-credential',
+  });
   const delayedId = await create('挂起：旧准入不得复活', [http('delayed_admission')], false, [
     'deepseek',
   ]);

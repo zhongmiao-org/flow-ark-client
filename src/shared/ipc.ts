@@ -6,6 +6,7 @@ import { runRerunPreviewSchema, runRerunConfirmSchema } from './run-rerun';
 import { taskMethods } from './planning';
 import { learningMethods } from './learning';
 import { connectionMethods } from './tool-connections';
+import { aiConfigurationMethods } from './ai-settings';
 import { runReviewConfirmSchema, runReviewPreviewSchema } from './run-review';
 const id = z.string().min(1).max(100);
 const empty = z.object({}).strict();
@@ -50,6 +51,7 @@ const bindings = z
   })
   .strict();
 export const methods = {
+  ...aiConfigurationMethods,
   ...connectionMethods,
   ...taskMethods,
   ...learningMethods,
@@ -131,18 +133,6 @@ export const methods = {
   'flow.export': flowExportSchema,
   'flow.import': empty,
   'file.choose': z.object({ kind: z.enum(['directory', 'browser', 'file', 'driver']) }).strict(),
-  'credentials.set': z
-    .object({
-      id: z.enum(['openai-codex', 'deepseek']),
-      value: z.string().min(8).max(1000),
-    })
-    .strict(),
-  'ai.test': z
-    .object({
-      provider: z.enum(['openai-codex', 'deepseek']),
-      model: z.string().min(1).max(100),
-    })
-    .strict(),
   'clipboard.copy': z.object({ value: z.string().max(20000) }).strict(),
   'app.showData': empty,
 };

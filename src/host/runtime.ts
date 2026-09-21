@@ -37,7 +37,6 @@ import { staticUploadFields, uploadSource, uploadText } from '../shared/upload-s
 import { Templates } from '../templates/service';
 import { version as clientVersion } from '../../package.json';
 import { normalizeBindings, validateConfiguration } from './configuration';
-import { generate } from '../ai/providers';
 const example = {
   formatVersion: '1.0',
   id: 'empty',
@@ -81,6 +80,7 @@ type Active = {
 import { TaskOutputs } from './task-output';
 import { TaskAttachments } from './task-attachments';
 import { ToolConnections } from './tool-connections';
+import { AISettings } from './ai-settings';
 
 export class Runtime {
   readonly store: Store;
@@ -93,6 +93,8 @@ export class Runtime {
   readonly webTargets: TaskWebTargets;
   readonly outputs: TaskOutputs;
   readonly toolConnections: ToolConnections;
+  readonly aiSettings: AISettings;
+  private credentialChecks = new WeakMap<PreparedScripts, () => void>();
   private active?: Active;
   private artifactFiles: ArtifactFiles;
   private artifactCleanup: ArtifactCleanup;
@@ -120,6 +122,27 @@ export class Runtime {
     this.artifactFiles = new ArtifactFiles(dataPath);
     this.store = new Store(join(dataPath, 'flowark.sqlite'), key);
     this.store.recover();
+    this.aiSettings = new AISettings(this.store, {
+      assertAvailable: () => {
+        if (this.stopping || this.suspended) throw new Error('应用正在退出或休眠');
+        if (this.store.fault) throw new Error(this.store.fault);
+      },
+      inUse: (provider) =>
+        this.planning?.usesProvider(provider) ||
+        this.store
+          .list<Run>('run')
+          .some(
+            (run) =>
+              (run.id === this.active?.id || run.state === 'QUEUED') &&
+              this.store
+                .get<FlowRecord>('snapshot', run.id)
+                ?.bindings.credentials.includes(provider),
+          ),
+      get: (provider) => this.system('ai.configuration.read', { provider }),
+      change: (provider, revision, update) =>
+        this.system('ai.configuration.write', { provider, revision, update }),
+      key: (provider, revision) => this.system('credentials.get', { id: provider, revision }),
+    });
     this.toolConnections = new ToolConnections(this.store, {
       assertAvailable: () => {
         if (this.stopping || this.suspended) throw new Error('应用正在退出或休眠');
@@ -186,7 +209,12 @@ export class Runtime {
         },
         capture: (requestId) => this.system('browser.embedded.pick.capture', { requestId }),
       }),
-      key: (provider) => this.system('credentials.get', { id: provider }),
+      key: async (provider) => {
+        this.aiSettings.assertReadable(provider);
+        const key = await this.system('credentials.get', { id: provider });
+        this.aiSettings.assertReadable(provider);
+        return key;
+      },
       save: (flow, bindings) => this.saveFlow(flow, bindings),
       assertAvailable: () => {
         if (this.stopping || this.suspended)
@@ -294,6 +322,7 @@ export class Runtime {
     return record;
   }
   private version(record: FlowRecord, prepared: PreparedScripts) {
+    this.credentialChecks.get(prepared)?.();
     const id = executionVersion(record, prepared);
     if (!this.store.get('version', id))
       this.store.put('version', id, { ...record, ...prepared, versionId: id });
@@ -342,6 +371,12 @@ export class Runtime {
     };
   }
   async preflight(record: FlowRecord & Partial<PreparedScripts>): Promise<PreparedScripts> {
+    const checkCredentials = this.aiSettings.capture(record.bindings.credentials);
+    const checked = (prepared: PreparedScripts) => {
+      checkCredentials();
+      this.credentialChecks.set(prepared, checkCredentials);
+      return prepared;
+    };
     const flow = validateFlow(record.flow);
     await this.webTargets.record(record);
     await this.outputs.record(record);
@@ -397,7 +432,7 @@ export class Runtime {
       }
       await this.webTargets.record(record);
       await this.outputs.record(record);
-      return { scripts: record.scripts, scriptBundles: record.scriptBundles };
+      return checked({ scripts: record.scripts, scriptBundles: record.scriptBundles });
     }
     if (record.versionId && scriptNodes.some((n) => n.dependencies.length))
       throw new Error('旧计划没有固定脚本依赖，请重新保存计划');
@@ -420,7 +455,7 @@ export class Runtime {
       }
     await this.webTargets.record(record);
     await this.outputs.record(record);
-    return prepared;
+    return checked(prepared);
   }
   private assertAdmitting() {
     const blocked = this.executionBlock();
@@ -677,6 +712,7 @@ export class Runtime {
     check();
     const prepared = await this.preflight(record);
     check();
+    this.credentialChecks.get(prepared)?.();
     const id = uid();
     const version = versionId ?? this.version(record, prepared);
     const run: Run = {
@@ -1122,6 +1158,9 @@ export class Runtime {
   }
   private async finishSuspend(active: Active | undefined): Promise<boolean> {
     const errors: unknown[] = [];
+    const aiCleanup = this.aiSettings.cancelAll().catch((error) => {
+      errors.push(error);
+    });
     const toolCleanup = this.toolConnections.cancelAll().catch((error) => {
       errors.push(error);
     });
@@ -1167,6 +1206,7 @@ export class Runtime {
     // A rejected diagnostic must not return before the actual owner finishes.
     if (active) await active.done;
     await toolCleanup;
+    await aiCleanup;
     if (this.store.fault && !errors.length) errors.push(new Error(this.store.fault));
     if (ids.size) {
       try {
@@ -1188,6 +1228,10 @@ export class Runtime {
     return true;
   }
   async request(method: string, args: any = {}): Promise<any> {
+    if (method.startsWith('ai.configuration.')) {
+      await this.ready;
+      return this.aiSettings.request(method, args);
+    }
     if (method.startsWith('tool.connection.')) {
       await this.ready;
       return this.toolConnections.request(method, args);
@@ -1212,38 +1256,6 @@ export class Runtime {
         this.lastTick = Date.now();
         this.suspended = false;
         return true;
-      }
-      case 'ai.test': {
-        const input = {
-          provider: args.provider,
-          model: args.model,
-          instructions: '仅返回输入中的 value，不添加内容。输出 JSON。',
-          input: { value: 'fictional-check' },
-          schema: {
-            type: 'object',
-            properties: { value: { type: 'string', const: 'fictional-check' } },
-            required: ['value'],
-            additionalProperties: false,
-          },
-        };
-        const key = await this.system('credentials.get', { id: args.provider });
-        try {
-          const result = await generate(input, key, new AbortController().signal);
-          this.store.put('ai-validation', args.provider, {
-            provider: result.provider,
-            model: result.model,
-            time: now(),
-            requestId: result.requestId,
-            status: 'passed',
-          });
-          return {
-            provider: result.provider,
-            model: result.model,
-            usage: result.usage,
-          };
-        } catch (error) {
-          throw new Error(redactedErrorText(error, [key]));
-        }
       }
       case 'bootstrap':
         return this.bootstrap();
@@ -1573,6 +1585,9 @@ export class Runtime {
   async shutdown() {
     this.stopping = true;
     const toolErrors: unknown[] = [];
+    const aiCleanup = this.aiSettings.cancelAll().catch((error) => {
+      toolErrors.push(error);
+    });
     const toolCleanup = this.toolConnections.cancelAll().catch((error) => {
       toolErrors.push(error);
     });
@@ -1627,6 +1642,7 @@ export class Runtime {
     const scripts = await scriptCleanup;
     if (!scripts.confirmed) this.blockExecution(scripts.error ?? '退出时脚本回收未确认');
     await toolCleanup;
+    await aiCleanup;
     errors.push(...toolErrors);
     try {
       await this.ready;

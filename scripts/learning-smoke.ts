@@ -305,13 +305,14 @@ try {
   assert.equal((await call('task.list')).length, 1);
   assert.equal(requests.length, 0);
   await button('配置 AI 服务').click();
-  await page!.getByPlaceholder('输入或替换 API Key').fill('sk-only-local-learning-fixture');
-  await button('保存密钥').click();
+  await button('去配置 AI 服务').click();
+  await page!.getByPlaceholder('输入 DeepSeek API Key').fill('sk-only-local-learning-fixture');
+  await button('保存配置').click();
   await wait(
     async () => (await call('bootstrap')).credentials.includes('deepseek'),
     'fixture credential save',
   );
-  await button('← 返回 AI 任务').click();
+  await button('← 返回原任务').click();
   assert.match(await page!.getByLabel('你的需求', { exact: true }).inputValue(), /同名自动加序号/);
   assert.equal(requests.length, 0);
   await button('网页链接与对象').click();

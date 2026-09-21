@@ -133,7 +133,12 @@ try {
   });
   await page.evaluate(() => document.fonts.ready);
   await call('browser.embedded.enable');
-  await call('credentials.set', { id: 'deepseek', value: 'opaque-local-preview-key' });
+  await call('ai.configuration.save', {
+    provider: 'deepseek',
+    revision: null,
+    model: 'deepseek-flash',
+    apiKey: 'opaque-local-preview-key',
+  });
   const first = await prepare('虚构结果回读', [
     {
       id: 'open',

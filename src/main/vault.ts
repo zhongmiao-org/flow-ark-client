@@ -1,9 +1,28 @@
 import { safeStorage } from 'electron';
 import { readFile, writeFile, mkdir, rename, rm } from 'node:fs/promises';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 export class Vault {
   constructor(private dir: string) {}
+  async readEntry(id: string) {
+    await this.available();
+    let encrypted: Buffer;
+    try {
+      encrypted = await readFile(this.path(id));
+    } catch (error: any) {
+      if (error.code === 'ENOENT') return null;
+      throw error;
+    }
+    return {
+      value: (await safeStorage.decryptStringAsync(encrypted)).result,
+      revision: createHash('sha256').update(encrypted).digest('hex'),
+    };
+  }
+  async removeProvider(id: string) {
+    if (!['deepseek', 'openai-codex'].includes(id)) throw new Error('AI 供应商无效');
+    await this.available();
+    await rm(this.path(id), { force: true });
+  }
   async removeToolCredential(id: string) {
     if (!/^mcp-[a-zA-Z0-9_-]{1,80}$/.test(id)) throw new Error('工具凭据 ID 无效');
     await this.available();
@@ -24,8 +43,10 @@ export class Vault {
   async set(id: string, value: string) {
     await this.available();
     const path = this.path(id);
-    await writeFile(path + '.tmp', await safeStorage.encryptStringAsync(value), { mode: 0o600 });
+    const encrypted = await safeStorage.encryptStringAsync(value);
+    await writeFile(path + '.tmp', encrypted, { mode: 0o600 });
     await rename(path + '.tmp', path);
+    return createHash('sha256').update(encrypted).digest('hex');
   }
   async get(id: string) {
     await this.available();

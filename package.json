@@ -8,7 +8,7 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "149da8fe2ee3d0f1434528c5709f510876ce6f5a",
+    "governanceBaseline": "873ccbc9950937fdc98e62679b5dd7f1ac6ba0d4",
     "contractsVersion": "0.12.0",
     "contractsTag": "contracts-v0.12.0"
   },
@@ -23,7 +23,7 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "test:runtime": "node --import tsx --test tests/runtime.integration.ts tests/run-rerun.integration.ts tests/run-review.integration.ts tests/embedded-cleanup.integration.ts tests/script-supervision.integration.ts tests/storage-full.integration.ts tests/system-suspend.integration.ts tests/redaction.integration.ts tests/template-runtime.integration.ts tests/task-web-target.integration.ts tests/learning.integration.ts tests/task-output.integration.ts tests/tool-connections.integration.ts",
+    "test:runtime": "node --import tsx --test tests/runtime.integration.ts tests/run-rerun.integration.ts tests/run-review.integration.ts tests/embedded-cleanup.integration.ts tests/script-supervision.integration.ts tests/storage-full.integration.ts tests/system-suspend.integration.ts tests/redaction.integration.ts tests/template-runtime.integration.ts tests/task-web-target.integration.ts tests/learning.integration.ts tests/task-output.integration.ts tests/tool-connections.integration.ts tests/ai-settings.integration.ts",
     "check": "pnpm typecheck && pnpm test && pnpm build",
     "contracts:generate": "node scripts/generate-contracts.mjs",
     "test:browser": "node --import tsx scripts/browser-smoke.ts",
@@ -79,7 +79,8 @@
     "test:learning": "node --import tsx scripts/learning-smoke.ts",
     "test:task-web-target": "node --import tsx scripts/task-web-target-smoke.ts",
     "test:task-attachments": "node --import tsx scripts/task-attachments-smoke.ts",
-    "test:tool-connections": "node --import tsx scripts/tool-connections-smoke.ts"
+    "test:tool-connections": "node --import tsx scripts/tool-connections-smoke.ts",
+    "test:ai-settings": "node --import tsx scripts/ai-settings-smoke.ts"
   },
   "build": {
     "appId": "org.zhongmiao.flowark",
