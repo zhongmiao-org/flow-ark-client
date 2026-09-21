@@ -222,6 +222,11 @@ async function capture(name: string, selector = '.ai-settings-columns') {
       };
     }, selector);
     assert.ok(layout.bodyWidth <= layout.viewport, 'horizontal page overflow');
+    if (selector === '.ai-missing-card') {
+      assert.equal(layout.children[0].x, layout.root.x + 33, 'missing-resource card padding');
+      assert.equal(layout.children[0].y, layout.root.y + 33, 'missing-resource top padding');
+      assert.equal(layout.children[1].y - layout.children[0].y - layout.children[0].height, 24);
+    }
     if (width === 1440 && selector === '.ai-settings-columns') {
       assert.equal(layout.children[0].x, 256);
       assert.equal(layout.children[1].x, 1008);

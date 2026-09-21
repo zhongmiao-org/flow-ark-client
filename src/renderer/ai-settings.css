@@ -192,7 +192,7 @@ button.ai-remove-button {
   grid-template-columns: 1fr 1fr;
   gap: 24px;
 }
-.ai-missing-card {
+.ai-task-card.ai-missing-card {
   min-height: 520px;
   padding: 32px;
   gap: 24px;
