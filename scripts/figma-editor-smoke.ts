@@ -189,6 +189,11 @@ try {
         BrowserWindow.getAllWindows()[0].setSize(width, height),
       { width, height },
     );
+    await wait(async () => {
+      const s = await inspect();
+      assert.equal(s.width, width);
+      assert.equal(s.height, height);
+    }, '窗口实际尺寸 ' + width);
     await button('全图').click();
     await capture('compact-' + width);
     assert.equal((await inspect()).library, null);
@@ -234,6 +239,13 @@ try {
   );
   const run = (await call('bootstrap')).runs[0];
   assert.equal((await call('run.detail', { id: run.id })).output.read, 'layout-verified');
+  await page.getByRole('region', { name: '运行概览', exact: true }).waitFor();
+  assert.equal(await page.getByRole('link', { name: /^第 \d+ 页$/ }).count(), 0);
+  await page.getByRole('tab', { name: '输出与产物', exact: true }).click();
+  await button('← 返回运行详情').click();
+  await button('← 返回流程编排').click();
+  assert.ok((await inspect()).canvas);
+  assert.equal((await call('bootstrap')).runs.length, 1, '返回不得重放运行');
   evidence.checks = [
     'all-34-nodes',
     'wide-panels',
@@ -244,8 +256,21 @@ try {
     'selected-step-summary',
     'full-canvas-after-close',
     'real-embedded-fill-read-assert',
+    'run-output-back-restores-origin-editor-without-replay',
   ];
   evidence.passed = true;
+} catch (error) {
+  evidence.error = error instanceof Error ? error.stack : String(error);
+  evidence.failure = await inspect().catch(() => null);
+  evidence.viewport = await page
+    .evaluate(() => ({
+      compact: matchMedia('(max-width: 1439px)').matches,
+      toolbar: document.querySelector('.editor-compact-toolbar')?.textContent ?? null,
+      classes: document.querySelector('.app')?.className,
+    }))
+    .catch(() => null);
+  await page.screenshot({ path: data + '/failure.png' }).catch(() => {});
+  throw error;
 } finally {
   const forcedExit = setTimeout(() => {
     evidence.passed = false;

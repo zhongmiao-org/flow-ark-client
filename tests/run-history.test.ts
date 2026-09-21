@@ -205,3 +205,84 @@ test('long filtered scan yields without including newer matches outside its capt
   );
   assert.equal(page.newerCount, 1);
 });
+
+test('date, flow and source filters count their full bounded intersection and reject changed cursors', async (t) => {
+  const { store } = fixture(t);
+  for (let i = 0; i < 240; i++)
+    store.put('run', run(i).id, run(i, { createdAt: '2026-01-01T12:00:00Z', debug: i % 2 === 0 }));
+  store.put('run', run(240).id, run(240, { createdAt: '2026-01-02T00:00:00Z' }));
+  store.put('run', run(241).id, run(241, { createdAt: 'invalid' }));
+  store.put('run', run(242).id, run(242, { flowId: 'another-flow' }));
+  store.put(
+    'run',
+    run(243).id,
+    run(243, {
+      debug: true,
+      rerun: { runId: 'history-1', mode: 'snapshot', reviewedAt: '2026-01-01T00:00:00Z' },
+    }),
+  );
+  const query = {
+    limit: 6,
+    flowId: 'flow-a',
+    source: 'manual',
+    createdFrom: '2026-01-01T00:00:00Z',
+    createdBefore: '2026-01-02T00:00:00Z',
+  } as const;
+  const first = await listRuns(store, query);
+  assert.equal(first.matchedCount, 120);
+  assert.equal(first.totalCount, 244);
+  assert.deepEqual(
+    first.runs.map((r) => r.id),
+    [239, 237, 235, 233, 231, 229].map((n) => `history-${n}`),
+  );
+  store.put('run', run(244).id, run(244));
+  const second = await listRuns(store, { ...query, cursor: first.nextCursor! });
+  assert.equal(second.matchedCount, 120);
+  assert.equal(second.newerCount, 1);
+  assert.equal(second.runs[0].id, 'history-227');
+  for (const changed of [
+    { source: 'debug' },
+    { flowId: 'another-flow' },
+    { createdFrom: '2026-01-01T01:00:00Z' },
+    { createdBefore: '2026-01-03T00:00:00Z' },
+  ])
+    await assert.rejects(
+      listRuns(store, { ...query, ...changed, cursor: first.nextCursor }),
+      /分页位置无效/,
+    );
+  assert.equal((await listRuns(store, { source: 'debug' })).matchedCount, 120);
+  assert.deepEqual(
+    (await listRuns(store, { source: 'rerun' })).runs.map((r) => r.id),
+    ['history-243'],
+  );
+  for (const bad of [
+    { createdFrom: '2026-01-01' },
+    { createdBefore: 'invalid' },
+    { createdFrom: query.createdBefore, createdBefore: query.createdFrom },
+    { flowId: '' },
+  ])
+    assert.throws(() => validateIPC('run.list', bad));
+});
+
+test('list elapsed uses saved execution events, not wall-clock timestamps on the run document', async (t) => {
+  const { store } = fixture(t);
+  store.put('run', run(1).id, run(1, { createdAt: '2000-01-01T00:00:00Z' }));
+  store.event(run(1).id, 'state', '', { state: 'RUNNING' });
+  store.event(run(1).id, 'state', '', { state: 'SUCCEEDED' });
+  store.put('run', run(2).id, run(2));
+  const page = await listRuns(store, {});
+  assert.equal(page.elapsed['history-1'].kind, 'final');
+  assert.ok(page.elapsed['history-1'].milliseconds! < 1000);
+  assert.equal(page.elapsed['history-2'].milliseconds, null);
+  assert.equal(page.elapsed['history-1'].startedAt, store.events(run(1).id)[0].time);
+  assert.equal(page.elapsed['history-2'].startedAt, null);
+  const events = store.events.bind(store);
+  t.mock.method(store, 'events', (id: string) => {
+    const saved = events(id);
+    return id === run(1).id ? [{ ...saved[0], sequence: 0, time: 'invalid' }, ...saved] : saved;
+  });
+  assert.equal(
+    (await listRuns(store, {})).elapsed['history-1'].startedAt,
+    events(run(1).id)[0].time,
+  );
+});

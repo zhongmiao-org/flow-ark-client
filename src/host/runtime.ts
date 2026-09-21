@@ -1103,7 +1103,10 @@ export class Runtime {
       case 'run.control':
         return this.control(args.id, args.action);
       case 'run.list':
-        return listRuns(this.store, args);
+        return listRuns(this.store, args, () => ({
+          execution: this.observeExecution(),
+          fault: this.store.fault,
+        }));
       case 'run.rerun.preview':
         await this.ready;
         return this.reruns.preview(args);

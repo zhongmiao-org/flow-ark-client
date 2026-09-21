@@ -17,7 +17,7 @@ export async function startFormLab(port = 0) {
     }
     res.setHeader('content-type', 'text/html; charset=utf-8');
     res.end(
-      `<!doctype html><title>Platform fixture</title><h1>Platform fixture</h1><form><label>Name<input id="fullName" name="fullName"></label><label>Option A<input type="radio" id="option-a" name="option" value="a"></label><button id="submit" type="submit">Submit</button></form><pre id="receipt"></pre><script>document.querySelector('form').onsubmit=async e=>{e.preventDefault();document.querySelector('#receipt').textContent=JSON.stringify(await(await fetch('/api/submit',{method:'POST'})).json())}</script>`,
+      `<!doctype html><title>Platform fixture</title><h1>Platform fixture</h1><form><label>Name<input id="fullName" name="fullName"></label><label>Option A<input type="radio" id="option-a" name="option" value="a"></label><label>Choice<select id="choice"><option value="a">A</option><option value="b">B</option></select></label><button id="submit" type="submit">Submit</button></form><pre id="receipt"></pre><script>document.querySelector('form').onsubmit=async e=>{e.preventDefault();document.querySelector('#receipt').textContent=JSON.stringify(await(await fetch('/api/submit',{method:'POST'})).json())}</script>`,
     );
   });
   await new Promise<void>((r) => server.listen(port, '127.0.0.1', r));

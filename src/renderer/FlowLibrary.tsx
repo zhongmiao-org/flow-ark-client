@@ -93,7 +93,7 @@ export default function FlowLibrary({
                 {active
                   ? active.name
                   : data.fault || data.runtimeBlock
-                    ? '执行已停止，请处理上方提示'
+                    ? '资源状态待核对，请处理上方提示'
                     : data.execution
                       ? '当前没有活动任务'
                       : '正在核对执行状态'}

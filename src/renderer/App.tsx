@@ -29,7 +29,6 @@ import {
   Bell,
   Settings,
   ArrowUpRight,
-  ArrowLeft,
   ArrowUp,
   ArrowDown,
   Check,
@@ -43,8 +42,6 @@ import {
   Upload,
   Download,
   Save,
-  Pause,
-  Square,
   Copy,
   FolderOpen,
   Trash2,
@@ -53,14 +50,12 @@ import {
   ShieldCheck,
   CircleHelp,
 } from 'lucide-react';
-import type { Bootstrap, FlowRecord, Step, Run, Event } from '../shared/types';
+import type { Bootstrap, FlowRecord, Step } from '../shared/types';
 import TemplateLibrary from './TemplateLibrary';
 import TemplateConfiguration from './TemplateConfiguration';
 import ScriptPackages from './ScriptPackages';
 import EmbeddedBrowserPanel from './EmbeddedBrowserPanel';
 import BrowserSidebar from './BrowserSidebar';
-import ArtifactCleanupPanel from './ArtifactCleanupPanel';
-import RunRerunPanel from './RunRerunPanel';
 import Schedules from './Schedules';
 import { fileBindingNames } from './file-bindings';
 import BrowserNodeConfiguration from './BrowserNodeConfiguration';
@@ -69,8 +64,7 @@ import ResourceNodeConfiguration from './ResourceNodeConfiguration';
 import ParameterConfiguration from './ParameterConfiguration';
 import TemplateParameters from './TemplateParameters';
 import RunHistory from './RunHistory';
-import { RunObservation, RunOutput } from './RunObservation';
-import { presentRun } from '../shared/run-presentation';
+import RunDetail, { type RunTab } from './RunDetail';
 import { runStateLabels } from '../shared/run-history';
 import { referenceChoices } from './value-references';
 import { referenceIssues } from '../shared/flow-references';
@@ -106,6 +100,10 @@ function format(t: string) {
 export default function App() {
   const [browserOpen, setBrowserOpen] = useState(false);
   const [editorPanel, setEditorPanel] = useState('canvas');
+  const [runPage, setRunPage] = useState(1);
+  const [runFilter, setRunFilter] = useState(false);
+  const [runTab, setRunTab] = useState<RunTab>('current');
+  const [runOrigin, setRunOrigin] = useState<'history' | 'editor'>('history');
   const [compactEditor, setCompactEditor] = useState(() => window.innerWidth < 1440);
   useEffect(() => {
     const query = window.matchMedia('(max-width: 1439px)');
@@ -129,6 +127,10 @@ export default function App() {
     [loaded, setLoaded] = useState(false),
     [configOpen, setConfigOpen] = useState(false);
   const [history, dispatchDraft] = useReducer(draftHistory, emptyHistory);
+  useEffect(() => {
+    if (section === 'runs' && (detail || runFilter))
+      document.querySelector('main')?.scrollTo({ top: 0 });
+  }, [section, detail?.run.id, runFilter, runTab]);
   const edit = history.present?.record ?? null,
     selected = history.present?.selected ?? '';
   const editorBrowser = section === 'editor' && browserOpen;
@@ -269,6 +271,9 @@ export default function App() {
       const next = await api('run.detail', { id: run.id });
       if (!guardInvalidNodeJson()) return;
       setDetail(next);
+      setRunOrigin('editor');
+      setRunTab('current');
+      setRunFilter(false);
       setSection('runs');
     }, '已生成快照并加入队列');
   }
@@ -332,6 +337,7 @@ export default function App() {
                   if (!guardInvalidNodeJson()) return;
                   setSection(id);
                   setDetail(null);
+                  setRunFilter(false);
                 }}
               >
                 <Icon size={20} strokeWidth={1.6} />
@@ -360,6 +366,26 @@ export default function App() {
         </aside>
         <main>
           <header className="topbar">
+            {section === 'runs' && (detail || runFilter) && (
+              <button
+                className="context-back"
+                onClick={() => {
+                  if (detail && runTab !== 'current') setRunTab('current');
+                  else if (detail) {
+                    setDetail(null);
+                    if (runOrigin === 'editor' && edit) setSection('editor');
+                  } else setRunFilter(false);
+                }}
+              >
+                {detail
+                  ? runTab !== 'current'
+                    ? '← 返回运行详情'
+                    : runOrigin === 'editor' && edit
+                      ? '← 返回流程编排'
+                      : `← 返回记录第 ${runPage} 页`
+                  : '← 返回运行记录'}
+              </button>
+            )}
             {(section === 'editor' || welcomePage) && (
               <button
                 className="context-back"
@@ -379,6 +405,55 @@ export default function App() {
               </button>
             )}
             <nav className="breadcrumbs" aria-label="当前位置">
+              {section === 'runs' && (detail || runFilter) && (
+                <>
+                  <a
+                    href="#runs"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      setDetail(null);
+                      setRunFilter(false);
+                    }}
+                  >
+                    运行记录
+                  </a>
+                  <span aria-hidden="true">/</span>
+                  {detail && (
+                    <>
+                      {runOrigin === 'history' && (
+                        <>
+                          <a
+                            href="#run-page"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              setDetail(null);
+                              setRunFilter(false);
+                            }}
+                          >
+                            第 {runPage} 页
+                          </a>
+                          <span aria-hidden="true">/</span>
+                        </>
+                      )}
+                      {runTab !== 'current' && (
+                        <>
+                          <a
+                            href="#run-detail"
+                            title={detail.run.id}
+                            onClick={(event) => {
+                              event.preventDefault();
+                              setRunTab('current');
+                            }}
+                          >
+                            {detail.run.id.slice(0, 8)}
+                          </a>
+                          <span aria-hidden="true">/</span>
+                        </>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
               {(section === 'editor' || welcomePage) && (
                 <>
                   <a
@@ -408,21 +483,29 @@ export default function App() {
                 </>
               )}
               <span aria-current="page">
-                {editorBrowser
-                  ? compactDrawer
-                    ? editorPanel === 'actions'
-                      ? '动作与结构'
-                      : editorPanel === 'params'
-                        ? '参数与绑定'
-                        : '当前步骤 · 配置'
-                    : compactEditor
-                      ? '紧凑窗口与网页'
-                      : '网页操作与拾取'
-                  : section === 'editor'
-                    ? edit?.flow.name || '流程编排'
-                    : welcomePage
-                      ? '首次使用'
-                      : nav.find((n) => n[0] === section)?.[1]}
+                {section === 'runs' && (detail || runFilter)
+                  ? detail
+                    ? runTab === 'output'
+                      ? '输出与产物'
+                      : runTab === 'logs'
+                        ? '运行日志'
+                        : detail.run.id.slice(0, 8)
+                    : '筛选运行记录'
+                  : editorBrowser
+                    ? compactDrawer
+                      ? editorPanel === 'actions'
+                        ? '动作与结构'
+                        : editorPanel === 'params'
+                          ? '参数与绑定'
+                          : '当前步骤 · 配置'
+                      : compactEditor
+                        ? '紧凑窗口与网页'
+                        : '网页操作与拾取'
+                    : section === 'editor'
+                      ? edit?.flow.name || '流程编排'
+                      : welcomePage
+                        ? '首次使用'
+                        : nav.find((n) => n[0] === section)?.[1]}
               </span>
             </nav>
             <button
@@ -439,7 +522,7 @@ export default function App() {
               <b>运行状态未能完整保存</b>
               <span>
                 {data.fault}
-                。以下状态为最后成功保存的记录，当前执行和最终结果请核对；重开不会自动重放。
+                。已停止接收新任务。以下状态为最后成功保存的记录，当前执行和最终结果请核对；重开不会自动重放。
               </span>
             </div>
           )}
@@ -710,28 +793,38 @@ export default function App() {
             </div>
           )}
           {section === 'runs' && (
-            <div className="page">
-              <Heading
-                title="每一次运行，都有迹可循"
-                text="执行快照、步骤事件与外部业务结果分别记录。"
+            <div className="page runs-page">
+              <RunHistory
+                visible={!detail}
+                flows={data.flows}
+                filterOpen={runFilter}
+                setFilterOpen={setRunFilter}
+                setPage={setRunPage}
+                open={(next) => {
+                  setRunOrigin('history');
+                  setRunTab('current');
+                  setDetail(next);
+                }}
               />
-              <RunHistory visible={!detail} open={setDetail} />
               {detail && (
                 <RunDetail
                   key={detail.run.id}
                   detail={detail}
                   fault={data.fault}
-                  open={(next) =>
+                  open={(next) => {
+                    setRunTab('current');
                     setDetail((current: any) =>
                       current?.run.id === detail.run.id ? next : current,
-                    )
-                  }
+                    );
+                  }}
                   reload={async () => {
                     const id = detail.run.id;
                     const next = await api('run.detail', { id });
                     setDetail((current: any) => (current?.run.id === id ? next : current));
                   }}
-                  back={() => setDetail(null)}
+                  tab={runTab}
+                  setTab={setRunTab}
+                  showBrowser={() => setBrowserOpen(true)}
                   control={(id, a) => action(() => api('run.control', { id, action: a }))}
                   reveal={(id) => action(() => api('artifact.reveal', { id }))}
                 />
@@ -1440,172 +1533,6 @@ function TemplateAnswer({ item, action }: any) {
   );
 }
 
-function RunDetail({
-  detail: d,
-  fault,
-  back,
-  control,
-  reveal,
-  reload,
-  open,
-}: {
-  detail: any;
-  fault?: string;
-  open: (detail: any) => void;
-  reload: () => Promise<void>;
-  back: () => void;
-  control: (id: string, a: string) => void;
-  reveal: (id: string) => void;
-}) {
-  const r: Run = d.run;
-  const observed = { ...d, fault: d.fault ?? fault };
-  const presentation = presentRun({ ...observed, output: undefined }, Date.now());
-  const terminal = ['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(r.state);
-  const controllable = presentation.activity === 'active' && !presentation.closing;
-  const lastSaved =
-    !terminal &&
-    (Boolean(observed.fault) || (r.state !== 'QUEUED' && presentation.activity !== 'active'));
-  const pause = [...d.events].reverse().find((e: Event) => e.type === 'debug-pause');
-  const results = d.events.filter((e: Event) => typeof e.data?.outputPreview === 'string');
-  return (
-    <>
-      <div className="section-row run-detail-heading">
-        <div className="row">
-          <button onClick={back}>
-            <ArrowLeft size={15} />
-            全部记录
-          </button>
-          <h2>{r.name}</h2>
-          {lastSaved ? (
-            <span className="badge state-INTERRUPTED">最后保存：{status[r.state]}</span>
-          ) : (
-            badge(r.state)
-          )}
-        </div>
-        <div className="row">
-          {controllable && !observed.fault && r.state === 'RUNNING' && (
-            <button onClick={() => control(r.id, 'pause')}>
-              <Pause size={14} />
-              步骤后暂停
-            </button>
-          )}
-          {controllable && !observed.fault && ['PAUSED', 'WAITING_INPUT'].includes(r.state) && (
-            <button onClick={() => control(r.id, 'resume')}>
-              <Play size={14} />
-              继续
-            </button>
-          )}
-          {controllable && !observed.fault && r.state === 'PAUSED' && (
-            <button onClick={() => control(r.id, 'step')}>执行下一步</button>
-          )}
-          {!terminal && (controllable || (r.state === 'QUEUED' && !observed.fault)) && (
-            <button onClick={() => control(r.id, 'cancel')}>
-              <Square size={14} />
-              取消
-            </button>
-          )}
-        </div>
-      </div>
-      <div className="run-meta">
-        <span>
-          运行 <code>{r.id.slice(0, 8)}</code>
-        </span>
-        <span>
-          不可变版本 <code>{r.versionId.slice(0, 12)}</code>
-        </span>
-        <span>{format(r.createdAt)}</span>
-      </div>
-      <RunObservation detail={observed} />
-      <RunOutput detail={observed} />
-      <p className="note">{r.business}</p>
-      <RunRerunPanel run={r} related={d.rerun} open={open} />
-      <ArtifactCleanupPanel run={r} cleanup={d.artifactCleanup} changed={reload} />
-      {r.debug && (
-        <p className="note">逐步调试 · 每次执行下一步会实际操作页面；继续将连续运行剩余流程。</p>
-      )}
-      {controllable && r.state === 'PAUSED' && pause && (
-        <div className="panel" aria-label="调试位置">
-          <b>下一步：{pause.data.nodeName}</b>
-          <p>
-            <code>{pause.nodeInstance}</code>
-          </p>
-        </div>
-      )}
-      {r.error && <div className="alert error">{r.error}</div>}
-      {results.length > 0 && (
-        <section className="panel" aria-label="步骤输出">
-          <h3>步骤输出</h3>
-          <p className="note">
-            显示脱敏后的输出预览，长内容截断；已执行步骤不会因暂停或失败自动重放。
-          </p>
-          {results.map((e: Event) => (
-            <details key={e.sequence} open={e === results.at(-1)}>
-              <summary>{e.nodeInstance}</summary>
-              <pre>{e.data.outputPreview}</pre>
-            </details>
-          ))}
-        </section>
-      )}
-      {d.scriptBundles?.length > 0 && (
-        <details className="script-bundles">
-          <summary>已固定的脚本与依赖 · {d.scriptBundles.length} 个节点</summary>
-          {d.scriptBundles.map((bundle: any) => (
-            <div key={bundle.nodeId}>
-              <p>
-                <b>{bundle.nodeId}</b> ·{' '}
-                {bundle.dependencies.length
-                  ? bundle.dependencies.map((dep: any) => dep.name + '@' + dep.version).join('，')
-                  : '仅使用脚本及 Node 内置能力'}
-              </p>
-              <code className="path-text">SHA-256 {bundle.sha256}</code>
-            </div>
-          ))}
-        </details>
-      )}
-      <div className="event-list">
-        {d.events.map((e: Event) => (
-          <div key={e.sequence}>
-            <span className="event-index">{String(e.sequence).padStart(2, '0')}</span>
-            <span className="event-dot" />
-            <time>{format(e.time)}</time>
-            <b>{e.type}</b>
-            <code>{e.nodeInstance}</code>
-            <pre>{JSON.stringify(e.data)}</pre>
-          </div>
-        ))}
-      </div>
-      {d.artifacts.length > 0 && (
-        <>
-          <h3>运行产物</h3>
-          {d.artifacts.map((a: any) => (
-            <div key={a.artifactId} className="row artifact-row" data-artifact-id={a.artifactId}>
-              <div className="artifact-description">
-                <p>
-                  {a.name} · {a.size} 字节
-                </p>
-                <span className={!a.available ? 'field-error' : undefined}>
-                  {a.integrity === 'cleared'
-                    ? '已清理'
-                    : a.integrity === 'verified'
-                      ? '已保存副本'
-                      : a.integrity === 'changed'
-                        ? '副本内容已改动'
-                        : a.integrity === 'unverified'
-                          ? '旧记录，未保存副本'
-                          : '文件已移动、删除或不可访问'}
-                </span>
-                <p className="path-text">{a.path}</p>
-              </div>
-              <button disabled={!a.available} onClick={() => reveal(a.artifactId)}>
-                {a.storage === 'snapshot-v1' ? '定位副本' : '定位当前文件'}
-              </button>
-            </div>
-          ))}
-        </>
-      )}
-    </>
-  );
-}
 function SettingsView({ data, action }: any) {
   const [candidates, setCandidates] = useState<any[]>([]),
     [provider, setProvider] = useState('openai-codex'),

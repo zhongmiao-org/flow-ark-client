@@ -82,19 +82,26 @@ const launch = async () => {
   assert.ok(!boot.fault, boot.fault);
   assert.ok(boot.execution, 'new Host must expose actual execution observation');
   evidence.version = await app.evaluate(({ app }) => app.getVersion());
+  await app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows()[0].setTitle('FlowArk · 运行观察隔离测试（自动退出）'),
+  );
+  await page.evaluate(() => {
+    document.querySelector('.window-titlebar')!.textContent =
+      'FlowArk · 运行观察隔离测试（自动退出）';
+  });
 };
 const openRun = async (id: string) => {
   await button('运行记录').click();
-  if (await button('全部记录').count()) await button('全部记录').click();
+  await button('触发来源筛选').click();
   await page.getByLabel('搜索运行记录', { exact: true }).fill(id);
-  await button('查询').click();
+  await button('应用筛选').click();
   const row = page
     .locator('.run-history tbody tr')
     .filter({ has: page.locator(`small[title="${id}"]`) });
   await row.getByRole('button', { name: '查看', exact: true }).click();
   await overview().waitFor();
   await wait(
-    async () => (await page.locator('.run-meta').innerText()).includes(id.slice(0, 8)),
+    async () => (await page.locator('.run-detail-heading').innerText()).includes(id.slice(0, 8)),
     'selected Run detail',
   );
 };
@@ -102,7 +109,16 @@ const create = async (name: string, steps: Step[], browser = false) => {
   const record = await call('flow.create');
   await call('flow.save', {
     flow: { ...record.flow, name, steps },
-    bindings: { files: {}, credentials: [], ...(browser ? { browserId: 'embedded' } : {}) },
+    bindings: {
+      files: {},
+      credentials: [],
+      ...(browser
+        ? {
+            browserId: (await call('bootstrap')).browsers.find((b: any) => b.product === 'embedded')
+              .id,
+          }
+        : {}),
+    },
   });
   return record.id as string;
 };
@@ -190,9 +206,9 @@ const nativeForm = () =>
     const view = BrowserWindow.getAllWindows()[0].contentView
       .children[0] as Electron.WebContentsView;
     return view.webContents.executeJavaScript(`({width:innerWidth,
-      name:document.querySelector('#full-name').value,
-      radio:document.querySelector('#channel-email').checked,
-      select:document.querySelector('#department').value})`);
+      name:document.querySelector('#fullName').value,
+      radio:document.querySelector('#option-a').checked,
+      select:document.querySelector('#choice').value})`);
   });
 
 try {
@@ -213,9 +229,9 @@ try {
     '运行观察：普通执行与已保存输出',
     [
       formBrowser('open', 'navigate', '', lab.url),
-      formBrowser('name', 'fill', '#full-name', '虚构观察用户'),
-      formBrowser('radio', 'check', '#channel-email', true),
-      formBrowser('select', 'select', '#department', 'engineering'),
+      formBrowser('name', 'fill', '#fullName', '虚构观察用户'),
+      formBrowser('radio', 'check', '#option-a', true),
+      formBrowser('select', 'select', '#choice', 'a'),
       {
         id: 'inspect',
         name: scriptName,
@@ -259,7 +275,7 @@ try {
     width: 1920,
     name: '虚构观察用户',
     radio: true,
-    select: 'engineering',
+    select: 'a',
   });
   // A later draft name must not replace the immutable execution snapshot name.
   const saved = (await call('bootstrap')).flows.find((item: any) => item.id === flowId);
@@ -300,6 +316,7 @@ try {
   }))
     assert.deepEqual(completed.output[key], value);
   const finalDuration = await fixed('ordinary-terminal');
+  await page.getByRole('tab', { name: '输出与产物', exact: true }).click();
   await output().waitFor();
   await output().getByRole('button', { name: '展开完整输出', exact: true }).waitFor();
   const previewText = await output().locator('pre').innerText();
@@ -349,7 +366,7 @@ try {
   );
   await increasing('human-wait-total-duration');
   assert.match(await progress().innerText(), /未报告/);
-  await button('取消').click();
+  await button('取消运行').click();
   const cancelled = await state(debug.id, 'CANCELLED');
   assert.ok(!cancelled.events.some((event: any) => event.nodeInstance === 'after_wait'));
   await fixed('cancelled-terminal');
@@ -365,6 +382,7 @@ try {
   assert.equal(requests.length, gateCount);
   await openRun(ordinary.id);
   assert.equal(await fixed('reopened-terminal'), finalDuration);
+  await page.getByRole('tab', { name: '输出与产物', exact: true }).click();
   await output().getByRole('button', { name: '展开完整输出', exact: true }).click();
   assert.deepEqual(JSON.parse(await output().locator('pre').innerText()), completed.output);
   await openRun(debug.id);
@@ -416,7 +434,7 @@ try {
   await page.getByText('运行状态未能完整保存', { exact: true }).waitFor();
   assert.match(await overview().innerText(), /最后保存|待核对/);
   assert.notEqual(await elapsed().getAttribute('data-elapsed-kind'), 'live');
-  for (const label of ['步骤后暂停', '执行下一步', '继续', '取消'])
+  for (const label of ['请求暂停', '执行下一步', '继续', '取消运行'])
     assert.equal(
       await button(label).count(),
       0,
@@ -426,20 +444,20 @@ try {
   await page.screenshot({ path: join(data, 'fault-presentation.png') });
   await button('我的流程').click();
   await wait(
-    async () => (await page.locator('.overview').innerText()).includes('已停止接收新任务'),
+    async () => (await page.locator('.storage-fault').innerText()).includes('已停止接收新任务'),
     'fault must not advertise an available execution slot',
   );
-  assert.ok(!(await page.locator('.overview').innerText()).includes('可以开始新任务'));
+  assert.ok(!(await page.locator('.storage-fault').innerText()).includes('可以开始新任务'));
   for (const fixtureState of ['RUNNING', 'PAUSED']) {
     await app!.evaluate((_electron, state) => {
       (globalThis as any).observationFault = { active: true, state };
     }, fixtureState);
     await openRun(ordinary.id);
     await wait(
-      async () => (await button('取消').count()) === 1,
+      async () => (await button('取消运行').count()) === 1,
       'active fault retains cancellation',
     );
-    for (const label of ['步骤后暂停', '执行下一步', '继续'])
+    for (const label of ['请求暂停', '执行下一步', '继续'])
       assert.equal(await button(label).count(), 0, 'fault must not expose ' + label);
     assert.match(await overview().innerText(), /最后成功保存/);
   }
@@ -459,7 +477,7 @@ try {
     async () => !(await page.locator('main').innerText()).includes('最后成功保存'),
     'restored genuine observations',
   );
-  assert.equal(await button('取消').count(), 0);
+  assert.equal(await button('取消运行').count(), 0);
   note(
     'reply-only-fault-fixture-protects-inactive-and-active-controls-without-changing-saved-history',
   );
@@ -484,7 +502,27 @@ try {
 } finally {
   for (const response of gates.values())
     if (!response.writableEnded) response.end('fixture cleanup');
-  if (app) await app.close().catch((error) => (evidence.cleanupError = String(error)));
+  if (app) {
+    const ownedProcess = app.process();
+    const guard = setTimeout(() => ownedProcess.kill('SIGKILL'), 30000);
+    try {
+      const boot = await call('bootstrap');
+      for (const run of boot.runs)
+        if (['QUEUED', 'RUNNING', 'PAUSED', 'WAITING_INPUT', 'CANCELLING'].includes(run.state))
+          await call('run.control', { id: run.id, action: 'cancel' });
+      await wait(
+        async () => !(await call('bootstrap')).execution?.active,
+        'test task cleanup',
+        15000,
+      );
+      await app.close();
+    } catch (error) {
+      evidence.cleanupError = String(error);
+      ownedProcess.kill('SIGKILL');
+    } finally {
+      clearTimeout(guard);
+    }
+  }
   await lab.close();
   receiver.closeAllConnections();
   await new Promise<void>((done) => receiver.close(() => done()));
