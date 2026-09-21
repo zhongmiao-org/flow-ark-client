@@ -2,6 +2,7 @@ import schema from '../../contracts/p1.schema.json';
 import { generate } from './providers';
 import type { PlanningInput, PlanningResult } from '../shared/planning';
 import { validateObject } from '../core/validate';
+import type { PlanningImageV1 } from '../shared/task-attachments';
 
 // Keep the provider's strict response schema small and portable. The enclosed
 // complete planning JSON is independently validated before any proposal exists.
@@ -30,6 +31,7 @@ export async function generatePlan(
   key: string,
   signal: AbortSignal,
   fetcher: typeof fetch = fetch,
+  images: PlanningImageV1[] = [],
 ): Promise<PlanningResult> {
   validateObject('AIPlanningRequest', input);
   const result = await generate(
@@ -54,6 +56,7 @@ export async function generatePlan(
     key,
     signal,
     fetcher,
+    images,
   );
   const output = result.output as { resultJson: string };
   if (output.resultJson.length > 1024 * 1024) throw new Error('AI 方案超过 1 MiB');

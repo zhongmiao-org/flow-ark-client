@@ -21,6 +21,8 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { Rpc } from '../shared/rpc';
 import { Vault } from './vault';
 import { validateIPC } from '../shared/ipc';
+import { imageInfo } from '../host/attachment-file';
+import { IMAGE_MAX_BYTES, TEXT_EXTENSIONS } from '../shared/task-attachments';
 import { redactArtifactText, redactedErrorText } from '../shared/utils';
 import type { EmbeddedCleanupFailure, EmbeddedLostNotice } from '../shared/embedded-lifecycle';
 let win: BrowserWindow;
@@ -315,6 +317,44 @@ app
                 version: process.versions.chrome,
               };
             if (method.startsWith('browser.embedded.')) return embedded.system(method, args);
+            if (method === 'task.attachment.image.validate') {
+              if (
+                typeof args.data !== 'string' ||
+                args.data.length > Math.ceil(IMAGE_MAX_BYTES / 3) * 4
+              )
+                throw new Error('图片超过限制');
+              const bytes = Buffer.from(args.data, 'base64');
+              const info = imageInfo(bytes);
+              const decoded = nativeImage.createFromBuffer(bytes);
+              const size = decoded.getSize();
+              return !decoded.isEmpty() && size.width === info.width && size.height === info.height;
+            }
+            if (method === 'task.attachment.file') {
+              if (outputDialogPending || quitting || hostStopped)
+                throw new Error('文件选择暂不可用');
+              if (!['file', 'image'].includes(args.kind)) throw new Error('附件类型无效');
+              outputDialogPending = true;
+              try {
+                const selected = await dialog.showOpenDialog(win, {
+                  title: args.kind === 'image' ? '选择目标截图' : '选择任务附件',
+                  properties: ['openFile'],
+                  filters: [
+                    {
+                      name: args.kind === 'image' ? 'PNG / JPEG 图片' : '文本与图片',
+                      extensions: [
+                        ...(args.kind === 'image' ? [] : TEXT_EXTENSIONS),
+                        'png',
+                        'jpg',
+                        'jpeg',
+                      ],
+                    },
+                  ],
+                });
+                return selected.canceled ? null : (selected.filePaths[0] ?? null);
+              } finally {
+                outputDialogPending = false;
+              }
+            }
             if (method === 'task.output.directory') {
               if (outputDialogPending || quitting || hostStopped)
                 throw new Error('目录选择暂不可用');

@@ -79,6 +79,7 @@ type Active = {
   abort: AbortController;
 };
 import { TaskOutputs } from './task-output';
+import { TaskAttachments } from './task-attachments';
 
 export class Runtime {
   readonly store: Store;
@@ -151,6 +152,10 @@ export class Runtime {
       },
     });
     this.planning = new Planning(this.store, {
+      attachments: new TaskAttachments(this.store, {
+        choose: (kind) => this.system('task.attachment.file', { kind }),
+        decodeImage: (data) => this.system('task.attachment.image.validate', { data }),
+      }),
       learning: this.learning,
       web: this.webTargets,
       output: this.outputs,

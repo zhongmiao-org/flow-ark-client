@@ -22,6 +22,7 @@ import { assertWebFlow, assertWebContext } from '../shared/task-web-target';
 import type { TaskOutputs } from './task-output';
 import { assertOutputFlow, OUTPUT_BINDING } from '../shared/task-output';
 import { taskPlanningContext } from '../shared/planning-context';
+import type { TaskAttachments } from './task-attachments';
 
 type SavedTask = PlanningTask & {
   proposal?: PlanningProposal;
@@ -29,6 +30,7 @@ type SavedTask = PlanningTask & {
 };
 type Job = { id: string; abort: AbortController };
 type Dependencies = {
+  attachments?: TaskAttachments;
   learning?: {
     target: (task: PlanningTask) => void;
     plan: (task: PlanningTask, flowHash: string) => void;
@@ -74,6 +76,10 @@ export class Planning {
   }
   private put(task: SavedTask) {
     this.store.put(kind, task.id, { ...task, updatedAt: now() });
+  }
+  private attachmentInput(task: PlanningTask) {
+    if (task.attachments?.length && !this.deps.attachments) throw new Error('附件服务不可用');
+    return this.deps.attachments?.snapshot(task) ?? { context: [], images: [] };
   }
   detail(id: string): TaskDetail {
     const { proposal, undo, ...task } = this.task(id);
@@ -156,8 +162,11 @@ export class Planning {
     const task = this.task(args.id, args.revision);
     const operationEpoch = this.operationEpoch.get(task.id) ?? 0;
     const cancellationEpoch = this.cancellationEpoch;
+    const attachmentDeadline = Date.now() + 60000;
     const unchanged = () => {
       this.deps.assertAvailable();
+      if (method.startsWith('task.attachment.') && Date.now() > attachmentDeadline)
+        throw new Error('附件选择已超时，请重新选择');
       if (
         this.cancellationEpoch !== cancellationEpoch ||
         (this.operationEpoch.get(task.id) ?? 0) !== operationEpoch ||
@@ -165,6 +174,46 @@ export class Planning {
       )
         throw new Error('任务已变化或操作已取消，请重新核对');
     };
+    if (method.startsWith('task.attachment.')) {
+      const service = this.deps.attachments;
+      if (!service) throw new Error('附件服务不可用');
+      if (method === 'task.attachment.preview') return service.preview(task, args.attachmentId);
+      let attachments = task.attachments ?? [];
+      const selected =
+        method === 'task.attachment.choose' ? await service.choose(task, args.kind) : null;
+      unchanged();
+      if (method === 'task.attachment.choose') {
+        if (!selected) return this.detail(task.id);
+        taskPlanningContext(
+          task.context,
+          task.webTarget,
+          task.outputTarget,
+          service.snapshot(task, selected).context,
+        );
+        attachments = [...attachments, service.metadata(selected)];
+      } else {
+        if (!attachments.some((a) => a.id === args.attachmentId && a.taskId === task.id))
+          throw new Error('附件不属于当前任务');
+        attachments = attachments.filter((a) => a.id !== args.attachmentId);
+      }
+      this.abort(task.id);
+      this.store.tx(() => {
+        if (selected) service.save(selected);
+        else service.remove(args.attachmentId);
+        this.put({
+          ...task,
+          attachments,
+          revision: task.revision + 1,
+          status: 'draft',
+          error: undefined,
+          requestId: undefined,
+          proposal: undefined,
+          undo: undefined,
+          appliedRepair: undefined,
+        });
+      });
+      return this.detail(task.id);
+    }
     if (method.startsWith('task.output.')) {
       if (!this.deps.output) throw new Error('输出选择不可用');
       if (task.scope) throw new Error('请先退出单步修改，再更换整个任务的输出');
@@ -188,7 +237,12 @@ export class Planning {
           selectedAt: now(),
         };
       } else outputTarget = undefined;
-      taskPlanningContext(task.context, task.webTarget, outputTarget);
+      taskPlanningContext(
+        task.context,
+        task.webTarget,
+        outputTarget,
+        this.attachmentInput(task).context,
+      );
       if (outputTarget) await this.deps.output.verify(outputTarget);
       unchanged();
       this.deps.output.assertSelectable(task);
@@ -213,7 +267,12 @@ export class Planning {
       const webTarget =
         method === 'task.web.select' ? await this.deps.web.select(task, args.token) : undefined;
       unchanged();
-      taskPlanningContext(task.context, webTarget, task.outputTarget);
+      taskPlanningContext(
+        task.context,
+        webTarget,
+        task.outputTarget,
+        this.attachmentInput(task).context,
+      );
       this.abort(task.id);
       this.store.tx(() => {
         this.put({
@@ -238,7 +297,12 @@ export class Planning {
     }
     if (method === 'task.save') {
       if (task.webTarget) assertWebContext(args.context, task.webTarget);
-      taskPlanningContext(args.context, task.webTarget, task.outputTarget);
+      taskPlanningContext(
+        args.context,
+        task.webTarget,
+        task.outputTarget,
+        this.attachmentInput(task).context,
+      );
       if (args.scope) checkScope(args.scope, this.flow(task));
       this.abort(task.id);
       this.put({
@@ -272,6 +336,7 @@ export class Planning {
           task.context,
           task.webTarget,
           task.outputTarget,
+          this.attachmentInput(task).context,
         ) as PlanningInput['context'],
         answers: task.answers,
         baseFlow: baseline?.flow ?? null,
@@ -532,10 +597,13 @@ export class Planning {
         model,
         key,
         job.abort.signal,
+        undefined,
+        repair ? [] : this.attachmentInput(task).images,
       );
       if (!this.current(task, job)) return;
       this.deps.assertAvailable();
       const serialized = JSON.stringify(result);
+      this.attachmentInput(task);
       if (Buffer.byteLength(serialized) > 1024 * 1024) throw new Error('AI 方案超过 1 MiB');
       if (serialized.includes(key)) throw new Error('AI 返回包含敏感凭据，结果已拒绝');
       this.validatePlan(result, task.flowId, input.baseFlow);

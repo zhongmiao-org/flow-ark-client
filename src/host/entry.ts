@@ -24,7 +24,7 @@ const rpc = new Rpc(
               ? (a.command.timeoutMs ?? 15000) + 5000
               : m === 'browser.embedded.close'
                 ? EMBEDDED_CLOSE_RPC_TIMEOUT_MS
-                : m === 'task.output.directory'
+                : m === 'task.output.directory' || m.startsWith('task.attachment.')
                   ? 55000
                   : 65000,
           ),

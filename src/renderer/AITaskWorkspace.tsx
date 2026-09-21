@@ -15,6 +15,8 @@ import TaskUnderstandingPage, { type OutputOptions } from './TaskUnderstandingPa
 import { outputContext } from '../shared/task-output';
 import { learningSteps, type LearningStatus } from '../shared/learning';
 import { webContext } from '../shared/task-web-target';
+import TaskBriefPage from './TaskBriefPage';
+import type { AttachmentPreview } from '../shared/task-attachments';
 
 const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
@@ -64,6 +66,7 @@ export default function AITaskWorkspace(props: Props) {
   const [detail, setDetail] = useState<TaskDetail | null>(null);
   const [draft, setDraft] = useState<Draft>({ description: '', context: [], answers: {} });
   const [saved, setSaved] = useState('');
+  const [attachmentPreview, setAttachmentPreview] = useState<AttachmentPreview>();
   const [outputOptions, setOutputOptions] = useState<OutputOptions>({
     name: '结果.txt',
     onConflict: 'number',
@@ -77,6 +80,10 @@ export default function AITaskWorkspace(props: Props) {
     'home' | 'guide' | 'brief' | 'target' | 'understand' | 'review' | 'check'
   >('home');
   const backToBrief = useCallback(() => setPage('brief'), []);
+  useEffect(
+    () => setAttachmentPreview(undefined),
+    [page, detail?.task.id, detail?.task.revision, props.active],
+  );
   const location = useRef({ active: props.active, page });
   location.current = { active: props.active, page };
   const planScroll = useRef(0);
@@ -148,7 +155,7 @@ export default function AITaskWorkspace(props: Props) {
             ? () => void openTarget()
             : page === 'target'
               ? backToBrief
-              : page === 'guide'
+              : page === 'guide' || page === 'brief'
                 ? () => {
                     void back();
                   }
@@ -157,7 +164,7 @@ export default function AITaskWorkspace(props: Props) {
           ? '选择操作对象'
           : page === 'target'
             ? '描述与附件'
-            : page === 'guide'
+            : page === 'guide' || page === 'brief'
               ? '开始任务'
               : undefined,
       );
@@ -487,6 +494,48 @@ export default function AITaskWorkspace(props: Props) {
       }
     });
   }
+  async function chooseAttachment(kind: 'file' | 'image') {
+    await run(async () => {
+      const task = await save();
+      props.showBrowser(false);
+      const next = await api('task.attachment.choose', {
+        id: task.task.id,
+        revision: task.task.revision,
+        kind,
+      });
+      if (next.task.revision !== task.task.revision) {
+        accept(next);
+        setReviewed(false);
+      }
+    });
+  }
+  async function removeAttachment(attachmentId: string) {
+    await run(async () => {
+      if (!detail || stale) throw new Error('请重新读取任务后操作');
+      // Removing a damaged attachment must remain possible without first saving
+      // a draft whose context validation necessarily rejects that attachment.
+      const currentDraft = draft;
+      const next = await api('task.attachment.remove', {
+        id: detail.task.id,
+        revision,
+        attachmentId,
+      });
+      accept(next, true);
+      setDraft(currentDraft);
+      setReviewed(false);
+    });
+  }
+  async function previewAttachment(attachmentId: string) {
+    await run(async () => {
+      if (!detail || stale) throw new Error('请重新读取任务后预览');
+      const next = await api('task.attachment.preview', {
+        id: detail.task.id,
+        revision,
+        attachmentId,
+      });
+      if (props.active && selectedTask.current === detail.task.id) setAttachmentPreview(next);
+    });
+  }
   async function showGuide() {
     await run(async () => {
       if (detail && dirty) await save();
@@ -558,7 +607,7 @@ export default function AITaskWorkspace(props: Props) {
 
   const planningControls = detail && (
     <>
-      {page === 'understand' ? (
+      {page === 'understand' || page === 'brief' ? (
         <details className="task-understanding-provider">
           <summary>
             AI 服务 · {providerName} · {model}
@@ -651,6 +700,20 @@ export default function AITaskWorkspace(props: Props) {
           <div key={entry.id}>
             <h3>{entry.label}</h3>
             <pre>{entry.text}</pre>
+          </div>
+        ))}
+        {detail.task.attachments?.map((a) => (
+          <div key={a.id}>
+            <h3>
+              {a.name} · {a.kind === 'image' ? '完整图片' : '完整文本副本'}
+            </h3>
+            <p>
+              {a.mimeType} · {Math.ceil(a.size / 1024)} KiB
+              {a.kind === 'image' ? ` · ${a.width} × ${a.height}` : ''}
+            </p>
+            <button disabled={inputDisabled || stale} onClick={() => void previewAttachment(a.id)}>
+              查看发送附件：{a.name}
+            </button>
           </div>
         ))}
         {detail.task.webTarget && (
@@ -766,35 +829,41 @@ export default function AITaskWorkspace(props: Props) {
                 ? '用一句话开始。FlowArk 先给你看步骤，由你决定何时执行。'
                 : page === 'understand'
                   ? '第 3 步 / 确认理解 · 缺少的信息用简单选择补齐'
-                  : page === 'target'
-                    ? '第 2 步 / 选目标 · 只有你明确选择的对象会进入任务上下文'
-                    : generating
-                      ? '正在理解本次任务，你可以取消生成。'
-                      : scope
-                        ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : scope.nodeId} · 尚未执行`
-                        : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
+                  : page === 'brief' && !scope
+                    ? '第 1 步 / 描述 · 对话和附件作为本次任务草稿保留'
+                    : page === 'target'
+                      ? '第 2 步 / 选目标 · 只有你明确选择的对象会进入任务上下文'
+                      : generating
+                        ? '正在理解本次任务，你可以取消生成。'
+                        : scope
+                          ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : scope.nodeId} · 尚未执行`
+                          : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
           </p>
         </div>
-        {page !== 'home' && page !== 'target' && page !== 'guide' && page !== 'understand' && (
-          <div className="ai-task-actions">
-            {detail?.flow && detail.flow.id === props.sourceFlowId && (
-              <button
-                disabled={busy}
-                onClick={() =>
-                  void run(async () => {
-                    const next = scopeConflict ? detail : await save();
-                    if (next.flow) await props.returnToSource(next.flow);
-                  })
-                }
-              >
-                返回来源步骤
+        {page !== 'home' &&
+          page !== 'target' &&
+          page !== 'guide' &&
+          page !== 'understand' &&
+          page !== 'brief' && (
+            <div className="ai-task-actions">
+              {detail?.flow && detail.flow.id === props.sourceFlowId && (
+                <button
+                  disabled={busy}
+                  onClick={() =>
+                    void run(async () => {
+                      const next = scopeConflict ? detail : await save();
+                      if (next.flow) await props.returnToSource(next.flow);
+                    })
+                  }
+                >
+                  返回来源步骤
+                </button>
+              )}
+              <button disabled={busy} onClick={() => void back()}>
+                返回开始任务
               </button>
-            )}
-            <button disabled={busy} onClick={() => void back()}>
-              返回开始任务
-            </button>
-          </div>
-        )}
+            </div>
+          )}
       </div>
       {error && (
         <div className="alert error" role="alert">
@@ -807,6 +876,20 @@ export default function AITaskWorkspace(props: Props) {
         <p className="ai-task-note" role="status">
           {message}
         </p>
+      )}
+      {attachmentPreview && (
+        <section className="ai-task-card task-attachment-preview" aria-label="附件预览">
+          <div className="ai-task-actions">
+            <h2>{attachmentPreview.name}</h2>
+            <button onClick={() => setAttachmentPreview(undefined)}>关闭附件预览</button>
+          </div>
+          {attachmentPreview.kind === 'image' ? (
+            <img src={attachmentPreview.dataUrl} alt={attachmentPreview.name} />
+          ) : (
+            <pre>{attachmentPreview.text}</pre>
+          )}
+          <p>这是选入任务的完整副本；预览不会发送给 AI，也不会修改原文件。</p>
+        </section>
       )}
       {page === 'guide' ? (
         <FirstTaskGuide
@@ -929,7 +1012,7 @@ export default function AITaskWorkspace(props: Props) {
       ) : (
         detail && (
           <>
-            {page !== 'understand' && learning?.taskId === detail.task.id && (
+            {page !== 'understand' && page !== 'brief' && learning?.taskId === detail.task.id && (
               <div className="learning-progress" aria-label="教学进度">
                 {learningSteps.map((label, i) => (
                   <span
@@ -947,7 +1030,7 @@ export default function AITaskWorkspace(props: Props) {
                 <small>学习记录与运行进度分开保存</small>
               </div>
             )}
-            {!scopeDiffView && page !== 'understand' && (
+            {!scopeDiffView && page !== 'understand' && page !== 'brief' && (
               <div className="ai-task-state" role="status">
                 <span>{status[detail.task.status]}</span>
                 <span>
@@ -981,7 +1064,23 @@ export default function AITaskWorkspace(props: Props) {
                 单步修改的基线已变化。请返回来源核对，或明确改为完整任务修改；当前要求已保留。
               </p>
             )}
-            {page === 'understand' ? (
+            {page === 'brief' && !scope ? (
+              <TaskBriefPage
+                task={detail.task}
+                description={draft.description}
+                context={draft.context}
+                busy={inputDisabled || stale}
+                dirty={dirty}
+                changeDescription={(description) => edit({ ...draft, description })}
+                changeContext={(context) => edit({ ...draft, context })}
+                choose={(kind) => void chooseAttachment(kind)}
+                remove={(id) => void removeAttachment(id)}
+                preview={(id) => void previewAttachment(id)}
+                target={() => void openTarget()}
+                understand={() => void understand()}
+                controls={planningControls}
+              />
+            ) : page === 'understand' ? (
               <TaskUnderstandingPage
                 task={detail.task}
                 description={draft.description}
@@ -1102,7 +1201,8 @@ export default function AITaskWorkspace(props: Props) {
                                 draft.context.length >=
                                   20 -
                                     Number(!!detail.task.webTarget) -
-                                    Number(!!detail.task.outputTarget)
+                                    Number(!!detail.task.outputTarget) -
+                                    (detail.task.attachments?.length ?? 0)
                               }
                               onClick={() =>
                                 edit({

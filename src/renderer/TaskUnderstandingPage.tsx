@@ -122,6 +122,7 @@ export default function TaskUnderstandingPage({
             {web ? '你确认的网页及明确提供的资料；不读取其他标签' : '你填写的需求及明确提供的资料'}
           </p>
           {!!task.context.length && <p>{task.context.map((c) => c.label).join('、')}</p>}
+          {!!task.attachments?.length && <p>{task.attachments.map((a) => a.name).join('、')}</p>}
         </div>
         <div className="task-understanding-fact" aria-label="已选网页来源">
           <div className="task-understanding-fact-heading">

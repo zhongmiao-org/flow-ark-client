@@ -7,6 +7,7 @@ import { planningScopeSchema, type PlanningScope } from './planning-scope';
 import { webTargetMethods, WEB_CONTEXT_ID, type TaskWebTarget } from './task-web-target';
 
 import { outputMethods, OUTPUT_CONTEXT_ID, type TaskOutputTarget } from './task-output';
+import { attachmentMethods, ATTACHMENT_PREFIX, type TaskAttachment } from './task-attachments';
 
 export type PlanningInput = NonNullable<FlowArkP1['AIPlanningRequest']>;
 export type PlanningResult = NonNullable<FlowArkP1['AIPlanningResult']>;
@@ -20,6 +21,7 @@ export type TaskStatus =
   | 'failed'
   | 'cancelled';
 export type PlanningTask = {
+  attachments?: TaskAttachment[];
   webTarget?: TaskWebTarget;
   outputTarget?: TaskOutputTarget;
   scope?: PlanningScope;
@@ -89,6 +91,7 @@ const context = z
   })
   .strict();
 export const taskMethods = {
+  ...attachmentMethods,
   ...webTargetMethods,
   ...outputMethods,
   'task.repair.preview': repairPreviewSchema,
@@ -113,7 +116,13 @@ export const taskMethods = {
           '上下文 ID 重复',
         )
         .refine(
-          (entries) => entries.every((e) => e.id !== WEB_CONTEXT_ID && e.id !== OUTPUT_CONTEXT_ID),
+          (entries) =>
+            entries.every(
+              (e) =>
+                e.id !== WEB_CONTEXT_ID &&
+                e.id !== OUTPUT_CONTEXT_ID &&
+                !e.id.startsWith(ATTACHMENT_PREFIX),
+            ),
           '网页来源必须通过选择目标取得，不能伪造系统资料',
         ),
       answers: z

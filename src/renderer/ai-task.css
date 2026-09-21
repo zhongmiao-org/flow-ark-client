@@ -910,3 +910,105 @@
     position: static;
   }
 }
+
+/* Figma 23:2280: selected context is real local data, never sample items. */
+.task-brief-columns {
+  align-items: stretch;
+}
+.task-brief-input > label {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  margin-bottom: -8px;
+}
+.task-brief-input > textarea {
+  min-height: 116px;
+  background: var(--fa-bg-canvas);
+}
+.task-brief-add {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.task-brief-add button {
+  padding: 0 6px;
+}
+.task-brief-context {
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  padding: 16px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.task-brief-context > button {
+  align-self: flex-start;
+  min-height: 28px;
+  padding: 4px 8px;
+}
+.task-brief-context p,
+.task-brief-disclosure,
+.task-brief-explainer p {
+  color: var(--fa-text-secondary);
+}
+.task-brief-attachment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.task-brief-attachment span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.task-brief-attachment small {
+  display: block;
+  color: var(--fa-text-secondary);
+}
+.task-brief-attachment button {
+  padding: 4px 8px;
+  min-height: 28px;
+  flex: 0 0 auto;
+}
+.task-brief-explainer > div {
+  min-height: 104px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.task-brief-explainer > div:first-of-type {
+  min-height: 124px;
+  background: var(--fa-action-subtle);
+}
+.task-brief-explainer h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+}
+.task-attachment-preview {
+  margin-bottom: 24px;
+}
+.task-attachment-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+  align-self: flex-start;
+}
+.task-attachment-preview pre {
+  max-height: 360px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@container (max-width: 950px) {
+  .task-brief-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .task-brief-columns > .ai-task-card {
+    min-height: auto;
+  }
+}

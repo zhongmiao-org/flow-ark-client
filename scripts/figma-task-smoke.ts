@@ -264,6 +264,7 @@ try {
   );
   assert.equal((await call('bootstrap')).flows.length, 0);
   await capture('brief-1440');
+  await page.locator('.task-understanding-provider > summary').click();
   await page.locator('.ai-task-provider input').fill('fixture-model');
   await button('配置 AI 服务').click();
   assert.equal(await page.locator('.settings-page').getByRole('combobox').inputValue(), 'deepseek');
