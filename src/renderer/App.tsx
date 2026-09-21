@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useReducer, useRef, lazy, Suspense } from 'react';
-import { version as appVersion } from '../../package.json';
+import FlowLibrary from './FlowLibrary';
 import { buildDiagram } from './flow-diagram';
 import DiagramCanvas from './DiagramCanvas';
 import { kinds } from './node-kinds';
@@ -51,6 +51,7 @@ import {
   Activity,
   Search,
   ShieldCheck,
+  CircleHelp,
 } from 'lucide-react';
 import type { Bootstrap, FlowRecord, Step, Run, Event } from '../shared/types';
 import TemplateLibrary from './TemplateLibrary';
@@ -104,6 +105,16 @@ function format(t: string) {
 }
 export default function App() {
   const [browserOpen, setBrowserOpen] = useState(false);
+  const [editorPanel, setEditorPanel] = useState('canvas');
+  const [compactEditor, setCompactEditor] = useState(() => window.innerWidth < 1440);
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 1439px)');
+    const change = () => setCompactEditor(query.matches);
+    query.addEventListener('change', change);
+    return () => query.removeEventListener('change', change);
+  }, []);
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+  const [importPreview, setImportPreview] = useState<any>();
   useEffect(() => {
     const open = () => setBrowserOpen(true);
     window.addEventListener('flowark:open-browser', open);
@@ -115,7 +126,7 @@ export default function App() {
     [error, setError] = useState(''),
     [notice, setNotice] = useState(''),
     [busy, setBusy] = useState(false),
-    [query, setQuery] = useState(''),
+    [loaded, setLoaded] = useState(false),
     [configOpen, setConfigOpen] = useState(false);
   const [history, dispatchDraft] = useReducer(draftHistory, emptyHistory);
   const edit = history.present?.record ?? null,
@@ -140,6 +151,7 @@ export default function App() {
   const refresh = useCallback(async () => {
     try {
       setData(await api('bootstrap'));
+      setLoaded(true);
     } catch (e: any) {
       setError(e.message);
     }
@@ -188,6 +200,7 @@ export default function App() {
   async function openFlow(r: FlowRecord) {
     if (!guardInvalidNodeJson()) return;
     setConfigOpen(false);
+    setEditorPanel('canvas');
     inputGroup.current = undefined;
     dispatchDraft({ type: 'open', record: r });
     setSection('editor');
@@ -270,461 +283,448 @@ export default function App() {
     ? ([data.runOverview.active, ...data.runs].find((run) => run?.id === observedActive.runId) ??
       null)
     : null;
+  const savedEdit = edit && data.flows.find((record) => record.id === edit.id);
+  const draftSaved =
+    !!savedEdit &&
+    JSON.stringify(edit.flow) === JSON.stringify(savedEdit.flow) &&
+    JSON.stringify(edit.bindings) === JSON.stringify(savedEdit.bindings);
+  const welcomePage =
+    section === 'flows' && loaded && !data.fault && !data.flows.length && !welcomeDismissed;
+  const returnHome = () => {
+    if (!guardInvalidNodeJson()) return;
+    setWelcomeDismissed(true);
+    setSection('flows');
+    setDetail(null);
+  };
   return (
-    <div className={`app ${browserOpen ? 'with-browser' : ''}`}>
-      <aside className="sidebar">
-        <div className="brand">
-          <span className="brand-mark">
-            F<span>↗</span>
-          </span>
-          <div>
-            FlowArk<small>序舟 · 本地自动化</small>
+    <div className="application-shell">
+      <div className="window-titlebar">FlowArk · 个人工作空间</div>
+      <div
+        className={`app ${browserOpen ? 'with-browser' : ''} ${section === 'editor' ? 'editing-workspace' : ''}`}
+      >
+        <aside className="sidebar">
+          <div className="brand">
+            <span className="brand-mark">
+              <Workflow size={20} strokeWidth={1.6} />
+            </span>
+            <span className="brand-name">FlowArk</span>
           </div>
-        </div>
-        <div className="workspace-label">
-          个人工作空间 <span>LOCAL</span>
-        </div>
-        <nav>
-          {nav.map(([id, label, Icon]) => (
+          <div className="workspace-label">
+            <span>个人工作空间</span>
+            <small>LOCAL WORKSPACE</small>
+          </div>
+          <nav>
+            {nav.map(([id, label, Icon]) => (
+              <button
+                key={id}
+                title={label}
+                aria-label={label}
+                className={
+                  section === id || (section === 'editor' && id === 'flows') ? 'selected' : ''
+                }
+                aria-current={
+                  section === id || (section === 'editor' && id === 'flows') ? 'page' : undefined
+                }
+                onClick={() => {
+                  if (!guardInvalidNodeJson()) return;
+                  setSection(id);
+                  setDetail(null);
+                }}
+              >
+                <Icon size={20} strokeWidth={1.6} />
+                <span className="nav-label">{label}</span>
+                {id === 'inbox' && unread > 0 && <b>{unread}</b>}
+              </button>
+            ))}
+          </nav>
+          <div className="sidebar-bottom">
+            <p>仅在这台 Mac 上运行</p>
             <button
-              key={id}
-              title={label}
-              aria-label={label}
-              className={
-                section === id || (section === 'editor' && id === 'flows') ? 'selected' : ''
+              className="sidebar-guide"
+              onClick={() =>
+                action(async () => {
+                  await api('browser.embedded.navigate', {
+                    url: 'https://github.com/zhongmiao-org/flow-ark-client#使用',
+                  });
+                  setBrowserOpen(true);
+                })
               }
-              onClick={() => {
-                if (!guardInvalidNodeJson()) return;
-                setSection(id);
-                setDetail(null);
+            >
+              <CircleHelp size={18} strokeWidth={1.6} aria-hidden="true" />
+              使用指南
+            </button>
+          </div>
+        </aside>
+        <main>
+          <header className="topbar">
+            {(section === 'editor' || welcomePage) && (
+              <button className="context-back" onClick={returnHome}>
+                ← 返回我的流程
+              </button>
+            )}
+            <nav className="breadcrumbs" aria-label="当前位置">
+              {(section === 'editor' || welcomePage) && (
+                <>
+                  <a
+                    href="#flows"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      returnHome();
+                    }}
+                  >
+                    我的流程
+                  </a>
+                  <span aria-hidden="true">/</span>
+                </>
+              )}
+              <span aria-current="page">
+                {section === 'editor'
+                  ? edit?.flow.name || '流程编排'
+                  : welcomePage
+                    ? '首次使用'
+                    : nav.find((n) => n[0] === section)?.[1]}
+              </span>
+            </nav>
+            <button
+              className="embedded-show"
+              aria-label={browserOpen ? '收起网页面板' : '打开网页面板'}
+              aria-pressed={browserOpen}
+              onClick={() => setBrowserOpen(!browserOpen)}
+            >
+              {browserOpen ? '收起网页' : '显示网页'}
+            </button>
+          </header>
+          {data.fault && (
+            <div className="alert error storage-fault" role="alert">
+              <b>运行状态未能完整保存</b>
+              <span>
+                {data.fault}
+                。以下状态为最后成功保存的记录，当前执行和最终结果请核对；重开不会自动重放。
+              </span>
+            </div>
+          )}
+          {data.runtimeBlock && (
+            <div className="alert error" role="alert">
+              <b>资源回收未确认</b>
+              <span>{data.runtimeBlock}</span>
+            </div>
+          )}
+          {error && (
+            <div className="alert error" role="alert">
+              <b>操作未完成</b>
+              <span>{error}</span>
+              <button onClick={() => setError('')}>关闭</button>
+            </div>
+          )}
+          {notice && (
+            <div className="notice" role="status">
+              {notice}
+              <button onClick={() => setNotice('')}>×</button>
+            </div>
+          )}
+          {section === 'flows' && (
+            <FlowLibrary
+              data={data}
+              loaded={loaded}
+              busy={busy}
+              active={active}
+              create={create}
+              open={openFlow}
+              importTemplate={() =>
+                action(async () => {
+                  const preview = await api('template.inspect');
+                  if (preview) {
+                    setImportPreview(preview);
+                    setSection('templates');
+                  }
+                })
+              }
+              showAttention={() => setSection('inbox')}
+            />
+          )}
+          {section === 'templates' && (
+            <TemplateLibrary
+              data={data}
+              action={action}
+              initialPreview={importPreview}
+              consumePreview={() => setImportPreview(undefined)}
+            />
+          )}
+          {section === 'editor' && edit && (
+            <div
+              className="editor-page"
+              onFocusCapture={(event) => {
+                const control = (event.target as HTMLElement).closest(
+                  'input,textarea,select,[contenteditable="true"],.monaco-editor',
+                );
+                inputTarget.current = control;
+                inputGroup.current = control ? crypto.randomUUID() : undefined;
+              }}
+              onChangeCapture={(event) => {
+                const control = (event.target as HTMLElement).closest(
+                  'input,textarea,select,[contenteditable="true"],.monaco-editor',
+                );
+                if (control && (control !== inputTarget.current || !inputGroup.current)) {
+                  inputTarget.current = control;
+                  inputGroup.current = crypto.randomUUID();
+                }
+              }}
+              onClickCapture={(event) => {
+                if ((event.target as HTMLElement).closest('button')) {
+                  inputTarget.current = null;
+                  inputGroup.current = undefined;
+                }
+              }}
+              onKeyDown={(event) => {
+                if (
+                  !(event.metaKey || event.ctrlKey) ||
+                  event.altKey ||
+                  event.key.toLowerCase() !== 'z'
+                )
+                  return;
+                if (
+                  (event.target as HTMLElement).closest(
+                    'input,textarea,select,[contenteditable="true"],.monaco-editor',
+                  )
+                )
+                  return;
+                event.preventDefault();
+                event.stopPropagation();
+                if (event.shiftKey) redo();
+                else undo();
               }}
             >
-              <Icon size={18} />
-              {label}
-              {id === 'inbox' && unread > 0 && <b>{unread}</b>}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="local-dot" />
-          单机运行 <span>{appVersion}</span>
-          <p>流程与历史保存在这台 Mac 上</p>
-        </div>
-      </aside>
-      <main>
-        <header className="topbar">
-          <div>
-            工作空间 <ChevronRight size={14} />{' '}
-            {section === 'editor' ? '流程编辑' : nav.find((n) => n[0] === section)?.[1]}
-          </div>
-          <button
-            className="embedded-show"
-            aria-pressed={browserOpen}
-            onClick={() => setBrowserOpen(!browserOpen)}
-          >
-            <Globe size={15} /> {browserOpen ? '收起网页面板' : '打开网页面板'}
-          </button>
-          <span className="machine">
-            <span className="local-dot" />
-            {data.fault
-              ? '存储异常'
-              : data.runtimeBlock
-                ? '执行已停止'
-                : active
-                  ? observedActive?.phase === 'closing'
-                    ? '任务收尾中'
-                    : '任务运行中'
-                  : data.execution
-                    ? '本机已就绪'
-                    : '正在读取执行状态'}
-          </span>
-        </header>
-        {data.fault && (
-          <div className="alert error storage-fault" role="alert">
-            <b>运行状态未能完整保存</b>
-            <span>
-              {data.fault}
-              。以下状态为最后成功保存的记录，当前执行和最终结果请核对；重开不会自动重放。
-            </span>
-          </div>
-        )}
-        {data.runtimeBlock && (
-          <div className="alert error" role="alert">
-            <b>资源回收未确认</b>
-            <span>{data.runtimeBlock}</span>
-          </div>
-        )}
-        {error && (
-          <div className="alert error" role="alert">
-            <b>操作未完成</b>
-            <span>{error}</span>
-            <button onClick={() => setError('')}>关闭</button>
-          </div>
-        )}
-        {notice && (
-          <div className="notice" role="status">
-            {notice}
-            <button onClick={() => setNotice('')}>×</button>
-          </div>
-        )}
-        {section === 'flows' && (
-          <div className="page">
-            <div className="page-heading">
-              <div>
-                <span className="eyebrow">AUTOMATE YOUR EVERYDAY</span>
-                <h1>
-                  让流程接手重复工作<span className="heading-dot">.</span>
-                </h1>
-                <p>创建、编排与执行，每一步都在你的掌控之中。</p>
-              </div>
-              <button className="primary" onClick={() => create()} disabled={busy}>
-                <Plus size={17} />
-                新建流程
-              </button>
-            </div>
-            <div className="overview">
-              <div>
-                <span>本地流程</span>
-                <strong>{data.flows.length.toString().padStart(2, '0')}</strong>
-                <small>独立保存 · 随时编辑</small>
-              </div>
-              <div>
-                <span>当前任务</span>
-                <strong>{active ? '01' : data.execution ? '00' : '—'}</strong>
-                <small>
-                  {active
-                    ? active.name + (observedActive?.phase === 'closing' ? ' · 正在收尾' : '')
-                    : data.fault || data.runtimeBlock
-                      ? '已停止接收新任务，请查看上方提示'
-                      : data.execution
-                        ? '运行槽空闲，可以开始新任务'
-                        : '当前执行情况尚未确定'}
-                  {data.runOverview.queued > 0 && ` · ${data.runOverview.queued} 个排队中`}
-                </small>
-              </div>
-              <div>
-                <span>待处理事项</span>
-                <strong>{unread.toString().padStart(2, '0')}</strong>
-                <small>查看结果、处理待办</small>
-              </div>
-              <div className="overview-art">
-                <Workflow size={64} strokeWidth={1} />
-                <span>
-                  ONE FLOW.
-                  <br />
-                  LESS BUSYWORK.
-                </span>
-              </div>
-            </div>
-            <div className="section-row">
-              <h2>
-                我的流程 <span>{data.flows.length}</span>
-              </h2>
-              <div className="row">
-                <div className="search">
-                  <Search size={15} />
+              <div className="editor-toolbar">
+                <div className="editor-flow-name">
                   <input
-                    placeholder="搜索流程"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
+                    className="title-input"
+                    aria-label="流程名称"
+                    value={edit.flow.name}
+                    onChange={(e) =>
+                      setEdit({
+                        ...edit,
+                        flow: { ...edit.flow, name: e.target.value },
+                      })
+                    }
                   />
+                  <span className="muted">
+                    {draftSaved ? '草稿已保存' : '有未保存修改'} · {flatten(edit.flow.steps).length}{' '}
+                    个步骤 · {edit.flow.sourceTemplate ? '模板流程' : '本地流程'}
+                  </span>
                 </div>
-                <button onClick={() => setSection('templates')}>
-                  <Upload size={15} />
-                  导入
+                <button onClick={save} disabled={busy}>
+                  保存
                 </button>
-              </div>
-            </div>
-            <div className="flow-grid">
-              {data.flows
-                .filter((f) => f.flow.name.includes(query))
-                .map((r) => (
-                  <FlowCard
-                    key={r.id}
-                    record={r}
-                    run={data.runOverview.latest.find((x) => x.flowId === r.id)}
-                    onEdit={() => openFlow(r)}
-                    onRun={() => run(r)}
-                  />
-                ))}
-              <button className="new-flow" onClick={() => create()}>
-                <Plus />
-                <b>从一个想法开始</b>
-                <span>将日常步骤编排为自动化流程</span>
-              </button>
-            </div>
-            <div className="intro-strip">
-              <span className="icon-tile">
-                <LayoutTemplate />
-              </span>
-              <div>
-                <b>从模板开始</b>
-                <p>导入独立模板包，配置资源后选择操作入口。</p>
-              </div>
-              <button onClick={() => setSection('templates')}>
-                浏览模板 <ArrowUpRight size={16} />
-              </button>
-            </div>
-          </div>
-        )}
-        {section === 'templates' && <TemplateLibrary data={data} action={action} />}
-        {section === 'editor' && edit && (
-          <div
-            className="editor-page"
-            onFocusCapture={(event) => {
-              const control = (event.target as HTMLElement).closest(
-                'input,textarea,select,[contenteditable="true"],.monaco-editor',
-              );
-              inputTarget.current = control;
-              inputGroup.current = control ? crypto.randomUUID() : undefined;
-            }}
-            onChangeCapture={(event) => {
-              const control = (event.target as HTMLElement).closest(
-                'input,textarea,select,[contenteditable="true"],.monaco-editor',
-              );
-              if (control && (control !== inputTarget.current || !inputGroup.current)) {
-                inputTarget.current = control;
-                inputGroup.current = crypto.randomUUID();
-              }
-            }}
-            onClickCapture={(event) => {
-              if ((event.target as HTMLElement).closest('button')) {
-                inputTarget.current = null;
-                inputGroup.current = undefined;
-              }
-            }}
-            onKeyDown={(event) => {
-              if (
-                !(event.metaKey || event.ctrlKey) ||
-                event.altKey ||
-                event.key.toLowerCase() !== 'z'
-              )
-                return;
-              if (
-                (event.target as HTMLElement).closest(
-                  'input,textarea,select,[contenteditable="true"],.monaco-editor',
-                )
-              )
-                return;
-              event.preventDefault();
-              event.stopPropagation();
-              if (event.shiftKey) redo();
-              else undo();
-            }}
-          >
-            <div className="editor-toolbar">
-              <button
-                className="icon-button"
-                onClick={() => {
-                  if (guardInvalidNodeJson()) setSection('flows');
-                }}
-                aria-label="返回流程"
-              >
-                <ArrowLeft size={18} />
-              </button>
-              <input
-                className="title-input"
-                value={edit.flow.name}
-                onChange={(e) =>
-                  setEdit({
-                    ...edit,
-                    flow: { ...edit.flow, name: e.target.value },
-                  })
-                }
-              />
-              <span className="muted">本地草稿</span>
-              <div className="draft-history" aria-label="草稿编辑历史">
+                <div className="draft-history" aria-label="草稿编辑历史">
+                  <button
+                    className="icon-button"
+                    aria-label="撤销编辑"
+                    title="撤销编辑 · ⌘/Ctrl Z"
+                    disabled={!history.past.length || busy}
+                    onClick={undo}
+                  >
+                    <Undo2 size={16} />
+                  </button>
+                  <button
+                    className="icon-button"
+                    aria-label="重做编辑"
+                    title="重做编辑 · ⌘/Ctrl Shift Z"
+                    disabled={!history.future.length || busy}
+                    onClick={redo}
+                  >
+                    <Redo2 size={16} />
+                  </button>
+                </div>
+                {edit.bindings.configuration && (
+                  <button
+                    onClick={() => {
+                      if (guardInvalidNodeJson()) {
+                        if (edit.bindings.template) setSection('templates');
+                        else setConfigOpen(true);
+                      }
+                    }}
+                  >
+                    <Settings size={15} />
+                    实例配置
+                  </button>
+                )}
                 <button
-                  className="icon-button"
-                  aria-label="撤销编辑"
-                  title="撤销编辑 · ⌘/Ctrl Z"
-                  disabled={!history.past.length || busy}
-                  onClick={undo}
+                  onClick={exportDraft}
+                  disabled={busy}
+                  title="导出前请确认流程字面量和脚本中没有个人数据；本地绑定和参数值不导出"
                 >
-                  <Undo2 size={16} />
+                  导出 ZIP
                 </button>
-                <button
-                  className="icon-button"
-                  aria-label="重做编辑"
-                  title="重做编辑 · ⌘/Ctrl Shift Z"
-                  disabled={!history.future.length || busy}
-                  onClick={redo}
-                >
-                  <Redo2 size={16} />
-                </button>
-              </div>
-              <div className="spacer" />
-              {edit.bindings.configuration && (
                 <button
                   onClick={() => {
-                    if (guardInvalidNodeJson()) {
-                      if (edit.bindings.template) setSection('templates');
-                      else setConfigOpen(true);
-                    }
+                    if (guardInvalidNodeJson()) setEditorPanel('params');
                   }}
                 >
-                  <Settings size={15} />
-                  实例配置
+                  参数与绑定
                 </button>
+                <button onClick={() => run(edit, true)} disabled={busy}>
+                  逐步调试
+                </button>
+                <button onClick={() => setBrowserOpen(!browserOpen)}>
+                  {browserOpen ? '收起网页' : '显示网页'}
+                </button>
+                <button className="primary" onClick={() => run(edit)} disabled={busy}>
+                  运行
+                </button>
+              </div>
+              {configOpen && edit.bindings.configuration && (
+                <TemplateConfiguration
+                  key={`configuration:${edit.id}`}
+                  configuration={edit.bindings.configuration}
+                  name={edit.flow.name}
+                  close={() => setConfigOpen(false)}
+                  apply={async (values) => {
+                    checkEditorInput('保存实例配置');
+                    setBusy(true);
+                    setError('');
+                    try {
+                      const saved = await api('flow.save', {
+                        flow: edit.flow,
+                        bindings: {
+                          ...edit.bindings,
+                          configuration: { ...edit.bindings.configuration!, values },
+                        },
+                      });
+                      inputGroup.current = undefined;
+                      inputTarget.current = null;
+                      setEdit(saved);
+                      setNotice('已保存实例配置');
+                      await refresh();
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                />
               )}
-              <button
-                onClick={exportDraft}
-                disabled={busy}
-                title="导出前请确认流程字面量和脚本中没有个人数据；本地绑定和参数值不导出"
-              >
-                <Download size={15} />
-                导出 ZIP
-              </button>
-              <button onClick={save} disabled={busy}>
-                <Save size={15} />
-                保存
-              </button>
-              <button className="primary" onClick={() => run(edit)} disabled={busy}>
-                <Play size={15} />
-                运行
-              </button>
-              <button onClick={() => run(edit, true)} disabled={busy}>
-                <Pause size={15} />
-                逐步调试
-              </button>
-            </div>
-            {configOpen && edit.bindings.configuration && (
-              <TemplateConfiguration
-                key={`configuration:${edit.id}`}
-                configuration={edit.bindings.configuration}
-                name={edit.flow.name}
-                close={() => setConfigOpen(false)}
-                apply={async (values) => {
-                  checkEditorInput('保存实例配置');
-                  setBusy(true);
-                  setError('');
-                  try {
-                    const saved = await api('flow.save', {
-                      flow: edit.flow,
-                      bindings: {
-                        ...edit.bindings,
-                        configuration: { ...edit.bindings.configuration!, values },
-                      },
-                    });
-                    inputGroup.current = undefined;
-                    inputTarget.current = null;
-                    setEdit(saved);
-                    setNotice('已保存实例配置');
-                    await refresh();
-                  } finally {
-                    setBusy(false);
+              <Editor
+                key={edit.id}
+                revision={history.revision}
+                record={edit}
+                setRecord={setEdit}
+                selected={selected}
+                setSelected={setSelected}
+                guardInvalidNodeJson={guardInvalidNodeJson}
+                compact={compactEditor}
+                panel={editorPanel}
+                setPanel={setEditorPanel}
+                browserOpen={browserOpen}
+                browserPanel={
+                  browserOpen ? (
+                    <BrowserSidebar
+                      close={() => setBrowserOpen(false)}
+                      running={!!active && !['PAUSED', 'WAITING_INPUT'].includes(active.state)}
+                      obscured={configOpen}
+                    />
+                  ) : null
+                }
+                editConfiguration={() => {
+                  if (guardInvalidNodeJson()) {
+                    if (edit.bindings.template) setSection('templates');
+                    else setConfigOpen(true);
                   }
                 }}
-              />
-            )}
-            <Editor
-              key={edit.id}
-              revision={history.revision}
-              record={edit}
-              setRecord={setEdit}
-              selected={selected}
-              setSelected={setSelected}
-              guardInvalidNodeJson={guardInvalidNodeJson}
-              editConfiguration={() => {
-                if (guardInvalidNodeJson()) {
-                  if (edit.bindings.template) setSection('templates');
-                  else setConfigOpen(true);
-                }
-              }}
-              browsers={data.browsers}
-              choose={async (binding: string) => {
-                const path = await action(() => api('file.choose', { kind: 'directory' }));
-                if (path)
-                  setEdit({
-                    ...edit,
-                    bindings: {
-                      ...edit.bindings,
-                      files: { ...edit.bindings.files, [binding]: path },
-                    },
-                  });
-              }}
-            />
-          </div>
-        )}
-        {section === 'runs' && (
-          <div className="page">
-            <Heading
-              title="每一次运行，都有迹可循"
-              text="执行快照、步骤事件与外部业务结果分别记录。"
-            />
-            <RunHistory visible={!detail} open={setDetail} />
-            {detail && (
-              <RunDetail
-                key={detail.run.id}
-                detail={detail}
-                fault={data.fault}
-                open={(next) =>
-                  setDetail((current: any) => (current?.run.id === detail.run.id ? next : current))
-                }
-                reload={async () => {
-                  const id = detail.run.id;
-                  const next = await api('run.detail', { id });
-                  setDetail((current: any) => (current?.run.id === id ? next : current));
+                browsers={data.browsers}
+                choose={async (binding: string) => {
+                  const path = await action(() => api('file.choose', { kind: 'directory' }));
+                  if (path)
+                    setEdit({
+                      ...edit,
+                      bindings: {
+                        ...edit.bindings,
+                        files: { ...edit.bindings.files, [binding]: path },
+                      },
+                    });
                 }}
-                back={() => setDetail(null)}
-                control={(id, a) => action(() => api('run.control', { id, action: a }))}
-                reveal={(id) => action(() => api('artifact.reveal', { id }))}
               />
-            )}
-          </div>
-        )}
-        {section === 'schedules' && <Schedules data={data} action={action} />}
-        {section === 'inbox' && (
-          <div className="page">
-            <Heading title="需要你看一眼" text="联系方式、待确认动作和异常结果会保存在这里。" />
-            {!data.attention.length ? (
-              <Empty text="目前没有待办。流程需要人工处理时，会在这里提醒。" />
-            ) : (
-              data.attention.map((a) => (
-                <div className={'attention ' + (a.read ? 'read' : '')} key={a.id}>
-                  <Bell size={20} />
-                  <div>
-                    <b>{a.title}</b>
-                    <small>{format(a.time)}</small>
-                    <AttentionContent detail={a.detail} />
+            </div>
+          )}
+          {section === 'runs' && (
+            <div className="page">
+              <Heading
+                title="每一次运行，都有迹可循"
+                text="执行快照、步骤事件与外部业务结果分别记录。"
+              />
+              <RunHistory visible={!detail} open={setDetail} />
+              {detail && (
+                <RunDetail
+                  key={detail.run.id}
+                  detail={detail}
+                  fault={data.fault}
+                  open={(next) =>
+                    setDetail((current: any) =>
+                      current?.run.id === detail.run.id ? next : current,
+                    )
+                  }
+                  reload={async () => {
+                    const id = detail.run.id;
+                    const next = await api('run.detail', { id });
+                    setDetail((current: any) => (current?.run.id === id ? next : current));
+                  }}
+                  back={() => setDetail(null)}
+                  control={(id, a) => action(() => api('run.control', { id, action: a }))}
+                  reveal={(id) => action(() => api('artifact.reveal', { id }))}
+                />
+              )}
+            </div>
+          )}
+          {section === 'schedules' && <Schedules data={data} action={action} />}
+          {section === 'inbox' && (
+            <div className="page">
+              <Heading title="需要你看一眼" text="联系方式、待确认动作和异常结果会保存在这里。" />
+              {!data.attention.length ? (
+                <Empty text="目前没有待办。流程需要人工处理时，会在这里提醒。" />
+              ) : (
+                data.attention.map((a) => (
+                  <div className={'attention ' + (a.read ? 'read' : '')} key={a.id}>
+                    <Bell size={20} />
+                    <div>
+                      <b>{a.title}</b>
+                      <small>{format(a.time)}</small>
+                      <AttentionContent detail={a.detail} />
+                    </div>
+                    <button
+                      onClick={() =>
+                        action(
+                          () =>
+                            api('clipboard.copy', {
+                              value:
+                                a.kind === 'contact' && a.detail.value
+                                  ? a.detail.value
+                                  : JSON.stringify(a.detail, null, 2),
+                            }),
+                          '已复制',
+                        )
+                      }
+                    >
+                      <Copy size={14} />
+                      复制
+                    </button>
+                    <button onClick={() => action(() => api('attention.read', { id: a.id }))}>
+                      {a.read ? '已读' : '标为已读'}
+                    </button>
+                    {a.kind === 'template-input' && !a.detail?.answered && (
+                      <TemplateAnswer item={a} action={action} />
+                    )}
                   </div>
-                  <button
-                    onClick={() =>
-                      action(
-                        () =>
-                          api('clipboard.copy', {
-                            value:
-                              a.kind === 'contact' && a.detail.value
-                                ? a.detail.value
-                                : JSON.stringify(a.detail, null, 2),
-                          }),
-                        '已复制',
-                      )
-                    }
-                  >
-                    <Copy size={14} />
-                    复制
-                  </button>
-                  <button onClick={() => action(() => api('attention.read', { id: a.id }))}>
-                    {a.read ? '已读' : '标为已读'}
-                  </button>
-                  {a.kind === 'template-input' && !a.detail?.answered && (
-                    <TemplateAnswer item={a} action={action} />
-                  )}
-                </div>
-              ))
-            )}
-          </div>
+                ))
+              )}
+            </div>
+          )}
+          {section === 'settings' && <SettingsView data={data} action={action} />}
+        </main>
+        {browserOpen && section !== 'editor' && (
+          <BrowserSidebar
+            close={() => setBrowserOpen(false)}
+            running={!!active && !['PAUSED', 'WAITING_INPUT'].includes(active.state)}
+            obscured={section === 'editor' && configOpen}
+          />
         )}
-        {section === 'settings' && <SettingsView data={data} action={action} />}
-      </main>
-      {browserOpen && (
-        <BrowserSidebar
-          close={() => setBrowserOpen(false)}
-          running={!!active && !['PAUSED', 'WAITING_INPUT'].includes(active.state)}
-          obscured={section === 'editor' && configOpen}
-        />
-      )}
+      </div>
     </div>
   );
 }
@@ -747,55 +747,6 @@ function Empty({ text }: { text: string }) {
     </div>
   );
 }
-function FlowCard({
-  record: r,
-  run,
-  onEdit,
-  onRun,
-}: {
-  record: FlowRecord;
-  run?: Run;
-  onEdit: () => void;
-  onRun: () => void;
-}) {
-  return (
-    <article className="flow-card">
-      <div className="card-top">
-        <span className="icon-tile">
-          <Workflow size={22} />
-        </span>
-        {run ? badge(run.state) : <span className="badge">未运行</span>}
-        <button className="icon-button" onClick={onEdit} aria-label={'编辑 ' + r.flow.name}>
-          <ArrowUpRight size={18} />
-        </button>
-      </div>
-      <h3 onClick={onEdit}>{r.flow.name}</h3>
-      <p>{r.flow.description || '你的下一个自动化流程'}</p>
-      <div className="mini-flow">
-        {r.flow.steps.slice(0, 5).map((s, i) => {
-          const Icon = kinds[s.type]?.icon ?? Workflow;
-          return (
-            <span key={s.id}>
-              <i>
-                <Icon size={14} />
-              </i>
-              {i < Math.min(4, r.flow.steps.length - 1) && <em>—</em>}
-            </span>
-          );
-        })}
-      </div>
-      <footer>
-        <span>
-          {flatten(r.flow.steps).length} 个节点 · {r.flow.sourceTemplate ? '来自模板' : '自建流程'}
-        </span>
-        <button onClick={onRun}>
-          <Play size={13} />
-          运行
-        </button>
-      </footer>
-    </article>
-  );
-}
 function Editor({
   record: r,
   setRecord,
@@ -806,6 +757,11 @@ function Editor({
   revision,
   guardInvalidNodeJson,
   editConfiguration,
+  compact,
+  panel,
+  setPanel,
+  browserOpen,
+  browserPanel,
 }: any) {
   const [tab, setTab] = useState('node');
   const [destination, setDestination] = useState('main');
@@ -814,6 +770,9 @@ function Editor({
   const [raw, setRaw] = useState('');
   const [invalid, setInvalid] = useState('');
   const selectedNode = flatten(r.flow.steps).find((n: Step) => n.id === selected);
+  useEffect(() => {
+    if (panel === 'params' || panel === 'node') setTab(panel);
+  }, [panel]);
   useEffect(() => {
     setRaw(selectedNode ? JSON.stringify(selectedNode, null, 2) : '');
     setInvalid('');
@@ -833,6 +792,7 @@ function Editor({
       setRecord({ ...r, flow: { ...r.flow, steps } });
       setSelected(nextSelected);
       setTab('node');
+      if (compact) setPanel('node');
       setStructureError('');
       return true;
     } catch (error: any) {
@@ -854,7 +814,10 @@ function Editor({
   };
   const insertAt = (side: 'before' | 'after') => {
     setDestination(selected + ':' + side);
-    document.querySelector<HTMLInputElement>('[aria-label="搜索动作"]')?.focus();
+    setPanel('actions');
+    requestAnimationFrame(() =>
+      document.querySelector<HTMLInputElement>('[aria-label="搜索动作"]')?.focus(),
+    );
   };
   const location = locationOf(r.flow.steps, selected);
   const targets = destinationChoices(r.flow.steps);
@@ -878,379 +841,452 @@ function Editor({
     setRecord({ ...r, flow: { ...r.flow, parameters } });
   };
   const { nodes, edges, stepCount } = buildDiagram(r.flow.steps, selected);
+  const changePanel = (value: string) => {
+    if (guardInvalidNodeJson()) setPanel(value);
+  };
   return (
-    <div className="editor-layout">
-      <ActionLibrary
-        key={r.id}
-        steps={r.flow.steps}
-        add={append}
-        destination={destination}
-        setDestination={setDestination}
-      />
-      <div className="canvas">
-        <DiagramCanvas
-          key={r.id}
-          nodes={nodes}
-          edges={edges}
-          selected={selected}
-          select={(id) => {
-            if (!guardInvalidNodeJson()) return;
-            setSelected(id);
-            setTab('node');
-          }}
-        />
-        <div className="canvas-legend" aria-label="流程图图例">
-          <span className="legend-decision" />
-          条件
-          <span className="legend-data" />
-          数据
-          <span className="legend-manual" />
-          人工
-        </div>
-        <span className="canvas-label">执行流程 · {stepCount} 个步骤</span>
+    <div
+      className={`editor-region ${compact ? 'is-compact' : ''} ${browserOpen ? 'has-browser' : ''}`}
+      data-panel={panel}
+      data-selected={!!selectedNode}
+    >
+      <div className="editor-views" role="group" aria-label="编排视图">
+        <button
+          aria-pressed={panel === 'graph' || panel === 'canvas'}
+          onClick={() => changePanel('graph')}
+        >
+          全图
+        </button>
+        <button aria-pressed={panel === 'actions'} onClick={() => changePanel('actions')}>
+          动作与结构
+        </button>
+        <button aria-pressed={panel === 'node'} onClick={() => changePanel('node')}>
+          当前步骤配置
+        </button>
+        <button aria-pressed={panel === 'params'} onClick={() => changePanel('params')}>
+          参数
+        </button>
+        {compact && ['actions', 'node', 'params'].includes(panel) && (
+          <button onClick={() => changePanel('canvas')}>应用并关闭</button>
+        )}
       </div>
-      <aside className="inspector">
-        <div className="tabs">
-          {[
-            ['node', '节点'],
-            ['params', '参数与绑定'],
-          ].map(([k, t]) => (
-            <button
-              key={k}
-              onClick={() => {
-                if (guardInvalidNodeJson()) setTab(k);
+      <div className="editor-workspace">
+        <div className="editor-layout">
+          <ActionLibrary
+            key={r.id}
+            steps={r.flow.steps}
+            add={append}
+            destination={destination}
+            setDestination={setDestination}
+          />
+          <div className="canvas">
+            <DiagramCanvas
+              key={r.id}
+              nodes={nodes}
+              edges={edges}
+              selected={selected}
+              select={(id) => {
+                if (!guardInvalidNodeJson()) return;
+                setSelected(id);
+                setTab('node');
+                if (compact) setPanel('node');
               }}
-              className={tab === k ? 'selected' : ''}
+            />
+            <div className="canvas-legend" aria-label="流程图图例">
+              <span className="legend-decision" />
+              条件
+              <span className="legend-data" />
+              数据
+              <span className="legend-manual" />
+              人工
+            </div>
+            <span className="canvas-label">执行流程 · {stepCount} 个步骤</span>
+          </div>
+          <section className="selected-step-summary" aria-label="当前步骤">
+            <h2>
+              {selectedNode
+                ? (typeof selectedNode.name === 'string' && selectedNode.name) ||
+                  kinds[selectedNode.type]?.label
+                : '选择一个步骤'}
+            </h2>
+            <p>
+              {selectedNode?.type === 'browser'
+                ? typeof selectedNode.selector === 'string'
+                  ? selectedNode.selector || '尚未选择网页目标'
+                  : '使用变量定位网页目标'
+                : '在流程图中选择需要编辑的步骤。'}
+            </p>
+            <button
+              className="primary"
+              disabled={!selectedNode}
+              onClick={() => changePanel('node')}
             >
-              {t}
+              编辑当前步骤
             </button>
-          ))}
-        </div>
-        {tab === 'node' &&
-          (selectedNode ? (
-            <>
-              <fieldset
-                disabled={!!invalid}
-                style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
-              >
-                <div className="inspector-heading">
-                  <h3>{kinds[selectedNode.type].label}</h3>
-                  <button
-                    className="icon-button"
-                    aria-label="节点上移"
-                    title="在当前分支上移"
-                    disabled={!location || location.index === 0}
-                    onClick={() => structure(() => moveSibling(r.flow.steps, selected, -1))}
-                  >
-                    <ArrowUp size={16} />
-                  </button>
-                  <button
-                    className="icon-button"
-                    aria-label="节点下移"
-                    title="在当前分支下移"
-                    disabled={!location || location.index === location.siblings.length - 1}
-                    onClick={() => structure(() => moveSibling(r.flow.steps, selected, 1))}
-                  >
-                    <ArrowDown size={16} />
-                  </button>
-                  <button
-                    className="icon-button"
-                    aria-label="复制节点"
-                    title="复制到后面（包含子步骤）"
-                    onClick={duplicate}
-                  >
-                    <Copy size={16} />
-                  </button>
-                  <button
-                    className="icon-button"
-                    aria-label="删除节点"
-                    title="删除步骤（包含子步骤）"
-                    onClick={() =>
-                      structure(() => changeSteps(r.flow.steps, selected, () => null), '')
-                    }
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-                <div className="node-insert-actions" aria-label="步骤插入位置">
-                  <button onClick={() => insertAt('before')}>在前面插入</button>
-                  <button onClick={() => insertAt('after')}>在后面插入</button>
-                </div>
-                <div className="node-move-actions">
-                  <select
-                    aria-label="步骤移动位置"
-                    value={moveTo}
-                    onChange={(event) => setMoveTo(event.target.value)}
-                  >
-                    <option value="">移动到…</option>
-                    {targets.map((target) => (
-                      <option key={target.value} value={target.value}>
-                        {target.label}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    disabled={!moveTo}
-                    onClick={() => {
-                      const target = targets.find((target) => target.value === moveTo);
-                      if (target) structure(() => moveStep(r.flow.steps, selected, target));
-                    }}
-                  >
-                    移动
-                  </button>
-                </div>
-                {structureError && (
-                  <p className="field-error" role="alert">
-                    {structureError}
-                  </p>
-                )}
-                <p className="muted">{selectedNode.id} · 修改后保存，下一次运行生效</p>
-                {!['file', 'excel'].includes(selectedNode.type) && (
-                  <>
-                    <label htmlFor="step-name">步骤名称</label>
-                    <input
-                      id="step-name"
-                      value={typeof selectedNode.name === 'string' ? selectedNode.name : ''}
-                      placeholder="便于识别的名称（可选）"
-                      onChange={(e) => updateNode({ ...selectedNode, name: e.target.value })}
-                    />
-                  </>
-                )}
-                <LogicNodeConfiguration
-                  key={selectedNode.id + ':logic:' + revision}
-                  node={selectedNode}
-                  choices={choices}
-                  change={updateNode}
-                />
-                {selectedNode.type === 'browser' && (
-                  <BrowserNodeConfiguration
-                    key={selectedNode.id + ':' + revision}
-                    node={selectedNode}
-                    choices={choices}
-                    change={(next) => {
-                      if (!guardInvalidNodeJson()) return;
-                      patch(() => next);
-                      setRaw(JSON.stringify(next, null, 2));
-                      setInvalid('');
-                    }}
-                  />
-                )}
-                <ResourceNodeConfiguration
-                  key={selectedNode.id + ':resource:' + revision}
-                  node={selectedNode}
-                  choices={choices}
-                  change={updateNode}
-                  bindings={r.bindings}
-                  choose={choose}
-                />
-                {selectedNode.type === 'script' && (
-                  <>
-                    <label>可信脚本 · 独立进程执行</label>
-                    <Suspense fallback={<p>加载编辑器…</p>}>
-                      <CodeEditor
-                        value={selectedNode.code}
-                        language={selectedNode.language === 'ts' ? 'typescript' : 'javascript'}
-                        onChange={(code) => {
-                          if (!guardInvalidNodeJson()) return;
-                          patch((n) => ({ ...n, code }) as Step);
-                          setRaw(JSON.stringify({ ...selectedNode, code }, null, 2));
-                        }}
-                        height="280px"
-                      />
-                    </Suspense>
-                    <ScriptPackages
-                      flowId={r.id}
-                      node={selectedNode}
-                      bindings={r.bindings}
-                      bind={(info) => {
-                        if (!guardInvalidNodeJson()) return;
-                        const conflict = flatten(r.flow.steps).some(
-                          (n: Step) =>
-                            n.id !== selectedNode.id &&
-                            n.type === 'script' &&
-                            n.dependencies.some(
-                              (d) => d.name === info.name && d.version !== info.version,
-                            ),
-                        );
-                        if (conflict)
-                          throw new Error('其他节点声明了不同版本，请先统一依赖版本：' + info.name);
-                        const next = {
-                          ...selectedNode,
-                          dependencies: [
-                            ...selectedNode.dependencies.filter((d: any) => d.name !== info.name),
-                            { name: info.name, version: info.version },
-                          ],
-                        };
-                        setRecord({
-                          ...r,
-                          flow: {
-                            ...r.flow,
-                            steps: changeSteps(r.flow.steps, selected, () => next),
-                          },
-                          bindings: {
-                            ...r.bindings,
-                            scriptPackages: {
-                              ...r.bindings.scriptPackages,
-                              [info.name]: { path: info.path, version: info.version },
-                            },
-                          },
-                        });
-                        setRaw(JSON.stringify(next, null, 2));
-                        setInvalid('');
-                      }}
-                      remove={(name) => {
-                        if (!guardInvalidNodeJson()) return;
-                        const next = {
-                          ...selectedNode,
-                          dependencies: selectedNode.dependencies.filter(
-                            (d: any) => d.name !== name,
-                          ),
-                        };
-                        const steps = changeSteps(r.flow.steps, selected, () => next);
-                        const packages = { ...r.bindings.scriptPackages };
-                        if (
-                          !flatten(steps).some(
-                            (n: Step) =>
-                              n.type === 'script' && n.dependencies.some((d) => d.name === name),
-                          )
-                        )
-                          delete packages[name];
-                        setRecord({
-                          ...r,
-                          flow: { ...r.flow, steps },
-                          bindings: { ...r.bindings, scriptPackages: packages },
-                        });
-                        setRaw(JSON.stringify(next, null, 2));
-                      }}
-                    />
-                  </>
-                )}
-              </fieldset>
-              <details
-                className="node-advanced"
-                data-value-invalid={invalid || undefined}
-                key={selectedNode.id}
-              >
-                <summary>高级配置 JSON</summary>
-                <label>节点配置 JSON</label>
-                <textarea
-                  aria-label="节点配置 JSON"
-                  aria-invalid={!!invalid}
-                  className="code-input"
-                  value={raw}
-                  onChange={(e) => {
-                    setRaw(e.target.value);
-                    try {
-                      const value = JSON.parse(e.target.value);
-                      if (value.id !== selectedNode.id || value.type !== selectedNode.type)
-                        throw new Error('ID 和类型不可在此修改');
-                      patch(() => value);
-                      setInvalid('');
-                    } catch (e: any) {
-                      setInvalid(e.message);
+            <p>当前步骤保持可见；动作库与配置使用互斥抽屉。</p>
+          </section>
+          <aside className="inspector">
+            <div className="tabs" role="tablist" aria-label="检查器内容">
+              {[
+                ['node', '节点'],
+                ['params', '参数'],
+              ].map(([k, t]) => (
+                <button
+                  key={k}
+                  role="tab"
+                  aria-selected={tab === k}
+                  onClick={() => {
+                    if (guardInvalidNodeJson()) {
+                      setTab(k);
+                      if (compact) setPanel(k);
                     }
                   }}
-                />
-                {invalid && <p className="field-error">{invalid}</p>}
-                {invalid && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRaw(JSON.stringify(selectedNode, null, 2));
-                      setInvalid('');
-                    }}
-                  >
-                    恢复节点配置
-                  </button>
-                )}
-                <p className="note">
-                  显式设置容器 timeoutMs 时，超时包含内部等待和暂停；人工节点未配置时不设节点超时。
-                </p>
-                <p className="note">
-                  引用示例：<code>{'{"$ref":"steps.greeting.message"}'}</code>
-                  。循环体可引用 item 和 index。
-                </p>
-              </details>
-            </>
-          ) : (
-            <Empty text="选择画布节点，编辑参数或脚本。" />
-          ))}
-        {tab === 'params' && (
-          <>
-            <h3>运行参数</h3>
-            {r.bindings.configuration?.adapter === 'flow-parameters-v1' ? (
-              <TemplateParameters
-                value={r.bindings.configuration.values}
-                edit={editConfiguration}
-              />
-            ) : (
-              <>
-                <ParameterConfiguration
-                  key={revision}
-                  value={r.flow.parameters}
-                  change={updateParameters}
-                />
-                <details className="parameters-advanced">
-                  <summary>参数 JSON · 高级</summary>
-                  <JsonInput key={revision} value={r.flow.parameters} onChange={updateParameters} />
-                </details>
-              </>
-            )}
-            <label htmlFor="flow-browser-binding">本机浏览器</label>
-            <select
-              id="flow-browser-binding"
-              value={r.bindings.browserId ?? ''}
-              onChange={(e) =>
-                setRecord({
-                  ...r,
-                  bindings: {
-                    ...r.bindings,
-                    browserId: e.target.value || undefined,
-                  },
-                })
-              }
-            >
-              <option value="">尚未绑定</option>
-              {browsers.map((b: any) => (
-                <option key={b.id} value={b.id}>
-                  {b.product === 'embedded' ? 'FlowArk 内置浏览器' : b.product} {b.version}
-                </option>
-              ))}
-            </select>
-            {fileBindingNames(r.flow.steps, r.bindings.files, r.flow.parameters).map((binding) => (
-              <section key={binding} className="file-binding">
-                <label>{binding} 文件目录</label>
-                <p className="path-text">{r.bindings.files[binding] ?? '尚未选择'}</p>
-                <button aria-label={`选择 ${binding} 目录`} onClick={() => choose(binding)}>
-                  <FolderOpen size={15} /> 选择目录
+                  className={tab === k ? 'selected' : ''}
+                >
+                  {t}
                 </button>
-              </section>
-            ))}
-            <label>允许脚本读取的凭据</label>
-            {['openai-codex', 'deepseek'].map((id) => (
-              <label className="check-label" key={id}>
-                <input
-                  type="checkbox"
-                  checked={r.bindings.credentials.includes(id)}
+              ))}
+            </div>
+            {tab === 'node' &&
+              (selectedNode ? (
+                <>
+                  <fieldset
+                    disabled={!!invalid}
+                    style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
+                  >
+                    <div className="inspector-heading">
+                      <h3>{kinds[selectedNode.type].label}</h3>
+                      <button
+                        className="icon-button"
+                        aria-label="节点上移"
+                        title="在当前分支上移"
+                        disabled={!location || location.index === 0}
+                        onClick={() => structure(() => moveSibling(r.flow.steps, selected, -1))}
+                      >
+                        <ArrowUp size={16} />
+                      </button>
+                      <button
+                        className="icon-button"
+                        aria-label="节点下移"
+                        title="在当前分支下移"
+                        disabled={!location || location.index === location.siblings.length - 1}
+                        onClick={() => structure(() => moveSibling(r.flow.steps, selected, 1))}
+                      >
+                        <ArrowDown size={16} />
+                      </button>
+                      <button
+                        className="icon-button"
+                        aria-label="复制节点"
+                        title="复制到后面（包含子步骤）"
+                        onClick={duplicate}
+                      >
+                        <Copy size={16} />
+                      </button>
+                      <button
+                        className="icon-button"
+                        aria-label="删除节点"
+                        title="删除步骤（包含子步骤）"
+                        onClick={() =>
+                          structure(() => changeSteps(r.flow.steps, selected, () => null), '')
+                        }
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                    <div className="node-insert-actions" aria-label="步骤插入位置">
+                      <button onClick={() => insertAt('before')}>在前面插入</button>
+                      <button onClick={() => insertAt('after')}>在后面插入</button>
+                    </div>
+                    <div className="node-move-actions">
+                      <select
+                        aria-label="步骤移动位置"
+                        value={moveTo}
+                        onChange={(event) => setMoveTo(event.target.value)}
+                      >
+                        <option value="">移动到…</option>
+                        {targets.map((target) => (
+                          <option key={target.value} value={target.value}>
+                            {target.label}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        disabled={!moveTo}
+                        onClick={() => {
+                          const target = targets.find((target) => target.value === moveTo);
+                          if (target) structure(() => moveStep(r.flow.steps, selected, target));
+                        }}
+                      >
+                        移动
+                      </button>
+                    </div>
+                    {structureError && (
+                      <p className="field-error" role="alert">
+                        {structureError}
+                      </p>
+                    )}
+                    <p className="muted">{selectedNode.id} · 修改后保存，下一次运行生效</p>
+                    {!['file', 'excel'].includes(selectedNode.type) && (
+                      <>
+                        <label htmlFor="step-name">步骤名称</label>
+                        <input
+                          id="step-name"
+                          value={typeof selectedNode.name === 'string' ? selectedNode.name : ''}
+                          placeholder="便于识别的名称（可选）"
+                          onChange={(e) => updateNode({ ...selectedNode, name: e.target.value })}
+                        />
+                      </>
+                    )}
+                    <LogicNodeConfiguration
+                      key={selectedNode.id + ':logic:' + revision}
+                      node={selectedNode}
+                      choices={choices}
+                      change={updateNode}
+                    />
+                    {selectedNode.type === 'browser' && (
+                      <BrowserNodeConfiguration
+                        key={selectedNode.id + ':' + revision}
+                        node={selectedNode}
+                        choices={choices}
+                        change={(next) => {
+                          if (!guardInvalidNodeJson()) return;
+                          patch(() => next);
+                          setRaw(JSON.stringify(next, null, 2));
+                          setInvalid('');
+                        }}
+                      />
+                    )}
+                    <ResourceNodeConfiguration
+                      key={selectedNode.id + ':resource:' + revision}
+                      node={selectedNode}
+                      choices={choices}
+                      change={updateNode}
+                      bindings={r.bindings}
+                      choose={choose}
+                    />
+                    {selectedNode.type === 'script' && (
+                      <>
+                        <label>可信脚本 · 独立进程执行</label>
+                        <Suspense fallback={<p>加载编辑器…</p>}>
+                          <CodeEditor
+                            value={selectedNode.code}
+                            language={selectedNode.language === 'ts' ? 'typescript' : 'javascript'}
+                            onChange={(code) => {
+                              if (!guardInvalidNodeJson()) return;
+                              patch((n) => ({ ...n, code }) as Step);
+                              setRaw(JSON.stringify({ ...selectedNode, code }, null, 2));
+                            }}
+                            height="280px"
+                          />
+                        </Suspense>
+                        <ScriptPackages
+                          flowId={r.id}
+                          node={selectedNode}
+                          bindings={r.bindings}
+                          bind={(info) => {
+                            if (!guardInvalidNodeJson()) return;
+                            const conflict = flatten(r.flow.steps).some(
+                              (n: Step) =>
+                                n.id !== selectedNode.id &&
+                                n.type === 'script' &&
+                                n.dependencies.some(
+                                  (d) => d.name === info.name && d.version !== info.version,
+                                ),
+                            );
+                            if (conflict)
+                              throw new Error(
+                                '其他节点声明了不同版本，请先统一依赖版本：' + info.name,
+                              );
+                            const next = {
+                              ...selectedNode,
+                              dependencies: [
+                                ...selectedNode.dependencies.filter(
+                                  (d: any) => d.name !== info.name,
+                                ),
+                                { name: info.name, version: info.version },
+                              ],
+                            };
+                            setRecord({
+                              ...r,
+                              flow: {
+                                ...r.flow,
+                                steps: changeSteps(r.flow.steps, selected, () => next),
+                              },
+                              bindings: {
+                                ...r.bindings,
+                                scriptPackages: {
+                                  ...r.bindings.scriptPackages,
+                                  [info.name]: { path: info.path, version: info.version },
+                                },
+                              },
+                            });
+                            setRaw(JSON.stringify(next, null, 2));
+                            setInvalid('');
+                          }}
+                          remove={(name) => {
+                            if (!guardInvalidNodeJson()) return;
+                            const next = {
+                              ...selectedNode,
+                              dependencies: selectedNode.dependencies.filter(
+                                (d: any) => d.name !== name,
+                              ),
+                            };
+                            const steps = changeSteps(r.flow.steps, selected, () => next);
+                            const packages = { ...r.bindings.scriptPackages };
+                            if (
+                              !flatten(steps).some(
+                                (n: Step) =>
+                                  n.type === 'script' &&
+                                  n.dependencies.some((d) => d.name === name),
+                              )
+                            )
+                              delete packages[name];
+                            setRecord({
+                              ...r,
+                              flow: { ...r.flow, steps },
+                              bindings: { ...r.bindings, scriptPackages: packages },
+                            });
+                            setRaw(JSON.stringify(next, null, 2));
+                          }}
+                        />
+                      </>
+                    )}
+                  </fieldset>
+                  <details
+                    className="node-advanced"
+                    data-value-invalid={invalid || undefined}
+                    key={selectedNode.id}
+                  >
+                    <summary>高级配置 JSON</summary>
+                    <label>节点配置 JSON</label>
+                    <textarea
+                      aria-label="节点配置 JSON"
+                      aria-invalid={!!invalid}
+                      className="code-input"
+                      value={raw}
+                      onChange={(e) => {
+                        setRaw(e.target.value);
+                        try {
+                          const value = JSON.parse(e.target.value);
+                          if (value.id !== selectedNode.id || value.type !== selectedNode.type)
+                            throw new Error('ID 和类型不可在此修改');
+                          patch(() => value);
+                          setInvalid('');
+                        } catch (e: any) {
+                          setInvalid(e.message);
+                        }
+                      }}
+                    />
+                    {invalid && <p className="field-error">{invalid}</p>}
+                    {invalid && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRaw(JSON.stringify(selectedNode, null, 2));
+                          setInvalid('');
+                        }}
+                      >
+                        恢复节点配置
+                      </button>
+                    )}
+                    <p className="note">
+                      显式设置容器 timeoutMs
+                      时，超时包含内部等待和暂停；人工节点未配置时不设节点超时。
+                    </p>
+                    <p className="note">
+                      引用示例：<code>{'{"$ref":"steps.greeting.message"}'}</code>
+                      。循环体可引用 item 和 index。
+                    </p>
+                  </details>
+                </>
+              ) : (
+                <Empty text="选择画布节点，编辑参数或脚本。" />
+              ))}
+            {tab === 'params' && (
+              <>
+                <h3>运行参数</h3>
+                {r.bindings.configuration?.adapter === 'flow-parameters-v1' ? (
+                  <TemplateParameters
+                    value={r.bindings.configuration.values}
+                    edit={editConfiguration}
+                  />
+                ) : (
+                  <>
+                    <ParameterConfiguration
+                      key={revision}
+                      value={r.flow.parameters}
+                      change={updateParameters}
+                    />
+                    <details className="parameters-advanced">
+                      <summary>参数 JSON · 高级</summary>
+                      <JsonInput
+                        key={revision}
+                        value={r.flow.parameters}
+                        onChange={updateParameters}
+                      />
+                    </details>
+                  </>
+                )}
+                <label htmlFor="flow-browser-binding">本机浏览器</label>
+                <select
+                  id="flow-browser-binding"
+                  value={r.bindings.browserId ?? ''}
                   onChange={(e) =>
                     setRecord({
                       ...r,
                       bindings: {
                         ...r.bindings,
-                        credentials: e.target.checked
-                          ? [...r.bindings.credentials, id]
-                          : r.bindings.credentials.filter((x: string) => x !== id),
+                        browserId: e.target.value || undefined,
                       },
                     })
                   }
-                />
-                {id}
-              </label>
-            ))}
-            <p className="note">本地绑定不随流程导出。计划使用创建时的固定版本。</p>
-          </>
-        )}
-      </aside>
+                >
+                  <option value="">尚未绑定</option>
+                  {browsers.map((b: any) => (
+                    <option key={b.id} value={b.id}>
+                      {b.product === 'embedded' ? 'FlowArk 内置浏览器' : b.product} {b.version}
+                    </option>
+                  ))}
+                </select>
+                {fileBindingNames(r.flow.steps, r.bindings.files, r.flow.parameters).map(
+                  (binding) => (
+                    <section key={binding} className="file-binding">
+                      <label>{binding} 文件目录</label>
+                      <p className="path-text">{r.bindings.files[binding] ?? '尚未选择'}</p>
+                      <button aria-label={`选择 ${binding} 目录`} onClick={() => choose(binding)}>
+                        <FolderOpen size={15} /> 选择目录
+                      </button>
+                    </section>
+                  ),
+                )}
+                <label>允许脚本读取的凭据</label>
+                {['openai-codex', 'deepseek'].map((id) => (
+                  <label className="check-label" key={id}>
+                    <input
+                      type="checkbox"
+                      checked={r.bindings.credentials.includes(id)}
+                      onChange={(e) =>
+                        setRecord({
+                          ...r,
+                          bindings: {
+                            ...r.bindings,
+                            credentials: e.target.checked
+                              ? [...r.bindings.credentials, id]
+                              : r.bindings.credentials.filter((x: string) => x !== id),
+                          },
+                        })
+                      }
+                    />
+                    {id}
+                  </label>
+                ))}
+                <p className="note">本地绑定不随流程导出。计划使用创建时的固定版本。</p>
+              </>
+            )}
+          </aside>
+        </div>
+        {browserPanel}
+      </div>
     </div>
   );
 }

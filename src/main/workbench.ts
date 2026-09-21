@@ -105,8 +105,14 @@ app
   .whenReady()
   .then(async () => {
     win = new BrowserWindow({
-      width: 1380,
-      height: 900,
+      width: 1440,
+      height: 960,
+      ...(process.platform === 'darwin'
+        ? {
+            titleBarStyle: 'hiddenInset' as const,
+            trafficLightPosition: { x: 12, y: 14 },
+          }
+        : {}),
       minWidth: 1040,
       minHeight: 700,
       title: 'FlowArk · 序舟',
@@ -256,7 +262,10 @@ app
             filters: [{ name: 'FlowArk 模板包', extensions: ['zip'] }],
           });
           if (picked.canceled || !picked.filePath) return false;
-          await rpc.call('template.export', { key: args.key, path: zipExportPath(picked.filePath) });
+          await rpc.call('template.export', {
+            key: args.key,
+            path: zipExportPath(picked.filePath),
+          });
           return true;
         }
         return await rpc.call(method, args);

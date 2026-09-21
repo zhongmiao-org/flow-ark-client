@@ -78,15 +78,31 @@ export async function listRuns(store: Store, input: unknown): Promise<RunListPag
 }
 
 // Input is newest first, from the full store rather than the history window.
-export function runOverview(runs: Run[]): RunOverview {
+export function runOverview(runs: Run[], now = new Date()): RunOverview {
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
+  const today = {
+    date: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
+    total: 0,
+    succeeded: 0,
+    failed: 0,
+    interrupted: 0,
+  };
   const latest = new Map<string, Run>();
   let active: Run | null = null,
     queued = 0;
   for (const run of runs) {
+    const created = Date.parse(run.createdAt);
+    if (created >= start && created < end && created <= now.getTime()) {
+      today.total++;
+      if (run.state === 'SUCCEEDED') today.succeeded++;
+      if (run.state === 'FAILED') today.failed++;
+      if (run.state === 'INTERRUPTED') today.interrupted++;
+    }
     if (!latest.has(run.flowId)) latest.set(run.flowId, run);
     if (run.state === 'QUEUED') queued++;
     if (!active && ['RUNNING', 'PAUSED', 'WAITING_INPUT', 'CANCELLING'].includes(run.state))
       active = run;
   }
-  return { total: runs.length, queued, active, latest: [...latest.values()] };
+  return { total: runs.length, queued, active, latest: [...latest.values()], today };
 }

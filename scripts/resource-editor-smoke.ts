@@ -146,7 +146,7 @@ try {
   await button('启用内置浏览器').click();
   await button('启用内置浏览器').waitFor({ state: 'hidden' });
   await button('我的流程').click();
-  await button('新建流程').click();
+  await page.getByRole('button', { name: /^(新建流程|创建空白流程)$/ }).click();
   await page.locator('.title-input').fill('资源节点表单验收');
   await select('verify');
   await button('删除节点').click();

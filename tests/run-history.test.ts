@@ -20,6 +20,34 @@ const run = (n: number, extra: Partial<Run> = {}): Run => ({
   business: 'fixture',
   ...extra,
 });
+test('today uses the full history and local calendar boundaries without counting future or invalid times', () => {
+  const now = new Date(2026, 8, 21, 12);
+  const createdAt = new Date(2026, 8, 21, 0).toISOString();
+  const rows = Array.from({ length: 251 }, (_, i) => run(i, { createdAt }));
+  rows.push(
+    run(252, { createdAt, state: 'FAILED' }),
+    run(253, { createdAt, state: 'INTERRUPTED' }),
+    run(254, { createdAt, state: 'WAITING_INPUT' }),
+    run(255, { createdAt: new Date(2026, 8, 20, 23, 59, 59, 999).toISOString() }),
+    run(256, { createdAt: new Date(2026, 8, 22).toISOString() }),
+    run(257, { createdAt: new Date(2026, 8, 21, 13).toISOString() }),
+    run(258, { createdAt: 'invalid' }),
+  );
+  assert.deepEqual(runOverview(rows, now).today, {
+    date: '2026-09-21',
+    total: 254,
+    succeeded: 251,
+    failed: 1,
+    interrupted: 1,
+  });
+  assert.deepEqual(runOverview([], new Date(2026, 8, 22)).today, {
+    date: '2026-09-22',
+    total: 0,
+    succeeded: 0,
+    failed: 0,
+    interrupted: 0,
+  });
+});
 function fixture(t: { after: (fn: () => void) => void }) {
   const dir = mkdtempSync(join(tmpdir(), 'flowark-history-unit-')),
     key = randomBytes(32);

@@ -53,7 +53,7 @@ try {
   await page.getByLabel('网页地址', { exact: true }).fill(lab.url);
   await page.getByRole('button', { name: '访问网页', exact: true }).click();
   await page.waitForTimeout(600);
-  await page.getByRole('button', { name: '新建流程', exact: true }).click();
+  await page.getByRole('button', { name: /^(新建流程|创建空白流程)$/ }).click();
   await page.locator('.title-input').fill('从空白搭建表单');
   while (await page.locator('.flow-shape[data-step-id]').count()) {
     await page.locator('.flow-shape[data-step-id]').last().click();

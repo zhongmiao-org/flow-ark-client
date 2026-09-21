@@ -212,7 +212,7 @@ try {
   const close = () => page.getByRole('button', { name: '关闭网页面板', exact: true }).click();
 
   await resize(1380, 900);
-  await page.getByRole('button', { name: '新建流程', exact: true }).click();
+  await page.getByRole('button', { name: /^(新建流程|创建空白流程)$/ }).click();
   await layout('closed');
   assert.equal(await focusSelected.isDisabled(), true, 'focus requires a selected step');
   await open();

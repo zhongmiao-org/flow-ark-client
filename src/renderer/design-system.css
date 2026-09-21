@@ -1,0 +1,212 @@
+/* Figma sVciNUZHG9yx81gCpYzjH9: FlowArk primitives and semantic variables. */
+:root {
+  --fa-raw-white: #ffffff;
+  --fa-raw-fog: #f6f7fb;
+  --fa-raw-soft: #eff2f7;
+  --fa-raw-line: #dfe4ed;
+  --fa-raw-ink: #172033;
+  --fa-raw-muted: #637089;
+  --fa-raw-nav: #121a2a;
+  --fa-raw-navMuted: #a8b4ca;
+  --fa-raw-blue: #315ef5;
+  --fa-raw-blueHover: #244bdc;
+  --fa-raw-blueSoft: #edf2ff;
+  --fa-raw-green: #147d61;
+  --fa-raw-greenSoft: #e8f6ef;
+  --fa-raw-amber: #946200;
+  --fa-raw-amberSoft: #fff5db;
+  --fa-raw-red: #b83b48;
+  --fa-raw-redSoft: #fdedf0;
+  --fa-raw-disabled: #b9c3d3;
+  --fa-bg-canvas: var(--fa-raw-fog);
+  --fa-bg-surface: var(--fa-raw-white);
+  --fa-bg-subtle: var(--fa-raw-soft);
+  --fa-bg-nav: var(--fa-raw-nav);
+  --fa-text-primary: var(--fa-raw-ink);
+  --fa-text-secondary: var(--fa-raw-muted);
+  --fa-text-inverse: var(--fa-raw-white);
+  --fa-text-nav: var(--fa-raw-navMuted);
+  --fa-border-default: var(--fa-raw-line);
+  --fa-action-primary: var(--fa-raw-blue);
+  --fa-action-hover: var(--fa-raw-blueHover);
+  --fa-action-subtle: var(--fa-raw-blueSoft);
+  --fa-action-disabled: var(--fa-raw-disabled);
+  --fa-status-success: var(--fa-raw-green);
+  --fa-status-success-bg: var(--fa-raw-greenSoft);
+  --fa-status-warning: var(--fa-raw-amber);
+  --fa-status-warning-bg: var(--fa-raw-amberSoft);
+  --fa-status-error: var(--fa-raw-red);
+  --fa-status-error-bg: var(--fa-raw-redSoft);
+  --fa-space-0: 0px;
+  --fa-space-4: 4px;
+  --fa-space-8: 8px;
+  --fa-space-12: 12px;
+  --fa-space-16: 16px;
+  --fa-space-20: 20px;
+  --fa-space-24: 24px;
+  --fa-space-32: 32px;
+  --fa-space-40: 40px;
+  --fa-space-48: 48px;
+  --fa-space-64: 64px;
+  --fa-radius-0: 0px;
+  --fa-radius-6: 6px;
+  --fa-radius-8: 8px;
+  --fa-radius-12: 12px;
+  --fa-radius-16: 16px;
+  --fa-radius-24: 24px;
+  --fa-radius-999: 999px;
+  --fa-font-body: 'Noto Sans SC Variable', sans-serif;
+  --fa-font-latin: 'Inter Variable', 'Noto Sans SC Variable', sans-serif;
+  --accent: var(--fa-action-primary);
+  --border: var(--fa-border-default);
+  --muted: var(--fa-text-secondary);
+  --nav: var(--fa-bg-nav);
+  --soft: var(--fa-action-subtle);
+  font-family: var(--fa-font-body);
+  color: var(--fa-text-primary);
+  background: var(--fa-bg-canvas);
+  font-size: 14px;
+  line-height: 22px;
+}
+button {
+  min-height: 40px;
+  padding: 9px 12px;
+  border-radius: var(--fa-radius-8);
+  color: var(--fa-text-primary);
+  background: var(--fa-bg-surface);
+  border-color: var(--fa-border-default);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+}
+button:hover {
+  background: var(--fa-bg-subtle);
+  border-color: var(--fa-border-default);
+}
+button:disabled {
+  background: var(--fa-bg-subtle);
+  color: var(--fa-text-secondary);
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+a:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 2px;
+}
+input,
+select,
+textarea {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--fa-text-primary);
+  border-color: var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-bg-surface);
+  padding: 8px 12px;
+}
+input:focus,
+textarea:focus {
+  border-color: var(--fa-action-primary);
+}
+input[aria-invalid='true'],
+textarea[aria-invalid='true'] {
+  border-color: var(--fa-status-error);
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--fa-text-secondary);
+  opacity: 1;
+}
+label {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--fa-text-secondary);
+}
+h1 {
+  font-size: 28px;
+  line-height: 40px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+h2,
+h3 {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+p {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--fa-text-secondary);
+}
+small {
+  font-size: 12px;
+  line-height: 18px;
+}
+.primary {
+  color: var(--fa-text-inverse);
+  background: var(--fa-action-primary);
+  border-color: var(--fa-action-primary);
+  box-shadow: none;
+}
+.primary:hover {
+  color: var(--fa-text-inverse);
+  background: var(--fa-action-hover);
+  border-color: var(--fa-action-hover);
+}
+button.danger {
+  color: var(--fa-status-error);
+  background: var(--fa-status-error-bg);
+  border-color: transparent;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 5px 12px;
+  border-radius: var(--fa-radius-999);
+  border: 0;
+  color: var(--fa-text-secondary);
+  background: var(--fa-bg-subtle);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+}
+.badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 6px;
+}
+.state-SUCCEEDED {
+  color: var(--fa-status-success);
+  background: var(--fa-status-success-bg);
+}
+.state-RUNNING,
+.state-QUEUED {
+  color: var(--fa-action-primary);
+  background: var(--fa-action-subtle);
+}
+.state-PAUSED,
+.state-WAITING_INPUT,
+.state-INTERRUPTED {
+  color: var(--fa-status-warning);
+  background: var(--fa-status-warning-bg);
+}
+.state-FAILED {
+  color: var(--fa-status-error);
+  background: var(--fa-status-error-bg);
+}
+.state-CANCELLED,
+.state-CANCELLING {
+  color: var(--fa-text-secondary);
+  background: var(--fa-bg-subtle);
+}

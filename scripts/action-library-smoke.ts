@@ -16,7 +16,7 @@ try {
   await page.waitForFunction(() => !!(window as any).flowark);
   evidence.version = await app.evaluate(({ app }) => app.getVersion());
   const state = () => page.evaluate(() => (window as any).flowark.request('bootstrap'));
-  await page.getByRole('button', { name: '新建流程', exact: true }).click();
+  await page.getByRole('button', { name: /^(新建流程|创建空白流程)$/ }).click();
   await page.locator('.title-input').fill('动作库作用域验证');
   const search = page.getByLabel('搜索动作', { exact: true });
   const position = page.getByLabel('动作添加位置', { exact: true });

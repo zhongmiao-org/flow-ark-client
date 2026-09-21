@@ -28,4 +28,10 @@ export type RunListPage = {
   totalCount: number;
   newerCount: number;
 };
-export type RunOverview = { total: number; queued: number; active: Run | null; latest: Run[] };
+export type RunOverview = {
+  total: number;
+  queued: number;
+  active: Run | null;
+  latest: Run[];
+  today?: { date: string; total: number; succeeded: number; failed: number; interrupted: number };
+};

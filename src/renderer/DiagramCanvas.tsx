@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import {
   ReactFlow,
   ReactFlowProvider,
-  Background,
   Controls,
   ControlButton,
   useReactFlow,
@@ -64,7 +63,6 @@ function Canvas({ nodes, edges, selected, select }: Props) {
       minZoom={fullViewport ? Math.min(0.15, fullViewport.zoom) : 0.15}
       elementsSelectable
     >
-      <Background gap={22} color="#d7e0de" />
       <Controls showInteractive={false} showFitView={false}>
         <ControlButton
           className="react-flow__controls-fitview"

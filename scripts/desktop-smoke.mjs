@@ -66,7 +66,7 @@ try {
   await page.waitForFunction(() => Boolean(window.flowark));
   assert.equal(bootstrap.runs.length, 0);
   const appVersion = await app.evaluate(({ app }) => app.getVersion());
-  assert.equal(await page.locator('.sidebar-bottom span').textContent(), appVersion);
+  assert.equal(await page.getByRole('button', { name: '使用指南', exact: true }).count(), 1);
   const security = await app.evaluate(({ BrowserWindow }) => {
     const p = BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences();
     return {
@@ -81,7 +81,8 @@ try {
     nodeIntegration: false,
   });
   assert.equal(await page.evaluate(() => typeof window.require), 'undefined');
-  await page.getByRole('button', { name: '运行', exact: true }).first().click();
+  await page.getByRole('button', { name: '编辑 第一个流程', exact: true }).click();
+  await page.getByRole('button', { name: '运行', exact: true }).click();
   console.log('Run submitted');
   const deadline = Date.now() + 20000;
   while (true) {

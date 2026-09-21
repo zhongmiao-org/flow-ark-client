@@ -1,15 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Bootstrap } from '../shared/types';
 import { Field } from './TemplateConfiguration';
 const api = (method: string, args: any = {}) => window.flowark.request(method, args);
 export default function TemplateLibrary({
   data,
   action,
+  initialPreview,
+  consumePreview,
 }: {
   data: Bootstrap;
   action: (fn: () => Promise<any>, message?: string) => Promise<any>;
+  initialPreview?: any;
+  consumePreview?: () => void;
 }) {
-  const [preview, setPreview] = useState<any>();
+  const [preview, setPreview] = useState<any>(initialPreview);
+  useEffect(() => {
+    if (initialPreview) consumePreview?.();
+  }, [initialPreview, consumePreview]);
   const [detail, setDetail] = useState<any>();
   const [busy, setBusy] = useState(false);
   const work = async (fn: () => Promise<any>, message?: string) => {
