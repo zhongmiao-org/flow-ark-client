@@ -1196,17 +1196,14 @@ function ScopedChanges({
 function conditionText(step: Extract<Step, { type: 'condition' }>) {
   const values = (value: unknown) =>
     value === '' ? '空文本' : value === null ? '空值' : text(value);
-  const operators: Record<string, string> = {
+  const operators: Record<Extract<Step, { type: 'condition' }>['operator'], string> = {
     equals: '等于',
     notEquals: '不等于',
     contains: '包含',
-    greaterThan: '大于',
-    lessThan: '小于',
-    exists: '存在',
-    notEmpty: '不为空',
-    truthy: '为真',
+    gt: '大于（数字）',
+    exists: '不是空值',
   };
-  return `${values(step.actual)} ${operators[step.operator] ?? step.operator} ${values(step.expected)}`;
+  return `${values(step.actual)} ${operators[step.operator]}${step.operator === 'exists' ? '' : ` ${values(step.expected)}`}`;
 }
 
 function StepList({
