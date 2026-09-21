@@ -43,6 +43,14 @@ export default function TaskRunPage({
   const detailsButton = useRef<HTMLButtonElement>(null);
   const previousPage = useRef(page);
   const model = taskRunPresentation({ ...detail, fault: detail.fault ?? fault });
+  const previousMode = useRef(model.mode);
+  useLayoutEffect(() => {
+    if (page === 'overview' && previousMode.current !== model.mode) {
+      document.querySelector('main')?.scrollTo(0, 0);
+      heading.current?.focus({ preventScroll: true });
+    }
+    previousMode.current = model.mode;
+  }, [model.mode, page]);
   const run = detail.run;
   const item = model.artifacts.find((a) => a.artifactId === selected);
   const fileState = JSON.stringify(item);

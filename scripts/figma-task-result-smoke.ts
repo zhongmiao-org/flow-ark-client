@@ -227,6 +227,11 @@ try {
   await state(id, 'SUCCEEDED');
   await screen().getByRole('heading', { name: '本次试运行已完成', exact: true }).waitFor();
   assert.equal(
+    await page.locator('main').evaluate((e) => e.scrollTop),
+    0,
+    'completed result starts at its heading',
+  );
+  assert.equal(
     await readFile(join(files, 'title.txt'), 'utf8'),
     '虚构结果标题 sk-preview-fixture opaque-local-preview-key',
   );
