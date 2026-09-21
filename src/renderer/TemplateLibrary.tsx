@@ -15,7 +15,11 @@ export default function TemplateLibrary({
   const work = async (fn: () => Promise<any>, message?: string) => {
     setBusy(true);
     try {
-      return await action(fn, message);
+      return await action(() => {
+        if (document.querySelector('.templates-page [data-value-invalid]'))
+          throw new Error('请先修正未完成的字段值');
+        return fn();
+      }, message);
     } finally {
       setBusy(false);
     }
@@ -109,7 +113,7 @@ export default function TemplateLibrary({
                 disabled={busy}
                 onClick={() => work(() => api('template.export', { key: p.key }))}
               >
-                导出
+                导出 ZIP
               </button>
               <button
                 disabled={busy}

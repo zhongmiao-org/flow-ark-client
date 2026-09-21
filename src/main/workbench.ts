@@ -14,6 +14,8 @@ import {
 } from 'electron';
 import { EmbeddedBrowser } from './embedded-browser';
 import { join } from 'node:path';
+import { randomUUID } from 'node:crypto';
+import { templateFilename, zipExportPath } from '../shared/template-filename';
 import { pathToFileURL } from 'node:url';
 import { readFile, writeFile } from 'node:fs/promises';
 import { Rpc } from '../shared/rpc';
@@ -223,7 +225,7 @@ app
         }
         if (method === 'flow.export') {
           const review = await dialog.showMessageBox(win, {
-            buttons: ['取消', '已审阅，导出模板'],
+            buttons: ['取消', '已审阅，导出 ZIP'],
             defaultId: 0,
             cancelId: 0,
             message: '确认已审阅流程中的字面量与脚本',
@@ -231,29 +233,30 @@ app
               '导出点击时的编辑内容，未保存修改不会写入本地草稿。实例配置、动作权限、本地绑定和运行历史不会导出；运行参数值也会清空。节点字面量、代码和配置定义仍会保留，请先确认其中没有个人数据或密钥。',
           });
           if (review.response !== 1) return false;
+          const identity = 'local-' + randomUUID();
           const r = await dialog.showSaveDialog(win, {
-            defaultPath: 'local-template-1.0.0.flowark-template.zip',
+            defaultPath: templateFilename(identity, '1.0.0'),
             filters: [{ name: 'FlowArk 模板', extensions: ['zip'] }],
           });
           if (r.canceled || !r.filePath) return false;
-          await rpc.call(method, { ...args, path: r.filePath });
+          await rpc.call(method, { ...args, identity, path: zipExportPath(r.filePath) });
           return true;
         }
         if (method === 'template.inspect') {
           const picked = await dialog.showOpenDialog(win, {
             properties: ['openFile'],
-            filters: [{ name: 'FlowArk 模板包', extensions: ['zip', 'json'] }],
+            filters: [{ name: 'FlowArk 模板包', extensions: ['zip'] }],
           });
           if (picked.canceled) return null;
           return rpc.call('template.inspect', { path: picked.filePaths[0] });
         }
         if (method === 'template.export') {
           const picked = await dialog.showSaveDialog(win, {
-            defaultPath: args.key + '.flowark-template.zip',
+            defaultPath: templateFilename(...(args.key.split('@') as [string, string])),
             filters: [{ name: 'FlowArk 模板包', extensions: ['zip'] }],
           });
           if (picked.canceled || !picked.filePath) return false;
-          await rpc.call('template.export', { key: args.key, path: picked.filePath });
+          await rpc.call('template.export', { key: args.key, path: zipExportPath(picked.filePath) });
           return true;
         }
         return await rpc.call(method, args);
