@@ -16,7 +16,15 @@ import { ScriptProcessInterruptedError, type ScriptOwner } from '../shared/scrip
 import type { CleanupResult } from '../shared/embedded-lifecycle';
 import { child, killOwnedTree } from './processes';
 import { Rpc } from '../shared/rpc';
-import { uid, now, digest, errorText, redact, redactedErrorText } from '../shared/utils';
+import {
+  uid,
+  now,
+  digest,
+  errorText,
+  redact,
+  redactArtifactText,
+  redactedErrorText,
+} from '../shared/utils';
 import { validateFlow, validateObject, walk } from '../core/validate';
 import { assertBrowserOperations } from '../adapters/browser-scope';
 import { discoverBrowsers, inspectBrowser, validateBinding } from '../adapters/browsers';
@@ -1212,6 +1220,21 @@ export class Runtime {
           scriptBundles: snapshot?.scriptBundles ?? [],
           fault: this.store.fault ? redact(this.store.fault, this.secrets) : undefined,
           execution: this.observeExecution(),
+        };
+      }
+      case 'artifact.preview': {
+        const item = this.store.get<any>('artifact', args.id);
+        if (!item) throw new Error('产物不存在');
+        const result = await this.artifactFiles.preview(item);
+        const base = { artifactId: args.id, name: item.name, size: item.size };
+        const latest = this.store.get<any>('artifact', args.id);
+        if (!latest || digest(latest) !== digest(item))
+          return { ...base, status: 'unavailable', reason: '产物记录已经变化，请重新读取' };
+        if ('reason' in result) return { ...base, status: 'unavailable', reason: result.reason };
+        return {
+          ...base,
+          status: 'text',
+          ...redactArtifactText(result.text, [...this.secrets, ...(args.redactionSecrets ?? [])]),
         };
       }
       case 'artifact.resolve': {

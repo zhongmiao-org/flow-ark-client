@@ -22,6 +22,7 @@ const allowed = new Set([
   'run.artifacts.preview',
   'run.artifacts.clear',
   'artifact.reveal',
+  'artifact.preview',
   'run.control',
   'browser.discover',
   'browser.embedded.enable',

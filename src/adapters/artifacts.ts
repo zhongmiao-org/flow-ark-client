@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { constants, createWriteStream, type BigIntStats } from 'node:fs';
 import { access, mkdir, open, realpath, rmdir, stat, unlink } from 'node:fs/promises';
-import { basename, dirname, join } from 'node:path';
+import { basename, dirname, join, relative, isAbsolute } from 'node:path';
 import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
@@ -123,5 +123,52 @@ export class ArtifactFiles {
       this.cache.delete(item.path);
     }
     return { available: integrity === 'verified', integrity };
+  }
+
+  /** Read and authenticate the same bounded bytes; never preview a business source path. */
+  async preview(item: ArtifactFile): Promise<{ text: string } | { reason: string }> {
+    if (item.clearedAt) return { reason: '产物已清理' };
+    if (item.storage !== 'snapshot-v1' || !/^[a-f0-9]{64}$/.test(item.sha256 ?? ''))
+      return { reason: '没有可核对的历史副本' };
+    try {
+      const root = await realpath(join(this.root, 'artifacts'));
+      const location = relative(root, item.path);
+      if (!location || location.startsWith('..') || isAbsolute(location))
+        return { reason: '该文件不在本机运行副本目录中' };
+      if ((await realpath(item.path)) !== item.path) return { reason: '副本路径已经变化' };
+      const input = await open(item.path, constants.O_RDONLY | constants.O_NOFOLLOW);
+      try {
+        const before = await input.stat({ bigint: true });
+        if (!before.isFile()) return { reason: '副本不是普通文件' };
+        if (before.size > 1048576n) return { reason: '文件超过 1 MiB，请定位副本后查看' };
+        const bytes = Buffer.alloc(Number(before.size) + 1);
+        let length = 0;
+        while (length < bytes.length) {
+          const read = await input.read(bytes, length, bytes.length - length, length);
+          if (!read.bytesRead) break;
+          length += read.bytesRead;
+        }
+        if (
+          BigInt(length) !== before.size ||
+          signature(await input.stat({ bigint: true })) !== signature(before) ||
+          signature(await stat(item.path, { bigint: true })) !== signature(before) ||
+          (await realpath(item.path)) !== item.path ||
+          createHash('sha256').update(bytes.subarray(0, length)).digest('hex') !== item.sha256
+        )
+          return { reason: '副本在读取时发生变化或内容已改动' };
+        try {
+          const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes.subarray(0, length));
+          if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(text))
+            return { reason: '该文件不是可预览的纯文本' };
+          return { text };
+        } catch {
+          return { reason: '该文件不是有效的 UTF-8 文本' };
+        }
+      } finally {
+        await input.close();
+      }
+    } catch {
+      return { reason: '副本已移动、删除或暂时无法读取' };
+    }
   }
 }

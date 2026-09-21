@@ -113,3 +113,56 @@ test('an in-progress stream is cancelled or rejects a source changed during copy
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test('authenticated previews support UTF-8 and reject changed, cleared, linked, binary and oversized copies', async (t) => {
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'flowark-preview-')));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const files = new ArtifactFiles(root),
+    source = join(root, 'result.txt');
+  let index = 0;
+  const capture = async (content: string | Buffer) => {
+    await writeFile(source, content);
+    return files.capture('run', String(index++), source, new AbortController().signal);
+  };
+  const a = await capture('真实文本 😀\n<script>plain text</script>');
+  assert.deepEqual(await files.preview(a), { text: '真实文本 😀\n<script>plain text</script>' });
+  assert.ok('reason' in (await files.preview({ ...a, clearedAt: 'now' })));
+  assert.ok('reason' in (await files.preview({ path: a.path })));
+  const b = await capture('else');
+  await writeFile(a.path, 'tampered');
+  assert.ok('reason' in (await files.preview(a)));
+  await rm(a.path);
+  await symlink(b.path, a.path);
+  assert.ok('reason' in (await files.preview(a)));
+  for (const content of [
+    Buffer.from([0xff, 0xfe]),
+    Buffer.from([0x61, 0, 0x62]),
+    'x'.repeat(1048577),
+  ])
+    assert.ok('reason' in (await files.preview(await capture(content))));
+  assert.deepEqual(await files.preview(await capture('')), { text: '' });
+});
+
+test('preview authenticates bytes read from the descriptor and rejects a mutation during that read', async (t) => {
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'flowark-preview-race-')));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const files = new ArtifactFiles(root),
+    source = join(root, 'source.txt');
+  await writeFile(source, 'before');
+  const a = await files.capture('run', 'copy', source, new AbortController().signal);
+  const sample = await open(source, 'r');
+  const prototype = Object.getPrototypeOf(sample),
+    original = prototype.read;
+  await sample.close();
+  let changed = false;
+  t.mock.method(prototype, 'read', async function (this: any, ...args: any[]) {
+    const result = await original.apply(this, args);
+    if (!changed) {
+      changed = true;
+      await writeFile(a.path, 'after!');
+    }
+    return result;
+  });
+  assert.ok('reason' in (await files.preview(a)));
+  assert.equal(changed, true);
+});

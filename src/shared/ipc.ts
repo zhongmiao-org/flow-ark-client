@@ -64,6 +64,7 @@ export const methods = {
     .object({ id, token: z.string().regex(/^[a-f0-9]{64}$/), reviewed: z.literal(true) })
     .strict(),
   'artifact.reveal': z.object({ id }).strict(),
+  'artifact.preview': z.object({ id }).strict(),
   'run.control': z.object({ id, action: z.enum(['pause', 'resume', 'step', 'cancel']) }).strict(),
   'browser.discover': empty,
   'browser.embedded.enable': empty,

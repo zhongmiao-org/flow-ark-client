@@ -6,6 +6,7 @@ import DiagramCanvas from './DiagramCanvas';
 import { kinds } from './node-kinds';
 import { flatten } from './flow-editing';
 import RunReviewPage from './RunReviewPage';
+import type { TaskRunIntent } from './task-run-presentation';
 
 const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
@@ -30,7 +31,7 @@ type Props = {
   active: boolean;
   data: Bootstrap;
   onNavigation: (title: string, back?: () => void) => void;
-  openRun: (detail: any, back: () => void) => void;
+  openRun: (detail: any, back: (intent?: TaskRunIntent) => void) => void;
   settings: (provider: 'deepseek' | 'openai-codex', model: string) => void;
   flows: () => void;
   createFlow: () => void;
@@ -49,6 +50,7 @@ export default function AITaskWorkspace(props: Props) {
   const location = useRef({ active: props.active, page });
   location.current = { active: props.active, page };
   const planScroll = useRef(0);
+  const returnToTask = useRef<(id: string, intent: TaskRunIntent) => void>(() => {});
   const trialButton = useRef<HTMLButtonElement>(null);
   const backToPlan = useCallback(() => {
     setPage('review');
@@ -251,6 +253,29 @@ export default function AITaskWorkspace(props: Props) {
   }
   const providerName = provider === 'deepseek' ? 'DeepSeek' : 'OpenAI';
   const inputDisabled = busy || generating;
+
+  returnToTask.current = (taskId, intent) => {
+    const arrive = () => {
+      if (intent === 'plan') backToPlan();
+      else {
+        setPage(intent === 'home' ? 'home' : 'brief');
+        requestAnimationFrame(() => {
+          document.querySelector('main')?.scrollTo(0, 0);
+          document.querySelector<HTMLTextAreaElement>('#task-description')?.focus();
+        });
+      }
+    };
+    if (selectedTask.current === taskId) arrive();
+    else
+      void run(async () => {
+        if (dirty) await save();
+        const original = await api('task.detail', { id: taskId });
+        if (!location.current.active) return;
+        accept(original);
+        setReviewed(false);
+        arrive();
+      });
+  };
 
   const workspace = (
     <div className="page ai-task-page" hidden={!props.active || page === 'check'}>
@@ -857,8 +882,9 @@ export default function AITaskWorkspace(props: Props) {
           })
         }
         openDetail={(next) => {
+          const taskId = detail!.task.id;
           setPage('review');
-          props.openRun(next, backToPlan);
+          props.openRun(next, (intent = 'plan') => returnToTask.current(taskId, intent));
           void props.changed();
         }}
       />

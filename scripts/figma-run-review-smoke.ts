@@ -290,7 +290,7 @@ try {
   );
   assert.equal(await readFile(join(files, 'title.txt'), 'utf8'), '虚构页面标题');
   await button('查看本次运行').click();
-  await page.getByRole('tab', { name: '当前步骤', exact: true }).waitFor();
+  await page.locator('.task-run-page').waitFor();
   await button('← 返回 AI 任务').click();
   await button('确认方案，去试运行').waitFor();
   assert.equal((await call('bootstrap')).runs.length, 1);
@@ -321,7 +321,7 @@ try {
   await page.locator('.sidebar').getByRole('button', { name: '我的流程', exact: true }).click();
   await release();
   await page.locator('.flows-page').waitFor();
-  assert.equal(await page.getByRole('tab', { name: '当前步骤', exact: true }).count(), 0);
+  assert.equal(await page.locator('.task-run-page').count(), 0);
   assert.equal((await call('bootstrap')).runs.length, 2);
   evidence.checks.push('late-confirmation-and-detail-do-not-steal-navigation-or-repeat');
   assert.deepEqual(errors, []);

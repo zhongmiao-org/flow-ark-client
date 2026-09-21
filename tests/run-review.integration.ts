@@ -281,3 +281,42 @@ test('execution checks resources again after asynchronous preflight before invok
   assert.match(detail.run.error, /资源或网页/);
   assert.equal(f.state.browserCalls, 0);
 });
+
+test('artifact preview reads an actual Worker copy and withholds bytes when its record is cleared during reading', async (t) => {
+  const { runtime, directory } = await fixture(t);
+  const flow = base('preview-file');
+  flow.requiredCapabilities = ['file'];
+  flow.steps = [
+    {
+      id: 'write',
+      type: 'file',
+      version: 1,
+      operation: 'write',
+      binding: 'work',
+      name: 'preview.txt',
+      content: 'result sk-private-test',
+    },
+  ];
+  runtime.saveFlow(flow, { files: { work: directory }, credentials: [] });
+  const run = await runtime.request('flow.run.confirm', args(await preview(runtime, flow.id)));
+  await completed(runtime, run);
+  const artifact = (await runtime.request('run.detail', { id: run.id })).artifacts[0];
+  const result = await runtime.request('artifact.preview', { id: artifact.artifactId });
+  assert.equal(result.status, 'text');
+  assert.equal(result.text, 'result [REDACTED]');
+  assert.equal(runtime.store.list('run').length, 1);
+  const adapter = (runtime as any).artifactFiles;
+  const original = adapter.preview.bind(adapter);
+  t.mock.method(adapter, 'preview', async (item: any) => {
+    const result = await original(item);
+    runtime.store.put('artifact', artifact.artifactId, {
+      ...runtime.store.get<any>('artifact', artifact.artifactId),
+      clearedAt: new Date().toISOString(),
+    });
+    return result;
+  });
+  const changed = await runtime.request('artifact.preview', { id: artifact.artifactId });
+  assert.equal(changed.status, 'unavailable');
+  assert.ok(!('text' in changed));
+  assert.equal(runtime.store.list('run').length, 1);
+});

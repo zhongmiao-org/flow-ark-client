@@ -21,7 +21,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { Rpc } from '../shared/rpc';
 import { Vault } from './vault';
 import { validateIPC } from '../shared/ipc';
-import { redactedErrorText } from '../shared/utils';
+import { redactArtifactText, redactedErrorText } from '../shared/utils';
 import type { EmbeddedCleanupFailure, EmbeddedLostNotice } from '../shared/embedded-lifecycle';
 let win: BrowserWindow;
 let tray: Tray;
@@ -223,6 +223,12 @@ app
           const path = await rpc.call('artifact.resolve', args);
           shell.showItemInFolder(path);
           return true;
+        }
+        if (method === 'artifact.preview') {
+          const preview = await rpc.call(method, { ...args, redactionSecrets: [...knownSecrets] });
+          if (preview.status !== 'text') return preview;
+          const masked = redactArtifactText(preview.text, [...knownSecrets]);
+          return { ...preview, ...masked, truncated: preview.truncated || masked.truncated };
         }
         if (method === 'credentials.set') {
           await vault.set(args.id, args.value);

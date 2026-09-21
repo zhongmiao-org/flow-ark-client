@@ -25,6 +25,10 @@ function maskText(value: string, secrets: string[]): string {
   for (const secret of secrets) if (secret) result = result.split(secret).join('[REDACTED]');
   return result;
 }
+export function redactArtifactText(value: string, secrets: string[] = []) {
+  const characters = [...maskText(value, secrets)];
+  return { text: characters.slice(0, 65536).join(''), truncated: characters.length > 65536 };
+}
 export function redactedErrorText(e: unknown, secrets: string[] = []): string {
   const message =
     e instanceof Error && typeof e.message === 'string' && e.message ? e.message : '请求失败';

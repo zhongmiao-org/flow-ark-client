@@ -66,6 +66,8 @@ import ParameterConfiguration from './ParameterConfiguration';
 import TemplateParameters from './TemplateParameters';
 import RunHistory from './RunHistory';
 import RunDetail, { type RunTab } from './RunDetail';
+import TaskRunPage from './TaskRunPage';
+import { taskRunPresentation, type TaskRunIntent, type TaskRunView } from './task-run-presentation';
 import { runStateLabels } from '../shared/run-history';
 import { referenceChoices } from './value-references';
 import { referenceIssues } from '../shared/flow-references';
@@ -105,7 +107,8 @@ export default function App() {
   const [runFilter, setRunFilter] = useState(false);
   const [runTab, setRunTab] = useState<RunTab>('current');
   const [runOrigin, setRunOrigin] = useState<'history' | 'editor' | 'task'>('history');
-  const taskRunBack = useRef<(() => void) | undefined>(undefined);
+  const taskRunBack = useRef<((intent?: TaskRunIntent) => void) | undefined>(undefined);
+  const [taskRunView, setTaskRunView] = useState<TaskRunView>('overview');
   const [compactEditor, setCompactEditor] = useState(() => window.innerWidth < 1440);
   useEffect(() => {
     const query = window.matchMedia('(max-width: 1439px)');
@@ -345,10 +348,20 @@ export default function App() {
                 title={label}
                 aria-label={label}
                 className={
-                  section === id || (section === 'editor' && id === 'flows') ? 'selected' : ''
+                  (section === 'runs' && detail && runOrigin === 'task'
+                    ? id === 'tasks'
+                    : section === id) ||
+                  (section === 'editor' && id === 'flows')
+                    ? 'selected'
+                    : ''
                 }
                 aria-current={
-                  section === id || (section === 'editor' && id === 'flows') ? 'page' : undefined
+                  (section === 'runs' && detail && runOrigin === 'task'
+                    ? id === 'tasks'
+                    : section === id) ||
+                  (section === 'editor' && id === 'flows')
+                    ? 'page'
+                    : undefined
                 }
                 onClick={() => {
                   if (!guardInvalidNodeJson()) return;
@@ -409,7 +422,9 @@ export default function App() {
               <button
                 className="context-back"
                 onClick={() => {
-                  if (detail && runTab !== 'current') setRunTab('current');
+                  if (detail && runOrigin === 'task' && taskRunView !== 'overview')
+                    setTaskRunView('overview');
+                  else if (detail && runTab !== 'current') setRunTab('current');
                   else if (detail) {
                     setDetail(null);
                     if (runOrigin === 'editor' && edit) setSection('editor');
@@ -421,13 +436,15 @@ export default function App() {
                 }}
               >
                 {detail
-                  ? runTab !== 'current'
-                    ? '← 返回运行详情'
-                    : runOrigin === 'task'
-                      ? '← 返回 AI 任务'
-                      : runOrigin === 'editor' && edit
-                        ? '← 返回流程编排'
-                        : `← 返回记录第 ${runPage} 页`
+                  ? runOrigin === 'task' && taskRunView !== 'overview'
+                    ? '← 返回结果摘要'
+                    : runTab !== 'current'
+                      ? '← 返回运行详情'
+                      : runOrigin === 'task'
+                        ? '← 返回 AI 任务'
+                        : runOrigin === 'editor' && edit
+                          ? '← 返回流程编排'
+                          : `← 返回记录第 ${runPage} 页`
                   : '← 返回运行记录'}
               </button>
             )}
@@ -464,7 +481,37 @@ export default function App() {
                   <span aria-hidden="true">/</span>
                 </>
               )}
-              {section === 'runs' && (detail || runFilter) && (
+              {section === 'runs' && detail && runOrigin === 'task' && (
+                <>
+                  <a
+                    href="#task-plan"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      setDetail(null);
+                      setSection('tasks');
+                      taskRunBack.current?.('plan');
+                    }}
+                  >
+                    确认任务方案
+                  </a>
+                  <span aria-hidden="true">/</span>
+                  {taskRunView !== 'overview' && (
+                    <>
+                      <a
+                        href="#task-result"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          setTaskRunView('overview');
+                        }}
+                      >
+                        本次运行
+                      </a>
+                      <span aria-hidden="true">/</span>
+                    </>
+                  )}
+                </>
+              )}
+              {section === 'runs' && (detail || runFilter) && (!detail || runOrigin !== 'task') && (
                 <>
                   <a
                     href="#runs"
@@ -544,11 +591,18 @@ export default function App() {
               <span aria-current="page">
                 {section === 'runs' && (detail || runFilter)
                   ? detail
-                    ? runTab === 'output'
-                      ? '输出与产物'
-                      : runTab === 'logs'
-                        ? '运行日志'
-                        : detail.run.id.slice(0, 8)
+                    ? runOrigin === 'task'
+                      ? taskRunView === 'details'
+                        ? '结果详细信息'
+                        : taskRunView === 'rerun'
+                          ? '重新运行前检查'
+                          : taskRunPresentation({ ...detail, fault: detail.fault ?? data.fault })
+                              .title
+                      : runTab === 'output'
+                        ? '输出与产物'
+                        : runTab === 'logs'
+                          ? '运行日志'
+                          : detail.run.id.slice(0, 8)
                     : '筛选运行记录'
                   : editorBrowser
                     ? compactDrawer
@@ -613,6 +667,7 @@ export default function App() {
               onNavigation={updateTaskNavigation}
               openRun={(next, back) => {
                 taskRunBack.current = back;
+                setTaskRunView('overview');
                 setDetail(next);
                 setRunOrigin('task');
                 setRunTab('current');
@@ -901,7 +956,35 @@ export default function App() {
                   setDetail(next);
                 }}
               />
-              {detail && (
+              {detail && runOrigin === 'task' && (
+                <TaskRunPage
+                  key={detail.run.id}
+                  detail={detail}
+                  fault={data.fault}
+                  page={taskRunView}
+                  setPage={setTaskRunView}
+                  navigate={(intent) => {
+                    setDetail(null);
+                    setSection('tasks');
+                    taskRunBack.current?.(intent);
+                  }}
+                  history={() => {
+                    setDetail(null);
+                    setRunOrigin('history');
+                    setRunFilter(false);
+                  }}
+                  control={(id, action) => api('run.control', { id, action })}
+                  reveal={(id) => api('artifact.reveal', { id })}
+                  showBrowser={() => setBrowserOpen(true)}
+                  open={(next) => {
+                    setTaskRunView('overview');
+                    setDetail((current: any) =>
+                      current?.run.id === detail.run.id ? next : current,
+                    );
+                  }}
+                />
+              )}
+              {detail && runOrigin !== 'task' && (
                 <RunDetail
                   key={detail.run.id}
                   detail={detail}
