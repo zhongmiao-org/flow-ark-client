@@ -131,6 +131,9 @@ export default function App() {
   const [history, dispatchDraft] = useReducer(draftHistory, emptyHistory);
   const edit = history.present?.record ?? null,
     selected = history.present?.selected ?? '';
+  const editorBrowser = section === 'editor' && browserOpen;
+  const compactDrawer =
+    editorBrowser && compactEditor && ['actions', 'node', 'params'].includes(editorPanel);
   const inputGroup = useRef<string | undefined>(undefined);
   const inputTarget = useRef<Element | null>(null);
   const setEdit = (record: FlowRecord) =>
@@ -358,8 +361,21 @@ export default function App() {
         <main>
           <header className="topbar">
             {(section === 'editor' || welcomePage) && (
-              <button className="context-back" onClick={returnHome}>
-                ← 返回我的流程
+              <button
+                className="context-back"
+                onClick={() => {
+                  if (!editorBrowser) returnHome();
+                  else if (guardInvalidNodeJson()) {
+                    if (compactDrawer) setEditorPanel('canvas');
+                    else setBrowserOpen(false);
+                  }
+                }}
+              >
+                {compactDrawer
+                  ? '← 返回紧凑窗口与网页'
+                  : editorBrowser
+                    ? '← 返回流程编排'
+                    : '← 返回我的流程'}
               </button>
             )}
             <nav className="breadcrumbs" aria-label="当前位置">
@@ -377,12 +393,36 @@ export default function App() {
                   <span aria-hidden="true">/</span>
                 </>
               )}
+              {editorBrowser && (
+                <>
+                  <a
+                    href="#editor"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      if (guardInvalidNodeJson()) setBrowserOpen(false);
+                    }}
+                  >
+                    {edit?.flow.name || '流程编排'}
+                  </a>
+                  <span aria-hidden="true">/</span>
+                </>
+              )}
               <span aria-current="page">
-                {section === 'editor'
-                  ? edit?.flow.name || '流程编排'
-                  : welcomePage
-                    ? '首次使用'
-                    : nav.find((n) => n[0] === section)?.[1]}
+                {editorBrowser
+                  ? compactDrawer
+                    ? editorPanel === 'actions'
+                      ? '动作与结构'
+                      : editorPanel === 'params'
+                        ? '参数与绑定'
+                        : '当前步骤 · 配置'
+                    : compactEditor
+                      ? '紧凑窗口与网页'
+                      : '网页操作与拾取'
+                  : section === 'editor'
+                    ? edit?.flow.name || '流程编排'
+                    : welcomePage
+                      ? '首次使用'
+                      : nav.find((n) => n[0] === section)?.[1]}
               </span>
             </nav>
             <button
@@ -494,84 +534,110 @@ export default function App() {
                 else undo();
               }}
             >
-              <div className="editor-toolbar">
-                <div className="editor-flow-name">
-                  <input
-                    className="title-input"
-                    aria-label="流程名称"
-                    value={edit.flow.name}
-                    onChange={(e) =>
-                      setEdit({
-                        ...edit,
-                        flow: { ...edit.flow, name: e.target.value },
-                      })
-                    }
-                  />
-                  <span className="muted">
-                    {draftSaved ? '草稿已保存' : '有未保存修改'} · {flatten(edit.flow.steps).length}{' '}
-                    个步骤 · {edit.flow.sourceTemplate ? '模板流程' : '本地流程'}
-                  </span>
-                </div>
-                <button onClick={save} disabled={busy}>
-                  保存
-                </button>
-                <div className="draft-history" aria-label="草稿编辑历史">
+              {compactEditor && browserOpen ? (
+                <div className="editor-compact-toolbar" aria-label="编排操作">
                   <button
-                    className="icon-button"
-                    aria-label="撤销编辑"
-                    title="撤销编辑 · ⌘/Ctrl Z"
-                    disabled={!history.past.length || busy}
-                    onClick={undo}
-                  >
-                    <Undo2 size={16} />
-                  </button>
-                  <button
-                    className="icon-button"
-                    aria-label="重做编辑"
-                    title="重做编辑 · ⌘/Ctrl Shift Z"
-                    disabled={!history.future.length || busy}
-                    onClick={redo}
-                  >
-                    <Redo2 size={16} />
-                  </button>
-                </div>
-                {edit.bindings.configuration && (
-                  <button
+                    aria-expanded={['actions', 'node', 'params'].includes(editorPanel)}
                     onClick={() => {
-                      if (guardInvalidNodeJson()) {
-                        if (edit.bindings.template) setSection('templates');
-                        else setConfigOpen(true);
-                      }
+                      if (guardInvalidNodeJson())
+                        setEditorPanel(editorPanel === 'actions' ? 'node' : 'actions');
                     }}
                   >
-                    <Settings size={15} />
-                    实例配置
+                    动作 / 配置抽屉
                   </button>
-                )}
-                <button
-                  onClick={exportDraft}
-                  disabled={busy}
-                  title="导出前请确认流程字面量和脚本中没有个人数据；本地绑定和参数值不导出"
-                >
-                  导出 ZIP
-                </button>
-                <button
-                  onClick={() => {
-                    if (guardInvalidNodeJson()) setEditorPanel('params');
-                  }}
-                >
-                  参数与绑定
-                </button>
-                <button onClick={() => run(edit, true)} disabled={busy}>
-                  逐步调试
-                </button>
-                <button onClick={() => setBrowserOpen(!browserOpen)}>
-                  {browserOpen ? '收起网页' : '显示网页'}
-                </button>
-                <button className="primary" onClick={() => run(edit)} disabled={busy}>
-                  运行
-                </button>
-              </div>
+                  <button
+                    onClick={() => {
+                      if (guardInvalidNodeJson()) setEditorPanel('graph');
+                    }}
+                  >
+                    全图
+                  </button>
+                  <button className="primary" onClick={() => run(edit, true)} disabled={busy}>
+                    逐步调试
+                  </button>
+                  <button onClick={() => setBrowserOpen(false)}>收起网页</button>
+                </div>
+              ) : (
+                <div className="editor-toolbar">
+                  <div className="editor-flow-name">
+                    <input
+                      className="title-input"
+                      aria-label="流程名称"
+                      value={edit.flow.name}
+                      onChange={(e) =>
+                        setEdit({
+                          ...edit,
+                          flow: { ...edit.flow, name: e.target.value },
+                        })
+                      }
+                    />
+                    <span className="muted">
+                      {draftSaved ? '草稿已保存' : '有未保存修改'} ·{' '}
+                      {flatten(edit.flow.steps).length} 个步骤 ·{' '}
+                      {edit.flow.sourceTemplate ? '模板流程' : '本地流程'}
+                    </span>
+                  </div>
+                  <button onClick={save} disabled={busy}>
+                    保存
+                  </button>
+                  <div className="draft-history" aria-label="草稿编辑历史">
+                    <button
+                      className="icon-button"
+                      aria-label="撤销编辑"
+                      title="撤销编辑 · ⌘/Ctrl Z"
+                      disabled={!history.past.length || busy}
+                      onClick={undo}
+                    >
+                      <Undo2 size={16} />
+                    </button>
+                    <button
+                      className="icon-button"
+                      aria-label="重做编辑"
+                      title="重做编辑 · ⌘/Ctrl Shift Z"
+                      disabled={!history.future.length || busy}
+                      onClick={redo}
+                    >
+                      <Redo2 size={16} />
+                    </button>
+                  </div>
+                  {edit.bindings.configuration && (
+                    <button
+                      onClick={() => {
+                        if (guardInvalidNodeJson()) {
+                          if (edit.bindings.template) setSection('templates');
+                          else setConfigOpen(true);
+                        }
+                      }}
+                    >
+                      <Settings size={15} />
+                      实例配置
+                    </button>
+                  )}
+                  <button
+                    onClick={exportDraft}
+                    disabled={busy}
+                    title="导出前请确认流程字面量和脚本中没有个人数据；本地绑定和参数值不导出"
+                  >
+                    导出 ZIP
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (guardInvalidNodeJson()) setEditorPanel('params');
+                    }}
+                  >
+                    参数与绑定
+                  </button>
+                  <button onClick={() => run(edit, true)} disabled={busy}>
+                    逐步调试
+                  </button>
+                  <button onClick={() => setBrowserOpen(!browserOpen)}>
+                    {browserOpen ? '收起网页' : '显示网页'}
+                  </button>
+                  <button className="primary" onClick={() => run(edit)} disabled={busy}>
+                    运行
+                  </button>
+                </div>
+              )}
               {configOpen && edit.bindings.configuration && (
                 <TemplateConfiguration
                   key={`configuration:${edit.id}`}
@@ -866,7 +932,7 @@ function Editor({
         <button aria-pressed={panel === 'params'} onClick={() => changePanel('params')}>
           参数
         </button>
-        {compact && ['actions', 'node', 'params'].includes(panel) && (
+        {compact && !browserOpen && ['actions', 'node', 'params'].includes(panel) && (
           <button onClick={() => changePanel('canvas')}>应用并关闭</button>
         )}
       </div>
@@ -909,13 +975,16 @@ function Editor({
                   kinds[selectedNode.type]?.label
                 : '选择一个步骤'}
             </h2>
-            <p>
-              {selectedNode?.type === 'browser'
-                ? typeof selectedNode.selector === 'string'
-                  ? selectedNode.selector || '尚未选择网页目标'
-                  : '使用变量定位网页目标'
-                : '在流程图中选择需要编辑的步骤。'}
-            </p>
+            <div className="selected-step-target">
+              <span>目标</span>
+              <p>
+                {selectedNode?.type === 'browser'
+                  ? typeof selectedNode.selector === 'string'
+                    ? selectedNode.selector || '尚未选择网页目标'
+                    : '使用变量定位网页目标'
+                  : '在流程图中选择需要编辑的步骤。'}
+              </p>
+            </div>
             <button
               className="primary"
               disabled={!selectedNode}
@@ -1282,6 +1351,13 @@ function Editor({
                 ))}
                 <p className="note">本地绑定不随流程导出。计划使用创建时的固定版本。</p>
               </>
+            )}
+            {compact && browserOpen && ['node', 'params'].includes(panel) && (
+              <div className="drawer-footer">
+                <button className="primary" onClick={() => changePanel('canvas')}>
+                  应用并关闭
+                </button>
+              </div>
             )}
           </aside>
         </div>

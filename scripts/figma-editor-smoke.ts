@@ -13,6 +13,7 @@ const app = await electron.launch({
   env: { ...process.env, FLOWARK_DATA_DIR: data },
   timeout: 30000,
 });
+const testProcess = app.process();
 const page = await app.firstWindow();
 page.setDefaultTimeout(15000);
 const call = (method: string, args: any = {}): Promise<any> =>
@@ -34,25 +35,31 @@ const wait = async (check: () => Promise<void>, label: string) => {
 const inspect = () =>
   page.evaluate(() => {
     const boxes = Object.fromEntries(
-      ['.canvas', '.inspector', '.node-library', '.browser-viewport', '.editor-workspace'].map(
-        (selector) => {
-          const element = document.querySelector(selector) as HTMLElement | null;
-          if (!element || !element.checkVisibility()) return [selector, null];
-          const r = element.getBoundingClientRect();
-          return [
-            selector,
-            {
-              x: r.x,
-              y: r.y,
-              width: r.width,
-              height: r.height,
-              right: r.right,
-              bottom: r.bottom,
-              overflow: element.scrollWidth > element.clientWidth + 1,
-            },
-          ];
-        },
-      ),
+      [
+        '.canvas',
+        '.inspector',
+        '.node-library',
+        '.browser-viewport',
+        '.editor-workspace',
+        '.editor-compact-toolbar',
+        '.editor-toolbar',
+      ].map((selector) => {
+        const element = document.querySelector(selector) as HTMLElement | null;
+        if (!element || !element.checkVisibility()) return [selector, null];
+        const r = element.getBoundingClientRect();
+        return [
+          selector,
+          {
+            x: r.x,
+            y: r.y,
+            width: r.width,
+            height: r.height,
+            right: r.right,
+            bottom: r.bottom,
+            overflow: element.scrollWidth > element.clientWidth + 1,
+          },
+        ];
+      }),
     );
     return {
       width: innerWidth,
@@ -62,6 +69,7 @@ const inspect = () =>
       library: boxes['.node-library'],
       browser: boxes['.browser-viewport'],
       workspace: boxes['.editor-workspace'],
+      toolbar: boxes['.editor-compact-toolbar'] || boxes['.editor-toolbar'],
       nodeIds: [...document.querySelectorAll('.flow-shape[data-step-id]')].map((e) =>
         e.getAttribute('data-step-id'),
       ),
@@ -70,7 +78,7 @@ const inspect = () =>
 const capture = async (name: string) => {
   await wait(async () => {
     const s = await inspect();
-    for (const r of [s.workspace, s.canvas, s.inspector, s.library, s.browser]) {
+    for (const r of [s.workspace, s.canvas, s.inspector, s.library, s.browser, s.toolbar]) {
       if (!r) continue;
       assert.ok(
         r.bottom <= s.height + 1 && r.right <= s.width + 1 && r.x >= 0 && r.y >= 40,
@@ -188,7 +196,8 @@ try {
     assert.ok((await inspect()).canvas!.width >= 300);
   }
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1040, 700));
-  await button('动作与结构').click();
+  assert.equal((await inspect()).toolbar!.height, 40);
+  await button('动作 / 配置抽屉').click();
   await capture('actions');
   assert.ok((await inspect()).library);
   assert.equal((await inspect()).inspector, null);
@@ -206,9 +215,12 @@ try {
   await capture('selected-step');
   await button('编辑当前步骤').click();
   assert.equal(await page.getByLabel('步骤名称', { exact: true }).inputValue(), '新读取步骤');
+  await button('← 返回紧凑窗口与网页').click();
+  await button('编辑当前步骤').click();
+  assert.equal(await page.getByLabel('步骤名称', { exact: true }).inputValue(), '新读取步骤');
   await button('删除节点').click();
   await button('全图').click();
-  await button('关闭网页面板').click();
+  await button('← 返回流程编排').click();
   await capture('compact-closed');
   assert.ok((await inspect()).canvas!.width > 800);
   await button('保存').click();
@@ -238,7 +250,7 @@ try {
   const forcedExit = setTimeout(() => {
     evidence.passed = false;
     evidence.cleanupError = '测试退出超时';
-    app.process().kill('SIGKILL');
+    testProcess.kill('SIGKILL');
   }, 30000);
   try {
     for (const run of (await call('bootstrap')).runs) {
@@ -256,8 +268,8 @@ try {
     throw error;
   } finally {
     clearTimeout(forcedExit);
-    if (app.process().exitCode === null && app.process().signalCode === null)
-      app.process().kill('SIGKILL');
+    if (testProcess.exitCode === null && testProcess.signalCode === null)
+      testProcess.kill('SIGKILL');
     await lab.close();
     await mkdir('test-results/figma', { recursive: true });
     await writeFile('test-results/figma/editor-summary.json', JSON.stringify(evidence, null, 2));

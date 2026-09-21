@@ -77,6 +77,24 @@
   min-height: 58px;
   flex-shrink: 0;
 }
+.editor-compact-toolbar {
+  display: flex;
+  gap: 12px;
+  height: 40px;
+  flex: 0 0 40px;
+}
+.editor-compact-toolbar button {
+  width: 164px;
+}
+.editor-compact-toolbar button:nth-child(2) {
+  width: 88px;
+}
+.editor-compact-toolbar button:nth-child(3) {
+  width: 136px;
+}
+.editor-compact-toolbar button:nth-child(4) {
+  width: 120px;
+}
 .app .editor-toolbar .title-input {
   width: 100%;
   height: 28px;
@@ -249,6 +267,9 @@
 .editor-region.is-compact .editor-workspace {
   gap: 12px;
 }
+.editor-region.is-compact.has-browser .editor-views {
+  display: none;
+}
 .editor-region.is-compact .editor-layout {
   gap: 0;
 }
@@ -299,6 +320,39 @@
 }
 .selected-step-summary h2 {
   margin: 0;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+.selected-step-target {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.selected-step-target > span {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.selected-step-target p {
+  padding: 6px;
+  border-radius: 6px;
+  background: var(--fa-bg-canvas);
+  font-size: 13px;
+  line-height: 20px;
+}
+.selected-step-summary > p {
+  color: var(--fa-text-secondary);
+}
+.editor-region .drawer-footer {
+  position: sticky;
+  bottom: -24px;
+  margin-top: 16px;
+  padding-block: 12px 24px;
+  background: var(--fa-bg-surface);
+}
+.editor-region .drawer-footer button {
+  width: 100%;
 }
 @media (max-width: 1439px) {
   .editing-workspace .topbar {
@@ -320,9 +374,7 @@
     width: 240px;
   }
   .editing-workspace .editor-toolbar {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 8px;
+    flex-wrap: wrap;
   }
   .editing-workspace .editor-region {
     gap: 12px;
