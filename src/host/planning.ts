@@ -12,6 +12,8 @@ import {
 import type { Bindings, Flow, FlowRecord } from '../shared/types';
 import { planningDiff, planningResources } from './planning-diff';
 import { generatePlan } from '../ai/planning';
+import type { PlanningRepair } from './planning-repair';
+import type { RepairReference } from '../shared/task-repair';
 
 type SavedTask = PlanningTask & {
   proposal?: PlanningProposal;
@@ -19,6 +21,7 @@ type SavedTask = PlanningTask & {
 };
 type Job = { id: string; abort: AbortController };
 type Dependencies = {
+  repair?: PlanningRepair;
   key: (provider: string) => Promise<string>;
   save: (flow: Flow, bindings: Bindings) => FlowRecord;
   assertAvailable: () => void;
@@ -30,6 +33,8 @@ const flowHash = (flow: FlowRecord | null) =>
 
 export class Planning {
   private jobs = new Map<string, Job>();
+  private operationEpoch = new Map<string, number>();
+  private cancellationEpoch = 0;
   constructor(
     private store: Store,
     private deps: Dependencies,
@@ -76,11 +81,13 @@ export class Planning {
     };
   }
   private abort(id: string) {
+    this.operationEpoch.set(id, (this.operationEpoch.get(id) ?? 0) + 1);
     const job = this.jobs.get(id);
     this.jobs.delete(id);
     job?.abort.abort();
   }
   cancelAll() {
+    this.cancellationEpoch++;
     const ids = [...this.jobs.keys()];
     // Abort every request before a possible persistence error.
     for (const id of ids) this.abort(id);
@@ -129,6 +136,13 @@ export class Planning {
       return this.detail(task.id);
     }
     const task = this.task(args.id, args.revision);
+    const operationEpoch = this.operationEpoch.get(task.id) ?? 0;
+    const cancellationEpoch = this.cancellationEpoch;
+    if (method === 'task.repair.preview') {
+      if (!this.deps.repair) throw new Error('网页目标修复不可用');
+      if (this.jobs.has(task.id)) throw new Error('请先取消正在生成的方案');
+      return this.deps.repair.preview(args);
+    }
     if (method === 'task.save') {
       this.abort(task.id);
       this.put({
@@ -142,11 +156,11 @@ export class Planning {
         requestId: undefined,
         proposal: undefined,
       });
-    } else if (method === 'task.generate') {
+    } else if (method === 'task.generate' || method === 'task.repair.generate') {
       if (this.jobs.has(task.id)) throw new Error('该任务正在生成，请先取消或等待结果');
       if (!task.description.trim()) throw new Error('请先描述你想完成的任务');
       const baseline = this.flow(task);
-      const request: PlanningInput = {
+      let request: PlanningInput = {
         formatVersion: '1.0',
         flowId: task.flowId,
         description: task.description,
@@ -155,6 +169,26 @@ export class Planning {
         baseFlow: baseline?.flow ?? null,
         capabilities: [...capabilities],
       };
+      let repair: RepairReference | undefined;
+      if (method === 'task.repair.generate') {
+        if (!this.deps.repair) throw new Error('网页目标修复不可用');
+        repair = {
+          runId: args.runId,
+          nodeId: args.nodeId,
+          pickRequestId: args.pickRequestId,
+          token: args.token,
+        };
+        request = (await this.deps.repair.verify(task, repair)).input;
+        if (
+          this.cancellationEpoch !== cancellationEpoch ||
+          (this.operationEpoch.get(task.id) ?? 0) !== operationEpoch ||
+          canonical(this.task(task.id, task.revision)) !== canonical(task)
+        )
+          throw new Error('修复操作已取消或任务已变化，请重新检查');
+        if (this.jobs.has(task.id)) throw new Error('该任务正在生成，请先取消或等待结果');
+        if (flowHash(this.flow(task)) !== flowHash(baseline))
+          throw new Error('流程已变化，请重新检查');
+      }
       validateObject('AIPlanningRequest', request);
       if (Buffer.byteLength(JSON.stringify(request)) > 2 * 1024 * 1024)
         throw new Error('规划上下文与基线流程合计超过 2 MiB，请缩小本次修改范围');
@@ -166,9 +200,10 @@ export class Planning {
         provider: args.provider,
         model: args.model,
         error: undefined,
+        proposal: undefined,
       });
       this.jobs.set(task.id, job);
-      void this.perform(task, job, request, flowHash(baseline), args.provider, args.model);
+      void this.perform(task, job, request, flowHash(baseline), args.provider, args.model, repair);
     } else if (method === 'task.cancel') {
       this.abort(task.id);
       if (task.status === 'generating')
@@ -176,6 +211,7 @@ export class Planning {
     } else if (method === 'task.reject') {
       if (this.jobs.has(task.id)) throw new Error('请先取消正在生成的方案');
       if (task.proposal?.id !== args.proposalId) throw new Error('提案已变化，请重新查看');
+      this.abort(task.id);
       this.put({ ...task, proposal: undefined, status: 'draft', error: undefined });
     } else if (method === 'task.adopt') {
       if (this.jobs.has(task.id)) throw new Error('请先取消正在生成的方案');
@@ -191,6 +227,25 @@ export class Planning {
       if (proposal.baseRevision !== task.revision || proposal.baseFlowHash !== flowHash(before))
         throw new Error('流程或资源绑定已修改，请基于当前版本重新生成；未覆盖手动编辑');
       this.validatePlan(proposal.result, task.flowId, proposal.baseFlow);
+      if (proposal.repair) {
+        if (!this.deps.repair) throw new Error('网页目标修复不可用');
+        const verified = await this.deps.repair.verify(task, proposal.repair);
+        const current = this.task(task.id, task.revision);
+        if (
+          this.cancellationEpoch !== cancellationEpoch ||
+          (this.operationEpoch.get(task.id) ?? 0) !== operationEpoch ||
+          this.jobs.has(task.id) ||
+          canonical(current.proposal) !== canonical(proposal) ||
+          flowHash(this.flow(task)) !== flowHash(before)
+        )
+          throw new Error('提案或流程已变化，请重新核对；未覆盖当前草稿');
+        this.deps.repair.validate(
+          proposal.result,
+          proposal.baseFlow!,
+          proposal.repair.nodeId,
+          verified.selection.target,
+        );
+      }
       this.store.tx(() => {
         const saved = this.deps.save(
           proposal.result.flow!,
@@ -254,6 +309,7 @@ export class Planning {
     baseline: string,
     provider: 'deepseek' | 'openai-codex',
     model: string,
+    repair?: RepairReference,
   ) {
     let key = '';
     try {
@@ -261,6 +317,8 @@ export class Planning {
       if (!this.current(task, job)) return;
       this.deps.assertAvailable();
       if (typeof key !== 'string' || !key) throw new Error('请先配置所选 AI 服务');
+      if (repair) await this.deps.repair!.verify(task, repair);
+      if (!this.current(task, job)) return;
       const result = await (this.deps.generate ?? generatePlan)(
         input,
         provider,
@@ -274,6 +332,16 @@ export class Planning {
       if (Buffer.byteLength(serialized) > 1024 * 1024) throw new Error('AI 方案超过 1 MiB');
       if (serialized.includes(key)) throw new Error('AI 返回包含敏感凭据，结果已拒绝');
       this.validatePlan(result, task.flowId, input.baseFlow);
+      if (repair) {
+        const verified = await this.deps.repair!.verify(task, repair);
+        if (!this.current(task, job)) return;
+        this.deps.repair!.validate(
+          result,
+          input.baseFlow!,
+          repair.nodeId,
+          verified.selection.target,
+        );
+      }
       const saved = this.task(task.id);
       this.put({
         ...saved,
@@ -286,6 +354,7 @@ export class Planning {
           baseFlow: input.baseFlow,
           result,
           createdAt: now(),
+          ...(repair ? { repair } : {}),
         },
       });
     } catch (error) {

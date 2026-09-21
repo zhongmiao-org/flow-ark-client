@@ -58,6 +58,7 @@ import type {
   ExecutionObservation,
 } from '../shared/types';
 import { Planning } from './planning';
+import { PlanningRepair } from './planning-repair';
 const terminal = new Set(['SUCCEEDED', 'FAILED', 'INTERRUPTED', 'CANCELLED']);
 type Active = {
   id: string;
@@ -109,6 +110,18 @@ export class Runtime {
     this.store = new Store(join(dataPath, 'flowark.sqlite'), key);
     this.store.recover();
     this.planning = new Planning(this.store, {
+      repair: new PlanningRepair(this.store, {
+        epoch: () => this.admissionEpoch,
+        assertAvailable: () => {
+          if (this.executionBlock()) throw new Error(this.executionBlock());
+          if (
+            this.stopping || this.suspended || this.active ||
+            this.store.list<Run>('run').some((r) => r.state === 'QUEUED')
+          )
+            throw new Error('请等待当前运行和收尾结束后，再检查目标修复');
+        },
+        capture: (requestId) => this.system('browser.embedded.pick.capture', { requestId }),
+      }),
       key: (provider) => this.system('credentials.get', { id: provider }),
       save: (flow, bindings) => this.saveFlow(flow, bindings),
       assertAvailable: () => {

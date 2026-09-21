@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { FlowArkP1 } from './contracts.generated';
 import type { Flow, FlowRecord } from './types';
+import { repairGenerateSchema, repairPreviewSchema, type RepairReference } from './task-repair';
 
 export type PlanningInput = NonNullable<FlowArkP1['AIPlanningRequest']>;
 export type PlanningResult = NonNullable<FlowArkP1['AIPlanningResult']>;
@@ -28,6 +29,7 @@ export type PlanningTask = {
   error?: string;
 };
 export type PlanningProposal = {
+  repair?: RepairReference;
   id: string;
   baseRevision: number;
   baseFlowHash: string;
@@ -70,6 +72,8 @@ const context = z
   })
   .strict();
 export const taskMethods = {
+  'task.repair.preview': repairPreviewSchema,
+  'task.repair.generate': repairGenerateSchema,
   'task.create': z.object({ flowId: id.optional() }).strict(),
   'task.list': z.object({}).strict(),
   'task.detail': task,

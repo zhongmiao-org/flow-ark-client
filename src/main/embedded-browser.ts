@@ -17,7 +17,8 @@ import {
   type EmbeddedLostNotice,
   type EmbeddedCleanupFailure,
 } from '../shared/embedded-lifecycle';
-import { errorText } from '../shared/utils';
+import { canonical, errorText } from '../shared/utils';
+import type { RepairSelection } from '../shared/task-repair';
 import { confirmWebContentsClosed } from './native-webcontents-close';
 import type { EmbeddedReview } from '../shared/run-review';
 
@@ -35,6 +36,7 @@ type Download = {
 type Resource = {
   id: string;
   documentRevision: number;
+  pickDocument?: { requestId: string; revision: number };
   token?: string;
   phase: 'starting' | 'ready' | 'closing' | 'unknown' | 'closed';
   view?: WebContentsView;
@@ -623,6 +625,8 @@ export class EmbeddedBrowser {
   }
   async system(method: string, args: any) {
     switch (method) {
+      case 'browser.embedded.pick.capture':
+        return this.captureSelection(args.requestId);
       case 'browser.embedded.review':
         return this.review();
       case 'browser.embedded.pick.start':
@@ -636,7 +640,13 @@ export class EmbeddedBrowser {
         if (!resource.presented) throw new Error('请先展开内置网页面板');
         if (!this.permitted(resource.contents!.getURL())) throw new Error('请先打开测试网页');
         const page = resource.page!;
-        if (method.endsWith('.start')) return page.picker.start(args.requestId);
+        if (method.endsWith('.start')) {
+          resource.pickDocument = {
+            requestId: args.requestId,
+            revision: resource.documentRevision,
+          };
+          return page.picker.start(args.requestId);
+        }
         let stop!: () => void;
         const stopped = new Promise<never>(
           (_, reject) => (stop = () => reject(new Error('网页会话已关闭'))),
@@ -685,6 +695,64 @@ export class EmbeddedBrowser {
         return this.navigate(args.url);
       default:
         throw new Error('未知网页方法');
+    }
+  }
+
+  private async captureSelection(requestId: string): Promise<RepairSelection> {
+    this.assertAvailable();
+    this.layout();
+    const resource = this.resource;
+    const before = this.review();
+    if (!resource || !before.started || before.loading || before.blocked || !resource.presented)
+      throw new Error('请展开已就绪的内置网页并重新选择目标');
+    const page = resource.page!;
+    const selected = page.picker.status(requestId);
+    if (
+      resource.pickDocument?.requestId !== requestId ||
+      resource.pickDocument.revision !== before.documentRevision
+    )
+      throw new Error('选取后的网页已变化，请重新选取');
+    if (selected.phase !== 'selected' || !selected.target)
+      throw new Error('没有此请求的已选网页目标，请重新选取');
+    let stop!: () => void;
+    const stopped = new Promise<never>(
+      (_, reject) => (stop = () => reject(new Error('网页会话已关闭'))),
+    );
+    const operation = { stop };
+    resource.operation = operation;
+    try {
+      const inspected = await Promise.race([
+        page.inspectTarget(selected.target.selector, selected.target.framePath, false),
+        stopped,
+      ]);
+      this.assertOperation(resource, operation);
+      this.layout();
+      if (!resource.presented || page.picker.status(requestId) !== selected)
+        throw new Error('选取已取消或改变，请重新选取');
+      // Exclude only our own read-only operation marker when comparing page identity.
+      const after = { ...this.review(), blocked: undefined };
+      if (canonical({ ...before, blocked: undefined }) !== canonical(after))
+        throw new Error('网页已变化，请重新选取');
+      const minimal = (target: typeof inspected) => ({
+        selector: target.selector,
+        framePath: target.framePath,
+        label: target.label,
+        tag: target.tag,
+        inputType: target.inputType,
+        structural: target.structural || selected.target!.structural,
+      });
+      if (canonical(minimal(selected.target)) !== canonical(minimal(inspected)))
+        throw new Error('所选元素内容或结构已变化，请重新选取');
+      return {
+        requestId,
+        resourceId: resource.id,
+        documentRevision: before.documentRevision,
+        url: before.url,
+        title: before.title,
+        target: minimal(inspected),
+      };
+    } finally {
+      if (resource.operation === operation) resource.operation = undefined;
     }
   }
 }
