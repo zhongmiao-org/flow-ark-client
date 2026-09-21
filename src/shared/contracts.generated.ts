@@ -201,6 +201,16 @@ export type Node =
       includeHeaders: boolean;
       nullPolicy: 'blank';
       timeoutMs?: number;
+    }
+  | {
+      id: string;
+      type: 'file';
+      version: 3;
+      name: Value;
+      timeoutMs?: number;
+      operation: 'create';
+      binding: string;
+      content: Value;
     };
 export type Value =
   | Json

@@ -2590,3 +2590,75 @@ test('schedule update cannot overwrite a pause, competing edit, timer trigger, o
     runtime.store.close();
   }
 });
+
+test('real Worker creates text from a fixed snapshot; repeated explicit runs fail without overwriting or reporting artifacts', async (t) => {
+  const path = await realpath(await mkdtemp(join(tmpdir(), 'flowark-create-worker-')));
+  const output = join(path, 'output');
+  await mkdir(output);
+  const runtime = new Runtime(
+    path,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  t.after(async () => {
+    await runtime.shutdown();
+    runtime.store.close();
+    await rm(path, { recursive: true, force: true });
+  });
+  const flow: Flow = {
+    ...base,
+    parameters: { title: '已核对的网页标题 💡' },
+    requiredCapabilities: ['file-create-v1'],
+    steps: [
+      { id: 'title', type: 'value', version: 1, value: { $ref: 'params.title' } },
+      { id: 'wait', type: 'human', version: 1, message: '固定快照验收' },
+      {
+        id: 'save',
+        type: 'file',
+        version: 3,
+        operation: 'create',
+        binding: 'output',
+        name: 'title.txt',
+        content: { $ref: 'steps.title' },
+      },
+      { id: 'after', type: 'value', version: 1, value: 'reached only after success' },
+    ],
+  };
+  const bindings = { files: { output }, credentials: [] };
+  runtime.saveFlow(flow, bindings);
+  const run = await runtime.enqueue(flow.id);
+  await until(() => runtime.store.get<Run>('run', run.id)?.state === 'WAITING_INPUT');
+  const before = runtime.store.get<any>('snapshot', run.id);
+  runtime.saveFlow({ ...flow, parameters: { title: '下一次的文字' } }, bindings);
+  await runtime.control(run.id, 'resume');
+  await until(() => ['SUCCEEDED', 'FAILED'].includes(runtime.store.get<Run>('run', run.id)!.state));
+  assert.equal(
+    runtime.store.get<Run>('run', run.id)!.state,
+    'SUCCEEDED',
+    JSON.stringify(runtime.store.events(run.id)),
+  );
+  assert.equal(await readFile(join(output, 'title.txt'), 'utf8'), flow.parameters.title);
+  assert.deepEqual(runtime.store.get('snapshot', run.id), before);
+  const first = (await runtime.request('run.detail', { id: run.id })).artifacts;
+  assert.equal(first.length, 1);
+  assert.equal(first[0].integrity, 'verified');
+  const second = await runtime.enqueue(flow.id);
+  await until(() => runtime.store.get<Run>('run', second.id)?.state === 'WAITING_INPUT');
+  await runtime.control(second.id, 'resume');
+  await until(() =>
+    ['SUCCEEDED', 'FAILED'].includes(runtime.store.get<Run>('run', second.id)!.state),
+  );
+  assert.equal(runtime.store.get<Run>('run', second.id)!.state, 'FAILED');
+  assert.match(runtime.store.get<Run>('run', second.id)!.error!, /已存在/);
+  assert.equal((await runtime.request('run.detail', { id: second.id })).artifacts.length, 0);
+  assert.ok(
+    !runtime.store
+      .events(second.id)
+      .some((e) => e.type === 'node-start' && e.nodeInstance === 'after'),
+  );
+  assert.equal(await readFile(join(output, 'title.txt'), 'utf8'), flow.parameters.title);
+  assert.equal(runtime.store.list('run').length, 2);
+  assert.equal(await readFile(first[0].path, 'utf8'), flow.parameters.title);
+});

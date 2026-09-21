@@ -5,6 +5,7 @@ import { framePathOf, validateFormCommand } from './browser-command';
 import { declaredDependencies } from './script-dependencies';
 import { referenceIssues } from '../shared/flow-references';
 import { mappingPreview } from '../shared/excel-mapping';
+import { validateFileCreate } from '../shared/file-create';
 const ajv = new Ajv2020({ strict: false, allErrors: true });
 ajv.addSchema(schema);
 export function validateObject<T>(name: string, value: unknown): T {
@@ -21,6 +22,7 @@ export const capabilities = [
   'http',
   'script',
   'file',
+  'file-create-v1',
   'excel',
   'excel-mapping-v1',
   'browser',
@@ -48,6 +50,11 @@ export function validateFlow(value: unknown): Flow {
     for (const n of steps) {
       if (++count > 1000 || all.has(n.id)) throw new Error('节点数量过多或 ID 重复：' + n.id);
       all.add(n.id);
+      if (n.type === 'file' && n.operation === 'create') {
+        if (!flow.requiredCapabilities.includes('file-create-v1'))
+          throw new Error('新建文本文件需要声明 file-create-v1 能力');
+        validateFileCreate(n, flow.parameters);
+      }
       if (n.type === 'excel' && n.operation === 'map') {
         if (!flow.requiredCapabilities.includes('excel-mapping-v1'))
           throw new Error('Excel 字段映射需要声明 excel-mapping-v1 能力');

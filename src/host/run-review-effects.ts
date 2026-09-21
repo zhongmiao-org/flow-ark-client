@@ -15,6 +15,11 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
       case 'file':
       case 'excel': {
         const file = typeof node.name === 'string' ? `“${node.name}”` : '执行时确定名称的文件';
+        if (node.operation === 'create')
+          return effect(
+            'write',
+            `在目录“${node.binding}”新建文本文件${file}；同名文件存在时停止，不覆盖。`,
+          );
         if (node.operation === 'map')
           return effect(
             'write',

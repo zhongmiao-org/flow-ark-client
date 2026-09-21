@@ -18,6 +18,7 @@ import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import type { Bindings } from '../shared/types';
 import { mappedRows, validateMappedFilename } from '../shared/excel-mapping';
+import { validateCreatedName, validateCreatedText } from '../shared/file-create';
 export async function scopedPath(root: string, name: string, writing = false) {
   if (!root) throw new Error('文件目录尚未绑定');
   const base = await realpath(root);
@@ -126,6 +127,10 @@ export async function fileOperation(
   bindings: Bindings,
   artifact: (path: string) => Promise<any>,
 ) {
+  if (n.type === 'file' && n.operation === 'create') {
+    validateCreatedName(n.name);
+    validateCreatedText(n.content);
+  }
   if (n.type === 'excel' && n.operation === 'map') validateMappedFilename(n.name);
   if (n.version === 2) {
     assertRelativeName(n.name);
@@ -196,7 +201,15 @@ export async function fileOperation(
     if ((await stat(path)).size > 10 * 1024 * 1024) throw new Error('文本文件超过 10 MiB');
     return readFile(path, 'utf8');
   }
-  if (n.operation === 'write')
+  if (n.operation === 'create') {
+    try {
+      await atomicWrite(path, (temporary) => writeFile(temporary, n.content, 'utf8'), true);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'EEXIST')
+        throw new Error('输出文件已存在，请更换文件名；原文件未覆盖');
+      throw error;
+    }
+  } else if (n.operation === 'write')
     await atomicWrite(path, (temporary) =>
       writeFile(temporary, typeof n.content === 'string' ? n.content : JSON.stringify(n.content)),
     );

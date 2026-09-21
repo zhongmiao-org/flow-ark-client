@@ -43,6 +43,7 @@ export async function generatePlan(
         '完整方案返回 plan，flow.id 必须等于输入 flowId；保留未修改步骤的 ID、引用、条件与循环语义。',
         '不要创建凭据、授权或本地路径绑定，不要把方案总结成已经完成的结果。',
         '需要修改时返回完整新流程，不返回补丁。问题 ID 稳定且不重复。',
+        '新建且不覆盖文本文件使用 file version 3 operation create，并声明 file-create-v1 能力；content 解析后必须是文本，不把 create 降级成可能覆盖的 write。',
         '按提供的 resultSchema 生成完整 JSON，再将其序列化为 resultJson 字符串。',
       ].join('\n'),
       input: { request: input as any, resultSchema: resultSchema() as any },

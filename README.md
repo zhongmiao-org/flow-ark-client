@@ -96,6 +96,7 @@ pnpm test:embedded-pointer
 pnpm test:script-editor
 pnpm test:flow-outline
 pnpm test:excel-mapping
+pnpm test:file-create
 pnpm test:desktop
 FLOWARK_TEST_EXECUTABLE=/absolute/path/FlowArk.app/Contents/MacOS/FlowArk pnpm test:install
 FLOWARK_TEST_EXECUTABLE=/absolute/path/FlowArk.app/Contents/MacOS/FlowArk pnpm test:template-parameters
@@ -107,7 +108,7 @@ FLOWARK_TEST_EXECUTABLE=/absolute/path/FlowArk.app/Contents/MacOS/FlowArk pnpm t
 
 `test:flow-outline` 验证真实 40 步流程的搜索／折叠、条件和循环实例、草稿与固定快照隔离、详情返回及延迟状态；结束时取消自身未完成的运行并确认测试实例退出。
 
-`test:excel-mapping` 验证字段冲突、预览失效、保存与放弃、静态和运行期来源、不可变快照，以及真实 Worker 工作簿输出与不覆盖已有文件。Excel 映射消费 contracts-v0.10.0，包内保留规范副本和校验摘要。
+`test:excel-mapping` 验证字段冲突、预览失效、保存与放弃、静态和运行期来源、不可变快照，以及真实 Worker 工作簿输出与不覆盖已有文件。当前客户端消费 contracts-v0.11.0，包内保留规范副本和校验摘要。
 
 `test:ai-step-edit` 使用本机 HTTP 模型夹具，验证真实任务/IPC/宿主的单步范围、补问、取消、差异、采纳/撤销、基线冲突、大纲返回及串行重开。该检查不代表真实 DeepSeek/OpenAI 调用通过。
 
@@ -119,3 +120,5 @@ FLOWARK_TEST_EXECUTABLE=/absolute/path/FlowArk.app/Contents/MacOS/FlowArk pnpm t
 当前为未正式发布的开发版本，不保留旧客户端、旧 JSON 模板或旧业务数据的兼容路径。开发数据清理只通过显式维护工具执行，凭据、通用设置和浏览器登录态保留。
 
 0.2.1 开发候选统一导入导出：自定义流程、修改后的模板流程和模板库均使用「导出 ZIP」，默认文件名对应包内清单。自定义流程导出参数结构、逻辑目录／浏览器资源及默认禁止的写入授权；重新导入后填写入口参数、重新绑定资源并授权即可执行。模板库导出原包；编辑器导出新的本地模板身份，不携带实例值、路径、凭据或历史。动态上传目录及未静态打包的脚本依赖需先整理再导出。
+
+`test:file-create` 验证文件属性表单、文本限制、撤销/重做、能力声明、运行前检查，以及内置浏览器读取本机无账号页面后的真实新建文本与同名停止。测试使用独立数据目录，两次启动严格串行；前一个子进程确认退出后才重开，不触碰日常实例。此检查不等于首次教学界面已完成。

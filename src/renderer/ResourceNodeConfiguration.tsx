@@ -85,7 +85,7 @@ export default function ResourceNodeConfiguration({
         onChange={(e) => change(resourceOperation(node, e.target.value))}
       >
         <option value="read">读取</option>
-        <option value="write">写入</option>
+        <option value="write">写入（可能覆盖）</option>
         {isExcel ? (
           <>
             <option value="map">字段映射 · 新建工作簿</option>
@@ -93,6 +93,7 @@ export default function ResourceNodeConfiguration({
           </>
         ) : (
           <>
+            <option value="create">新建文本文件（不覆盖）</option>
             <option value="copy">复制文件</option>
             <option value="archive">归档为 ZIP</option>
           </>
@@ -136,8 +137,13 @@ export default function ResourceNodeConfiguration({
       )}
       <p className="note">文件名为绑定目录内的相对路径；运行时检查目录范围。</p>
       {node.type === 'file' &&
-        node.operation === 'write' &&
+        (node.operation === 'write' || node.operation === 'create') &&
         field('content', '写入内容', node.content)}
+      {node.type === 'file' && node.operation === 'create' && (
+        <p className="note">
+          仅接受文本，UTF-8 内容最多 10 MiB；同名文件存在时停止，不覆盖、不自动改名。
+        </p>
+      )}
       {node.type === 'file' &&
         node.operation === 'copy' &&
         field('content', '源文件名', node.content, '', true)}

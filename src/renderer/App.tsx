@@ -1415,14 +1415,21 @@ function Editor({
   const patch = (fn: (n: Step) => Step | null) => {
     const steps = changeSteps(r.flow.steps, selected, fn);
     const mapped = flatten(steps).some((node) => node.type === 'excel' && node.operation === 'map');
+    const createsText = flatten(steps).some(
+      (node) => node.type === 'file' && node.operation === 'create',
+    );
     setRecord({
       ...r,
       flow: {
         ...r.flow,
         steps,
-        requiredCapabilities: mapped
-          ? [...new Set([...r.flow.requiredCapabilities, 'excel-mapping-v1'])]
-          : r.flow.requiredCapabilities,
+        requiredCapabilities: [
+          ...new Set([
+            ...r.flow.requiredCapabilities,
+            ...(mapped ? ['excel-mapping-v1'] : []),
+            ...(createsText ? ['file-create-v1'] : []),
+          ]),
+        ],
       },
     });
   };

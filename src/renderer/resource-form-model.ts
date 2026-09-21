@@ -3,9 +3,9 @@ export type FileNode = Extract<Step, { type: 'file' | 'excel' }>;
 export function resourceOperation(node: FileNode, operation: string): FileNode {
   const excel = node.type === 'excel';
   if (
-    !(excel ? ['read', 'write', 'fill', 'map'] : ['read', 'write', 'copy', 'archive']).includes(
-      operation,
-    )
+    !(
+      excel ? ['read', 'write', 'fill', 'map'] : ['read', 'write', 'create', 'copy', 'archive']
+    ).includes(operation)
   )
     throw new Error('未知文件操作');
   const extra = excel
@@ -30,7 +30,11 @@ export function resourceOperation(node: FileNode, operation: string): FileNode {
         : { version: 1, name: 'result.xlsx', rows: [] }
     : operation === 'archive'
       ? { version: 2, name: 'archive.zip', files: ['result.txt'] }
-      : { version: 1, name: 'result.txt', content: operation === 'copy' ? 'source.txt' : '' };
+      : {
+          version: operation === 'create' ? 3 : 1,
+          name: 'result.txt',
+          content: operation === 'copy' ? 'source.txt' : '',
+        };
   return {
     id: node.id,
     type: node.type,
