@@ -13,6 +13,8 @@ const allowed = new Set([
   'flow.save',
   'flow.create',
   'flow.run',
+  'flow.run.preview',
+  'flow.run.confirm',
   'run.detail',
   'run.rerun.preview',
   'run.rerun.confirm',

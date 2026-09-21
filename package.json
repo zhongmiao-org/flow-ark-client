@@ -8,7 +8,7 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "81864314a9be435ac4f67e5491bf4e111555c8c0",
+    "governanceBaseline": "9b624b7e017f1ba9a3acd9e19cdca54fd2cf33e7",
     "contractsVersion": "0.9.0",
     "contractsTag": "contracts-v0.9.0"
   },
@@ -23,7 +23,7 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "test:runtime": "node --import tsx --test tests/runtime.integration.ts tests/run-rerun.integration.ts tests/embedded-cleanup.integration.ts tests/script-supervision.integration.ts tests/storage-full.integration.ts tests/system-suspend.integration.ts tests/redaction.integration.ts tests/template-runtime.integration.ts",
+    "test:runtime": "node --import tsx --test tests/runtime.integration.ts tests/run-rerun.integration.ts tests/run-review.integration.ts tests/embedded-cleanup.integration.ts tests/script-supervision.integration.ts tests/storage-full.integration.ts tests/system-suspend.integration.ts tests/redaction.integration.ts tests/template-runtime.integration.ts",
     "check": "pnpm typecheck && pnpm test && pnpm build",
     "contracts:generate": "node scripts/generate-contracts.mjs",
     "test:browser": "node --import tsx scripts/browser-smoke.ts",
@@ -56,6 +56,7 @@
     "test:flow-export": "node --import tsx scripts/template-package-smoke.ts",
     "test:node-timeout": "node --import tsx scripts/node-timeout-smoke.ts",
     "test:invalid-node-json": "node --import tsx scripts/invalid-node-json-smoke.ts",
+    "test:run-review-browser": "node --import tsx scripts/run-review-browser-smoke.ts",
     "test:run-rerun": "node --import tsx scripts/run-rerun-smoke.ts",
     "test:embedded-close": "node --import tsx scripts/embedded-close-lifecycle.ts",
     "test:embedded-cleanup": "node --import tsx scripts/embedded-cleanup-smoke.ts",

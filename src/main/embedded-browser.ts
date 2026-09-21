@@ -19,6 +19,7 @@ import {
 } from '../shared/embedded-lifecycle';
 import { errorText } from '../shared/utils';
 import { confirmWebContentsClosed } from './native-webcontents-close';
+import type { EmbeddedReview } from '../shared/run-review';
 
 type Bounds = { x: number; y: number; width: number; height: number };
 type Operation = { stop: () => void };
@@ -33,6 +34,7 @@ type Download = {
 };
 type Resource = {
   id: string;
+  documentRevision: number;
   token?: string;
   phase: 'starting' | 'ready' | 'closing' | 'unknown' | 'closed';
   view?: WebContentsView;
@@ -170,7 +172,7 @@ export class EmbeddedBrowser {
     }
     let resource = this.resource;
     if (!resource) {
-      resource = { id: randomUUID(), token, phase: 'starting' };
+      resource = { id: randomUUID(), documentRevision: 0, token, phase: 'starting' };
       this.resource = resource;
       resource.starting = this.initialize(resource);
     } else if (token) {
@@ -210,6 +212,14 @@ export class EmbeddedBrowser {
       });
       wc.on('will-redirect', (event, url) => {
         if (!this.permitted(url)) event.preventDefault();
+      });
+      // Include iframe navigation, SPA navigation and same-URL reloads. URL alone
+      // is not the identity of the document the user reviewed.
+      wc.on('did-start-navigation', () => {
+        resource.documentRevision++;
+      });
+      wc.on('did-navigate-in-page', () => {
+        resource.documentRevision++;
       });
       wc.on('did-finish-load', () => {
         if (
@@ -335,6 +345,27 @@ export class EmbeddedBrowser {
       url: wc && !wc.isDestroyed() ? wc.getURL() : '',
       title: wc && !wc.isDestroyed() ? wc.getTitle() : '',
       ...(this.blocked ? { blocked: this.blocked } : {}),
+    };
+  }
+  review(): EmbeddedReview {
+    const resource = this.resource,
+      wc = resource?.contents;
+    const alive = !!wc && !wc.isDestroyed();
+    const blocked =
+      this.blocked ||
+      (resource && !['ready', 'starting'].includes(resource.phase)
+        ? '内置网页正在关闭或状态未知'
+        : resource?.operation
+          ? '内置网页正在执行操作'
+          : undefined);
+    return {
+      ...(resource ? { resourceId: resource.id } : {}),
+      documentRevision: resource?.documentRevision ?? 0,
+      started: resource?.phase === 'ready' && alive,
+      loading: resource?.phase === 'starting' || (alive && wc.isLoading()),
+      url: alive ? wc.getURL() : '',
+      title: alive ? wc.getTitle() : '',
+      ...(blocked ? { blocked } : {}),
     };
   }
   async start(token: string): Promise<EmbeddedStartReceipt> {
@@ -592,6 +623,8 @@ export class EmbeddedBrowser {
   }
   async system(method: string, args: any) {
     switch (method) {
+      case 'browser.embedded.review':
+        return this.review();
       case 'browser.embedded.pick.start':
       case 'browser.embedded.pick.validate': {
         this.assertAvailable();

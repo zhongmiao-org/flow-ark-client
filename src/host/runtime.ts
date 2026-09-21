@@ -9,6 +9,7 @@ import { flowExportSchema, templateContentLimit } from '../shared/flow-export';
 import { listRuns, runOverview } from './run-history';
 import { ArtifactCleanup } from './artifact-cleanup';
 import { RunRerun, executionVersion } from './run-rerun';
+import { RunReview } from './run-review';
 import { Sessions } from './sessions';
 import { ScriptProcesses } from './script-processes';
 import { ScriptProcessInterruptedError, type ScriptOwner } from '../shared/script-supervision';
@@ -76,6 +77,7 @@ export class Runtime {
   private artifactFiles: ArtifactFiles;
   private artifactCleanup: ArtifactCleanup;
   private reruns: RunRerun;
+  private runReview: RunReview;
   private pendingCapabilities = new Map<string, number>();
   private stopping = false;
   private suspended = false;
@@ -137,6 +139,22 @@ export class Runtime {
       this.system('notification', { title: 'FlowArk 有新的待办' }),
     );
     this.sessions = new Sessions(dir, executable, dataPath, system);
+    this.runReview = new RunReview(this.store, {
+      assertAdmitting: () => this.assertAdmitting(),
+      epoch: () => this.admissionEpoch,
+      preflight: (record) => this.preflight(record),
+      version: (record, prepared) => this.version(record, prepared),
+      dispatch: () => this.dispatch(),
+      embedded: () => this.system('browser.embedded.review', {}),
+      template: async (record) => {
+        const { pkg, entry } = await this.templates.context(record);
+        return {
+          resources: pkg.manifest.resources.filter((r) => entry.resources.includes(r.id)),
+          actions: pkg.manifest.actions.filter((a) => entry.actions.includes(a.id)),
+        };
+      },
+      error: (error) => this.redactError(error),
+    });
     this.ready = Promise.all([this.scripts.ready, this.templates.library.cleanStaging()]).then(
       () => {
         // A recovery probe can take several seconds. Plans missed during that
@@ -634,9 +652,12 @@ export class Runtime {
         this.store.state(run.id, 'RUNNING');
         const s = this.store.get<FlowRecord & PreparedScripts>('snapshot', run.id)!;
         this.reruns.checkExecution(run, s);
+        await this.waitActive(active, this.runReview.checkExecution(run, s));
         const prepared = await this.waitActive(active, this.preflight(s)); // Never recompile a fixed bundle.
         this.checkActive(active);
         this.reruns.checkExecution(run, s);
+        await this.waitActive(active, this.runReview.checkExecution(run, s));
+        this.checkActive(active);
         outputs = await rpc.call(
           'execute',
           {
@@ -1127,15 +1148,20 @@ export class Runtime {
           execution: this.observeExecution(),
           fault: this.store.fault,
         }));
+      case 'flow.run.preview':
+        await this.ready;
+        return this.runReview.preview(args);
       case 'run.rerun.preview':
         await this.ready;
         return this.reruns.preview(args);
+      case 'flow.run.confirm':
       case 'run.rerun.confirm': {
         const epoch = this.admissionEpoch;
         const suspended = this.suspended;
         const pending = this.admissions.then(async () => {
           await this.ready;
-          return this.reruns.confirm(args, () => {
+          const service = method === 'flow.run.confirm' ? this.runReview : this.reruns;
+          return service.confirm(args, () => {
             if (suspended) throw new Error('系统正在休眠，恢复后请重新开始运行');
             this.assertAdmission(epoch);
           });

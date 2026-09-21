@@ -4,6 +4,7 @@ import { scheduleCreateSchema, scheduleUpdateSchema } from './schedules';
 import { flowExportSchema } from './flow-export';
 import { runRerunPreviewSchema, runRerunConfirmSchema } from './run-rerun';
 import { taskMethods } from './planning';
+import { runReviewConfirmSchema, runReviewPreviewSchema } from './run-review';
 const id = z.string().min(1).max(100);
 const empty = z.object({}).strict();
 const bindings = z
@@ -52,6 +53,8 @@ export const methods = {
   'flow.save': z.object({ flow: z.unknown(), bindings }).strict(),
   'flow.create': empty,
   'flow.run': z.object({ id, debug: z.boolean().optional() }).strict(),
+  'flow.run.preview': runReviewPreviewSchema,
+  'flow.run.confirm': runReviewConfirmSchema,
   'run.detail': z.object({ id }).strict(),
   'run.rerun.preview': runRerunPreviewSchema,
   'run.rerun.confirm': runRerunConfirmSchema,

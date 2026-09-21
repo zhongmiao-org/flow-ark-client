@@ -41,6 +41,7 @@ export type Run = {
   debug?: boolean;
   scheduleId?: string;
   rerun?: { runId: string; mode: RunRerunMode; reviewedAt: string };
+  review?: { reviewedAt: string };
   error?: string;
   business: string;
 };
