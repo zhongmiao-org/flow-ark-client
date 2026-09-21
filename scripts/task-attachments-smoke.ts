@@ -4,7 +4,8 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync, type ChildProcess } from 'node:child_process';
 import { createServer } from 'node:http';
-import { _electron as electron, type ElectronApplication, type Page } from 'playwright-core';
+import { desktopElectron as electron } from './desktop-session.mjs';
+import { type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
 import { build } from 'esbuild';
 

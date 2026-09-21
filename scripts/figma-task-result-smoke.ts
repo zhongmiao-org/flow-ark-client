@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { _electron as electron, type ElectronApplication, type Page } from 'playwright-core';
+import { desktopElectron as electron } from './desktop-session.mjs';
+import { type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
 import type { Flow, Run, Step } from '../src/shared/types';
 const data = await mkdtemp('/private/tmp/flowark-task-result-'),

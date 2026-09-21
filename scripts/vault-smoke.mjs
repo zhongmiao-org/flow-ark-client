@@ -3,7 +3,7 @@ import { mkdtemp, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { build } from 'esbuild';
-import { _electron } from 'playwright-core';
+import { desktopElectron as _electron } from './desktop-session.mjs';
 import { killOwnedTree } from '../src/host/processes.ts';
 
 const root = await mkdtemp(join(tmpdir(), 'flowark-vault-test-'));

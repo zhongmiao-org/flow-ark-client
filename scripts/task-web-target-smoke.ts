@@ -5,7 +5,8 @@ import { build } from 'esbuild';
 import { cp, mkdir, mkdtemp, readFile, writeFile, access } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { _electron as electron, type ElectronApplication, type Page } from 'playwright-core';
+import { desktopElectron as electron } from './desktop-session.mjs';
+import { type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
 import type { PlanningInput, PlanningResult, TaskDetail } from '../src/shared/planning';
 

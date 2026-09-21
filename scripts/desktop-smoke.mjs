@@ -1,4 +1,4 @@
-import { _electron as electron } from 'playwright-core';
+import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -91,6 +91,7 @@ try {
     nodeIntegration: false,
   });
   assert.equal(await page.evaluate(() => typeof window.require), 'undefined');
+  await page.getByRole('button', { name: '我的流程', exact: true }).click();
   await page.getByRole('button', { name: '编辑 第一个流程', exact: true }).click();
   await page.getByRole('button', { name: '运行', exact: true }).click();
   console.log('Run submitted');
