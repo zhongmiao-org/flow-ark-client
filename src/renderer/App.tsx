@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useReducer, useRef, lazy, Suspense } from 'react';
 import FlowLibrary from './FlowLibrary';
+import AITaskWorkspace from './AITaskWorkspace';
 import { buildDiagram } from './flow-diagram';
 import DiagramCanvas from './DiagramCanvas';
 import { kinds } from './node-kinds';
@@ -49,6 +50,7 @@ import {
   Search,
   ShieldCheck,
   CircleHelp,
+  Sparkles,
 } from 'lucide-react';
 import type { Bootstrap, FlowRecord, Step } from '../shared/types';
 import TemplateLibrary from './TemplateLibrary';
@@ -112,6 +114,8 @@ export default function App() {
     return () => query.removeEventListener('change', change);
   }, []);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+  const [taskTitle, setTaskTitle] = useState('开始任务');
+  const [taskReturn, setTaskReturn] = useState(false);
   const [importPreview, setImportPreview] = useState<any>();
   useEffect(() => {
     const open = () => setBrowserOpen(true);
@@ -119,7 +123,7 @@ export default function App() {
     return () => window.removeEventListener('flowark:open-browser', open);
   }, []);
   const [data, setData] = useState(initial),
-    [section, setSection] = useState('flows'),
+    [section, setSection] = useState('tasks'),
     [detail, setDetail] = useState<any>(null),
     [error, setError] = useState(''),
     [notice, setNotice] = useState(''),
@@ -279,6 +283,7 @@ export default function App() {
   }
   const unread = data.attention.filter((a) => !a.read).length;
   const nav = [
+    ['tasks', '开始任务', Sparkles],
     ['flows', '我的流程', Workflow],
     ['templates', '模板库', LayoutTemplate],
     ['runs', '运行记录', History],
@@ -335,6 +340,7 @@ export default function App() {
                 }
                 onClick={() => {
                   if (!guardInvalidNodeJson()) return;
+                  setTaskReturn(false);
                   setSection(id);
                   setDetail(null);
                   setRunFilter(false);
@@ -366,6 +372,22 @@ export default function App() {
         </aside>
         <main>
           <header className="topbar">
+            {taskReturn && ['settings', 'editor'].includes(section) && (
+              <button
+                className="context-back"
+                onClick={() => {
+                  if (!guardInvalidNodeJson()) return;
+                  if (section === 'editor' && !draftSaved) {
+                    setError('请先保存流程修改，再返回 AI 任务');
+                    return;
+                  }
+                  setSection('tasks');
+                  setTaskReturn(false);
+                }}
+              >
+                ← 返回 AI 任务
+              </button>
+            )}
             {section === 'runs' && (detail || runFilter) && (
               <button
                 className="context-back"
@@ -386,7 +408,7 @@ export default function App() {
                   : '← 返回运行记录'}
               </button>
             )}
-            {(section === 'editor' || welcomePage) && (
+            {((section === 'editor' && !taskReturn) || welcomePage) && (
               <button
                 className="context-back"
                 onClick={() => {
@@ -505,7 +527,9 @@ export default function App() {
                       ? edit?.flow.name || '流程编排'
                       : welcomePage
                         ? '首次使用'
-                        : nav.find((n) => n[0] === section)?.[1]}
+                        : section === 'tasks'
+                          ? taskTitle
+                          : nav.find((n) => n[0] === section)?.[1]}
               </span>
             </nav>
             <button
@@ -544,6 +568,30 @@ export default function App() {
               {notice}
               <button onClick={() => setNotice('')}>×</button>
             </div>
+          )}
+          {loaded && (
+            <AITaskWorkspace
+              active={section === 'tasks'}
+              data={data}
+              onTitle={setTaskTitle}
+              settings={() => {
+                setTaskReturn(true);
+                setSection('settings');
+              }}
+              flows={() => {
+                setTaskReturn(false);
+                setSection('flows');
+              }}
+              createFlow={() => {
+                setTaskReturn(false);
+                void create();
+              }}
+              openFlow={(record) => {
+                setTaskReturn(true);
+                void openFlow(record);
+              }}
+              changed={refresh}
+            />
           )}
           {section === 'flows' && (
             <FlowLibrary

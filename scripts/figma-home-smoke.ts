@@ -43,6 +43,8 @@ try {
   });
   page.on('pageerror', (e) => errors.push(e.message));
   const button = (name: string) => page.getByRole('button', { name, exact: true });
+  await page.getByRole('heading', { name: '你想完成什么？' }).waitFor();
+  await button('我的流程').click();
   await page.getByRole('heading', { name: '你的工作流，从这里开始。' }).waitFor();
   await page.evaluate(() => {
     document.querySelector('.window-titlebar')!.textContent = 'FlowArk · 隔离测试（自动退出）';

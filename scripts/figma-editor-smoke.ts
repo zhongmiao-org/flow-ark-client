@@ -106,6 +106,8 @@ const capture = async (name: string) => {
   await page.screenshot({ path: `test-results/figma/editor-${name}.png`, scale: 'css' });
 };
 try {
+  await page.getByRole('heading', { name: '你想完成什么？' }).waitFor();
+  await button('我的流程').click();
   await page.getByRole('heading', { name: '你的工作流，从这里开始。' }).waitFor();
   await app.evaluate(({ BrowserWindow }) =>
     BrowserWindow.getAllWindows()[0].setTitle('FlowArk · 编排隔离测试（自动退出）'),

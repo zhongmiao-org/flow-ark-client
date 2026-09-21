@@ -64,6 +64,7 @@
     "test:template-parameters": "node --import tsx scripts/template-package-smoke.ts",
     "test:redaction": "node --import tsx scripts/redaction-smoke.ts",
     "test:figma-home": "node --import tsx scripts/figma-home-smoke.ts",
+    "test:figma-task": "node --import tsx scripts/figma-task-smoke.ts",
     "test:figma-editor": "node --import tsx scripts/figma-editor-smoke.ts"
   },
   "build": {
