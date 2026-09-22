@@ -5,6 +5,7 @@ import { commandBudget } from './browser-scope';
 import { framePathOf, validateFormCommand, formKeys } from '../core/browser-command';
 import { EmbeddedPicker } from './embedded-picker';
 import { describeElement } from './element-description';
+import type { PointIdentity } from './embedded-point-target';
 import type { ElementTarget } from '../shared/element-picker';
 type Scope = {
   context: number;
@@ -33,7 +34,7 @@ export class EmbeddedPage {
       contents,
       (m, p, s) => this.send(m, p, s),
       this.frames,
-      (selector, path) => this.inspectTarget(selector, path, false),
+      (selector, path, expected) => this.inspectTarget(selector, path, false, expected),
       coordinates,
     );
     contents.debugger.on('message', (_event, method, params) => {
@@ -124,7 +125,7 @@ export class EmbeddedPage {
       );
     return result.result.value;
   }
-  private async scope(path: string[], remaining: () => number) {
+  private async scope(path: string[], remaining: () => number, scroll = true) {
     const { frameTree } = await this.send('Page.getFrameTree');
     let scope = await this.world(frameTree.frame.id);
     for (const selector of path) {
@@ -134,7 +135,8 @@ export class EmbeddedPage {
         const box = await this.call(
           scope,
           element,
-          `function() { this.scrollIntoView({block:'center',inline:'center',behavior:'instant'}); const r=this.getBoundingClientRect(); return {x:r.x+this.clientLeft,y:r.y+this.clientTop}; }`,
+          `function(scroll) { if(scroll) this.scrollIntoView({block:'center',inline:'center',behavior:'instant'}); const r=this.getBoundingClientRect(); return {x:r.x+this.clientLeft,y:r.y+this.clientTop}; }`,
+          scroll,
         );
         const { node } = await this.send('DOM.describeNode', { objectId: element }, scope.session);
         if (!node.frameId) throw new Error('目标不是可用框架：' + selector);
@@ -151,21 +153,28 @@ export class EmbeddedPage {
     }
     return scope;
   }
-  private async visible(scope: Scope, objectId: string, remaining: () => number, enabled = false) {
+  private async visible(
+    scope: Scope,
+    objectId: string,
+    remaining: () => number,
+    enabled = false,
+    scroll = true,
+  ) {
     while (true) {
       remaining();
       const box = await this.call(
         scope,
         objectId,
-        `function(enabled) {
+        `function(enabled, scroll) {
         if (!this.isConnected) throw new Error('目标元素已离开页面');
-        this.scrollIntoView({block:'center', inline:'center', behavior:'instant'});
+        if(scroll) this.scrollIntoView({block:'center', inline:'center', behavior:'instant'});
         const r=this.getBoundingClientRect(), s=getComputedStyle(this);
         if (!r.width || !r.height || s.visibility==='hidden' || s.display==='none' || (enabled && this.matches(':disabled'))) return null;
         const x=r.x+r.width/2,y=r.y+r.height/2;
         return {x,y};
       }`,
         enabled,
+        scroll,
       );
       if (box) return box;
       await new Promise((resolve) => setTimeout(resolve, Math.min(30, remaining())));
@@ -438,11 +447,21 @@ export class EmbeddedPage {
       );
     }
   }
-  async inspectTarget(selector: string, path: string[], highlight = true): Promise<ElementTarget> {
-    const scope = await this.scope(path, commandBudget(3000));
+  async inspectTarget(
+    selector: string,
+    path: string[],
+    highlight = true,
+    expected?: PointIdentity,
+  ): Promise<ElementTarget> {
+    const scope = await this.scope(path, commandBudget(3000), !expected);
     const element = await this.element(scope, selector, commandBudget(3000));
     try {
-      await this.visible(scope, element, commandBudget(3000));
+      await this.visible(scope, element, commandBudget(3000), false, !expected);
+      if (expected) {
+        const { node } = await this.send('DOM.describeNode', { objectId: element }, scope.session);
+        if (node.backendNodeId !== expected.backendNodeId || scope.session !== expected.session)
+          throw new Error('目标在选取期间已被替换，请重新选取');
+      }
       const target = await this.call(scope, element, describeElement.toString(), false);
       if (highlight) {
         await this.send('DOM.enable', {}, scope.session);

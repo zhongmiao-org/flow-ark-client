@@ -91,7 +91,7 @@ test('cancelling a stationary click preserves a newer picker and releases the ne
   const picker = new EmbeddedPicker(
     contents,
     async (method, args) => {
-      if (method === 'DOM.getDocument') {
+      if (method === 'Page.getFrameTree') {
         entered();
         await gate;
       }
@@ -122,8 +122,19 @@ test('cancelling a stationary click preserves a newer picker and releases the ne
   await hitStarted;
   const cancelled = picker.cancel('stationary');
   const newer = picker.start('newer');
-  release();
-  await Promise.all([cancelled, newer]);
+  let timeout: NodeJS.Timeout | undefined;
+  try {
+    await Promise.race([
+      Promise.all([cancelled, newer]),
+      new Promise((_, reject) => {
+        timeout = setTimeout(() => reject(new Error('cancel waited for the old CDP read')), 1500);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timeout);
+    release();
+  }
+  await new Promise((done) => setImmediate(done));
   assert.equal(picker.status('stationary').phase, 'cancelled');
   assert.equal(picker.status('newer').phase, 'picking');
   assert.equal(modes.at(-1), 'searchForNode');

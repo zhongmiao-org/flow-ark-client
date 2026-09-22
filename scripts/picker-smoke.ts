@@ -173,7 +173,7 @@ try {
       wc.debugger.sendCommand = original;
     };
     wc.debugger.sendCommand = (method: string, args: any, session: any) => {
-      if (method === 'DOM.getDocument')
+      if (method === 'DOM.getNodeForLocation')
         return Promise.reject(new Error('fixture hit-test failure'));
       return original(method, args, session);
     };
