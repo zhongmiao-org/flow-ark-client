@@ -1,3 +1,4 @@
+import type { TemplateEntryOrigin } from './template-entry-navigation';
 import { useState, useEffect, type MutableRefObject } from 'react';
 import type { Bootstrap } from '../shared/types';
 import type { AISettingsEntry } from './AISettingsPage';
@@ -12,8 +13,12 @@ export default function TemplateLibrary({
   active,
   settings,
   navigation,
+  showRun,
+  schedule,
 }: {
   navigation: MutableRefObject<TemplateNavigation | undefined>;
+  showRun: (detail: any, origin: TemplateEntryOrigin, output?: boolean) => void;
+  schedule: (origin: TemplateEntryOrigin) => void;
   data: Bootstrap;
   action: (fn: () => Promise<any>, message?: string) => Promise<any>;
   initialPreview?: any;
@@ -54,6 +59,8 @@ export default function TemplateLibrary({
         data={data}
         action={action}
         navigation={navigation}
+        showRun={showRun}
+        schedule={schedule}
         settings={settings}
         close={() => setDetail(undefined)}
         choose={(id) => void edit(id)}

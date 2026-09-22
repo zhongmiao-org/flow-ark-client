@@ -1,0 +1,85 @@
+.template-schedule-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 672fr) minmax(0, 456fr);
+  gap: 24px;
+}
+.template-schedule-columns > .ai-task-card {
+  padding: 24px;
+  min-height: 676px;
+  gap: 24px;
+}
+.template-schedule-columns h2 {
+  font-size: 18px;
+  line-height: 28px;
+}
+.template-schedule-columns h3 {
+  font-size: 18px;
+  line-height: 28px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.template-schedule-columns p {
+  font-size: 13px;
+  line-height: 22px;
+  color: var(--fa-text-secondary);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.template-schedule-item {
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.template-schedule-item > button {
+  align-self: flex-start;
+}
+.template-schedule-form fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+.template-schedule-form fieldset > label:not(.schedule-adoption) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+}
+.template-schedule-form input:not([type='checkbox']) {
+  width: 100%;
+  min-width: 0;
+  background: var(--fa-bg-canvas);
+  font-size: 13px;
+}
+.template-schedule-form .ai-task-actions > button {
+  min-width: 120px;
+}
+.template-schedule-form .schedule-adoption {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+@container (max-width:1000px) {
+  .template-schedule-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .template-schedule-columns > .ai-task-card {
+    min-height: 0;
+  }
+}
+
+.template-schedule-form .schedule-adoption input {
+  width: 16px;
+  height: 16px;
+  min-height: 16px;
+  flex: 0 0 16px;
+}

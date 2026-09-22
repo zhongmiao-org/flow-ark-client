@@ -366,3 +366,42 @@ test('configuration and authorization tabs save only their own fields; leave-all
   assert.equal(all.name, 'Still unsaved');
   assert.deepEqual(all.inputs, { run: { text: 'local input' } });
 });
+
+test('run and plan source IPC accepts only instance, entry and immutable revision', () => {
+  const source = { instanceId: 'instance', entryId: 'run', revision: 'a'.repeat(64) };
+  for (const [method, args] of [
+    ['flow.run', { id: 'flow', debug: true }],
+    ['schedule.save', { flowId: 'flow', intervalMinutes: 60, timezone: 'UTC' }],
+  ] as const) {
+    assert.deepEqual(validateIPC(method, { ...args, templateSource: source }), {
+      ...args,
+      templateSource: source,
+    });
+    for (const bad of [
+      { ...source, revision: 'old' },
+      { ...source, entryId: '' },
+      { ...source, inputs: {} },
+      { instanceId: 'instance', entryId: 'run' },
+    ])
+      assert.throws(() => validateIPC(method, { ...args, templateSource: bad }));
+  }
+});
+test('template launch source binds exact current instance, entry and full revision', async (t) => {
+  const { service, store, instance, detail, request } = await fixture(t);
+  const source = { instanceId: instance.id, entryId: 'run', revision: detail.revision };
+  assert.doesNotThrow(() => service.assertSource(instance.entryFlows.run, source));
+  assert.throws(() => service.assertSource(instance.entryFlows.second, source), /原入口/);
+  const other = await service.create(instance.packageKey);
+  assert.throws(() => service.assertSource(other.entryFlows.run, source), /原入口/);
+  const next = await service.save({ ...request, name: 'New name' });
+  assert.throws(() => service.assertSource(instance.entryFlows.run, source), /实例已变化/);
+  const broken = store.get<FlowRecord>('flow', instance.entryFlows.run)!;
+  broken.bindings.template!.entryId = 'second';
+  store.put('flow', broken.id, broken);
+  const corrupt = await service.detail(instance.id);
+  assert.throws(
+    () => service.assertSource(broken.id, { ...source, revision: corrupt.revision }),
+    /原入口/,
+  );
+  assert.notEqual(next.revision, detail.revision);
+});

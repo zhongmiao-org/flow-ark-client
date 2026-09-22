@@ -1,3 +1,4 @@
+import type { TemplateSource } from '../shared/template-source';
 import { join, dirname, resolve, relative } from 'node:path';
 import { readFile, writeFile, realpath, stat, mkdir } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
@@ -178,6 +179,20 @@ export class Templates {
     );
     const revision = sha256(canonical({ instance, records }));
     return { instance, records, revision };
+  }
+  assertSource(flowId: string, source: TemplateSource) {
+    const { instance, records, revision } = this.snapshot(source.instanceId);
+    if (revision !== source.revision) throw new Error('实例已变化，请返回原入口重新核对');
+    const record = records[source.entryId],
+      ref = record?.bindings.template;
+    if (
+      instance.entryFlows[source.entryId] !== flowId ||
+      record?.id !== flowId ||
+      ref?.instanceId !== instance.id ||
+      ref?.entryId !== source.entryId ||
+      ref?.packageKey !== instance.packageKey
+    )
+      throw new Error('原入口流程不存在或来源已变化，请返回原入口重新核对');
   }
   private describe(pkg: PackageData, snapshot: ReturnType<Templates['snapshot']>) {
     const { instance, records, revision } = snapshot;

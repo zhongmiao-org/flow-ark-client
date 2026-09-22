@@ -16,7 +16,7 @@ type Edit = {
   adoptLatest: boolean;
 };
 const api = (method: string, args: any) => window.flowark.request(method, args);
-function inZone(time: number, timezone: string) {
+export function inZone(time: number, timezone: string) {
   try {
     return new Intl.DateTimeFormat('zh-CN', {
       timeZone: timezone,
@@ -28,7 +28,7 @@ function inZone(time: number, timezone: string) {
     return '时间不可用，请检查时区';
   }
 }
-function Timing({
+export function Timing({
   minutes,
   timezone,
   onChange,

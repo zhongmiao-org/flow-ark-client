@@ -84,3 +84,34 @@
     min-height: 0;
   }
 }
+.template-execution-summary,
+.template-recent-run {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.template-execution-summary > span {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.template-execution-summary > p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 22px;
+}
+.template-recent-run {
+  margin-top: auto;
+  padding-top: 16px;
+}
+.template-entry-input .ai-task-actions > button {
+  min-width: 140px;
+}
+
+.template-entry-columns.no-ai > .ai-task-card {
+  min-height: 652px;
+}
+@container (max-width:1000px) {
+  .template-entry-columns.no-ai > .ai-task-card {
+    min-height: 0;
+  }
+}

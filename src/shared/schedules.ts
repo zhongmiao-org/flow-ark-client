@@ -1,3 +1,4 @@
+import { templateSourceSchema } from './template-source';
 import { z } from 'zod';
 
 const id = z.string().min(1).max(100);
@@ -17,7 +18,9 @@ export const scheduleTiming = {
       }
     }, '请填写有效时区，例如 Asia/Shanghai'),
 };
-export const scheduleCreateSchema = z.object({ flowId: id, ...scheduleTiming }).strict();
+export const scheduleCreateSchema = z
+  .object({ flowId: id, ...scheduleTiming, templateSource: templateSourceSchema.optional() })
+  .strict();
 const update = { id, revision: id.nullable(), ...scheduleTiming };
 export const scheduleUpdateSchema = z.discriminatedUnion('adoptLatest', [
   z.object({ ...update, adoptLatest: z.literal(false) }).strict(),

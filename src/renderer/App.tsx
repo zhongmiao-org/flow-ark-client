@@ -1,3 +1,5 @@
+import TemplateSchedulePage from './TemplateSchedulePage';
+import type { TemplateEntryOrigin } from './template-entry-navigation';
 import { useState, useEffect, useCallback, useReducer, useRef, lazy, Suspense } from 'react';
 import FlowLibrary from './FlowLibrary';
 import AITaskWorkspace from './AITaskWorkspace';
@@ -135,7 +137,9 @@ export default function App() {
   const [runPage, setRunPage] = useState(1);
   const [runFilter, setRunFilter] = useState(false);
   const [runTab, setRunTab] = useState<RunTab>('current');
-  const [runOrigin, setRunOrigin] = useState<'history' | 'editor' | 'task'>('history');
+  const [runOrigin, setRunOrigin] = useState<'history' | 'editor' | 'task' | 'template'>('history');
+  const [templateOrigin, setTemplateOrigin] = useState<TemplateEntryOrigin>();
+  const scheduleNavigation = useRef<TemplateNavigation | undefined>(undefined);
   const taskRunBack = useRef<((intent?: TaskRunIntent) => void) | undefined>(undefined);
   const [taskRunView, setTaskRunView] = useState<TaskRunView>('overview');
   const [compactEditor, setCompactEditor] = useState(() => window.innerWidth < 1440);
@@ -254,16 +258,42 @@ export default function App() {
       clearInterval(timer);
     };
   }, [detail?.run?.id]);
+  function returnTemplate() {
+    setDetail(null);
+    setSection('templates');
+    templateOrigin?.back();
+  }
+  useEffect(() => {
+    if (section !== 'runs' || runOrigin !== 'template' || !detail) return;
+    const key = (event: KeyboardEvent) => {
+      if (
+        (event.target as HTMLElement).closest(
+          'input,textarea,select,dialog,[contenteditable="true"]',
+        )
+      )
+        return;
+      if ((event.altKey && event.key === 'ArrowLeft') || (event.metaKey && event.key === '[')) {
+        event.preventDefault();
+        if (runTab !== 'current') setRunTab('current');
+        else returnTemplate();
+      }
+    };
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
+  }, [section, runOrigin, detail?.run?.id, runTab, templateOrigin]);
+  function leaveTemplateContext(next: () => void) {
+    setDetail(null);
+    setSection('templates');
+    requestAnimationFrame(() =>
+      templateNavigation.current ? templateNavigation.current(next) : next(),
+    );
+  }
   function leaveAIContext(next: () => void) {
     if (taskAISettings.source?.kind !== 'template') {
       next();
       return;
     }
-    setSection('templates');
-    // Restore the owner page before showing its draft guard from the AI subtask.
-    requestAnimationFrame(() =>
-      templateNavigation.current ? templateNavigation.current(next) : next(),
-    );
+    leaveTemplateContext(next);
   }
   async function action(fn: () => Promise<any>, message?: string) {
     setBusy(true);
@@ -449,7 +479,8 @@ export default function App() {
                     ? id === 'tasks'
                     : section === id) ||
                   (section === 'editor' && id === 'flows') ||
-                  (section === 'ai-settings' && id === 'settings')
+                  (section === 'ai-settings' && id === 'settings') ||
+                  (section === 'template-schedule' && id === 'schedules')
                     ? 'selected'
                     : ''
                 }
@@ -458,7 +489,8 @@ export default function App() {
                     ? id === 'tasks'
                     : section === id) ||
                   (section === 'editor' && id === 'flows') ||
-                  (section === 'ai-settings' && id === 'settings')
+                  (section === 'ai-settings' && id === 'settings') ||
+                  (section === 'template-schedule' && id === 'schedules')
                     ? 'page'
                     : undefined
                 }
@@ -485,7 +517,14 @@ export default function App() {
                       id === 'templates' ? navigate() : leaveAIContext(navigate),
                     );
                   else if (section === 'templates') templateNavigation.current?.(navigate);
-                  else navigate();
+                  else if (section === 'template-schedule')
+                    scheduleNavigation.current?.(() =>
+                      id === 'templates' ? navigate() : leaveTemplateContext(navigate),
+                    );
+                  else if (section === 'runs' && runOrigin === 'template' && detail) {
+                    if (id === 'templates') returnTemplate();
+                    else leaveTemplateContext(navigate);
+                  } else navigate();
                 }}
               >
                 <Icon size={20} strokeWidth={1.6} />
@@ -512,6 +551,10 @@ export default function App() {
                 else if (section === 'ai-settings')
                   aiSettingsNavigation.current?.(() => leaveAIContext(navigate));
                 else if (section === 'templates') templateNavigation.current?.(navigate);
+                else if (section === 'template-schedule')
+                  scheduleNavigation.current?.(() => leaveTemplateContext(navigate));
+                else if (section === 'runs' && runOrigin === 'template' && detail)
+                  leaveTemplateContext(navigate);
                 else navigate();
               }}
             >
@@ -591,6 +634,7 @@ export default function App() {
               nodeSession ||
               section === 'tools' ||
               section === 'templates' ||
+              section === 'template-schedule' ||
               section === 'ai-settings' ||
               (section === 'editor' && outlineOpen)
                 ? { display: 'none' }
@@ -630,7 +674,8 @@ export default function App() {
                   else if (detail && runTab !== 'current') setRunTab('current');
                   else if (detail) {
                     setDetail(null);
-                    if (runOrigin === 'editor' && edit) setSection('editor');
+                    if (runOrigin === 'template') returnTemplate();
+                    else if (runOrigin === 'editor' && edit) setSection('editor');
                     else if (runOrigin === 'task') {
                       setSection('tasks');
                       taskRunBack.current?.();
@@ -643,13 +688,15 @@ export default function App() {
                     ? '← 返回结果摘要'
                     : runTab !== 'current'
                       ? '← 返回运行详情'
-                      : runOrigin === 'task'
-                        ? '← 返回 AI 任务'
-                        : runOrigin === 'editor' && edit
-                          ? outlineOpen
-                            ? '← 返回长流程大纲'
-                            : '← 返回流程编排'
-                          : `← 返回记录第 ${runPage} 页`
+                      : runOrigin === 'template'
+                        ? '← 返回模板入口'
+                        : runOrigin === 'task'
+                          ? '← 返回 AI 任务'
+                          : runOrigin === 'editor' && edit
+                            ? outlineOpen
+                              ? '← 返回长流程大纲'
+                              : '← 返回流程编排'
+                            : `← 返回记录第 ${runPage} 页`
                   : '← 返回运行记录'}
               </button>
             )}
@@ -716,14 +763,36 @@ export default function App() {
                   )}
                 </>
               )}
+              {section === 'runs' && detail && runOrigin === 'template' && templateOrigin && (
+                <>
+                  <a
+                    href="#template-entry"
+                    className="ai-source-title"
+                    title={templateOrigin.title}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      returnTemplate();
+                    }}
+                  >
+                    {templateOrigin.title}
+                  </a>
+                  <span aria-hidden="true">/</span>
+                </>
+              )}
               {section === 'runs' && (detail || runFilter) && (!detail || runOrigin !== 'task') && (
                 <>
                   <a
                     href="#runs"
                     onClick={(event) => {
                       event.preventDefault();
-                      setDetail(null);
-                      setRunFilter(false);
+                      const next = () => {
+                        setDetail(null);
+                        setRunFilter(false);
+                        setSection('runs');
+                        setRunOrigin('history');
+                      };
+                      if (runOrigin === 'template' && detail) leaveTemplateContext(next);
+                      else next();
                     }}
                   >
                     运行记录
@@ -973,6 +1042,19 @@ export default function App() {
           <div hidden={section !== 'templates'}>
             <TemplateLibrary
               navigation={templateNavigation}
+              showRun={(next, origin, output) => {
+                setTemplateOrigin(origin);
+                setRunOrigin('template');
+                setRunTab(output ? 'output' : 'current');
+                setRunFilter(false);
+                setDetail(next);
+                setSection('runs');
+              }}
+              schedule={(origin) => {
+                setTemplateOrigin(origin);
+                setSection('template-schedule');
+                setBrowserOpen(false);
+              }}
               active={section === 'templates'}
               data={data}
               action={action}
@@ -1389,6 +1471,16 @@ export default function App() {
                 />
               )}
             </div>
+          )}
+          {section === 'template-schedule' && templateOrigin && (
+            <TemplateSchedulePage
+              origin={templateOrigin}
+              data={data}
+              action={action}
+              navigation={scheduleNavigation}
+              back={returnTemplate}
+              manage={() => leaveTemplateContext(() => setSection('schedules'))}
+            />
           )}
           {section === 'schedules' && <Schedules data={data} action={action} />}
           {section === 'inbox' && (

@@ -277,3 +277,163 @@ test('atomic instance edits leave paused and queued runs and a fixed schedule on
     runtime.request('template.configure', { id: instance.id, configuration: {} }),
   );
 });
+
+async function launchFixture(t: import('node:test').TestContext) {
+  const dir = await mkdtemp(join(tmpdir(), 'template-launch-'));
+  const runtime = new Runtime(
+    dir,
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  t.after(async () => {
+    await runtime.shutdown();
+    runtime.store.close();
+    await rm(dir, { recursive: true, force: true });
+  });
+  await runtime.ready;
+  const pkg = await exportDefinition({
+    id: 'launch',
+    name: 'Launch fixture',
+    description: '',
+    formatVersion: '1.0',
+    parameters: { text: 'old' },
+    requiredCapabilities: ['value'],
+    steps: [
+      { id: 'first', type: 'value', version: 1, value: { $ref: 'params.text' } },
+      { id: 'last', type: 'value', version: 1, value: { $ref: 'params.text' } },
+    ],
+  } as any);
+  pkg.manifest.entries.push({
+    ...pkg.manifest.entries[0],
+    id: 'manual',
+    name: 'Manual only',
+    schedulable: false,
+  });
+  pkg.manifest.contentDigest = manifestDigest(pkg.manifest);
+  pkg.files.set('manifest.json', Buffer.from(canonical(pkg.manifest)));
+  const zip = join(dir, 'fixture.zip');
+  await writeArchive(pkg, zip);
+  const installed = await runtime.templates.install(
+    (await runtime.templates.library.inspect(zip)).token,
+  );
+  const instance = await runtime.templates.create(installed.key);
+  let detail = await runtime.templates.detail(instance.id);
+  detail = await runtime.templates.save({
+    id: instance.id,
+    revision: detail.revision,
+    name: instance.name,
+    configuration: instance.configuration,
+    resources: instance.resources,
+    grants: instance.grants,
+    inputs: { run: { text: 'old' }, manual: { text: 'manual' } },
+  });
+  return {
+    runtime,
+    instance,
+    detail,
+    source: { instanceId: instance.id, entryId: 'run', revision: detail.revision },
+  };
+}
+test('template-source debug pauses first, preserves its snapshot, and plan creation never starts a Run', async (t) => {
+  const { runtime, instance, detail, source } = await launchFixture(t);
+  const args = { id: instance.entryFlows.run, debug: true, templateSource: source };
+  const debug = await runtime.request('flow.run', args);
+  await wait(() => runtime.store.get<any>('run', debug.id)?.state === 'PAUSED');
+  assert.equal(
+    runtime.store.events(debug.id).filter((event) => event.type === 'node-start').length,
+    0,
+  );
+  const beforePlans = runtime.store.list('run').length;
+  const plan = await runtime.request('schedule.save', {
+    flowId: args.id,
+    intervalMinutes: 60,
+    timezone: 'UTC',
+    templateSource: source,
+  });
+  assert.equal(runtime.store.list('run').length, beforePlans);
+  assert.equal(plan.enabled, true);
+  assert.ok(plan.nextAt > Date.now() + 59 * 60000);
+  const changed = await runtime.templates.save({
+    id: instance.id,
+    revision: detail.revision,
+    name: instance.name,
+    configuration: instance.configuration,
+    resources: instance.resources,
+    grants: instance.grants,
+    inputs: { run: { text: 'new' } },
+  });
+  assert.equal(runtime.store.get<any>('version', plan.versionId).flow.parameters.text, 'old');
+  assert.equal(runtime.store.get<any>('snapshot', debug.id).flow.parameters.text, 'old');
+  await runtime.request('run.control', { id: debug.id, action: 'step' });
+  await wait(() => runtime.store.events(debug.id).some((event) => event.type === 'node-end'));
+  await wait(() => runtime.store.get<any>('run', debug.id)?.state === 'PAUSED');
+  await runtime.request('run.control', { id: debug.id, action: 'resume' });
+  await wait(() => runtime.store.get<any>('run', debug.id)?.state === 'SUCCEEDED');
+  assert.match(JSON.stringify(runtime.store.get('output', debug.id)), /old/);
+  await assert.rejects(runtime.request('flow.run', args), /实例已变化/);
+  const manual = await runtime.request('flow.run', {
+    id: args.id,
+    templateSource: { ...source, revision: changed.revision },
+  });
+  await wait(() => runtime.store.get<any>('run', manual.id)?.state === 'SUCCEEDED');
+  assert.match(JSON.stringify(runtime.store.get('output', manual.id)), /new/);
+  await assert.rejects(
+    runtime.request('schedule.save', {
+      flowId: instance.entryFlows.manual,
+      intervalMinutes: 60,
+      timezone: 'UTC',
+      templateSource: { ...source, entryId: 'manual', revision: changed.revision },
+    }),
+    /不支持定时/,
+  );
+});
+test('template source changed during asynchronous run or plan admission publishes nothing', async (t) => {
+  const { runtime, instance } = await launchFixture(t);
+  for (const method of ['flow.run', 'schedule.save']) {
+    const detail = await runtime.templates.detail(instance.id);
+    const source = { instanceId: instance.id, entryId: 'run', revision: detail.revision };
+    const counts = Object.fromEntries(
+      ['run', 'snapshot', 'version', 'schedule'].map((kind) => [
+        kind,
+        runtime.store.list(kind).length,
+      ]),
+    );
+    let release!: () => void, entered!: () => void;
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const reached = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const original = runtime.preflight.bind(runtime);
+    runtime.preflight = async (record) => {
+      const prepared = await original(record);
+      entered();
+      await barrier;
+      return prepared;
+    };
+    const pending = runtime.request(method, {
+      ...(method === 'flow.run'
+        ? { id: instance.entryFlows.run }
+        : { flowId: instance.entryFlows.run, intervalMinutes: 60, timezone: 'UTC' }),
+      templateSource: source,
+    });
+    await reached;
+    await runtime.templates.save({
+      id: instance.id,
+      revision: detail.revision,
+      name: instance.name + ' changed',
+      configuration: detail.instance.configuration,
+      resources: detail.instance.resources,
+      grants: detail.instance.grants,
+      inputs: {},
+    });
+    release();
+    await assert.rejects(pending, /实例已变化/);
+    runtime.preflight = original;
+    for (const [kind, count] of Object.entries(counts))
+      assert.equal(runtime.store.list(kind).length, count, kind);
+  }
+});

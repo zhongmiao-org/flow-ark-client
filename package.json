@@ -8,7 +8,7 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "31aa91b1cda13dbfce3764578bbf076e2e148f35",
+    "governanceBaseline": "d3fa51b638af35791f28a46f3db11a24829e839c",
     "contractsVersion": "0.12.0",
     "contractsTag": "contracts-v0.12.0"
   },
@@ -82,7 +82,8 @@
     "test:tool-connections": "node --import tsx scripts/tool-connections-smoke.ts",
     "test:ai-settings": "node --import tsx scripts/ai-settings-smoke.ts",
     "test:template-ai": "node --import tsx scripts/template-ai-smoke.ts",
-    "test:template-instance": "node --import tsx scripts/template-instance-smoke.ts"
+    "test:template-instance": "node --import tsx scripts/template-instance-smoke.ts",
+    "test:template-entry": "node --import tsx scripts/template-entry-smoke.ts"
   },
   "build": {
     "appId": "org.zhongmiao.flowark",

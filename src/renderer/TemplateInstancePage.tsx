@@ -1,3 +1,4 @@
+import type { TemplateEntryOrigin } from './template-entry-navigation';
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import type { Bootstrap } from '../shared/types';
 import type { AISettingsEntry } from './AISettingsPage';
@@ -35,6 +36,8 @@ export default function TemplateInstancePage({
   data,
   action,
   navigation,
+  showRun,
+  schedule,
   settings,
   close,
   choose,
@@ -44,6 +47,8 @@ export default function TemplateInstancePage({
   data: Bootstrap;
   action: (fn: () => Promise<any>, message?: string) => Promise<any>;
   navigation: MutableRefObject<TemplateNavigation | undefined>;
+  showRun: (detail: any, origin: TemplateEntryOrigin, output?: boolean) => void;
+  schedule: (origin: TemplateEntryOrigin) => void;
   settings: (entry: AISettingsEntry) => void;
   close: () => void;
   choose: (id: string) => void;
@@ -121,6 +126,8 @@ export default function TemplateInstancePage({
           return await fn();
         } catch (error) {
           setError(message(error));
+          if (/实例已变化|实例不存在|原入口流程/.test(message(error)))
+            setSourceError('原实例的已保存内容已变化。当前输入仍保留，请核对后重新读取。');
           throw error;
         }
       }, notice);
@@ -422,6 +429,12 @@ export default function TemplateInstancePage({
                 saved={saved}
                 entryId={entry.id}
                 selectEntry={setEntryId}
+                showRun={showRun}
+                schedule={schedule}
+                savedAt={
+                  data.flows.find((flow) => flow.id === instance.entryFlows[entry.id])?.updatedAt ??
+                  ''
+                }
                 change={setDraft}
                 save={save}
                 work={work}

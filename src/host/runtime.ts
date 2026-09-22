@@ -1,3 +1,4 @@
+import { templateSourceSchema, type TemplateSource } from '../shared/template-source';
 import { Learning } from './learning';
 import { learningPrompt } from '../shared/learning';
 import { exportDefinition } from '../templates/export';
@@ -659,7 +660,12 @@ export class Runtime {
     triggerId?: string,
     scheduleRevision?: string,
     debug = false,
+    templateSource?: TemplateSource,
   ) {
+    templateSource = templateSource
+      ? structuredClone(templateSourceSchema.parse(templateSource))
+      : undefined;
+    if (templateSource) this.templates.assertSource(flowId, templateSource);
     const epoch = this.admissionEpoch;
     if (this.suspended) throw new Error('系统正在休眠，恢复后请重新开始运行');
     if (!this.recovering) this.assertAdmitting();
@@ -679,6 +685,7 @@ export class Runtime {
         triggerId,
         scheduleRevision,
         debug,
+        templateSource,
       );
     });
     this.admissions = pending.then(
@@ -696,9 +703,11 @@ export class Runtime {
     triggerId?: string,
     scheduleRevision?: string,
     debug = false,
+    templateSource?: TemplateSource,
   ) {
     const check = () => {
       this.assertAdmission(epoch);
+      if (templateSource) this.templates.assertSource(flowId, templateSource);
       if (scheduleId) {
         const schedule = this.store.get<Schedule>('schedule', scheduleId);
         if (
@@ -1269,6 +1278,7 @@ export class Runtime {
           undefined,
           undefined,
           args.debug === true,
+          args.templateSource,
         );
       case 'flow.create': {
         return this.saveFlow(
@@ -1454,22 +1464,26 @@ export class Runtime {
         this.assertAdmitting();
         const r = this.store.get<FlowRecord>('flow', args.flowId);
         if (!r) throw new Error('流程不存在');
+        if (args.templateSource) this.templates.assertSource(r.id, args.templateSource);
         await this.templates.preflight(r, true);
         const prepared = await this.preflight(r);
         this.assertAdmitting();
         new Intl.DateTimeFormat('en', { timeZone: args.timezone });
-        const s = {
-          id: uid(),
-          flowId: r.id,
-          versionId: this.version(r, prepared),
-          intervalMinutes: args.intervalMinutes,
-          timezone: args.timezone,
-          enabled: true,
-          nextAt: Date.now() + args.intervalMinutes * 60000,
-          revision: uid(),
-        };
-        this.store.put('schedule', s.id, s);
-        return s;
+        if (args.templateSource) this.templates.assertSource(r.id, args.templateSource);
+        return this.store.tx(() => {
+          const s = {
+            id: uid(),
+            flowId: r.id,
+            versionId: this.version(r, prepared),
+            intervalMinutes: args.intervalMinutes,
+            timezone: args.timezone,
+            enabled: true,
+            nextAt: Date.now() + args.intervalMinutes * 60000,
+            revision: uid(),
+          };
+          this.store.put('schedule', s.id, s);
+          return s;
+        });
       }
       case 'schedule.update': {
         const update = scheduleUpdateSchema.parse(args);

@@ -1,3 +1,4 @@
+import { templateSourceSchema } from './template-source';
 import { z } from 'zod';
 import { runListSchema } from './run-history';
 import { scheduleCreateSchema, scheduleUpdateSchema } from './schedules';
@@ -70,7 +71,9 @@ export const methods = {
   bootstrap: empty,
   'flow.save': z.object({ flow: z.unknown(), bindings }).strict(),
   'flow.create': empty,
-  'flow.run': z.object({ id, debug: z.boolean().optional() }).strict(),
+  'flow.run': z
+    .object({ id, debug: z.boolean().optional(), templateSource: templateSourceSchema.optional() })
+    .strict(),
   'flow.run.preview': runReviewPreviewSchema,
   'flow.run.confirm': runReviewConfirmSchema,
   'run.detail': z.object({ id }).strict(),
