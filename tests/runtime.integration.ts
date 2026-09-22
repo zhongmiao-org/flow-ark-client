@@ -18,7 +18,7 @@ import { join, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
 import { Runtime } from '../src/host/runtime';
-import type { Flow, Run, Step } from '../src/shared/types';
+import type { Flow, FlowRecord, Run, Step } from '../src/shared/types';
 import { Store } from '../src/host/store';
 import { child, killOwnedTree } from '../src/host/processes';
 import { Rpc } from '../src/shared/rpc';
@@ -2755,4 +2755,69 @@ test('numbered Worker output keeps its fixed conflict policy and actual artifact
   assert.equal(await readFile(join(output, 'title.txt'), 'utf8'), 'original protected bytes');
   assert.deepEqual((await readdir(output)).sort(), ['title (1).txt', 'title (2).txt', 'title.txt']);
   assert.equal(runtime.store.list('run').length, 3);
+});
+
+test('schedule creation refuses a stale saved selection or a real competing save during preflight without publishing a version', async () => {
+  const runtime = new Runtime(
+    await mkdtemp(join(tmpdir(), 'flowark-schedule-source-')),
+    resolve('dist'),
+    process.execPath,
+    randomBytes(32),
+    async () => [],
+  );
+  const original = runtime.preflight.bind(runtime);
+  let release = () => {};
+  try {
+    await runtime.ready;
+    const record = runtime.saveFlow(
+      { ...base, steps: [{ id: 'value', type: 'value', version: 1, value: 'original' }] },
+      { files: {}, credentials: [] },
+    );
+    const args = {
+      flowId: record.id,
+      intervalMinutes: 60,
+      timezone: 'UTC',
+      flowUpdatedAt: record.updatedAt,
+    };
+    await assert.rejects(
+      runtime.request('schedule.save', { ...args, flowUpdatedAt: '2000-01-01T00:00:00.000Z' }),
+      /已改变/,
+    );
+    let entered = false;
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    runtime.preflight = async (value) => {
+      entered = true;
+      await gate;
+      return original(value);
+    };
+    const pending = runtime.request('schedule.save', args);
+    const rejected = assert.rejects(pending, /已改变/);
+    await until(() => entered);
+    runtime.saveFlow({ ...record.flow, name: 'real competing save' }, record.bindings);
+    release();
+    await rejected;
+    assert.equal(runtime.store.list('version').length, 0);
+    assert.equal(runtime.store.list('schedule').length, 0);
+    assert.equal(runtime.store.list('run').length, 0);
+    runtime.preflight = original;
+    const current = runtime.store.get<FlowRecord>('flow', record.id)!;
+    const plan = await runtime.request('schedule.save', {
+      ...args,
+      flowUpdatedAt: current.updatedAt,
+    });
+    const before = runtime.store.list('schedule');
+    const view = await runtime.request('schedule.inspect', { id: plan.id });
+    assert.equal(view.version.name, 'real competing save');
+    assert.equal(view.records.length, 0);
+    assert.equal(view.activeRun, null);
+    assert.deepEqual(runtime.store.list('schedule'), before);
+    assert.equal(runtime.store.list('run').length, 0);
+    await runtime.request('schedule.toggle', { id: plan.id, enabled: false });
+  } finally {
+    release();
+    await runtime.shutdown();
+    runtime.store.close();
+  }
 });

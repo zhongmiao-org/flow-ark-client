@@ -1,7 +1,7 @@
 import { templateSourceSchema } from './template-source';
 import { z } from 'zod';
 import { runListSchema } from './run-history';
-import { scheduleCreateSchema, scheduleUpdateSchema } from './schedules';
+import { scheduleCreateSchema, scheduleUpdateSchema, scheduleInspectSchema } from './schedules';
 import { flowExportSchema } from './flow-export';
 import { runRerunPreviewSchema, runRerunConfirmSchema } from './run-rerun';
 import { taskMethods } from './planning';
@@ -125,6 +125,7 @@ export const methods = {
     })
     .strict(),
   'schedule.save': scheduleCreateSchema,
+  'schedule.inspect': scheduleInspectSchema,
   'schedule.update': scheduleUpdateSchema,
   'schedule.toggle': z.object({ id, enabled: z.boolean() }).strict(),
   'attention.read': z.object({ id }).strict(),

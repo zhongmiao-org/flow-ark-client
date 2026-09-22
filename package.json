@@ -8,7 +8,7 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "d3fa51b638af35791f28a46f3db11a24829e839c",
+    "governanceBaseline": "c27d9824b6a2456dfc2297dd7a09d8016f890bc2",
     "contractsVersion": "0.12.0",
     "contractsTag": "contracts-v0.12.0"
   },
@@ -83,6 +83,7 @@
     "test:ai-settings": "node --import tsx scripts/ai-settings-smoke.ts",
     "test:template-ai": "node --import tsx scripts/template-ai-smoke.ts",
     "test:template-instance": "node --import tsx scripts/template-instance-smoke.ts",
+    "test:schedule-workbench": "node --import tsx scripts/schedule-workbench-smoke.ts",
     "test:template-entry": "node --import tsx scripts/template-entry-smoke.ts"
   },
   "build": {

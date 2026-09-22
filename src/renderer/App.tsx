@@ -137,9 +137,13 @@ export default function App() {
   const [runPage, setRunPage] = useState(1);
   const [runFilter, setRunFilter] = useState(false);
   const [runTab, setRunTab] = useState<RunTab>('current');
-  const [runOrigin, setRunOrigin] = useState<'history' | 'editor' | 'task' | 'template'>('history');
+  const [runOrigin, setRunOrigin] = useState<
+    'history' | 'editor' | 'task' | 'template' | 'schedule'
+  >('history');
   const [templateOrigin, setTemplateOrigin] = useState<TemplateEntryOrigin>();
   const scheduleNavigation = useRef<TemplateNavigation | undefined>(undefined);
+  const plansNavigation = useRef<TemplateNavigation | undefined>(undefined);
+  const scheduleRunBack = useRef<(() => void) | undefined>(undefined);
   const taskRunBack = useRef<((intent?: TaskRunIntent) => void) | undefined>(undefined);
   const [taskRunView, setTaskRunView] = useState<TaskRunView>('overview');
   const [compactEditor, setCompactEditor] = useState(() => window.innerWidth < 1440);
@@ -258,13 +262,23 @@ export default function App() {
       clearInterval(timer);
     };
   }, [detail?.run?.id]);
+  function returnSchedule() {
+    setDetail(null);
+    setSection('schedules');
+    scheduleRunBack.current?.();
+  }
+  function leaveScheduleContext(next: () => void) {
+    setDetail(null);
+    setSection('schedules');
+    requestAnimationFrame(() => (plansNavigation.current ? plansNavigation.current(next) : next()));
+  }
   function returnTemplate() {
     setDetail(null);
     setSection('templates');
     templateOrigin?.back();
   }
   useEffect(() => {
-    if (section !== 'runs' || runOrigin !== 'template' || !detail) return;
+    if (section !== 'runs' || !['template', 'schedule'].includes(runOrigin) || !detail) return;
     const key = (event: KeyboardEvent) => {
       if (
         (event.target as HTMLElement).closest(
@@ -275,6 +289,7 @@ export default function App() {
       if ((event.altKey && event.key === 'ArrowLeft') || (event.metaKey && event.key === '[')) {
         event.preventDefault();
         if (runTab !== 'current') setRunTab('current');
+        else if (runOrigin === 'schedule') returnSchedule();
         else returnTemplate();
       }
     };
@@ -517,11 +532,15 @@ export default function App() {
                       id === 'templates' ? navigate() : leaveAIContext(navigate),
                     );
                   else if (section === 'templates') templateNavigation.current?.(navigate);
+                  else if (section === 'schedules') plansNavigation.current?.(navigate);
                   else if (section === 'template-schedule')
                     scheduleNavigation.current?.(() =>
                       id === 'templates' ? navigate() : leaveTemplateContext(navigate),
                     );
-                  else if (section === 'runs' && runOrigin === 'template' && detail) {
+                  else if (section === 'runs' && runOrigin === 'schedule' && detail) {
+                    if (id === 'schedules') returnSchedule();
+                    else leaveScheduleContext(navigate);
+                  } else if (section === 'runs' && runOrigin === 'template' && detail) {
                     if (id === 'templates') returnTemplate();
                     else leaveTemplateContext(navigate);
                   } else navigate();
@@ -551,6 +570,9 @@ export default function App() {
                 else if (section === 'ai-settings')
                   aiSettingsNavigation.current?.(() => leaveAIContext(navigate));
                 else if (section === 'templates') templateNavigation.current?.(navigate);
+                else if (section === 'schedules') plansNavigation.current?.(navigate);
+                else if (section === 'runs' && runOrigin === 'schedule' && detail)
+                  leaveScheduleContext(navigate);
                 else if (section === 'template-schedule')
                   scheduleNavigation.current?.(() => leaveTemplateContext(navigate));
                 else if (section === 'runs' && runOrigin === 'template' && detail)
@@ -674,7 +696,8 @@ export default function App() {
                   else if (detail && runTab !== 'current') setRunTab('current');
                   else if (detail) {
                     setDetail(null);
-                    if (runOrigin === 'template') returnTemplate();
+                    if (runOrigin === 'schedule') returnSchedule();
+                    else if (runOrigin === 'template') returnTemplate();
                     else if (runOrigin === 'editor' && edit) setSection('editor');
                     else if (runOrigin === 'task') {
                       setSection('tasks');
@@ -688,15 +711,17 @@ export default function App() {
                     ? '← 返回结果摘要'
                     : runTab !== 'current'
                       ? '← 返回运行详情'
-                      : runOrigin === 'template'
-                        ? '← 返回模板入口'
-                        : runOrigin === 'task'
-                          ? '← 返回 AI 任务'
-                          : runOrigin === 'editor' && edit
-                            ? outlineOpen
-                              ? '← 返回长流程大纲'
-                              : '← 返回流程编排'
-                            : `← 返回记录第 ${runPage} 页`
+                      : runOrigin === 'schedule'
+                        ? '← 返回本机计划'
+                        : runOrigin === 'template'
+                          ? '← 返回模板入口'
+                          : runOrigin === 'task'
+                            ? '← 返回 AI 任务'
+                            : runOrigin === 'editor' && edit
+                              ? outlineOpen
+                                ? '← 返回长流程大纲'
+                                : '← 返回流程编排'
+                              : `← 返回记录第 ${runPage} 页`
                   : '← 返回运行记录'}
               </button>
             )}
@@ -763,6 +788,20 @@ export default function App() {
                   )}
                 </>
               )}
+              {section === 'runs' && detail && runOrigin === 'schedule' && (
+                <>
+                  <a
+                    href="#schedules"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      returnSchedule();
+                    }}
+                  >
+                    本机计划
+                  </a>
+                  <span aria-hidden="true">/</span>
+                </>
+              )}
               {section === 'runs' && detail && runOrigin === 'template' && templateOrigin && (
                 <>
                   <a
@@ -791,7 +830,8 @@ export default function App() {
                         setSection('runs');
                         setRunOrigin('history');
                       };
-                      if (runOrigin === 'template' && detail) leaveTemplateContext(next);
+                      if (runOrigin === 'schedule' && detail) leaveScheduleContext(next);
+                      else if (runOrigin === 'template' && detail) leaveTemplateContext(next);
                       else next();
                     }}
                   >
@@ -1482,7 +1522,22 @@ export default function App() {
               manage={() => leaveTemplateContext(() => setSection('schedules'))}
             />
           )}
-          {section === 'schedules' && <Schedules data={data} action={action} />}
+          <div hidden={section !== 'schedules'}>
+            <Schedules
+              data={data}
+              action={action}
+              active={section === 'schedules'}
+              navigation={plansNavigation}
+              showRun={(next, back) => {
+                scheduleRunBack.current = back;
+                setRunOrigin('schedule');
+                setRunTab('current');
+                setRunFilter(false);
+                setDetail(next);
+                setSection('runs');
+              }}
+            />
+          </div>
           {section === 'inbox' && (
             <div className="page">
               <Heading title="需要你看一眼" text="联系方式、待确认动作和异常结果会保存在这里。" />

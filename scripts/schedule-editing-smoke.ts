@@ -75,7 +75,7 @@ const formValue = () =>
     const view = BrowserWindow.getAllWindows()[0].contentView
       .children[0] as Electron.WebContentsView;
     return view.webContents.executeJavaScript(
-      `({name:document.querySelector('#full-name').value,width:innerWidth})`,
+      `({name:document.querySelector('#fullName').value,width:innerWidth})`,
     );
   });
 try {
@@ -95,16 +95,21 @@ try {
     name: '虚构计划版本验证',
     steps: [
       formBrowser('open', 'navigate', '', lab.url),
-      formBrowser('fill', 'fill', '#full-name', name),
+      formBrowser('fill', 'fill', '#fullName', name),
       { id: 'wait', type: 'human', version: 1, message: '核对当前表单后继续' },
     ],
   });
   const bindings = { files: {}, browserId: browser.id, credentials: [] };
   await call('flow.save', { flow: flow('旧版本虚构用户'), bindings });
   await button('本机计划').click();
+  await page
+    .getByLabel('计划流程', { exact: true })
+    .getByRole('option', { name: /虚构计划版本验证/ })
+    .waitFor({ state: 'attached' });
   await page.getByLabel('计划流程', { exact: true }).selectOption(record.id);
   await page.getByLabel('创建间隔分钟', { exact: true }).fill('1');
   await page.getByLabel('创建时区', { exact: true }).fill('Asia/Shanghai');
+  await page.getByLabel('固定当前已保存版本与入口', { exact: true }).check();
   await button('创建计划').click();
   await wait(async () => (await call('bootstrap')).schedules.length === 1, '创建');
   planId = (await call('bootstrap')).schedules[0].id;
@@ -115,6 +120,7 @@ try {
   await button('编辑计划').click();
   await page.getByLabel('计划间隔分钟', { exact: true }).fill('9');
   await button('取消编辑').click();
+  await button('不保存离开').click();
   assert.deepEqual(await plan(), paused);
   note('cancel-preserves-plan');
   await call('flow.save', { flow: flow('新版本虚构用户'), bindings });

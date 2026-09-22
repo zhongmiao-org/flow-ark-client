@@ -1,4 +1,5 @@
 import { templateSourceSchema, type TemplateSource } from '../shared/template-source';
+import { inspectSchedule } from './schedule-inspection';
 import { Learning } from './learning';
 import { learningPrompt } from '../shared/learning';
 import { exportDefinition } from '../templates/export';
@@ -1458,18 +1459,28 @@ export class Runtime {
         this.store.put('browser', b.id, b);
         return b;
       }
+      case 'schedule.inspect': {
+        await this.ready;
+        return inspectSchedule(this.store, args, (reason) => redact(reason, this.secrets));
+      }
       case 'schedule.save': {
         args = scheduleCreateSchema.parse(args);
         await this.ready;
         this.assertAdmitting();
         const r = this.store.get<FlowRecord>('flow', args.flowId);
         if (!r) throw new Error('流程不存在');
+        if (args.flowUpdatedAt && r.updatedAt !== args.flowUpdatedAt)
+          throw new Error('已保存的流程已改变，请重新选择并核对');
+        const sourceDigest = args.flowUpdatedAt ? digest(r) : undefined;
         if (args.templateSource) this.templates.assertSource(r.id, args.templateSource);
         await this.templates.preflight(r, true);
         const prepared = await this.preflight(r);
         this.assertAdmitting();
         new Intl.DateTimeFormat('en', { timeZone: args.timezone });
         if (args.templateSource) this.templates.assertSource(r.id, args.templateSource);
+        const currentSource = this.store.get('flow', r.id);
+        if (sourceDigest && (!currentSource || digest(currentSource) !== sourceDigest))
+          throw new Error('已保存的流程已改变，请重新选择并核对');
         return this.store.tx(() => {
           const s = {
             id: uid(),
