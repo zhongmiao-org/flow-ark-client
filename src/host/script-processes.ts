@@ -236,14 +236,17 @@ export class ScriptProcesses {
       else if (!item.pgid) this.blockExecution('遗留脚本启动身份不完整；请重启系统后核对运行结果');
       else unresolved.push(item);
     }
+    const probeErrors = new Map<string, string>();
     while (unresolved.length) {
       for (let i = unresolved.length - 1; i >= 0; i--) {
         let exists: boolean;
         try {
           exists = this.system.groupExists(unresolved[i].pgid!);
+          probeErrors.delete(unresolved[i].nonce);
         } catch (error) {
-          this.blockExecution('遗留脚本进程组无法核对：' + errorText(error));
-          unresolved.splice(i, 1);
+          // A dying group can temporarily return EPERM on macOS. Keep its
+          // lease and recheck within the same total budget; only ESRCH clears it.
+          probeErrors.set(unresolved[i].nonce, '遗留脚本进程组无法核对：' + errorText(error));
           continue;
         }
         if (!exists) {
@@ -253,7 +256,10 @@ export class ScriptProcesses {
       }
       if (!unresolved.length) break;
       if (performance.now() >= deadline) {
-        this.blockExecution('遗留脚本资源尚未确认退出；请重启系统后核对运行结果');
+        this.blockExecution(
+          [...new Set(probeErrors.values())].join('\n') ||
+            '遗留脚本资源尚未确认退出；请重启系统后核对运行结果',
+        );
         break;
       }
       await delay(Math.min(25, Math.max(1, deadline - performance.now())));
@@ -498,9 +504,11 @@ export class ScriptProcesses {
               record.confirmed = true;
               break;
             }
+            cleanupError = undefined;
           } catch (error) {
             cleanupError = '脚本进程组无法核对：' + errorText(error);
-            break;
+            // The exact child has exited, but an error is not proof that its
+            // group is gone. Keep waiting without resetting the cleanup budget.
           }
         }
       }

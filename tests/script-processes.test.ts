@@ -279,21 +279,95 @@ test('loss with actual group disappearance interrupts only that run and keeps ad
   assert.equal(await scripts.execute({ ...request('next'), runId: 'next-run' }), 'result');
 });
 
+test('transient probe errors retain the result and lease until later group disappearance', async () => {
+  const f = fixture();
+  const scripts = f.manager();
+  let outcome: unknown;
+  const result = scripts.execute(request()).then(
+    (value) => (outcome = { value }),
+    (error) => (outcome = { error }),
+  );
+  await turn();
+  let probes = 0;
+  let groupPresent = true;
+  f.system.groupExists = () => {
+    if (++probes <= 2) throw Object.assign(new Error('probe unavailable'), { code: 'EPERM' });
+    return groupPresent;
+  };
+  f.children[0].result('confirmed-result');
+  await new Promise<void>((resolve) => setTimeout(resolve, 100));
+  assert.equal(outcome, undefined, 'neither failure nor success precedes the bounded recheck');
+  assert.ok(probes >= 3);
+  assert.equal(f.data.size, 1);
+  assert.equal(scripts.hasRun('run'), true);
+  groupPresent = false;
+  await result;
+  assert.deepEqual(outcome, { value: 'confirmed-result' });
+  assert.equal(f.data.size, 0);
+  assert.equal(scripts.recoveryError, undefined);
+  assert.equal(f.children[0].sent.filter((m) => m.kind === 'script-stop').length, 1);
+});
+
+test('startup rechecks transient probe errors independently for each same-boot lease', async () => {
+  const f = fixture([lease(), lease({ nonce: 'other', pid: 9011, pgid: 9011 })]);
+  let probes = 0;
+  let absent = false;
+  f.system.groupExists = (pgid) => {
+    if (pgid === 9011) return false;
+    if (++probes <= 2) throw new Error('probe unavailable');
+    return !absent;
+  };
+  const scripts = f.manager();
+  let ready = false;
+  const recovery = scripts.ready.then(() => (ready = true));
+  await new Promise<void>((resolve) => setTimeout(resolve, 100));
+  assert.equal(ready, false);
+  assert.equal(f.data.has('other'), false);
+  assert.equal(f.data.has('lease'), true);
+  assert.equal(scripts.hasRun('run'), true);
+  absent = true;
+  await recovery;
+  assert.ok(probes >= 3);
+  assert.equal(f.data.size, 0);
+  assert.equal(scripts.recoveryError, undefined);
+  assert.equal(f.children.length, 0, 'recovery only probes, never creates a process');
+});
+
 test('unknown cleanup persists and repeated cancel never invents a confirmation', async () => {
   const f = fixture();
   const scripts = f.manager();
   const failed = assert.rejects(scripts.execute(request()), ScriptProcessInterruptedError);
   await turn();
+  let probes = 0;
   f.system.groupExists = () => {
+    probes++;
     throw Object.assign(new Error('permission denied'), { code: 'EPERM' });
   };
   f.children[0].exit(true);
   await failed;
+  assert.ok(probes > 1, 'persistent errors are rechecked within the original deadline');
   assert.match(scripts.recoveryError!, /无法核对/);
   assert.equal(f.data.size, 1);
   assert.equal((await scripts.cancel('run', 'one')).confirmed, false);
   assert.equal(scripts.hasRun('run'), true);
   assert.equal((await scripts.shutdown()).confirmed, false);
+});
+
+test('persistent startup probe errors keep the lease and block after the recovery deadline', async () => {
+  const f = fixture([lease()]);
+  let probes = 0;
+  f.system.groupExists = () => {
+    probes++;
+    throw Object.assign(new Error('persistent permission failure'), { code: 'EPERM' });
+  };
+  const scripts = f.manager();
+  await scripts.ready;
+  assert.ok(probes > 1);
+  assert.match(scripts.recoveryError!, /persistent permission failure/);
+  assert.equal(f.data.size, 1);
+  assert.equal(scripts.hasRun('run'), true);
+  assert.equal((await scripts.shutdown()).confirmed, false);
+  assert.equal(f.children.length, 0);
 });
 
 test('permission persistence failure never starts user code and still sends stop despite Store fault', async () => {

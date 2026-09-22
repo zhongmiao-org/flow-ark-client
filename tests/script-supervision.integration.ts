@@ -81,9 +81,16 @@ function exists(pid: number) {
     throw error;
   }
 }
+const groupProbeErrors: { pgid: number; code: string; time: number }[] = [];
 function groupAbsent(pgid: number) {
   assert.ok(Number.isSafeInteger(pgid) && pgid > 1);
-  return !exists(-pgid); // Read-only group probe. Never signal a historical group.
+  try {
+    return !exists(-pgid); // Read-only group probe. Never signal a historical group.
+  } catch (error: any) {
+    groupProbeErrors.push({ pgid, code: String(error.code), time: Date.now() });
+    if (error.code === 'EPERM') return false; // Unconfirmed, never counted as absent.
+    throw error;
+  }
 }
 async function probe(pid: number): Promise<ProcessEvidence> {
   if (!exists(pid)) return { pid, state: 'absent' };
@@ -360,6 +367,7 @@ async function fixture(t: TestContext) {
     server.closeAllConnections();
     await new Promise<void>((done) => server.close(() => done()));
     evidence.cleanupErrors = errors.map(String);
+    evidence.groupProbeErrors = groupProbeErrors.filter((item) => groups.has(item.pgid));
     await writeFile(join(directory, 'evidence.json'), JSON.stringify(evidence, null, 2));
     t.diagnostic('Process evidence: ' + join(directory, 'evidence.json'));
     if (errors.length) throw new AggregateError(errors, 'fixture cleanup incomplete');
@@ -443,7 +451,22 @@ async function fixture(t: TestContext) {
         (runtime as any).active?.id !== id &&
         !(runtime as any).pendingCapabilities.has(id),
       'Run did not settle',
-    );
+    ).catch((error) => {
+      evidence.unsettled = {
+        id,
+        expected: state,
+        state: runtime.store.get<Run>('run', id)?.state,
+        active: (runtime as any).active?.id,
+        pendingCapabilities: (runtime as any).pendingCapabilities.has(id),
+        scriptBlock: runtime.scripts.recoveryError,
+        leases: runtime.store.list<any>('script-lease').map(({ nonce, phase, error }) => ({
+          nonce,
+          phase,
+          error,
+        })),
+      };
+      throw error;
+    });
     const run = runtime.store.get<Run>('run', id)!;
     assert.equal(run.state, state, JSON.stringify(run));
     assert.equal(
@@ -504,6 +527,62 @@ async function fixture(t: TestContext) {
     assertReceiptsStopped,
   };
 }
+
+test(
+  'transient group probe errors hold real Worker cleanup and FIFO until confirmed',
+  options,
+  async (t) => {
+    const f = await fixture(t),
+      runtime = await f.open(),
+      target = f.busy('probe-errors', true);
+    f.save(runtime, 'busy', [target.step, f.http('must-not-run')]);
+    f.save(runtime, 'next', [f.http('after-confirmation')]);
+    const run = await runtime.enqueue('busy');
+    const worker = (runtime as any).active.child as ChildProcess;
+    f.ownedChildren.add(worker);
+    const supervisor = (await f.invocation(runtime, run.id)).child!;
+    const owned = await f.capture(target);
+    const next = await runtime.enqueue('next');
+    const originalSystem = (runtime.scripts as any).system;
+    let probes = 0;
+    let allowNativeProbe = false;
+    (runtime.scripts as any).system = {
+      ...originalSystem,
+      groupExists: (pgid: number) => {
+        assert.equal(pgid, supervisor.pid);
+        if (!allowNativeProbe) {
+          probes++;
+          throw Object.assign(new Error('fixture transient probe denial'), { code: 'EPERM' });
+        }
+        return originalSystem.groupExists(pgid);
+      },
+    };
+    try {
+      assert.equal(worker.kill('SIGKILL'), true);
+      await until(() => probes >= 3, 'cleanup did not recheck the transient group probe');
+      assert.equal(runtime.store.get<Run>('run', next.id)!.state, 'QUEUED');
+      assert.equal(runtime.store.list('script-lease').length, 1);
+      assert.equal(f.receipts.length, 0);
+      assert.equal(runtime.scripts.recoveryError, undefined);
+      f.evidence.injectedProbeErrors = probes;
+      allowNativeProbe = true;
+      await f.finished(runtime, run.id, 'INTERRUPTED');
+      await f.finished(runtime, next.id, 'SUCCEEDED');
+      assert.equal(groupAbsent(supervisor.pid!), true);
+      assert.notEqual((await probe(owned.before.pid)).state, 'running');
+      assert.equal(runtime.store.list('script-lease').length, 0);
+      assert.equal((await runtime.bootstrap()).runtimeBlock, undefined);
+      assert.deepEqual(
+        f.receipts.map((receipt) => receipt.path),
+        ['/after-confirmation'],
+      );
+      f.assertReceiptsStopped();
+      await f.sentinelAlive();
+    } finally {
+      (runtime.scripts as any).system = originalSystem;
+    }
+  },
+);
 
 for (const topLevel of [false, true])
   test(
