@@ -2157,7 +2157,24 @@ function Editor({
   const [structureError, setStructureError] = useState('');
   const [raw, setRaw] = useState('');
   const [invalid, setInvalid] = useState('');
+  const inspectorHeading = useRef<HTMLHeadingElement>(null);
+  const canvasElement = useRef<HTMLDivElement>(null);
+  const keyboardStep = useRef<string | null>(null);
+  const pendingStepFocus = useRef<'inspector' | 'canvas' | null>(null);
   const selectedNode = flatten(r.flow.steps).find((n: Step) => n.id === selected);
+  useEffect(() => {
+    if (!active || !compact || outlineOpen || !pendingStepFocus.current) return;
+    if (pendingStepFocus.current === 'inspector' && panel === 'node') {
+      inspectorHeading.current?.focus({ preventScroll: true });
+      pendingStepFocus.current = null;
+    } else if (pendingStepFocus.current === 'canvas' && ['canvas', 'graph'].includes(panel)) {
+      canvasElement.current
+        ?.querySelector<HTMLElement>(`[data-id="${CSS.escape(keyboardStep.current ?? '')}"]`)
+        ?.focus({ preventScroll: true });
+      pendingStepFocus.current = null;
+      keyboardStep.current = null;
+    }
+  }, [active, compact, outlineOpen, panel, selected]);
   useEffect(() => {
     if (panel === 'params' || panel === 'node') setTab(panel);
   }, [panel]);
@@ -2247,7 +2264,11 @@ function Editor({
       openParameters();
       return;
     }
-    if (guardInvalidNodeJson()) setPanel(value);
+    if (guardInvalidNodeJson()) {
+      if (['canvas', 'graph'].includes(value) && keyboardStep.current)
+        pendingStepFocus.current = 'canvas';
+      setPanel(value);
+    }
   };
   return (
     <>
@@ -2307,15 +2328,17 @@ function Editor({
               destination={destination}
               setDestination={setDestination}
             />
-            <div className="canvas">
+            <div className="canvas" ref={canvasElement}>
               <DiagramCanvas
                 key={r.id}
                 active={active && !outlineOpen}
                 nodes={nodes}
                 edges={edges}
                 selected={selected}
-                select={(id) => {
+                select={(id, source) => {
                   if (!guardInvalidNodeJson()) return;
+                  keyboardStep.current = compact && source === 'keyboard' ? id : null;
+                  pendingStepFocus.current = keyboardStep.current ? 'inspector' : null;
                   setSelected(id);
                   setTab('node');
                   if (compact) setPanel('node');
@@ -2390,7 +2413,9 @@ function Editor({
                       style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
                     >
                       <div className="inspector-heading">
-                        <h3>{kinds[selectedNode.type].label}</h3>
+                        <h3 ref={inspectorHeading} tabIndex={-1}>
+                          {kinds[selectedNode.type].label}
+                        </h3>
                         <button
                           className="icon-button"
                           aria-label="节点上移"

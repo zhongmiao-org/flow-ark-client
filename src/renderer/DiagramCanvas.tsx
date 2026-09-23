@@ -18,7 +18,7 @@ type Props = {
   nodes: DiagramNode[];
   edges: DiagramEdge[];
   selected: string;
-  select: (id: string) => void;
+  select: (id: string, source?: 'keyboard') => void;
 };
 
 function Canvas({ nodes, edges, selected, select, active = true, focusRequest }: Props) {
@@ -76,6 +76,8 @@ function Canvas({ nodes, edges, selected, select, active = true, focusRequest }:
     <ReactFlow
       style={{ background: 'var(--fa-bg-canvas)' }}
       ariaLabelConfig={{
+        'node.a11yDescription.default': '按 Enter 或空格查看此步骤，按 Tab 浏览下一步骤。',
+        'node.a11yDescription.keyboardDisabled': '流程步骤。',
         'controls.ariaLabel': '流程图视图控制',
         'controls.zoomIn.ariaLabel': '放大流程图',
         'controls.zoomOut.ariaLabel': '缩小流程图',
@@ -90,8 +92,19 @@ function Canvas({ nodes, edges, selected, select, active = true, focusRequest }:
       multiSelectionKeyCode={active ? ['Meta', 'Control'] : null}
       zoomActivationKeyCode={active ? ['Meta', 'Control'] : null}
       disableKeyboardA11y={!active}
+      onKeyDownCapture={(event) => {
+        if (!active || (event.key !== 'Enter' && event.key !== ' ')) return;
+        // Handle only the focused node wrapper, never a field or control inside it.
+        const target = event.target;
+        if (!(target instanceof HTMLElement) || !target.matches('.react-flow__node')) return;
+        const node = nodes.find((item) => item.id === target.dataset.id && item.data.step);
+        if (!node) return;
+        event.preventDefault();
+        event.stopPropagation();
+        select(node.id, 'keyboard');
+      }}
       onNodeClick={(_event, node) => {
-        if (node.data.step) select(node.id);
+        if (active && node.data.step) select(node.id);
       }}
       nodesConnectable={false}
       minZoom={fullViewport ? Math.min(0.15, fullViewport.zoom) : 0.15}

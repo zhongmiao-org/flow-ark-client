@@ -1,5 +1,6 @@
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
 import type { Step } from '../shared/types';
+import { kinds } from './node-kinds';
 
 export type FlowShape =
   | 'process'
@@ -87,8 +88,10 @@ export function buildDiagram(steps: Step[], selected = '') {
       draggable: false,
       deletable: false,
       ariaLabel: step
-        ? `${step.type} ${typeof step.name === 'string' ? step.name : step.id}`
+        ? `${kinds[step.type]?.label ?? step.type} · ${typeof step.name === 'string' ? step.name : step.id}`
         : label,
+      ariaRole: step ? 'button' : undefined,
+      domAttributes: step ? { 'aria-pressed': id === selected } : undefined,
     });
     return { id, handle: 'out' };
   }

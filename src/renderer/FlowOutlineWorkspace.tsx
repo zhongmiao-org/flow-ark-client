@@ -430,7 +430,7 @@ export default function FlowOutlineWorkspace({
               nodes={nodes}
               edges={edges}
               selected={selectedId}
-              select={choose}
+              select={(id) => choose(id)}
               active={visible && view === 'graph'}
               focusRequest={focusRequest}
             />
