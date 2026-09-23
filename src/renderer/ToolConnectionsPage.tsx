@@ -567,7 +567,7 @@ export default function ToolConnectionsPage({
                 : view === 'config'
                   ? '高级设置 · 为熟悉来源和权限的用户提供'
                   : view === 'assistant'
-                    ? '核对来源 → 系统权限 → 只读检查，再为任务选择具体窗口'
+                    ? '连接向导 · 1 核对来源 → 2 系统权限 → 3 只读检查'
                     : content
                       ? `${content.config.transport.type === 'http' ? '远程 / 本机 HTTP' : '本地程序'} · ${address(content.config)}`
                       : '来源、系统权限和能力必须逐项核对'}
