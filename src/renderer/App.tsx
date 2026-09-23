@@ -268,14 +268,17 @@ export default function App() {
     inputGroup.current = undefined;
     dispatchDraft({ type: 'redo' });
   };
+  const reloadSettingsData = useCallback(async () => {
+    setData(await api('bootstrap'));
+    setLoaded(true);
+  }, []);
   const refresh = useCallback(async () => {
     try {
-      setData(await api('bootstrap'));
-      setLoaded(true);
+      await reloadSettingsData();
     } catch (e: any) {
       setError(e.message);
     }
-  }, []);
+  }, [reloadSettingsData]);
   useEffect(() => {
     void refresh();
     const timer = setInterval(refresh, 2000);
@@ -946,7 +949,11 @@ export default function App() {
               </button>
             )}
             {section === 'settings' && settingsNavigation?.back && (
-              <button className="context-back" onClick={settingsNavigation.back}>
+              <button
+                className="context-back"
+                onClick={settingsNavigation.back}
+                disabled={settingsNavigation.busy}
+              >
                 ← 返回本地设置
               </button>
             )}
@@ -960,6 +967,7 @@ export default function App() {
                 <>
                   <a
                     href="#settings"
+                    aria-disabled={settingsNavigation.busy}
                     onClick={(event) => {
                       event.preventDefault();
                       settingsNavigation.back?.();
@@ -1852,7 +1860,7 @@ export default function App() {
           <LocalSettingsPage
             data={data}
             active={section === 'settings'}
-            refresh={refresh}
+            refresh={reloadSettingsData}
             navigation={setSettingsNavigation}
             showBrowser={() => setBrowserOpen(true)}
             openRuns={() => {

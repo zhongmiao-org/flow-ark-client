@@ -21,7 +21,7 @@ const tabs = [
 ] as const;
 type Tab = (typeof tabs)[number][0];
 type Session = { started: boolean; visible: boolean; url: string; blocked?: string };
-export type SettingsNavigation = { title: string; back?: () => void };
+export type SettingsNavigation = { title: string; back?: () => void; busy?: boolean };
 
 export default function LocalSettingsPage({
   data,
@@ -52,7 +52,10 @@ export default function LocalSettingsPage({
   const [driver, setDriver] = useState('');
   const [picked, setPicked] = useState<BrowserBinding>();
   const [receipt, setReceipt] = useState<BrowserBinding>();
+  const [savedBindings, setSavedBindings] = useState<BrowserBinding[]>([]);
+  const [refreshError, setRefreshError] = useState('');
   const [busy, setBusy] = useState('');
+  const [completion, setCompletion] = useState(0);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [session, setSession] = useState<Session>();
@@ -61,8 +64,23 @@ export default function LocalSettingsPage({
   const [query, setQuery] = useState('');
   const locked = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
+  const bindingEntry = useRef<HTMLButtonElement>(null);
+  const errorBanner = useRef<HTMLDivElement>(null);
+  const receiptBanner = useRef<HTMLDivElement>(null);
+  const refreshBanner = useRef<HTMLDivElement>(null);
+  const restoreEntry = useRef(false);
+  const focusAfter = useRef<HTMLElement | 'error' | 'receipt' | 'refresh' | undefined>(undefined);
+  const visible = useRef(active);
+  visible.current = active;
+
   const embedded = data.browsers.find((b) => b.product === 'embedded');
-  const bound = data.browsers.filter((b) => b.product !== 'embedded');
+  // Keep acknowledged writes visible if the independent list refresh fails.
+  const bound = [
+    ...savedBindings,
+    ...data.browsers.filter(
+      (b) => b.product !== 'embedded' && !savedBindings.some((saved) => saved.id === b.id),
+    ),
+  ];
   const choices = [...bound, ...candidates.filter((c) => !bound.some((b) => b.id === c.id))];
   const fileFlows = data.flows.filter(
     (flow) =>
@@ -77,6 +95,8 @@ export default function LocalSettingsPage({
     })),
   );
   const back = () => {
+    if (locked.current) return;
+    restoreEntry.current = true;
     setLocal(false);
     setError('');
     setNotice('');
@@ -86,9 +106,10 @@ export default function LocalSettingsPage({
     navigation({
       title: local && tab === 'browser' ? '本机浏览器绑定' : '本地设置',
       back: local && tab === 'browser' ? back : undefined,
+      busy: !!busy,
     });
     return () => navigation(undefined);
-  }, [active, local, tab, navigation]);
+  }, [active, local, tab, navigation, busy]);
   useEffect(() => {
     if (!active || tab !== 'browser') return;
     let live = true,
@@ -119,17 +140,40 @@ export default function LocalSettingsPage({
     };
   }, [active, tab, statusRevision]);
   useEffect(() => {
-    if (active) heading.current?.focus({ preventScroll: true });
+    if (!active) return;
+    if (restoreEntry.current && !local) {
+      restoreEntry.current = false;
+      bindingEntry.current?.focus({ preventScroll: true });
+    } else heading.current?.focus({ preventScroll: true });
   }, [active, local]);
+  useEffect(() => {
+    if (busy || !focusAfter.current) return;
+    const pending = focusAfter.current;
+    focusAfter.current = undefined;
+    const target =
+      pending === 'error'
+        ? errorBanner.current
+        : pending === 'receipt'
+          ? receiptBanner.current
+          : pending === 'refresh'
+            ? refreshBanner.current
+            : pending;
+    if (visible.current && target?.isConnected && !target.closest('[hidden]')) {
+      target.focus({ preventScroll: false });
+    }
+  }, [busy, completion]);
   const act = async (key: string, operation: () => Promise<void>) => {
     if (locked.current) return;
     locked.current = true;
+    focusAfter.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
     setBusy(key);
     setError('');
     setNotice('');
     try {
       await operation();
     } catch (reason) {
+      focusAfter.current = 'error';
       setError(
         (reason instanceof Error ? reason.message : '操作未完成，请重试').replace(
           /^Error invoking remote method 'flowark:request': (?:Error: )?/,
@@ -139,6 +183,7 @@ export default function LocalSettingsPage({
     } finally {
       locked.current = false;
       setBusy('');
+      setCompletion((value) => value + 1);
     }
   };
   const select = (b: BrowserBinding) => {
@@ -163,18 +208,33 @@ export default function LocalSettingsPage({
     });
   const save = () =>
     act('save', async () => {
+      if (receipt) return;
       const next = (await api('browser.bind', {
         path,
         ...(driver ? { driver } : {}),
       })) as BrowserBinding;
       setReceipt(next);
+      setSavedBindings((current) => [next, ...current.filter((b) => b.id !== next.id)]);
       setPicked(next);
       setPath(next.executable);
       setDriver(next.driver ?? '');
-      await refresh();
-      setNotice('已检测安装信息并保存绑定。请在需要它的流程中明确选择此浏览器。');
+      await refreshBindings();
     });
+  const refreshBindings = async () => {
+    setRefreshError('');
+    try {
+      await refresh();
+      setSavedBindings([]);
+      focusAfter.current = local ? 'receipt' : (bindingEntry.current ?? undefined);
+    } catch {
+      setRefreshError(
+        '已保存的绑定未撤销，但设置列表尚未刷新。可以重新读取列表，无需再次保存绑定。',
+      );
+      focusAfter.current = 'refresh';
+    }
+  };
   const changeTab = (next: Tab) => {
+    if (locked.current) return;
     setTab(next);
     setError('');
     setNotice('');
@@ -237,7 +297,7 @@ export default function LocalSettingsPage({
         ))}
       </div>
       {error && (
-        <div className="local-settings-banner error" role="alert">
+        <div className="local-settings-banner error" role="alert" ref={errorBanner} tabIndex={-1}>
           {error}
         </div>
       )}
@@ -289,6 +349,8 @@ export default function LocalSettingsPage({
                   </div>
                   <p>使用你已安装并明确选择的浏览器。</p>
                   <button
+                    ref={bindingEntry}
+                    disabled={!!busy}
                     onClick={() => {
                       setLocal(true);
                       setError('');
@@ -299,6 +361,19 @@ export default function LocalSettingsPage({
                   </button>
                 </div>
                 <div className="local-settings-divider" />
+                {refreshError && (
+                  <div
+                    className="local-settings-banner warning"
+                    role="alert"
+                    ref={refreshBanner}
+                    tabIndex={-1}
+                  >
+                    <p>{refreshError}</p>
+                    <button disabled={!!busy} onClick={() => void act('refresh', refreshBindings)}>
+                      {busy === 'refresh' ? '正在读取列表…' : '重新读取设置列表'}
+                    </button>
+                  </div>
+                )}
                 <h3>网页展示</h3>
                 <dl className="local-settings-facts">
                   <div>
@@ -362,7 +437,7 @@ export default function LocalSettingsPage({
               </aside>
             </div>
           ) : (
-            <section className="local-settings-card local-browser-binding">
+            <section className="local-settings-card local-browser-binding" aria-busy={!!busy}>
               <div className="local-settings-row">
                 <h2>本机浏览器绑定</h2>
                 <button
@@ -452,6 +527,8 @@ export default function LocalSettingsPage({
               <div
                 className={`local-settings-banner ${receipt ? (receipt.product === 'firefox' && !receipt.driver ? 'warning' : 'success') : ''}`}
                 role="status"
+                ref={receiptBanner}
+                tabIndex={-1}
               >
                 {receipt ? (
                   <>
@@ -464,6 +541,7 @@ export default function LocalSettingsPage({
                         : '安装信息检测通过；网页操作与环境兼容性仍以实际运行为准。'}
                     </p>
                     {receipt.driverVersion && <p>{receipt.driverVersion}</p>}
+                    <p>请在需要它的流程中明确选择此浏览器。</p>
                   </>
                 ) : path ? (
                   '安装位置已选择，尚未检测保存。'
@@ -471,12 +549,30 @@ export default function LocalSettingsPage({
                   '尚未选择本机安装。'
                 )}
               </div>
+              {refreshError && (
+                <div
+                  className="local-settings-banner warning"
+                  role="alert"
+                  ref={refreshBanner}
+                  tabIndex={-1}
+                >
+                  <strong>设置列表刷新失败</strong>
+                  <p>{refreshError}</p>
+                  <button disabled={!!busy} onClick={() => void act('refresh', refreshBindings)}>
+                    {busy === 'refresh' ? '正在读取列表…' : '重新读取设置列表'}
+                  </button>
+                </div>
+              )}
               <div className="local-settings-actions">
-                <button className="primary" disabled={!path || !!busy} onClick={() => void save()}>
-                  {busy === 'save' ? '正在检测并保存…' : '检测并保存'}
+                <button
+                  className="primary"
+                  disabled={!path || !!busy || !!receipt}
+                  onClick={() => void save()}
+                >
+                  {busy === 'save' ? '正在检测并保存…' : receipt ? '绑定已保存' : '检测并保存'}
                 </button>
                 <button disabled={!!busy} onClick={back}>
-                  返回内置模式
+                  返回浏览器设置
                 </button>
               </div>
               <p className="local-settings-muted">
