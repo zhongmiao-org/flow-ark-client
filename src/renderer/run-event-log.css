@@ -1,0 +1,123 @@
+.run-event-log {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.run-log-heading,
+.run-log-entry header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px;
+}
+.run-log-heading {
+  justify-content: space-between;
+}
+.run-event-log > .note {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  font-size: 12px;
+  line-height: 20px;
+}
+.run-log-heading h3,
+.run-log-empty h4,
+.run-log-output h4 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+}
+.run-log-heading span,
+.run-log-entry header,
+.run-log-source,
+.run-log-text p,
+.run-log-output > p,
+.run-log-more p,
+.run-log-empty p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.run-event-log > ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.run-log-entry {
+  padding: 16px 0;
+  border-top: 1px solid var(--fa-border-default);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.run-log-entry header strong {
+  color: var(--fa-text-primary);
+  font-weight: 500;
+  font-size: 13px;
+}
+.run-log-entry header time {
+  font-variant-numeric: tabular-nums;
+}
+.run-log-entry header > span {
+  margin-left: auto;
+}
+.run-log-entry .run-log-source {
+  white-space: pre-wrap;
+}
+.run-log-entry .run-log-source b {
+  font-weight: 500;
+}
+.run-log-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.run-log-text pre {
+  margin: 0;
+  padding: 12px;
+  width: 100%;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 8px;
+  background: var(--fa-bg-canvas);
+  color: var(--fa-text-primary);
+  font-size: 12px;
+  line-height: 20px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.run-log-output {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.run-log-entry details summary {
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.run-log-entry details[open] summary {
+  margin-bottom: 12px;
+}
+.run-log-entry details summary:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.run-log-more,
+.run-log-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 12px;
+  background: var(--fa-bg-canvas);
+}

@@ -11,6 +11,7 @@ import RunRerunPanel from './RunRerunPanel';
 import ArtifactCleanupPanel from './ArtifactCleanupPanel';
 import { runTimeline } from './run-timeline';
 import { kinds } from './node-kinds';
+import RunEventLog from './RunEventLog';
 
 export type RunTab = 'current' | 'output' | 'logs';
 const tabs: [RunTab, string][] = [
@@ -250,19 +251,7 @@ export default function RunDetail({
             aria-labelledby="run-tab-logs"
             hidden={tab !== 'logs'}
           >
-            <h3>运行日志</h3>
-            <p className="note">仅展示已保存的运行事件，包含节点实例路径与脱敏内容。</p>
-            <div className="event-list">
-              {d.events.map((event: Event) => (
-                <details key={event.sequence}>
-                  <summary>
-                    <time>{time(event.time)}</time> <b>{event.type}</b>{' '}
-                    <code>{event.nodeInstance}</code>
-                  </summary>
-                  <pre>{JSON.stringify(event.data, null, 2)}</pre>
-                </details>
-              ))}
-            </div>
+            <RunEventLog key={r.id} runId={r.id} events={d.events} snapshot={d.snapshot} />
             {d.scriptBundles?.length > 0 && (
               <details className="script-bundles">
                 <summary>已固定的脚本与依赖 · {d.scriptBundles.length} 个节点</summary>

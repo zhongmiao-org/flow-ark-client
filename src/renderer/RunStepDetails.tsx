@@ -1,9 +1,10 @@
-import type { Event, Step } from '../shared/types';
+import type { Step } from '../shared/types';
 import type { RunPresentationInput, RunStepPresentation } from '../shared/run-presentation';
 import { flatten } from './flow-editing';
 import { browserActions } from './browser-actions';
 import { kinds } from './node-kinds';
 import './run-step-details.css';
+import { runEventMessage } from './run-event-presentation';
 
 const configured = (value: unknown): string => {
   if (value === undefined) return '未配置';
@@ -93,33 +94,6 @@ function fields(node: Step): [string, string][] {
   }
 }
 
-function eventLabel(event: Event) {
-  if (event.type === 'node-start') return '开始执行此步骤';
-  if (event.type === 'node-end')
-    return event.data?.completed === true ? '此步骤已完成' : '步骤结束，结果待核对';
-  if (event.type === 'debug-pause') return '暂停在此步骤之前';
-  if (event.type === 'progress') {
-    const { completed, total } = event.data ?? {};
-    if (typeof completed === 'number' && Number.isFinite(completed) && completed >= 0) {
-      return typeof total === 'number' && Number.isFinite(total) && total >= completed
-        ? `脚本报告 ${completed} / ${total}`
-        : `脚本报告已处理 ${completed}`;
-    }
-    return '进度记录缺少有效数量';
-  }
-  if (event.type === 'log') {
-    const value = event.data?.value;
-    if (value === undefined) return '日志记录缺少内容';
-    const text = typeof value === 'string' ? value : JSON.stringify(value);
-    return text.length > 1000 ? text.slice(0, 1000) + '…（完整内容见运行日志）' : text;
-  }
-  if (event.type === 'error')
-    return typeof event.data?.message === 'string'
-      ? event.data.message
-      : '步骤错误，详情见运行日志';
-  return event.type;
-}
-
 export default function RunStepDetails({
   detail,
   step,
@@ -171,7 +145,11 @@ export default function RunStepDetails({
                       ? new Date(event.time).toLocaleTimeString('zh-CN', { hour12: false })
                       : '时间未记录'}
                   </time>
-                  <span>{eventLabel(event)}</span>
+                  <span>
+                    {runEventMessage(event).length > 1000
+                      ? runEventMessage(event).slice(0, 1000) + '…（完整内容见运行日志）'
+                      : runEventMessage(event)}
+                  </span>
                 </li>
               ))}
             </ol>
