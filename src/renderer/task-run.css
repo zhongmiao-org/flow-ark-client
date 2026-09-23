@@ -84,6 +84,59 @@
   min-height: 132px;
   background: var(--fa-action-subtle);
 }
+.task-restart-columns .task-run-note {
+  min-height: 72px;
+}
+.task-restart-version {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px 12px;
+  margin: 0;
+  line-height: 1.6;
+}
+.task-restart-version dt {
+  color: var(--fa-text-secondary);
+}
+.task-restart-version dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.task-restart-history summary {
+  cursor: pointer;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.task-restart-history > p,
+.task-restart-records > p {
+  margin-top: 12px;
+  font-size: 12px;
+}
+.task-restart-records,
+.task-restart-unavailable {
+  display: grid;
+  gap: 12px;
+}
+.task-restart-history ol {
+  max-height: 240px;
+  overflow: auto;
+  padding: 12px 12px 12px 32px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-bg-canvas);
+  margin-bottom: 0;
+  overflow-wrap: anywhere;
+}
+.task-restart-history li + li {
+  margin-top: 12px;
+}
+.task-restart-history small {
+  display: block;
+  color: var(--fa-text-secondary);
+}
+.task-restart-history ol:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 2px;
+}
 .task-repair-page .task-run-note {
   color: var(--fa-action-primary);
 }

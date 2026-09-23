@@ -1,4 +1,5 @@
 import TaskRepairTarget from './TaskRepairTarget';
+import TaskRepairRestart from './TaskRepairRestart';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { TaskDetail } from '../shared/planning';
 import type { ElementTarget } from '../shared/element-picker';
@@ -35,7 +36,7 @@ export default function TaskRepairPage({
   const [provider, setProvider] = useState<'deepseek' | 'openai-codex'>('deepseek');
   const [model, setModel] = useState('deepseek-flash');
   const [reviewed, setReviewed] = useState(false);
-  const [priorReviewed, setPriorReviewed] = useState(false);
+  const [priorReviewKey, setPriorReviewKey] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [pendingAdoption, setPendingAdoption] = useState<string>();
@@ -59,6 +60,14 @@ export default function TaskRepairPage({
     repair.token === preview?.token;
   const generating = task?.task.status === 'generating';
   const applied = task?.task.appliedRepair?.runId === run.id;
+  const priorKey = JSON.stringify([
+    run.id,
+    taskId,
+    task?.task.revision,
+    task?.task.appliedRepair?.proposalId,
+  ]);
+  const priorReviewed = applied && priorReviewKey === priorKey;
+  const setPriorReviewed = (checked: boolean) => setPriorReviewKey(checked ? priorKey : '');
   const canAdopt = ours && proposal?.result.kind === 'plan' && !task?.conflict;
   const current = (epoch: number) => location.current.active && location.current.epoch === epoch;
   useEffect(() => {
@@ -189,7 +198,9 @@ export default function TaskRepairPage({
               {title}
             </h1>
             <p>
-              针对运行 {run.id} · {stepName || '网页步骤'}
+              {phase === 'restart'
+                ? `会创建新运行，关联 ${run.id}；不恢复旧脚本内部现场`
+                : `针对运行 ${run.id} · ${stepName || '网页步骤'}`}
             </p>
           </div>
         </div>
@@ -520,49 +531,16 @@ export default function TaskRepairPage({
             </section>
           </div>
         ) : (
-          <div className="task-run-columns task-restart-columns">
-            <section className="ai-task-card">
-              <div className="task-repair-box">
-                <h2>从头重新运行</h2>
-                <p>
-                  {observation.summary}。{observation.effectNote}
-                </p>
-              </div>
-              <label className="run-review-toggle">
-                <input
-                  type="checkbox"
-                  checked={priorReviewed}
-                  disabled={!applied}
-                  onChange={(e) => setPriorReviewed(e.target.checked)}
-                />
-                我已核对原运行的输出与外部结果，确认可以从头执行
-              </label>
-              <p>
-                执行起点：第 1 步<br />
-                采用版本：当前已采纳的修复方案；下一页核对实际资源与可能更改。
-              </p>
-              <p className="task-run-note">
-                不恢复旧脚本内部现场。已经完成或结果未知的外部操作，可能在新运行中再次发生。
-              </p>
-            </section>
-            <section className="ai-task-card">
-              <h2>已完成操作不会被隐藏</h2>
-              <p>已完成：{observation.completed.map((r) => r.name).join('、') || '尚无完成记录'}</p>
-              <p>
-                已开始未确认完成：{observation.unresolved.map((r) => r.name).join('、') || '无'}
-              </p>
-              <p>新运行将关联 {run.id}，重新检查对象与权限，再按新快照执行。</p>
-              <p>如果此前已提交试运行确认，下一页会保留该次请求，先查询或查看结果。</p>
-              <button
-                className="primary"
-                disabled={!priorReviewed || !applied}
-                onClick={() => setPhase('check')}
-              >
-                确认，重新检查
-              </button>
-              <button onClick={back}>先不运行</button>
-            </section>
-          </div>
+          <TaskRepairRestart
+            observation={observation}
+            revision={task?.task.revision}
+            applied={applied}
+            reviewed={priorReviewed}
+            review={setPriorReviewed}
+            check={() => setPhase('check')}
+            back={back}
+            modify={modify}
+          />
         )}
       </div>
       <RunReviewPage
