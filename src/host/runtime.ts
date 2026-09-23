@@ -1,3 +1,5 @@
+import { redactMcpReceipt } from './mcp-redaction';
+import { McpRuns } from './mcp-runs';
 import { templateSourceSchema, type TemplateSource } from '../shared/template-source';
 import { inspectSchedule } from './schedule-inspection';
 import { Learning } from './learning';
@@ -98,6 +100,7 @@ export class Runtime {
   readonly planning: Planning;
   readonly desktopPlanning: DesktopPlanning;
   readonly desktopRuns: DesktopRuns;
+  readonly mcpRuns: McpRuns;
   readonly learning: Learning;
   readonly webTargets: TaskWebTargets;
   readonly outputs: TaskOutputs;
@@ -184,7 +187,11 @@ export class Runtime {
         if (this.store.fault) throw new Error(this.store.fault);
       },
       credentials: {
-        get: (id) => this.system('tool.credentials.get', { id }),
+        get: async (id) => {
+          const secret = await this.system('tool.credentials.get', { id });
+          if (typeof secret === 'string' && secret) this.secrets.push(secret);
+          return secret;
+        },
         set: (id, value) => this.system('tool.credentials.set', { id, value }),
         remove: (id) => this.system('tool.credentials.remove', { id }),
       },
@@ -220,6 +227,9 @@ export class Runtime {
       )
         throw new Error('请等待本任务运行和收尾结束，再更换工具对象');
     });
+    this.mcpRuns = new McpRuns(this.store, this.toolConnections, this.toolTargets, (value) =>
+      redactMcpReceipt(value, this.secrets),
+    );
     this.learning = new Learning(this.store, {
       busy: (id) => {
         const task = this.store.get('ai-task', id);
@@ -453,7 +463,7 @@ export class Runtime {
     const checkAI = this.aiSettings.capture(record.bindings.credentials);
     const checkLocal = this.localCredentials.capture(record.bindings.credentials);
     const checkCredentials = () => {
-      this.toolTargets.assertExecutable(record.id);
+      this.toolTargets.assertExecutable(record.id, record, !!desktopRun);
       checkAI();
       checkLocal();
     };
@@ -462,7 +472,7 @@ export class Runtime {
       this.credentialChecks.set(prepared, checkCredentials);
       return prepared;
     };
-    this.toolTargets.assertExecutable(record.id);
+    this.toolTargets.assertExecutable(record.id, record, !!desktopRun);
     const flow = validateFlow(record.flow);
     if (walk(flow.steps).some((node) => node.type === 'desktop')) {
       if (!desktopRun) throw new Error('应用选区只能从原任务重新绑定窗口并明确确认单次试运行');
@@ -471,11 +481,16 @@ export class Runtime {
         typeof desktopRun === 'string' ? desktopRun : undefined,
       );
     }
-    if (walk(flow.steps).some((node) => node.type === 'mcp'))
-      throw new Error('工具方案已保存；工具调用尚未接入，暂不能执行此流程');
+    if (walk(flow.steps).some((node) => node.type === 'mcp')) {
+      if (!desktopRun) throw new Error('请从原任务核对工具并明确确认本次试运行');
+      const run =
+        typeof desktopRun === 'string' ? this.store.get<Run>('run', desktopRun) : undefined;
+      if (typeof desktopRun === 'string' && !run) throw new Error('工具运行授权不存在');
+      this.mcpRuns.verify(record, run);
+    }
     const localIds = record.bindings.credentials.filter((id) => id.startsWith('local-'));
     if (localIds.length) await this.system('credential.local.check', { ids: localIds });
-    this.toolTargets.assertExecutable(record.id);
+    this.toolTargets.assertExecutable(record.id, record, !!desktopRun);
     await this.webTargets.record(record);
     await this.outputs.record(record);
     await this.templates.preflight(record);
@@ -528,7 +543,7 @@ export class Runtime {
         validateObject('ScriptBundle', bundle);
         await verifyScriptBundle(record.scripts[n.id], bundle.sha256);
       }
-      this.toolTargets.assertExecutable(record.id);
+      this.toolTargets.assertExecutable(record.id, record, !!desktopRun);
       await this.webTargets.record(record);
       await this.outputs.record(record);
       return checked({ scripts: record.scripts, scriptBundles: record.scriptBundles });
@@ -552,7 +567,7 @@ export class Runtime {
           dependencies: bundle.dependencies,
         });
       }
-    this.toolTargets.assertExecutable(record.id);
+    this.toolTargets.assertExecutable(record.id, record, !!desktopRun);
     await this.webTargets.record(record);
     await this.outputs.record(record);
     return checked(prepared);
@@ -932,6 +947,7 @@ export class Runtime {
         active.abort.abort(new Error('运行已停止'));
         results.push(await this.releaseSession(active, true));
       }
+      results.push(await this.mcpRuns.release(run.id));
       const desktopSnapshot = this.store.get<FlowRecord>('snapshot', run.id);
       if (desktopSnapshot?.desktopTarget?.binding)
         results.push(await this.desktopRuns.release(desktopSnapshot, run.id));
@@ -971,6 +987,8 @@ export class Runtime {
       }
       this.recordExecutionBlock(run.id);
     } finally {
+      active.abort.abort(new Error('运行正在收尾'));
+      await this.mcpRuns.release(run.id);
       clearTimeout(active.cancelTimer);
       this.sessions.finishRun(run.id);
       rpc.close();
@@ -995,10 +1013,17 @@ export class Runtime {
     // A cancellation can overtake execute or arrive after the Run was revoked.
     // Its exact invocation tombstone must be recorded before normal owner checks.
     if (method === 'script.cancel') return this.scripts.cancel(id, args.invocationId);
+    if (method === 'mcp.cancel') return this.mcpRuns.cancel(id, args.nodeInstance);
     if (this.active?.id !== id) throw new Error('运行已停止');
     this.checkActive(this.active);
     const runSignal = this.active.abort.signal;
     const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', id)!;
+    if (method === 'mcp.call') {
+      const active = this.active;
+      const run = this.store.get<Run>('run', id);
+      if (!run) throw new Error('运行不存在');
+      return this.mcpRuns.perform(run, snapshot, args, runSignal, () => this.checkActive(active!));
+    }
     if (method === 'desktop.replace') {
       const active = this.active;
       const run = this.store.get<Run>('run', id);
@@ -1493,6 +1518,9 @@ export class Runtime {
         return {
           run,
           desktopReceipts: redact(this.desktopRuns.receipts(id), this.secrets),
+          mcpReceipts: this.mcpRuns
+            .receipts(id)
+            .map((receipt) => redactMcpReceipt(receipt, this.secrets)),
           targetContext: runTargetContext(run, snapshot, this.secrets),
           rerun: {
             ...rerun,

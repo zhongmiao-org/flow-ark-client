@@ -1,0 +1,60 @@
+.mcp-run-receipts {
+  margin: 20px 0;
+  min-width: 0;
+}
+.mcp-run-receipts article {
+  padding: 20px 0;
+  border-top: 1px solid var(--fa-border-default);
+}
+.mcp-run-receipts article:last-child {
+  padding-bottom: 0;
+}
+.mcp-receipt-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.mcp-receipt-heading h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.mcp-run-receipts p,
+.mcp-run-receipts h3 {
+  overflow-wrap: anywhere;
+}
+.mcp-receipt-status {
+  border-radius: var(--fa-radius-8);
+  padding: 4px 10px;
+  font-size: 12px;
+  background: var(--fa-bg-subtle);
+  color: var(--fa-text-secondary);
+}
+.mcp-receipt-status.is-received {
+  background: var(--fa-status-success-bg);
+  color: var(--fa-status-success);
+}
+.mcp-receipt-status.is-unknown,
+.mcp-receipt-status.is-tool-error {
+  background: var(--fa-status-error-bg);
+  color: var(--fa-status-error);
+}
+.mcp-run-receipts pre {
+  max-height: 280px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-bg-subtle);
+  font: 12px/20px var(--fa-font-latin);
+}
+.mcp-run-receipts details {
+  margin: 12px 0;
+}
+.mcp-receipt-time {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}

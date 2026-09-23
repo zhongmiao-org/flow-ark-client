@@ -126,7 +126,11 @@ function issue(error: ErrorObject): { path: string; message: string } {
   }
 }
 
-export function reviewMcpArguments(schema: unknown, args: unknown): McpArgumentReview {
+export function reviewMcpArguments(
+  schema: unknown,
+  args: unknown,
+  resolved = false,
+): McpArgumentReview {
   if (schema === undefined)
     return { status: 'unavailable', summary: '没有匹配的工具输入定义', issues: [] };
   let source: string;
@@ -179,7 +183,7 @@ export function reviewMcpArguments(schema: unknown, args: unknown): McpArgumentR
       issues: [{ path: '', message: (error as Error).message }],
     };
   }
-  if (referenceCount)
+  if (referenceCount && !resolved)
     return {
       status: 'deferred',
       summary: '参数含动态引用，需在执行前求值后核对',

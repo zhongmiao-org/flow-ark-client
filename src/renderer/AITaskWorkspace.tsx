@@ -19,7 +19,7 @@ import TaskWebTargetPage from './TaskWebTargetPage';
 import FirstTaskGuide from './FirstTaskGuide';
 import TaskUnderstandingPage, { type OutputOptions } from './TaskUnderstandingPage';
 import PlanningQuestions from './PlanningQuestions';
-import { toolsNotExecutable, toolContexts } from '../shared/task-mcp-targets';
+import { toolsExecutionNotice, toolContexts } from '../shared/task-mcp-targets';
 import PlanningChanges from './PlanningChanges';
 import { outputContext, taskOutputNameSchema } from '../shared/task-output';
 import { learningSteps, type LearningStatus } from '../shared/learning';
@@ -1056,7 +1056,7 @@ export default function AITaskWorkspace(props: Props) {
                 : '需要重新核对连接'}
             </p>
           ))}
-          <p>{toolsNotExecutable}</p>
+          <p>{toolsExecutionNotice}</p>
           {detail.task.webTarget && (
             <p className="field-error">
               当前不能混合只读网页与工具方案，请移除其中一种目标后继续。
@@ -2260,7 +2260,7 @@ export default function AITaskWorkspace(props: Props) {
                           )}
                           {flatten(flow.steps).some((step) => step.type === 'mcp') && (
                             <p className="ai-task-note">
-                              可进入检查页核对工具和参数。真实调用尚未开放，检查不会执行工具。
+                              检查页会核对工具和参数；明确确认本次试运行后才会连接服务并执行。
                             </p>
                           )}
                         </>

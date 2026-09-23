@@ -1,3 +1,4 @@
+import McpRunReceipts from './McpRunReceipts';
 import type { LearningStatus } from '../shared/learning';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ArtifactPreview } from '../shared/artifact-preview';
@@ -283,6 +284,12 @@ export default function TaskRunPage({
             {model.view.statusNote}
           </p>
         )}
+        <McpRunReceipts
+          runId={run.id}
+          receipts={detail.mcpReceipts}
+          snapshot={detail.snapshot}
+          running={!model.terminal && model.view.activity === 'active'}
+        />
         <DesktopRunReceipt
           runId={run.id}
           receipts={detail.desktopReceipts}

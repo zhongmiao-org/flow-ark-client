@@ -183,7 +183,8 @@ export default function McpNodeConfiguration({
         </dl>
       )}
       <p className="ai-task-note">
-        方案尚未执行。工具调用和实际输出尚未接入，保存、编辑与采纳不会调用服务。
+        保存、编辑与采纳不会调用服务。执行需从原任务检查并确认试运行；成功回复可通过
+        structuredContent 或 content 引用。
       </p>
     </section>
   );

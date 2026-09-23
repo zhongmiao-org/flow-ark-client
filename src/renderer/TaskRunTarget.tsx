@@ -86,7 +86,7 @@ export default function TaskRunTarget({
       note = '脚本的实际文件、网页或网络操作取决于代码与输入，不能仅凭此卡片确定影响范围。';
     } else if (node.type === 'mcp') {
       facts.push(['工具对象引用', node.target], ['工具名称', node.tool]);
-      note = '这里只显示固定配置，工具调用能力尚未开放，不表示已连接或执行成功。';
+      note = '这里只显示本次固定配置；实际调用是否发出及收到回复，请查看工具调用回执。';
     } else {
       facts.push([
         '处理对象',

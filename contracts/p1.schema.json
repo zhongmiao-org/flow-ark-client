@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.14.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.15.0/p1.schema.json",
   "title": "FlowArk P1",
   "$defs": {
     "Json": {
@@ -2150,6 +2150,39 @@
         "type"
       ],
       "additionalProperties": false
+    },
+    "McpToolResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "content",
+        "isError"
+      ],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "content": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/$defs/Json"
+            }
+          }
+        },
+        "structuredContent": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Json"
+          }
+        },
+        "isError": {
+          "type": "boolean"
+        }
+      }
     }
   }
 }

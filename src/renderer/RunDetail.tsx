@@ -1,3 +1,4 @@
+import McpRunReceipts from './McpRunReceipts';
 import { useEffect, useRef, useState } from 'react';
 import type { Event, Run } from '../shared/types';
 import { formatRunDuration, presentRun } from '../shared/run-presentation';
@@ -133,6 +134,12 @@ export default function RunDetail({
             </p>
           )}
         </section>
+        <McpRunReceipts
+          runId={r.id}
+          receipts={d.mcpReceipts}
+          snapshot={d.snapshot}
+          running={!terminal && view.activity === 'active'}
+        />
         <DesktopRunReceipt runId={r.id} receipts={d.desktopReceipts} snapshot={d.snapshot} />
         <div className={'run-observation-layout' + (tab === 'output' ? ' is-output' : '')}>
           <aside className="run-timeline" aria-label="执行步骤" hidden={tab === 'output'}>

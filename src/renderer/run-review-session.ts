@@ -146,6 +146,7 @@ export class RunReviewSession {
           token: state.preview.token,
           requestId: this.newId(),
           reviewed: true,
+          ...(state.preview.toolCalls?.length ? { toolsReviewed: true as const } : {}),
           ...(state.preview.desktop ? { desktopReviewed: true as const } : {}),
         },
       };

@@ -454,6 +454,7 @@ export interface FlowArkP1 {
   AIPlanningRequest?: AIPlanningRequest;
   AIPlanningResult?: AIPlanningResult;
   ExcelColumnMapping?: ExcelColumnMapping;
+  McpToolResult?: McpToolResult;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -929,4 +930,17 @@ export interface AIPlanningRequest {
    * @maxItems 100
    */
   capabilities: string[];
+}
+export interface McpToolResult {
+  version: 1;
+  /**
+   * @maxItems 64
+   */
+  content: {
+    [k: string]: Json;
+  }[];
+  structuredContent?: {
+    [k: string]: Json;
+  };
+  isError: boolean;
 }

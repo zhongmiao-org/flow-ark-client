@@ -27,6 +27,7 @@ export const runReviewConfirmSchema = z
     requestId: z.string().uuid(),
     reviewed: z.literal(true),
     desktopReviewed: z.literal(true).optional(),
+    toolsReviewed: z.literal(true).optional(),
   })
   .strict();
 export type RunReviewInput = z.infer<typeof runReviewPreviewSchema>;

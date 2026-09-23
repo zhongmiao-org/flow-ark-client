@@ -1,3 +1,5 @@
+import type { McpReceipt } from '../shared/mcp-run';
+import { mcpReceiptsForRun } from './mcp-run-presentation';
 import { presentRun } from '../shared/run-presentation';
 import { runTimeline } from './run-timeline';
 import { kinds } from './node-kinds';
@@ -26,7 +28,7 @@ export const artifactLabel = (a: RunArtifact) =>
   })[a.integrity] ?? '副本状态待核对';
 
 export function taskRunPresentation(
-  input: DesktopRunInput & { artifacts?: RunArtifact[] },
+  input: DesktopRunInput & { artifacts?: RunArtifact[]; mcpReceipts?: McpReceipt[] },
   now = Date.now(),
 ) {
   const detail = { ...input, events: input.events.filter((e) => e.runId === input.run.id) };
@@ -40,6 +42,10 @@ export function taskRunPresentation(
   const uncertain =
     !!input.fault ||
     !!desktop?.needsReview ||
+    (terminal &&
+      mcpReceiptsForRun(input.run.id, input.mcpReceipts, input.snapshot).some(
+        (receipt) => receipt.status === 'unknown',
+      )) ||
     (!terminal && input.run.state !== 'QUEUED' && view.activity !== 'active');
   const rows = runTimeline(detail, now).map((row) => ({
     ...row,
@@ -123,11 +129,13 @@ export function taskRunPresentation(
       [...labels].map(([label, count]) => `${label} ${count} 次`).join('、') +
       '。' +
       (labels.has('写入文件') ? '文件副本不表示原位置没有覆盖。' : '') +
-      (labels.has('网络请求') || labels.has('操作网页') ? '外部结果需结合业务回执核对。' : '') +
+      (labels.has('网络请求') || labels.has('操作网页') || labels.has('工具调用')
+        ? '外部结果需结合业务回执核对。'
+        : '') +
       (labels.has('执行脚本') ? '脚本可能还有未报告的操作。' : '')
     : uncertain
       ? '当前记录不足以核对外部影响。'
-      : '未记录文件、网页、网络或脚本步骤的执行。';
+      : '未记录文件、网页、网络、脚本、工具或应用步骤的执行。';
   return {
     desktop,
     view,

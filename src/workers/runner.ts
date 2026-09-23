@@ -79,6 +79,22 @@ const rpc = new Rpc(
             signal,
           );
         if (n.type === 'browser') return rpc.call('browser', resolved, timeout + 5000);
+        if (n.type === 'mcp') {
+          const cancel = () => {
+            void rpc.call('mcp.cancel', { nodeInstance: instance }, 65000).catch(() => {});
+          };
+          signal.addEventListener('abort', cancel, { once: true });
+          try {
+            signal.throwIfAborted();
+            return await rpc.call(
+              'mcp.call',
+              { nodeId: n.id, nodeInstance: instance, arguments: resolved.arguments },
+              timeout + 10000,
+            );
+          } finally {
+            signal.removeEventListener('abort', cancel);
+          }
+        }
         if (n.type === 'desktop')
           return rpc.call(
             'desktop.replace',

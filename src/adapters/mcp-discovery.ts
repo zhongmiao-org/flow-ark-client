@@ -95,12 +95,13 @@ function safeTool(tool: Tool): ToolDefinition {
       : {}),
   };
 }
-export async function discoverMcp(
+export async function withMcpSession<T>(
   config: ConnectionConfig,
   token: string | undefined,
   signal: AbortSignal,
-  options: { fetcher?: typeof fetch; timeoutMs?: number } = {},
-): Promise<ConnectionDiscovery> {
+  options: { fetcher?: typeof fetch; timeoutMs?: number },
+  perform: (client: Client, discovery: ConnectionDiscovery, signal: AbortSignal) => Promise<T>,
+): Promise<T> {
   connectionConfig.parse(config);
   const auth = config.transport.type === 'http' && config.transport.auth === 'bearer';
   if (auth && (!token || !/^[\x21-\x7e]{1,8192}$/.test(token)))
@@ -237,7 +238,11 @@ export async function discoverMcp(
     };
     if (token && JSON.stringify(result).includes(token))
       throw new DiscoveryError('服务响应包含认证内容，已拒绝保存');
-    return { ...result, capabilityDigest: digest(result), testedAt: now() };
+    return await perform(
+      client,
+      { ...result, capabilityDigest: digest(result), testedAt: now() },
+      combined,
+    );
   } catch (error) {
     if (transportError) throw transportError;
     if (error instanceof DiscoveryError) throw error;
@@ -257,4 +262,13 @@ export async function discoverMcp(
     if (closeFailure)
       throw new McpCleanupError('无法确认 MCP 连接已关闭，请退出应用并核对本机程序');
   }
+}
+
+export function discoverMcp(
+  config: ConnectionConfig,
+  token: string | undefined,
+  signal: AbortSignal,
+  options: { fetcher?: typeof fetch; timeoutMs?: number } = {},
+): Promise<ConnectionDiscovery> {
+  return withMcpSession(config, token, signal, options, async (_, discovered) => discovered);
 }

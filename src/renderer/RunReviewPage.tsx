@@ -265,7 +265,9 @@ export default function RunReviewPage(props: Props) {
                 />
                 {preview?.desktop
                   ? '我授权本次只替换已核对的原选区并回读，运行期间保持文档与选区不变'
-                  : '我已核对操作对象、可能更改和保存位置'}
+                  : preview?.toolCalls?.length
+                    ? '我授权本次按已列工具和参数来源执行，已核对外部影响；结果未知时不自动重试'
+                    : '我已核对操作对象、可能更改和保存位置'}
               </label>
               <button
                 className="primary"

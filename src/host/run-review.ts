@@ -51,6 +51,7 @@ type PathIdentity = PathRequirement & {
   mtimeMs?: number;
 };
 type Authorization = {
+  tools?: { selectionId: string; connectionRevision: number; capabilityDigest: string }[];
   desktop?: DesktopBinding;
   target?: RepairSelection;
   paths: PathIdentity[];
@@ -99,6 +100,13 @@ export class RunReview {
       (!args.task || args.task.id !== record.desktopTarget?.taskId)
     )
       throw new Error('请从保存此应用方案的原任务进入试运行');
+    if (
+      walk(record.flow.steps).some((node) => node.type === 'mcp') &&
+      (!args.task ||
+        !record.toolTargets?.length ||
+        record.toolTargets.some((target) => target.taskId !== args.task!.id))
+    )
+      throw new Error('请从保存此工具方案的原任务进入试运行');
     let task: (PlanningTask & { proposal?: unknown }) | undefined;
     if (args.task) {
       task = this.store.get('ai-task', args.task.id);
@@ -150,7 +158,13 @@ export class RunReview {
     if (hasDesktop && !this.deps.desktop) throw new Error('应用执行服务不可用');
     const desktop = hasDesktop ? await this.deps.desktop!.verify(record, runId) : undefined;
     const paths = new Map<string, PathRequirement>();
-    const resources: ReviewResource[] = [];
+    const resources: ReviewResource[] = (record.toolTargets ?? []).map((target) => ({
+      id: 'mcp:' + target.selectionId,
+      name: target.displayName,
+      kind: 'action',
+      access: '本次工具调用',
+      detail: target.source + '；实际发送参数和外部影响见下方工具明细。',
+    }));
     if (desktop)
       resources.push({
         id: 'desktop:' + desktop.bindingId,
@@ -322,6 +336,15 @@ export class RunReview {
       resources,
       desktop,
       authorization: {
+        ...(record.toolTargets?.length
+          ? {
+              tools: record.toolTargets.map((target) => ({
+                selectionId: target.selectionId,
+                connectionRevision: target.connectionRevision,
+                capabilityDigest: target.capabilityDigest,
+              })),
+            }
+          : {}),
         ...(desktop
           ? {
               desktop: {
@@ -470,6 +493,8 @@ export class RunReview {
     const nextId = uid();
     const hasDesktop = !!captured.authorization.desktop;
     if (hasDesktop && !args.desktopReviewed) throw new Error('请明确授权本次原选区替换与回读');
+    const hasTools = walk(captured.record.flow.steps).some((node) => node.type === 'mcp');
+    if (hasTools && !args.toolsReviewed) throw new Error('请明确确认本次工具、参数来源与外部影响');
     let claimed = false;
     try {
       if (hasDesktop) {
@@ -494,7 +519,11 @@ export class RunReview {
           updatedAt: time,
           source: 'manual',
           debug: !!args.debug,
-          review: { reviewedAt: time, ...(hasDesktop ? { desktopReviewed: true as const } : {}) },
+          review: {
+            reviewedAt: time,
+            ...(hasDesktop ? { desktopReviewed: true as const } : {}),
+            ...(hasTools ? { toolsReviewed: true as const } : {}),
+          },
           ...(args.task ? { task: args.task } : {}),
           ...(captured.rerun
             ? { rerun: { runId: captured.rerun.id, mode: 'saved' as const, reviewedAt: time } }

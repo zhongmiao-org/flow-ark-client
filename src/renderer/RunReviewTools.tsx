@@ -59,7 +59,7 @@ function Call({ call }: { call: ReviewToolCall }) {
           {target?.displayName || '工具对象未绑定'} · {step.tool}
         </small>
         <small className={call.current ? '' : 'run-review-error'}>
-          {call.current ? '本机记录一致 · 调用尚未开放' : '工具对象需要处理'}
+          {call.current ? '本机记录一致 · 执行前复核服务' : '工具对象需要处理'}
         </small>
         <small>参数：{argumentStatusLabels[call.argumentCheck?.status ?? 'unavailable']}</small>
       </summary>
@@ -134,8 +134,8 @@ function Call({ call }: { call: ReviewToolCall }) {
               ))}
             </ul>
             <p>
-              引用值要到执行时才能确定；前序工具的实际输出尚未接入。字段路径使用 / 分隔，~1
-              表示字段名中的 /，~0 表示 ~。
+              引用值要到执行时才能确定；成功工具回复包含 structuredContent 与 content。字段路径使用
+              / 分隔，~1 表示字段名中的 /，~0 表示 ~。
             </p>
             {refs.remaining > 0 && <p>另有 {refs.remaining} 项引用，请在上方完整参数中查看。</p>}
           </>
@@ -172,7 +172,9 @@ export default function RunReviewTools({ calls }: { calls: ReviewToolCall[] }) {
       <p>
         展开核对每个工具的连接、参数与服务声明。查看或重新检查不会连接服务、启动程序或调用工具。
       </p>
-      <p className="ai-task-note">工具调用尚未开放，本页不能开始试运行。</p>
+      <p className="ai-task-note">
+        确认试运行将按这些步骤执行真实调用；服务声明不能保证没有副作用，结果未知时不会自动重试。
+      </p>
       {calls.map((call) => (
         <Call key={call.step.id} call={call} />
       ))}

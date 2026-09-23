@@ -11,8 +11,8 @@ const revision = z
   .max(Number.MAX_SAFE_INTEGER - 1);
 const task = { id, revision };
 export const TOOL_CONTEXT_PREFIX = '_flowark_tool_';
-export const toolsNotExecutable =
-  '可核对所选工具并生成方案；工具调用尚未接入，方案可保存和编辑，暂不能执行。';
+export const toolsExecutionNotice =
+  '选择和采纳不会调用工具；执行需从原任务核对工具、参数和外部影响，再明确确认本次试运行。';
 export type TaskMcpTarget = {
   version: 1;
   selectionId: string;

@@ -120,7 +120,7 @@ export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext
     case 'mcp': {
       const target = context.toolTargets?.find((entry) => entry.selectionId === step.target);
       const tool = target?.tools.find((entry) => entry.name === step.tool);
-      return `${target ? concise(target.displayName) : '工具对象尚未匹配'} · ${concise(tool?.title || step.tool)} · 调用能力尚未开放`;
+      return `${target ? concise(target.displayName) : '工具对象尚未匹配'} · ${concise(tool?.title || step.tool)} · 试运行前核对外部影响`;
     }
     case 'file': {
       const destination = `${resource(step.binding)} · 文件：${value(step.name)}`;

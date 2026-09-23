@@ -6,6 +6,9 @@ import {
   type ToolConnection,
 } from '../shared/tool-connections';
 import { discoverMcp, DiscoveryError, McpCleanupError } from '../adapters/mcp-discovery';
+import { callMcp } from '../adapters/mcp-call';
+import type { TaskMcpTarget } from '../shared/task-mcp-targets';
+import type { McpToolResult } from '../shared/mcp-run';
 import { Store } from './store';
 import { canonical, uid } from '../shared/utils';
 import type { PlanningTask } from '../shared/planning';
@@ -22,6 +25,82 @@ type Candidate = ConnectionCandidate & { secret?: string; saving?: boolean };
 type Job = { abort: AbortController; connectionId?: string; promise: Promise<ConnectionCandidate> };
 export class ToolConnections {
   private jobs = new Map<string, Job>();
+  private calls = new Map<
+    string,
+    {
+      connectionId: string;
+      abort: AbortController;
+      promise: Promise<McpToolResult>;
+    }
+  >();
+  private assertIdle(id: string) {
+    if ([...this.calls.values()].some((call) => call.connectionId === id))
+      throw new Error('此连接仍有工具调用正在执行或收尾，请等待完成后再更改连接');
+  }
+  private async settleCalls(id?: string) {
+    const pending = [...this.calls.values()].filter((call) => !id || call.connectionId === id);
+    for (const call of pending) call.abort.abort();
+    await Promise.all(pending.map((call) => call.promise.catch(() => {})));
+    if (this.cleanupFault) throw new Error('工具会话关闭尚未确认，请退出应用并核对');
+  }
+  async call(
+    target: TaskMcpTarget,
+    input: {
+      tool: string;
+      arguments: Record<string, unknown>;
+      signal: AbortSignal;
+      timeoutMs: number;
+      beforeSend: () => void;
+    },
+  ): Promise<McpToolResult> {
+    this.targetSource(target.connectionId, target.connectionRevision);
+    this.assertIdle(target.connectionId);
+    if (
+      [...this.jobs.values()].some((job) => job.connectionId === target.connectionId) ||
+      [...this.candidates.values()].some(
+        (candidate) => candidate.connectionId === target.connectionId,
+      )
+    )
+      throw new Error('连接正在重新核对，请先完成连接设置');
+    const record = this.record(target.connectionId, target.connectionRevision);
+    const abort = new AbortController();
+    const signal = AbortSignal.any([input.signal, abort.signal]);
+    const id = uid();
+    const job = { connectionId: record.id, abort, promise: undefined! as Promise<McpToolResult> };
+    this.calls.set(id, job);
+    job.promise = Promise.resolve().then(async () => {
+      let secret: string | undefined;
+      const current = () => {
+        signal.throwIfAborted();
+        const current = this.targetSource(target.connectionId, target.connectionRevision);
+        if (current.capabilityDigest !== target.capabilityDigest)
+          throw new Error('工具能力已变化，请重新核对');
+      };
+      try {
+        if (record.credentialRef) secret = await this.deps.credentials.get(record.credentialRef);
+        current();
+        return await callMcp({
+          ...input,
+          config: record.config,
+          token: secret,
+          signal,
+          capabilityDigest: target.capabilityDigest,
+          beforeSend: () => {
+            current();
+            input.beforeSend();
+          },
+        });
+      } catch (error) {
+        if (error instanceof McpCleanupError) this.cleanupFault = true;
+        if (error instanceof DiscoveryError) throw error;
+        throw new Error('工具调用未能取得可确认的回复，请查看本次回执；未自动重试');
+      } finally {
+        secret = undefined;
+        this.calls.delete(id);
+      }
+    });
+    return job.promise;
+  }
   private candidates = new Map<string, Candidate>();
   private states = new Map<string, ToolConnection['status']>();
   private removing = new Set<string>();
@@ -39,6 +118,9 @@ export class ToolConnections {
       time?: () => number;
     },
   ) {}
+  clean() {
+    return !this.cleanupFault;
+  }
   private time() {
     return this.deps.time?.() ?? Date.now();
   }
@@ -89,6 +171,7 @@ export class ToolConnections {
     return data;
   }
   private invalidate(id: string) {
+    for (const call of this.calls.values()) if (call.connectionId === id) call.abort.abort();
     for (const job of this.jobs.values()) if (job.connectionId === id) job.abort.abort();
     for (const [token, candidate] of this.candidates)
       if (candidate.connectionId === id) this.candidates.delete(token);
@@ -128,7 +211,10 @@ export class ToolConnections {
       const previous = args.connectionId
         ? this.record(args.connectionId, args.revision)
         : undefined;
-      if (previous) this.invalidate(previous.id);
+      if (previous) {
+        this.assertIdle(previous.id);
+        this.invalidate(previous.id);
+      }
       const abort = new AbortController();
       const deadline = setTimeout(() => abort.abort(), 60000);
       const job: Job = { abort, connectionId: previous?.id, promise: undefined! };
@@ -198,6 +284,7 @@ export class ToolConnections {
       const deadline = Date.now() + 60000;
       const id = candidate.connectionId ?? uid();
       const previous = candidate.connectionId ? this.record(id, candidate.revision) : undefined;
+      this.assertIdle(id);
       let credentialRef: string | undefined;
       let committed = false;
       try {
@@ -206,6 +293,7 @@ export class ToolConnections {
           await this.deps.credentials.set(credentialRef, candidate.secret);
         }
         this.candidate(args.token);
+        this.assertIdle(id);
         if (Date.now() >= deadline) throw new Error('连接保存已超时');
         const { server, tools, capabilityDigest, testedAt, protocolVersion, config } = candidate;
         const record: Saved = {
@@ -246,6 +334,7 @@ export class ToolConnections {
             .filter((job) => job.connectionId === record.id)
             .map((job) => job.promise.catch(() => {})),
         );
+        await this.settleCalls(record.id);
         if (record.credentialRef) await this.deps.credentials.remove(record.credentialRef);
         this.store.remove('mcp-connection', record.id);
         this.states.delete(record.id);
@@ -262,6 +351,7 @@ export class ToolConnections {
         disconnected: true,
       });
       this.states.set(record.id, 'disconnected');
+      await this.settleCalls(record.id);
     }
     await Promise.all(
       [...this.jobs.values()]
@@ -271,10 +361,11 @@ export class ToolConnections {
     return true;
   }
   async cancelAll() {
+    const calls = this.settleCalls();
     const pending = [...this.jobs.values()];
     this.candidates.clear();
     for (const job of pending) job.abort.abort();
-    await Promise.all(pending.map((job) => job.promise.catch(() => {})));
+    await Promise.all([calls, ...pending.map((job) => job.promise.catch(() => {}))]);
     this.states.clear();
     if (this.cleanupFault) throw new Error('MCP 连接回收未确认');
   }

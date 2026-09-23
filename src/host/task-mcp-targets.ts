@@ -1,6 +1,6 @@
 import type { PlanningTask } from '../shared/planning';
 import type { TaskMcpPreview, TaskMcpTarget, TaskMcpState } from '../shared/task-mcp-targets';
-import { toolsNotExecutable, assertMcpPlan } from '../shared/task-mcp-targets';
+import { assertMcpPlan } from '../shared/task-mcp-targets';
 import type { Flow, FlowRecord } from '../shared/types';
 import { OUTPUT_BINDING } from '../shared/task-output';
 import { digest, uid, now } from '../shared/utils';
@@ -139,9 +139,20 @@ export class TaskMcpTargets {
       return this.states([target])[0];
     });
   }
-  assertExecutable(flowId: string) {
+  assertExecutable(flowId: string, record?: FlowRecord, reviewed = false) {
     const tasks = this.store.list<PlanningTask>('ai-task').filter((task) => task.flowId === flowId);
-    if (tasks.some((task) => task.toolTargets?.length)) throw new Error(toolsNotExecutable);
+    if (tasks.some((task) => task.toolTargets?.length) || record?.toolTargets?.length) {
+      if (!reviewed || !record?.toolTargets?.length)
+        throw new Error('工具方案需从原任务核对并明确确认本次试运行，暂不支持直接运行或定时计划');
+      const states = this.reviewStates(record);
+      const invalid = states.find((state) => !state.current);
+      if (invalid) throw new Error(invalid.reason || '工具选择已变化，请重新核对');
+      assertMcpPlan(
+        record.flow,
+        record.toolTargets,
+        record.outputTarget ? OUTPUT_BINDING : undefined,
+      );
+    }
     if (tasks.some((task) => task.toolsRequirePlan))
       throw new Error('工具选择已变化，请从原任务重新生成并采纳完整方案后运行');
   }

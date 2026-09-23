@@ -54,7 +54,7 @@ export default function McpArgumentCheck({ result }: { result?: McpArgumentRevie
         </p>
       )}
       <p className="mcp-argument-check-note">
-        本次只读核对不连接服务、不发送参数；工具调用尚未开放。
+        本次只读核对不连接服务、不发送参数；执行前仍会核对实际参数和服务能力。
       </p>
     </section>
   );

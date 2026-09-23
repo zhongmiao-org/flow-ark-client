@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ToolConnection } from '../shared/tool-connections';
 import type { PlanningTask, TaskDetail } from '../shared/planning';
-import { toolsNotExecutable, type TaskMcpPreview } from '../shared/task-mcp-targets';
+import { toolsExecutionNotice, type TaskMcpPreview } from '../shared/task-mcp-targets';
 import ToolCapabilityReview from './ToolCapabilityReview';
 import TaskToolPicker from './TaskToolPicker';
 import './editor-leave.css';
@@ -415,7 +415,7 @@ export default function TaskTargetConnections({
           <ToolCapabilityReview
             current={{ ...candidate.record, tools: candidate.preview.target.tools }}
           />
-          <p className="ai-task-note">{toolsNotExecutable}</p>
+          <p className="ai-task-note">{toolsExecutionNotice}</p>
           {expired && (
             <p className="field-error" role="alert">
               本次核对已过期，请返回重新选择。

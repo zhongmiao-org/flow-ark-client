@@ -20,7 +20,7 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
       case 'mcp':
         return effect(
           'unknown',
-          `工具 ${node.tool} · 对象 ${node.target}；外部影响待核对，当前工具调用尚未接入。`,
+          `工具 ${node.tool} · 对象 ${node.target}；外部影响需按工具及参数核对，只有明确确认试运行后才会调用。`,
         );
       case 'file':
       case 'excel': {
