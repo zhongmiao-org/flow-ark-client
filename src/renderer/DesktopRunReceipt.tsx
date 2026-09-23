@@ -1,20 +1,41 @@
 import type { DesktopReceipt } from '../shared/desktop-run';
+import type { Flow } from '../shared/types';
+import { flatten } from './flow-editing';
+import { verifiedDesktopReceipt } from './desktop-run-presentation';
 import './desktop-run.css';
 
 export default function DesktopRunReceipt({
   runId,
   receipts,
+  snapshot,
 }: {
   runId: string;
   receipts?: DesktopReceipt[];
+  snapshot?: Flow;
 }) {
-  const items = receipts?.filter((receipt) => receipt.runId === runId) ?? [];
+  const nodes = flatten(snapshot?.steps ?? []);
+  const selected = receipts?.filter((receipt) => receipt.runId === runId) ?? [];
+  const items = selected.map((receipt): DesktopReceipt => {
+    const node = nodes.find((item) => item.id === receipt.nodeId);
+    if (
+      (receipt.status === 'verified' &&
+        (!verifiedDesktopReceipt(receipt, node) ||
+          selected.filter((item) => item.nodeId === receipt.nodeId).length !== 1)) ||
+      (receipt.status === 'not-written' && (!receipt.completedAt || node?.type !== 'desktop'))
+    )
+      return {
+        ...receipt,
+        status: 'unknown',
+        message: '回执与本次固定方案未能核对一致，请人工检查文档结果；未自动重试。',
+      };
+    return receipt;
+  });
   if (!items.length) return null;
   return (
     <section className="ai-task-card desktop-run-receipt" aria-label="应用修改回执">
       <h2>应用修改回执</h2>
-      {items.map((receipt) => (
-        <div key={receipt.nodeId} data-desktop-result={receipt.status}>
+      {items.map((receipt, index) => (
+        <div key={receipt.nodeId + ':' + index} data-desktop-result={receipt.status}>
           <h3>
             {receipt.status === 'verified'
               ? '选区文字已替换并回读一致'

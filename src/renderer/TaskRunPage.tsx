@@ -12,6 +12,7 @@ import TaskExecutionSteps, { type TaskExecutionView } from './TaskExecutionSteps
 import RunEventLog from './RunEventLog';
 import TaskRunTarget from './TaskRunTarget';
 import DesktopRunReceipt from './DesktopRunReceipt';
+import DesktopTaskRun from './DesktopTaskRun';
 
 export default function TaskRunPage({
   detail,
@@ -238,6 +239,20 @@ export default function TaskRunPage({
       <p>修改先保存为草稿。重新执行需确认版本和已完成操作，从第一个步骤创建新的运行。</p>
     </>
   );
+  if (model.desktop)
+    return (
+      <DesktopTaskRun
+        detail={{ ...detail, fault: detail.fault ?? fault }}
+        model={model}
+        page={page}
+        setPage={setPage}
+        navigate={navigate}
+        history={history}
+        busy={busy}
+        error={error}
+        control={(action) => void act(() => control(run.id, action))}
+      />
+    );
   return (
     <div className="task-run-page" data-task-run-id={run.id} data-task-run-mode={model.mode}>
       <div className="task-run-content" hidden={page === 'repair'}>
@@ -268,7 +283,11 @@ export default function TaskRunPage({
             {model.view.statusNote}
           </p>
         )}
-        <DesktopRunReceipt runId={run.id} receipts={detail.desktopReceipts} />
+        <DesktopRunReceipt
+          runId={run.id}
+          receipts={detail.desktopReceipts}
+          snapshot={detail.snapshot}
+        />
         {page === 'rerun' ? (
           <section className="ai-task-card task-run-restart">
             <h2>已完成操作不会被隐藏</h2>

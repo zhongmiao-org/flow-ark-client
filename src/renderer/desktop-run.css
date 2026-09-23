@@ -12,15 +12,6 @@
 .desktop-run-texts > div {
   min-width: 0;
 }
-.desktop-run-comparison .desktop-run-texts {
-  grid-template-columns: 1fr;
-}
-.desktop-run-comparison .desktop-run-texts > div:first-child pre {
-  background: var(--fa-status-error-bg);
-}
-.desktop-run-comparison .desktop-run-texts > div:last-child pre {
-  background: var(--fa-status-success-bg);
-}
 .desktop-run-texts pre {
   max-height: 280px;
   overflow: auto;
@@ -37,5 +28,81 @@
 @media (max-width: 1200px) {
   .desktop-run-texts {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Application confirmation/execution/result: Figma taskappcheck/taskapprun/taskappresult. */
+.run-review-page.is-desktop .run-review-columns {
+  grid-template-columns: minmax(0, 650fr) minmax(0, 478fr);
+}
+.run-review-page.is-desktop .run-review-columns > .ai-task-card {
+  min-height: 720px;
+}
+.desktop-run-confirmation {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.desktop-run-confirmation section {
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  padding: 16px;
+  min-height: 120px;
+}
+.desktop-confirm-original {
+  background: var(--fa-status-error-bg);
+}
+.desktop-run-confirmation .desktop-confirm-replacement {
+  background: var(--fa-status-success-bg);
+  min-height: 140px;
+}
+.desktop-run-confirmation pre,
+.desktop-task-readback pre {
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow: auto;
+  max-height: 280px;
+  margin: 12px 0 0;
+}
+.desktop-task-run-panel {
+  min-height: 560px;
+  padding: 32px;
+}
+.desktop-task-run[data-task-run-mode='success'] .desktop-task-run-panel {
+  min-height: 600px;
+}
+.desktop-task-run .desktop-task-run-panel > h2 {
+  font-size: 28px;
+  line-height: 1.4;
+}
+.desktop-task-run-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: var(--fa-text-secondary);
+}
+.desktop-task-readback {
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  min-height: 140px;
+  background: var(--fa-status-success-bg);
+}
+.desktop-task-details {
+  align-self: flex-start;
+}
+@container (max-width: 1000px) {
+  .run-review-page.is-desktop .run-review-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .run-review-page.is-desktop .run-review-columns > .ai-task-card {
+    min-height: 0;
+  }
+  .desktop-task-run-panel {
+    padding: 24px;
+    min-height: 0;
   }
 }

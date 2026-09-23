@@ -21,6 +21,7 @@ export default function TaskWebTargetPage({
   initialTab,
   selected,
   back,
+  backLabel = '返回描述与资料',
   showBrowser,
   changed,
   openTools,
@@ -34,6 +35,7 @@ export default function TaskWebTargetPage({
   initialTab?: 'web' | 'window';
   selected: (next: TaskDetail) => void;
   back: () => void;
+  backLabel?: string;
   showBrowser: () => void;
   changed: () => Promise<void>;
   openTools: () => void;
@@ -262,6 +264,7 @@ export default function TaskWebTargetPage({
             <DesktopWindowCapabilities
               state={desktop}
               back={back}
+              backLabel={backLabel}
               chooseWeb={() => setTab('web')}
               plan={() => setDesktopPlan(true)}
             />
@@ -273,7 +276,7 @@ export default function TaskWebTargetPage({
               <p>账号：未核对 · 工作区：未核对 · 系统权限：未核对</p>
               <p>当前网页和资料继续保留；工具选择不会授予网页写入权限。</p>
               <button disabled={busy} onClick={back}>
-                返回描述与资料
+                {backLabel}
               </button>
             </>
           ) : (
@@ -328,7 +331,7 @@ export default function TaskWebTargetPage({
                   </button>
                 )}
                 <button disabled={busy} onClick={back}>
-                  返回描述与资料
+                  {backLabel}
                 </button>
               </div>
               {tab !== 'web' && (

@@ -126,10 +126,12 @@ export function DesktopWindowCapabilities({
   state,
   back,
   chooseWeb,
+  backLabel = '返回描述与资料',
   plan,
 }: {
   state: DesktopState;
   back: () => void;
+  backLabel?: string;
   chooseWeb: () => void;
   plan: () => void;
 }) {
@@ -194,7 +196,7 @@ export function DesktopWindowCapabilities({
         <button className="primary" onClick={chooseWeb}>
           改用网页目标
         </button>
-        <button onClick={back}>返回描述与资料</button>
+        <button onClick={back}>{backLabel}</button>
       </div>
     </div>
   );

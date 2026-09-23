@@ -133,7 +133,7 @@ export default function RunDetail({
             </p>
           )}
         </section>
-        <DesktopRunReceipt runId={r.id} receipts={d.desktopReceipts} />
+        <DesktopRunReceipt runId={r.id} receipts={d.desktopReceipts} snapshot={d.snapshot} />
         <div className={'run-observation-layout' + (tab === 'output' ? ' is-output' : '')}>
           <aside className="run-timeline" aria-label="执行步骤" hidden={tab === 'output'}>
             <h2>执行步骤</h2>

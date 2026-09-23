@@ -157,6 +157,7 @@ export default function AITaskWorkspace(props: Props) {
   const selectedTask = useRef<string | null>(null);
   const handledTool = useRef<string | undefined>(undefined);
   const handledConfiguration = useRef<string | undefined>(undefined);
+  const [targetFromRun, setTargetFromRun] = useState(false);
   const [desktopPhase, setDesktopPhase] = useState<'window' | 'plan' | 'changes'>('window');
   const [provider, setProvider] = useState<'deepseek' | 'openai-codex'>('deepseek');
   const [model, setModel] = useState('deepseek-flash');
@@ -316,7 +317,9 @@ export default function AITaskWorkspace(props: Props) {
               : page === 'missing-ai'
                 ? '先连接 AI，需求会为你保留'
                 : page === 'check'
-                  ? '试运行前，最后确认一次'
+                  ? detail?.flow?.desktopTarget
+                    ? '确认这次应用修改'
+                    : '试运行前，最后确认一次'
                   : page === 'home'
                     ? '开始任务'
                     : page === 'brief'
@@ -346,7 +349,9 @@ export default function AITaskWorkspace(props: Props) {
                   : page === 'understand'
                     ? () => void openTarget()
                     : page === 'target'
-                      ? backToBrief
+                      ? targetFromRun
+                        ? backToPlan
+                        : backToBrief
                       : page === 'guide' || page === 'brief'
                         ? () => {
                             void back();
@@ -365,7 +370,9 @@ export default function AITaskWorkspace(props: Props) {
                 : page === 'understand'
                   ? '选择操作对象'
                   : page === 'target'
-                    ? '描述与附件'
+                    ? targetFromRun
+                      ? '任务方案'
+                      : '描述与附件'
                     : page === 'guide' || page === 'brief'
                       ? '开始任务'
                       : undefined,
@@ -378,6 +385,7 @@ export default function AITaskWorkspace(props: Props) {
     page,
     backToPlan,
     backToBrief,
+    targetFromRun,
     props.onNavigation,
     draft,
     outputOptions,
@@ -579,7 +587,10 @@ export default function AITaskWorkspace(props: Props) {
   }
   const [targetEntry, setTargetEntry] = useState<{ key: string; tab: 'web' | 'window' }>();
   useEffect(() => {
-    if (page !== 'target') setTargetEntry(undefined);
+    if (page !== 'target') {
+      setTargetEntry(undefined);
+      setTargetFromRun(false);
+    }
   }, [page]);
   async function create(description: string) {
     await run(async () => {
@@ -907,7 +918,12 @@ export default function AITaskWorkspace(props: Props) {
   returnToTask.current = (taskId, intent) => {
     const arrive = (current: TaskDetail | null) => {
       if (intent === 'plan') backToPlan();
-      else if (
+      else if (intent === 'desktop-target') {
+        setTargetFromRun(true);
+        setDesktopPhase('window');
+        setTargetEntry({ key: crypto.randomUUID(), tab: 'window' });
+        setPage('target');
+      } else if (
         intent === 'modify' &&
         current?.flow &&
         !current.proposal &&
@@ -1541,7 +1557,8 @@ export default function AITaskWorkspace(props: Props) {
           openTools={props.openTools}
           task={detail.task}
           initialUrl={learning?.taskId === detail.task.id ? 'https://example.com' : undefined}
-          back={backToBrief}
+          back={targetFromRun ? backToPlan : backToBrief}
+          backLabel={targetFromRun ? '返回任务方案' : undefined}
           changed={props.changed}
           showBrowser={() => props.showBrowser(true)}
           selected={(next) => {
@@ -2238,7 +2255,7 @@ export default function AITaskWorkspace(props: Props) {
                           </div>
                           {flatten(flow.steps).some((step) => step.type === 'desktop') && (
                             <p className="ai-task-note">
-                              应用方案已保存，文档尚未修改。可继续核对步骤；单次授权与实际写入回读尚未开放。
+                              应用方案已保存。进入试运行检查后重新选择窗口与原文，核对替换文字并明确授权单次修改；保存草稿本身不会修改文档。
                             </p>
                           )}
                           {flatten(flow.steps).some((step) => step.type === 'mcp') && (

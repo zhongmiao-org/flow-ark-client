@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { TaskDetail } from '../shared/planning';
 import DesktopRunBinding from './DesktopRunBinding';
+import DesktopRunConfirmation from './DesktopRunConfirmation';
 import './desktop-run.css';
 import type { RunReviewInput, RunReviewPreview, ReviewResource } from '../shared/run-review';
 import { RunReviewSession } from './run-review-session';
@@ -32,6 +33,7 @@ function Resource({ resource }: { resource: ReviewResource }) {
   );
 }
 function Contents({ preview }: { preview: RunReviewPreview }) {
+  if (preview.desktop) return <DesktopRunConfirmation preview={preview} />;
   const tools = preview.toolCalls ?? [];
   const objects = preview.resources.filter((r) => !['file', 'directory'].includes(r.kind));
   const locations = preview.resources.filter((r) => ['file', 'directory'].includes(r.kind));
@@ -39,37 +41,6 @@ function Contents({ preview }: { preview: RunReviewPreview }) {
   const changes = preview.effects.filter((e) => ['write', 'network', 'unknown'].includes(e.kind));
   return (
     <>
-      {preview.desktop && (
-        <section className="run-review-card desktop-run-comparison" aria-label="本次选区修改">
-          <h2>本次只替换选中的段落</h2>
-          <p>
-            {preview.desktop.windowTitle
-              ? `文本编辑 · ${preview.desktop.windowTitle}`
-              : '尚未绑定本次窗口与原选区'}
-          </p>
-          {preview.desktop.expiresAt && (
-            <p>
-              本次绑定有效至 {new Date(preview.desktop.expiresAt).toLocaleTimeString('zh-CN')}
-              ；运行期间请保持文档和选区不变。
-            </p>
-          )}
-          <div className="desktop-run-texts">
-            <div>
-              <h3>核对的原文</h3>
-              {preview.desktop.original !== undefined ? (
-                <pre tabIndex={0}>{preview.desktop.original}</pre>
-              ) : (
-                <p>重新选择窗口后显示原文。</p>
-              )}
-            </div>
-            <div>
-              <h3>将替换为</h3>
-              <pre tabIndex={0}>{preview.desktop.replacement}</pre>
-            </div>
-          </div>
-          <p>单次替换后读取文字核对；不会自动保存文档。结果未知时需要人工检查，不自动重试。</p>
-        </section>
-      )}
       {preview.rerun && (
         <section className="run-review-card">
           <h2>关联原运行，从头执行</h2>
@@ -225,7 +196,11 @@ export default function RunReviewPage(props: Props) {
                 ? '检查通过'
                 : '需要处理';
   return (
-    <div className="page run-review-page" hidden={!props.active} aria-busy={state.loading}>
+    <div
+      className={'page run-review-page' + (preview?.desktop ? ' is-desktop' : '')}
+      hidden={!props.active}
+      aria-busy={state.loading}
+    >
       <div className="page-heading">
         <div>
           <h1 ref={heading} tabIndex={-1}>
@@ -259,7 +234,8 @@ export default function RunReviewPage(props: Props) {
           )}
         </div>
         <section className="ai-task-card run-review-confirm" aria-label="执行前检查">
-          <h2 aria-live="polite">{title}</h2>
+          <h2>{preview?.desktop ? '本次授权' : title}</h2>
+          {preview?.desktop && <p aria-live="polite">{title}</p>}
           {!attempt && (
             <>
               {preview?.checks.map((check, i) => (
@@ -354,7 +330,7 @@ export default function RunReviewPage(props: Props) {
               {attempt?.run ? '检查新的试运行' : '重新检查'}
             </button>
           )}
-          <button onClick={props.back}>回去修改</button>
+          <button onClick={props.back}>{preview?.desktop ? '取消，回到方案' : '回去修改'}</button>
           {!locked && !attempt?.run && <button onClick={props.edit}>配置流程与资源</button>}
           {preview && (
             <details className="run-review-limitations">
