@@ -1,0 +1,57 @@
+.mcp-argument-check {
+  padding: 20px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-subtle);
+  margin: 16px 0;
+}
+.mcp-argument-check.is-valid {
+  background: var(--fa-action-subtle);
+}
+.mcp-argument-check:is(.is-invalid, .is-unsupported) {
+  background: var(--fa-status-warning-bg);
+}
+.mcp-argument-check-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.mcp-argument-check-heading h3 {
+  margin: 0;
+}
+.mcp-argument-check-heading span {
+  font-weight: 600;
+  font-size: 13px;
+}
+.mcp-argument-check p {
+  line-height: 1.7;
+}
+.mcp-argument-check ul {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.mcp-argument-check li {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.mcp-argument-check code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.mcp-argument-check-note {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  margin-bottom: 0;
+}
+
+.mcp-argument-check li code {
+  display: block;
+  max-height: 96px;
+  overflow: auto;
+  padding: 4px 0;
+}

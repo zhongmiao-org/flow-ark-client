@@ -8,7 +8,7 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "036b1d6bb009dd1d27876537b502e991600b0b0c",
+    "governanceBaseline": "a72a3510d555fd580d6366bd41731dadae6eef7d",
     "contractsVersion": "0.14.0",
     "contractsTag": "contracts-v0.14.0"
   },

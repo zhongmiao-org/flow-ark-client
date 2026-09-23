@@ -1,5 +1,6 @@
 import type { FlowRecord, Step } from '../shared/types';
 import type { TaskMcpState } from '../shared/task-mcp-targets';
+import { reviewMcpArguments } from './mcp-argument-review';
 import type { ReviewToolCall } from '../shared/run-review';
 
 /** Never resolves arguments, reads credentials, or contacts a service. */
@@ -31,6 +32,7 @@ export function reviewToolCalls(record: FlowRecord, states: TaskMcpState[] = [])
               }
             : {}),
           ...(definition ? { definition: structuredClone(definition) } : {}),
+          argumentCheck: reviewMcpArguments(definition?.inputSchema, step.arguments),
           current,
           reason: !target
             ? '没有匹配的本机工具对象，请回到原任务重新选择。'

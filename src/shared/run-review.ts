@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { McpArgumentReview } from './mcp-argument-review';
 import type { Run, ScriptBundle, Step } from './types';
 import type { TaskMcpTarget } from './task-mcp-targets';
 import type { ToolDefinition } from './tool-connections';
@@ -57,6 +58,7 @@ export type ReviewEffect = {
 };
 /** Saved plan data for inspection only, never a tool-call authorization. */
 export type ReviewToolCall = {
+  argumentCheck?: McpArgumentReview;
   step: Extract<Step, { type: 'mcp' }>;
   ordinal: number;
   context: string[];

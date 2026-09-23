@@ -1,6 +1,7 @@
 import type { ReviewToolCall } from '../shared/run-review';
 import { referenceOf } from './value-references';
 import './run-review-tools.css';
+import McpArgumentCheck, { argumentStatusLabels } from './McpArgumentCheck';
 
 const hints = [
   ['readOnlyHint', '只读'],
@@ -43,7 +44,13 @@ function Call({ call }: { call: ReviewToolCall }) {
   const { step, target, definition } = call;
   const refs = references(step.arguments);
   return (
-    <details className="run-review-tool">
+    <details
+      className="run-review-tool"
+      open={
+        !!call.argumentCheck &&
+        ['invalid', 'unsupported', 'unavailable'].includes(call.argumentCheck.status)
+      }
+    >
       <summary>
         <span>
           第 {call.ordinal} 步 · {step.name || definition?.title || step.tool}
@@ -54,6 +61,7 @@ function Call({ call }: { call: ReviewToolCall }) {
         <small className={call.current ? '' : 'run-review-error'}>
           {call.current ? '本机记录一致 · 调用尚未开放' : '工具对象需要处理'}
         </small>
+        <small>参数：{argumentStatusLabels[call.argumentCheck?.status ?? 'unavailable']}</small>
       </summary>
       <div className="run-review-tool-body">
         <p>{call.reason}</p>
@@ -108,8 +116,9 @@ function Call({ call }: { call: ReviewToolCall }) {
             </p>
           </>
         )}
+        <McpArgumentCheck result={call.argumentCheck} />
         <h3>拟发送参数</h3>
-        <p>以下是已保存方案中的配置；尚未求值，也未按服务的输入定义验证。</p>
+        <p>以下是已保存方案中的原始配置；动态引用未求值，固定值的核对结果见上方。</p>
         <pre tabIndex={0} aria-label={`第 ${call.ordinal} 步完整参数`}>
           {JSON.stringify(step.arguments, null, 2)}
         </pre>
