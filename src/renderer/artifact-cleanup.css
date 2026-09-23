@@ -1,0 +1,140 @@
+/* Figma 2:4421: cleanup review, retained records and incomplete result. */
+.artifact-cleanup {
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  padding: 24px;
+  margin-top: 24px;
+}
+.artifact-cleanup h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.artifact-cleanup p {
+  margin: 8px 0 0;
+  color: var(--fa-text-secondary);
+}
+.artifact-cleanup .section-row {
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.artifact-cleanup-dialog {
+  width: min(640px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  padding: 32px;
+  overflow: auto;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-16);
+  background: var(--fa-bg-surface);
+  color: var(--fa-text-primary);
+}
+.artifact-cleanup-dialog::backdrop {
+  background: rgb(18 26 42 / 48%);
+}
+.artifact-cleanup-dialog h2 {
+  margin: 8px 0 12px;
+  font-size: 24px;
+  line-height: 36px;
+}
+.artifact-cleanup-dialog h2:focus {
+  outline: none;
+}
+.artifact-cleanup-dialog p {
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+.artifact-cleanup-dialog header > p,
+.artifact-cleanup-kicker {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.artifact-cleanup-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+.artifact-cleanup-summary span {
+  display: block;
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+  margin-bottom: 8px;
+}
+.artifact-cleanup-summary strong {
+  font-size: 18px;
+  line-height: 28px;
+  overflow-wrap: anywhere;
+}
+.artifact-cleanup-message {
+  padding: 16px;
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-bg-subtle);
+  margin: 20px 0;
+}
+.artifact-cleanup-message p {
+  margin: 8px 0 0;
+}
+.artifact-cleanup-message.error {
+  color: var(--fa-status-error);
+  background: var(--fa-status-error-bg);
+}
+.artifact-cleanup-message.warning {
+  color: var(--fa-status-warning);
+  background: var(--fa-status-warning-bg);
+}
+.artifact-cleanup-message.success {
+  color: var(--fa-status-success);
+  background: var(--fa-status-success-bg);
+}
+.artifact-cleanup-files {
+  max-height: 220px;
+  overflow: auto;
+  list-style: none;
+  padding: 0;
+}
+.artifact-cleanup-files li {
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--fa-border-default);
+}
+.artifact-cleanup-files code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.artifact-cleanup-files span {
+  white-space: nowrap;
+  color: var(--fa-text-secondary);
+}
+.artifact-cleanup-confirm {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 24px 0;
+}
+.artifact-cleanup-confirm input {
+  width: 16px;
+  height: 16px;
+  margin: 3px 0 0;
+  flex-shrink: 0;
+  accent-color: var(--fa-action-primary);
+}
+.artifact-cleanup-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+.artifact-cleanup-actions button {
+  min-width: 140px;
+}
+@media (max-width: 600px) {
+  .artifact-cleanup-dialog {
+    width: calc(100vw - 24px);
+    max-height: calc(100vh - 24px);
+    padding: 20px;
+  }
+  .artifact-cleanup-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
