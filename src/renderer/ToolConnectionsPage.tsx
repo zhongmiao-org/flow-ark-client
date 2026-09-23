@@ -1,5 +1,5 @@
 import ToolConnectionUsage, { type ConnectionTaskReference } from './ToolConnectionUsage';
-import DesktopAssistantConnection from './DesktopAssistantConnection';
+import DesktopAssistantConnection, { type AssistantPhase } from './DesktopAssistantConnection';
 import { usePageBack } from './use-page-back';
 import {
   useEffect,
@@ -128,6 +128,7 @@ export default function ToolConnectionsPage({
   const [view, setView] = useState<'catalog' | 'config' | 'review' | 'saved' | 'assistant'>(
     'catalog',
   );
+  const [assistantPhase, setAssistantPhase] = useState<AssistantPhase>('setup');
   const [connections, setConnections] = useState<ToolConnection[]>([]);
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState('');
@@ -249,6 +250,7 @@ export default function ToolConnectionsPage({
     listRead.current++;
     setListLoading(false);
     if (next === 'catalog') void refresh().catch(() => {});
+    if (next === 'assistant') setAssistantPhase('setup');
     setView(next);
     setError('');
     setConfirm(undefined);
@@ -516,7 +518,11 @@ export default function ToolConnectionsPage({
           ? '检查发现的能力'
           : view === 'saved'
             ? `${selected?.config.displayName || '连接'} · ${selected ? labels[selected.status] : '已变化'}`
-            : '连接本机应用助手';
+            : assistantPhase === 'connected'
+              ? '本机应用助手'
+              : assistantPhase === 'recovery'
+                ? '应用窗口需要重新检查'
+                : '连接本机应用助手';
   const back =
     view === 'catalog'
       ? () => go(leave)
@@ -567,7 +573,9 @@ export default function ToolConnectionsPage({
                 : view === 'config'
                   ? '高级设置 · 为熟悉来源和权限的用户提供'
                   : view === 'assistant'
-                    ? '连接向导 · 1 核对来源 → 2 系统权限 → 3 只读检查'
+                    ? assistantPhase === 'setup'
+                      ? '连接向导 · 1 核对来源 → 2 系统权限 → 3 只读检查'
+                      : '本机桌面 · TextEdit（文本编辑） · 系统权限与任务授权分别核对'
                     : content
                       ? `${content.config.transport.type === 'http' ? '远程 / 本机 HTTP' : '本地程序'} · ${address(content.config)}`
                       : '来源、系统权限和能力必须逐项核对'}
@@ -1106,6 +1114,7 @@ export default function ToolConnectionsPage({
         {view === 'assistant' && (
           <DesktopAssistantConnection
             active={active}
+            onPhase={setAssistantPhase}
             choose={() => choose('window')}
             back={catalog}
           />

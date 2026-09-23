@@ -181,6 +181,18 @@
 .tool-assistant-columns > .ai-task-card {
   min-height: 716px;
 }
+.tool-assistant-managed > .ai-task-card {
+  min-height: 700px;
+}
+.tool-assistant-managed .tool-assistant-capabilities li {
+  min-height: 111px;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+}
+.tool-assistant-recovery {
+  min-height: 120px;
+}
 .tool-assistant-source {
   min-height: 126px;
 }
