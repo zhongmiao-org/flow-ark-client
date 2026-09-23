@@ -6,9 +6,9 @@ import {
   runSourceLabels,
   runDisplayLabels as runStateLabels,
 } from '../shared/run-history';
-import { RunObservation, RunOutput } from './RunObservation';
+import { RunObservation } from './RunObservation';
 import RunRerunPanel from './RunRerunPanel';
-import ArtifactCleanupPanel from './ArtifactCleanupPanel';
+import RunOutputWorkspace from './RunOutputWorkspace';
 import { runTimeline } from './run-timeline';
 import { kinds } from './node-kinds';
 import RunEventLog from './RunEventLog';
@@ -41,7 +41,7 @@ export default function RunDetail({
   detail: any;
   fault?: string;
   control: (id: string, action: string) => void;
-  reveal: (id: string) => void;
+  reveal: (id: string) => Promise<unknown>;
   reload: () => Promise<void>;
   open: (detail: any) => void;
   tab: RunTab;
@@ -115,8 +115,8 @@ export default function RunDetail({
           </p>
         )}
       </section>
-      <div className="run-observation-layout">
-        <aside className="run-timeline" aria-label="执行步骤">
+      <div className={'run-observation-layout' + (tab === 'output' ? ' is-output' : '')}>
+        <aside className="run-timeline" aria-label="执行步骤" hidden={tab === 'output'}>
           <h2>执行步骤</h2>
           {timeline.length ? (
             <ol>
@@ -209,41 +209,7 @@ export default function RunDetail({
             aria-labelledby="run-tab-output"
             hidden={tab !== 'output'}
           >
-            <RunOutput detail={observed} />
-            <h3>运行产物</h3>
-            {d.artifacts.length ? (
-              d.artifacts.map((a: any) => (
-                <div
-                  key={a.artifactId}
-                  className="row artifact-row"
-                  data-artifact-id={a.artifactId}
-                >
-                  <div className="artifact-description">
-                    <p>
-                      {a.name} · {a.size} 字节
-                    </p>
-                    <span className={!a.available ? 'field-error' : undefined}>
-                      {a.integrity === 'cleared'
-                        ? '已清理'
-                        : a.integrity === 'verified'
-                          ? '已保存副本'
-                          : a.integrity === 'changed'
-                            ? '副本内容已改动'
-                            : a.integrity === 'unverified'
-                              ? '旧记录，未保存副本'
-                              : '文件已移动、删除或不可访问'}
-                    </span>
-                    <p className="path-text">{a.path}</p>
-                  </div>
-                  <button disabled={!a.available} onClick={() => reveal(a.artifactId)}>
-                    {a.storage === 'snapshot-v1' ? '定位副本' : '定位当前文件'}
-                  </button>
-                </div>
-              ))
-            ) : (
-              <p>尚无已保存的运行产物。</p>
-            )}
-            <ArtifactCleanupPanel run={r} cleanup={d.artifactCleanup} changed={reload} />
+            <RunOutputWorkspace detail={observed} reveal={reveal} reload={reload} />
           </div>
           <div
             id="run-panel-logs"

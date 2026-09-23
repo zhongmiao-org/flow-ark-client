@@ -1,0 +1,126 @@
+.run-observation-layout.is-output {
+  grid-template-columns: minmax(0, 1fr);
+}
+.run-observation-layout.is-output > .run-observation-content {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.run-observation-layout.is-output .run-detail-tabs {
+  margin: 0 0 24px;
+}
+.run-output-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  container-type: inline-size;
+  min-width: 0;
+}
+.run-output-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.47fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+}
+.run-output-result,
+.run-output-files {
+  padding: 24px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-surface);
+  min-width: 0;
+}
+.run-output-result {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.run-output-result .run-output pre {
+  background: var(--fa-bg-canvas);
+  border-color: var(--fa-border-default);
+  color: var(--fa-text-primary);
+  border-radius: 8px;
+}
+.run-output-files {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.run-output-files > header,
+.run-artifact-card > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.run-output-files h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+}
+.run-artifact-card h4,
+.run-artifact-empty h4 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+.run-output-files p,
+.run-output-files header span,
+.run-output-boundary {
+  margin: 0;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.run-artifact-card,
+.run-artifact-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+}
+.run-artifact-card > button {
+  align-self: flex-start;
+}
+.run-artifact-card .run-artifact-status {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--fa-bg-canvas);
+  align-self: flex-start;
+}
+.run-artifact-card .is-verified {
+  color: var(--fa-status-success);
+}
+.run-artifact-card .is-unavailable {
+  color: var(--fa-status-warning);
+}
+.run-artifact-card .field-error {
+  color: var(--fa-status-error);
+}
+.run-artifact-card summary {
+  cursor: pointer;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 20px;
+}
+.run-artifact-card summary:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 2px;
+}
+.run-artifact-card details[open] summary {
+  margin-bottom: 8px;
+}
+.run-artifact-empty {
+  background: var(--fa-bg-canvas);
+}
+@container (max-width: 760px) {
+  .run-output-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

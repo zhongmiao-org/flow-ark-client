@@ -1655,7 +1655,7 @@ export default function App() {
                   setTab={setRunTab}
                   showBrowser={() => setBrowserOpen(true)}
                   control={(id, a) => action(() => api('run.control', { id, action: a }))}
-                  reveal={(id) => action(() => api('artifact.reveal', { id }))}
+                  reveal={(id) => api('artifact.reveal', { id })}
                 />
               )}
             </div>
