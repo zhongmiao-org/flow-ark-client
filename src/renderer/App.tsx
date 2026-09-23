@@ -1865,8 +1865,9 @@ function Editor({
     }
   };
   const append = (node: Step, target: Destination) => {
-    if (structure(() => insertStep(r.flow.steps, node, target), node.id) && target.side === 'after')
-      setDestination(node.id + ':after');
+    const added = structure(() => insertStep(r.flow.steps, node, target), node.id);
+    if (added && target.side === 'after') setDestination(node.id + ':after');
+    return added;
   };
   const duplicate = () => {
     try {

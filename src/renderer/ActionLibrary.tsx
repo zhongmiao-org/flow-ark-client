@@ -1,10 +1,24 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Search, Plus, X } from 'lucide-react';
 import type { Step } from '../shared/types';
 import type { Destination } from './flow-editing';
 import { kinds } from './node-kinds';
 import { newStep } from './node-defaults';
 import { browserActions, newBrowserStep, type BrowserOperation } from './browser-actions';
+import './action-library.css';
+
+const groups = ['网页', '数据与文件', '流程控制'];
+const descriptions: Record<string, string> = {
+  value: '准备文本、数字或结构化数据',
+  assert: '核对结果，不满足时停止运行',
+  http: '发送 HTTP 请求并读取响应',
+  script: '编写 JavaScript 或 TypeScript 处理逻辑',
+  file: '读取、写入或整理绑定目录中的文件',
+  excel: '读取、写入工作簿或配置表格映射',
+  human: '暂停当前步骤，等待人工确认',
+  condition: '根据判断结果进入不同分支',
+  loop: '依次处理数组中的每一项',
+};
 
 const entries = [
   ...Object.entries(browserActions).map(([operation, preset]) => ({
@@ -21,7 +35,7 @@ const entries = [
       type,
       group: ['condition', 'loop', 'human', 'assert'].includes(type) ? '流程控制' : '数据与文件',
       label: kind.label,
-      detail: kind.label,
+      detail: descriptions[type] || kind.label,
       keywords: type,
       create: () => newStep(type),
     })),
@@ -71,38 +85,45 @@ export default function ActionLibrary({
   setDestination,
 }: {
   steps: Step[];
-  add: (node: Step, destination: Destination) => void;
+  add: (node: Step, destination: Destination) => boolean;
   destination: string;
   setDestination: (destination: string) => void;
 }) {
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState('全部');
+  const [notice, setNotice] = useState('');
+  const search = useRef<HTMLInputElement>(null);
   const targets = destinationChoices(steps);
   const target = targets.find((item) => item.value === destination);
   const terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
-  const matches = entries.filter((entry) =>
-    terms.length
-      ? terms.every((term) =>
-          `${entry.label} ${entry.detail} ${entry.keywords} ${entry.group}`
-            .toLocaleLowerCase()
-            .includes(term),
-        )
-      : group === '全部' || entry.group === group,
+  const matches = entries.filter(
+    (entry) =>
+      (group === '全部' || entry.group === group) &&
+      terms.every((term) =>
+        `${entry.label} ${entry.detail} ${entry.keywords} ${entry.group}`
+          .toLocaleLowerCase()
+          .includes(term),
+      ),
   );
+  const clear = () => {
+    setQuery('');
+    search.current?.focus();
+  };
   return (
     <aside className="node-library" aria-label="动作库">
       <div className="action-library-tools">
-        <span className="eyebrow">动作库</span>
+        <h3>动作库</h3>
         <div className="action-search">
           <Search size={14} aria-hidden="true" />
           <input
+            ref={search}
             aria-label="搜索动作"
             placeholder="搜索动作…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
           {query && (
-            <button aria-label="清空动作搜索" onClick={() => setQuery('')}>
+            <button aria-label="清空动作搜索" onClick={clear}>
               <X size={12} />
             </button>
           )}
@@ -126,36 +147,72 @@ export default function ActionLibrary({
             ))}
           </select>
         </label>
-        <select
-          aria-label="动作分类"
-          value={terms.length ? '全部' : group}
-          onChange={(e) => setGroup(e.target.value)}
-          disabled={terms.length > 0}
-        >
-          {['全部', '网页', '数据与文件', '流程控制'].map((name) => (
+        <select aria-label="动作分类" value={group} onChange={(e) => setGroup(e.target.value)}>
+          {['全部', ...groups].map((name) => (
             <option key={name}>{name}</option>
           ))}
         </select>
+        <p className="action-result-count" role="status">
+          {matches.length} 个可用动作
+        </p>
+        {!target && (
+          <p className="field-error" role="alert">
+            添加位置已失效，请先重新选择位置。
+          </p>
+        )}
       </div>
       <div className="action-list" aria-label="可添加动作">
-        {matches.map((entry) => {
-          const Icon = kinds[entry.type].icon;
+        {groups.map((name) => {
+          const members = matches.filter((entry) => entry.group === name);
+          if (!members.length) return null;
           return (
-            <button
-              key={entry.id}
-              aria-label={`添加 ${entry.label}`}
-              title={`${entry.detail} · ${target?.label ?? '请选择添加位置'}`}
-              disabled={!target}
-              onClick={() => target && add(entry.create(), target)}
-            >
-              <Icon size={15} aria-hidden="true" />
-              <span>{entry.label}</span>
-              <Plus size={12} className="action-add-icon" aria-hidden="true" />
-            </button>
+            <section className="action-group" key={name} aria-label={name}>
+              <h4>
+                {name === '网页' ? '网页操作' : name}
+                <span>{members.length}</span>
+              </h4>
+              {members.map((entry) => {
+                const Icon = kinds[entry.type].icon;
+                return (
+                  <button
+                    key={entry.id}
+                    aria-label={`添加 ${entry.label}`}
+                    title={`${entry.detail} · ${target?.label ?? '请选择添加位置'}`}
+                    disabled={!target}
+                    onClick={() => {
+                      if (!target) return;
+                      const added = add(entry.create(), target);
+                      setNotice(
+                        added
+                          ? `已添加“${entry.label}”至 ${target.label}；可在当前步骤配置中继续编辑。`
+                          : '未添加动作，请先处理当前编辑器中的错误。',
+                      );
+                    }}
+                  >
+                    <Icon size={15} aria-hidden="true" />
+                    <span className="action-entry-copy">
+                      <strong>{entry.label}</strong>
+                      <small>{entry.detail}</small>
+                    </span>
+                    <Plus size={12} className="action-add-icon" aria-hidden="true" />
+                  </button>
+                );
+              })}
+            </section>
           );
         })}
-        {!matches.length && <p role="status">没有匹配动作，试试“填写”或“select”。</p>}
+        {!matches.length && (
+          <div className="action-library-empty">
+            <p>没有匹配动作</p>
+            <p>调整关键词或分类后重试。</p>
+            {query && <button onClick={clear}>清空搜索</button>}
+            {group !== '全部' && <button onClick={() => setGroup('全部')}>查看全部分类</button>}
+          </div>
+        )}
       </div>
+      <p className="action-library-notice" role="status" aria-live="polite">
+        {notice || '选择动作，将其添加到指定位置。添加不会执行流程。'}
+      </p>
     </aside>
   );
 }
