@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { PlanningTask, TaskDetail } from '../shared/planning';
 import { sameWebPage, type TaskWebPreview } from '../shared/task-web-target';
 import { toolsNotExecutable } from '../shared/task-mcp-targets';
+import DesktopTaskPlan from './DesktopTaskPlan';
 import TaskTargetConnections from './TaskTargetConnections';
 import {
   DesktopWindowList,
@@ -11,6 +12,7 @@ import {
 const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
 export default function TaskWebTargetPage({
+  phaseChanged,
   active = true,
   task,
   initialUrl,
@@ -21,6 +23,7 @@ export default function TaskWebTargetPage({
   changed,
   openTools,
 }: {
+  phaseChanged: (phase: 'window' | 'plan' | 'changes') => void;
   active?: boolean;
   task: PlanningTask;
   initialUrl?: string;
@@ -35,8 +38,16 @@ export default function TaskWebTargetPage({
   const [tab, setTab] = useState<'web' | 'window' | 'tools'>(
     initialTab ?? (task.toolTargets?.length ? 'tools' : 'web'),
   );
+  const [desktopPlan, setDesktopPlan] = useState(false);
+  useEffect(() => {
+    if (!desktopPlan) phaseChanged('window');
+  }, [desktopPlan, phaseChanged]);
+  useEffect(() => () => phaseChanged('window'), [phaseChanged]);
   const tabId = useId();
   const desktop = useDesktopWindows(active && tab === 'window', `${task.id}:${task.revision}`);
+  useEffect(() => {
+    setDesktopPlan(false);
+  }, [desktop.preview?.status === 'ready' ? desktop.preview.previewId : undefined]);
   const tabs = [
     { id: 'web', label: '网页' },
     { id: 'window', label: '应用窗口' },
@@ -106,6 +117,18 @@ export default function TaskWebTargetPage({
       showBrowser();
       await refresh();
     });
+  if (desktopPlan && desktop.selected && desktop.preview?.status === 'ready')
+    return (
+      <DesktopTaskPlan
+        phaseChanged={phaseChanged}
+        key={desktop.preview.previewId}
+        task={task}
+        selection={desktop.preview}
+        target={desktop.selected}
+        back={() => setDesktopPlan(false)}
+        editDescription={back}
+      />
+    );
   return (
     <section className="task-web-target" aria-label="选择任务对象">
       {error && (
@@ -234,6 +257,7 @@ export default function TaskWebTargetPage({
               state={desktop}
               back={back}
               chooseWeb={() => setTab('web')}
+              plan={() => setDesktopPlan(true)}
             />
           ) : tab === 'tools' ? (
             <>

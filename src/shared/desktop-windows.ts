@@ -2,10 +2,12 @@ import { z } from 'zod';
 
 const uuid = z.string().uuid();
 export const selectionIdentity = z.object({ observationId: uuid, windowId: uuid }).strict();
+export const selectionReference = selectionIdentity.extend({ previewId: uuid });
 export const desktopMethods = {
   'desktop.windows.list': z.object({ requestId: uuid }).strict(),
   'desktop.windows.release': z.object({ observationId: uuid }).strict(),
   'desktop.selection.preview': selectionIdentity,
+  'desktop.selection.clear': selectionReference,
   'desktop.accessibility.openSettings': z.object({}).strict(),
 };
 const windowInfo = z.object({ title: z.string().max(1024), minimized: z.boolean() }).strict();
@@ -89,6 +91,7 @@ export const desktopSelectionPreview = z.discriminatedUnion('status', [
     .object({
       ...previewIdentity,
       status: z.literal('ready'),
+      previewId: uuid,
       text: z.string().min(1).max(20000),
       range,
       redacted: z.boolean(),
@@ -104,4 +107,5 @@ export const desktopSelectionPreview = z.discriminatedUnion('status', [
 export type DesktopWindowDiscovery = z.infer<typeof desktopWindowDiscovery>;
 export type DesktopWindow = DesktopWindowDiscovery['windows'][number];
 export type SelectionIdentity = z.infer<typeof selectionIdentity>;
+export type SelectionReference = z.infer<typeof selectionReference>;
 export type DesktopSelectionPreview = z.infer<typeof desktopSelectionPreview>;

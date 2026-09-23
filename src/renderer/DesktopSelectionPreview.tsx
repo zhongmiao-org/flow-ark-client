@@ -3,8 +3,10 @@ import type useDesktopWindows from './useDesktopWindows';
 
 export default function DesktopSelectionPreview({
   state,
+  plan,
 }: {
   state: ReturnType<typeof useDesktopWindows>;
+  plan: () => void;
 }) {
   const titleId = useId(),
     heading = useRef<HTMLHeadingElement>(null),
@@ -74,7 +76,14 @@ export default function DesktopSelectionPreview({
           重新检查窗口
         </button>
       )}
-      <p className="task-desktop-observed">当前仅供本地查看，暂不支持应用任务规划或文档写入。</p>
+      {preview?.status === 'ready' && (
+        <button className="primary" onClick={plan} disabled={expired || reading || state.loading}>
+          用这个窗口规划
+        </button>
+      )}
+      <p className="task-desktop-observed">
+        下一步可核对发送内容并生成改动预览；文档写入尚未开放。
+      </p>
     </section>
   );
 }

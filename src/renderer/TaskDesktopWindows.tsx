@@ -126,10 +126,12 @@ export function DesktopWindowCapabilities({
   state,
   back,
   chooseWeb,
+  plan,
 }: {
   state: DesktopState;
   back: () => void;
   chooseWeb: () => void;
+  plan: () => void;
 }) {
   const { snapshot, loading } = state;
   const permission = state.expired ? undefined : snapshot?.accessibility;
@@ -182,10 +184,10 @@ export function DesktopWindowCapabilities({
           </button>
         )}
       </div>
-      <DesktopSelectionPreview state={state} />
+      <DesktopSelectionPreview state={state} plan={plan} />
       {!state.selected && (
         <p className="ai-task-note">
-          窗口与选区仅供本地核对；规划和执行仍未开放，不改变已选网页或工具。
+          选择窗口并读取段落后可生成改动预览，不改变已选网页或工具；文档写入尚未开放。
         </p>
       )}
       <div className="ai-task-actions">

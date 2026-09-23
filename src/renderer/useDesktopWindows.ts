@@ -14,7 +14,22 @@ const release = (observationId?: string) => {
 export default function useDesktopWindows(active: boolean, identity: string) {
   const [snapshot, setSnapshot] = useState<DesktopWindowDiscovery>();
   const [selectedId, setSelectedId] = useState<string>();
-  const [preview, setPreview] = useState<DesktopSelectionPreview>();
+  const [preview, setPreviewState] = useState<DesktopSelectionPreview>();
+  const previewRef = useRef<DesktopSelectionPreview | undefined>(undefined);
+  const setPreview = (next: DesktopSelectionPreview | undefined) => {
+    previewRef.current = next;
+    setPreviewState(next);
+  };
+  const discard = (value?: DesktopSelectionPreview) => {
+    if (value?.status === 'ready')
+      void window.flowark
+        .request('desktop.selection.clear', {
+          observationId: value.observationId,
+          windowId: value.windowId,
+          previewId: value.previewId,
+        })
+        .catch(() => {});
+  };
   const [reading, setReading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [settingsPending, setSettingsPending] = useState(false);
@@ -25,6 +40,7 @@ export default function useDesktopWindows(active: boolean, identity: string) {
     previewEpoch = useRef(0),
     observation = useRef<string | undefined>(undefined);
   const clearPreview = () => {
+    discard(previewRef.current);
     previewEpoch.current++;
     setPreview(undefined);
     setReading(false);
@@ -74,6 +90,7 @@ export default function useDesktopWindows(active: boolean, identity: string) {
     return () => {
       epoch.current++;
       previewEpoch.current++;
+      discard(previewRef.current);
       releaseCurrent();
     };
   }, [active, identity]);
@@ -100,6 +117,7 @@ export default function useDesktopWindows(active: boolean, identity: string) {
   const readSelection = async () => {
     if (!snapshot?.observationId || !selected || reading || loading || expired) return;
     const source = { observationId: snapshot.observationId, windowId: selected.id };
+    discard(previewRef.current);
     const ticket = ++previewEpoch.current;
     setPreview(undefined);
     setReading(true);
@@ -111,7 +129,10 @@ export default function useDesktopWindows(active: boolean, identity: string) {
       );
       if (next.observationId !== source.observationId || next.windowId !== source.windowId)
         throw new Error('预览来源不一致');
-      if (ticket !== previewEpoch.current) return;
+      if (ticket !== previewEpoch.current) {
+        discard(next);
+        return;
+      }
       if (
         next.status === 'ready' &&
         (next.expiresAt <= Date.now() || next.expiresAt !== snapshot.expiresAt)

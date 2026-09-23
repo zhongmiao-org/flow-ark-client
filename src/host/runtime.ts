@@ -61,6 +61,7 @@ import type {
   PreparedScripts,
   ExecutionObservation,
 } from '../shared/types';
+import { DesktopPlanning } from './desktop-planning';
 import { Planning } from './planning';
 import { PlanningRepair } from './planning-repair';
 import { TaskWebTargets } from './task-web-target';
@@ -94,6 +95,7 @@ export class Runtime {
   readonly ready: Promise<void>;
   readonly templates: Templates;
   readonly planning: Planning;
+  readonly desktopPlanning: DesktopPlanning;
   readonly learning: Learning;
   readonly webTargets: TaskWebTargets;
   readonly outputs: TaskOutputs;
@@ -136,6 +138,7 @@ export class Runtime {
       },
       inUse: (provider) =>
         this.planning?.usesProvider(provider) ||
+        this.desktopPlanning?.usesProvider(provider) ||
         this.store
           .list<Run>('run')
           .some(
@@ -263,6 +266,17 @@ export class Runtime {
           throw new Error('应用正在退出或休眠，不能开始新的规划操作');
         if (this.store.fault) throw new Error(this.store.fault);
       },
+    });
+    this.desktopPlanning = new DesktopPlanning({
+      task: (id) => this.planning.detail(id).task,
+      assertAvailable: () => {
+        if (this.stopping || this.suspended || this.store.fault)
+          throw new Error('应用或存储尚未就绪');
+      },
+      configuration: (provider) => this.system('ai.configuration.read', { provider }),
+      key: (provider, revision) => this.system('credentials.get', { id: provider, revision }),
+      captureConfiguration: (provider) => this.aiSettings.capture([provider]),
+      selection: (reference) => this.system('desktop.selection.resolve', reference),
     });
     this.scripts = new ScriptProcesses({
       store: this.store,
@@ -1233,6 +1247,7 @@ export class Runtime {
       errors.push(error);
     });
     try {
+      this.desktopPlanning.invalidate();
       this.planning.cancelAll();
     } catch (error) {
       errors.push(error);
@@ -1312,8 +1327,21 @@ export class Runtime {
       await this.ready;
       return this.learning.request(method, args);
     }
+    if (method === 'system.desktop.invalidate')
+      return this.desktopPlanning.invalidate(args.observationId);
+    if (method.startsWith('desktop.plan.')) {
+      await this.ready;
+      return this.desktopPlanning.request(method, args);
+    }
     if (method.startsWith('task.')) {
       await this.ready;
+      if (
+        ['task.generate', 'task.repair.generate'].includes(method) &&
+        this.desktopPlanning.hasTask(args.id)
+      )
+        throw new Error('应用选区仍在生成，请先取消或等待完成');
+      if (['task.save', 'task.adopt', 'task.undo', 'task.cancel'].includes(method))
+        this.desktopPlanning.cancelTask(args.id);
       return this.planning.request(method, args);
     }
     switch (method) {
@@ -1680,6 +1708,7 @@ export class Runtime {
     });
     let planningError: unknown;
     try {
+      this.desktopPlanning.invalidate();
       this.planning.cancelAll();
     } catch (error) {
       planningError = error;

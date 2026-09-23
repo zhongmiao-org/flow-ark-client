@@ -13,6 +13,7 @@ import {
   powerMonitor,
 } from 'electron';
 import { EmbeddedBrowser } from './embedded-browser';
+import { selectionReference } from '../shared/desktop-windows';
 import { DesktopWindows } from './desktop-windows';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -206,6 +207,10 @@ app
           )
         : join(__dirname, 'native', 'flowark-window-discovery'),
       () => [...knownSecrets],
+      (observationId) => {
+        if (rpc && !hostStopped)
+          void rpc.call('system.desktop.invalidate', { observationId }).catch(() => {});
+      },
     );
     app.on('before-quit', () => desktopWindows.stop());
     powerMonitor.on('suspend', () => desktopWindows.stop());
@@ -247,6 +252,7 @@ app
         if (method === 'desktop.windows.list') return desktopWindows.list(args.requestId);
         if (method === 'desktop.windows.release') return desktopWindows.release(args.observationId);
         if (method === 'desktop.selection.preview') return desktopWindows.preview(args);
+        if (method === 'desktop.selection.clear') return desktopWindows.clear(args);
         if (method === 'desktop.accessibility.openSettings') {
           if (process.platform !== 'darwin') throw new Error('应用窗口发现当前仅支持 macOS');
           await shell.openExternal(
@@ -356,6 +362,8 @@ app
                 executable: app.getPath('exe'),
                 version: process.versions.chrome,
               };
+            if (method === 'desktop.selection.resolve')
+              return desktopWindows.resolve(selectionReference.parse(args));
             if (method.startsWith('browser.embedded.')) return embedded.system(method, args);
             if (method === 'task.attachment.image.validate') {
               if (

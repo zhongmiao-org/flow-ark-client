@@ -14,7 +14,10 @@ export class DesktopWindowSession {
   private child: ChildProcessWithoutNullStreams;
   private rpc: Rpc;
   private timer: NodeJS.Timeout;
-  constructor(executable: string) {
+  constructor(
+    executable: string,
+    private readonly closedCallback: () => void = () => {},
+  ) {
     this.child = spawn(executable, [], { stdio: 'pipe' });
     this.rpc = new Rpc(
       (message) => {
@@ -67,5 +70,6 @@ export class DesktopWindowSession {
     this.windows.clear();
     this.rpc.close();
     this.child.kill('SIGKILL');
+    this.closedCallback();
   }
 }

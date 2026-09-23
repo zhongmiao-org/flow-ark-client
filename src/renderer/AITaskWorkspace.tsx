@@ -157,6 +157,7 @@ export default function AITaskWorkspace(props: Props) {
   const selectedTask = useRef<string | null>(null);
   const handledTool = useRef<string | undefined>(undefined);
   const handledConfiguration = useRef<string | undefined>(undefined);
+  const [desktopPhase, setDesktopPhase] = useState<'window' | 'plan' | 'changes'>('window');
   const [provider, setProvider] = useState<'deepseek' | 'openai-codex'>('deepseek');
   const [model, setModel] = useState('deepseek-flash');
   useLayoutEffect(() => {
@@ -307,7 +308,11 @@ export default function AITaskWorkspace(props: Props) {
           : page === 'guide'
             ? '第一次，让我们一起完成'
             : page === 'target'
-              ? '这次要操作哪里？'
+              ? desktopPhase === 'plan'
+                ? '整理所选段落的方案'
+                : desktopPhase === 'changes'
+                  ? '核对这次应用改动'
+                  : '这次要操作哪里？'
               : page === 'missing-ai'
                 ? '先连接 AI，需求会为你保留'
                 : page === 'check'
@@ -1233,7 +1238,9 @@ export default function AITaskWorkspace(props: Props) {
                         : page === 'brief' && !scope
                           ? '第 1 步 / 描述 · 对话和附件作为本次任务草稿保留'
                           : page === 'target'
-                            ? '第 2 步 / 选目标 · 只有你明确选择的对象会进入任务上下文'
+                            ? desktopPhase === 'window'
+                              ? '第 2 步 / 选目标 · 只有你明确选择的对象会进入任务上下文'
+                              : '应用任务 · 改动预览 · 尚未修改文档'
                             : generating
                               ? '正在理解本次任务，你可以取消生成。'
                               : scope
@@ -1509,6 +1516,7 @@ export default function AITaskWorkspace(props: Props) {
         />
       ) : page === 'target' && detail ? (
         <TaskWebTargetPage
+          phaseChanged={setDesktopPhase}
           key={targetEntry?.key}
           initialTab={targetEntry?.tab}
           active={props.active}

@@ -10,6 +10,7 @@ import { connectionMethods } from './tool-connections';
 import { aiConfigurationMethods } from './ai-settings';
 import { runReviewConfirmSchema, runReviewPreviewSchema } from './run-review';
 import { localCredentialMethods } from './local-credentials';
+import { desktopPlanMethods } from './desktop-planning';
 import { desktopMethods } from './desktop-windows';
 const id = z.string().min(1).max(100);
 const empty = z.object({}).strict();
@@ -67,6 +68,7 @@ export const templateSaveSchema = z
 export type TemplateSave = z.infer<typeof templateSaveSchema>;
 export const methods = {
   ...desktopMethods,
+  ...desktopPlanMethods,
   ...aiConfigurationMethods,
   ...localCredentialMethods,
   ...connectionMethods,

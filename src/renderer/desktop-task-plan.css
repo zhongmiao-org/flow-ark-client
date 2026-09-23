@@ -1,0 +1,123 @@
+/* Figma 23:8190 / 23:8344: plan and original/replacement review. */
+.desktop-plan-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 450fr) minmax(0, 720fr);
+  gap: 24px;
+}
+.desktop-plan-columns.is-changes {
+  grid-template-columns: minmax(0, 650fr) minmax(0, 720fr);
+}
+.desktop-task-plan .desktop-plan-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.desktop-plan-stack h2,
+.desktop-plan-stack h3,
+.desktop-plan-stack p {
+  margin: 0;
+}
+.desktop-plan-stack h3 {
+  font-size: 16px;
+  line-height: 24px;
+}
+.desktop-plan-description p {
+  white-space: pre-wrap;
+  margin: 12px 0;
+}
+.desktop-plan-scope,
+.desktop-plan-text,
+.desktop-plan-candidate {
+  padding: 16px;
+  background: var(--fa-bg-subtle);
+  border-radius: var(--fa-radius-12);
+  border: 1px solid var(--fa-border-default);
+  overflow-wrap: anywhere;
+}
+.desktop-plan-scope {
+  min-height: 120px;
+}
+.desktop-plan-scope p,
+.desktop-plan-candidate p {
+  margin: 8px 0;
+}
+.desktop-task-plan .desktop-plan-text pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  line-height: 24px;
+  margin: 12px 0 0;
+  padding: 0;
+  min-height: 0;
+  max-height: 280px;
+  overflow: auto;
+  background: transparent;
+}
+.desktop-plan-text.is-before {
+  background: var(--fa-status-error-bg);
+  min-height: 120px;
+}
+.desktop-plan-text.is-after {
+  background: var(--fa-status-success-bg);
+  min-height: 140px;
+}
+.desktop-plan-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.desktop-plan-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px;
+  min-height: 104px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+}
+.desktop-plan-steps li > span {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fa-text-secondary);
+}
+.desktop-plan-steps p {
+  margin-top: 8px;
+  color: var(--fa-text-secondary);
+}
+.desktop-plan-send-note {
+  color: var(--fa-text-secondary);
+  font-size: 13px;
+  line-height: 21px;
+}
+.desktop-plan-stack > button {
+  align-self: flex-start;
+}
+.desktop-plan-stack fieldset {
+  min-width: 0;
+}
+.desktop-plan-stack p,
+.desktop-plan-stack li {
+  overflow-wrap: anywhere;
+}
+@container (max-width: 950px) {
+  .desktop-plan-columns,
+  .desktop-plan-columns.is-changes {
+    grid-template-columns: 1fr;
+  }
+}
+
+.desktop-plan-heading {
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.desktop-plan-heading > div {
+  min-width: 0;
+}
+.desktop-plan-heading > button {
+  flex-shrink: 0;
+}
