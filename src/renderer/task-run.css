@@ -130,6 +130,37 @@
   font-size: 12px;
   overflow-wrap: anywhere;
 }
+.task-run-target {
+  min-height: 112px;
+}
+.task-run-target summary {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--fa-text-secondary);
+}
+.task-run-target dl {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 12px 0;
+}
+.task-run-target dt {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--fa-text-secondary);
+}
+.task-run-target dd {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.task-run-target .task-run-target-note {
+  font-size: 12px;
+  line-height: 18px;
+  margin-bottom: 0;
+}
 .task-run-banner {
   padding: 24px;
   border: 1px solid var(--fa-border-default);

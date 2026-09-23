@@ -14,6 +14,7 @@ import { listRuns, runOverview } from './run-history';
 import { ArtifactCleanup } from './artifact-cleanup';
 import { RunRerun, executionVersion } from './run-rerun';
 import { RunReview } from './run-review';
+import { runTargetContext } from './run-target-context';
 import { Sessions } from './sessions';
 import { ScriptProcesses } from './script-processes';
 import { ScriptProcessInterruptedError, type ScriptOwner } from '../shared/script-supervision';
@@ -1398,8 +1399,10 @@ export class Runtime {
         const snapshot = this.store.get('snapshot', id);
         const rerun = this.reruns.details(id);
         const artifactCleanup = this.artifactCleanup.status(id);
+        const run = this.store.get<Run>('run', id);
         return {
-          run: this.store.get('run', id),
+          run,
+          targetContext: runTargetContext(run, snapshot, this.secrets),
           rerun: {
             ...rerun,
             ...(rerun.reason ? { reason: redact(rerun.reason, this.secrets) } : {}),

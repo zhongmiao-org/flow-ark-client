@@ -10,6 +10,7 @@ import TaskRepairPage from './TaskRepairPage';
 import './task-run.css';
 import TaskExecutionSteps, { type TaskExecutionView } from './TaskExecutionSteps';
 import RunEventLog from './RunEventLog';
+import TaskRunTarget from './TaskRunTarget';
 
 export default function TaskRunPage({
   detail,
@@ -51,6 +52,16 @@ export default function TaskRunPage({
   const detailsButton = useRef<HTMLButtonElement>(null);
   const previousPage = useRef(page);
   const model = taskRunPresentation({ ...detail, fault: detail.fault ?? fault });
+  const target = (
+    <TaskRunTarget
+      run={detail.run}
+      flow={detail.snapshot}
+      node={model.node}
+      context={detail.targetContext}
+      historical={model.terminal || model.uncertain || model.view.closing}
+      next={model.view.step.kind === 'paused'}
+    />
+  );
   const previousMode = useRef(model.mode);
   useLayoutEffect(() => {
     if (page === 'overview' && previousMode.current !== model.mode) {
@@ -327,6 +338,7 @@ export default function TaskRunPage({
               <p>状态：{runDisplayLabels[run.state as keyof typeof runDisplayLabels]}</p>
               <p>已记录耗时：{model.view.elapsed.label}</p>
               <p className="task-run-path">版本：{run.versionId}</p>
+              {target}
               {run.error && <p className="field-error">{run.error}</p>}
               <details>
                 <summary>步骤回执与脱敏日志</summary>
@@ -385,6 +397,7 @@ export default function TaskRunPage({
                   : runDisplayLabels[run.state as keyof typeof runDisplayLabels]}
               </span>
               <h2 className="task-run-current">{model.current?.name ?? model.view.step.label}</h2>
+              {target}
               {run.error && (
                 <p className="field-error" role="alert">
                   {run.error}
