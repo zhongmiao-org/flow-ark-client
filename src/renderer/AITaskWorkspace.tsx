@@ -1,3 +1,4 @@
+import TaskStepList from './TaskStepList';
 import TaskPlanConversation from './TaskPlanConversation';
 import TaskModificationPage from './TaskModificationPage';
 import TaskGenerationPage from './TaskGenerationPage';
@@ -1369,7 +1370,12 @@ export default function AITaskWorkspace(props: Props) {
           back={returnFromModification}
           controls={planningControls}
           steps={
-            <StepList steps={detail.flow.flow.steps} selected={selected} select={setSelected} />
+            <TaskStepList
+              flow={detail.flow.flow}
+              context={detail.flow}
+              selected={selected}
+              select={setSelected}
+            />
           }
         />
       ) : page === 'generation' && detail ? (
@@ -1907,7 +1913,23 @@ export default function AITaskWorkspace(props: Props) {
                         </button>
                       </div>
                       {view === 'list' ? (
-                        <StepList steps={flow.steps} selected={selected} select={setSelected} />
+                        <TaskStepList
+                          flow={flow}
+                          selected={selected}
+                          select={setSelected}
+                          context={{
+                            bindings: detail.flow?.bindings,
+                            webTarget: detail.proposal
+                              ? detail.task.webTarget
+                              : detail.flow?.webTarget,
+                            outputTarget: detail.proposal
+                              ? detail.task.outputTarget
+                              : detail.flow?.outputTarget,
+                            toolTargets: detail.proposal
+                              ? detail.task.toolTargets
+                              : detail.flow?.toolTargets,
+                          }}
+                        />
                       ) : (
                         <div className="ai-task-graph">
                           <DiagramCanvas {...diagram} selected={selected} select={setSelected} />
@@ -2167,61 +2189,4 @@ function conditionText(step: Extract<Step, { type: 'condition' }>) {
     exists: '不是空值',
   };
   return `${values(step.actual)} ${operators[step.operator]}${step.operator === 'exists' ? '' : ` ${values(step.expected)}`}`;
-}
-
-function StepList({
-  steps,
-  selected,
-  select,
-  branch,
-}: {
-  steps: Step[];
-  selected: string;
-  select: (id: string) => void;
-  branch?: string;
-}) {
-  return (
-    <div className="ai-task-steps">
-      {branch && <h3>{branch}</h3>}
-      {steps.map((step, index) => (
-        <div key={step.id}>
-          <button
-            className="ai-task-step"
-            aria-pressed={selected === step.id}
-            data-step-id={step.id}
-            onClick={() => select(step.id)}
-          >
-            <b>{String(index + 1).padStart(2, '0')}</b>
-            <span>
-              <strong>
-                {typeof step.name === 'string' && step.name
-                  ? step.name
-                  : kinds[step.type]?.label || step.type}
-              </strong>
-              <small>
-                {kinds[step.type]?.label} · {step.id}
-              </small>
-            </span>
-          </button>
-          {step.type === 'condition' && (
-            <div className="ai-task-branches">
-              <StepList steps={step.then} selected={selected} select={select} branch="条件成立" />
-              <StepList steps={step.else} selected={selected} select={select} branch="条件不成立" />
-            </div>
-          )}
-          {step.type === 'loop' && (
-            <div className="ai-task-branches">
-              <StepList
-                steps={step.body}
-                selected={selected}
-                select={select}
-                branch="循环体 · 串行执行"
-              />
-            </div>
-          )}
-        </div>
-      ))}
-      {!steps.length && <p>此分支没有步骤，继续后续流程。</p>}
-    </div>
-  );
 }
