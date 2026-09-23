@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Clock, ListChecks, Terminal } from 'lucide-react';
 import { formatRunDuration, presentRun } from '../shared/run-presentation';
+import RunStepDetails from './RunStepDetails';
+import { kinds } from './node-kinds';
+import { flatten } from './flow-editing';
+import { browserActions } from './browser-actions';
 
 export function RunObservation({ detail }: { detail: any }) {
   const [, updateClock] = useState(0);
@@ -9,6 +13,13 @@ export function RunObservation({ detail }: { detail: any }) {
     return () => clearInterval(timer);
   }, []);
   const view = presentRun({ ...detail, output: undefined }, Date.now());
+  const node = flatten(detail.snapshot?.steps ?? []).find((item) => item.id === view.step.nodeId);
+  const defaultName =
+    node?.type === 'browser'
+      ? browserActions[node.operation]?.label
+      : view.step.type
+        ? kinds[view.step.type]?.label
+        : undefined;
   const stepLabel = {
     current: '当前步骤',
     paused: '下一步',
@@ -30,7 +41,11 @@ export function RunObservation({ detail }: { detail: any }) {
           <ListChecks size={15} />
           {stepLabel}
         </span>
-        <strong data-testid="run-current-step">{view.step.name ?? view.step.label}</strong>
+        <strong data-testid="run-current-step">
+          {view.step.name === view.step.nodeId && view.step.type
+            ? (defaultName ?? view.step.name)
+            : (view.step.name ?? view.step.label)}
+        </strong>
         {view.step.instance && <code>{view.step.instance}</code>}
       </div>
       <div className="run-observation-metrics">
@@ -57,6 +72,7 @@ export function RunObservation({ detail }: { detail: any }) {
         </div>
       </div>
       {view.statusNote && <p className="run-observation-note">{view.statusNote}</p>}
+      <RunStepDetails detail={detail} step={view.step} />
     </section>
   );
 }
