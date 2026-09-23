@@ -1,4 +1,4 @@
-import { memo, type CSSProperties } from 'react';
+import { memo } from 'react';
 import {
   Handle,
   Position,
@@ -84,7 +84,7 @@ const FlowNode = memo(function FlowNode({ data, selected }: NodeProps<DiagramNod
   return (
     <div
       className={`flow-shape flow-shape--${shape}${selected ? ' is-selected' : ''}`}
-      style={{ width, height, '--node-accent': kind?.color ?? '#44745e' } as CSSProperties}
+      style={{ width, height }}
       data-shape={shape}
       data-step-id={step?.id}
     >
@@ -170,7 +170,7 @@ function RoutedEdge({
       <BaseEdge id={id} path={d} markerEnd={markerEnd} style={style} />
       <EdgeLabelRenderer>
         <span
-          className="flow-route-label"
+          className={'flow-route-label' + (data?.returning ? ' is-returning' : '')}
           style={{ transform: `translate(-50%, -50%) translate(${x}px, ${(sy + targetY) / 2}px)` }}
         >
           {label}

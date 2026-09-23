@@ -74,6 +74,12 @@ function Canvas({ nodes, edges, selected, select, active = true, focusRequest }:
 
   return (
     <ReactFlow
+      style={{ background: 'var(--fa-bg-canvas)' }}
+      ariaLabelConfig={{
+        'controls.ariaLabel': '流程图视图控制',
+        'controls.zoomIn.ariaLabel': '放大流程图',
+        'controls.zoomOut.ariaLabel': '缩小流程图',
+      }}
       nodes={nodes}
       edges={edges}
       nodeTypes={flowNodeTypes}
@@ -94,7 +100,7 @@ function Canvas({ nodes, edges, selected, select, active = true, focusRequest }:
       <Controls showInteractive={false} showFitView={false}>
         <ControlButton
           className="react-flow__controls-fitview"
-          aria-label="Fit View"
+          aria-label="显示完整流程"
           title="显示完整流程"
           disabled={!ready || !fullViewport}
           onClick={() => {
