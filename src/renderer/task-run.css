@@ -252,6 +252,88 @@
 .task-run-page .run-output {
   margin-top: 16px;
 }
+.task-run-preview h2 {
+  overflow-wrap: anywhere;
+}
+.task-file-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.task-file-content > p {
+  font-size: 12px;
+  line-height: 18px;
+}
+.task-run-preview .task-file-preview {
+  margin: 0;
+  max-height: 300px;
+}
+.task-run-page .task-run-output {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.task-run-output h3 {
+  font-size: 18px;
+}
+.task-run-output > .section-row {
+  margin: 0;
+}
+.task-run-output > p {
+  font-size: 12px;
+  line-height: 18px;
+}
+.task-run-page .task-run-output pre {
+  min-height: 156px;
+  max-height: 300px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-canvas);
+}
+.task-run-page .task-run-output > p + pre {
+  margin-top: -8px;
+}
+.task-run-output pre:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 2px;
+}
+.task-run-evidence dl {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+.task-run-evidence dl > div {
+  display: grid;
+  grid-template-columns: 6em minmax(0, 1fr);
+  gap: 8px;
+  font-size: 14px;
+  line-height: 22px;
+}
+.task-run-evidence dt {
+  color: var(--fa-text-secondary);
+}
+.task-run-evidence dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.task-run-evidence summary,
+.task-run-file-info summary {
+  cursor: pointer;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.task-run-file-info p,
+.task-run-file-info .ai-task-actions,
+.task-run-fixed-evidence > p,
+.task-run-fixed-evidence > section {
+  margin-top: 12px;
+}
 @container (max-width: 850px) {
   .task-run-columns {
     grid-template-columns: minmax(0, 1fr);

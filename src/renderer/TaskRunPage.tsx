@@ -45,6 +45,7 @@ export default function TaskRunPage({
   const [selected, setSelected] = useState<string>();
   const [preview, setPreview] = useState<ArtifactPreview>();
   const [loading, setLoading] = useState(false);
+  const [previewError, setPreviewError] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [retry, setRetry] = useState(0);
@@ -122,6 +123,7 @@ export default function TaskRunPage({
     previousPage.current = page;
   }, [run.id, page]);
   useEffect(() => {
+    setPreviewError('');
     if (page !== 'details' || !selected) {
       setPreview(undefined);
       setLoading(false);
@@ -143,7 +145,7 @@ export default function TaskRunPage({
         setPreview(value);
       })
       .catch((e) => {
-        if (live) setError(e.message);
+        if (live) setPreviewError(e.message);
       })
       .finally(() => {
         if (live) setLoading(false);
@@ -169,7 +171,7 @@ export default function TaskRunPage({
   function inspect(id?: string) {
     detailScroll.current = document.querySelector('main')?.scrollTop ?? 0;
     returnAction.current = id;
-    setSelected(id);
+    setSelected(id ?? (model.artifacts.length === 1 ? model.artifacts[0].artifactId : undefined));
     setPage('details');
   }
   const title =
@@ -346,64 +348,130 @@ export default function TaskRunPage({
           </section>
         ) : page === 'details' ? (
           <div className="task-run-columns task-run-details">
-            <section className="ai-task-card">
-              <h2>文件预览</h2>
-              <label htmlFor="task-artifact">选择本次文件</label>
-              <select
-                id="task-artifact"
-                value={selected ?? ''}
-                onChange={(e) => setSelected(e.target.value || undefined)}
-              >
-                <option value="">请选择文件</option>
-                {model.artifacts.map((a) => (
-                  <option key={a.artifactId} value={a.artifactId}>
-                    {a.name} · {artifactLabel(a)}
-                  </option>
-                ))}
-              </select>
-              {loading ? (
-                <p role="status">正在读取并核对文件副本…</p>
-              ) : visiblePreview?.status === 'text' ? (
+            <section className="ai-task-card task-run-preview" aria-label="文件与结构化输出">
+              <h2>{item ? `${item.name} · 文件预览` : '文件预览'}</h2>
+              {model.artifacts.length > 1 && (
                 <>
-                  <p>
-                    已核对保存的副本 · 纯文本预览，已按当前脱敏规则处理
-                    {visiblePreview.truncated ? ' · 内容已截断' : ''}
-                  </p>
-                  <pre
-                    className="task-file-preview"
-                    tabIndex={0}
-                    aria-label={`文件内容：${visiblePreview.name}`}
-                    data-artifact-preview={visiblePreview.artifactId}
+                  <label htmlFor="task-artifact">选择本次文件</label>
+                  <select
+                    id="task-artifact"
+                    value={selected ?? ''}
+                    onChange={(e) => setSelected(e.target.value || undefined)}
                   >
-                    {visiblePreview.text || '（空文件）'}
-                  </pre>
+                    <option value="">请选择文件</option>
+                    {model.artifacts.map((a) => (
+                      <option key={a.artifactId} value={a.artifactId}>
+                        {a.name} · {artifactLabel(a)}
+                      </option>
+                    ))}
+                  </select>
                 </>
-              ) : selected ? (
-                <p role="status">
-                  {preview?.status === 'unavailable'
-                    ? preview.reason
-                    : item
-                      ? artifactLabel(item)
-                      : '该产物不在本次记录中'}
-                </p>
-              ) : (
-                <p>选择文件后只读预览，不会执行其中的内容。</p>
               )}
-              {selected && (
-                <button disabled={loading} onClick={() => setRetry((n) => n + 1)}>
-                  重新读取预览
-                </button>
-              )}
-              <RunOutput detail={detail} />
+              <div className="task-file-content">
+                {loading ? (
+                  <p role="status">正在读取并核对文件副本…</p>
+                ) : visiblePreview?.status === 'text' ? (
+                  <>
+                    <p>
+                      已核对保存的副本 · 纯文本预览，已按当前脱敏规则处理
+                      {visiblePreview.truncated ? ' · 内容已截断' : ''}
+                    </p>
+                    <pre
+                      className="task-file-preview"
+                      tabIndex={0}
+                      aria-label={`文件内容：${visiblePreview.name}`}
+                      data-artifact-preview={visiblePreview.artifactId}
+                    >
+                      {visiblePreview.text || '（空文件）'}
+                    </pre>
+                  </>
+                ) : selected ? (
+                  <p
+                    role={previewError ? 'alert' : 'status'}
+                    className={previewError ? 'field-error' : undefined}
+                  >
+                    {previewError ||
+                      (preview?.status === 'unavailable'
+                        ? preview.reason
+                        : item
+                          ? artifactLabel(item)
+                          : '该产物不在本次记录中')}
+                  </p>
+                ) : (
+                  <p>
+                    {model.artifacts.length
+                      ? '选择文件后只读预览，不会执行其中的内容。'
+                      : '本次没有登记的文件产物，可查看下方已保存的结构化输出。'}
+                  </p>
+                )}
+              </div>
+              <RunOutput detail={detail} layout="task" />
             </section>
-            <section className="ai-task-card">
+            <section className="ai-task-card task-run-evidence" aria-label="执行证据">
               <h2>执行证据</h2>
-              <p>{model.summary}</p>
-              <p>状态：{runDisplayLabels[run.state as keyof typeof runDisplayLabels]}</p>
-              <p>已记录耗时：{model.view.elapsed.label}</p>
-              <p className="task-run-path">版本：{run.versionId}</p>
-              {target}
+              <dl>
+                <div>
+                  <dt>运行标识</dt>
+                  <dd className="task-run-path">{run.id}</dd>
+                </div>
+                <div>
+                  <dt>记录状态</dt>
+                  <dd>{runDisplayLabels[run.state as keyof typeof runDisplayLabels]}</dd>
+                </div>
+                <div>
+                  <dt>执行步骤</dt>
+                  <dd>
+                    {model.completed.length} 次已完成 · {model.unresolved.length} 次未确认完成 ·{' '}
+                    {model.unvisited.length} 个尚未执行（含未选分支）
+                  </dd>
+                </div>
+                <div>
+                  <dt>文件产物</dt>
+                  <dd>
+                    {model.artifacts.length} 个已登记 · {model.verified.length} 个副本已核对
+                  </dd>
+                </div>
+                <div>
+                  <dt>已记录耗时</dt>
+                  <dd>{model.view.elapsed.label}</dd>
+                </div>
+              </dl>
               {run.error && <p className="field-error">{run.error}</p>}
+              <button className="primary" onClick={() => setPage('overview')}>
+                返回结果摘要
+              </button>
+              {selected && (
+                <details className="task-run-file-info">
+                  <summary>文件信息与保存位置</summary>
+                  {item && (
+                    <>
+                      <p>
+                        {item.size.toLocaleString('zh-CN')} 字节 · {artifactLabel(item)}
+                      </p>
+                      <p className="task-run-path">{item.path}</p>
+                    </>
+                  )}
+                  <div className="ai-task-actions">
+                    <button disabled={loading} onClick={() => setRetry((n) => n + 1)}>
+                      重新读取预览
+                    </button>
+                    {item && (
+                      <button
+                        disabled={!item.available || busy}
+                        onClick={() => void act(() => reveal(item.artifactId))}
+                      >
+                        定位文件
+                      </button>
+                    )}
+                  </div>
+                </details>
+              )}
+              <details className="task-run-fixed-evidence">
+                <summary>固定版本与已记录影响</summary>
+                <p className="task-run-path">版本：{run.versionId}</p>
+                <p>{model.effectNote}</p>
+                {target}
+              </details>
               <details>
                 <summary>步骤回执与脱敏日志</summary>
                 <RunEventLog
@@ -417,10 +485,6 @@ export default function TaskRunPage({
                 <summary>查看本次执行步骤</summary>
                 {steps}
               </details>
-              <button className="primary" onClick={() => setPage('overview')}>
-                返回结果摘要
-              </button>
-              {fileCards}
             </section>
           </div>
         ) : model.success ? (
@@ -594,14 +658,18 @@ export default function TaskRunPage({
             )}
           </div>
         )}
-        <div className="ai-task-actions task-run-footer">
-          <button onClick={() => navigate('plan')}>回到任务</button>
-          <button onClick={history}>运行记录</button>
-          <button onClick={() => navigate('home')}>回到开始</button>
-        </div>
-        <p className="task-run-note">
-          返回、查看结果和修改草稿不会重复执行；未知的外部结果请先核对。
-        </p>
+        {page !== 'details' && (
+          <>
+            <div className="ai-task-actions task-run-footer">
+              <button onClick={() => navigate('plan')}>回到任务</button>
+              <button onClick={history}>运行记录</button>
+              <button onClick={() => navigate('home')}>回到开始</button>
+            </div>
+            <p className="task-run-note">
+              返回、查看结果和修改草稿不会重复执行；未知的外部结果请先核对。
+            </p>
+          </>
+        )}
       </div>
       {run.task?.id && (
         <TaskRepairPage

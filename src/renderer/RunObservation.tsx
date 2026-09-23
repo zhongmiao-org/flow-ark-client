@@ -77,15 +77,30 @@ export function RunObservation({ detail }: { detail: any }) {
   );
 }
 
-export function RunOutput({ detail }: { detail: any }) {
+export function RunOutput({
+  detail,
+  layout = 'panel',
+}: {
+  detail: any;
+  layout?: 'panel' | 'task';
+}) {
   const [expanded, setExpanded] = useState(false);
   const output = useMemo(() => presentRun(detail, Date.now()).output, [detail.output]);
   return (
-    <section className="run-output panel" aria-label="运行输出">
+    <section
+      className={layout === 'task' ? 'run-output task-run-output' : 'run-output panel'}
+      aria-label={layout === 'task' ? '结构化输出' : '运行输出'}
+    >
       <div className="section-row">
         <h3>
-          <Terminal size={16} />
-          运行输出
+          {layout === 'task' ? (
+            '结构化输出'
+          ) : (
+            <>
+              <Terminal size={16} />
+              运行输出
+            </>
+          )}
         </h3>
         {output.truncated && (
           <button onClick={() => setExpanded(!expanded)} aria-expanded={expanded}>
@@ -95,14 +110,20 @@ export function RunOutput({ detail }: { detail: any }) {
       </div>
       {output.available ? (
         <>
-          <p className="muted">已保存的脱敏输出；业务结果请结合回执核对。</p>
+          <p className="muted">
+            {layout === 'task'
+              ? '已保存的脱敏 JSON；业务结果请结合回执核对。'
+              : '已保存的脱敏输出；业务结果请结合回执核对。'}
+          </p>
           {output.truncated && !expanded && (
             <p className="output-limit">
               长输出预览已截断，共 {output.characters.toLocaleString('zh-CN')}{' '}
               字符。展开只读取已保存内容。
             </p>
           )}
-          <pre>{expanded ? output.full : output.preview}</pre>
+          <pre tabIndex={0} aria-label="已保存的结构化输出">
+            {expanded ? output.full : output.preview}
+          </pre>
         </>
       ) : (
         <p className="muted">
