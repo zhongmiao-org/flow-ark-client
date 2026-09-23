@@ -27,6 +27,7 @@ export const runListSchema = z
     state: z.enum(Object.keys(runStateLabels) as [RunState, ...RunState[]]).optional(),
     source: z.enum(['manual', 'schedule', 'debug', 'rerun']).optional(),
     flowId: z.string().min(1).max(200).optional(),
+    taskId: z.string().min(1).max(100).optional(),
     createdFrom: z.iso.datetime({ offset: true }).optional(),
     createdBefore: z.iso.datetime({ offset: true }).optional(),
   })

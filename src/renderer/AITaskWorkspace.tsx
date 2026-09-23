@@ -4,6 +4,7 @@ import TaskStepInspector from './TaskStepInspector';
 import TaskPlanConversation from './TaskPlanConversation';
 import TaskProposalReview from './TaskProposalReview';
 import TaskPlanScope from './TaskPlanScope';
+import TaskLatestRun from './TaskLatestRun';
 import TaskModificationPage from './TaskModificationPage';
 import TaskGenerationPage from './TaskGenerationPage';
 import {
@@ -1913,6 +1914,21 @@ export default function AITaskWorkspace(props: Props) {
                         <button disabled={inputDisabled} onClick={() => setPage('brief')}>
                           编辑描述与资料
                         </button>
+                      )}
+                      {!detail.proposal && (
+                        <TaskLatestRun
+                          key={detail.task.id}
+                          taskId={detail.task.id}
+                          revision={detail.task.revision}
+                          active={props.active && page === 'review' && !standaloneGraph}
+                          disabled={inputDisabled}
+                          open={(next) => {
+                            const taskId = detail.task.id;
+                            props.openRun(next, (intent = 'plan') =>
+                              returnToTask.current(taskId, intent),
+                            );
+                          }}
+                        />
                       )}
                     </TaskPlanConversation>
                   ) : scopeDiffView ? (

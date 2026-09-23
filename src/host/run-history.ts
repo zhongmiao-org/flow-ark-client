@@ -41,6 +41,7 @@ export async function listRuns(
         args.state ?? null,
         args.source ?? null,
         args.flowId ?? null,
+        args.taskId ?? null,
         args.createdFrom ?? null,
         args.createdBefore ?? null,
       ]),
@@ -75,6 +76,7 @@ export async function listRuns(
       if (args.state && r.state !== args.state) continue;
       if (args.source && runSource(r) !== args.source) continue;
       if (args.flowId && r.flowId !== args.flowId) continue;
+      if (args.taskId && r.task?.id !== args.taskId) continue;
       const created = Date.parse(r.createdAt);
       if ((from !== null || until !== null) && !Number.isFinite(created)) continue;
       if (from !== null && created < from) continue;
