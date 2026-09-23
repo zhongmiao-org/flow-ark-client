@@ -240,6 +240,56 @@
   font-size: 12px;
   color: var(--fa-text-secondary);
 }
+.tool-oauth-inspection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding-top: 24px;
+  border-top: 1px solid var(--fa-border-default);
+}
+.tool-oauth-inspection :is(h2, h3, h4, p, dl, ul) {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.tool-oauth-inspection :is(h3, h4) {
+  font-size: 14px;
+  line-height: 22px;
+}
+.tool-oauth-inspection dl {
+  display: grid;
+  gap: 12px;
+  font-size: 12px;
+  line-height: 20px;
+}
+.tool-oauth-inspection dt {
+  color: var(--fa-text-secondary);
+}
+.tool-oauth-inspection dd {
+  margin: 4px 0 0;
+}
+.tool-oauth-inspection ul {
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 22px;
+}
+.tool-oauth-server {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 8px;
+  background: var(--fa-bg-canvas);
+}
+.tool-oauth-inspection summary {
+  cursor: pointer;
+  color: var(--fa-action-primary);
+  font-size: 12px;
+}
+.tool-oauth-inspection details[open] > dl {
+  margin-top: 12px;
+}
 .tool-warning,
 .ai-task-note.tool-warning {
   color: var(--fa-status-warning);

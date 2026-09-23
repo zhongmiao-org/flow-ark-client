@@ -7,9 +7,11 @@ import {
   type ConnectionConfig,
   type ConnectionCandidate,
   type ToolConnection,
+  type OAuthInspection,
 } from '../shared/tool-connections';
 import './tool-connections.css';
 import ToolCapabilityReview from './ToolCapabilityReview';
+import ToolOAuthInspection from './ToolOAuthInspection';
 
 const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
@@ -24,7 +26,7 @@ type Form = {
   source: string;
   type: 'http' | 'stdio';
   url: string;
-  auth: 'none' | 'bearer';
+  auth: 'none' | 'bearer' | 'oauth';
   command: string;
   args: string;
   protocol: ConnectionConfig['protocolVersion'];
@@ -128,6 +130,7 @@ export default function ToolConnectionsPage({
     [capabilitiesReviewed, setCapabilitiesReviewed] = useState(false);
   const [selectedId, setSelectedId] = useState<string>();
   const [candidate, setCandidate] = useState<ConnectionCandidate>();
+  const [oauthInspection, setOAuthInspection] = useState<OAuthInspection>();
   const [reviewBaseline, setReviewBaseline] = useState<ToolConnection>();
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState<'discover' | 'save' | 'manage' | 'inspect' | 'open-task' | null>(
@@ -197,6 +200,7 @@ export default function ToolConnectionsPage({
     locked.current = false;
     setBusy(null);
     setCandidate(undefined);
+    setOAuthInspection(undefined);
     setReviewBaseline(undefined);
     setCapabilitiesReviewed(false);
     setSecret('');
@@ -231,6 +235,7 @@ export default function ToolConnectionsPage({
     go(() => {
       setSelectedId(connection?.id);
       setForm(connection ? formOf(connection.config) : { ...empty });
+      setOAuthInspection(undefined);
       setSourceReviewed(false);
       setCapabilitiesReviewed(false);
       setSecret('');
@@ -238,6 +243,7 @@ export default function ToolConnectionsPage({
       move('config');
     });
   const change = (patch: Partial<Form>) => {
+    setOAuthInspection(undefined);
     setForm((previous) => ({ ...previous, ...patch }));
     setDirty(true);
     setSourceReviewed(false);
@@ -262,7 +268,11 @@ export default function ToolConnectionsPage({
         protocolVersion: form.protocol,
         transport:
           form.type === 'http'
-            ? { type: 'http', url: form.url.trim(), auth: form.auth }
+            ? {
+                type: 'http',
+                url: form.url.trim(),
+                auth: form.auth === 'oauth' ? 'none' : form.auth,
+              }
             : { type: 'stdio', command: form.command, args },
       });
       if (!result.success)
@@ -277,6 +287,7 @@ export default function ToolConnectionsPage({
     }
     locked.current = true;
     setBusy('discover');
+    setOAuthInspection(undefined);
     setReviewBaseline(selected ? structuredClone(selected) : undefined);
     const ticket = ++epoch.current,
       requestId = crypto.randomUUID();
@@ -284,6 +295,19 @@ export default function ToolConnectionsPage({
     const bearerToken = secret;
     setSecret('');
     try {
+      if (form.type === 'http' && form.auth === 'oauth') {
+        const result: OAuthInspection = await api('tool.connection.oauth.inspect', {
+          requestId,
+          url: form.url.trim(),
+          protocolVersion: form.protocol,
+          reviewedSource: true,
+        });
+        if (ticket === epoch.current) {
+          setOAuthInspection(result);
+          request.current = undefined;
+        }
+        return;
+      }
       const next: ConnectionCandidate = await api('tool.connection.discover', {
         requestId,
         config,
@@ -599,7 +623,7 @@ export default function ToolConnectionsPage({
                     >
                       <option value="none">无需凭据</option>
                       <option value="bearer">Bearer Token</option>
-                      <option disabled>OAuth · 尚未接入</option>
+                      <option value="oauth">OAuth · 授权前检查</option>
                     </select>
                   </label>
                   {form.auth === 'bearer' && (
@@ -666,10 +690,20 @@ export default function ToolConnectionsPage({
                   <option value="2025-11-25">2025-11-25</option>
                 </select>
               </label>
-              <p>先发现能力并测试，确认工具列表、身份和范围后再保存。</p>
+              <p>
+                {form.type === 'http' && form.auth === 'oauth'
+                  ? '先读取认证站点和范围。本阶段尚未接入登录授权，不会保存 OAuth 连接。'
+                  : '先发现能力并测试，确认工具列表、身份和范围后再保存。'}
+              </p>
               <div className="ai-task-actions">
                 <button className="primary" type="submit" disabled={!!busy || !sourceReviewed}>
-                  {busy === 'discover' ? '正在发现能力…' : '发现并检查能力'}
+                  {form.type === 'http' && form.auth === 'oauth'
+                    ? busy === 'discover'
+                      ? '正在检查认证配置…'
+                      : '检查认证站点与范围'
+                    : busy === 'discover'
+                      ? '正在发现能力…'
+                      : '发现并检查能力'}
                 </button>
                 <button
                   type="button"
@@ -714,11 +748,16 @@ export default function ToolConnectionsPage({
                   disabled={!!busy}
                   onChange={(e) => setSourceReviewed(e.target.checked)}
                 />
-                我已核对来源、地址或程序及其运行方式
+                {form.type === 'http' && form.auth === 'oauth'
+                  ? '我已核对来源，同意读取此服务及其声明的认证站点配置'
+                  : '我已核对来源、地址或程序及其运行方式'}
               </label>
               <p className="ai-task-note">
-                发现仅请求服务身份和工具清单，不调用工具。服务说明、提示词和网页内容不能替代用户授权。
+                {form.type === 'http' && form.auth === 'oauth'
+                  ? '检查只读取公开的认证配置，不发送凭据、不打开登录网页、不注册客户端或调用工具。'
+                  : '发现仅请求服务身份和工具清单，不调用工具。服务说明、提示词和网页内容不能替代用户授权。'}
               </p>
+              {oauthInspection && <ToolOAuthInspection result={oauthInspection} />}
               {selected && (
                 <p>
                   已有连接：{selected.config.displayName}

@@ -64,6 +64,14 @@ const revision = z
   .max(Number.MAX_SAFE_INTEGER - 1);
 export const connectionMethods = {
   'tool.connection.list': z.object({}).strict(),
+  'tool.connection.oauth.inspect': z
+    .object({
+      requestId: id,
+      url: connectionConfig.shape.transport.options[0].shape.url,
+      protocolVersion: connectionConfig.shape.protocolVersion,
+      reviewedSource: z.literal(true),
+    })
+    .strict(),
   'tool.connection.discover': z
     .object({
       requestId: id,
@@ -128,4 +136,23 @@ export type ConnectionCandidate = ConnectionDiscovery & {
   revision?: number;
   expiresAt: number;
   changed: boolean;
+};
+export type OAuthInspection = {
+  version: 1;
+  url: string;
+  resource: string;
+  checkedAt: string;
+  expiresAt: number;
+  scopes: string[];
+  scopeSource: 'challenge' | 'resource' | 'unspecified';
+  contactedOrigins: string[];
+  servers: {
+    issuer: string;
+    status: 'ready' | 'unsupported' | 'failed';
+    issues: string[];
+    authorizationEndpoint?: string;
+    tokenEndpoint?: string;
+    registrationEndpoint?: string;
+    clientIdMetadataSupported?: boolean;
+  }[];
 };

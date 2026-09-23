@@ -13,6 +13,7 @@ const allowed = new Set([
   'desktop.plan.cancel',
   'desktop.accessibility.openSettings',
   'tool.connection.list',
+  'tool.connection.oauth.inspect',
   'tool.connection.discover',
   'tool.connection.cancel',
   'tool.connection.save',

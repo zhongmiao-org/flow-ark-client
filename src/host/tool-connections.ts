@@ -4,9 +4,11 @@ import {
   type ConnectionConfig,
   type ConnectionDiscovery,
   type ToolConnection,
+  type OAuthInspection,
 } from '../shared/tool-connections';
 import { discoverMcp, DiscoveryError, McpCleanupError } from '../adapters/mcp-discovery';
 import { callMcp } from '../adapters/mcp-call';
+import { inspectMcpOAuth } from '../adapters/mcp-oauth-inspection';
 import type { TaskMcpTarget } from '../shared/task-mcp-targets';
 import type { McpToolResult } from '../shared/mcp-run';
 import { Store } from './store';
@@ -22,7 +24,11 @@ type Saved = ConnectionDiscovery & {
   disconnected?: boolean;
 };
 type Candidate = ConnectionCandidate & { secret?: string; saving?: boolean };
-type Job = { abort: AbortController; connectionId?: string; promise: Promise<ConnectionCandidate> };
+type Job = {
+  abort: AbortController;
+  connectionId?: string;
+  promise: Promise<ConnectionCandidate | OAuthInspection>;
+};
 export class ToolConnections {
   private jobs = new Map<string, Job>();
   private calls = new Map<
@@ -203,6 +209,24 @@ export class ToolConnections {
       return true;
     }
     this.available();
+    if (method === 'tool.connection.oauth.inspect') {
+      if (this.jobs.size) throw new Error('另一个连接仍在检查或关闭，请等待完成');
+      const abort = new AbortController();
+      const deadline = setTimeout(() => abort.abort(), 30000);
+      const job: Job = { abort, promise: undefined! };
+      this.jobs.set(args.requestId, job);
+      job.promise = inspectMcpOAuth(args, abort.signal)
+        .then((result) => {
+          this.available();
+          abort.signal.throwIfAborted();
+          return result;
+        })
+        .finally(() => {
+          clearTimeout(deadline);
+          if (this.jobs.get(args.requestId) === job) this.jobs.delete(args.requestId);
+        });
+      return job.promise;
+    }
     if (method === 'tool.connection.discover') {
       if (this.jobs.size) throw new Error('另一个连接仍在发现或关闭，请等待完成');
       if ([...this.candidates.values()].some((c) => c.requestId === args.requestId))
