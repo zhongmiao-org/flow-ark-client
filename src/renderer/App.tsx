@@ -139,6 +139,35 @@ export default function App() {
   const [runPage, setRunPage] = useState(1);
   const [runFilter, setRunFilter] = useState(false);
   const [runTab, setRunTab] = useState<RunTab>('current');
+  const runRerunReturn = useRef<
+    | {
+        tab: Exclude<RunTab, 'rerun'>;
+        scroll: number;
+        focus: HTMLElement | null;
+      }
+    | undefined
+  >(undefined);
+  const [runRerunBusy, setRunRerunBusy] = useState(false);
+  function changeRunTab(next: RunTab) {
+    if (next === 'rerun' && runTab !== 'rerun') {
+      runRerunReturn.current = {
+        tab: runTab,
+        scroll: document.querySelector('main')?.scrollTop ?? 0,
+        focus: document.activeElement instanceof HTMLElement ? document.activeElement : null,
+      };
+    }
+    setRunTab(next);
+  }
+  function returnRunSubview() {
+    if (runRerunBusy) return;
+    const source = runTab === 'rerun' ? runRerunReturn.current : undefined;
+    setRunTab(source?.tab ?? 'current');
+    if (source)
+      requestAnimationFrame(() => {
+        source.focus?.isConnected && source.focus.focus({ preventScroll: true });
+        document.querySelector('main')?.scrollTo({ top: source.scroll });
+      });
+  }
   const [runOrigin, setRunOrigin] = useState<
     'history' | 'editor' | 'task' | 'template' | 'schedule' | 'inbox'
   >('history');
@@ -290,8 +319,7 @@ export default function App() {
     templateOrigin?.back();
   }
   useEffect(() => {
-    if (section !== 'runs' || !['template', 'schedule', 'inbox'].includes(runOrigin) || !detail)
-      return;
+    if (section !== 'runs' || runOrigin === 'task' || !detail) return;
     const key = (event: KeyboardEvent) => {
       if (
         (event.target as HTMLElement).closest(
@@ -301,17 +329,21 @@ export default function App() {
         return;
       if ((event.altKey && event.key === 'ArrowLeft') || (event.metaKey && event.key === '[')) {
         event.preventDefault();
-        if (runTab !== 'current') setRunTab('current');
+        if (runTab !== 'current') returnRunSubview();
         else if (runOrigin === 'inbox') {
           setDetail(null);
           setSection('inbox');
         } else if (runOrigin === 'schedule') returnSchedule();
-        else returnTemplate();
+        else if (runOrigin === 'template') returnTemplate();
+        else {
+          setDetail(null);
+          if (runOrigin === 'editor' && edit) setSection('editor');
+        }
       }
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [section, runOrigin, detail?.run?.id, runTab, templateOrigin]);
+  }, [section, runOrigin, detail?.run?.id, runTab, templateOrigin, runRerunBusy]);
   function leaveTemplateContext(next: () => void) {
     setDetail(null);
     setSection('templates');
@@ -860,11 +892,12 @@ export default function App() {
             )}
             {section === 'runs' && (detail || runFilter) && (
               <button
+                disabled={runOrigin !== 'task' && runTab === 'rerun' && runRerunBusy}
                 className="context-back"
                 onClick={() => {
                   if (detail && runOrigin === 'task' && taskRunView !== 'overview')
                     setTaskRunView('overview');
-                  else if (detail && runTab !== 'current') setRunTab('current');
+                  else if (detail && runTab !== 'current') returnRunSubview();
                   else if (detail) {
                     setDetail(null);
                     if (runOrigin === 'inbox') setSection('inbox');
@@ -881,21 +914,23 @@ export default function App() {
                 {detail
                   ? runOrigin === 'task' && taskRunView !== 'overview'
                     ? '← 返回结果摘要'
-                    : runTab !== 'current'
-                      ? '← 返回运行详情'
-                      : runOrigin === 'inbox'
-                        ? '← 返回待办与提醒'
-                        : runOrigin === 'schedule'
-                          ? '← 返回本机计划'
-                          : runOrigin === 'template'
-                            ? '← 返回模板入口'
-                            : runOrigin === 'task'
-                              ? '← 返回 AI 任务'
-                              : runOrigin === 'editor' && edit
-                                ? outlineOpen
-                                  ? '← 返回长流程大纲'
-                                  : '← 返回流程编排'
-                                : `← 返回记录第 ${runPage} 页`
+                    : runTab === 'rerun'
+                      ? `← 返回${runRerunReturn.current?.tab === 'output' ? '输出与产物' : runRerunReturn.current?.tab === 'logs' ? '运行日志' : '运行详情'}`
+                      : runTab !== 'current'
+                        ? '← 返回运行详情'
+                        : runOrigin === 'inbox'
+                          ? '← 返回待办与提醒'
+                          : runOrigin === 'schedule'
+                            ? '← 返回本机计划'
+                            : runOrigin === 'template'
+                              ? '← 返回模板入口'
+                              : runOrigin === 'task'
+                                ? '← 返回 AI 任务'
+                                : runOrigin === 'editor' && edit
+                                  ? outlineOpen
+                                    ? '← 返回长流程大纲'
+                                    : '← 返回流程编排'
+                                  : `← 返回记录第 ${runPage} 页`
                   : '← 返回运行记录'}
               </button>
             )}
@@ -1124,11 +1159,13 @@ export default function App() {
                             ? '重新运行前检查'
                             : taskRunPresentation({ ...detail, fault: detail.fault ?? data.fault })
                                 .title
-                      : runTab === 'output'
-                        ? '输出与产物'
-                        : runTab === 'logs'
-                          ? '运行日志'
-                          : detail.run.id.slice(0, 8)
+                      : runTab === 'rerun'
+                        ? '重新运行前核对'
+                        : runTab === 'output'
+                          ? '输出与产物'
+                          : runTab === 'logs'
+                            ? '运行日志'
+                            : detail.run.id.slice(0, 8)
                     : '筛选运行记录'
                   : editorBrowser
                     ? compactDrawer
@@ -1760,7 +1797,9 @@ export default function App() {
                     setDetail((current: any) => (current?.run.id === id ? next : current));
                   }}
                   tab={runTab}
-                  setTab={setRunTab}
+                  setTab={changeRunTab}
+                  cancelRerun={returnRunSubview}
+                  rerunBusy={setRunRerunBusy}
                   showBrowser={() => setBrowserOpen(true)}
                   control={(id, a) => action(() => api('run.control', { id, action: a }))}
                   reveal={(id) => api('artifact.reveal', { id })}

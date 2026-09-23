@@ -19,12 +19,24 @@ export default function RunRerunPanel({
   related,
   open,
   initialMode = 'snapshot',
+  page = false,
+  active = true,
+  cancel,
+  busyChanged,
+  inspectSource,
 }: {
   run: Run;
   related?: RunRerunDetails;
   open: (detail: any) => void;
   initialMode?: RunRerunMode;
+  page?: boolean;
+  active?: boolean;
+  cancel?: () => void;
+  busyChanged?: (busy: boolean) => void;
+  inspectSource?: (tab: 'output' | 'logs') => void;
 }) {
+  const activeRef = useRef(active);
+  activeRef.current = active;
   const choiceId = useId();
   const previewHeading = useRef<HTMLHeadingElement>(null);
   const [mode, setMode] = useState<RunRerunMode>(initialMode);
@@ -43,6 +55,10 @@ export default function RunRerunPanel({
   const attempt = useRef<RunRerunConfirmInput | undefined>(undefined);
   const previewButton = useRef<HTMLButtonElement>(null);
   const createdButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    busyChanged?.(submitting && active);
+    return () => busyChanged?.(false);
+  }, [submitting, busyChanged, active]);
   const terminal = ['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(run.state);
   useEffect(() => {
     live.current = true;
@@ -52,11 +68,11 @@ export default function RunRerunPanel({
     };
   }, []);
   useEffect(() => {
-    if (preview) previewHeading.current?.focus();
-  }, [preview]);
+    if (preview && active) previewHeading.current?.focus();
+  }, [preview, active]);
   useEffect(() => {
-    if (created && !submitting && !opening) createdButton.current?.focus();
-  }, [created, submitting, opening]);
+    if (active && created && !submitting && !opening) createdButton.current?.focus();
+  }, [created, submitting, opening, active]);
   const current = (id: number) => live.current && generation.current === id;
   const reset = (preserveCreated = false) => {
     generation.current++;
@@ -94,7 +110,7 @@ export default function RunRerunPanel({
     setOpening(runId);
     try {
       const detail = await api('run.detail', { id: runId });
-      if (current(id)) open(detail);
+      if (current(id) && activeRef.current) open(detail);
     } catch (error) {
       if (current(id)) setError(message(error));
     } finally {
@@ -129,7 +145,7 @@ export default function RunRerunPanel({
       setReviewed(false);
       try {
         const detail = await api('run.detail', { id: next.id });
-        if (current(id)) open(detail);
+        if (current(id) && activeRef.current) open(detail);
       } catch (error) {
         if (current(id)) setError('新运行已创建，但详情暂时无法读取：' + message(error));
       }
@@ -147,14 +163,23 @@ export default function RunRerunPanel({
   };
   return (
     <section className="run-rerun run-rerun-workspace" aria-label="人工核对后重新运行">
-      <div className="section-row">
-        <div>
-          <h2>重新运行前，核对已完成操作</h2>
-          <p className="muted">创建独立运行记录，从第一个步骤开始。</p>
+      {!page && (
+        <div className="section-row">
+          <div>
+            <h2>重新运行前，核对已完成操作</h2>
+            <p className="muted">创建独立运行记录，从第一个步骤开始。</p>
+          </div>
         </div>
-      </div>
+      )}
       <div className="run-rerun-layout">
         <div className="run-rerun-main">
+          {!terminal && (
+            <div className="run-rerun-unavailable" role="status">
+              <h2>当前不可重新运行</h2>
+              <p>{related?.reason ?? '请等待原运行结束，再核对结果。'}</p>
+              <p>可以查看原运行的输出、日志和关联记录。</p>
+            </div>
+          )}
           {terminal && (
             <>
               <div className="run-rerun-options">
@@ -315,23 +340,36 @@ export default function RunRerunPanel({
               </button>
             </form>
           )}
-          {(loading || preview || retry) && (
+          {(cancel || loading || preview || retry) && (
             <button
               type="button"
               className="run-rerun-cancel"
               disabled={submitting}
               onClick={() => {
                 if (sending.current) return;
-                reset();
-                previewButton.current?.focus();
+                if (cancel) cancel();
+                else {
+                  reset();
+                  previewButton.current?.focus();
+                }
               }}
             >
-              取消重新运行
+              {cancel ? '取消并返回' : '取消重新运行'}
             </button>
           )}
         </div>
         <aside className="run-rerun-context" aria-label="重新运行的来源与边界">
           <h3>当前授权重新检查</h3>
+          {inspectSource && (
+            <div className="run-rerun-source-actions">
+              <button type="button" disabled={submitting} onClick={() => inspectSource('output')}>
+                查看原运行输出
+              </button>
+              <button type="button" disabled={submitting} onClick={() => inspectSource('logs')}>
+                查看原运行日志
+              </button>
+            </div>
+          )}
           <p className="run-rerun-availability" role="status">
             {terminal && related?.available
               ? '可以预览执行内容'
