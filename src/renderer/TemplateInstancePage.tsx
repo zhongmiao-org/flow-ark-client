@@ -387,6 +387,7 @@ export default function TemplateInstancePage({
         <div data-instance-tab="resources" hidden={tab !== 'resources'}>
           <TemplateResources
             detail={draft}
+            saved={saved.instance}
             data={data}
             busy={busy}
             blocked={blocked}

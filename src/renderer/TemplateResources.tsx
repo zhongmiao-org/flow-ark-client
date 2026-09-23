@@ -1,9 +1,10 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { Bootstrap } from '../shared/types';
-import type { TemplateDetail } from './template-draft';
+import { equal, type TemplateDetail } from './template-draft';
 const api = (method: string, args: unknown = {}) => window.flowark.request(method, args);
 export default function TemplateResources({
   detail,
+  saved,
   data,
   busy,
   blocked,
@@ -15,6 +16,7 @@ export default function TemplateResources({
   openEntry,
 }: {
   detail: TemplateDetail;
+  saved: TemplateDetail['instance'];
   data: Bootstrap;
   busy: boolean;
   blocked: boolean;
@@ -50,7 +52,15 @@ export default function TemplateResources({
           {manifest.resources.map((resource) => {
             const binding = instance.resources[resource.id] ?? {};
             return (
-              <div className="template-resource" key={resource.id}>
+              <div
+                className={
+                  'template-resource' +
+                  (resource.kind === 'file' || resource.kind === 'directory'
+                    ? ' template-resource-file'
+                    : '')
+                }
+                key={resource.id}
+              >
                 <label className="ai-settings-field">
                   <span>
                     {resource.name} · {resource.kind} / {resource.access}
@@ -117,9 +127,11 @@ export default function TemplateResources({
                     选择{resource.kind === 'file' ? '文件' : '目录'}
                   </button>
                 ) : resource.kind === 'browser' ? (
-                  <button onClick={() => void work(() => api('browser.embedded.enable'))}>
-                    启用内置浏览器
-                  </button>
+                  !data.browsers.some((browser) => browser.product === 'embedded') && (
+                    <button onClick={() => void work(() => api('browser.embedded.enable'))}>
+                      启用内置浏览器
+                    </button>
+                  )
                 ) : (
                   <>
                     <label className="ai-settings-field">
@@ -212,26 +224,38 @@ export default function TemplateResources({
             (id) => !instance.grants[id] || instance.grants[id] === 'deny',
           );
           const incomplete = missing.length || denied.length || entry.unavailable.length;
+          const pending =
+            entry.resources.some((id) => !equal(instance.resources[id], saved.resources[id])) ||
+            entry.actions.some(
+              (id) => (instance.grants[id] ?? 'deny') !== (saved.grants[id] ?? 'deny'),
+            );
           return (
             <div className="template-entry-check" key={entry.id}>
-              <span className={'ai-config-status ' + (incomplete ? 'warning' : 'neutral')}>
-                {entry.name} · {incomplete ? '尚未就绪' : '已填写 · 运行前复核'}
+              <span
+                className={'ai-config-status ' + (pending || incomplete ? 'warning' : 'neutral')}
+              >
+                {entry.name} ·{' '}
+                {pending ? '待保存' : incomplete ? '尚未就绪' : '已填写 · 运行前复核'}
               </span>
-              <p>
-                {entry.unavailable.length
-                  ? '缺少能力：' + entry.unavailable.join('、')
-                  : denied.length
-                    ? '动作仍为禁止：' +
-                      denied
-                        .map((id) => manifest.actions.find((item) => item.id === id)!.name)
-                        .join('、')
-                    : missing.length
-                      ? '待配置：' +
-                        missing
-                          .map((id) => manifest.resources.find((item) => item.id === id)!.name)
-                          .join('、')
-                      : '只核对当前入口所需的资源与动作；保存不会自动运行。'}
-              </p>
+              {pending && <p>资源或权限修改尚未保存。核对范围后点击保存授权。</p>}
+              {entry.unavailable.length > 0 && <p>缺少能力：{entry.unavailable.join('、')}</p>}
+              {denied.length > 0 && (
+                <p>
+                  动作仍为禁止：
+                  {denied
+                    .map((id) => manifest.actions.find((item) => item.id === id)!.name)
+                    .join('、')}
+                </p>
+              )}
+              {missing.length > 0 && (
+                <p>
+                  待配置：
+                  {missing
+                    .map((id) => manifest.resources.find((item) => item.id === id)!.name)
+                    .join('、')}
+                </p>
+              )}
+              {!pending && !incomplete && <p>只核对当前入口所需的资源与动作；保存不会自动运行。</p>}
               <button disabled={busy} onClick={() => openEntry(entry.id)}>
                 打开 {entry.name}
               </button>

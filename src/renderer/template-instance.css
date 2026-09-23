@@ -70,6 +70,21 @@
 .template-resource > button {
   align-self: flex-start;
 }
+.template-resource-file {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px;
+}
+.template-resource-file > .ai-settings-field {
+  display: contents;
+}
+.template-resource-file > .ai-settings-field > span {
+  grid-column: 1 / -1;
+}
+.template-resource-file > button {
+  align-self: stretch;
+  white-space: nowrap;
+}
 .template-resource input,
 .template-resource select,
 .template-action-grant select {
