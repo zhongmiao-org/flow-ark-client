@@ -1,0 +1,169 @@
+/* Figma 2:4940 / 2:4837: export review and result states. */
+.export-review-dialog {
+  width: min(1040px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  padding: 32px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-16);
+  background: var(--fa-bg-canvas);
+  color: var(--fa-text-primary);
+  overflow: auto;
+}
+.export-review-dialog::backdrop {
+  background: rgb(18 26 42 / 48%);
+}
+.export-review-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.export-review-kicker {
+  color: var(--fa-action-primary);
+  font-size: 12px;
+}
+.export-review-heading h1 {
+  font-size: 24px;
+  line-height: 36px;
+  margin: 8px 0;
+}
+.export-review-heading h1:focus {
+  outline: none;
+}
+.export-review-heading p {
+  margin: 0;
+  color: var(--fa-text-secondary);
+}
+.export-review-heading > button {
+  flex-shrink: 0;
+}
+.export-review-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 24px;
+}
+.export-review-card {
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-surface);
+}
+.export-review-card h2,
+.export-review-success h2 {
+  font-size: 18px;
+  line-height: 28px;
+  margin: 12px 0 20px;
+  overflow-wrap: anywhere;
+}
+.export-review-card h3 {
+  font-size: 14px;
+  margin-top: 24px;
+}
+.export-review-card dl {
+  display: grid;
+  gap: 16px;
+}
+.export-review-card dt {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+.export-review-card dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.export-review-card ul {
+  padding-left: 20px;
+  margin-bottom: 24px;
+}
+.export-review-card li {
+  line-height: 24px;
+  margin: 10px 0;
+}
+.export-review-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--fa-radius-999);
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+  background: var(--fa-bg-subtle);
+}
+.export-review-badge.success {
+  color: var(--fa-status-success);
+  background: var(--fa-status-success-bg);
+}
+.export-review-muted {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 22px;
+}
+.export-review-message {
+  margin: 0 0 20px;
+  padding: 16px;
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-bg-subtle);
+  line-height: 24px;
+  overflow-wrap: anywhere;
+}
+.export-review-message p {
+  margin: 8px 0 0;
+}
+.export-review-message.error {
+  color: var(--fa-status-error);
+  background: var(--fa-status-error-bg);
+}
+.export-review-message.warning {
+  color: var(--fa-status-warning);
+  background: var(--fa-status-warning-bg);
+}
+.export-review-footer {
+  margin-top: 24px;
+}
+.export-review-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 24px;
+}
+.export-review-check input {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin: 4px 0;
+  accent-color: var(--fa-action-primary);
+}
+.export-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+.export-review-actions button {
+  min-width: 160px;
+}
+.export-review-success {
+  padding: 32px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-surface);
+}
+.export-review-success p {
+  line-height: 24px;
+  color: var(--fa-text-secondary);
+}
+@media (max-width: 760px) {
+  .export-review-dialog {
+    width: calc(100vw - 24px);
+    max-height: calc(100vh - 24px);
+    padding: 20px;
+  }
+  .export-review-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .export-review-card {
+    padding: 20px;
+  }
+}

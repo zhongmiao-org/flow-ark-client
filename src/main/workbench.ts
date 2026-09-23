@@ -248,15 +248,8 @@ app
         }
         if (method === 'ai.configuration.save' && args.apiKey) knownSecrets.add(args.apiKey);
         if (method === 'flow.export') {
-          const review = await dialog.showMessageBox(win, {
-            buttons: ['取消', '已审阅，导出 ZIP'],
-            defaultId: 0,
-            cancelId: 0,
-            message: '确认已审阅流程中的字面量与脚本',
-            detail:
-              '导出点击时的编辑内容，未保存修改不会写入本地草稿。实例配置、动作权限、本地绑定和运行历史不会导出；运行参数值也会清空。节点字面量、代码和配置定义仍会保留，请先确认其中没有个人数据或密钥。',
-          });
-          if (review.response !== 1) return false;
+          // The application review freezes the payload and supplies reviewed:true.
+          // IPC validation above and host package validation remain authoritative.
           const identity = 'local-' + randomUUID();
           const r = await dialog.showSaveDialog(win, {
             defaultPath: templateFilename(identity, '1.0.0'),

@@ -15,10 +15,12 @@ export default function TemplateLibrary({
   navigation,
   showRun,
   schedule,
+  exportTemplate,
 }: {
   navigation: MutableRefObject<TemplateNavigation | undefined>;
   showRun: (detail: any, origin: TemplateEntryOrigin, output?: boolean) => void;
   schedule: (origin: TemplateEntryOrigin) => void;
+  exportTemplate: (pkg: Bootstrap['templates'][number]) => void;
   data: Bootstrap;
   action: (fn: () => Promise<any>, message?: string) => Promise<any>;
   initialPreview?: any;
@@ -153,10 +155,7 @@ export default function TemplateLibrary({
                 >
                   创建实例
                 </button>
-                <button
-                  disabled={busy}
-                  onClick={() => work(() => api('template.export', { key: p.key }))}
-                >
+                <button disabled={busy} onClick={() => exportTemplate(p)}>
                   导出 ZIP
                 </button>
                 <button

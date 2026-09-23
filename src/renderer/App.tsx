@@ -1,3 +1,4 @@
+import ExportReviewDialog, { captureDraftExport, type ExportSource } from './ExportReviewDialog';
 import LocalSettingsPage, { type SettingsNavigation } from './LocalSettingsPage';
 import AttentionWorkspace, { type AttentionNavigation } from './AttentionWorkspace';
 import TemplateSchedulePage from './TemplateSchedulePage';
@@ -109,6 +110,7 @@ function format(t: string) {
   });
 }
 export default function App() {
+  const [exportSource, setExportSource] = useState<ExportSource>();
   const [settingsFlowId, setSettingsFlowId] = useState<string>();
   const [toolsOrigin, setToolsOrigin] = useState<'tasks' | 'settings'>('tasks');
   const [settingsNavigation, setSettingsNavigation] = useState<SettingsNavigation>();
@@ -378,20 +380,14 @@ export default function App() {
         return api('flow.save', { flow: edit.flow, bindings: edit.bindings });
       }, '已保存本地草稿');
   }
-  async function exportDraft() {
-    if (edit)
-      return action(() => {
-        checkEditorInput('导出');
-        const configuration = edit.bindings.configuration;
-        const snapshot = structuredClone({
-          flow: edit.flow,
-          ...(configuration
-            ? { configuration: { adapter: configuration.adapter, schema: configuration.schema } }
-            : {}),
-          reviewed: true as const,
-        });
-        return api('flow.export', snapshot);
-      });
+  function exportDraft() {
+    if (!edit) return;
+    try {
+      checkEditorInput('导出');
+      setExportSource(captureDraftExport(edit, draftSaved));
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : '无法准备导出内容');
+    }
   }
   async function run(r: FlowRecord, debug = false) {
     await action(async () => {
@@ -475,6 +471,19 @@ export default function App() {
   };
   return (
     <div className="application-shell">
+      {exportSource && (
+        <ExportReviewDialog
+          source={exportSource}
+          close={() => setExportSource(undefined)}
+          importZip={async () => {
+            const preview = await api('template.inspect');
+            if (!preview) return false;
+            setImportPreview(preview);
+            setSection('templates');
+            return true;
+          }}
+        />
+      )}
       <div className="window-titlebar">FlowArk · 个人工作空间</div>
       <div
         className={`app ${browserOpen ? 'with-browser' : ''} ${section === 'editor' && !nodeSession && !outlineOpen ? 'editing-workspace' : ''}`}
@@ -1158,6 +1167,17 @@ export default function App() {
           <div hidden={section !== 'templates'}>
             <TemplateLibrary
               navigation={templateNavigation}
+              exportTemplate={(pkg) =>
+                setExportSource(
+                  structuredClone({
+                    kind: 'template',
+                    key: pkg.key,
+                    name: pkg.manifest.name,
+                    version: pkg.manifest.version,
+                    entries: pkg.manifest.entries.map((entry) => entry.name),
+                  }),
+                )
+              }
               showRun={(next, origin, output) => {
                 setTemplateOrigin(origin);
                 setRunOrigin('template');
@@ -1449,7 +1469,7 @@ export default function App() {
                     <BrowserSidebar
                       close={() => setBrowserOpen(false)}
                       running={!!active && !['PAUSED', 'WAITING_INPUT'].includes(active.state)}
-                      obscured={configOpen}
+                      obscured={configOpen || !!exportSource}
                     />
                   ) : null
                 }
@@ -1683,7 +1703,7 @@ export default function App() {
           <BrowserSidebar
             close={() => setBrowserOpen(false)}
             running={!!active && !['PAUSED', 'WAITING_INPUT'].includes(active.state)}
-            obscured={section === 'editor' && configOpen}
+            obscured={!!exportSource || (section === 'editor' && configOpen)}
           />
         )}
       </div>
