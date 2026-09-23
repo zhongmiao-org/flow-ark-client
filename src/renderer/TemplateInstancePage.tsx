@@ -86,9 +86,9 @@ export default function TemplateInstancePage({
             : scope === 'instance'
               ? '[data-instance-tab="configuration"], [data-instance-tab="resources"]'
               : '[data-instance-tab]';
-    return [...(root.current?.querySelectorAll(containers) ?? [])].some((element) =>
-      element.querySelector('[data-value-invalid]'),
-    );
+    return [...(root.current?.querySelectorAll(containers) ?? [])]
+      .map((element) => element.querySelector<HTMLElement>('[data-value-invalid]'))
+      .find((element) => element);
   };
   useLayoutEffect(() => {
     if (!active) return;
@@ -139,8 +139,15 @@ export default function TemplateInstancePage({
   };
   const save = async (scope: TemplateSaveScope, inputId?: string) => {
     if (lock.current || checking || sourceError) return false;
-    if (rawInvalid(scope, inputId)) {
+    const invalid = rawInvalid(scope, inputId);
+    if (invalid) {
       setError('请先修正未完成的字段值，其他草稿仍保留。');
+      if (!dialog.current?.open && !invalid.closest('[hidden]')) {
+        const control = invalid.matches('input, select, textarea, button')
+          ? invalid
+          : invalid.querySelector<HTMLElement>('input, select, textarea, button');
+        control?.focus();
+      }
       return false;
     }
     const submitted = structuredClone(draft),

@@ -3,9 +3,21 @@ import { X, Plus, Trash2 } from 'lucide-react';
 import type { Bindings, Json } from '../shared/types';
 import { schemaDefaults } from '../shared/template-config';
 import { LiteralValue } from './ValueField';
+import './template-fields.css';
+
+function sameOption(a: any, b: any): boolean {
+  if (a === b) return true;
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  const keys = Object.keys(a);
+  return (
+    keys.length === Object.keys(b).length &&
+    keys.every((key) => Object.hasOwn(b, key) && sameOption(a[key], b[key]))
+  );
+}
 
 /** A generic, data-only form. Business field labels and options live in the package. */
-export function Field({ schema: s, value, change, label }: any) {
+export function Field({ schema: s, value, change, label, required = false }: any) {
   const id = useId();
   if (Object.hasOwn(s, 'const') || s.readOnly) return null;
   const title = s.title ?? label;
@@ -21,8 +33,9 @@ export function Field({ schema: s, value, change, label }: any) {
             key={key}
             schema={schema}
             label={key}
+            required={s.required?.includes(key)}
             value={value?.[key]}
-            change={(next: Json) => change({ ...schemaDefaults(s), ...value, [key]: next })}
+            change={(next: Json) => change({ ...(value ?? schemaDefaults(s)), [key]: next })}
           />
         ))}
       </fieldset>
@@ -62,21 +75,59 @@ export function Field({ schema: s, value, change, label }: any) {
       </fieldset>
     );
   }
-  const options = s.oneOf ?? s.enum?.map((v: Json) => ({ const: v, title: String(v) }));
+  const options =
+    s.oneOf ??
+    s.enum?.map((v: Json) => ({
+      const: v,
+      title: typeof v === 'object' ? JSON.stringify(v) : String(v),
+    }));
+  const selected = options?.findIndex((option: any) => sameOption(option.const, value));
+  const text = typeof value === 'string' ? value : '';
+  const length = [...text].length;
+  const error =
+    value === undefined
+      ? required && s.type !== 'integer' && s.type !== 'number'
+        ? '请填写此项。'
+        : ''
+      : options
+        ? selected === -1
+          ? '请选择一个有效选项。'
+          : ''
+        : s.type === 'string'
+          ? s.minLength !== undefined && length < s.minLength
+            ? `至少填写 ${s.minLength} 个字符。`
+            : s.maxLength !== undefined && length > s.maxLength
+              ? `最多填写 ${s.maxLength} 个字符，当前 ${length} 个。`
+              : ''
+          : '';
+  const describedBy =
+    [error ? id + '-error' : '', s.description ? id + '-description' : '']
+      .filter(Boolean)
+      .join(' ') || undefined;
   return (
     <label className="template-field">
-      <span id={id}>{title}</span>
+      <span id={id}>
+        {title}
+        {required && <small className="template-required">（必需）</small>}
+      </span>
       {options ? (
         <select
           aria-labelledby={id}
-          aria-describedby={s.description ? id + '-description' : undefined}
-          value={String(value ?? '')}
-          onChange={(e) =>
-            change(options.find((o: any) => String(o.const) === e.target.value).const)
-          }
+          aria-describedby={describedBy}
+          aria-required={required || undefined}
+          aria-invalid={!!error}
+          data-value-invalid={!!error || undefined}
+          value={selected === -1 ? '' : String(selected)}
+          onChange={(e) => {
+            const option = options[Number(e.target.value)];
+            if (e.target.value && option) change(option.const);
+          }}
         >
-          {options.map((o: any) => (
-            <option value={String(o.const)} key={String(o.const)}>
+          <option value="" disabled>
+            请选择
+          </option>
+          {options.map((o: any, index: number) => (
+            <option value={String(index)} key={index}>
               {o.title ?? String(o.const)}
             </option>
           ))}
@@ -84,51 +135,68 @@ export function Field({ schema: s, value, change, label }: any) {
       ) : s.type === 'boolean' ? (
         <input
           aria-labelledby={id}
-          aria-describedby={s.description ? id + '-description' : undefined}
+          aria-describedby={describedBy}
+          aria-invalid={!!error}
+          data-value-invalid={!!error || undefined}
           type="checkbox"
           checked={Boolean(value)}
           onChange={(e) => change(e.target.checked)}
         />
       ) : s.type === 'number' || s.type === 'integer' ? (
-        <TemplateNumber schema={s} value={value} change={change} labelId={id} />
+        <TemplateNumber schema={s} value={value} change={change} labelId={id} required={required} />
       ) : s.type === 'string' && s.maxLength > 500 ? (
         <textarea
           aria-labelledby={id}
-          aria-describedby={s.description ? id + '-description' : undefined}
+          aria-describedby={describedBy}
+          aria-required={required || undefined}
+          aria-invalid={!!error}
+          data-value-invalid={!!error || undefined}
           value={value ?? ''}
-          minLength={s.minLength}
-          maxLength={s.maxLength}
           onChange={(e) => change(e.target.value)}
         />
       ) : (
         <input
           aria-labelledby={id}
-          aria-describedby={s.description ? id + '-description' : undefined}
+          aria-describedby={describedBy}
+          aria-required={required || undefined}
+          aria-invalid={!!error}
+          data-value-invalid={!!error || undefined}
           value={value ?? ''}
           type="text"
-          min={s.minimum}
-          max={s.maximum}
-          minLength={s.minLength}
-          maxLength={s.maxLength}
           onChange={(e) => change(e.target.value)}
         />
+      )}
+      {error && (
+        <small className="template-field-error" id={id + '-error'}>
+          {error}
+        </small>
       )}
       {s.description && <small id={id + '-description'}>{s.description}</small>}
     </label>
   );
 }
-function TemplateNumber({ schema, value, change, labelId }: any) {
+function TemplateNumber({ schema, value, change, labelId, required }: any) {
   const [text, setText] = useState(String(value ?? ''));
   useEffect(() => setText(String(value ?? '')), [value]);
   const number = Number(text);
-  const invalid =
-    !text.trim() ||
-    !Number.isFinite(number) ||
-    (schema.type === 'integer' && !Number.isInteger(number));
+  const error =
+    !text.trim() && value === undefined && !required
+      ? ''
+      : !text.trim() || !Number.isFinite(number)
+        ? '请填写有效数字。'
+        : schema.type === 'integer' && !Number.isInteger(number)
+          ? '请填写整数。'
+          : schema.minimum !== undefined && number < schema.minimum
+            ? `不能小于 ${schema.minimum}。`
+            : schema.maximum !== undefined && number > schema.maximum
+              ? `不能大于 ${schema.maximum}。`
+              : '';
+  const invalid = !!error;
   return (
     <>
       <input
         aria-labelledby={labelId}
+        aria-required={required || undefined}
         aria-invalid={invalid}
         data-value-invalid={invalid || undefined}
         aria-describedby={
@@ -149,8 +217,8 @@ function TemplateNumber({ schema, value, change, labelId }: any) {
         }}
       />
       {invalid && (
-        <small id={labelId + '-error'}>
-          请填写{schema.type === 'integer' ? '整数' : '有效数字'}
+        <small className="template-field-error" id={labelId + '-error'}>
+          {error}
         </small>
       )}
     </>
