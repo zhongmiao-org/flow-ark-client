@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import ArchiveFileList from './ArchiveFileList';
 import type { Bindings, Json, Step } from '../shared/types';
 import ValueField from './ValueField';
 import { MappingValues, MatrixValues } from './StructuredValues';
@@ -170,24 +170,11 @@ export default function ResourceNodeConfiguration({
         node.operation === 'copy' &&
         field('content', '源文件名', node.content, '', true)}
       {node.type === 'file' && node.operation === 'archive' && (
-        <ValueField
-          label="归档文件列表"
+        <ArchiveFileList
           value={node.files}
           choices={choices}
-          defaultValue={[]}
           change={(files) => change({ ...node, files })}
-        >
-          {Array.isArray(node.files) && node.files.every((f) => typeof f === 'string') ? (
-            <>
-              <label htmlFor="archive-files">归档文件列表</label>
-              <FileListInput
-                files={node.files as string[]}
-                change={(files) => change({ ...node, files })}
-              />
-              <p className="note">空行忽略。明确选择 1～200 个文件，合计不超过 100 MiB。</p>
-            </>
-          ) : undefined}
-        </ValueField>
+        />
       )}
       {node.type === 'excel' && node.operation === 'read' && (
         <p className="note">读取首个工作表，保留空行和原始行列位置；行内空单元格输出为 null。</p>
@@ -223,24 +210,5 @@ export default function ResourceNodeConfiguration({
         </>
       )}
     </section>
-  );
-}
-
-function FileListInput({ files, change }: { files: string[]; change: (files: string[]) => void }) {
-  const [text, setText] = useState(files.join('\n'));
-  const parse = (value: string) => value.split('\n').filter(Boolean);
-  useEffect(() => {
-    if (JSON.stringify(parse(text)) !== JSON.stringify(files)) setText(files.join('\n'));
-  }, [JSON.stringify(files)]);
-  return (
-    <textarea
-      id="archive-files"
-      value={text}
-      placeholder="每行一个相对文件名"
-      onChange={(e) => {
-        setText(e.target.value);
-        change(parse(e.target.value));
-      }}
-    />
   );
 }

@@ -1,0 +1,79 @@
+.archive-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.archive-file-list > header,
+.archive-file-row-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.archive-file-list > header strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.archive-file-list > header span,
+.archive-file-row-heading > span {
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+}
+.archive-file-list > ol {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 520px;
+  overflow: auto;
+}
+.archive-file-list > ol > li {
+  padding: 12px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-bg-canvas);
+}
+.archive-file-row-heading {
+  margin-bottom: 8px;
+}
+.archive-file-row-heading button {
+  padding: 4px 10px;
+  min-height: 28px;
+  font-size: 12px;
+}
+.node-configuration .archive-file-list .value-field {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.archive-file-list label {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 6px;
+  color: var(--fa-text-secondary);
+}
+.archive-file-list > button {
+  align-self: flex-start;
+}
+.archive-file-empty {
+  padding: 20px 16px;
+  border: 1px dashed var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 20px;
+}
+.node-configuration .archive-file-list .archive-file-hint {
+  margin-top: 8px;
+  color: var(--fa-status-warning);
+}
+.archive-file-feedback:empty {
+  display: none;
+}
+.node-configuration .archive-file-list .archive-file-feedback {
+  color: var(--fa-action-primary);
+}
