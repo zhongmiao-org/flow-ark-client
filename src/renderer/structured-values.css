@@ -1,0 +1,186 @@
+/* Shared Figma 2:2033 fields: HTTP headers, workbook mappings and typed matrices. */
+.mapping-values,
+.matrix-values {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mapping-values {
+  container-type: inline-size;
+  container-name: mapping;
+}
+.structured-values-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.structured-values-heading strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.structured-values-heading span {
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+}
+.mapping-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+.mapping-inventory {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mapping-values .mapping-list {
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  max-height: 280px;
+  background: var(--fa-bg-surface);
+}
+.mapping-values .mapping-list:empty {
+  display: none;
+}
+.mapping-values .mapping-row {
+  border-bottom: 1px solid var(--fa-border-default);
+}
+.mapping-values .mapping-row:last-child {
+  border-bottom: 0;
+}
+.mapping-values .mapping-row > button {
+  padding: 10px 12px;
+  min-height: 40px;
+  font-size: 12px;
+}
+.mapping-values .mapping-row > button:first-child {
+  display: flex;
+  gap: 4px;
+}
+.mapping-values .mapping-row strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.mapping-values .mapping-row span {
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+}
+.mapping-values .mapping-row button.selected,
+.matrix-values .matrix-scroll button.selected {
+  background: var(--fa-action-subtle);
+  color: var(--fa-action-primary);
+}
+.mapping-values .mapping-row button.selected {
+  box-shadow: inset 3px 0 0 var(--fa-action-primary);
+}
+.mapping-values .resource-inline {
+  gap: 8px;
+}
+.mapping-values .resource-inline button {
+  min-height: 40px;
+  font-size: 12px;
+  padding: 8px 12px;
+}
+.mapping-values label {
+  display: block;
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+  margin: 0 0 6px;
+}
+.mapping-values .mapping-current,
+.matrix-values .matrix-current {
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  padding: 16px;
+  margin: 0;
+  min-width: 0;
+  background: var(--fa-bg-canvas);
+}
+.mapping-values .mapping-current h5 {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+.mapping-value-editor {
+  margin-top: 16px;
+}
+.node-configuration .mapping-value-editor > .value-field {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+.node-configuration .structured-values-empty {
+  border: 1px dashed var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  padding: 16px;
+  color: var(--fa-text-secondary);
+}
+.node-configuration .structured-values-feedback {
+  color: var(--fa-action-primary);
+}
+.structured-values-feedback:empty {
+  display: none;
+}
+.matrix-values .matrix-actions,
+.matrix-values .matrix-pagination {
+  gap: 8px;
+  margin: 0;
+}
+.matrix-values .matrix-actions button,
+.matrix-values .matrix-pagination button {
+  font-size: 12px;
+  min-height: 40px;
+  padding: 8px 12px;
+}
+.matrix-values .matrix-pagination span {
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--fa-text-secondary);
+}
+.matrix-values .matrix-scroll {
+  border-color: var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+}
+.matrix-values .matrix-scroll table {
+  font-size: 12px;
+}
+.matrix-values .matrix-scroll th,
+.matrix-values .matrix-scroll td {
+  border-color: var(--fa-border-default);
+}
+.matrix-values .matrix-scroll th {
+  background: var(--fa-bg-canvas);
+  color: var(--fa-text-secondary);
+  padding: 8px;
+  min-width: 40px;
+}
+.matrix-values .matrix-scroll td button {
+  min-height: 40px;
+  width: 96px;
+  max-width: 96px;
+  font-size: 12px;
+  padding: 8px 12px;
+  background: var(--fa-bg-surface);
+  color: var(--fa-text-primary);
+}
+.matrix-values .matrix-scroll td button:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: -2px;
+}
+.node-configuration .note {
+  background: var(--fa-bg-canvas);
+  color: var(--fa-text-secondary);
+  border-radius: var(--fa-radius-8);
+  padding: 12px;
+  line-height: 20px;
+}
+@container mapping (min-width: 620px) {
+  .mapping-workspace {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    align-items: start;
+  }
+}

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import './structured-values.css';
 import type { Json } from '../shared/types';
 import ValueField from './ValueField';
 import { referenceOf, type ReferenceChoice } from './value-references';
@@ -32,10 +33,14 @@ export function MappingValues({
   choices: ReferenceChoice[];
   kind: 'headers' | 'cells';
 }) {
+  const id = useId();
+  const root = useRef<HTMLDivElement>(null);
+  const focus = useRef<'value' | 'name' | 'list' | null>(null);
   const [selected, setSelected] = useState(''),
     [name, setName] = useState(''),
     [rename, setRename] = useState(''),
     [error, setError] = useState('');
+  const [notice, setNotice] = useState<{ message: string; value: string }>();
   const object =
     value && typeof value === 'object' && !Array.isArray(value) && referenceOf(value) === undefined
       ? value
@@ -46,109 +51,183 @@ export function MappingValues({
     setRename(active);
     setError('');
   }, [active]);
+  useLayoutEffect(() => {
+    const target = focus.current;
+    if (!target) return;
+    focus.current = null;
+    const selector =
+      target === 'value'
+        ? '.mapping-value-editor textarea, .mapping-value-editor input'
+        : target === 'name'
+          ? '.mapping-rename-input'
+          : '.mapping-row button[aria-pressed="true"]';
+    (
+      root.current?.querySelector<HTMLElement>(selector) ??
+      (target === 'value'
+        ? root.current?.querySelector<HTMLElement>(
+            '.mapping-value-editor select, .mapping-value-editor button',
+          )
+        : null) ??
+      root.current?.querySelector<HTMLElement>('.mapping-new-input')
+    )?.focus();
+  }, [active, value, selected]);
+  const changed = (next: Json, message: string) => {
+    change(next);
+    setNotice({ message, value: JSON.stringify(next) });
+    setError('');
+  };
+  const add = () => {
+    if (!object) return;
+    try {
+      const key = mapKey(kind, name, object);
+      changed({ ...object, [key]: '' }, `已添加 ${key}，请填写对应值。`);
+      setSelected(key);
+      setName('');
+      focus.current = 'value';
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : '条目未添加');
+    }
+  };
+  const renameCurrent = () => {
+    if (!object || !active) return;
+    try {
+      const next = renameEntry(object, active, rename, kind);
+      const key = kind === 'cells' ? cellKey(rename) : rename;
+      changed(next, `已将 ${active} 更名为 ${key}，原值保持。`);
+      setSelected(key);
+      setRename(key);
+      focus.current = 'name';
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : '条目未更名');
+    }
+  };
   return (
     <ValueField label={label} value={value} change={change} choices={choices} defaultValue={{}}>
       {object ? (
-        <div className="mapping-values">
-          <label>{label}</label>
-          <div className="mapping-list">
-            {keys.map((key) => (
-              <div className="mapping-row" key={key}>
-                <button
-                  className={active === key ? 'selected' : ''}
-                  type="button"
-                  aria-label={label + '条目 ' + key}
-                  onClick={() => setSelected(key)}
-                >
-                  <strong>{key}</strong>
-                  <span>{shortValue(object[key])}</span>
-                </button>
-                <button
-                  type="button"
-                  aria-label={'删除' + label + '条目 ' + key}
-                  onClick={() => {
-                    const next = { ...object };
-                    delete next[key];
-                    change(next);
+        <div className="mapping-values" ref={root}>
+          <header className="structured-values-heading">
+            <strong>{label}</strong>
+            <span>{keys.length} 个条目</span>
+          </header>
+          <div className="mapping-workspace">
+            <div className="mapping-inventory">
+              <div className="mapping-list" role="group" aria-label={label + '条目'}>
+                {keys.map((key, index) => (
+                  <div className="mapping-row" key={key}>
+                    <button
+                      className={active === key ? 'selected' : ''}
+                      type="button"
+                      aria-pressed={active === key}
+                      aria-label={label + '条目 ' + key}
+                      onClick={() => {
+                        setSelected(key);
+                        setError('');
+                        focus.current = 'value';
+                      }}
+                    >
+                      <strong title={key}>{key}</strong>
+                      <span title={shortValue(object[key])}>{shortValue(object[key])}</span>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={'删除' + label + '条目 ' + key}
+                      onClick={() => {
+                        const next = { ...object };
+                        delete next[key];
+                        changed(next, `已移除 ${key}。`);
+                        if (active === key) setSelected(keys[index + 1] ?? keys[index - 1] ?? '');
+                        focus.current = 'list';
+                      }}
+                    >
+                      移除
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {!keys.length && (
+                <p className="structured-values-empty">尚无条目。填写名称后添加，再编辑对应值。</p>
+              )}
+              <label htmlFor={`${id}-new`}>新增{label}名称</label>
+              <div className="resource-inline">
+                <input
+                  id={`${id}-new`}
+                  className="mapping-new-input"
+                  placeholder={kind === 'cells' ? 'A1' : 'Content-Type'}
+                  value={name}
+                  onChange={(event) => {
+                    setName(event.target.value);
+                    setError('');
                   }}
-                >
-                  ×
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+                      event.preventDefault();
+                      add();
+                    }
+                  }}
+                />
+                <button type="button" aria-label={'添加' + label + '条目'} onClick={add}>
+                  添加
                 </button>
               </div>
-            ))}
-          </div>
-          {!keys.length && <p className="note">尚无条目。</p>}
-          <label htmlFor={kind + '-new-key'}>新增{label}名称</label>
-          <div className="resource-inline">
-            <input
-              id={kind + '-new-key'}
-              placeholder={kind === 'cells' ? 'A1' : 'Content-Type'}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <button
-              type="button"
-              aria-label={'添加' + label + '条目'}
-              onClick={() => {
-                try {
-                  const key = mapKey(kind, name, object);
-                  change({ ...object, [key]: '' });
-                  setSelected(key);
-                  setName('');
-                  setError('');
-                } catch (e: any) {
-                  setError(e.message);
-                }
-              }}
-            >
-              添加
-            </button>
+            </div>
+            {active && (
+              <div className="mapping-current">
+                <h5>当前条目 · {active}</h5>
+                <label htmlFor={`${id}-rename`}>当前{label}名称</label>
+                <div className="resource-inline">
+                  <input
+                    id={`${id}-rename`}
+                    className="mapping-rename-input"
+                    value={rename}
+                    onChange={(event) => {
+                      setRename(event.target.value);
+                      setError('');
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+                        event.preventDefault();
+                        renameCurrent();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    aria-label={'更改' + label + '名称'}
+                    disabled={rename === active}
+                    onClick={renameCurrent}
+                  >
+                    更名
+                  </button>
+                </div>
+                <div className="mapping-value-editor">
+                  <ValueField
+                    key={active}
+                    label={label + '值 ' + active}
+                    value={object[active]}
+                    change={(next) => {
+                      change({ ...object, [active]: next });
+                      setNotice(undefined);
+                    }}
+                    choices={choices}
+                  />
+                </div>
+              </div>
+            )}
           </div>
           {error && (
             <p className="field-error" role="alert">
               {error}
             </p>
           )}
-          {active && (
-            <div className="mapping-current">
-              <label htmlFor={kind + '-rename'}>当前{label}名称</label>
-              <div className="resource-inline">
-                <input
-                  id={kind + '-rename'}
-                  value={rename}
-                  onChange={(e) => setRename(e.target.value)}
-                />
-                <button
-                  type="button"
-                  aria-label={'更改' + label + '名称'}
-                  onClick={() => {
-                    try {
-                      const next = renameEntry(object, active, rename, kind);
-                      change(next);
-                      setSelected(kind === 'cells' ? cellKey(rename) : rename);
-                      setError('');
-                    } catch (e: any) {
-                      setError(e.message);
-                    }
-                  }}
-                >
-                  更名
-                </button>
-              </div>
-              <ValueField
-                key={active}
-                label={label + '值 ' + active}
-                value={object[active]}
-                change={(next) => change({ ...object, [active]: next })}
-                choices={choices}
-              />
-            </div>
-          )}
+          <p className="structured-values-feedback" role="status">
+            {notice?.value === JSON.stringify(value) ? notice.message : ''}
+          </p>
         </div>
       ) : undefined}
     </ValueField>
   );
 }
+
 export function MatrixValues({
   value,
   change,
@@ -175,7 +254,12 @@ export function MatrixValues({
     <ValueField label="行列数据" value={value} change={change} choices={choices} defaultValue={[]}>
       {rows ? (
         <div className="matrix-values">
-          <label>行列数据</label>
+          <header className="structured-values-heading">
+            <strong>行列数据</strong>
+            <span>
+              {rows.length} 行 · {width} 列
+            </span>
+          </header>
           <div className="matrix-actions">
             <button
               type="button"
@@ -206,16 +290,18 @@ export function MatrixValues({
             <table aria-label="Excel 数据表格">
               <thead>
                 <tr>
-                  <th>行</th>
+                  <th scope="col">行</th>
                   {columns.map((c) => (
-                    <th key={c}>{columnName(c)}</th>
+                    <th key={c} scope="col">
+                      {columnName(c)}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.slice(rowStart, rowStart + 10).map((row, i) => (
                   <tr key={rowStart + i}>
-                    <th>{rowStart + i + 1}</th>
+                    <th scope="row">{rowStart + i + 1}</th>
                     {columns.map((c) => (
                       <td key={c}>
                         <button
@@ -224,6 +310,8 @@ export function MatrixValues({
                             active?.[0] === rowStart + i && active[1] === c ? 'selected' : ''
                           }
                           aria-label={'编辑单元格 ' + columnName(c) + (rowStart + i + 1)}
+                          aria-pressed={active?.[0] === rowStart + i && active?.[1] === c}
+                          title={shortValue(row[c])}
                           onClick={() => setSelected([rowStart + i, c])}
                         >
                           {shortValue(row[c])}
@@ -235,9 +323,17 @@ export function MatrixValues({
               </tbody>
             </table>
           </div>
-          <div className="matrix-pagination">
-            <span>
-              {rows.length} 行 · {width} 列
+          {!rows.length && (
+            <p className="structured-values-empty">
+              尚无数据行。添加一行后，点击单元格编辑文本、数字、布尔、空值或变量。
+            </p>
+          )}
+          <div className="matrix-pagination" aria-label="矩阵分页">
+            <span role="status">
+              {rows.length
+                ? `第 ${rowStart + 1}–${Math.min(rowStart + 10, rows.length)} 行 / 共 ${rows.length} 行`
+                : '尚无数据行'}{' '}
+              · {columnName(columnStart)}–{columnName(columnStart + columns.length - 1)} 列
             </span>
             <button
               type="button"
