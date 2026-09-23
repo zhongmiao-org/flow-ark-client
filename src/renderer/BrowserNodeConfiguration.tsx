@@ -7,6 +7,7 @@ import { formKeys } from '../core/browser-command';
 import { browserActions } from './browser-actions';
 import ValueField from './ValueField';
 import type { ReferenceChoice } from './value-references';
+import './node-configuration.css';
 
 type BrowserNode = Extract<Step, { type: 'browser' }>;
 export default function BrowserNodeConfiguration({
@@ -40,7 +41,10 @@ export default function BrowserNodeConfiguration({
   }, [node.selector, pathKey]);
   const topLevel = ['navigate', 'screenshot'].includes(node.operation);
   return (
-    <section aria-label="浏览器节点配置">
+    <section className="node-configuration" aria-label="浏览器节点配置">
+      <header>
+        <h4>网页动作</h4>
+      </header>
       <label htmlFor="browser-operation">操作</label>
       <select
         id="browser-operation"
@@ -62,6 +66,10 @@ export default function BrowserNodeConfiguration({
           </option>
         ))}
       </select>
+      <p className="node-operation-description">
+        {browserActions[node.operation].detail}
+        。切换动作会恢复该动作的默认输入，可通过草稿撤销恢复。
+      </p>
       {node.operation === 'navigate' && (
         <ValueField
           label="网页地址"

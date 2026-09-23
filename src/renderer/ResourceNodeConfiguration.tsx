@@ -4,6 +4,7 @@ import ValueField from './ValueField';
 import { MappingValues, MatrixValues } from './StructuredValues';
 import { resourceOperation, fileConflictPolicy } from './resource-form-model';
 import { type ReferenceChoice } from './value-references';
+import './node-configuration.css';
 export default function ResourceNodeConfiguration({
   node,
   choices,
@@ -46,7 +47,11 @@ export default function ResourceNodeConfiguration({
   );
   if (node.type === 'http')
     return (
-      <section aria-label="HTTP 请求配置">
+      <section className="node-configuration" aria-label="HTTP 请求配置">
+        <header>
+          <h4>HTTP 请求</h4>
+        </header>
+        <p>配置方法、地址、请求头和请求体；运行时才会发出请求。</p>
         <label htmlFor="http-method">请求方法</label>
         <select
           id="http-method"
@@ -77,7 +82,10 @@ export default function ResourceNodeConfiguration({
   const validBinding =
     !!node.binding.trim() && !['__proto__', 'constructor', 'prototype'].includes(node.binding);
   return (
-    <section aria-label={isExcel ? 'Excel 配置' : '文件配置'}>
+    <section className="node-configuration" aria-label={isExcel ? 'Excel 配置' : '文件配置'}>
+      <header>
+        <h4>{isExcel ? '工作簿与数据' : '文件与目录'}</h4>
+      </header>
       <label htmlFor="file-operation">操作</label>
       <select
         id="file-operation"

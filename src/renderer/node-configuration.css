@@ -1,0 +1,103 @@
+.node-timing,
+.node-configuration {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px 0;
+  border-top: 1px solid var(--fa-border-default);
+}
+.node-timing > header,
+.node-configuration > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.node-timing h4,
+.node-configuration h4 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--fa-text-primary);
+}
+.node-timing header span {
+  font-size: 11px;
+  color: var(--fa-text-secondary);
+  flex-shrink: 0;
+}
+.node-timing p,
+.node-configuration p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.node-timing p.field-error,
+.node-configuration p.field-error {
+  color: var(--fa-status-error);
+}
+.node-timing label,
+.node-configuration > label {
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+  margin: 0;
+}
+.node-timing input:not([type='checkbox']),
+.node-configuration input:not([type='checkbox']),
+.node-configuration textarea,
+.node-configuration select {
+  width: 100%;
+  min-width: 0;
+  background: var(--fa-bg-canvas);
+}
+.node-timing-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.node-timing-toggle input[type='checkbox'] {
+  width: 16px;
+  min-height: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin: 2px 0 0;
+}
+.node-timing-toggle span {
+  min-width: 0;
+}
+.node-configuration .value-field {
+  padding: 12px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 8px;
+  background: var(--fa-bg-surface);
+}
+.node-operation-description {
+  padding: 12px;
+  background: var(--fa-action-subtle);
+  border-radius: 8px;
+}
+.node-control-summary {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--fa-bg-canvas);
+  border-radius: 8px;
+}
+.node-control-summary div {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  font-size: 12px;
+  line-height: 20px;
+}
+.node-control-summary dt {
+  color: var(--fa-text-secondary);
+}
+.node-control-summary dd {
+  margin: 0;
+  color: var(--fa-text-primary);
+}

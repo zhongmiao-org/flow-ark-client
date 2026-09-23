@@ -70,6 +70,7 @@ import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 import LogicNodeConfiguration from './LogicNodeConfiguration';
 import ResourceNodeConfiguration from './ResourceNodeConfiguration';
 import FlowParametersPage from './FlowParametersPage';
+import NodeTiming from './NodeTiming';
 import RunHistory from './RunHistory';
 import RunDetail, { type RunTab } from './RunDetail';
 import TaskRunPage from './TaskRunPage';
@@ -350,16 +351,21 @@ export default function App() {
     if (details) details.open = true;
     const input = invalid.matches('textarea,input')
       ? invalid
-      : invalid.querySelector<HTMLElement>('textarea,input');
+      : (invalid.querySelector<HTMLElement>('[aria-invalid="true"]') ??
+        invalid.querySelector<HTMLElement>('textarea,input'));
     input?.focus();
   }
   function guardInvalidNodeJson() {
     const invalid = document.querySelector<HTMLElement>(
-      '.editor-page .node-advanced[data-value-invalid]',
+      '.editor-page .node-advanced[data-value-invalid], .editor-page .node-timing[data-value-invalid]',
     );
     if (!invalid) return true;
     focusInvalidInput(invalid);
-    setError('请先修正高级节点 JSON，或点击“恢复节点配置”放弃这段未完成输入');
+    setError(
+      invalid.classList.contains('node-timing')
+        ? '请先修正节点期限，或关闭自定义期限恢复默认规则'
+        : '请先修正高级节点 JSON，或点击“恢复节点配置”放弃这段未完成输入',
+    );
     return false;
   }
   function checkEditorInput(operation = '保存或运行') {
@@ -2124,6 +2130,14 @@ function Editor({
                           />
                         </>
                       )}
+                      <NodeTiming
+                        key={selectedNode.id + ':timing:' + revision}
+                        node={selectedNode}
+                        change={(next) => {
+                          patch(() => next);
+                          setRaw(JSON.stringify(next, null, 2));
+                        }}
+                      />
                       <LogicNodeConfiguration
                         key={selectedNode.id + ':logic:' + revision}
                         node={selectedNode}
