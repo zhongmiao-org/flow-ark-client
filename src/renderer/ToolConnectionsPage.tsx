@@ -1,3 +1,4 @@
+import ToolConnectionUsage, { type ConnectionTaskReference } from './ToolConnectionUsage';
 import DesktopAssistantConnection from './DesktopAssistantConnection';
 import { usePageBack } from './use-page-back';
 import { useEffect, useRef, useState, type MutableRefObject, type ReactNode } from 'react';
@@ -104,12 +105,16 @@ export default function ToolConnectionsPage({
   leave,
   parentTitle = '开始任务',
   choose,
+  openTask,
+  openDetails,
 }: {
   active: boolean;
   navigation: MutableRefObject<ToolNavigation | undefined>;
   leave: () => void;
   parentTitle?: string;
   choose: (kind: 'web' | 'file' | 'window') => void;
+  openTask: (task: ConnectionTaskReference, connection: ToolConnection) => Promise<void>;
+  openDetails: MutableRefObject<((id: string) => void) | undefined>;
 }) {
   const [view, setView] = useState<'catalog' | 'config' | 'review' | 'saved' | 'assistant'>(
     'catalog',
@@ -125,10 +130,25 @@ export default function ToolConnectionsPage({
   const [candidate, setCandidate] = useState<ConnectionCandidate>();
   const [reviewBaseline, setReviewBaseline] = useState<ToolConnection>();
   const [dirty, setDirty] = useState(false);
-  const [busy, setBusy] = useState<'discover' | 'save' | 'manage' | null>(null);
+  const [busy, setBusy] = useState<'discover' | 'save' | 'manage' | 'inspect' | 'open-task' | null>(
+    null,
+  );
   const [pendingLeave, setPendingLeave] = useState<{ next: () => void }>();
   const [confirm, setConfirm] = useState<'disconnect' | 'remove'>();
   const [clock, setClock] = useState(Date.now());
+  const referenceReturn = useRef<{ focus: HTMLElement | null; scroll: number } | undefined>(
+    undefined,
+  );
+  useEffect(() => {
+    if (!active || !referenceReturn.current) return;
+    const source = referenceReturn.current;
+    referenceReturn.current = undefined;
+    const frame = requestAnimationFrame(() => {
+      document.querySelector('main')?.scrollTo({ top: source.scroll });
+      if (source.focus?.isConnected) source.focus.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [active]);
   const locked = useRef(false),
     epoch = useRef(0),
     request = useRef<string | undefined>(undefined);
@@ -182,8 +202,8 @@ export default function ToolConnectionsPage({
     setSecret('');
   };
   const go = (next: () => void) => {
-    if (busy === 'save' || busy === 'manage') {
-      setError('请等待连接保存或管理操作完成');
+    if (busy && busy !== 'discover') {
+      setError('请等待当前连接操作完成');
       return;
     }
     if (dirty || candidate || busy) setPendingLeave({ next });
@@ -201,6 +221,11 @@ export default function ToolConnectionsPage({
       setSelectedId(undefined);
       setDirty(false);
       move('catalog');
+    });
+  openDetails.current = (id) =>
+    go(() => {
+      setSelectedId(id);
+      move('saved');
     });
   const edit = (connection?: ToolConnection) =>
     go(() => {
@@ -307,6 +332,42 @@ export default function ToolConnectionsPage({
       setBusy(null);
     }
   };
+  const inspect = async (operation?: 'disconnect' | 'remove') => {
+    if (locked.current || !selected) return;
+    locked.current = true;
+    setBusy('inspect');
+    setError('');
+    try {
+      const records = await refresh();
+      if (!records.some((record) => record.id === selected.id))
+        throw new Error('连接记录已不存在，请返回目录。');
+      if (operation) setConfirm(operation);
+    } catch (e) {
+      setError(connectionError(e));
+    } finally {
+      locked.current = false;
+      setBusy(null);
+    }
+  };
+  const openReference = async (task: ConnectionTaskReference) => {
+    if (locked.current || !selected) return;
+    locked.current = true;
+    setBusy('open-task');
+    setError('');
+    referenceReturn.current = {
+      focus: document.activeElement instanceof HTMLElement ? document.activeElement : null,
+      scroll: document.querySelector('main')?.scrollTop ?? 0,
+    };
+    try {
+      await openTask(task, selected);
+    } catch (e) {
+      referenceReturn.current = undefined;
+      setError(connectionError(e));
+    } finally {
+      locked.current = false;
+      setBusy(null);
+    }
+  };
   const manage = async (operation: 'disconnect' | 'remove') => {
     if (locked.current || !selected) return;
     locked.current = true;
@@ -361,11 +422,7 @@ export default function ToolConnectionsPage({
   return (
     <div className="tools-host" hidden={!active}>
       <header className="topbar">
-        <button
-          className="context-back"
-          onClick={back}
-          disabled={busy === 'save' || busy === 'manage'}
-        >
+        <button className="context-back" onClick={back} disabled={!!busy && busy !== 'discover'}>
           ← 返回{backLabel}
         </button>
         <nav className="breadcrumbs" aria-label="当前位置">
@@ -402,6 +459,12 @@ export default function ToolConnectionsPage({
         {error && (
           <div className="alert error" role="alert">
             {error}
+          </div>
+        )}
+        {view === 'saved' && loaded && !selected && (
+          <div className="alert error" role="alert">
+            原连接记录已不存在。任务与历史仍保留，请返回目录选择有效连接并重新核对。
+            <button onClick={catalog}>返回连接目录</button>
           </div>
         )}
         {view === 'catalog' && (
@@ -610,7 +673,7 @@ export default function ToolConnectionsPage({
                 </button>
                 <button
                   type="button"
-                  disabled={busy === 'save' || busy === 'manage'}
+                  disabled={!!busy && busy !== 'discover'}
                   onClick={
                     busy === 'discover'
                       ? () => void cancel().catch((e) => setError(connectionError(e)))
@@ -724,30 +787,32 @@ export default function ToolConnectionsPage({
                 服务说明只提供上下文。任务授权、目标选择和参数校验由 FlowArk 宿主执行。
               </p>
               <p>
-                任务执行授权：尚未开放工具执行
+                任务执行授权：每次试运行前明确核对
                 <br />
                 系统权限：未通过连接发现核对
               </p>
-              {view === 'saved' && selected?.taskReferences && (
-                <section aria-label="引用此连接的任务">
-                  <h3>任务引用 · {selected.taskReferences.length} 个</h3>
-                  <p>
-                    关联流程中的活动运行：{selected.activeRunCount ?? 0} 个。选择不等于执行授权。
-                  </p>
-                  {selected.taskReferences.length ? (
-                    <ul>
-                      {selected.taskReferences.map((task) => (
-                        <li key={task.taskId}>
-                          {task.description || '未命名任务'}
-                          <small> · 流程 {task.flowId}</small>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p>当前没有任务选择此连接。</p>
+              {view === 'saved' && selected && (
+                <>
+                  {selected.status !== 'verified' && (
+                    <p className="ai-task-note tool-warning" role="status">
+                      {selected.status === 'disconnected'
+                        ? '连接已断开。'
+                        : selected.status === 'failed'
+                          ? '最近连接检查未通过。'
+                          : '连接需要重新核对。'}
+                      相关任务暂不能使用此连接；重新连接后仍需回到原任务核对工具选择，不会自动继续执行。
+                    </p>
                   )}
-                  <p>断开或删除连接会使引用任务的工具选择失效；任务草稿仍保留。</p>
-                </section>
+                  <ToolConnectionUsage
+                    connection={selected}
+                    busy={!!busy}
+                    openTask={(task) => void openReference(task)}
+                  />
+                  <button disabled={!!busy} onClick={() => void inspect()}>
+                    {busy === 'inspect' ? '正在刷新引用…' : '刷新连接与任务引用'}
+                  </button>
+                  {busy === 'open-task' && <p role="status">正在保存原任务草稿并核对目标任务…</p>}
+                </>
               )}
               {view === 'review' && candidate ? (
                 <>
@@ -801,11 +866,11 @@ export default function ToolConnectionsPage({
                     </button>
                     <button
                       disabled={!!busy || selected.status === 'disconnected'}
-                      onClick={() => setConfirm('disconnect')}
+                      onClick={() => void inspect('disconnect')}
                     >
                       断开连接
                     </button>
-                    <button disabled={!!busy} onClick={() => setConfirm('remove')}>
+                    <button disabled={!!busy} onClick={() => void inspect('remove')}>
                       删除连接
                     </button>
                     <button disabled={!!busy} onClick={catalog}>
@@ -834,7 +899,7 @@ export default function ToolConnectionsPage({
               继续编辑
             </button>
             <button
-              disabled={busy === 'save' || busy === 'manage'}
+              disabled={!!busy && busy !== 'discover'}
               onClick={() => {
                 const next = pendingLeave.next;
                 void cancel()
@@ -869,7 +934,8 @@ export default function ToolConnectionsPage({
               ? '删除本机连接记录和其专属凭据。不会删除任务、运行历史或产物。'
               : '保留配置与历史能力，取消该连接未完成的检查。恢复需要你重新检查。'}
           </p>
-          <p>该连接尚未绑定任务；本操作不会执行工具或重放任务。</p>
+          <ToolConnectionUsage connection={selected} />
+          <p>以上为刚读取的引用。本操作不会新增运行或重放任务；已完成的外部操作不会回滚。</p>
           <div className="ai-task-actions">
             <button autoFocus disabled={!!busy} onClick={() => setConfirm(undefined)}>
               取消

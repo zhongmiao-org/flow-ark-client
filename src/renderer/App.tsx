@@ -9,7 +9,7 @@ import TemplateSchedulePage from './TemplateSchedulePage';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
 import { useState, useEffect, useCallback, useReducer, useRef, lazy, Suspense } from 'react';
 import FlowLibrary from './FlowLibrary';
-import AITaskWorkspace from './AITaskWorkspace';
+import AITaskWorkspace, { type TaskOpener } from './AITaskWorkspace';
 import ToolConnectionsPage, { type ToolNavigation } from './ToolConnectionsPage';
 import AISettingsPage, { type AISettingsEntry, type AISettingsNavigation } from './AISettingsPage';
 import type { AIProviderId } from '../shared/ai-settings';
@@ -120,6 +120,7 @@ export default function App() {
   const [attentionNavigation, setAttentionNavigation] = useState<AttentionNavigation>();
   const templateNavigation = useRef<TemplateNavigation | undefined>(undefined);
   const toolNavigation = useRef<ToolNavigation | undefined>(undefined);
+  const toolDetails = useRef<((id: string) => void) | undefined>(undefined);
   const aiSettingsNavigation = useRef<AISettingsNavigation | undefined>(undefined);
   const [configuredAI, setConfiguredAI] = useState<{
     key: string;
@@ -218,6 +219,7 @@ export default function App() {
   const taskEditorReturn = useRef<
     { flowId: string; back: () => void; browserOpen: boolean } | undefined
   >(undefined);
+  const taskOpener = useRef<TaskOpener | undefined>(undefined);
   const [taskEntry, setTaskEntry] = useState<{ key: string; record: FlowRecord; nodeId: string }>();
   const [taskSource, setTaskSource] = useState<{
     record: FlowRecord;
@@ -1338,6 +1340,12 @@ export default function App() {
           )}
           {loaded && (
             <AITaskWorkspace
+              openTask={taskOpener}
+              returnConnection={(id) => {
+                toolDetails.current?.(id);
+                setSection('tools');
+                setBrowserOpen(false);
+              }}
               showBrowser={setBrowserOpen}
               entry={taskEntry}
               entryHandled={() => setTaskEntry(undefined)}
@@ -1423,7 +1431,28 @@ export default function App() {
           <ToolConnectionsPage
             active={section === 'tools'}
             navigation={toolNavigation}
+            openDetails={toolDetails}
             parentTitle={toolsOrigin === 'settings' ? '本地设置' : '开始任务'}
+            openTask={async (task, connection) => {
+              if (!taskOpener.current) throw new Error('任务工作区尚未就绪，请稍后重试。');
+              await taskOpener.current({
+                ...task,
+                connectionId: connection.id,
+                connectionName: connection.config.displayName,
+              });
+              setTaskReturn(false);
+              setTaskEntry(undefined);
+              setToolSelection(undefined);
+              setTaskSource(undefined);
+              setSection('tasks');
+              setBrowserOpen(false);
+              requestAnimationFrame(() => {
+                document.querySelector('main')?.scrollTo({ top: 0 });
+                document
+                  .querySelector<HTMLElement>('.ai-task-page:not([hidden]) h1')
+                  ?.focus({ preventScroll: true });
+              });
+            }}
             leave={() => setSection(toolsOrigin)}
             choose={(kind) => {
               setToolSelection({ key: crypto.randomUUID(), kind });

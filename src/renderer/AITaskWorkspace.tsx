@@ -5,7 +5,15 @@ import TaskPlanConversation from './TaskPlanConversation';
 import TaskProposalReview from './TaskProposalReview';
 import TaskModificationPage from './TaskModificationPage';
 import TaskGenerationPage from './TaskGenerationPage';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from 'react';
 import type { Bootstrap, FlowRecord, Step } from '../shared/types';
 import type { PlanningChange, PlanningContext, PlanningTask, TaskDetail } from '../shared/planning';
 import { buildDiagram } from './flow-diagram';
@@ -53,7 +61,16 @@ const draftOf = (detail: TaskDetail): Draft => ({
 });
 const text = (value: unknown): string =>
   typeof value === 'string' ? value : (JSON.stringify(value, null, 2) ?? '无');
+export type ConnectionTaskSource = {
+  taskId: string;
+  flowId: string;
+  connectionId: string;
+  connectionName: string;
+};
+export type TaskOpener = (source: ConnectionTaskSource) => Promise<void>;
 type Props = {
+  openTask: MutableRefObject<TaskOpener | undefined>;
+  returnConnection: (id: string) => void;
   configuredAI?: { key: string; provider: 'deepseek' | 'openai-codex'; model: string };
   configuredAIHandled: () => void;
   toolSelection?: { key: string; kind: 'web' | 'file' | 'window' };
@@ -82,6 +99,7 @@ type Props = {
 };
 
 export default function AITaskWorkspace(props: Props) {
+  const [connectionOrigin, setConnectionOrigin] = useState<ConnectionTaskSource>();
   const [tasks, setTasks] = useState<PlanningTask[]>([]);
   const [detail, setDetail] = useState<TaskDetail | null>(null);
   const [draft, setDraft] = useState<Draft>({ description: '', context: [], answers: {} });
@@ -563,29 +581,62 @@ export default function AITaskWorkspace(props: Props) {
     }
     return next;
   }
+  const showTask = (next: TaskDetail) => {
+    accept(next);
+    setEditingProposal(false);
+    setReviewed(false);
+    setSelected('');
+    setProvider(next.task.provider ?? 'deepseek');
+    setModel(next.task.model ?? 'deepseek-flash');
+    setPage(
+      ['generating', 'failed', 'unsupported'].includes(next.task.status)
+        ? 'generation'
+        : next.proposal?.result.kind === 'clarify' && !next.task.scope
+          ? 'understand'
+          : next.proposal || next.flow
+            ? 'review'
+            : next.task.webTarget || next.task.outputTarget || next.task.toolTargets?.length
+              ? 'understand'
+              : 'brief',
+    );
+  };
   async function open(id: string) {
     await run(async () => {
       if (detail && dirty) await save();
       const next: TaskDetail = await api('task.detail', { id });
-      accept(next);
-      setEditingProposal(false);
-      setReviewed(false);
-      setSelected('');
-      setProvider(next.task.provider ?? 'deepseek');
-      setModel(next.task.model ?? 'deepseek-flash');
-      setPage(
-        ['generating', 'failed', 'unsupported'].includes(next.task.status)
-          ? 'generation'
-          : next.proposal?.result.kind === 'clarify' && !next.task.scope
-            ? 'understand'
-            : next.proposal || next.flow
-              ? 'review'
-              : next.task.webTarget || next.task.outputTarget || next.task.toolTargets?.length
-                ? 'understand'
-                : 'brief',
-      );
+      setConnectionOrigin(undefined);
+      showTask(next);
     });
   }
+  useLayoutEffect(() => {
+    const openConnectionTask: TaskOpener = async (source) => {
+      if (lock.current) throw new Error('原任务仍在处理，请稍后再打开相关任务。');
+      lock.current = true;
+      epoch.current++;
+      setBusy(true);
+      try {
+        if (detail && dirty) await save();
+        const next: TaskDetail = await api('task.detail', { id: source.taskId });
+        if (
+          next.task.id !== source.taskId ||
+          next.task.flowId !== source.flowId ||
+          !next.task.toolTargets?.some((target) => target.connectionId === source.connectionId)
+        )
+          throw new Error('任务或连接引用已变化，请刷新引用后重新选择；原任务仍保留。');
+        showTask(next);
+        setConnectionOrigin(source);
+        setError('');
+        setMessage('');
+      } finally {
+        lock.current = false;
+        setBusy(false);
+      }
+    };
+    props.openTask.current = openConnectionTask;
+    return () => {
+      if (props.openTask.current === openConnectionTask) props.openTask.current = undefined;
+    };
+  });
   const [targetEntry, setTargetEntry] = useState<{ key: string; tab: 'web' | 'window' }>();
   useEffect(() => {
     if (page !== 'target') {
@@ -1296,6 +1347,17 @@ export default function AITaskWorkspace(props: Props) {
             </div>
           )}
       </div>
+      {connectionOrigin && detail?.task.id === connectionOrigin.taskId && page !== 'home' && (
+        <aside className="ai-task-note task-connection-origin" aria-label="任务来源">
+          <span>来自应用与工具 · {connectionOrigin.connectionName}</span>
+          <button
+            disabled={busy}
+            onClick={() => props.returnConnection(connectionOrigin.connectionId)}
+          >
+            返回连接详情
+          </button>
+        </aside>
+      )}
       {error && (
         <div className="alert error" role="alert">
           <b>操作未完成</b>
