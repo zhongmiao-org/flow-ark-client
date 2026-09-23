@@ -3,6 +3,7 @@ import type { Bootstrap, BrowserBinding, FlowRecord } from '../shared/types';
 import type { AIProviderId } from '../shared/ai-settings';
 import { AISettingsSummary } from './AISettingsPage';
 import './local-settings.css';
+import LocalStoragePanel from './LocalStoragePanel';
 
 const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
@@ -28,6 +29,7 @@ export default function LocalSettingsPage({
   openAI,
   openFlow,
   openTools,
+  openRuns,
   showBrowser,
   navigation,
 }: {
@@ -37,6 +39,7 @@ export default function LocalSettingsPage({
   openAI: (provider: AIProviderId, model: string) => void;
   openFlow: (flow: FlowRecord) => Promise<void>;
   openTools: () => void;
+  openRuns: () => void;
   showBrowser: () => void;
   navigation: (value: SettingsNavigation | undefined) => void;
 }) {
@@ -61,9 +64,9 @@ export default function LocalSettingsPage({
   const bound = data.browsers.filter((b) => b.product !== 'embedded');
   const choices = [...bound, ...candidates.filter((c) => !bound.some((b) => b.id === c.id))];
   const fileFlows = data.flows.filter(
-    (f) =>
-      Object.keys(f.bindings.files).length ||
-      Object.values(f.bindings.resources ?? {}).some((r) => r.path),
+    (flow) =>
+      Object.values(flow.bindings.files).some(Boolean) ||
+      Object.values(flow.bindings.resources ?? {}).some((resource) => resource.path),
   );
   const packages = data.flows.flatMap((flow) =>
     Object.entries(flow.bindings.scriptPackages ?? {}).map(([name, binding]) => ({
@@ -176,8 +179,6 @@ export default function LocalSettingsPage({
     setNotice('');
     setQuery('');
   };
-  const filteredFlows = (flows: FlowRecord[]) =>
-    flows.filter((f) => f.flow.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
   const flowLink = (flow: FlowRecord) => (
     <button disabled={!!busy} onClick={() => void act('flow', () => openFlow(flow))}>
       打开流程配置
@@ -515,64 +516,18 @@ export default function LocalSettingsPage({
           </section>
         )}
         {tab === 'storage' && (
-          <>
-            <section className="local-settings-card">
-              <h2>本地数据</h2>
-              <p className="local-settings-path">{data.dataPath || '正在初始化安全存储…'}</p>
-              <button
-                disabled={!!busy || !data.dataPath}
-                onClick={() =>
-                  void act('data', async () => {
-                    await api('app.showData');
-                  })
-                }
-              >
-                打开数据目录
-              </button>
-              <p>应用内产物按运行保存。查看和清理产物请进入对应运行详情。</p>
-            </section>
-            <section className="local-settings-card">
-              <h2>文件与目录绑定</h2>
-              <label className="local-settings-search">
-                搜索流程
-                <input
-                  type="search"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="按流程名称筛选"
-                />
-              </label>
-              {filteredFlows(fileFlows).map((flow) => (
-                <article className="local-settings-resource" key={flow.id}>
-                  <div className="local-settings-row">
-                    <h3>{flow.flow.name}</h3>
-                    {flowLink(flow)}
-                  </div>
-                  <dl className="local-settings-facts">
-                    {[
-                      ...Object.entries(flow.bindings.files),
-                      ...Object.entries(flow.bindings.resources ?? {})
-                        .filter(([, r]) => r.path)
-                        .map(([id, r]) => [id, r.path!] as const),
-                    ].map(([name, path]) => (
-                      <div key={name}>
-                        <dt>{name}</dt>
-                        <dd className="local-settings-path">{path}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </article>
-              ))}
-              {!filteredFlows(fileFlows).length && (
-                <div className="local-settings-empty">
-                  {query ? '没有匹配的流程。' : '尚无文件或目录绑定，请在流程资源中选择。'}
-                </div>
-              )}
-              <p className="local-settings-muted">
-                这里显示已保存路径，不代表路径当前可用；运行前会重新检查。
-              </p>
-            </section>
-          </>
+          <LocalStoragePanel
+            data={data}
+            busy={!!busy}
+            openFlow={(flow) => void act('flow', () => openFlow(flow))}
+            openRuns={openRuns}
+            showData={() =>
+              void act('data', async () => {
+                await api('app.showData');
+                setNotice('已请求在文件管理器中打开数据目录。');
+              })
+            }
+          />
         )}
         {tab === 'scripts' && (
           <section className="local-settings-card">

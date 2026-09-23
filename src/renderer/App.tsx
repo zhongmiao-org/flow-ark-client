@@ -1708,6 +1708,13 @@ export default function App() {
             refresh={refresh}
             navigation={setSettingsNavigation}
             showBrowser={() => setBrowserOpen(true)}
+            openRuns={() => {
+              setDetail(null);
+              setRunOrigin('history');
+              setRunTab('current');
+              setSection('runs');
+              setBrowserOpen(false);
+            }}
             openTools={() => {
               setToolsOrigin('settings');
               setSection('tools');

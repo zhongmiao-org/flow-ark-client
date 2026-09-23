@@ -1,0 +1,75 @@
+/* Figma 2:3227: resource inventory and file locations, using saved local data. */
+.local-storage-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 24px;
+}
+.local-storage-layout > .local-settings-card {
+  padding: 24px;
+  margin: 0;
+}
+.local-storage-layout .local-settings-search {
+  max-width: none;
+}
+.local-storage-count,
+.local-storage-usage {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 20px;
+}
+.local-storage-count {
+  margin-bottom: 16px;
+}
+.local-storage-resources {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+.local-storage-resources li {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-bg-canvas);
+}
+.local-storage-resource-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  justify-content: space-between;
+  align-items: baseline;
+  overflow-wrap: anywhere;
+}
+.local-storage-resource-title strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.local-storage-resource-title span {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.local-storage-resources .local-settings-path {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+.local-storage-resources .is-unbound {
+  color: var(--fa-status-warning);
+}
+.local-storage-location {
+  padding: 20px 0 24px;
+  border-top: 1px solid var(--fa-border-default);
+}
+.local-storage-location button {
+  width: 100%;
+}
+.local-storage-layout .local-settings-empty p {
+  margin-top: 0;
+}
+@container (max-width: 800px) {
+  .local-storage-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
