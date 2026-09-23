@@ -1,5 +1,5 @@
 import type { TemplateEntryOrigin } from './template-entry-navigation';
-import type { Run } from '../shared/types';
+import type { Bootstrap, Run } from '../shared/types';
 import { runDisplayLabels } from '../shared/run-history';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { TemplateDetail, TemplateSaveScope } from './template-draft';
@@ -19,6 +19,7 @@ export default function TemplateEntry({
   active,
   detail,
   saved,
+  browsers,
   entryId,
   selectEntry,
   showRun,
@@ -36,6 +37,7 @@ export default function TemplateEntry({
   active: boolean;
   detail: TemplateDetail;
   saved: TemplateDetail;
+  browsers: Bootstrap['browsers'];
   entryId: string;
   selectEntry: (entryId: string) => void;
   showRun: (detail: any, origin: TemplateEntryOrigin, output?: boolean) => void;
@@ -64,6 +66,7 @@ export default function TemplateEntry({
     loadingResources = useRef(false);
   const inputFields = useRef<HTMLFieldSetElement>(null);
   const [invalidInput, setInvalidInput] = useState(false);
+  const [inputSaved, setInputSaved] = useState(0);
   const hasInvalidInput = () => !!inputFields.current?.querySelector('[data-value-invalid]');
   useLayoutEffect(() => {
     const fields = inputFields.current;
@@ -79,6 +82,14 @@ export default function TemplateEntry({
     update();
     return () => observer.disconnect();
   }, []);
+  useLayoutEffect(() => {
+    if (!inputSaved || !active) return;
+    const card = inputFields.current?.parentElement;
+    const target =
+      card?.querySelector<HTMLElement>('.template-entry-run:not(:disabled)') ??
+      card?.querySelector<HTMLElement>('select[aria-label="操作入口"]');
+    target?.focus({ preventScroll: true });
+  }, [inputSaved]);
   const aiResources = detail.manifest.resources.filter(
     (r) => r.kind === 'ai' && entry.resources.includes(r.id),
   );
@@ -147,12 +158,16 @@ export default function TemplateEntry({
         !binding.model ||
         !configurations[binding.provider as AIProviderId]?.configured
       );
-    return declaration.kind === 'browser' ? !binding.browserId : !binding.path;
+    return declaration.kind === 'browser'
+      ? !browsers.some((browser) => browser.id === binding.browserId)
+      : !binding.path;
   });
   const denied = entry.actions.filter(
     (id) => !instance.grants[id] || instance.grants[id] === 'deny',
   );
-  const saveInput = () => save('input', entryId);
+  const saveInput = async () => {
+    if (await save('input', entryId)) setInputSaved((value) => value + 1);
+  };
   const saveConfiguration = () => save('instance');
   const openSettings = (resourceId: string) => {
     scroll.current = document.querySelector('main')?.scrollTop ?? 0;
@@ -255,6 +270,37 @@ export default function TemplateEntry({
     !!missing.length ||
     !!denied.length ||
     !!entry.unavailable.length;
+  const requirements = [
+    ...(!flowId ? ['原入口流程不存在，请返回模板库重新读取。'] : []),
+    ...(dirtyInput ? [invalidInput ? '请修正本次输入中未完成的字段。' : '本次输入尚未保存。'] : []),
+    ...(dirtyConfiguration ? ['实例配置尚未保存。'] : []),
+    ...(missing.length
+      ? [
+          '待配置资源：' +
+            missing
+              .map((id) => detail.manifest.resources.find((resource) => resource.id === id)!.name)
+              .join('、'),
+        ]
+      : []),
+    ...(denied.length
+      ? [
+          '动作仍为禁止：' +
+            denied
+              .map((id) => detail.manifest.actions.find((action) => action.id === id)!.name)
+              .join('、'),
+        ]
+      : []),
+    ...(entry.unavailable.length ? ['缺少能力：' + entry.unavailable.join('、')] : []),
+  ];
+  const reading = checking || sourceChecking;
+  const readiness =
+    sourceError || readError
+      ? '入口状态待核对'
+      : reading
+        ? '正在核对入口资源'
+        : requirements.length
+          ? '当前入口尚未就绪'
+          : '当前入口已填写 · 运行前复核';
 
   const entrySelector = (
     <label className="ai-settings-field">
@@ -305,18 +351,54 @@ export default function TemplateEntry({
               />
             </fieldset>
             {!!aiResources.length && entrySelector}
-            <p className="ai-task-note">进入设置不会运行此入口；返回后保留本页输入与所选入口。</p>
+            {!!aiResources.length && (
+              <p className="ai-task-note">进入设置不会运行此入口；返回后保留本页输入与所选入口。</p>
+            )}
+            <div className="template-entry-readiness" aria-label="入口准备情况" role="status">
+              <span
+                className={
+                  'ai-config-status ' +
+                  (sourceError || readError || (!reading && requirements.length)
+                    ? 'warning'
+                    : 'neutral')
+                }
+              >
+                {readiness}
+              </span>
+              {!reading && requirements.length > 0 && (
+                <ul>
+                  {requirements.map((requirement) => (
+                    <li key={requirement}>{requirement}</li>
+                  ))}
+                </ul>
+              )}
+              {(sourceError || readError) && <p>请先处理上方的读取问题，再核对并启动。</p>}
+              {!reading && !sourceError && !readError && !requirements.length && (
+                <p>启动时仍会检查资源与权限；保存或返回本页不会自动运行。</p>
+              )}
+            </div>
             <div className="ai-task-actions">
-              <button disabled={blocked || !dirtyInput} onClick={() => void saveInput()}>
-                保存入口参数
-              </button>
-              <button className="primary" disabled={cannotStart} onClick={() => void start(false)}>
+              {dirtyInput && (
+                <button disabled={blocked} onClick={() => void saveInput()}>
+                  保存入口参数
+                </button>
+              )}
+              <button
+                className="primary template-entry-run"
+                disabled={cannotStart}
+                onClick={() => void start(false)}
+              >
                 运行此入口
               </button>
-              <button disabled={cannotStart} onClick={() => void start(true)}>
+              <button
+                className="template-entry-debug"
+                disabled={cannotStart}
+                onClick={() => void start(true)}
+              >
                 逐步调试
               </button>
               <button
+                className="template-entry-schedule"
                 disabled={cannotStart || !entry.schedulable}
                 title={!entry.schedulable ? '此入口不支持本机计划' : undefined}
                 onClick={() => {
@@ -326,19 +408,6 @@ export default function TemplateEntry({
                 创建本机计划
               </button>
             </div>
-            <small>
-              {checking
-                ? '正在核对原实例与资源…'
-                : dirtyInput || dirtyConfiguration
-                  ? '请先保存本次输入和实例配置；运行使用已保存内容。'
-                  : missing.length
-                    ? '请先完成当前入口所需的资源配置。'
-                    : denied.length
-                      ? '当前入口的动作尚未授权。'
-                      : entry.unavailable.length
-                        ? `缺少能力：${entry.unavailable.join('、')}`
-                        : '由你明确启动。保存配置或返回本页不会自动运行。'}
-            </small>
           </section>
           <section className="ai-task-card template-entry-resources">
             <h2>{aiResources.length ? 'AI 资源' : '本次执行'}</h2>

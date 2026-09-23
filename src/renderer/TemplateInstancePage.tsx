@@ -413,6 +413,7 @@ export default function TemplateInstancePage({
                 active={active && tab === 'entry' && entryId === entry.id}
                 detail={draft}
                 saved={saved}
+                browsers={data.browsers}
                 entryId={entry.id}
                 selectEntry={setEntryId}
                 showRun={showRun}

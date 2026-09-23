@@ -60,6 +60,23 @@
   gap: 16px;
   min-width: 0;
 }
+.template-entry-readiness {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 13px;
+  line-height: 22px;
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.template-entry-readiness ul {
+  margin: 0;
+  padding-left: 20px;
+}
+.template-entry-readiness p {
+  margin: 0;
+}
 .template-entry-ai-resource + .template-entry-ai-resource {
   border-top: 1px solid var(--fa-border-default);
   padding-top: 16px;
@@ -105,6 +122,15 @@
 }
 .template-entry-input .ai-task-actions > button {
   min-width: 140px;
+}
+.template-entry-input .ai-task-actions > .template-entry-run {
+  min-width: 180px;
+}
+.template-entry-input .ai-task-actions > .template-entry-debug {
+  min-width: 160px;
+}
+.template-entry-input .ai-task-actions > .template-entry-schedule {
+  min-width: 200px;
 }
 
 .template-entry-columns.no-ai > .ai-task-card {
