@@ -12,6 +12,7 @@ import { changeSteps, flatten } from './flow-editing';
 import { referenceChoices } from './value-references';
 import ValueField from './ValueField';
 import ScriptPackages from './ScriptPackages';
+import type { CodeLocation } from './CodeEditor';
 import {
   editScriptPackage,
   scriptInputPreview,
@@ -44,6 +45,9 @@ export default function ScriptEditorPage({
   const [timeout, setTimeoutValue] = useState(String(node.timeoutMs ?? 60000));
   const [error, setError] = useState(''),
     [saving, setSaving] = useState(false);
+  const [timeoutError, setTimeoutError] = useState('');
+  const [location, setLocation] = useState<CodeLocation>();
+  const [focusRequest, setFocusRequest] = useState<{ selector: string }>();
   const [syntax, setSyntax] = useState<{
     checking?: boolean;
     issues?: Diagnostic[];
@@ -85,6 +89,7 @@ export default function ScriptEditorPage({
   useEffect(() => {
     generation.current++;
     setSyntax({});
+    setLocation(undefined);
   }, [node.code, node.language]);
   useLayoutEffect(() => {
     navigation.current = (next) => {
@@ -100,15 +105,30 @@ export default function ScriptEditorPage({
     if (pendingLeave) dialog.current?.showModal();
     else dialog.current?.close();
   }, [pendingLeave]);
+  useEffect(() => {
+    if (pendingLeave || saving || !focusRequest) return;
+    const element = root.current?.querySelector<HTMLElement>(focusRequest.selector);
+    if (!element) return;
+    let ancestor = element.parentElement;
+    while (ancestor && ancestor !== root.current) {
+      if (ancestor instanceof HTMLDetailsElement) ancestor.open = true;
+      ancestor = ancestor.parentElement;
+    }
+    const target = element.matches('input,textarea,select,button')
+      ? element
+      : (element.querySelector<HTMLElement>('textarea') ??
+        element.querySelector<HTMLElement>('input,select') ??
+        element);
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ block: 'nearest' });
+    setFocusRequest(undefined);
+  }, [pendingLeave, saving, focusRequest]);
   const persist = async (next?: () => void) => {
     if (persisting.current) return;
     setError('');
     if (incomplete()) {
       setPendingLeave(undefined);
-      const invalid = root.current?.querySelector<HTMLElement>('[data-value-invalid]');
-      const details = invalid?.closest('details');
-      if (details) details.open = true;
-      invalid?.querySelector<HTMLElement>('textarea,input')?.focus();
+      setFocusRequest({ selector: '[data-value-invalid]' });
       setError('请先修正未完成的输入配置');
       return;
     }
@@ -121,7 +141,8 @@ export default function ScriptEditorPage({
     ) {
       setPendingLeave(undefined);
       setError('超时须为 100 至 3600000 毫秒的整数');
-      root.current?.querySelector<HTMLElement>('#script-timeout')?.focus();
+      setTimeoutError('超时须为 100 至 3600000 毫秒的整数');
+      setFocusRequest({ selector: '#script-timeout' });
       return;
     }
     persisting.current = true;
@@ -138,6 +159,7 @@ export default function ScriptEditorPage({
       if (alive.current) {
         setPendingLeave(undefined);
         setError((e as Error).message);
+        setFocusRequest({ selector: '[data-script-error]' });
       }
     } finally {
       persisting.current = false;
@@ -208,7 +230,7 @@ export default function ScriptEditorPage({
         <p>可信 JS/TS · 独立进程执行 · 不是安全沙箱</p>
       </header>
       {error && (
-        <p className="alert error" role="alert">
+        <p className="alert error" role="alert" tabIndex={-1} data-script-error>
           {error}
         </p>
       )}
@@ -239,6 +261,7 @@ export default function ScriptEditorPage({
               theme="vs-dark"
               readOnly={saving}
               height="390px"
+              location={location}
               onChange={(code) => change({ ...node, code })}
             />
           </Suspense>
@@ -246,13 +269,29 @@ export default function ScriptEditorPage({
             {syntax.error && <p className="field-error">检查未完成：{syntax.error}</p>}
             {syntax.issues &&
               (syntax.issues.length ? (
-                <ul>
-                  {syntax.issues.map((issue, index) => (
-                    <li key={index}>
-                      第 {issue.lineNumber} 行，{issue.column} 列：{issue.message}
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <p className="field-error">
+                    发现 {syntax.issues.length} 个语法问题，选择一项定位到代码。
+                  </p>
+                  <ul>
+                    {syntax.issues.map((issue, index) => (
+                      <li key={index}>
+                        <button
+                          className="script-diagnostic"
+                          onClick={() =>
+                            setLocation((current) => ({
+                              lineNumber: issue.lineNumber,
+                              column: issue.column,
+                              request: (current?.request ?? 0) + 1,
+                            }))
+                          }
+                        >
+                          第 {issue.lineNumber} 行，{issue.column} 列：{issue.message}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </>
               ) : (
                 <p>语法检查通过；依赖解析、入口函数和实际结果仍需运行前检查及试运行。</p>
               ))}
@@ -268,7 +307,9 @@ export default function ScriptEditorPage({
                     ? '按当前参数解析；执行前仍会固定本次输入。'
                     : '包含运行时引用；此处显示来源配置，实际值由运行产生。'}
                 </p>
-                <pre>{json(input.available ? input.value : node.input)}</pre>
+                <pre tabIndex={0} aria-label="当前草稿输入内容">
+                  {json(input.available ? input.value : node.input)}
+                </pre>
                 {!input.available && <p className="note">{input.reason}</p>}
                 <h3>历史运行输出</h3>
                 <label htmlFor="script-history">最近 20 次运行</label>
@@ -303,7 +344,9 @@ export default function ScriptEditorPage({
                       outputs.map((output) => (
                         <div key={output.instance}>
                           <strong>{output.instance}</strong>
-                          <pre>{json(output.value)}</pre>
+                          <pre tabIndex={0} aria-label={`历史输出 ${output.instance}`}>
+                            {json(output.value)}
+                          </pre>
                         </div>
                       ))
                     ) : (
@@ -342,17 +385,38 @@ export default function ScriptEditorPage({
           <input
             id="script-timeout"
             inputMode="numeric"
+            aria-invalid={!!timeoutError}
+            aria-describedby={
+              timeoutError ? 'script-timeout-error script-timeout-help' : 'script-timeout-help'
+            }
             value={timeout}
-            onChange={(e) => setTimeoutValue(e.target.value)}
+            onChange={(e) => {
+              setTimeoutValue(e.target.value);
+              setTimeoutError('');
+              setError('');
+            }}
           />
-          <p className="note">100–3600000 毫秒；未配置时为 60000 毫秒，外层步骤可能先到期。</p>
-          <ScriptPackages
-            flowId={record.id}
-            node={node}
-            bindings={draft.bindings}
-            bind={(info) => setDraft(editScriptPackage(draft, node, info.name, info))}
-            remove={(name) => setDraft(editScriptPackage(draft, node, name))}
-          />
+          {timeoutError && (
+            <p className="field-error" id="script-timeout-error">
+              {timeoutError}
+            </p>
+          )}
+          <p className="note" id="script-timeout-help">
+            100–3600000 毫秒；未配置时为 60000 毫秒，外层步骤可能先到期。
+          </p>
+          <details className="script-dependency-settings">
+            <summary>
+              依赖 ·{' '}
+              {node.dependencies.length ? `${node.dependencies.length} 个本地包` : '仅内置 SDK'}
+            </summary>
+            <ScriptPackages
+              flowId={record.id}
+              node={node}
+              bindings={draft.bindings}
+              bind={(info) => setDraft(editScriptPackage(draft, node, info.name, info))}
+              remove={(name) => setDraft(editScriptPackage(draft, node, name))}
+            />
+          </details>
           <details className="script-access">
             <summary>
               文件与凭据 · {Object.keys(draft.bindings.files).length} 个目录 ·{' '}
@@ -378,7 +442,7 @@ export default function ScriptEditorPage({
         aria-labelledby="script-leave-title"
         onCancel={(e) => {
           e.preventDefault();
-          if (!saving) setPendingLeave(undefined);
+          if (!persisting.current) setPendingLeave(undefined);
         }}
       >
         <h2 id="script-leave-title">保存脚本修改？</h2>

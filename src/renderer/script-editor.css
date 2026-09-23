@@ -35,9 +35,19 @@
   margin-bottom: 16px;
 }
 .script-editor-toolbar .badge {
-  margin-right: auto;
+  margin-right: 0;
   max-width: 100%;
   overflow-wrap: anywhere;
+}
+.script-editor-toolbar > button {
+  min-width: 144px;
+}
+.script-dependency-settings > summary {
+  cursor: pointer;
+  color: var(--fa-text-secondary);
+}
+.script-dependency-settings[open] > summary {
+  margin-bottom: 12px;
 }
 .script-editor-code {
   display: block;
@@ -126,7 +136,7 @@
   color: var(--fa-action-primary);
 }
 .script-editor-settings > .primary {
-  margin-top: auto;
+  margin-top: 0;
 }
 .script-syntax {
   max-height: 180px;
@@ -164,4 +174,25 @@
   .script-editor-columns > * {
     min-height: 0;
   }
+}
+.script-syntax .script-diagnostic {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+  margin-block: 4px;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  color: var(--fa-status-error);
+  border: 1px solid var(--fa-border-default);
+  background: var(--fa-bg-surface);
+}
+.script-editor-settings #script-timeout[aria-invalid='true'] {
+  border-color: var(--fa-status-error);
+}
+.script-editor-settings > .field-error {
+  margin: 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
