@@ -8,6 +8,8 @@ import { runDisplayLabels } from '../shared/run-history';
 import RunRerunPanel from './RunRerunPanel';
 import TaskRepairPage from './TaskRepairPage';
 import './task-run.css';
+import TaskExecutionSteps, { type TaskExecutionView } from './TaskExecutionSteps';
+import RunEventLog from './RunEventLog';
 
 export default function TaskRunPage({
   detail,
@@ -42,6 +44,7 @@ export default function TaskRunPage({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [retry, setRetry] = useState(0);
+  const [stepsView, setStepsView] = useState<TaskExecutionView & { runId: string }>();
   const lock = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const detailScroll = useRef(0);
@@ -154,29 +157,12 @@ export default function TaskRunPage({
         : model.title;
   const allowed = model.view.activity === 'active' && !model.view.closing && !model.uncertain;
   const steps = (
-    <section className="ai-task-card task-run-steps" aria-label="执行步骤">
-      <h2>执行步骤</h2>
-      <p>
-        {model.completed.length} 次已完成 · {model.unresolved.length} 次已开始未确认完成 ·{' '}
-        {model.unvisited.length} 个尚未执行
-      </p>
-      <ol>
-        {model.rows.map((row, index) => (
-          <li key={row.instance} aria-current={row.current ? 'step' : undefined}>
-            <span className="task-run-index">{String(index + 1).padStart(2, '0')}</span>
-            <div>
-              <strong>{row.name}</strong>
-              <p>
-                <span className={'run-status run-tone-' + row.tone}>{row.label}</span>
-              </p>
-              {row.instance !== row.nodeId && <small>循环/分支位置：{row.instance}</small>}
-            </div>
-          </li>
-        ))}
-      </ol>
-      {!model.rows.length && <p>尚无已保存的执行步骤。</p>}
-      <p className="task-run-note">条件中未选择的分支保持未执行；循环按每次实际执行记录。</p>
-    </section>
+    <TaskExecutionSteps
+      key={run.id}
+      model={model}
+      view={stepsView?.runId === run.id ? stepsView : undefined}
+      change={(view) => setStepsView({ ...view, runId: run.id })}
+    />
   );
   const fileCards = (
     <>
@@ -344,16 +330,12 @@ export default function TaskRunPage({
               {run.error && <p className="field-error">{run.error}</p>}
               <details>
                 <summary>步骤回执与脱敏日志</summary>
-                {detail.events
-                  .filter((e: any) => e.runId === run.id)
-                  .map((e: any) => (
-                    <details key={e.sequence}>
-                      <summary>
-                        {e.nodeInstance || '运行'} · {e.type}
-                      </summary>
-                      <pre>{JSON.stringify(e.data, null, 2)}</pre>
-                    </details>
-                  ))}
+                <RunEventLog
+                  key={run.id}
+                  runId={run.id}
+                  events={detail.events}
+                  snapshot={detail.snapshot}
+                />
               </details>
               <button className="primary" onClick={() => setPage('overview')}>
                 返回结果摘要
@@ -416,13 +398,24 @@ export default function TaskRunPage({
               </div>
               <div className="task-run-file">
                 <h3>已完成</h3>
-                <p>{model.completed.map((r) => r.name).join('、') || '尚无完成记录'}</p>
+                <p>
+                  {model.completed
+                    .slice(0, 6)
+                    .map((r) => r.name)
+                    .join('、') || '尚无完成记录'}
+                  {model.completed.length > 6 &&
+                    ` 等 ${model.completed.length} 次，完整记录见执行步骤。`}
+                </p>
               </div>
               <div className="task-run-file">
                 <h3>尚未完成或未执行</h3>
                 <p>
-                  {[...model.unresolved, ...model.unvisited].map((r) => r.name).join('、') ||
-                    '无未完成步骤记录'}
+                  {[...model.unresolved, ...model.unvisited]
+                    .slice(0, 6)
+                    .map((r) => r.name)
+                    .join('、') || '无未完成步骤记录'}
+                  {model.unresolved.length + model.unvisited.length > 6 &&
+                    ` 等 ${model.unresolved.length + model.unvisited.length} 条，完整记录见执行步骤。`}
                 </p>
               </div>
               <div className="task-run-file">

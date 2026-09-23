@@ -1,0 +1,38 @@
+.task-execution-steps input {
+  width: 100%;
+  min-width: 0;
+}
+.task-execution-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.task-execution-actions button {
+  min-height: 40px;
+}
+.task-execution-actions button[aria-pressed='true'] {
+  color: var(--fa-action-primary);
+  border-color: var(--fa-action-primary);
+  background: var(--fa-action-subtle);
+}
+.task-execution-steps ol {
+  max-height: 480px;
+  overflow: auto;
+  padding: 2px;
+}
+.task-execution-steps li {
+  scroll-margin-block: 8px;
+}
+.task-execution-steps li:focus {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: -2px;
+}
+.task-execution-steps small {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.task-execution-empty {
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+}
