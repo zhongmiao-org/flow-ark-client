@@ -1350,6 +1350,10 @@ export default function App() {
           {loaded && (
             <AITaskWorkspace
               openTask={taskOpener}
+              openAttention={() => {
+                setSection('inbox');
+                setBrowserOpen(false);
+              }}
               returnConnection={(id) => {
                 toolDetails.current?.(id);
                 setSection('tools');

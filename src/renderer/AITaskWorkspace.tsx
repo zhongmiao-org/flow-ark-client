@@ -76,6 +76,7 @@ type Props = {
   toolSelection?: { key: string; kind: 'web' | 'file' | 'window' };
   toolSelectionHandled: () => void;
   openTools: () => void;
+  openAttention: () => void;
   guideEntry?: number;
   showBrowser: (visible: boolean) => void;
   entry?: { key: string; record: FlowRecord; nodeId: string };
@@ -644,7 +645,7 @@ export default function AITaskWorkspace(props: Props) {
       setTargetFromRun(false);
     }
   }, [page]);
-  async function create(description: string) {
+  async function create(description: string, entry?: 'file' | 'image' | 'web' | 'window') {
     await run(async () => {
       if (detail && dirty) await save();
       const next: TaskDetail = await api('task.create');
@@ -661,6 +662,19 @@ export default function AITaskWorkspace(props: Props) {
       setPage('brief');
       setSelected('');
       setHomeText('');
+      if (entry === 'web' || entry === 'window') {
+        props.showBrowser(false);
+        setTargetEntry({ key: crypto.randomUUID(), tab: entry });
+        setPage('target');
+      } else if (entry) {
+        props.showBrowser(false);
+        const attached: TaskDetail = await api('task.attachment.choose', {
+          id: stored.task.id,
+          revision: stored.task.revision,
+          kind: entry,
+        });
+        accept(attached);
+      }
     });
   }
   useEffect(() => {
@@ -1446,15 +1460,29 @@ export default function AITaskWorkspace(props: Props) {
       ) : page === 'home' ? (
         <>
           <section className="ai-task-composer">
-            <label htmlFor="new-task-description">你想完成的任务</label>
+            <label className="sr-only" htmlFor="new-task-description">
+              你想完成的任务
+            </label>
             <textarea
               id="new-task-description"
               value={homeText}
+              disabled={busy}
               maxLength={20000}
               onChange={(e) => setHomeText(e.target.value)}
               placeholder="把指定网页的标题保存到文件，标题为空就提醒我。"
             />
-            <p>描述目标、输入与希望得到的结果，下一步可以补充文本资料。</p>
+            <p>也可以附加文件、网页链接或目标截图，帮助说明需求。</p>
+            <div className="ai-task-actions task-home-attachments" aria-label="添加任务资料">
+              <button disabled={busy} onClick={() => void create(homeText, 'file')}>
+                ＋ 文件
+              </button>
+              <button disabled={busy} onClick={() => void create(homeText, 'web')}>
+                ＋ 网页
+              </button>
+              <button disabled={busy} onClick={() => void create(homeText, 'image')}>
+                ＋ 截图
+              </button>
+            </div>
             <div className="ai-task-actions">
               <button
                 className="primary"
@@ -1463,9 +1491,9 @@ export default function AITaskWorkspace(props: Props) {
               >
                 开始规划
               </button>
-              <button onClick={() => props.settings('deepseek', 'deepseek-flash')}>
-                AI 服务 ·{' '}
-                {props.data.credentials.includes('deepseek') ? 'DeepSeek 已配置' : '配置服务'}
+              <button disabled={busy} onClick={() => props.settings(provider, model)}>
+                AI 服务 · {providerName} ·{' '}
+                {props.data.credentials.includes(provider) ? '已配置' : '未配置'}
               </button>
             </div>
           </section>
@@ -1482,15 +1510,19 @@ export default function AITaskWorkspace(props: Props) {
                 '整理工作簿中的字段，保留原文件，先确认工作表、字段映射、空值策略和输出位置。',
               ],
               [
-                '整理一段文本',
-                '粘贴资料，说明需要的格式。',
-                '请根据我接下来提供的文本，设计整理并保存结果的流程。先确认整理规则和输出位置。',
+                '检查应用窗口',
+                '选择窗口，核对可操作的内容。',
+                '整理我明确选择的文本编辑窗口中的选中段落，先核对原文和改动方案，再由我确认修改。',
               ],
             ].map(([heading, description, prompt]) => (
               <button
                 key={heading}
                 disabled={busy}
-                onClick={() => void (heading === '跟着示例做一次' ? showGuide() : create(prompt))}
+                onClick={() =>
+                  void (heading === '跟着示例做一次'
+                    ? showGuide()
+                    : create(prompt, heading === '检查应用窗口' ? 'window' : undefined))
+                }
               >
                 <h2>{heading}</h2>
                 <p>{description}</p>
@@ -1498,23 +1530,53 @@ export default function AITaskWorkspace(props: Props) {
               </button>
             ))}
           </div>
-          {learning?.taskId && (
-            <section className="ai-task-card learning-home" aria-label="教学进度">
-              <h2>{learning.status === 'completed' ? '已完成第一次学习' : '继续上次学习'}</h2>
+          <div className="task-home-status">
+            {learning?.taskId && (
+              <section className="ai-task-card learning-home" aria-label="教学进度">
+                <h2>{learning.status === 'completed' ? '已完成第一次学习' : '继续上次学习'}</h2>
+                <p>
+                  {learning.status === 'skipped' ? '已跳过 · ' : ''}已完成{' '}
+                  {Object.keys(learning.achieved).length} / 4 项学习。运行状态和结果在原任务中查看。
+                </p>
+                <div className="ai-task-actions">
+                  <button
+                    disabled={busy || !learning.taskExists}
+                    onClick={() => void startLearning('continue')}
+                  >
+                    {learning.status === 'completed' ? '查看教学结果' : '继续教学'}
+                  </button>
+                  <button disabled={busy} onClick={() => void showGuide()}>
+                    重新学习
+                  </button>
+                </div>
+              </section>
+            )}
+            <section className="ai-task-card" aria-label="待处理入口">
+              <h2>
+                需要我处理 · {props.data.attention.filter((item) => !item.read).length} 条未读
+              </h2>
               <p>
-                {learning.status === 'skipped' ? '已跳过 · ' : ''}已完成{' '}
-                {Object.keys(learning.achieved).length} / 4 项学习。运行状态和结果在原任务中查看。
+                {props.data.attention.find((item) => !item.read)?.title ||
+                  '当前没有未读提醒。仍可查看待办、人工请求和历史提醒。'}
               </p>
               <div className="ai-task-actions">
-                <button disabled={busy} onClick={() => void startLearning('continue')}>
-                  {learning.status === 'completed' ? '查看教学结果' : '继续教学'}
-                </button>
-                <button disabled={busy} onClick={() => void showGuide()}>
-                  重新学习
+                <button disabled={busy} onClick={props.openAttention}>
+                  查看待办与提醒
                 </button>
               </div>
             </section>
-          )}
+          </div>
+          <div className="ai-task-actions task-home-navigation">
+            <button disabled={busy} onClick={props.flows}>
+              使用已有流程
+            </button>
+            <button disabled={busy} onClick={props.openTools}>
+              应用与工具
+            </button>
+            <button disabled={busy} onClick={props.createFlow}>
+              手动创建流程
+            </button>
+          </div>
           <section className="ai-task-card">
             <h2>继续你的任务</h2>
             {!tasks.length ? (
@@ -1532,12 +1594,6 @@ export default function AITaskWorkspace(props: Props) {
               </div>
             )}
           </section>
-          <div className="ai-task-actions">
-            <button onClick={props.flows}>使用已有流程</button>
-            <button disabled={busy} onClick={props.createFlow}>
-              手动创建流程
-            </button>
-          </div>
         </>
       ) : page === 'modify' && detail?.flow && modification ? (
         <TaskModificationPage
