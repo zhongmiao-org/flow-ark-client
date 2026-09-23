@@ -83,6 +83,7 @@ import { TaskOutputs } from './task-output';
 import { TaskAttachments } from './task-attachments';
 import { ToolConnections } from './tool-connections';
 import { AISettings } from './ai-settings';
+import { LocalCredentialSettings } from './local-credentials';
 
 export class Runtime {
   readonly store: Store;
@@ -96,6 +97,7 @@ export class Runtime {
   readonly outputs: TaskOutputs;
   readonly toolConnections: ToolConnections;
   readonly aiSettings: AISettings;
+  readonly localCredentials: LocalCredentialSettings;
   private credentialChecks = new WeakMap<PreparedScripts, () => void>();
   private active?: Active;
   private artifactFiles: ArtifactFiles;
@@ -144,6 +146,29 @@ export class Runtime {
       change: (provider, revision, update) =>
         this.system('ai.configuration.write', { provider, revision, update }),
       key: (provider, revision) => this.system('credentials.get', { id: provider, revision }),
+    });
+    this.localCredentials = new LocalCredentialSettings({
+      assertAvailable: () => {
+        if (this.stopping || this.suspended) throw new Error('应用正在退出或休眠');
+        if (this.store.fault || this.executionBlock())
+          throw new Error('本地存储或运行资源尚未就绪，请先处理故障');
+      },
+      inUse: (id) =>
+        this.store
+          .list<Run>('run')
+          .some(
+            (run) =>
+              (run.id === this.active?.id || run.state === 'QUEUED') &&
+              this.store.get<FlowRecord>('snapshot', run.id)?.bindings.credentials.includes(id),
+          ),
+      boundFlows: (id) =>
+        this.store
+          .list<FlowRecord>('flow')
+          .filter((flow) => flow.bindings.credentials.includes(id))
+          .map((flow) => ({ id: flow.id, name: flow.flow.name })),
+      list: () => this.system('credential.local.read', {}),
+      change: (id, revision, update) =>
+        this.system('credential.local.write', { id, revision, update }),
     });
     this.toolConnections = new ToolConnections(this.store, {
       assertAvailable: () => {
@@ -320,6 +345,7 @@ export class Runtime {
       bindings: structuredClone(bindings),
       updatedAt: now(),
     };
+    for (const id of bindings.credentials) this.localCredentials.assertReadable(id);
     this.store.put('flow', flow.id, record);
     return record;
   }
@@ -373,13 +399,20 @@ export class Runtime {
     };
   }
   async preflight(record: FlowRecord & Partial<PreparedScripts>): Promise<PreparedScripts> {
-    const checkCredentials = this.aiSettings.capture(record.bindings.credentials);
+    const checkAI = this.aiSettings.capture(record.bindings.credentials);
+    const checkLocal = this.localCredentials.capture(record.bindings.credentials);
+    const checkCredentials = () => {
+      checkAI();
+      checkLocal();
+    };
     const checked = (prepared: PreparedScripts) => {
       checkCredentials();
       this.credentialChecks.set(prepared, checkCredentials);
       return prepared;
     };
     const flow = validateFlow(record.flow);
+    const localIds = record.bindings.credentials.filter((id) => id.startsWith('local-'));
+    if (localIds.length) await this.system('credential.local.check', { ids: localIds });
     await this.webTargets.record(record);
     await this.outputs.record(record);
     await this.templates.preflight(record);
@@ -1018,6 +1051,7 @@ export class Runtime {
     }
     if (method === 'credential') {
       if (!snapshot.bindings.credentials.includes(args.id)) throw new Error('凭据未授权给此流程');
+      this.localCredentials.assertReadable(args.id);
       const secret = await this.system('credentials.get', { id: args.id });
       this.secrets.push(secret);
       return secret;
@@ -1238,6 +1272,10 @@ export class Runtime {
     return true;
   }
   async request(method: string, args: any = {}): Promise<any> {
+    if (method.startsWith('credential.local.')) {
+      await this.ready;
+      return this.localCredentials.request(method, args);
+    }
     if (method.startsWith('ai.configuration.')) {
       await this.ready;
       return this.aiSettings.request(method, args);

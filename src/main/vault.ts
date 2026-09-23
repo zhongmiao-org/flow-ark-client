@@ -1,7 +1,8 @@
 import { safeStorage } from 'electron';
-import { readFile, writeFile, mkdir, rename, rm } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rename, rm, readdir } from 'node:fs/promises';
 import { createHash, randomBytes } from 'node:crypto';
 import { join } from 'node:path';
+import { localCredentialId } from '../shared/local-credentials';
 export class Vault {
   constructor(private dir: string) {}
   async readEntry(id: string) {
@@ -27,6 +28,24 @@ export class Vault {
     if (!/^mcp-[a-zA-Z0-9_-]{1,80}$/.test(id)) throw new Error('工具凭据 ID 无效');
     await this.available();
     await rm(this.path(id), { force: true });
+  }
+  async localIds() {
+    let names: string[];
+    try {
+      names = await readdir(this.dir);
+    } catch (error: any) {
+      if (error.code === 'ENOENT') return [];
+      throw error;
+    }
+    return names
+      .filter((name) => name.endsWith('.enc'))
+      .map((name) => name.slice(0, -4))
+      .filter((id) => localCredentialId.safeParse(id).success);
+  }
+  async removeLocalCredential(id: string) {
+    localCredentialId.parse(id);
+    await this.available();
+    await rm(this.path(id));
   }
   private async available() {
     if (
@@ -74,6 +93,6 @@ export class Vault {
         await readFile(this.path(id));
         found.push(id);
       } catch {}
-    return found;
+    return [...found, ...(await this.localIds())];
   }
 }

@@ -20,6 +20,8 @@ import { pathToFileURL } from 'node:url';
 import { readFile, writeFile } from 'node:fs/promises';
 import { Rpc } from '../shared/rpc';
 import { Vault } from './vault';
+import { LocalCredentials } from './local-credentials';
+import { localCredentialId } from '../shared/local-credentials';
 import { ProviderConfigurations } from './provider-configurations';
 import { aiProvider } from '../shared/ai-settings';
 import { validateIPC } from '../shared/ipc';
@@ -191,6 +193,7 @@ app
     const providerConfigurations = new ProviderConfigurations(vault, (key) =>
       knownSecrets.add(key),
     );
+    const localCredentials = new LocalCredentials(vault, (value) => knownSecrets.add(value));
     let ready: Promise<any>;
     ipcMain.handle('flowark:request', async (event, method: string, raw: unknown) => {
       const pending =
@@ -209,6 +212,14 @@ app
         typeof raw.bearerToken === 'string'
       )
         pending.push(raw.bearerToken);
+      if (
+        method === 'credential.local.save' &&
+        raw &&
+        typeof raw === 'object' &&
+        'value' in raw &&
+        typeof raw.value === 'string'
+      )
+        pending.push(raw.value);
       try {
         if (
           event.sender !== win.webContents ||
@@ -246,6 +257,7 @@ app
           const masked = redactArtifactText(preview.text, [...knownSecrets]);
           return { ...preview, ...masked, truncated: preview.truncated || masked.truncated };
         }
+        if (method === 'credential.local.save' && args.value) knownSecrets.add(args.value);
         if (method === 'ai.configuration.save' && args.apiKey) knownSecrets.add(args.apiKey);
         if (method === 'flow.export') {
           // The application review freezes the payload and supplies reviewed:true.
@@ -372,6 +384,27 @@ app
               }
             }
             if (method === 'credentials.list') return vault.list();
+            if (
+              [
+                'credential.local.read',
+                'credential.local.write',
+                'credential.local.check',
+              ].includes(method)
+            ) {
+              try {
+                if (method === 'credential.local.read') return await localCredentials.list();
+                if (method === 'credential.local.check') {
+                  for (const id of localCredentialId.array().max(30).parse(args.ids))
+                    await localCredentials.key(id);
+                  return true;
+                }
+                return await localCredentials.change(args.id, args.revision, args.update);
+              } catch (error) {
+                if (error instanceof Error && error.message === '凭据已变化，请刷新列表后重新编辑')
+                  throw error;
+                throw new Error('凭据读取或修改未完成，请检查系统保护存储并刷新列表核对');
+              }
+            }
             if (method === 'ai.configuration.read') {
               try {
                 return await providerConfigurations.get(aiProvider.parse(args.provider));
@@ -416,10 +449,15 @@ app
               return true;
             }
             if (method === 'credentials.get') {
-              const value = await providerConfigurations.key(
-                aiProvider.parse(args.id),
-                args.revision,
-              );
+              let value: string;
+              if (localCredentialId.safeParse(args.id).success) {
+                try {
+                  value = await localCredentials.key(args.id);
+                } catch {
+                  throw new Error('本机凭据读取未完成，请检查系统保护存储或重新绑定');
+                }
+              } else
+                value = await providerConfigurations.key(aiProvider.parse(args.id), args.revision);
               knownSecrets.add(value);
               return value;
             }

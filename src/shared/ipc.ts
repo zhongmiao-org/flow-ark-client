@@ -9,6 +9,7 @@ import { learningMethods } from './learning';
 import { connectionMethods } from './tool-connections';
 import { aiConfigurationMethods } from './ai-settings';
 import { runReviewConfirmSchema, runReviewPreviewSchema } from './run-review';
+import { localCredentialMethods } from './local-credentials';
 const id = z.string().min(1).max(100);
 const empty = z.object({}).strict();
 const bindings = z
@@ -65,6 +66,7 @@ export const templateSaveSchema = z
 export type TemplateSave = z.infer<typeof templateSaveSchema>;
 export const methods = {
   ...aiConfigurationMethods,
+  ...localCredentialMethods,
   ...connectionMethods,
   ...taskMethods,
   ...learningMethods,

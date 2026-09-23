@@ -24,6 +24,23 @@ export default function FlowParametersPage({
   save: (record: FlowRecord) => Promise<void>;
   configuration: () => void;
 }) {
+  const [credentialNames, setCredentialNames] = useState<Record<string, string>>({});
+  const [credentialError, setCredentialError] = useState('');
+  useEffect(() => {
+    let live = true;
+    window.flowark
+      .request('credential.local.list')
+      .then((entries: { id: string; name: string }[]) => {
+        if (live)
+          setCredentialNames(Object.fromEntries(entries.map((entry) => [entry.id, entry.name])));
+      })
+      .catch(() => {
+        if (live) setCredentialError('凭据名称暂未读取，以下保留实际引用标识。');
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
   const [draft, setDraft] = useState(() => structuredClone(record));
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -241,7 +258,8 @@ export default function FlowParametersPage({
             ),
           )}
           <h3>允许脚本读取的凭据</h3>
-          {!ids.length && <p>未使用凭据。可在 AI 服务或应用与工具中管理凭据。</p>}
+          {!ids.length && <p>未使用凭据。可在本地设置的凭据、AI 服务或应用与工具中管理。</p>}
+          {credentialError && <p role="status">{credentialError}</p>}
           {ids.map((id) => (
             <label className="flow-parameters-credential" key={id}>
               <input
@@ -260,7 +278,7 @@ export default function FlowParametersPage({
                 }
               />
               <span>
-                {id}
+                {credentialNames[id] ? `${credentialNames[id]} · ${id}` : id}
                 {!credentials.includes(id) ? ' · 凭据不可用' : ''}
               </span>
             </label>

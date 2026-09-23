@@ -4,6 +4,7 @@ import type { AIProviderId } from '../shared/ai-settings';
 import { AISettingsSummary } from './AISettingsPage';
 import './local-settings.css';
 import LocalStoragePanel from './LocalStoragePanel';
+import LocalCredentialsPanel from './LocalCredentialsPanel';
 
 const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
@@ -484,36 +485,14 @@ export default function LocalSettingsPage({
             </section>
           ))}
         {tab === 'ai' && active && <AISettingsSummary open={openAI} />}
-        {tab === 'credentials' && (
-          <section className="local-settings-card">
-            <h2>受保护的凭据</h2>
-            <p>只展示当前凭据标识，不读取或回显密钥。AI 密钥与工具认证分别在对应配置中管理。</p>
-            {data.credentials.length ? (
-              <ul className="local-settings-inventory">
-                {data.credentials.map((id) => (
-                  <li key={id}>
-                    <strong>
-                      {id === 'deepseek'
-                        ? 'DeepSeek'
-                        : id === 'openai-codex'
-                          ? 'Codex / OpenAI'
-                          : id}
-                    </strong>
-                    <span>已配置</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="local-settings-empty">尚未保存凭据。</div>
-            )}
-            <div className="local-settings-actions">
-              <button onClick={() => changeTab('ai')}>管理 AI 密钥</button>
-              <button onClick={openTools}>管理工具认证</button>
-            </div>
-            <p className="local-settings-muted">
-              通用凭据的新增与移除入口尚未接入。密钥不随流程 ZIP 导出。
-            </p>
-          </section>
+        {tab === 'credentials' && active && (
+          <LocalCredentialsPanel
+            data={data}
+            refresh={refresh}
+            openAI={() => changeTab('ai')}
+            openTools={openTools}
+            openFlow={openFlow}
+          />
         )}
         {tab === 'storage' && (
           <LocalStoragePanel
