@@ -37,6 +37,40 @@
 .task-repair-old {
   background: var(--fa-status-error-bg);
 }
+.task-repair-target {
+  min-height: 108px;
+}
+.task-repair-target summary,
+.task-repair-location summary {
+  color: var(--fa-text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+}
+.task-repair-target details,
+.task-repair-location {
+  margin-top: 12px;
+}
+.task-repair-target ol {
+  padding-left: 20px;
+  margin-bottom: 0;
+}
+.task-run-page .task-repair-page pre {
+  max-height: 220px;
+  padding: 12px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-bg-canvas);
+}
+.task-repair-page pre:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 2px;
+}
+.task-repair-adoption > button {
+  min-width: 144px;
+}
+.task-repair-adoption > .primary {
+  min-width: 208px;
+}
 .task-repair-speaker {
   color: var(--fa-action-primary);
 }

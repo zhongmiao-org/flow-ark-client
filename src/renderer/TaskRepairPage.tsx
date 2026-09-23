@@ -1,3 +1,4 @@
+import TaskRepairTarget from './TaskRepairTarget';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { TaskDetail } from '../shared/planning';
 import type { ElementTarget } from '../shared/element-picker';
@@ -261,6 +262,25 @@ export default function TaskRepairPage({
                   {preview?.selection.target.label || preview?.selection.target.tag || '尚无'}
                 </p>
                 <p>描述不是完整读取结果；生成与采纳时会再次核对。</p>
+                {preview && (
+                  <details className="task-repair-location">
+                    <summary>核对选择时的网页与元素信息</summary>
+                    <p>网页：{preview.selection.title || '未命名网页'}</p>
+                    <p className="task-run-path">{preview.selection.url}</p>
+                    <p>
+                      元素类型：{preview.selection.target.tag}
+                      {preview.selection.target.inputType
+                        ? ` · ${preview.selection.target.inputType}`
+                        : ''}
+                    </p>
+                    {preview.selection.target.structural && (
+                      <p>使用结构定位，网页布局变化后需要重新选择。</p>
+                    )}
+                    <p>
+                      仅供本机核对，不表示网页当前仍未变化；网页地址和标题不会自动加入模型输入。
+                    </p>
+                  </details>
+                )}
               </div>
               <p className="task-run-note">
                 如果原操作结果未知，请先核对；修复目标不会自动重复提交。
@@ -300,7 +320,9 @@ export default function TaskRepairPage({
                     <p>
                       发送任务描述、当前完整流程及本次目标修复说明。未选择的附件和历史输出不自动发送。
                     </p>
-                    <pre>{JSON.stringify(preview?.input, null, 2)}</pre>
+                    <pre tabIndex={0} aria-label="本次修复实际发送内容">
+                      {JSON.stringify(preview?.input, null, 2)}
+                    </pre>
                   </details>
                   <label className="run-review-toggle">
                     <input
@@ -361,17 +383,27 @@ export default function TaskRepairPage({
             </section>
             <section className="ai-task-card">
               <h2>{canAdopt ? '只改变目标引用' : '待核对的目标变化'}</h2>
-              <div className="task-repair-box task-repair-old">
-                <h3>原目标</h3>
-                <p>{preview?.source.nodeName || stepName}</p>
-                <p>{preview?.source.selector || (node?.type === 'browser' ? node.selector : '')}</p>
-                <p>原运行在此步骤停止，历史匹配数未记录。</p>
-              </div>
-              <div className="task-repair-box task-repair-new">
-                <h3>新目标</h3>
-                <p>{preview?.selection.target.label || '需要重新选择'}</p>
-                <p>{preview?.selection.target.selector}</p>
-              </div>
+              <TaskRepairTarget
+                title="原目标"
+                label={preview?.source.nodeName || stepName}
+                selector={
+                  preview?.source.selector || (node?.type === 'browser' ? node.selector : undefined)
+                }
+                framePath={
+                  preview?.source.framePath ??
+                  (node?.type === 'browser' && 'framePath' in node ? node.framePath : undefined)
+                }
+                kind="old"
+                note="原运行停止于此，历史匹配数未记录"
+              />
+              <TaskRepairTarget
+                title="新目标"
+                label={preview?.selection.target.label || preview?.selection.target.tag}
+                selector={preview?.selection.target.selector}
+                framePath={preview?.selection.target.framePath}
+                kind="new"
+                note={preview ? '确认时唯一匹配，采纳前再次核对' : '需要重新选择'}
+              />
               {ours && (
                 <>
                   <p>
@@ -388,14 +420,16 @@ export default function TaskRepairPage({
                         <b>
                           {c.label} · {c.path}
                         </b>
-                        <pre>{JSON.stringify({ 原值: c.before, 新值: c.after }, null, 2)}</pre>
+                        <pre tabIndex={0} aria-label={`${c.label}的完整差异`}>
+                          {JSON.stringify({ 原值: c.before, 新值: c.after }, null, 2)}
+                        </pre>
                       </div>
                     ))}
                   </details>
                   {proposal!.result.limitations.map((text, i) => (
                     <p key={i}>{text}</p>
                   ))}
-                  <div className="ai-task-actions">
+                  <div className="ai-task-actions task-repair-adoption">
                     <button
                       className="primary"
                       disabled={!canAdopt || busy || !!pendingAdoption}
