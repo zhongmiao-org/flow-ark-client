@@ -12,6 +12,7 @@ import RunOutputWorkspace from './RunOutputWorkspace';
 import { runTimeline } from './run-timeline';
 import { kinds } from './node-kinds';
 import RunEventLog from './RunEventLog';
+import DesktopRunReceipt from './DesktopRunReceipt';
 
 export type RunTab = 'current' | 'output' | 'logs' | 'rerun';
 const tabs: [RunTab, string][] = [
@@ -132,6 +133,7 @@ export default function RunDetail({
             </p>
           )}
         </section>
+        <DesktopRunReceipt runId={r.id} receipts={d.desktopReceipts} />
         <div className={'run-observation-layout' + (tab === 'output' ? ' is-output' : '')}>
           <aside className="run-timeline" aria-label="执行步骤" hidden={tab === 'output'}>
             <h2>执行步骤</h2>

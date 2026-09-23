@@ -2362,6 +2362,7 @@ export default function AITaskWorkspace(props: Props) {
             : undefined
         }
         source={JSON.stringify(detail?.flow ?? null)}
+        bound={(next) => accept(next)}
         back={backToPlan}
         edit={() =>
           void run(async () => {

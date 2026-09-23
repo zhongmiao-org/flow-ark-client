@@ -102,7 +102,7 @@ export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext
   };
   switch (step.type) {
     case 'desktop':
-      return `替换已核对的应用选区 · ${step.text.length} 个字符 · 写后按范围回读 · 尚未开放执行`;
+      return `替换已核对的应用选区 · ${step.text.length} 个字符 · 单次授权后修改并回读`;
     case 'value':
       return `输出数据：${value(step.value)}`;
     case 'assert':

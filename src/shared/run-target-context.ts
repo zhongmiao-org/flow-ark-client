@@ -3,6 +3,7 @@ export type RunTargetContext = {
   formatVersion: 1;
   runId: string;
   versionId: string;
+  desktop?: { windowTitle: string };
   browser?: {
     bindingId: string;
     product?: 'embedded' | 'chrome' | 'firefox' | 'safari';

@@ -11,6 +11,7 @@ import './task-run.css';
 import TaskExecutionSteps, { type TaskExecutionView } from './TaskExecutionSteps';
 import RunEventLog from './RunEventLog';
 import TaskRunTarget from './TaskRunTarget';
+import DesktopRunReceipt from './DesktopRunReceipt';
 
 export default function TaskRunPage({
   detail,
@@ -267,6 +268,7 @@ export default function TaskRunPage({
             {model.view.statusNote}
           </p>
         )}
+        <DesktopRunReceipt runId={run.id} receipts={detail.desktopReceipts} />
         {page === 'rerun' ? (
           <section className="ai-task-card task-run-restart">
             <h2>已完成操作不会被隐藏</h2>

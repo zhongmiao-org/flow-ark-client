@@ -146,6 +146,7 @@ export class RunReviewSession {
           token: state.preview.token,
           requestId: this.newId(),
           reviewed: true,
+          ...(state.preview.desktop ? { desktopReviewed: true as const } : {}),
         },
       };
     } else attempt = { ...attempt, phase: 'pending', message: undefined };

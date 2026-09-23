@@ -54,6 +54,7 @@ export const desktopPlanResponse = selectionReference.extend({
 export type DesktopPlanGenerate = z.infer<typeof desktopPlanGenerate>;
 export type DesktopPlanResponse = z.infer<typeof desktopPlanResponse>;
 export type DesktopTaskTarget = {
+  binding?: import('./desktop-run').DesktopBinding;
   version: 1;
   taskId: string;
   requestId: string;

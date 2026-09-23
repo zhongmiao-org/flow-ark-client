@@ -44,7 +44,16 @@ export function runTargetContext(
     }
   }
   return redact(
-    { formatVersion: 1, runId: run.id, versionId: run.versionId, browser, files },
+    {
+      formatVersion: 1,
+      runId: run.id,
+      versionId: run.versionId,
+      browser,
+      files,
+      ...(snapshot.desktopTarget?.binding
+        ? { desktop: { windowTitle: snapshot.desktopTarget.binding.windowTitle } }
+        : {}),
+    },
     secrets,
   );
 }

@@ -249,20 +249,10 @@ export default function DesktopModificationCheck({
           )}
         </>
       )}
-      <h2>本次授权</h2>
-      <label className="ai-task-checkbox">
-        <input type="checkbox" checked={false} disabled />
-        读取选区、替换选区并回读
-      </label>
+      <h2>下一步：确认试运行</h2>
       <p>
-        {complete
-          ? '窗口与选区条件已核对，固定运行和写后回读尚未接入。'
-          : '固定运行和写后回读尚未接入。'}
-        本次未授予修改权限，原文未修改。
+        保存方案后，在试运行前检查中重新选择窗口与原选区。核对原文、替换文字与能力后，由你明确授权单次修改并回读。本页不会修改文档。
       </p>
-      <button className="primary" disabled>
-        确认修改并试运行 · 尚未开放
-      </button>
     </section>
   );
 }

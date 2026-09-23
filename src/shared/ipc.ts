@@ -12,6 +12,7 @@ import { runReviewConfirmSchema, runReviewPreviewSchema } from './run-review';
 import { localCredentialMethods } from './local-credentials';
 import { desktopPlanMethods } from './desktop-planning';
 import { desktopMethods } from './desktop-windows';
+import { desktopRunMethods } from './desktop-run';
 const id = z.string().min(1).max(100);
 const empty = z.object({}).strict();
 const bindings = z
@@ -69,6 +70,7 @@ export type TemplateSave = z.infer<typeof templateSaveSchema>;
 export const methods = {
   ...desktopMethods,
   ...desktopPlanMethods,
+  ...desktopRunMethods,
   ...aiConfigurationMethods,
   ...localCredentialMethods,
   ...connectionMethods,

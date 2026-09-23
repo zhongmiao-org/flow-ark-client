@@ -147,7 +147,7 @@ export function DesktopWindowCapabilities({
           label: '读取选中段落 · 点击后核对',
           checked: !state.expired && state.preview?.status === 'ready',
         },
-        { label: '编辑选中段落并回读 · 尚未接入', checked: false },
+        { label: '编辑选中段落并回读 · 需在试运行前核对能力与授权', checked: false },
         { label: '发送邮件 / 后台操作其他窗口 · 不支持', checked: false },
       ].map(({ label, checked }) => (
         <label className="ai-task-checkbox" key={label}>
@@ -187,7 +187,7 @@ export function DesktopWindowCapabilities({
       <DesktopSelectionPreview state={state} plan={plan} />
       {!state.selected && (
         <p className="ai-task-note">
-          选择窗口并读取段落后可生成改动预览，不改变已选网页或工具；文档写入尚未开放。
+          选择窗口并读取段落后可生成改动预览；保存方案后，还需重新绑定原选区并确认试运行。
         </p>
       )}
       <div className="ai-task-actions">

@@ -15,6 +15,7 @@ import {
 import { EmbeddedBrowser } from './embedded-browser';
 import { selectionReference } from '../shared/desktop-windows';
 import { DesktopWindows } from './desktop-windows';
+import { desktopNativeMethods } from '../shared/desktop-run';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { templateFilename, zipExportPath } from '../shared/template-filename';
@@ -366,6 +367,27 @@ app
               return desktopWindows.inspect(selectionReference.parse(args));
             if (method === 'desktop.selection.resolve')
               return desktopWindows.resolve(selectionReference.parse(args));
+            if (method === 'desktop.binding.hold') {
+              const { bindingId, replacementHash, ...reference } =
+                desktopNativeMethods[method].parse(args);
+              return desktopWindows.hold(reference, bindingId, replacementHash);
+            }
+            if (method === 'desktop.binding.verify') {
+              const value = desktopNativeMethods[method].parse(args);
+              return desktopWindows.verifyBinding(value.bindingId, value.runId);
+            }
+            if (method === 'desktop.binding.claim') {
+              const value = desktopNativeMethods[method].parse(args);
+              return desktopWindows.claimBinding(value.bindingId, value.runId);
+            }
+            if (method === 'desktop.binding.release') {
+              const value = desktopNativeMethods[method].parse(args);
+              return desktopWindows.releaseBinding(value.bindingId, value.runId);
+            }
+            if (method === 'desktop.binding.write') {
+              const value = desktopNativeMethods[method].parse(args);
+              return desktopWindows.writeBinding(value.bindingId, value.runId, value.text);
+            }
             if (method.startsWith('browser.embedded.')) return embedded.system(method, args);
             if (method === 'task.attachment.image.validate') {
               if (

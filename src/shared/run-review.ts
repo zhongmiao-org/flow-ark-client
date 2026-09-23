@@ -25,6 +25,7 @@ export const runReviewConfirmSchema = z
     token: z.string().regex(/^[a-f0-9]{64}$/),
     requestId: z.string().uuid(),
     reviewed: z.literal(true),
+    desktopReviewed: z.literal(true).optional(),
   })
   .strict();
 export type RunReviewInput = z.infer<typeof runReviewPreviewSchema>;
@@ -68,6 +69,14 @@ export type ReviewToolCall = {
   reason: string;
 };
 export type RunReviewPreview = {
+  desktop?: {
+    flowHash: string;
+    replacement: string;
+    bindingId?: string;
+    expiresAt?: number;
+    windowTitle?: string;
+    original?: string;
+  };
   toolCalls?: ReviewToolCall[];
   rerun?: { runId: string; name: string; state: string };
   ready: boolean;

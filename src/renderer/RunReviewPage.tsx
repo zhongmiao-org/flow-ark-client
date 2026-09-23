@@ -1,4 +1,7 @@
-import { useLayoutEffect, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import type { TaskDetail } from '../shared/planning';
+import DesktopRunBinding from './DesktopRunBinding';
+import './desktop-run.css';
 import type { RunReviewInput, RunReviewPreview, ReviewResource } from '../shared/run-review';
 import { RunReviewSession } from './run-review-session';
 import RunReviewTools from './RunReviewTools';
@@ -10,6 +13,7 @@ type Props = {
   back: () => void;
   edit: () => void;
   openDetail: (detail: any) => void;
+  bound?: (detail: TaskDetail) => void;
 };
 const access: Record<string, string> = {
   read: '读取',
@@ -35,6 +39,37 @@ function Contents({ preview }: { preview: RunReviewPreview }) {
   const changes = preview.effects.filter((e) => ['write', 'network', 'unknown'].includes(e.kind));
   return (
     <>
+      {preview.desktop && (
+        <section className="run-review-card desktop-run-comparison" aria-label="本次选区修改">
+          <h2>本次只替换选中的段落</h2>
+          <p>
+            {preview.desktop.windowTitle
+              ? `文本编辑 · ${preview.desktop.windowTitle}`
+              : '尚未绑定本次窗口与原选区'}
+          </p>
+          {preview.desktop.expiresAt && (
+            <p>
+              本次绑定有效至 {new Date(preview.desktop.expiresAt).toLocaleTimeString('zh-CN')}
+              ；运行期间请保持文档和选区不变。
+            </p>
+          )}
+          <div className="desktop-run-texts">
+            <div>
+              <h3>核对的原文</h3>
+              {preview.desktop.original !== undefined ? (
+                <pre tabIndex={0}>{preview.desktop.original}</pre>
+              ) : (
+                <p>重新选择窗口后显示原文。</p>
+              )}
+            </div>
+            <div>
+              <h3>将替换为</h3>
+              <pre tabIndex={0}>{preview.desktop.replacement}</pre>
+            </div>
+          </div>
+          <p>单次替换后读取文字核对；不会自动保存文档。结果未知时需要人工检查，不自动重试。</p>
+        </section>
+      )}
       {preview.rerun && (
         <section className="run-review-card">
           <h2>关联原运行，从头执行</h2>
@@ -134,6 +169,8 @@ function Contents({ preview }: { preview: RunReviewPreview }) {
   );
 }
 export default function RunReviewPage(props: Props) {
+  const [binding, setBinding] = useState(false);
+  const bindings = useRef(new Set<string>());
   const heading = useRef<HTMLHeadingElement>(null);
   const callbacks = useRef(props);
   callbacks.current = props;
@@ -155,6 +192,23 @@ export default function RunReviewPage(props: Props) {
   }, [session, props.active, selectionKey, props.source]);
   const attempt = state.attempt;
   const preview = attempt?.preview ?? state.preview;
+  if (props.active && preview?.desktop?.bindingId) bindings.current.add(preview.desktop.bindingId);
+  useEffect(() => {
+    setBinding(false);
+    return () => {
+      for (const id of bindings.current)
+        void window.flowark.request('desktop.run.release', { bindingId: id }).catch(() => {});
+      bindings.current.clear();
+    };
+  }, [props.active, props.selection?.id, props.selection?.task?.id]);
+  useEffect(() => {
+    if (!props.active || attempt || !preview?.desktop?.expiresAt || !preview.ready) return;
+    const timer = setTimeout(
+      () => void session.refresh(),
+      Math.max(0, preview.desktop.expiresAt - Date.now()),
+    );
+    return () => clearTimeout(timer);
+  }, [props.active, attempt, preview, session]);
   const locked = attempt?.phase === 'pending' || attempt?.phase === 'unknown';
   const title =
     attempt?.phase === 'created'
@@ -175,14 +229,27 @@ export default function RunReviewPage(props: Props) {
       <div className="page-heading">
         <div>
           <h1 ref={heading} tabIndex={-1}>
-            试运行前，最后确认一次
+            {preview?.desktop ? '确认这次应用修改' : '试运行前，最后确认一次'}
           </h1>
           <p>试运行也会执行已列出的操作；这不是无副作用的预览</p>
         </div>
       </div>
       <div className="run-review-columns">
         <div className="ai-task-card run-review-summary">
-          {preview ? (
+          {binding && props.selection?.task && preview?.desktop && props.bound ? (
+            <DesktopRunBinding
+              key={preview.desktop.flowHash}
+              selection={props.selection}
+              flowHash={preview.desktop.flowHash}
+              close={() => setBinding(false)}
+              bound={(detail) => {
+                const id = detail.flow?.desktopTarget?.binding?.bindingId;
+                if (id) bindings.current.add(id);
+                setBinding(false);
+                props.bound?.(detail);
+              }}
+            />
+          ) : preview ? (
             <Contents preview={preview} />
           ) : (
             <div role="status">
@@ -208,7 +275,7 @@ export default function RunReviewPage(props: Props) {
                 <input
                   type="checkbox"
                   checked={!!state.selection?.debug}
-                  disabled={state.loading}
+                  disabled={state.loading || binding}
                   onChange={(e) => void session.refresh(e.target.checked)}
                 />
                 逐步调试，在每个步骤前暂停
@@ -217,17 +284,19 @@ export default function RunReviewPage(props: Props) {
                 <input
                   type="checkbox"
                   checked={state.reviewed}
-                  disabled={!preview?.ready || state.loading}
+                  disabled={!preview?.ready || state.loading || binding}
                   onChange={(e) => session.setReviewed(e.target.checked)}
                 />
-                我已核对操作对象、可能更改和保存位置
+                {preview?.desktop
+                  ? '我授权本次只替换已核对的原选区并回读，运行期间保持文档与选区不变'
+                  : '我已核对操作对象、可能更改和保存位置'}
               </label>
               <button
                 className="primary"
-                disabled={!preview?.ready || !state.reviewed || state.loading}
+                disabled={!preview?.ready || !state.reviewed || state.loading || binding}
                 onClick={() => void session.confirm()}
               >
-                开始试运行
+                {preview?.desktop ? '确认修改并试运行' : '开始试运行'}
               </button>
             </>
           )}
@@ -266,10 +335,21 @@ export default function RunReviewPage(props: Props) {
               {state.error}
             </p>
           )}
+          {!locked && !attempt?.run && preview?.desktop && props.selection?.task && props.bound && (
+            <button
+              disabled={state.loading || binding}
+              onClick={() => {
+                session.setReviewed(false);
+                setBinding(true);
+              }}
+            >
+              重新选择窗口与原选区
+            </button>
+          )}
           {!locked && (
             <button
               onClick={() => void session.refresh()}
-              disabled={state.loading || state.opening}
+              disabled={state.loading || state.opening || binding}
             >
               {attempt?.run ? '检查新的试运行' : '重新检查'}
             </button>

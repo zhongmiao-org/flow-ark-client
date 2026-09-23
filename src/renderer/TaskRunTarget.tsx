@@ -27,8 +27,16 @@ export default function TaskRunTarget({
   let note = '以下是本次运行的固定配置，不表示当前权限或外部结果已核对。';
   if (node) {
     if (node.type === 'desktop') {
-      facts.push(['应用目标', node.target], ['操作', '替换原选区并回读']);
-      note = '逻辑目标不是原生窗口授权。此处只展示固定配置，实际修改能力尚未开放。';
+      facts.push(
+        [
+          '应用目标',
+          current?.desktop?.windowTitle
+            ? '文本编辑 · ' + current.desktop.windowTitle
+            : '此记录未提供窗口名称',
+        ],
+        ['操作', '替换原选区并回读'],
+      );
+      note = '窗口来自本次固定快照；实际修改与回读结果请查看应用修改回执。';
     } else if (node.type === 'browser') {
       const browser = current?.browser;
       const product = {

@@ -21,6 +21,9 @@ import {
 import { reviewEffects } from './run-review-effects';
 import { reviewToolCalls } from './run-review-tools';
 import type { TaskMcpState } from '../shared/task-mcp-targets';
+import type { DesktopRuns } from './desktop-runs';
+import type { DesktopBinding } from '../shared/desktop-run';
+import { planningFlowHash } from './planning-scope';
 
 export type ReviewTemplate = {
   resources: {
@@ -48,6 +51,7 @@ type PathIdentity = PathRequirement & {
   mtimeMs?: number;
 };
 type Authorization = {
+  desktop?: DesktopBinding;
   target?: RepairSelection;
   paths: PathIdentity[];
   browsers: BrowserBinding[];
@@ -57,6 +61,7 @@ type Authorization = {
 type Snapshot = FlowRecord & Partial<PreparedScripts> & { runReviewAuthorization?: Authorization };
 type RequestRecord = { requestId: string; fingerprint: string; runId: string };
 type Dependencies = {
+  desktop?: DesktopRuns;
   tools?: (record: FlowRecord) => TaskMcpState[];
   learnedTrial?: (run: Run) => void;
   busy?: (runId: string) => boolean;
@@ -89,6 +94,11 @@ export class RunReview {
     const record = this.store.get<FlowRecord>('flow', args.id);
     if (!record || record.flow.id !== args.id) throw new Error('已保存流程不存在或标识不一致');
     validateFlow(record.flow);
+    if (
+      record.flow.steps.some((step) => step.type === 'desktop') &&
+      (!args.task || args.task.id !== record.desktopTarget?.taskId)
+    )
+      throw new Error('请从保存此应用方案的原任务进入试运行');
     let task: (PlanningTask & { proposal?: unknown }) | undefined;
     if (args.task) {
       task = this.store.get('ai-task', args.task.id);
@@ -135,9 +145,20 @@ export class RunReview {
     };
   }
 
-  private async environment(record: FlowRecord, target?: RepairSelection) {
+  private async environment(record: FlowRecord, target?: RepairSelection, runId?: string) {
+    const hasDesktop = walk(record.flow.steps).some((node) => node.type === 'desktop');
+    if (hasDesktop && !this.deps.desktop) throw new Error('应用执行服务不可用');
+    const desktop = hasDesktop ? await this.deps.desktop!.verify(record, runId) : undefined;
     const paths = new Map<string, PathRequirement>();
     const resources: ReviewResource[] = [];
+    if (desktop)
+      resources.push({
+        id: 'desktop:' + desktop.bindingId,
+        name: '文本编辑 · ' + desktop.windowTitle,
+        kind: 'action',
+        access: '单次替换并回读',
+        detail: '仅本次核对的原选区；运行期间请勿切换文档或更改选区。',
+      });
     const browserIds = new Set<string>();
     const directory = (name: string, read: boolean, write: boolean) => {
       if (!Object.hasOwn(record.bindings.files, name) || !record.bindings.files[name])
@@ -299,7 +320,19 @@ export class RunReview {
       });
     return {
       resources,
+      desktop,
       authorization: {
+        ...(desktop
+          ? {
+              desktop: {
+                bindingId: desktop.bindingId,
+                expiresAt: desktop.expiresAt,
+                windowTitle: desktop.windowTitle,
+                sourceHash: desktop.sourceHash,
+                replacementHash: desktop.replacementHash,
+              },
+            }
+          : {}),
         ...(target ? { target: await this.verifyTarget(target) } : {}),
         paths: identities,
         browsers,
@@ -355,6 +388,9 @@ export class RunReview {
       limitations,
     };
     result.toolCalls = reviewToolCalls(record, this.deps.tools?.(record));
+    const desktopNode = record.flow.steps.find((node) => node.type === 'desktop');
+    if (desktopNode?.type === 'desktop' && record.desktopTarget)
+      result.desktop = { flowHash: planningFlowHash(record), replacement: desktopNode.text };
     try {
       const prepared = await this.prepare(args);
       result.ready = true;
@@ -362,6 +398,14 @@ export class RunReview {
       result.flow.versionId = executionVersion(prepared.record, prepared.prepared);
       result.flow.scriptBundles = prepared.prepared.scriptBundles;
       result.resources = prepared.resources;
+      if (result.desktop && prepared.desktop)
+        result.desktop = {
+          ...result.desktop,
+          bindingId: prepared.desktop.bindingId,
+          expiresAt: prepared.desktop.expiresAt,
+          windowTitle: prepared.desktop.windowTitle,
+          original: prepared.desktop.original,
+        };
       if (prepared.rerun)
         result.rerun = {
           runId: prepared.rerun.id,
@@ -423,49 +467,64 @@ export class RunReview {
     const captured = await this.prepare(selection);
     assertAdmission();
     if (captured.token !== args.token) throw new Error('试运行检查已过期，请重新检查并核对');
-    const run = this.store.tx(() => {
-      const duplicate = this.previous(args, fingerprint);
-      if (duplicate) return duplicate;
-      assertAdmission();
-      if (this.capture(selection).signature !== captured.signature)
-        throw new Error('试运行检查已过期，请重新检查');
-      const time = now(),
-        versionId = this.deps.version(captured.record, captured.prepared);
-      const next: Run = {
-        id: uid(),
-        flowId: args.id,
-        name: captured.record.flow.name,
-        versionId,
-        state: 'QUEUED',
-        createdAt: time,
-        updatedAt: time,
-        source: 'manual',
-        debug: !!args.debug,
-        review: { reviewedAt: time },
-        ...(args.task ? { task: args.task } : {}),
-        ...(captured.rerun
-          ? { rerun: { runId: captured.rerun.id, mode: 'saved' as const, reviewedAt: time } }
-          : {}),
-        business: '已核对后开始试运行；执行结果与外部业务核对分别记录',
-      };
-      this.store.put('snapshot', next.id, {
-        ...captured.record,
-        ...captured.prepared,
-        versionId,
-        runReviewAuthorization: captured.authorization,
+    const nextId = uid();
+    const hasDesktop = !!captured.authorization.desktop;
+    if (hasDesktop && !args.desktopReviewed) throw new Error('请明确授权本次原选区替换与回读');
+    let claimed = false;
+    try {
+      if (hasDesktop) {
+        claimed = true;
+        await this.deps.desktop!.claim(captured.record, nextId);
+      }
+      const run = this.store.tx(() => {
+        const duplicate = this.previous(args, fingerprint);
+        if (duplicate) return duplicate;
+        assertAdmission();
+        if (this.capture(selection).signature !== captured.signature)
+          throw new Error('试运行检查已过期，请重新检查');
+        const time = now(),
+          versionId = this.deps.version(captured.record, captured.prepared);
+        const next: Run = {
+          id: nextId,
+          flowId: args.id,
+          name: captured.record.flow.name,
+          versionId,
+          state: 'QUEUED',
+          createdAt: time,
+          updatedAt: time,
+          source: 'manual',
+          debug: !!args.debug,
+          review: { reviewedAt: time, ...(hasDesktop ? { desktopReviewed: true as const } : {}) },
+          ...(args.task ? { task: args.task } : {}),
+          ...(captured.rerun
+            ? { rerun: { runId: captured.rerun.id, mode: 'saved' as const, reviewedAt: time } }
+            : {}),
+          business: '已核对后开始试运行；执行结果与外部业务核对分别记录',
+        };
+        this.store.put('snapshot', next.id, {
+          ...captured.record,
+          ...captured.prepared,
+          versionId,
+          runReviewAuthorization: captured.authorization,
+        });
+        this.store.put('run', next.id, next);
+        this.store.event(next.id, 'state', '', { state: 'QUEUED' });
+        this.store.put('flow-run-request', args.requestId, {
+          requestId: args.requestId,
+          fingerprint,
+          runId: next.id,
+        } satisfies RequestRecord);
+        this.deps.learnedTrial?.(next);
+        return next;
       });
-      this.store.put('run', next.id, next);
-      this.store.event(next.id, 'state', '', { state: 'QUEUED' });
-      this.store.put('flow-run-request', args.requestId, {
-        requestId: args.requestId,
-        fingerprint,
-        runId: next.id,
-      } satisfies RequestRecord);
-      this.deps.learnedTrial?.(next);
-      return next;
-    });
-    this.deps.dispatch();
-    return run;
+      if (claimed && run.id !== nextId) await this.deps.desktop!.release(captured.record, nextId);
+      this.deps.dispatch();
+      return run;
+    } catch (error) {
+      if (claimed && !this.store.get('run', nextId))
+        await this.deps.desktop!.release(captured.record, nextId);
+      throw error;
+    }
   }
 
   async checkExecution(run: Run, snapshot: Snapshot) {
@@ -474,7 +533,11 @@ export class RunReview {
     if (!current || !snapshot.runReviewAuthorization)
       throw new Error('试运行授权已失效，请重新检查');
     assertRerunBindings(snapshot.bindings, current.bindings);
-    const environment = await this.environment(snapshot, snapshot.runReviewAuthorization.target);
+    const environment = await this.environment(
+      snapshot,
+      snapshot.runReviewAuthorization.target,
+      run.id,
+    );
     const latest = this.store.get<FlowRecord>('flow', run.flowId);
     if (!latest) throw new Error('当前流程已删除，试运行授权失效');
     assertRerunBindings(snapshot.bindings, latest.bindings);

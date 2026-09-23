@@ -11,7 +11,7 @@ export default function DesktopStepDetails({ node }: { node: Extract<Step, { typ
         {node.text}
       </pre>
       <p>
-        这是流程中保存的文字，尚未修改文档。原生窗口需在执行前重新绑定，单次授权和实际写入仍未开放。
+        这是流程中保存的文字，尚未修改文档。请从原任务进入试运行检查，重新选择窗口与原选区，核对后授权本次单次修改。
       </p>
       <details>
         <summary>查看目标引用</summary>

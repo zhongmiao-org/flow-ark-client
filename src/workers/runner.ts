@@ -79,6 +79,12 @@ const rpc = new Rpc(
             signal,
           );
         if (n.type === 'browser') return rpc.call('browser', resolved, timeout + 5000);
+        if (n.type === 'desktop')
+          return rpc.call(
+            'desktop.replace',
+            { nodeId: n.id, nodeInstance: instance },
+            timeout + 10000,
+          );
         if (n.type === 'script')
           return runScript({
             nodeId: n.id,

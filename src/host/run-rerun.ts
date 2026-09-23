@@ -27,6 +27,7 @@ export function executionVersion(record: FlowRecord, prepared: PreparedScripts) 
     ...(record.webTarget ? { webTarget: record.webTarget } : {}),
     ...(record.outputTarget ? { outputTarget: record.outputTarget } : {}),
     ...(record.toolTargets?.length ? { toolTargets: record.toolTargets } : {}),
+    ...(record.desktopTarget ? { desktopTarget: record.desktopTarget } : {}),
     scriptBundles: prepared.scriptBundles,
   });
 }

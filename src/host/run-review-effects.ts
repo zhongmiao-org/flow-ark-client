@@ -15,7 +15,7 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
       case 'desktop':
         return effect(
           'write',
-          `替换应用目标“${node.target}”的原选区并按范围回读；单次授权与原生执行尚未开放。`,
+          `仅替换应用目标“${node.target}”的原选区，并按原起点与新文字长度回读。不会自动保存文档；结果未知不自动重试。`,
         );
       case 'mcp':
         return effect(

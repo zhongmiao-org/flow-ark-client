@@ -4,9 +4,15 @@ import type useDesktopWindows from './useDesktopWindows';
 export default function DesktopSelectionPreview({
   state,
   plan,
+  actionLabel = '用这个窗口规划',
+  actionDisabled = false,
+  note = '下一步可核对发送内容并生成改动预览；修改前还需保存方案并确认试运行。',
 }: {
   state: ReturnType<typeof useDesktopWindows>;
   plan: () => void;
+  actionLabel?: string;
+  actionDisabled?: boolean;
+  note?: string;
 }) {
   const titleId = useId(),
     heading = useRef<HTMLHeadingElement>(null),
@@ -77,13 +83,15 @@ export default function DesktopSelectionPreview({
         </button>
       )}
       {preview?.status === 'ready' && (
-        <button className="primary" onClick={plan} disabled={expired || reading || state.loading}>
-          用这个窗口规划
+        <button
+          className="primary"
+          onClick={plan}
+          disabled={actionDisabled || expired || reading || state.loading}
+        >
+          {actionLabel}
         </button>
       )}
-      <p className="task-desktop-observed">
-        下一步可核对发送内容并生成改动预览；文档写入尚未开放。
-      </p>
+      <p className="task-desktop-observed">{note}</p>
     </section>
   );
 }

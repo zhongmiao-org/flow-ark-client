@@ -1626,7 +1626,7 @@ export default function App() {
                 ))}
               {draftHasTools && (
                 <p className="note" role="status">
-                  工具或应用选区方案可保存，实际调用尚未接入，暂不能运行或逐步调试。
+                  应用选区方案须从原任务重新绑定窗口并确认单次试运行；工具调用尚未接入。
                 </p>
               )}
               <Editor

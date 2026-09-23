@@ -1,0 +1,41 @@
+.desktop-run-binding fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.desktop-run-texts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.desktop-run-texts > div {
+  min-width: 0;
+}
+.desktop-run-comparison .desktop-run-texts {
+  grid-template-columns: 1fr;
+}
+.desktop-run-comparison .desktop-run-texts > div:first-child pre {
+  background: var(--fa-status-error-bg);
+}
+.desktop-run-comparison .desktop-run-texts > div:last-child pre {
+  background: var(--fa-status-success-bg);
+}
+.desktop-run-texts pre {
+  max-height: 280px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+}
+.desktop-run-receipt {
+  margin: 20px 0;
+}
+@media (max-width: 1200px) {
+  .desktop-run-texts {
+    grid-template-columns: 1fr;
+  }
+}

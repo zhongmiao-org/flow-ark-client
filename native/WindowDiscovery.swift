@@ -2,7 +2,7 @@ import AppKit
 import ApplicationServices
 import Foundation
 
-// Window references stay in this process. All supported commands are read-only.
+// Window/selection references stay in this process. A retained selection permits one write.
 struct WindowInfo: Encodable {
     let id: String
     let title: String
@@ -90,7 +90,7 @@ enum SelectionError: String, Error {
     case selectionChanged = "selection-changed"
     case tooLarge = "too-large"
 }
-struct TextRange: Encodable, Equatable { let location: Int; let length: Int }
+struct TextRange: Codable, Equatable { let location: Int; let length: Int }
 struct Selection: Encodable {
     let status: String
     var text: String? = nil
@@ -249,7 +249,97 @@ func inspectSelection(_ id: String) -> Inspection {
         return Inspection(status: SelectionError.unavailable.rawValue)
     }
 }
-struct Arguments: Decodable { let windowId: String? }
+struct BoundSelection {
+    let entry: WindowEntry
+    let area: AXUIElement
+    let range: TextRange
+    let text: String
+    var used = false
+}
+var bindings: [String: BoundSelection] = [:]
+func checkBound(_ bound: BoundSelection, deadline: TimeInterval) throws {
+    guard !bound.used else { throw SelectionError.expired }
+    try checkedWindow(bound.entry)
+    let area = try textArea(in: bound.entry.window, deadline: deadline)
+    guard CFEqual(area, bound.area) else { throw SelectionError.selectionChanged }
+    let selected = try selectedText(bound.area)
+    guard selected.0 == bound.range, selected.1 == bound.text else { throw SelectionError.selectionChanged }
+    try checkDeadline(deadline)
+}
+func retainSelection(_ id: String, _ bindingId: String, _ text: String, _ range: TextRange) -> Inspection {
+    let deadline = ProcessInfo.processInfo.systemUptime + 5
+    do {
+        guard let entry = entries[id], text.utf16.count == range.length, range.length > 0, range.length <= 20000 else { throw SelectionError.expired }
+        try checkedWindow(entry)
+        let area = try textArea(in: entry.window, deadline: deadline)
+        let bound = BoundSelection(entry: entry, area: area, range: range, text: text)
+        try checkBound(bound, deadline: deadline)
+        guard replacementAvailability(area) == "available", try rangeReadAvailability(area, (range, text)) == "available" else { throw SelectionError.unsupported }
+        try checkBound(bound, deadline: deadline)
+        // This helper belongs to one observation/lease; a newer retain invalidates the old one.
+        bindings = [bindingId: bound]
+        return Inspection(status: "ready", text: text, range: range, replacement: "available", readback: "available")
+    } catch let error as SelectionError { return Inspection(status: error.rawValue) }
+    catch { return Inspection(status: "unavailable") }
+}
+func inspectBound(_ id: String) -> Inspection {
+    let deadline = ProcessInfo.processInfo.systemUptime + 5
+    do {
+        guard let bound = bindings[id] else { throw SelectionError.expired }
+        try checkBound(bound, deadline: deadline)
+        let replacement = replacementAvailability(bound.area)
+        let readback = try rangeReadAvailability(bound.area, (bound.range, bound.text))
+        try checkBound(bound, deadline: deadline)
+        return Inspection(status: "ready", text: bound.text, range: bound.range, replacement: replacement, readback: readback)
+    } catch let error as SelectionError { return Inspection(status: error.rawValue) }
+    catch { return Inspection(status: "unavailable") }
+}
+struct WriteReceipt: Encodable {
+    let status: String
+    var readback: String? = nil
+    var reason: String? = nil
+}
+func replaceBound(_ id: String, _ replacement: String) -> WriteReceipt {
+    let deadline = ProcessInfo.processInfo.systemUptime + 5
+    var attempted = false
+    do {
+        guard var bound = bindings[id], !replacement.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              replacement.utf16.count <= 20000, replacement != bound.text else { throw SelectionError.expired }
+        try checkBound(bound, deadline: deadline)
+        guard replacementAvailability(bound.area) == "available",
+              try rangeReadAvailability(bound.area, (bound.range, bound.text)) == "available" else { throw SelectionError.unsupported }
+        try checkBound(bound, deadline: deadline)
+        bound.used = true
+        bindings[id] = bound
+        attempted = true
+        // The only setter. Never change focus, selection, clipboard or the full document.
+        guard AXUIElementSetAttributeValue(bound.area, kAXSelectedTextAttribute as CFString, replacement as CFString) == .success else {
+            return WriteReceipt(status: "unknown", reason: "setter-unconfirmed")
+        }
+        try checkDeadline(deadline)
+        var range = CFRange(location: bound.range.location, length: replacement.utf16.count)
+        guard let parameter = AXValueCreate(.cfRange, &range) else { throw SelectionError.unavailable }
+        var value: CFTypeRef?
+        guard AXUIElementCopyParameterizedAttributeValue(bound.area, kAXStringForRangeParameterizedAttribute as CFString, parameter, &value) == .success,
+              let actual = value as? String, actual == replacement, actual.utf16.count == range.length else {
+            return WriteReceipt(status: "unknown", reason: "readback-unconfirmed")
+        }
+        try checkedWindow(bound.entry)
+        let area = try textArea(in: bound.entry.window, deadline: deadline)
+        guard CFEqual(area, bound.area) else { throw SelectionError.selectionChanged }
+        try checkDeadline(deadline)
+        return WriteReceipt(status: "verified", readback: actual)
+    } catch let error as SelectionError {
+        return WriteReceipt(status: attempted ? "unknown" : "not-written", reason: error.rawValue)
+    } catch { return WriteReceipt(status: attempted ? "unknown" : "not-written", reason: "unavailable") }
+}
+struct Arguments: Decodable {
+    let windowId: String?
+    let bindingId: String?
+    let text: String?
+    let range: TextRange?
+    let replacement: String?
+}
 struct Request: Decodable { let rpc: String; let method: String; let args: Arguments }
 struct Reply<T: Encodable>: Encodable { let rpc: String; let reply = true; let result: T }
 func send<T: Encodable>(_ request: Request, _ result: T) throws {
@@ -270,6 +360,17 @@ while let line = readLine() {
         case "inspect":
             guard let id = request.args.windowId, UUID(uuidString: id) != nil else { exit(1) }
             try send(request, inspectSelection(id))
+        case "bind":
+            guard let id = request.args.windowId, let bindingId = request.args.bindingId,
+                  UUID(uuidString: id) != nil, UUID(uuidString: bindingId) != nil,
+                  let text = request.args.text, let range = request.args.range else { exit(1) }
+            try send(request, retainSelection(id, bindingId, text, range))
+        case "verify":
+            guard let id = request.args.bindingId, UUID(uuidString: id) != nil else { exit(1) }
+            try send(request, inspectBound(id))
+        case "replace":
+            guard let id = request.args.bindingId, UUID(uuidString: id) != nil, let replacement = request.args.replacement else { exit(1) }
+            try send(request, replaceBound(id, replacement))
         default: exit(1)
         }
     } catch { exit(1) }
