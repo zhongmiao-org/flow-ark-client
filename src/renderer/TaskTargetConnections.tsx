@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { ToolConnection } from '../shared/tool-connections';
 import type { PlanningTask, TaskDetail } from '../shared/planning';
 import { toolsExecutionNotice, type TaskMcpPreview } from '../shared/task-mcp-targets';
@@ -20,12 +21,14 @@ export default function TaskTargetConnections({
   manage,
   selected: apply,
   pending,
+  detailsContainer,
 }: {
   active: boolean;
   task: PlanningTask;
   manage: () => void;
   selected: (next: TaskDetail) => void;
   pending: (busy: boolean) => void;
+  detailsContainer: HTMLElement | null;
 }) {
   const [records, setRecords] = useState<ToolConnection[]>([]);
   const [loading, setLoading] = useState(true),
@@ -57,6 +60,8 @@ export default function TaskTargetConnections({
   const epoch = useRef(0),
     locked = useRef(false);
   const titleId = useId();
+  const detailsId = useId();
+  const detailsHeading = useRef<HTMLHeadingElement>(null);
   const identity = { id: task.id, revision: task.revision };
   useEffect(() => {
     setSelectedId('');
@@ -164,9 +169,10 @@ export default function TaskTargetConnections({
   const selectionChanged = sameTask ? !matchingChoice : !!saved && !matchingSaved;
   const connectionLimit = (task.toolTargets?.length ?? 0) >= 5 && !saved;
   const blocked = loading || !!error || record?.status !== 'verified' || connectionLimit;
-  const choose = (next: ToolConnection) => {
+  const choose = (next: ToolConnection, keyboard = false) => {
     cancelCandidate();
     setSelectedId(next.id);
+    if (keyboard) requestAnimationFrame(() => detailsHeading.current?.focus());
   };
   const changeNames = (next: string[]) => {
     if (!record || busy || blocked) return;
@@ -277,7 +283,8 @@ export default function TaskTargetConnections({
                 className="task-target-connection"
                 disabled={busy || loading}
                 aria-pressed={selectedId === item.id}
-                onClick={() => choose(item)}
+                aria-controls={detailsId}
+                onClick={(event) => choose(item, event.detail === 0)}
               >
                 <strong>{item.config.displayName}</strong>
                 <span>{item.config.source}</span>
@@ -305,75 +312,142 @@ export default function TaskTargetConnections({
               之前选择的连接已不在当前列表中，请选择其他连接；已保存的任务选择仍保留在上方。
             </p>
           )}
-          {record && (
-            <section className="task-web-object task-target-capabilities" aria-label="选择任务工具">
-              <h3>{record.config.displayName}</h3>
-              <p>
-                {statusLabel[record.status]} ·{' '}
-                {record.config.transport.type === 'stdio' ? '本机程序' : 'HTTP 服务'}
-              </p>
-              <p>仅选择本次需要的工具（最多 30 项）。服务声明不替代任务授权。</p>
-              {selectionChanged && (
-                <p className="ai-task-note" role="status">
-                  连接资料或能力已经变化，旧勾选已清除，请按当前定义重新选择。
-                </p>
-              )}
-              {connectionLimit && (
-                <p className="ai-task-note" role="status">
-                  本任务已选择 5 个连接。可以修改已有连接的工具，或先移除一个任务选择。
-                </p>
-              )}
-              {record.status !== 'verified' && (
-                <p className="ai-task-note" role="status">
-                  此连接当前不能用于规划，请先管理连接并重新核对能力。
-                </p>
-              )}
-              <TaskToolPicker
-                key={`${task.id}:${selectedId}:${record.revision}:${record.capabilityDigest}`}
-                tools={record.tools}
-                names={names}
-                disabled={busy || blocked}
-                change={changeNames}
-              />
-              <div className="ai-task-actions">
-                <button
-                  className="primary"
-                  ref={reviewButton}
-                  disabled={busy || blocked || !names.length}
-                  onClick={() =>
-                    void act(async () => {
-                      const ticket = epoch.current;
-                      const preview: TaskMcpPreview = await api('task.tools.preview', {
-                        ...identity,
-                        connectionId: record.id,
-                        connectionRevision: record.revision,
-                        toolNames: names,
-                      });
-                      if (ticket !== epoch.current) {
-                        void api('task.tools.cancel', { id: task.id, token: preview.token }).catch(
-                          () => {},
-                        );
-                        return;
-                      }
-                      token.current = preview.token;
-                      setReviewed(false);
-                      setCandidate({ preview, record });
-                    })
-                  }
-                >
-                  核对所选工具
-                </button>
-                <button disabled={busy} onClick={manage}>
-                  管理连接与能力
-                </button>
-              </div>
-            </section>
-          )}
           <button disabled={busy} onClick={manage}>
             连接其他应用
           </button>
         </>
       )}
+      {detailsContainer &&
+        createPortal(
+          <div id={detailsId} className="task-target-details" aria-label="当前连接与任务能力">
+            <h2>当前将操作的对象</h2>
+            {!record && (
+              <div className="task-target-empty">
+                <h3>选择本次任务的工具连接</h3>
+                <p>
+                  {loading
+                    ? '正在读取本机连接…'
+                    : selectedId
+                      ? '之前的连接已不在列表中，请重新选择。'
+                      : '从连接列表选一项，在这里核对身份和本次所需能力。'}
+                </p>
+                <p>未选择的连接不会加入任务，也不会发送给模型。</p>
+              </div>
+            )}
+            {record && (
+              <section
+                className="task-web-object task-target-capabilities"
+                aria-label="选择任务工具"
+              >
+                <h3 ref={detailsHeading} tabIndex={-1}>
+                  {record.config.displayName}
+                </h3>
+                <p>
+                  {statusLabel[record.status]} ·{' '}
+                  {record.config.transport.type === 'stdio' ? '本机程序' : 'HTTP 服务'}
+                </p>
+                <p>仅选择本次需要的工具（最多 30 项）。服务声明不替代任务授权。</p>
+                <dl className="task-tool-identity">
+                  <div>
+                    <dt>来源</dt>
+                    <dd>{record.config.source}</dd>
+                  </div>
+                  <div>
+                    <dt>服务声明</dt>
+                    <dd>
+                      {record.server
+                        ? `${record.server.name} / ${record.server.version}`
+                        : '未提供身份'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>最近核对</dt>
+                    <dd>{new Date(record.testedAt).toLocaleString('zh-CN')}</dd>
+                  </div>
+                  <div>
+                    <dt>认证方式</dt>
+                    <dd>
+                      {record.config.transport.type === 'stdio'
+                        ? '本机程序'
+                        : record.config.transport.auth === 'oauth'
+                          ? 'OAuth 登录'
+                          : record.config.transport.auth === 'bearer'
+                            ? 'Bearer Token'
+                            : '未使用凭据'}
+                    </dd>
+                  </div>
+                </dl>
+                {record.oauth && (
+                  <p>
+                    认证站点：{record.oauth.issuer}
+                    <br />
+                    授予范围：{record.oauth.scopes.join(' · ') || '未声明具体范围'}
+                  </p>
+                )}
+                <p>账号、工作区与系统权限尚未核对。当前清单不会读取凭据或自动调用工具。</p>
+                {selectionChanged && (
+                  <p className="ai-task-note" role="status">
+                    连接资料或能力已经变化，旧勾选已清除，请按当前定义重新选择。
+                  </p>
+                )}
+                {connectionLimit && (
+                  <p className="ai-task-note" role="status">
+                    本任务已选择 5 个连接。可以修改已有连接的工具，或先移除一个任务选择。
+                  </p>
+                )}
+                {record.status !== 'verified' && (
+                  <p className="ai-task-note" role="status">
+                    此连接当前不能用于规划，请先管理连接并重新核对能力。
+                  </p>
+                )}
+                <TaskToolPicker
+                  key={`${task.id}:${selectedId}:${record.revision}:${record.capabilityDigest}`}
+                  tools={record.tools}
+                  names={names}
+                  disabled={busy || blocked}
+                  change={changeNames}
+                />
+                <div className="ai-task-actions">
+                  <button
+                    className="primary"
+                    ref={reviewButton}
+                    disabled={busy || blocked || !names.length}
+                    onClick={() =>
+                      void act(async () => {
+                        const ticket = epoch.current;
+                        const preview: TaskMcpPreview = await api('task.tools.preview', {
+                          ...identity,
+                          connectionId: record.id,
+                          connectionRevision: record.revision,
+                          toolNames: names,
+                        });
+                        if (ticket !== epoch.current) {
+                          void api('task.tools.cancel', {
+                            id: task.id,
+                            token: preview.token,
+                          }).catch(() => {});
+                          return;
+                        }
+                        token.current = preview.token;
+                        setReviewed(false);
+                        setCandidate({ preview, record });
+                      })
+                    }
+                  >
+                    核对所选工具
+                  </button>
+                  <button disabled={busy} onClick={manage}>
+                    管理连接与能力
+                  </button>
+                </div>
+              </section>
+            )}
+
+            <p className="ai-task-note">{toolsExecutionNotice}</p>
+            <p>当前网页和资料继续保留；工具选择不会授予网页写入权限。</p>
+          </div>,
+          detailsContainer,
+        )}
       {candidate && (
         <dialog
           ref={dialog}

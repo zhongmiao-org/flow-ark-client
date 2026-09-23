@@ -1,7 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { PlanningTask, TaskDetail } from '../shared/planning';
 import { sameWebPage, type TaskWebPreview } from '../shared/task-web-target';
-import { toolsExecutionNotice } from '../shared/task-mcp-targets';
 import DesktopTaskPlan from './DesktopTaskPlan';
 import TaskTargetConnections from './TaskTargetConnections';
 import {
@@ -45,6 +44,7 @@ export default function TaskWebTargetPage({
     initialTab ?? (task.toolTargets?.length ? 'tools' : 'web'),
   );
   const [desktopPlan, setDesktopPlan] = useState(false);
+  const [toolDetails, setToolDetails] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!desktopPlan) phaseChanged('window');
   }, [desktopPlan, phaseChanged]);
@@ -256,10 +256,12 @@ export default function TaskWebTargetPage({
               manage={openTools}
               selected={selected}
               pending={setBusy}
+              detailsContainer={toolDetails}
             />
           </div>
         </section>
         <section className="ai-task-card">
+          <div ref={setToolDetails} className="task-tools-detail-slot" hidden={tab !== 'tools'} />
           {tab === 'window' ? (
             <DesktopWindowCapabilities
               state={desktop}
@@ -270,11 +272,6 @@ export default function TaskWebTargetPage({
             />
           ) : tab === 'tools' ? (
             <>
-              <h2>任务工具选择</h2>
-              <p>在左侧选择连接和本次需要的工具，核对后保存到任务。</p>
-              <p className="ai-task-note">{toolsExecutionNotice}</p>
-              <p>账号：未核对 · 工作区：未核对 · 系统权限：未核对</p>
-              <p>当前网页和资料继续保留；工具选择不会授予网页写入权限。</p>
               <button disabled={busy} onClick={back}>
                 {backLabel}
               </button>

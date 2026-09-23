@@ -79,3 +79,38 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+.task-tools-detail-slot[hidden] {
+  display: none;
+}
+.task-target-details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.task-target-details h2 {
+  margin: 0;
+}
+.task-tool-identity {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+.task-tool-identity > div {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 12px;
+  font-size: 14px;
+}
+.task-tool-identity dt {
+  color: var(--fa-text-secondary);
+}
+.task-tool-identity dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.task-target-details > .task-target-capabilities {
+  border: 0;
+  padding: 0;
+}
