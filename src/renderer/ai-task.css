@@ -462,6 +462,16 @@
   flex-direction: column;
   gap: 8px;
 }
+.run-review-resource-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.run-review-resource-group h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
 .run-review-page h2 {
   margin: 0;
   font-size: 18px;

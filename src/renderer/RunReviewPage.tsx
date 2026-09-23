@@ -28,7 +28,8 @@ function Resource({ resource }: { resource: ReviewResource }) {
   return (
     <li>
       <b>{resource.name}</b> · {access[resource.access] ?? resource.access}
-      <p>{resource.location || resource.detail}</p>
+      {resource.location && <p className="run-review-version">{resource.location}</p>}
+      {resource.detail && <p>{resource.detail}</p>}
     </li>
   );
 }
@@ -37,6 +38,8 @@ function Contents({ preview }: { preview: RunReviewPreview }) {
   const tools = preview.toolCalls ?? [];
   const objects = preview.resources.filter((r) => !['file', 'directory'].includes(r.kind));
   const locations = preview.resources.filter((r) => ['file', 'directory'].includes(r.kind));
+  const sources = locations.filter((r) => ['read', 'readwrite'].includes(r.access));
+  const destinations = locations.filter((r) => ['write', 'readwrite'].includes(r.access));
   const reads = preview.effects.filter((e) => e.kind === 'read');
   const changes = preview.effects.filter((e) => ['write', 'network', 'unknown'].includes(e.kind));
   return (
@@ -73,6 +76,16 @@ function Contents({ preview }: { preview: RunReviewPreview }) {
       </section>
       <section className="run-review-card">
         <h2>读取内容</h2>
+        {!!sources.length && (
+          <div className="run-review-resource-group">
+            <h3>读取来源</h3>
+            <ul>
+              {sources.map((resource) => (
+                <Resource key={resource.id} resource={resource} />
+              ))}
+            </ul>
+          </div>
+        )}
         {reads.length ? (
           <ul>
             {reads.map((e) => (
@@ -83,7 +96,10 @@ function Contents({ preview }: { preview: RunReviewPreview }) {
           </ul>
         ) : (
           <p>
-            没有独立的文件或网页读取步骤。脚本、HTTP、上传、工具与应用选区的读取范围需结合下方影响说明核对。
+            {sources.length
+              ? '以上资源允许读取；具体内容取决于流程参数和实际执行步骤。'
+              : '没有独立的文件或网页读取步骤。'}
+            脚本、HTTP、上传、工具与应用选区的读取范围需结合下方影响说明核对。
           </p>
         )}
       </section>
@@ -98,22 +114,26 @@ function Contents({ preview }: { preview: RunReviewPreview }) {
             ))}
           </ul>
         ) : (
-          <p>当前步骤仅在本地计算、判断、循环或等待人工；运行记录和结果会保存在本机。</p>
+          <p>
+            {preview.ready
+              ? '没有列出的文件写入、网络请求或其他外部更改步骤。运行记录和结果会保存在本机。'
+              : '检查尚未通过，暂不确认外部更改范围。请先处理执行前检查中的提示。'}
+          </p>
         )}
       </section>
       {!!tools.length && <RunReviewTools calls={tools} />}
       <section className="run-review-card">
         <h2>保存位置</h2>
-        {locations.length ? (
+        {destinations.length ? (
           <ul>
-            {locations.map((r) => (
+            {destinations.map((r) => (
               <Resource key={r.id} resource={r} />
             ))}
           </ul>
         ) : (
           <p>
             {preview.ready
-              ? '未绑定文件目录。本次运行记录与结果保存在本机，可在运行详情查看。'
+              ? '没有已核对的文件写入位置。本次运行记录与结果仍保存在本机，可在运行详情查看。'
               : '资源尚未核对，暂不确认保存位置。'}
           </p>
         )}
