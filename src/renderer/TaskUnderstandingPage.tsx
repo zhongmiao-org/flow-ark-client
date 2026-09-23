@@ -151,19 +151,34 @@ export default function TaskUnderstandingPage({
           )}
           <p>可展开“查看本次发送给…的内容”核对完整范围。</p>
         </div>
-        <div className="task-understanding-fact" aria-label="已选网页来源">
+        <div className="task-understanding-fact" aria-label="已选操作对象">
           <div className="task-understanding-fact-heading">
             <h3>操作对象</h3>
             <button disabled={busy} onClick={target}>
-              {web ? '查看或更换网页目标' : '选择网页对象'}
+              {web || task.toolTargets?.length ? '查看或更换任务对象' : '选择任务对象'}
             </button>
           </div>
           <p title={web?.page.url}>
             {web
               ? `内置浏览器 · ${web.page.title || '未命名网页'} · 账号未核对`
-              : '尚未选择网页对象，按需求核对后再执行。'}
+              : task.toolTargets?.length
+                ? '已选择工具对象，尚未接入规划与执行。'
+                : '尚未选择操作对象，按需求核对后再执行。'}
           </p>
         </div>
+        {!!task.toolTargets?.length && (
+          <div className="task-understanding-fact">
+            <h3>已选工具</h3>
+            <ul>
+              {task.toolTargets.map((target) => (
+                <li key={target.selectionId}>
+                  {target.displayName} · {target.tools.length} 项工具
+                </li>
+              ))}
+            </ul>
+            <p>账号、工作区和读写影响尚未核对，所选定义尚未发送给模型。</p>
+          </div>
+        )}
         <div className="task-understanding-fact">
           <h3>输出规则与修改范围</h3>
           <p>

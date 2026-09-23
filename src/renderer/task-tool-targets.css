@@ -1,0 +1,45 @@
+.task-tools-options {
+  border: 0;
+  padding: 0;
+  margin: 16px 0;
+  min-width: 0;
+  max-height: 360px;
+  overflow: auto;
+}
+.task-tools-options legend {
+  padding: 0 0 12px;
+  font-weight: 600;
+}
+.task-tools-options > label {
+  padding: 12px;
+  margin-bottom: 8px;
+  background: var(--fa-bg-canvas);
+  border-radius: var(--fa-radius-8);
+}
+.task-tools-options small {
+  display: block;
+  color: var(--fa-text-secondary);
+}
+.task-tools-options span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.task-tools-options p {
+  margin: 4px 0 0;
+}
+.task-tools-saved {
+  display: grid;
+  gap: 12px;
+}
+.task-tool-confirm {
+  width: min(800px, calc(100vw - 40px));
+}
+.task-tool-confirm .tool-capability-review {
+  margin: 16px 0;
+}
+.task-tool-confirm pre {
+  max-height: 200px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

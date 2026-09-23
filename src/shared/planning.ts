@@ -8,6 +8,12 @@ import { webTargetMethods, WEB_CONTEXT_ID, type TaskWebTarget } from './task-web
 
 import { outputMethods, OUTPUT_CONTEXT_ID, type TaskOutputTarget } from './task-output';
 import { attachmentMethods, ATTACHMENT_PREFIX, type TaskAttachment } from './task-attachments';
+import {
+  taskToolMethods,
+  TOOL_CONTEXT_PREFIX,
+  type TaskMcpTarget,
+  type TaskMcpState,
+} from './task-mcp-targets';
 
 export type PlanningInput = NonNullable<FlowArkP1['AIPlanningRequest']>;
 export type PlanningResult = NonNullable<FlowArkP1['AIPlanningResult']>;
@@ -21,6 +27,8 @@ export type TaskStatus =
   | 'failed'
   | 'cancelled';
 export type PlanningTask = {
+  toolTargets?: TaskMcpTarget[];
+  toolsRequirePlan?: boolean;
   attachments?: TaskAttachment[];
   webTarget?: TaskWebTarget;
   outputTarget?: TaskOutputTarget;
@@ -64,6 +72,7 @@ export type PlanningChange = {
   after: unknown;
 };
 export type TaskDetail = {
+  toolTargetStates?: TaskMcpState[];
   flowHash: string;
   task: PlanningTask;
   flow: FlowRecord | null;
@@ -91,6 +100,7 @@ const context = z
   })
   .strict();
 export const taskMethods = {
+  ...taskToolMethods,
   ...attachmentMethods,
   ...webTargetMethods,
   ...outputMethods,
@@ -121,9 +131,10 @@ export const taskMethods = {
               (e) =>
                 e.id !== WEB_CONTEXT_ID &&
                 e.id !== OUTPUT_CONTEXT_ID &&
-                !e.id.startsWith(ATTACHMENT_PREFIX),
+                !e.id.startsWith(ATTACHMENT_PREFIX) &&
+                !e.id.startsWith(TOOL_CONTEXT_PREFIX),
             ),
-          '网页来源必须通过选择目标取得，不能伪造系统资料',
+          '系统资料必须通过对应对象选择取得，不能自行伪造',
         ),
       answers: z
         .record(id, z.string().max(3000))

@@ -13,6 +13,7 @@ import TaskWebTargetPage from './TaskWebTargetPage';
 import FirstTaskGuide from './FirstTaskGuide';
 import TaskUnderstandingPage, { type OutputOptions } from './TaskUnderstandingPage';
 import PlanningQuestions from './PlanningQuestions';
+import { toolsNotExecutable } from '../shared/task-mcp-targets';
 import PlanningChanges from './PlanningChanges';
 import { outputContext, taskOutputNameSchema } from '../shared/task-output';
 import { learningSteps, type LearningStatus } from '../shared/learning';
@@ -409,7 +410,7 @@ export default function AITaskWorkspace(props: Props) {
           ? 'understand'
           : next.proposal || next.flow
             ? 'review'
-            : next.task.webTarget || next.task.outputTarget
+            : next.task.webTarget || next.task.outputTarget || next.task.toolTargets?.length
               ? 'understand'
               : 'brief',
       );
@@ -618,7 +619,9 @@ export default function AITaskWorkspace(props: Props) {
           ? 'understand'
           : next.detail.proposal || next.detail.flow
             ? 'review'
-            : next.detail.task.webTarget || next.detail.task.outputTarget
+            : next.detail.task.webTarget ||
+                next.detail.task.outputTarget ||
+                next.detail.task.toolTargets?.length
               ? 'understand'
               : 'brief',
       );
@@ -748,6 +751,27 @@ export default function AITaskWorkspace(props: Props) {
           </button>
         </div>
       )}
+      {detail.task.toolsRequirePlan && !detail.task.toolTargets?.length && (
+        <p className="ai-task-note">工具选择已移除，请重新生成并采纳完整方案后运行。</p>
+      )}
+      {!!detail.task.toolTargets?.length && (
+        <div className="ai-task-note" role="status">
+          <h3>已选工具对象</h3>
+          {detail.task.toolTargets.map((target) => (
+            <p key={target.selectionId}>
+              {target.displayName} · {target.tools.length} 项 ·{' '}
+              {detail.toolTargetStates?.find((state) => state.selectionId === target.selectionId)
+                ?.current
+                ? '已保存选择'
+                : '需要重新核对连接'}
+            </p>
+          ))}
+          <p>{toolsNotExecutable}</p>
+          <button disabled={inputDisabled} onClick={() => void openTarget()}>
+            查看或移除工具选择
+          </button>
+        </div>
+      )}
       <details className="ai-task-disclosure">
         <summary>查看本次发送给 {providerName} 的内容</summary>
         <p>
@@ -847,6 +871,7 @@ export default function AITaskWorkspace(props: Props) {
             disabled={
               busy ||
               stale ||
+              !!detail.task.toolTargets?.length ||
               !(scope?.instruction ?? draft.description).trim() ||
               scopeConflict ||
               !model.trim() ||
@@ -1104,6 +1129,7 @@ export default function AITaskWorkspace(props: Props) {
         </>
       ) : page === 'target' && detail ? (
         <TaskWebTargetPage
+          active={props.active}
           openTools={props.openTools}
           task={detail.task}
           initialUrl={learning?.taskId === detail.task.id ? 'https://example.com' : undefined}
@@ -1628,7 +1654,15 @@ export default function AITaskWorkspace(props: Props) {
                         <div className="ai-task-actions">
                           <button
                             className="primary"
-                            disabled={busy || dirty || stale || generating || !!scope}
+                            disabled={
+                              busy ||
+                              dirty ||
+                              stale ||
+                              generating ||
+                              !!scope ||
+                              !!detail.task.toolTargets?.length ||
+                              !!detail.task.toolsRequirePlan
+                            }
                             ref={trialButton}
                             data-run-review-start
                             onClick={() => {

@@ -81,6 +81,7 @@ type Active = {
 };
 import { TaskOutputs } from './task-output';
 import { TaskAttachments } from './task-attachments';
+import { TaskMcpTargets } from './task-mcp-targets';
 import { ToolConnections } from './tool-connections';
 import { AISettings } from './ai-settings';
 import { LocalCredentialSettings } from './local-credentials';
@@ -96,6 +97,7 @@ export class Runtime {
   readonly webTargets: TaskWebTargets;
   readonly outputs: TaskOutputs;
   readonly toolConnections: ToolConnections;
+  readonly toolTargets: TaskMcpTargets;
   readonly aiSettings: AISettings;
   readonly localCredentials: LocalCredentialSettings;
   private credentialChecks = new WeakMap<PreparedScripts, () => void>();
@@ -201,6 +203,17 @@ export class Runtime {
           throw new Error('请等待本任务运行和收尾结束，再更换输出');
       },
     });
+    this.toolTargets = new TaskMcpTargets(this.store, this.toolConnections, (task) => {
+      this.assertAdmitting();
+      const active = this.active && this.store.get<Run>('run', this.active.id);
+      if (
+        (active && active.flowId === task.flowId) ||
+        this.store
+          .list<Run>('run')
+          .some((run) => run.flowId === task.flowId && run.state === 'QUEUED')
+      )
+        throw new Error('请等待本任务运行和收尾结束，再更换工具对象');
+    });
     this.learning = new Learning(this.store, {
       busy: (id) => {
         const task = this.store.get('ai-task', id);
@@ -215,6 +228,7 @@ export class Runtime {
       },
     });
     this.planning = new Planning(this.store, {
+      tools: this.toolTargets,
       attachments: new TaskAttachments(this.store, {
         choose: (kind) => this.system('task.attachment.file', { kind }),
         decodeImage: (data) => this.system('task.attachment.image.validate', { data }),
@@ -402,6 +416,7 @@ export class Runtime {
     const checkAI = this.aiSettings.capture(record.bindings.credentials);
     const checkLocal = this.localCredentials.capture(record.bindings.credentials);
     const checkCredentials = () => {
+      this.toolTargets.assertExecutable(record.id);
       checkAI();
       checkLocal();
     };
@@ -410,9 +425,11 @@ export class Runtime {
       this.credentialChecks.set(prepared, checkCredentials);
       return prepared;
     };
+    this.toolTargets.assertExecutable(record.id);
     const flow = validateFlow(record.flow);
     const localIds = record.bindings.credentials.filter((id) => id.startsWith('local-'));
     if (localIds.length) await this.system('credential.local.check', { ids: localIds });
+    this.toolTargets.assertExecutable(record.id);
     await this.webTargets.record(record);
     await this.outputs.record(record);
     await this.templates.preflight(record);
@@ -465,6 +482,7 @@ export class Runtime {
         validateObject('ScriptBundle', bundle);
         await verifyScriptBundle(record.scripts[n.id], bundle.sha256);
       }
+      this.toolTargets.assertExecutable(record.id);
       await this.webTargets.record(record);
       await this.outputs.record(record);
       return checked({ scripts: record.scripts, scriptBundles: record.scriptBundles });
@@ -488,6 +506,7 @@ export class Runtime {
           dependencies: bundle.dependencies,
         });
       }
+    this.toolTargets.assertExecutable(record.id);
     await this.webTargets.record(record);
     await this.outputs.record(record);
     return checked(prepared);

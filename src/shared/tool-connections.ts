@@ -116,6 +116,8 @@ export type ToolConnection = ConnectionDiscovery & {
   revision: number;
   config: ConnectionConfig;
   hasCredential: boolean;
+  taskReferences?: { taskId: string; flowId: string; description: string }[];
+  activeRunCount?: number;
   status: 'verified' | 'unverified' | 'disconnected' | 'failed';
 };
 export type ConnectionCandidate = ConnectionDiscovery & {

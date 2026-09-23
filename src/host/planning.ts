@@ -22,14 +22,17 @@ import { assertWebFlow, assertWebContext } from '../shared/task-web-target';
 import type { TaskOutputs } from './task-output';
 import { assertOutputFlow, OUTPUT_BINDING } from '../shared/task-output';
 import { taskPlanningContext } from '../shared/planning-context';
+import type { TaskMcpTargets } from './task-mcp-targets';
+import { toolsNotExecutable } from '../shared/task-mcp-targets';
 import type { TaskAttachments } from './task-attachments';
 
 type SavedTask = PlanningTask & {
   proposal?: PlanningProposal;
-  undo?: { before: FlowRecord | null; afterHash: string };
+  undo?: { before: FlowRecord | null; afterHash: string; toolsRequirePlan?: boolean };
 };
 type Job = { id: string; abort: AbortController; provider: string };
 type Dependencies = {
+  tools?: TaskMcpTargets;
   attachments?: TaskAttachments;
   learning?: {
     target: (task: PlanningTask) => void;
@@ -89,6 +92,7 @@ export class Planning {
     const flow = this.flow(task);
     const result = proposal?.result;
     return {
+      toolTargetStates: this.deps.tools?.states(task.toolTargets),
       flowHash: flowHash(flow),
       task,
       flow,
@@ -103,12 +107,14 @@ export class Planning {
     };
   }
   private abort(id: string) {
+    this.deps.tools?.cancelTask(id);
     this.operationEpoch.set(id, (this.operationEpoch.get(id) ?? 0) + 1);
     const job = this.jobs.get(id);
     this.jobs.delete(id);
     job?.abort.abort();
   }
   cancelAll() {
+    this.deps.tools?.cancelAll();
     this.cancellationEpoch++;
     const ids = [...this.jobs.keys()];
     // Abort every request before a possible persistence error.
@@ -127,6 +133,7 @@ export class Planning {
     this.deps.assertAvailable();
     const flow = flowId ? this.store.get<FlowRecord>('flow', flowId) : null;
     if (flowId && !flow) throw new Error('关联流程已不存在');
+    if (flowId) this.deps.tools?.assertExecutable(flowId);
     if (flow?.webTarget || flow?.outputTarget)
       throw new Error('此流程已有任务来源，请从原任务继续');
     const task: SavedTask = {
@@ -160,6 +167,10 @@ export class Planning {
           updatedAt: task.updatedAt,
         }));
     if (method === 'task.detail') return this.detail(args.id);
+    if (method === 'task.tools.cancel') {
+      this.deps.tools?.cancel(args.id, args.token);
+      return true;
+    }
     if (method !== 'task.cancel') this.deps.assertAvailable();
     if (method === 'task.create') return this.create(args.flowId);
     const task = this.task(args.id, args.revision);
@@ -177,6 +188,73 @@ export class Planning {
       )
         throw new Error('任务已变化或操作已取消，请重新核对');
     };
+    if (method.startsWith('task.tools.')) {
+      const tools = this.deps.tools;
+      if (!tools) throw new Error('任务工具选择不可用');
+      if (task.scope) throw new Error('请先退出单步修改，再更换整个任务的工具');
+      tools.assertChange(task);
+      if (method === 'task.tools.preview') {
+        if (
+          (task.toolTargets?.length ?? 0) >= 5 &&
+          !task.toolTargets?.some((t) => t.connectionId === args.connectionId)
+        )
+          throw new Error('每个任务最多选择五个连接');
+        const candidate = tools.preview(
+          task,
+          args.connectionId,
+          args.connectionRevision,
+          args.toolNames,
+        );
+        try {
+          taskPlanningContext(
+            task.context,
+            task.webTarget,
+            task.outputTarget,
+            this.attachmentInput(task).context,
+            [
+              ...(task.toolTargets ?? []).filter((t) => t.connectionId !== args.connectionId),
+              candidate.target,
+            ],
+          );
+          return candidate;
+        } catch (error) {
+          tools.cancel(task.id, candidate.token);
+          throw error;
+        }
+      }
+      const selected = method === 'task.tools.select' ? tools.select(task, args.token) : undefined;
+      if (!selected && !task.toolTargets?.some((t) => t.selectionId === args.selectionId))
+        throw new Error('所选工具对象不属于当前任务');
+      const toolTargets = selected
+        ? [
+            ...(task.toolTargets ?? []).filter((t) => t.connectionId !== selected.connectionId),
+            selected,
+          ]
+        : (task.toolTargets ?? []).filter((t) => t.selectionId !== args.selectionId);
+      if (toolTargets.length > 5) throw new Error('每个任务最多选择五个连接');
+      taskPlanningContext(
+        task.context,
+        task.webTarget,
+        task.outputTarget,
+        this.attachmentInput(task).context,
+        toolTargets,
+      );
+      unchanged();
+      this.abort(task.id);
+      this.put({
+        ...task,
+        toolTargets,
+        toolsRequirePlan: task.toolsRequirePlan || !!this.flow(task),
+        revision: task.revision + 1,
+        status: 'draft',
+        error: undefined,
+        requestId: undefined,
+        proposal: undefined,
+        undo: undefined,
+        appliedRepair: undefined,
+      });
+      return this.detail(task.id);
+    }
     if (method.startsWith('task.attachment.')) {
       const service = this.deps.attachments;
       if (!service) throw new Error('附件服务不可用');
@@ -192,6 +270,7 @@ export class Planning {
           task.webTarget,
           task.outputTarget,
           service.snapshot(task, selected).context,
+          task.toolTargets,
         );
         attachments = [...attachments, service.metadata(selected)];
       } else {
@@ -245,6 +324,7 @@ export class Planning {
         task.webTarget,
         outputTarget,
         this.attachmentInput(task).context,
+        task.toolTargets,
       );
       if (outputTarget) await this.deps.output.verify(outputTarget);
       unchanged();
@@ -275,6 +355,7 @@ export class Planning {
         webTarget,
         task.outputTarget,
         this.attachmentInput(task).context,
+        task.toolTargets,
       );
       this.abort(task.id);
       this.store.tx(() => {
@@ -305,6 +386,7 @@ export class Planning {
         task.webTarget,
         task.outputTarget,
         this.attachmentInput(task).context,
+        task.toolTargets,
       );
       if (args.scope) checkScope(args.scope, this.flow(task));
       this.abort(task.id);
@@ -322,6 +404,7 @@ export class Planning {
         proposal: undefined,
       });
     } else if (method === 'task.generate' || method === 'task.repair.generate') {
+      if (task.toolTargets?.length) throw new Error(toolsNotExecutable);
       if (this.jobs.has(task.id)) throw new Error('该任务正在生成，请先取消或等待结果');
       if (!(task.scope?.instruction ?? task.description).trim())
         throw new Error(task.scope ? '请描述所选步骤需要怎样修改' : '请先描述你想完成的任务');
@@ -340,6 +423,7 @@ export class Planning {
           task.webTarget,
           task.outputTarget,
           this.attachmentInput(task).context,
+          task.toolTargets,
         ) as PlanningInput['context'],
         answers: task.answers,
         baseFlow: baseline?.flow ?? null,
@@ -427,6 +511,7 @@ export class Planning {
       this.abort(task.id);
       this.put({ ...task, proposal: undefined, status: 'draft', error: undefined });
     } else if (method === 'task.adopt') {
+      if (task.toolTargets?.length) throw new Error(toolsNotExecutable);
       if (this.jobs.has(task.id)) throw new Error('请先取消正在生成的方案');
       const proposal = task.proposal;
       if (
@@ -460,6 +545,7 @@ export class Planning {
         if (flowHash(this.flow(task)) !== flowHash(before)) throw new Error('核对期间流程已变化');
       }
       if (proposal.scope) {
+        if (task.toolsRequirePlan) throw new Error('工具选择已变化，请重新生成完整方案');
         checkScope(proposal.scope, before);
         validateScopedPlan(proposal.result, proposal.baseFlow!, proposal.scope);
       }
@@ -518,7 +604,8 @@ export class Planning {
           proposal: undefined,
           status: 'draft',
           error: undefined,
-          undo: { before, afterHash: flowHash(saved) },
+          toolsRequirePlan: false,
+          undo: { before, afterHash: flowHash(saved), toolsRequirePlan: task.toolsRequirePlan },
           appliedRepair: appliedRepair
             ? { ...appliedRepair, flowHash: flowHash(saved) }
             : undefined,
@@ -542,6 +629,7 @@ export class Planning {
           ...task,
           revision: task.revision + 1,
           undo: undefined,
+          toolsRequirePlan: undo.toolsRequirePlan,
           scope: undefined,
           appliedRepair: undefined,
           proposal: undefined,

@@ -1,81 +1,211 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { ToolConnection } from '../shared/tool-connections';
-
+import type { PlanningTask, TaskDetail } from '../shared/planning';
+import { toolsNotExecutable, type TaskMcpPreview } from '../shared/task-mcp-targets';
+import ToolCapabilityReview from './ToolCapabilityReview';
+import './editor-leave.css';
+import './task-tool-targets.css';
+const api = (method: string, args: unknown = {}): Promise<any> =>
+  window.flowark.request(method, args);
 const statusLabel: Record<ToolConnection['status'], string> = {
   verified: '连接已核对',
   unverified: '需要重新核对',
   disconnected: '已断开',
   failed: '需要重新连接',
 };
-
 export default function TaskTargetConnections({
   active,
+  task,
   manage,
+  selected: apply,
+  pending,
 }: {
   active: boolean;
+  task: PlanningTask;
   manage: () => void;
+  selected: (next: TaskDetail) => void;
+  pending: (busy: boolean) => void;
 }) {
   const [records, setRecords] = useState<ToolConnection[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(true),
+    [busy, setBusy] = useState(false);
+  const [error, setError] = useState(''),
+    [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState('');
+  const [names, setNames] = useState<string[]>([]);
   const [refresh, setRefresh] = useState(0);
+  const [candidate, setCandidate] = useState<{ preview: TaskMcpPreview; record: ToolConnection }>();
+  const [reviewed, setReviewed] = useState(false);
+  const [expired, setExpired] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null),
+    heading = useRef<HTMLHeadingElement>(null);
+  const reviewButton = useRef<HTMLButtonElement>(null),
+    search = useRef<HTMLInputElement>(null);
+  const token = useRef<string | undefined>(undefined);
+  const epoch = useRef(0),
+    locked = useRef(false);
+  const titleId = useId();
+  const identity = { id: task.id, revision: task.revision };
+  const cancelCandidate = () => {
+    if (token.current)
+      void api('task.tools.cancel', { id: task.id, token: token.current }).catch(() => {});
+    token.current = undefined;
+    setCandidate(undefined);
+    setReviewed(false);
+  };
   useEffect(() => {
+    const ticket = ++epoch.current;
     if (!active) return;
-    let live = true;
     setLoading(true);
     setError('');
-    void window.flowark.request('tool.connection.list', {}).then(
+    void api('tool.connection.list').then(
       (next: ToolConnection[]) => {
-        if (!live) return;
+        if (ticket !== epoch.current) return;
         setRecords(next);
         setLoading(false);
-      },
-      (reason: unknown) => {
-        if (!live) return;
-        setError(
-          (reason instanceof Error ? reason.message : '暂时无法读取连接，请重试').replace(
-            /^Error invoking remote method 'flowark:request': (?:Error: )?/,
-            '',
+        setNames((previous) =>
+          previous.filter((name) =>
+            next.find((item) => item.id === selectedId)?.tools.some((tool) => tool.name === name),
           ),
         );
+      },
+      (reason) => {
+        if (ticket !== epoch.current) return;
+        setError(reason.message || '连接列表读取失败');
         setLoading(false);
       },
     );
     return () => {
-      live = false;
+      epoch.current++;
+      if (token.current)
+        void api('task.tools.cancel', { id: task.id, token: token.current }).catch(() => {});
+      token.current = undefined;
+      setCandidate(undefined);
+      setReviewed(false);
     };
-  }, [active, refresh]);
+  }, [active, task.id, task.revision, refresh]);
+  useEffect(() => {
+    if (!candidate || !active) return;
+    const element = dialog.current;
+    element?.showModal();
+    heading.current?.focus();
+    setExpired(candidate.preview.expiresAt <= Date.now());
+    const timer = setTimeout(
+      () => setExpired(true),
+      Math.max(0, candidate.preview.expiresAt - Date.now()),
+    );
+    return () => {
+      clearTimeout(timer);
+      element?.close();
+    };
+  }, [candidate, active]);
+  const act = async (operation: () => Promise<void>) => {
+    if (locked.current) return;
+    const ticket = epoch.current;
+    locked.current = true;
+    setBusy(true);
+    pending(true);
+    setError('');
+    try {
+      await operation();
+    } catch (reason) {
+      if (ticket !== epoch.current) return;
+      cancelCandidate();
+      setError(
+        (reason instanceof Error ? reason.message : '操作未完成').replace(
+          /^Error invoking remote method 'flowark:request': (?:Error: )?/,
+          '',
+        ),
+      );
+      requestAnimationFrame(() => reviewButton.current?.focus());
+    } finally {
+      locked.current = false;
+      setBusy(false);
+      pending(false);
+    }
+  };
   const visible = records.filter((record) =>
     `${record.config.displayName} ${record.config.source}`
       .toLocaleLowerCase()
       .includes(query.trim().toLocaleLowerCase()),
   );
-  const selected = visible.find((record) => record.id === selectedId);
+  const record = records.find((item) => item.id === selectedId);
+  const choose = (next: ToolConnection) => {
+    cancelCandidate();
+    setSelectedId(next.id);
+    setNames(
+      (task.toolTargets?.find((target) => target.connectionId === next.id)?.tools ?? [])
+        .map((tool) => tool.name)
+        .filter((name) => next.tools.some((tool) => tool.name === name)),
+    );
+  };
   return (
-    <div className="task-target-connections" aria-busy={loading}>
+    <div className="task-target-connections" aria-busy={loading || busy}>
       <div className="task-target-section-heading">
         <h2>已连接工具</h2>
-        <button disabled={loading} onClick={() => setRefresh((value) => value + 1)}>
-          {loading ? '读取中…' : '刷新连接'}
+        <button disabled={loading || busy} onClick={() => setRefresh((value) => value + 1)}>
+          刷新连接
         </button>
       </div>
-      <p className="ai-task-note">查看已有连接与可用能力，任务描述和已选资料会为你保留。</p>
-      {error ? (
-        <div className="task-web-object" role="alert">
-          <h3>连接列表未能加载</h3>
-          <p>{error}</p>
-          <button onClick={() => setRefresh((value) => value + 1)}>重新加载</button>
-        </div>
-      ) : loading && !records.length ? (
-        <p className="ai-task-note" role="status">
-          正在读取你的连接…
+      <p className="ai-task-note">
+        选择本次任务需要的工具，再核对来源和完整定义。账号、工作区与系统权限尚未核对。
+      </p>
+      {error && (
+        <p className="alert error" role="alert">
+          {error}
         </p>
+      )}
+      {!!task.toolTargets?.length && (
+        <section className="task-tools-saved" aria-label="本任务已选工具">
+          <h3>已选工具对象</h3>
+          {task.toolTargets.map((target) => {
+            const current = records.find((record) => record.id === target.connectionId);
+            const valid =
+              current?.status === 'verified' &&
+              current.revision === target.connectionRevision &&
+              current.capabilityDigest === target.capabilityDigest;
+            return (
+              <div className="task-web-object" key={target.selectionId}>
+                <strong>
+                  {target.displayName} · {target.tools.length} 项
+                </strong>
+                <p>
+                  {loading
+                    ? '正在读取连接状态…'
+                    : error
+                      ? '连接状态尚未取得'
+                      : valid
+                        ? '已保存到任务草稿'
+                        : '连接已变化或尚未核对，请重新选择'}
+                </p>
+                <p>{target.tools.map((tool) => tool.title || tool.name).join('、')}</p>
+                <button
+                  disabled={busy || loading}
+                  onClick={() =>
+                    void act(async () => {
+                      const ticket = epoch.current;
+                      const next = await api('task.tools.clear', {
+                        ...identity,
+                        selectionId: target.selectionId,
+                      });
+                      if (ticket === epoch.current) apply(next);
+                    })
+                  }
+                >
+                  移除 {target.displayName} 的任务选择
+                </button>
+              </div>
+            );
+          })}
+        </section>
+      )}
+      {loading ? (
+        <p role="status">正在读取你的连接…</p>
+      ) : error && !records.length ? (
+        <button onClick={() => setRefresh((value) => value + 1)}>重新加载</button>
       ) : !records.length ? (
         <div className="task-target-empty">
           <h3>还没有连接工具</h3>
-          <p>连接后可以在这里查看工具提供的能力和当前状态。</p>
           <button className="primary" onClick={manage}>
             连接其他应用
           </button>
@@ -85,65 +215,206 @@ export default function TaskTargetConnections({
           <label className="task-target-search">
             查找连接
             <input
+              ref={search}
               type="search"
               value={query}
               placeholder="搜索名称或来源"
               onChange={(event) => setQuery(event.target.value)}
+              disabled={busy}
             />
           </label>
           <div className="task-target-connection-list" aria-label="已有连接">
-            {visible.map((record) => (
+            {visible.map((item) => (
               <button
-                key={record.id}
+                key={item.id}
                 className="task-target-connection"
-                aria-pressed={selectedId === record.id}
-                onClick={() => setSelectedId(record.id)}
+                disabled={busy}
+                aria-pressed={selectedId === item.id}
+                onClick={() => choose(item)}
               >
-                <strong>{record.config.displayName}</strong>
-                <span>{record.config.source}</span>
-                <span className={`task-target-status is-${record.status}`}>
-                  {statusLabel[record.status]} · {record.tools.length} 项能力
+                <strong>{item.config.displayName}</strong>
+                <span>{item.config.source}</span>
+                <span className={`task-target-status is-${item.status}`}>
+                  {statusLabel[item.status]} · {item.tools.length} 项能力
                 </span>
               </button>
             ))}
             {!visible.length && (
               <div className="task-target-empty">
-                <h3>没有找到匹配的连接</h3>
-                <p>试试其他名称，或清除搜索查看全部连接。</p>
-                <button onClick={() => setQuery('')}>清除搜索</button>
+                <p>没有找到匹配的连接。</p>
+                <button
+                  onClick={() => {
+                    setQuery('');
+                    search.current?.focus();
+                  }}
+                >
+                  清除搜索
+                </button>
               </div>
             )}
           </div>
-          {selected && (
-            <section className="task-web-object task-target-capabilities" aria-label="连接能力">
-              <h3>{selected.config.displayName}</h3>
+          {record && (
+            <section className="task-web-object task-target-capabilities" aria-label="选择任务工具">
+              <h3>{record.config.displayName}</h3>
               <p>
-                {statusLabel[selected.status]} · 上次核对{' '}
-                {new Date(selected.testedAt).toLocaleString('zh-CN')}
+                {statusLabel[record.status]} ·{' '}
+                {record.config.transport.type === 'stdio' ? '本机程序' : 'HTTP 服务'}
               </p>
-              {selected.tools.length ? (
-                <ul>
-                  {selected.tools.map((tool) => (
-                    <li key={tool.name}>
+              <p>仅选择本次需要的工具（最多 30 项）。服务声明不替代任务授权。</p>
+              <fieldset
+                disabled={busy || record.status !== 'verified'}
+                className="task-tools-options"
+              >
+                <legend>本次工具 · 已选 {names.length} 项</legend>
+                {record.tools.map((tool) => (
+                  <label className="ai-task-checkbox" key={tool.name}>
+                    <input
+                      type="checkbox"
+                      checked={names.includes(tool.name)}
+                      disabled={!names.includes(tool.name) && names.length >= 30}
+                      onChange={(event) => {
+                        setNames(
+                          event.target.checked
+                            ? [...names, tool.name]
+                            : names.filter((name) => name !== tool.name),
+                        );
+                      }}
+                    />
+                    <span>
                       <strong>{tool.title || tool.name}</strong>
-                      <p>{tool.description || '此工具尚未提供用途说明'}</p>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p>这个连接暂未提供可用工具。</p>
-              )}
-              <p className="ai-task-note">
-                可以查看和管理此连接；当前版本尚不能将它绑定到本次任务。
-              </p>
-              <button onClick={manage}>
-                {selected.status === 'verified' ? '管理连接与能力' : '前往重新连接'}
-              </button>
+                      <small>{tool.name}</small>
+                      <p>{tool.description || '尚无用途说明'}</p>
+                    </span>
+                  </label>
+                ))}
+                {!record.tools.length && <p>该连接没有可选择的工具。</p>}
+              </fieldset>
+              <div className="ai-task-actions">
+                <button
+                  className="primary"
+                  ref={reviewButton}
+                  disabled={busy || loading || record.status !== 'verified' || !names.length}
+                  onClick={() =>
+                    void act(async () => {
+                      const ticket = epoch.current;
+                      const preview: TaskMcpPreview = await api('task.tools.preview', {
+                        ...identity,
+                        connectionId: record.id,
+                        connectionRevision: record.revision,
+                        toolNames: names,
+                      });
+                      if (ticket !== epoch.current) {
+                        void api('task.tools.cancel', { id: task.id, token: preview.token }).catch(
+                          () => {},
+                        );
+                        return;
+                      }
+                      token.current = preview.token;
+                      setReviewed(false);
+                      setCandidate({ preview, record });
+                    })
+                  }
+                >
+                  核对所选工具
+                </button>
+                <button disabled={busy} onClick={manage}>
+                  管理连接与能力
+                </button>
+              </div>
             </section>
           )}
+          <button disabled={busy} onClick={manage}>
+            连接其他应用
+          </button>
         </>
       )}
-      {!!records.length && <button onClick={manage}>连接其他应用</button>}
+      {candidate && (
+        <dialog
+          ref={dialog}
+          className="editor-leave-dialog task-tool-confirm"
+          aria-labelledby={titleId}
+          onCancel={(event) => {
+            event.preventDefault();
+            if (!locked.current) {
+              cancelCandidate();
+              requestAnimationFrame(() => reviewButton.current?.focus());
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              if (!locked.current) {
+                cancelCandidate();
+                requestAnimationFrame(() => reviewButton.current?.focus());
+              }
+            }
+          }}
+        >
+          <h2 id={titleId} ref={heading} tabIndex={-1}>
+            确认本次工具对象
+          </h2>
+          <p>
+            {candidate.preview.target.displayName} · 来源：{candidate.preview.target.source}
+          </p>
+          <p>
+            {candidate.preview.target.transport === 'stdio' ? '本机程序' : 'HTTP 服务'} · 协议{' '}
+            {candidate.preview.target.protocolVersion} · 上次核对{' '}
+            {new Date(candidate.preview.target.testedAt).toLocaleString()}
+          </p>
+          <p>账号、工作区、系统权限：尚未核对。读写影响需在可执行方案中确认。</p>
+          <p>
+            仅把下列 {candidate.preview.target.tools.length}{' '}
+            项工具保存到任务草稿；不会连接服务、调用工具或发送给模型。
+          </p>
+          <ToolCapabilityReview
+            current={{ ...candidate.record, tools: candidate.preview.target.tools }}
+          />
+          <p className="ai-task-note">{toolsNotExecutable}</p>
+          {expired && (
+            <p className="field-error" role="alert">
+              本次核对已过期，请返回重新选择。
+            </p>
+          )}
+          <label className="ai-task-checkbox">
+            <input
+              type="checkbox"
+              checked={reviewed}
+              disabled={busy || expired}
+              onChange={(event) => setReviewed(event.target.checked)}
+            />
+            我已核对来源与本次所选工具
+          </label>
+          <div className="editor-leave-actions">
+            <button
+              disabled={busy}
+              onClick={() => {
+                cancelCandidate();
+                requestAnimationFrame(() => reviewButton.current?.focus());
+              }}
+            >
+              返回重新选择
+            </button>
+            <button
+              className="primary"
+              disabled={!reviewed || busy || expired}
+              onClick={() =>
+                void act(async () => {
+                  const ticket = epoch.current;
+                  const next = await api('task.tools.select', {
+                    ...identity,
+                    token: candidate.preview.token,
+                  });
+                  token.current = undefined;
+                  setCandidate(undefined);
+                  if (ticket === epoch.current) apply(next);
+                })
+              }
+            >
+              {busy ? '正在保存…' : '确认工具对象'}
+            </button>
+          </div>
+        </dialog>
+      )}
     </div>
   );
 }

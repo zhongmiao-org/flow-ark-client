@@ -8,6 +8,8 @@ import {
 import { discoverMcp, DiscoveryError, McpCleanupError } from '../adapters/mcp-discovery';
 import { Store } from './store';
 import { canonical, uid } from '../shared/utils';
+import type { PlanningTask } from '../shared/planning';
+import type { Run } from '../shared/types';
 
 type Saved = ConnectionDiscovery & {
   id: string;
@@ -53,11 +55,34 @@ export class ToolConnections {
   }
   private publicRecord(record: Saved): ToolConnection {
     const { credentialRef, disconnected, ...data } = record;
+    const references = this.store
+      .list<PlanningTask>('ai-task')
+      .filter((task) => task.toolTargets?.some((target) => target.connectionId === record.id));
+    const flowIds = new Set(references.map((task) => task.flowId));
     return {
       ...data,
       hasCredential: !!credentialRef,
+      taskReferences: references.map((task) => ({
+        taskId: task.id,
+        flowId: task.flowId,
+        description: task.description.slice(0, 200),
+      })),
+      activeRunCount: this.store
+        .list<Run>('run')
+        .filter(
+          (run) =>
+            flowIds.has(run.flowId) &&
+            ['QUEUED', 'RUNNING', 'PAUSED', 'WAITING_INPUT', 'CANCELLING'].includes(run.state),
+        ).length,
       status: this.states.get(record.id) ?? (disconnected ? 'disconnected' : 'unverified'),
     };
+  }
+  targetSource(id: string, revision: number): ToolConnection {
+    this.available();
+    const record = this.publicRecord(this.record(id, revision));
+    if (record.status !== 'verified')
+      throw new Error('连接尚未核对或已断开，请前往应用与工具重新连接');
+    return record;
   }
   private publicCandidate(candidate: Candidate): ConnectionCandidate {
     const { secret: _, saving: __, ...data } = candidate;

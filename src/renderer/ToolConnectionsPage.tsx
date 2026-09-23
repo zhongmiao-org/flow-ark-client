@@ -712,10 +712,31 @@ export default function ToolConnectionsPage({
                 服务说明只提供上下文。任务授权、目标选择和参数校验由 FlowArk 宿主执行。
               </p>
               <p>
-                任务授权：尚未授权任何任务
+                任务执行授权：尚未开放工具执行
                 <br />
                 系统权限：未通过连接发现核对
               </p>
+              {view === 'saved' && selected?.taskReferences && (
+                <section aria-label="引用此连接的任务">
+                  <h3>任务引用 · {selected.taskReferences.length} 个</h3>
+                  <p>
+                    关联流程中的活动运行：{selected.activeRunCount ?? 0} 个。选择不等于执行授权。
+                  </p>
+                  {selected.taskReferences.length ? (
+                    <ul>
+                      {selected.taskReferences.map((task) => (
+                        <li key={task.taskId}>
+                          {task.description || '未命名任务'}
+                          <small> · 流程 {task.flowId}</small>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>当前没有任务选择此连接。</p>
+                  )}
+                  <p>断开或删除连接会使引用任务的工具选择失效；任务草稿仍保留。</p>
+                </section>
+              )}
               {view === 'review' && candidate ? (
                 <>
                   <label className="ai-task-checkbox">
