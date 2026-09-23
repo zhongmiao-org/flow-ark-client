@@ -1,20 +1,45 @@
 import { useEffect, useRef, useState } from 'react';
-import { FolderOpen, X } from 'lucide-react';
 import type { Bindings, Step } from '../shared/types';
+import './script-packages.css';
 
 type Package = { name: string; version: string; path: string };
-export default function ScriptPackages(props: {
+type Props = {
   flowId: string;
   node: Extract<Step, { type: 'script' }>;
   bindings: Bindings;
-  bind: (info: Package) => void;
-  remove: (name: string) => void;
-}) {
+  bind: (info: Package) => void | boolean;
+  remove: (name: string) => void | boolean;
+};
+type Check = { signature: string; error?: string };
+const identity = (props: Props) => `${props.flowId}:${props.node.id}`;
+const signature = (props: Props, name: string) =>
+  JSON.stringify([
+    identity(props),
+    props.node.dependencies.find((dep) => dep.name === name),
+    props.bindings.scriptPackages?.[name],
+  ]);
+const fail = (reason: unknown) =>
+  (reason instanceof Error ? reason.message : '依赖操作未完成，请重新核对').replace(
+    /^Error invoking remote method 'flowark:request': (?:Error: )?/,
+    '',
+  );
+export default function ScriptPackages(props: Props) {
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [busy, setBusy] = useState('');
+  const [checks, setChecks] = useState<Record<string, Check>>({});
+  const [candidate, setCandidate] = useState<{ info: Package; source: string; before: string }>();
+  const locked = useRef(false);
   const latest = useRef(props);
   latest.current = props;
   const alive = useRef(true);
+  const root = useRef<HTMLElement>(null);
+  const addButton = useRef<HTMLButtonElement>(null);
+  const review = useRef<HTMLHeadingElement>(null);
+  const errorElement = useRef<HTMLParagraphElement>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const origin = useRef<HTMLElement | null>(null);
+  const restore = useRef(false);
   useEffect(() => {
     alive.current = true;
     return () => {
@@ -23,57 +48,305 @@ export default function ScriptPackages(props: {
   }, []);
   useEffect(() => {
     setError('');
+    setNotice('');
+    setChecks({});
+    setCandidate(undefined);
   }, [props.flowId, props.node.id]);
-  const bind = async () => {
-    const identity = props.flowId + ':' + props.node.id;
-    setBusy(true);
+  useEffect(() => {
+    if (candidate) {
+      dialog.current?.showModal();
+      review.current?.focus();
+    } else {
+      dialog.current?.close();
+      if (restore.current) {
+        restore.current = false;
+        if (origin.current?.isConnected) origin.current.focus();
+        else addButton.current?.focus();
+      }
+    }
+  }, [candidate]);
+  useEffect(() => {
+    if (candidate && error) errorElement.current?.focus();
+  }, [candidate, error]);
+  const cancel = () => {
+    restore.current = true;
+    setCandidate(undefined);
     setError('');
+  };
+  const refocus = (element: HTMLElement | null, source: string) =>
+    requestAnimationFrame(() => {
+      if (
+        alive.current &&
+        source === identity(latest.current) &&
+        element?.isConnected &&
+        (!document.activeElement || document.activeElement === document.body)
+      )
+        element.focus();
+    });
+  const choose = async (name?: string) => {
+    if (locked.current) return;
+    const source = identity(props);
+    const start = name
+      ? signature(props, name)
+      : JSON.stringify([props.node.dependencies, props.bindings.scriptPackages]);
+    const current = () =>
+      alive.current &&
+      source === identity(latest.current) &&
+      start ===
+        (name
+          ? signature(latest.current, name)
+          : JSON.stringify([
+              latest.current.node.dependencies,
+              latest.current.bindings.scriptPackages,
+            ]));
+    origin.current = document.activeElement as HTMLElement | null;
+    const trigger = origin.current;
+    let opened = false;
+    locked.current = true;
+    setBusy(name ?? 'add');
+    setError('');
+    setNotice('');
     try {
       const path = await window.flowark.request('file.choose', { kind: 'directory' });
-      if (!path) return;
-      const info = await window.flowark.request('script.package.inspect', { path });
-      const current = latest.current;
-      if (alive.current && identity === current.flowId + ':' + current.node.id) current.bind(info);
-    } catch (e: any) {
-      if (alive.current && identity === latest.current.flowId + ':' + latest.current.node.id)
-        setError(e.message);
+      if (!current()) return;
+      if (!path) {
+        setNotice('已取消选择，原有依赖保持不变。');
+        return;
+      }
+      const info: Package = await window.flowark.request('script.package.inspect', { path });
+      if (!current()) return;
+      if (name && info.name !== name)
+        throw new Error(`所选包为 ${info.name}，请为 ${name} 选择同名包目录`);
+      opened = true;
+      setCandidate({ info, source, before: signature(latest.current, info.name) });
+    } catch (reason) {
+      if (current()) setError(fail(reason));
     } finally {
-      if (alive.current) setBusy(false);
+      locked.current = false;
+      if (alive.current) setBusy('');
+      if (!opened) refocus(trigger, source);
     }
   };
+  const inspect = async (name: string) => {
+    if (locked.current) return;
+    const trigger = document.activeElement as HTMLElement | null;
+    const source = identity(props);
+    const before = signature(props, name);
+    const expected = props.node.dependencies.find((dep) => dep.name === name);
+    const binding = props.bindings.scriptPackages?.[name];
+    if (!binding?.path || !expected) return;
+    locked.current = true;
+    setBusy(name);
+    setError('');
+    setNotice('');
+    try {
+      const info: Package = await window.flowark.request('script.package.inspect', {
+        path: binding.path,
+      });
+      if (!alive.current || before !== signature(latest.current, name)) return;
+      if (
+        info.name !== name ||
+        info.version !== expected.version ||
+        binding.version !== expected.version
+      )
+        throw new Error(
+          `要求 ${name}@${expected.version}；目录实际为 ${info.name}@${info.version}，请重新绑定。`,
+        );
+      setChecks((values) => ({ ...values, [name]: { signature: before } }));
+    } catch (reason) {
+      if (alive.current && before === signature(latest.current, name))
+        setChecks((values) => ({ ...values, [name]: { signature: before, error: fail(reason) } }));
+    } finally {
+      locked.current = false;
+      if (alive.current) setBusy('');
+      refocus(trigger, source);
+    }
+  };
+  const apply = () => {
+    if (!candidate) return;
+    try {
+      const { info, source, before } = candidate;
+      if (source !== identity(latest.current) || before !== signature(latest.current, info.name))
+        throw new Error('依赖已变化，请取消后重新选择目录。');
+      if (latest.current.bind(info) === false)
+        throw new Error('当前步骤有未完成的输入，请取消并修正后再绑定。');
+      setNotice(`已将 ${info.name}@${info.version} 应用到当前草稿，保存流程后生效。`);
+      restore.current = true;
+      setCandidate(undefined);
+      setError('');
+      setChecks((values) => {
+        const next = { ...values };
+        delete next[info.name];
+        return next;
+      });
+    } catch (reason) {
+      setError(fail(reason));
+    }
+  };
+  const remove = (name: string) => {
+    if (locked.current) return;
+    setError('');
+    setNotice('');
+    const buttons = Array.from(
+      root.current?.querySelectorAll<HTMLButtonElement>('[data-dependency-remove]') ?? [],
+    );
+    const index = buttons.findIndex((button) => button.dataset.dependencyRemove === name);
+    const next = buttons[index + 1] ?? buttons[index - 1];
+    try {
+      if (props.remove(name) === false) throw new Error('当前步骤有未完成的输入，依赖未移除。');
+      setNotice(`已从当前步骤移除 ${name}；未删除本机包目录。保存流程后生效。`);
+      requestAnimationFrame(() => {
+        if (next?.isConnected) next.focus();
+        else addButton.current?.focus();
+      });
+    } catch (reason) {
+      setError(fail(reason));
+    }
+  };
+  const old = candidate && props.node.dependencies.find((dep) => dep.name === candidate.info.name);
+  const previous = candidate && props.bindings.scriptPackages?.[candidate.info.name];
   return (
-    <section className="script-packages" aria-label="脚本本地依赖">
-      <label>本地依赖</label>
-      <p className="note">选择已安装包的目录。保存精确版本，运行前固定代码。</p>
+    <section ref={root} className="script-packages" aria-label="脚本本地依赖">
+      <header className="script-packages-heading">
+        <h3>本地依赖</h3>
+        <span>{props.node.dependencies.length} 个</span>
+      </header>
+      <p className="note">选择已安装包的目录，使用精确版本。运行时不自动安装依赖。</p>
+      {!props.node.dependencies.length && (
+        <p className="script-package-empty">当前步骤未声明第三方依赖。需要时绑定已有包目录。</p>
+      )}
       {props.node.dependencies.map((dep) => {
         const binding = props.bindings.scriptPackages?.[dep.name];
+        const check =
+          checks[dep.name]?.signature === signature(props, dep.name) ? checks[dep.name] : undefined;
+        const missing = !binding?.path,
+          mismatch = !!binding && binding.version !== dep.version;
+        const warning = missing || mismatch || !!check?.error;
         return (
-          <div className="script-package" key={dep.name}>
-            <div>
-              <strong>{dep.name}</strong>
-              <small>{dep.version}</small>
-              <span className="path-text">
-                {binding?.version === dep.version ? binding.path : '尚未绑定此版本'}
-              </span>
-            </div>
-            <button
-              className="icon-button"
-              aria-label={'移除依赖 ' + dep.name}
-              onClick={() => props.remove(dep.name)}
+          <article className="script-package-card" key={dep.name} aria-label={`${dep.name} 依赖`}>
+            <h4>{dep.name}</h4>
+            <p className="script-package-version">
+              要求版本 <strong>{dep.version}</strong>
+            </p>
+            <span
+              className={`script-package-state ${warning ? 'warning' : check ? 'success' : ''}`}
             >
-              <X size={14} />
-            </button>
-          </div>
+              {busy === dep.name
+                ? '正在读取包信息…'
+                : missing
+                  ? '尚未绑定目录'
+                  : mismatch
+                    ? '绑定版本不一致'
+                    : check?.error
+                      ? '当前目录核对失败'
+                      : check
+                        ? '名称与版本已核对'
+                        : '已绑定 · 本次尚未核对'}
+            </span>
+            {binding?.path && (
+              <details>
+                <summary>查看本机目录</summary>
+                <p className="path-text">{binding.path}</p>
+                <p>绑定版本：{binding.version}</p>
+              </details>
+            )}
+            {check?.error && (
+              <p role="alert" className="field-error">
+                {check.error}
+              </p>
+            )}
+            {check && !check.error && (
+              <p className="note">仅核对目录的包名与版本；完整依赖编译与运行前检查仍需通过。</p>
+            )}
+            <div className="script-package-actions">
+              <button disabled={!!busy} onClick={() => void choose(dep.name)}>
+                {missing ? '选择包目录' : '重新选择目录'}
+              </button>
+              <button disabled={!!busy || missing} onClick={() => void inspect(dep.name)}>
+                核对当前目录
+              </button>
+              <button
+                disabled={!!busy}
+                data-dependency-remove={dep.name}
+                aria-label={`移除依赖 ${dep.name}`}
+                onClick={() => remove(dep.name)}
+              >
+                移除依赖
+              </button>
+            </div>
+          </article>
         );
       })}
-      <button onClick={bind} disabled={busy}>
-        <FolderOpen size={15} />
-        {busy ? '读取包信息…' : '绑定本地包'}
+      <button ref={addButton} onClick={() => void choose()} disabled={!!busy}>
+        {busy === 'add' ? '读取包信息…' : '绑定本地包'}
       </button>
-      {error && (
+      {notice && (
+        <p className="script-package-feedback" role="status">
+          {notice}
+        </p>
+      )}
+      {error && !candidate && (
         <p className="field-error" role="alert">
           {error}
         </p>
+      )}
+      {candidate && (
+        <dialog
+          ref={dialog}
+          className="script-package-dialog"
+          aria-label="核对本地依赖变更"
+          onCancel={(event) => {
+            event.preventDefault();
+            cancel();
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              event.stopPropagation();
+              cancel();
+            }
+          }}
+        >
+          <h2 ref={review} tabIndex={-1}>
+            核对本地依赖变更
+          </h2>
+          <p>只更新当前草稿；不会安装包或运行脚本。</p>
+          <h3>{candidate.info.name}</h3>
+          <dl>
+            <dt>当前步骤版本</dt>
+            <dd>{old?.version ?? '未声明'}</dd>
+            <dt>所选目录版本</dt>
+            <dd>{candidate.info.version}</dd>
+            {previous && (
+              <>
+                <dt>当前绑定目录</dt>
+                <dd>{previous.path}</dd>
+              </>
+            )}
+            <dt>所选本机目录</dt>
+            <dd>{candidate.info.path}</dd>
+          </dl>
+          {old && old.version !== candidate.info.version && (
+            <p className="script-package-warning">
+              应用后将把本步骤的依赖版本改为 {candidate.info.version}
+              。其他步骤若声明不同版本，会拒绝应用。
+            </p>
+          )}
+          <p>
+            目录绑定由同一流程的脚本步骤共享。保存后供新的运行使用，已有运行与计划的固定内容保持原样。
+          </p>
+          {error && (
+            <p ref={errorElement} tabIndex={-1} className="field-error" role="alert">
+              {error}
+            </p>
+          )}
+          <footer className="script-package-actions">
+            <button onClick={cancel}>取消</button>
+            <button className="primary" onClick={apply}>
+              应用到草稿
+            </button>
+          </footer>
+        </dialog>
       )}
     </section>
   );

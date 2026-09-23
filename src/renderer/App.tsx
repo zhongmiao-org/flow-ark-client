@@ -2358,7 +2358,7 @@ function Editor({
                             node={selectedNode}
                             bindings={r.bindings}
                             bind={(info) => {
-                              if (!guardInvalidNodeJson()) return;
+                              if (!guardInvalidNodeJson()) return false;
                               const conflict = flatten(r.flow.steps).some(
                                 (n: Step) =>
                                   n.id !== selectedNode.id &&
@@ -2398,7 +2398,7 @@ function Editor({
                               setInvalid('');
                             }}
                             remove={(name) => {
-                              if (!guardInvalidNodeJson()) return;
+                              if (!guardInvalidNodeJson()) return false;
                               const next = {
                                 ...selectedNode,
                                 dependencies: selectedNode.dependencies.filter(
