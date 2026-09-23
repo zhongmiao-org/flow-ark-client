@@ -1,0 +1,29 @@
+/* Figma taskeditnext 27:13212. */
+.ai-task-columns.task-modification {
+  grid-template-columns: minmax(320px, 440px) minmax(0, 1fr);
+}
+.task-modification textarea {
+  min-height: 132px;
+}
+.task-modification > .ai-task-card > button {
+  align-self: flex-start;
+  min-width: 200px;
+}
+.task-modification-review {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.task-modification-review:focus {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 6px;
+}
+@container (max-width: 900px) {
+  .ai-task-columns.task-modification {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ai-task-columns.task-modification > .ai-task-card {
+    min-height: auto;
+  }
+}

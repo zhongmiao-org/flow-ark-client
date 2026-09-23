@@ -1,3 +1,4 @@
+import TaskModificationPage from './TaskModificationPage';
 import TaskGenerationPage from './TaskGenerationPage';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Bootstrap, FlowRecord, Step } from '../shared/types';
@@ -100,8 +101,11 @@ export default function AITaskWorkspace(props: Props) {
     | 'check'
     | 'missing-ai'
     | 'generation'
+    | 'modify'
   >('home');
-  const missingOrigin = useRef<'brief' | 'understand' | 'review' | 'generation'>('brief');
+  const missingOrigin = useRef<'brief' | 'understand' | 'review' | 'generation' | 'modify'>(
+    'brief',
+  );
   const settingsReturnScroll = useRef<number | undefined>(undefined);
   useLayoutEffect(() => {
     if (!props.active || settingsReturnScroll.current === undefined || page === 'missing-ai')
@@ -163,6 +167,24 @@ export default function AITaskWorkspace(props: Props) {
   const [view, setView] = useState<'list' | 'graph'>('list');
   const [selected, setSelected] = useState('');
   const [editingProposal, setEditingProposal] = useState(false);
+  const [modification, setModification] = useState<{
+    taskId: string;
+    baseHash: string;
+    description: string;
+    instruction: string;
+  }>();
+  const modificationConflict =
+    !!modification &&
+    (modification.taskId !== detail?.task.id ||
+      modification.baseHash !== detail?.flowHash ||
+      modification.description !== draft.description ||
+      !!detail?.proposal ||
+      !!draft.scope);
+  const modificationDescription = modification?.instruction.trim() ?? '';
+  const modificationError =
+    modificationDescription.length > 10000 ? '修改要求超过 10000 字，请缩短后继续。' : undefined;
+  const sendingDraft =
+    page === 'modify' ? { ...draft, description: modificationDescription } : draft;
   const contentDirty = !!detail && JSON.stringify(draft) !== saved;
   const outputNameCheck = taskOutputNameSchema.safeParse(outputOptions.name);
   const outputNameError = outputNameCheck.success
@@ -184,66 +206,72 @@ export default function AITaskWorkspace(props: Props) {
   const scopedProposal = result?.kind === 'plan' && !!detail?.proposal?.scope;
   const scopeDiffView = scopedProposal && !editingProposal;
   const title =
-    page === 'generation'
-      ? generating
-        ? '正在准备任务步骤'
-        : detail?.task.status === 'unsupported'
-          ? '当前工具还不能完成这项操作'
-          : '方案没有生成完成'
-      : page === 'understand'
-        ? '我理解你要……'
-        : page === 'guide'
-          ? '第一次，让我们一起完成'
-          : page === 'target'
-            ? '这次要操作哪里？'
-            : page === 'missing-ai'
-              ? '先连接 AI，需求会为你保留'
-              : page === 'check'
-                ? '试运行前，最后确认一次'
-                : page === 'home'
-                  ? '开始任务'
-                  : page === 'brief'
-                    ? '描述需求，带上必要资料'
-                    : result?.kind === 'clarify'
-                      ? '我理解你要……'
-                      : result?.kind === 'unsupported'
-                        ? '这项任务还需要支持'
-                        : result?.kind === 'plan' && detail?.proposal?.baseFlow
-                          ? '检查 AI 提议的修改'
-                          : '先看看任务步骤';
+    page === 'modify'
+      ? '接着修改当前任务'
+      : page === 'generation'
+        ? generating
+          ? '正在准备任务步骤'
+          : detail?.task.status === 'unsupported'
+            ? '当前工具还不能完成这项操作'
+            : '方案没有生成完成'
+        : page === 'understand'
+          ? '我理解你要……'
+          : page === 'guide'
+            ? '第一次，让我们一起完成'
+            : page === 'target'
+              ? '这次要操作哪里？'
+              : page === 'missing-ai'
+                ? '先连接 AI，需求会为你保留'
+                : page === 'check'
+                  ? '试运行前，最后确认一次'
+                  : page === 'home'
+                    ? '开始任务'
+                    : page === 'brief'
+                      ? '描述需求，带上必要资料'
+                      : result?.kind === 'clarify'
+                        ? '我理解你要……'
+                        : result?.kind === 'unsupported'
+                          ? '这项任务还需要支持'
+                          : result?.kind === 'plan' && detail?.proposal?.baseFlow
+                            ? '检查 AI 提议的修改'
+                            : '先看看任务步骤';
 
   useEffect(() => {
     if (props.active)
       props.onNavigation(
         title,
-        page === 'generation'
-          ? () => (generating ? void cancelGeneration() : recoverDescription())
-          : page === 'missing-ai'
-            ? () => setPage(missingOrigin.current)
-            : page === 'check'
-              ? backToPlan
+        page === 'modify'
+          ? returnFromModification
+          : page === 'generation'
+            ? () => (generating ? void cancelGeneration() : recoverDescription())
+            : page === 'missing-ai'
+              ? () => setPage(missingOrigin.current)
+              : page === 'check'
+                ? backToPlan
+                : page === 'understand'
+                  ? () => void openTarget()
+                  : page === 'target'
+                    ? backToBrief
+                    : page === 'guide' || page === 'brief'
+                      ? () => {
+                          void back();
+                        }
+                      : undefined,
+        page === 'modify'
+          ? '当前方案'
+          : page === 'generation'
+            ? generating
+              ? '取消并返回'
+              : '任务草稿'
+            : page === 'missing-ai'
+              ? '任务草稿'
               : page === 'understand'
-                ? () => void openTarget()
+                ? '选择操作对象'
                 : page === 'target'
-                  ? backToBrief
+                  ? '描述与附件'
                   : page === 'guide' || page === 'brief'
-                    ? () => {
-                        void back();
-                      }
+                    ? '开始任务'
                     : undefined,
-        page === 'generation'
-          ? generating
-            ? '取消并返回'
-            : '任务草稿'
-          : page === 'missing-ai'
-            ? '任务草稿'
-            : page === 'understand'
-              ? '选择操作对象'
-              : page === 'target'
-                ? '描述与附件'
-                : page === 'guide' || page === 'brief'
-                  ? '开始任务'
-                  : undefined,
       );
   }, [
     props.active,
@@ -408,13 +436,13 @@ export default function AITaskWorkspace(props: Props) {
       setBusy(false);
     }
   }
-  async function save(): Promise<TaskDetail> {
+  async function save(content: Draft = draft): Promise<TaskDetail> {
     if (!detail) throw new Error('请先创建任务');
     if (stale) throw new Error('任务已在其他位置修改，请重新读取后继续');
     if (detail.task.outputTarget && outputNameError) throw new Error(outputNameError);
     let next = detail;
-    if (contentDirty) {
-      next = await api('task.save', { id: detail.task.id, revision, ...draft });
+    if (JSON.stringify(content) !== saved) {
+      next = await api('task.save', { id: detail.task.id, revision, ...content });
       accept(next, true);
     }
     if (outputDirty) {
@@ -518,8 +546,19 @@ export default function AITaskWorkspace(props: Props) {
   async function generate() {
     await run(async () => {
       if (!reviewed) throw new Error('请先核对本次发送的内容');
-      const next = await save();
+      if (
+        page === 'modify' &&
+        (!modification?.instruction.trim() || modificationConflict || modificationError)
+      )
+        throw new Error(modificationError || '请先填写修改要求并重新核对当前草稿');
+      const next = await save(sendingDraft);
       setEditingProposal(false);
+      // The saved request is now canonical, including when starting generation fails.
+      if (page === 'modify') {
+        setModification(undefined);
+        setReviewed(false);
+        setPage('understand');
+      }
       const generated: TaskDetail = await api('task.generate', {
         id: next.task.id,
         revision: next.task.revision,
@@ -531,6 +570,38 @@ export default function AITaskWorkspace(props: Props) {
       setPage(generationDestination(generated));
       document.querySelector('main')?.scrollTo(0, 0);
       setReviewed(false);
+    });
+  }
+  function beginModification() {
+    if (!detail?.flow || detail.proposal || scope || dirty || stale || busy || generating) return;
+    enterModification(detail);
+  }
+  function enterModification(current: TaskDetail) {
+    setModification((previous) =>
+      previous?.taskId === current.task.id
+        ? previous
+        : {
+            taskId: current.task.id,
+            baseHash: current.flowHash,
+            description: current.task.description,
+            instruction: '',
+          },
+    );
+    setReviewed(false);
+    setError('');
+    setMessage('');
+    planScroll.current = document.querySelector('main')?.scrollTop ?? 0;
+    setPage('modify');
+  }
+  function returnFromModification() {
+    if (lock.current) return;
+    setReviewed(false);
+    setPage('review');
+    requestAnimationFrame(() => {
+      document.querySelector('main')?.scrollTo({ top: planScroll.current });
+      document
+        .querySelector<HTMLButtonElement>('[data-task-modify]')
+        ?.focus({ preventScroll: true });
     });
   }
   async function chooseScope(next: TaskDetail, nodeId: string) {
@@ -716,8 +787,16 @@ export default function AITaskWorkspace(props: Props) {
   const inputDisabled = busy || generating;
 
   returnToTask.current = (taskId, intent) => {
-    const arrive = () => {
+    const arrive = (current: TaskDetail | null) => {
       if (intent === 'plan') backToPlan();
+      else if (
+        intent === 'modify' &&
+        current?.flow &&
+        !current.proposal &&
+        !current.task.scope &&
+        current.task.status !== 'generating'
+      )
+        enterModification(current);
       else {
         setPage(intent === 'home' ? 'home' : 'brief');
         requestAnimationFrame(() => {
@@ -726,7 +805,7 @@ export default function AITaskWorkspace(props: Props) {
         });
       }
     };
-    if (selectedTask.current === taskId) arrive();
+    if (selectedTask.current === taskId) arrive(detail);
     else
       void run(async () => {
         if (dirty) await save();
@@ -734,13 +813,13 @@ export default function AITaskWorkspace(props: Props) {
         if (!location.current.active) return;
         accept(original);
         setReviewed(false);
-        arrive();
+        arrive(original);
       });
   };
 
   const planningControls = detail && (
     <>
-      {page === 'understand' || page === 'brief' || page === 'generation' ? (
+      {page === 'understand' || page === 'brief' || page === 'generation' || page === 'modify' ? (
         <details className="task-understanding-provider">
           <summary>
             AI 服务 · {providerName} · {model}
@@ -814,7 +893,10 @@ export default function AITaskWorkspace(props: Props) {
                 await save();
                 settingsReturnScroll.current = document.querySelector('main')?.scrollTop ?? 0;
                 missingOrigin.current =
-                  page === 'understand' || page === 'review' || page === 'generation'
+                  page === 'understand' ||
+                  page === 'review' ||
+                  page === 'generation' ||
+                  page === 'modify'
                     ? page
                     : 'brief';
                 setPage('missing-ai');
@@ -854,12 +936,14 @@ export default function AITaskWorkspace(props: Props) {
       <details className="ai-task-disclosure">
         <summary>查看本次发送给 {providerName} 的内容</summary>
         <p>
-          {scope
-            ? '所选步骤的修改要求与范围、已选资料、补问答案、当前完整流程及支持的能力说明。原任务描述和本机绑定不会额外加入。'
-            : '描述、所选资料与网页元数据、补问答案、当前已采纳流程及支持的能力说明。'}
+          {page === 'modify'
+            ? '本次新的修改要求、所选资料、补问答案和当前已采纳流程。不会将历史提案作为当前方案发送。'
+            : scope
+              ? '所选步骤的修改要求与范围、已选资料、补问答案、当前完整流程及支持的能力说明。原任务描述和本机绑定不会额外加入。'
+              : '描述、所选资料与网页元数据、补问答案、当前已采纳流程及支持的能力说明。'}
         </p>
-        <h3>描述</h3>
-        <pre>{scope ? scopedDescription(scope) : draft.description}</pre>
+        <h3>{page === 'modify' ? '本次修改要求' : '描述'}</h3>
+        <pre>{scope ? scopedDescription(scope) : sendingDraft.description}</pre>
         {draft.context.map((entry) => (
           <div key={entry.id}>
             <h3>{entry.label}</h3>
@@ -957,6 +1041,10 @@ export default function AITaskWorkspace(props: Props) {
             disabled={
               busy ||
               stale ||
+              (page === 'modify' &&
+                (!modification?.instruction.trim() ||
+                  modificationConflict ||
+                  !!modificationError)) ||
               (!!detail.task.toolTargets?.length &&
                 (!!detail.task.webTarget ||
                   detail.toolTargetStates?.some((state) => !state.current))) ||
@@ -972,30 +1060,34 @@ export default function AITaskWorkspace(props: Props) {
             }
             onClick={() => void generate()}
           >
-            {page === 'generation'
-              ? '确认并重试生成'
-              : page === 'understand' || result?.kind === 'clarify'
-                ? '确认并生成方案'
-                : result || detail.flow
-                  ? scope
-                    ? '生成这一步的修改'
-                    : '生成修改方案'
-                  : '理解我的任务'}
+            {page === 'modify'
+              ? '确认并发送修改要求'
+              : page === 'generation'
+                ? '确认并重试生成'
+                : page === 'understand' || result?.kind === 'clarify'
+                  ? '确认并生成方案'
+                  : result || detail.flow
+                    ? scope
+                      ? '生成这一步的修改'
+                      : '生成修改方案'
+                    : '理解我的任务'}
           </button>
         )}
-        <button
-          disabled={
-            inputDisabled || !dirty || stale || (!!detail.task.outputTarget && !!outputNameError)
-          }
-          onClick={() =>
-            void run(async () => {
-              await save();
-              setMessage('任务草稿已保存。');
-            })
-          }
-        >
-          保存任务草稿
-        </button>
+        {page !== 'modify' && (
+          <button
+            disabled={
+              inputDisabled || !dirty || stale || (!!detail.task.outputTarget && !!outputNameError)
+            }
+            onClick={() =>
+              void run(async () => {
+                await save();
+                setMessage('任务草稿已保存。');
+              })
+            }
+          >
+            保存任务草稿
+          </button>
+        )}
       </div>
     </>
   );
@@ -1009,29 +1101,31 @@ export default function AITaskWorkspace(props: Props) {
         <div>
           <h1 tabIndex={-1}>{page === 'home' ? '你想完成什么？' : title}</h1>
           <p>
-            {page === 'generation'
-              ? generating
-                ? `${providerName} · 仅规划，尚未执行本次任务`
-                : detail?.task.status === 'unsupported'
-                  ? '能力不足时停止规划，不生成可执行提案'
-                  : '原需求和已保存草稿均保留；本次没有开始执行'
-              : page === 'missing-ai'
-                ? '任务描述与已选附件仍在草稿中'
-                : page === 'guide'
-                  ? '大约 2 分钟 · 使用无账号的示例网页和你选择的输出目录'
-                  : page === 'home'
-                    ? '用一句话开始。FlowArk 先给你看步骤，由你决定何时执行。'
-                    : page === 'understand'
-                      ? '第 3 步 / 确认理解 · 缺少的信息用简单选择补齐'
-                      : page === 'brief' && !scope
-                        ? '第 1 步 / 描述 · 对话和附件作为本次任务草稿保留'
-                        : page === 'target'
-                          ? '第 2 步 / 选目标 · 只有你明确选择的对象会进入任务上下文'
-                          : generating
-                            ? '正在理解本次任务，你可以取消生成。'
-                            : scope
-                              ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : scope.nodeId} · 尚未执行`
-                              : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
+            {page === 'modify'
+              ? `${detail?.flow?.flow.name ?? '当前任务'} · 基于当前已采纳草稿，目标与输出位置保留`
+              : page === 'generation'
+                ? generating
+                  ? `${providerName} · 仅规划，尚未执行本次任务`
+                  : detail?.task.status === 'unsupported'
+                    ? '能力不足时停止规划，不生成可执行提案'
+                    : '原需求和已保存草稿均保留；本次没有开始执行'
+                : page === 'missing-ai'
+                  ? '任务描述与已选附件仍在草稿中'
+                  : page === 'guide'
+                    ? '大约 2 分钟 · 使用无账号的示例网页和你选择的输出目录'
+                    : page === 'home'
+                      ? '用一句话开始。FlowArk 先给你看步骤，由你决定何时执行。'
+                      : page === 'understand'
+                        ? '第 3 步 / 确认理解 · 缺少的信息用简单选择补齐'
+                        : page === 'brief' && !scope
+                          ? '第 1 步 / 描述 · 对话和附件作为本次任务草稿保留'
+                          : page === 'target'
+                            ? '第 2 步 / 选目标 · 只有你明确选择的对象会进入任务上下文'
+                            : generating
+                              ? '正在理解本次任务，你可以取消生成。'
+                              : scope
+                                ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : scope.nodeId} · 尚未执行`
+                                : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
           </p>
         </div>
         {page !== 'home' &&
@@ -1040,7 +1134,8 @@ export default function AITaskWorkspace(props: Props) {
           page !== 'guide' &&
           page !== 'understand' &&
           page !== 'brief' &&
-          page !== 'generation' && (
+          page !== 'generation' &&
+          page !== 'modify' && (
             <div className="ai-task-actions">
               {detail?.flow && detail.flow.id === props.sourceFlowId && (
                 <button
@@ -1242,6 +1337,38 @@ export default function AITaskWorkspace(props: Props) {
             </button>
           </div>
         </>
+      ) : page === 'modify' && detail?.flow && modification ? (
+        <TaskModificationPage
+          taskId={detail.task.id}
+          baseHash={modification.baseHash}
+          name={detail.flow.flow.name}
+          instruction={modification.instruction}
+          busy={inputDisabled || stale}
+          conflict={modificationConflict}
+          invalid={modificationError}
+          change={(instruction) => {
+            setModification({ ...modification, instruction });
+            setReviewed(false);
+          }}
+          resetReview={() => setReviewed(false)}
+          rebase={() => {
+            if (detail.proposal || scope) {
+              setError('请先返回方案，处理当前提案或退出单步范围。修改要求仍在本页保留。');
+              return;
+            }
+            setModification({
+              ...modification,
+              baseHash: detail.flowHash,
+              description: draft.description,
+            });
+            setReviewed(false);
+          }}
+          back={returnFromModification}
+          controls={planningControls}
+          steps={
+            <StepList steps={detail.flow.flow.steps} selected={selected} select={setSelected} />
+          }
+        />
       ) : page === 'generation' && detail ? (
         <TaskGenerationPage
           key={detail.task.id}
@@ -1380,7 +1507,26 @@ export default function AITaskWorkspace(props: Props) {
             ) : (
               <div className={`ai-task-columns ${page === 'review' ? 'ai-task-review' : ''}`}>
                 <section className="ai-task-card ai-task-input">
-                  {scopeDiffView ? (
+                  {page === 'review' && !scope && !detail.proposal && detail.flow ? (
+                    <>
+                      <h2>当前任务</h2>
+                      <p>{draft.description || detail.flow.flow.name}</p>
+                      <p className="ai-task-note">
+                        当前方案已保存在草稿中。填写新的要求后，先查看差异，再决定是否采纳。
+                      </p>
+                      <button
+                        className="primary"
+                        data-task-modify
+                        disabled={inputDisabled || dirty || stale}
+                        onClick={beginModification}
+                      >
+                        继续描述修改
+                      </button>
+                      <button disabled={inputDisabled} onClick={() => setPage('brief')}>
+                        编辑描述与资料
+                      </button>
+                    </>
+                  ) : scopeDiffView ? (
                     <>
                       <div className="ai-step-user">
                         <b>你</b>
