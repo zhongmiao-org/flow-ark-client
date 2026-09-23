@@ -76,6 +76,7 @@ type Props = {
   flows: () => void;
   createFlow: () => void;
   openFlow: (flow: FlowRecord) => void;
+  openMore: (flow: FlowRecord, back: () => void) => Promise<void>;
   changed: () => Promise<void>;
 };
 
@@ -140,6 +141,7 @@ export default function AITaskWorkspace(props: Props) {
   const planScroll = useRef(0);
   const returnToTask = useRef<(id: string, intent: TaskRunIntent) => void>(() => {});
   const trialButton = useRef<HTMLButtonElement>(null);
+  const moreButton = useRef<HTMLButtonElement>(null);
   const backToPlan = useCallback(() => {
     setPage('review');
     requestAnimationFrame(() => {
@@ -214,6 +216,70 @@ export default function AITaskWorkspace(props: Props) {
   const changesView =
     fullModification &&
     (proposalView?.id !== detail?.proposal?.id || proposalView?.mode === 'changes');
+  const moreUnavailable = moreOperationReason();
+  function moreOperationReason() {
+    if (busy || generating) return '请等当前操作结束后再打开更多操作。';
+    if (detail?.proposal) return '请先核对并采纳当前方案，再导出、复制或编辑这份流程。';
+    if (dirty) return '请先保存或放弃未保存的任务修改，再打开更多操作。';
+    if (stale) return '任务已变化，请重新读取后再打开更多操作。';
+    if (scope) return '请先结束当前步骤的修改，再打开整个任务的更多操作。';
+    if (!detail?.flow) return '当前还没有已保存的流程方案。';
+    return '';
+  }
+  async function openPlanMore() {
+    if (!detail?.flow || moreUnavailable) return;
+    const source = detail;
+    const scroll = document.querySelector('main')?.scrollTop ?? 0;
+    await run(async () => {
+      const next: TaskDetail = await api('task.detail', { id: source.task.id });
+      if (
+        !location.current.active ||
+        location.current.page !== 'review' ||
+        selectedTask.current !== source.task.id
+      )
+        return;
+      if (
+        next.task.id !== source.task.id ||
+        next.task.revision !== source.task.revision ||
+        next.proposal ||
+        next.task.status === 'generating' ||
+        !next.flow ||
+        next.flowHash !== source.flowHash ||
+        JSON.stringify(next.flow) !== JSON.stringify(source.flow)
+      ) {
+        setDetail(next);
+        throw new Error('任务或流程已变化，请核对更新后的方案再打开更多操作。');
+      }
+      await props.openMore(next.flow, () => {
+        if (selectedTask.current !== source.task.id) return;
+        setPage('review');
+        setReviewed(false);
+        void run(async () => {
+          const refreshed: TaskDetail = await api('task.detail', { id: source.task.id });
+          if (
+            selectedTask.current === source.task.id &&
+            location.current.active &&
+            location.current.page === 'review'
+          )
+            setDetail(refreshed);
+        }).finally(() =>
+          requestAnimationFrame(() => {
+            if (
+              selectedTask.current !== source.task.id ||
+              !location.current.active ||
+              location.current.page !== 'review'
+            )
+              return;
+            document.querySelector('main')?.scrollTo({ top: scroll });
+            const target = moreButton.current?.disabled
+              ? document.querySelector<HTMLElement>('[data-plan-preview-heading]')
+              : moreButton.current;
+            target?.focus({ preventScroll: true });
+          }),
+        );
+      });
+    });
+  }
   const title =
     page === 'modify'
       ? '接着修改当前任务'
@@ -1983,7 +2049,42 @@ export default function AITaskWorkspace(props: Props) {
                             >
                               流程图
                             </button>
+                            {!detail.proposal && detail.flow && (
+                              <button
+                                className="primary"
+                                disabled={busy || dirty || stale || generating || !!scope}
+                                ref={trialButton}
+                                data-run-review-start
+                                onClick={() => {
+                                  planScroll.current =
+                                    document.querySelector('main')?.scrollTop ?? 0;
+                                  setMessage('');
+                                  setError('');
+                                  setPage('check');
+                                }}
+                              >
+                                {detail.task.toolTargets?.length ||
+                                detail.task.toolsRequirePlan ||
+                                flatten(flow.steps).some((step) => step.type === 'mcp')
+                                  ? '查看试运行前检查'
+                                  : '确认方案，去试运行'}
+                              </button>
+                            )}
+                            <button
+                              ref={moreButton}
+                              aria-label="打开任务更多操作"
+                              aria-describedby={moreUnavailable ? 'task-more-reason' : undefined}
+                              disabled={!!moreUnavailable}
+                              onClick={() => void openPlanMore()}
+                            >
+                              更多 ···
+                            </button>
                           </div>
+                          {moreUnavailable && (
+                            <p id="task-more-reason" className="ai-task-note">
+                              {moreUnavailable}
+                            </p>
+                          )}
                           {view === 'list' ? (
                             <TaskStepList
                               flow={flow}
@@ -2102,24 +2203,6 @@ export default function AITaskWorkspace(props: Props) {
                       )}
                       {!detail.proposal && detail.flow && (
                         <div className="ai-task-actions">
-                          <button
-                            className="primary"
-                            disabled={busy || dirty || stale || generating || !!scope}
-                            ref={trialButton}
-                            data-run-review-start
-                            onClick={() => {
-                              planScroll.current = document.querySelector('main')?.scrollTop ?? 0;
-                              setMessage('');
-                              setError('');
-                              setPage('check');
-                            }}
-                          >
-                            {detail.task.toolTargets?.length ||
-                            detail.task.toolsRequirePlan ||
-                            flatten(flow.steps).some((step) => step.type === 'mcp')
-                              ? '查看试运行前检查'
-                              : '确认方案，去试运行'}
-                          </button>
                           <button
                             disabled={busy}
                             onClick={() =>

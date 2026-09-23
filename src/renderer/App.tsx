@@ -127,7 +127,7 @@ export default function App() {
   const [browserOpen, setBrowserOpen] = useState(false);
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
-  const moreOrigin = useRef({ browserOpen: false, scroll: 0, outline: false });
+  const moreOrigin = useRef({ browserOpen: false, scroll: 0, outline: false, task: false });
   const outlineBrowser = useRef(false);
   const outlineMemory = useRef(new Map<string, OutlineLocation>());
   const [nodeSession, setNodeSession] = useState<{
@@ -209,6 +209,9 @@ export default function App() {
     [],
   );
   const [taskReturn, setTaskReturn] = useState(false);
+  const taskEditorReturn = useRef<
+    { flowId: string; back: () => void; browserOpen: boolean } | undefined
+  >(undefined);
   const [taskEntry, setTaskEntry] = useState<{ key: string; record: FlowRecord; nodeId: string }>();
   const [taskSource, setTaskSource] = useState<{
     record: FlowRecord;
@@ -381,7 +384,7 @@ export default function App() {
     }
   }
   async function openFlow(r: FlowRecord, fromSettings = false) {
-    if (!guardInvalidNodeJson()) return;
+    if (!guardInvalidNodeJson()) return false;
     setMoreOpen(false);
     setSettingsFlowId(fromSettings ? r.id : undefined);
     if (fromSettings) setTaskReturn(false);
@@ -392,6 +395,7 @@ export default function App() {
     dispatchDraft({ type: 'open', record: r });
     setSection('editor');
     setDetail(null);
+    return true;
   }
   async function create() {
     if (!guardInvalidNodeJson()) return;
@@ -524,6 +528,19 @@ export default function App() {
       setSection('flows');
       setDetail(null);
     }, '我的流程');
+  const returnToTaskEditor = () =>
+    requestEditorLeave(() => {
+      const origin =
+        section === 'editor' && taskEditorReturn.current?.flowId === edit?.id
+          ? taskEditorReturn.current
+          : undefined;
+      setMoreOpen(false);
+      setSection('tasks');
+      setTaskReturn(false);
+      if (origin) setBrowserOpen(origin.browserOpen);
+      taskEditorReturn.current = undefined;
+      if (origin) requestAnimationFrame(origin.back);
+    }, 'AI 任务');
   const returnEditor = () => {
     if (moreOpen) {
       closeMore();
@@ -537,11 +554,7 @@ export default function App() {
       if (!guardInvalidNodeJson()) return;
       if (compactDrawer) setEditorPanel('canvas');
       else setBrowserOpen(false);
-    } else if (taskReturn)
-      requestEditorLeave(() => {
-        setSection('tasks');
-        setTaskReturn(false);
-      }, 'AI 任务');
+    } else if (taskReturn) returnToTaskEditor();
     else if (settingsFlowId === edit?.id && settingsFlowId)
       requestEditorLeave(() => {
         setSection('settings');
@@ -635,6 +648,7 @@ export default function App() {
       browserOpen,
       scroll: document.querySelector('main')?.scrollTop ?? 0,
       outline: outlineOpen,
+      task: false,
     };
     setOutlineOpen(false);
     setBrowserOpen(false);
@@ -643,6 +657,10 @@ export default function App() {
   };
   const closeMore = () => {
     if (busy) return;
+    if (moreOrigin.current.task) {
+      returnToTaskEditor();
+      return;
+    }
     setMoreOpen(false);
     setOutlineOpen(moreOrigin.current.outline);
     setBrowserOpen(moreOrigin.current.browserOpen);
@@ -949,15 +967,7 @@ export default function App() {
             {taskReturn &&
               !(section === 'editor' && moreOpen) &&
               ['settings', 'editor'].includes(section) && (
-                <button
-                  className="context-back"
-                  onClick={() =>
-                    requestEditorLeave(() => {
-                      setSection('tasks');
-                      setTaskReturn(false);
-                    }, 'AI 任务')
-                  }
-                >
+                <button className="context-back" onClick={returnToTaskEditor}>
                   ← 返回 AI 任务
                 </button>
               )}
@@ -1010,9 +1020,11 @@ export default function App() {
             {((section === 'editor' && (!taskReturn || moreOpen)) || welcomePage) && (
               <button className="context-back" onClick={returnEditor}>
                 {moreOpen
-                  ? moreOrigin.current.outline
-                    ? '← 返回长流程大纲'
-                    : '← 返回流程编排'
+                  ? moreOrigin.current.task
+                    ? '← 返回确认方案'
+                    : moreOrigin.current.outline
+                      ? '← 返回长流程大纲'
+                      : '← 返回流程编排'
                   : compactDrawer
                     ? '← 返回紧凑窗口与网页'
                     : editorBrowser
@@ -1381,8 +1393,18 @@ export default function App() {
                 void create();
               }}
               openFlow={(record) => {
+                taskEditorReturn.current = undefined;
                 setTaskReturn(true);
                 void openFlow(record);
+              }}
+              openMore={async (record, back) => {
+                if (!(await openFlow(record))) throw new Error('请先处理当前编排中的未完成输入');
+                taskEditorReturn.current = { flowId: record.id, back, browserOpen };
+                moreOrigin.current = { browserOpen: false, scroll: 0, outline: false, task: true };
+                setTaskReturn(true);
+                setBrowserOpen(false);
+                setMoreOpen(true);
+                document.querySelector('main')?.scrollTo(0, 0);
               }}
               changed={refresh}
             />
@@ -1992,7 +2014,9 @@ export default function App() {
               setSection('tools');
               setBrowserOpen(false);
             }}
-            openFlow={(record) => openFlow(record, true)}
+            openFlow={async (record) => {
+              await openFlow(record, true);
+            }}
             openAI={(provider, model) => {
               setTaskAISettings({ key: crypto.randomUUID(), provider, model });
               setTaskReturn(false);
