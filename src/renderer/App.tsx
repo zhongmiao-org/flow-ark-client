@@ -1,4 +1,5 @@
 import EditorLeaveDialog from './EditorLeaveDialog';
+import EditorMorePage from './EditorMorePage';
 import ExportReviewDialog, { captureDraftExport, type ExportSource } from './ExportReviewDialog';
 import LocalSettingsPage, { type SettingsNavigation } from './LocalSettingsPage';
 import AttentionWorkspace, { type AttentionNavigation } from './AttentionWorkspace';
@@ -125,6 +126,8 @@ export default function App() {
   const [toolSelection, setToolSelection] = useState<{ key: string; kind: 'web' | 'file' }>();
   const [browserOpen, setBrowserOpen] = useState(false);
   const [outlineOpen, setOutlineOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreOrigin = useRef({ browserOpen: false, scroll: 0, outline: false });
   const outlineBrowser = useRef(false);
   const outlineMemory = useRef(new Map<string, OutlineLocation>());
   const [nodeSession, setNodeSession] = useState<{
@@ -379,6 +382,7 @@ export default function App() {
   }
   async function openFlow(r: FlowRecord, fromSettings = false) {
     if (!guardInvalidNodeJson()) return;
+    setMoreOpen(false);
     setSettingsFlowId(fromSettings ? r.id : undefined);
     if (fromSettings) setTaskReturn(false);
     setConfigOpen(false);
@@ -485,7 +489,7 @@ export default function App() {
       (!draftSaved || document.querySelector('.editor-page [data-value-invalid]'))
     ) {
       editorLeaveLocked.current = true;
-      if (!editorFocus.current?.isConnected)
+      if (moreOpen || !editorFocus.current?.isConnected)
         editorFocus.current = document.activeElement as HTMLElement;
       setEditorLeave({ next, destination, resume });
     } else next();
@@ -521,6 +525,10 @@ export default function App() {
       setDetail(null);
     }, '我的流程');
   const returnEditor = () => {
+    if (moreOpen) {
+      closeMore();
+      return;
+    }
     if (outlineOpen) {
       closeOutline();
       return;
@@ -546,7 +554,7 @@ export default function App() {
     const back = (event: KeyboardEvent) => {
       if (
         event.defaultPrevented ||
-        document.querySelector('dialog[open]') ||
+        document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]') ||
         (event.target as HTMLElement | null)?.closest(
           'input,textarea,select,[contenteditable="true"],.monaco-editor',
         )
@@ -583,11 +591,13 @@ export default function App() {
           document.querySelector('main')?.scrollTo({ top: source?.scroll ?? 0 });
           document
             .querySelector<HTMLElement>(
-              source?.kind === 'parameters'
-                ? '[aria-label="打开流程参数与资源"]'
-                : source?.kind === 'excel'
-                  ? '[aria-label="打开 Excel 映射编辑器"]'
-                  : '[aria-label="打开完整脚本编辑器"]',
+              moreOpen
+                ? '.editor-more-page h1'
+                : source?.kind === 'parameters'
+                  ? '[aria-label="打开流程参数与资源"]'
+                  : source?.kind === 'excel'
+                    ? '[aria-label="打开 Excel 映射编辑器"]'
+                    : '[aria-label="打开完整脚本编辑器"]',
             )
             ?.focus({ preventScroll: true });
         }),
@@ -613,6 +623,58 @@ export default function App() {
     setBrowserOpen(false);
     document.querySelector('main')?.scrollTo(0, 0);
   };
+  const openMore = () => {
+    if (busy) return;
+    try {
+      checkEditorInput('打开更多操作');
+    } catch (reason) {
+      setError((reason as Error).message);
+      return;
+    }
+    moreOrigin.current = {
+      browserOpen,
+      scroll: document.querySelector('main')?.scrollTop ?? 0,
+      outline: outlineOpen,
+    };
+    setOutlineOpen(false);
+    setBrowserOpen(false);
+    setMoreOpen(true);
+    document.querySelector('main')?.scrollTo(0, 0);
+  };
+  const closeMore = () => {
+    if (busy) return;
+    setMoreOpen(false);
+    setOutlineOpen(moreOrigin.current.outline);
+    setBrowserOpen(moreOrigin.current.browserOpen);
+    requestAnimationFrame(() => {
+      document.querySelector('main')?.scrollTo({ top: moreOrigin.current.scroll });
+      document
+        .querySelector<HTMLElement>(
+          moreOrigin.current.outline
+            ? '[aria-label="从大纲打开更多操作"]'
+            : '[aria-label="打开更多操作"]',
+        )
+        ?.focus({ preventScroll: true });
+    });
+  };
+  const openScript = (nodeId: string) => {
+    if (!edit) return;
+    try {
+      checkEditorInput('打开脚本编辑器');
+    } catch (reason) {
+      setError((reason as Error).message);
+      return;
+    }
+    setNodeSession({
+      kind: 'script',
+      record: structuredClone(edit),
+      nodeId,
+      browserOpen,
+      scroll: document.querySelector('main')?.scrollTop ?? 0,
+    });
+    setBrowserOpen(false);
+    document.querySelector('main')?.scrollTo(0, 0);
+  };
   const openOutline = () => {
     try {
       checkEditorInput('打开长流程大纲');
@@ -620,7 +682,9 @@ export default function App() {
       setError((e as Error).message);
       return;
     }
-    outlineBrowser.current = browserOpen;
+    if (!moreOpen || !moreOrigin.current.outline)
+      outlineBrowser.current = moreOpen ? moreOrigin.current.browserOpen : browserOpen;
+    setMoreOpen(false);
     setBrowserOpen(false);
     setOutlineOpen(true);
   };
@@ -675,7 +739,7 @@ export default function App() {
       )}
       <div className="window-titlebar">FlowArk · 个人工作空间</div>
       <div
-        className={`app ${browserOpen ? 'with-browser' : ''} ${section === 'editor' && !nodeSession && !outlineOpen ? 'editing-workspace' : ''}`}
+        className={`app ${browserOpen ? 'with-browser' : ''} ${section === 'editor' && !nodeSession && !outlineOpen && !moreOpen ? 'editing-workspace' : ''}`}
       >
         <aside className="sidebar">
           <div className="brand">
@@ -795,7 +859,7 @@ export default function App() {
           {nodeSession && (
             <header className="topbar">
               <button className="context-back" onClick={() => nodeNavigation.current?.()}>
-                ← 返回流程编排
+                {moreOpen ? '← 返回更多操作' : '← 返回流程编排'}
               </button>
               <nav className="breadcrumbs" aria-label="当前位置">
                 <a
@@ -882,19 +946,21 @@ export default function App() {
                 {taskNavigation.backLabel ? '← 返回' : '← 返回确认方案'}
               </button>
             )}
-            {taskReturn && ['settings', 'editor'].includes(section) && (
-              <button
-                className="context-back"
-                onClick={() =>
-                  requestEditorLeave(() => {
-                    setSection('tasks');
-                    setTaskReturn(false);
-                  }, 'AI 任务')
-                }
-              >
-                ← 返回 AI 任务
-              </button>
-            )}
+            {taskReturn &&
+              !(section === 'editor' && moreOpen) &&
+              ['settings', 'editor'].includes(section) && (
+                <button
+                  className="context-back"
+                  onClick={() =>
+                    requestEditorLeave(() => {
+                      setSection('tasks');
+                      setTaskReturn(false);
+                    }, 'AI 任务')
+                  }
+                >
+                  ← 返回 AI 任务
+                </button>
+              )}
             {section === 'runs' && (detail || runFilter) && (
               <button
                 disabled={runOrigin !== 'task' && runTab === 'rerun' && runRerunBusy}
@@ -932,22 +998,28 @@ export default function App() {
                               : runOrigin === 'task'
                                 ? '← 返回 AI 任务'
                                 : runOrigin === 'editor' && edit
-                                  ? outlineOpen
-                                    ? '← 返回长流程大纲'
-                                    : '← 返回流程编排'
+                                  ? moreOpen
+                                    ? '← 返回更多操作'
+                                    : outlineOpen
+                                      ? '← 返回长流程大纲'
+                                      : '← 返回流程编排'
                                   : `← 返回记录第 ${runPage} 页`
                   : '← 返回运行记录'}
               </button>
             )}
-            {((section === 'editor' && !taskReturn) || welcomePage) && (
+            {((section === 'editor' && (!taskReturn || moreOpen)) || welcomePage) && (
               <button className="context-back" onClick={returnEditor}>
-                {compactDrawer
-                  ? '← 返回紧凑窗口与网页'
-                  : editorBrowser
-                    ? '← 返回流程编排'
-                    : section === 'editor' && !!settingsFlowId && settingsFlowId === edit?.id
-                      ? '← 返回本地设置'
-                      : '← 返回我的流程'}
+                {moreOpen
+                  ? moreOrigin.current.outline
+                    ? '← 返回长流程大纲'
+                    : '← 返回流程编排'
+                  : compactDrawer
+                    ? '← 返回紧凑窗口与网页'
+                    : editorBrowser
+                      ? '← 返回流程编排'
+                      : section === 'editor' && !!settingsFlowId && settingsFlowId === edit?.id
+                        ? '← 返回本地设置'
+                        : '← 返回我的流程'}
               </button>
             )}
             {section === 'settings' && settingsNavigation?.back && (
@@ -1188,7 +1260,9 @@ export default function App() {
                         ? '紧凑窗口与网页'
                         : '网页操作与拾取'
                     : section === 'editor'
-                      ? edit?.flow.name || '流程编排'
+                      ? moreOpen
+                        ? '更多操作'
+                        : edit?.flow.name || '流程编排'
                       : welcomePage
                         ? '首次使用'
                         : section === 'tasks'
@@ -1200,14 +1274,16 @@ export default function App() {
                               : nav.find((n) => n[0] === section)?.[1]}
               </span>
             </nav>
-            <button
-              className="embedded-show"
-              aria-label={browserOpen ? '收起网页面板' : '打开网页面板'}
-              aria-pressed={browserOpen}
-              onClick={() => setBrowserOpen(!browserOpen)}
-            >
-              {browserOpen ? '收起网页' : '显示网页'}
-            </button>
+            {section !== 'editor' && (
+              <button
+                className="embedded-show"
+                aria-label={browserOpen ? '收起网页面板' : '打开网页面板'}
+                aria-pressed={browserOpen}
+                onClick={() => setBrowserOpen(!browserOpen)}
+              >
+                {browserOpen ? '收起网页' : '显示网页'}
+              </button>
+            )}
           </header>
           {data.fault && (
             <div className="alert error storage-fault" role="alert">
@@ -1386,7 +1462,7 @@ export default function App() {
           {section === 'editor' && edit && (
             <div
               className={'editor-page' + (outlineOpen ? ' is-outline' : '')}
-              style={nodeSession ? { display: 'none' } : undefined}
+              style={nodeSession || moreOpen ? { display: 'none' } : undefined}
               onFocusCapture={(event) => {
                 const control = (event.target as HTMLElement).closest(
                   'input,textarea,select,[contenteditable="true"],.monaco-editor',
@@ -1456,7 +1532,9 @@ export default function App() {
                       逐步调试
                     </button>
                     <button onClick={() => setBrowserOpen(false)}>收起网页</button>
-                    <button onClick={openOutline}>长流程大纲</button>
+                    <button onClick={openMore} aria-label="打开更多操作" disabled={busy}>
+                      更多 ···
+                    </button>
                   </div>
                 ) : (
                   <div className="editor-toolbar">
@@ -1481,7 +1559,9 @@ export default function App() {
                     <button onClick={save} disabled={busy}>
                       保存
                     </button>
-                    <button onClick={openOutline}>长流程大纲</button>
+                    <button onClick={openMore} aria-label="打开更多操作" disabled={busy}>
+                      更多 ···
+                    </button>
                     <div className="draft-history" aria-label="草稿编辑历史">
                       <button
                         className="icon-button"
@@ -1502,28 +1582,6 @@ export default function App() {
                         <Redo2 size={16} />
                       </button>
                     </div>
-                    {edit.bindings.configuration && (
-                      <button
-                        onClick={() => {
-                          if (edit.bindings.template)
-                            requestEditorLeave(() => setSection('templates'), '模板实例');
-                          else if (guardInvalidNodeJson()) setConfigOpen(true);
-                        }}
-                      >
-                        <Settings size={15} />
-                        实例配置
-                      </button>
-                    )}
-                    <button
-                      onClick={exportDraft}
-                      disabled={busy}
-                      title="导出前请确认流程字面量和脚本中没有个人数据；本地绑定和参数值不导出"
-                    >
-                      导出 ZIP
-                    </button>
-                    <button aria-label="打开流程参数与资源" onClick={openParameters}>
-                      参数与绑定
-                    </button>
                     <button onClick={() => run(edit, true)} disabled={busy || draftHasTools}>
                       逐步调试
                     </button>
@@ -1544,41 +1602,13 @@ export default function App() {
                   工具方案可保存与编辑，实际调用尚未接入，暂不能运行或逐步调试。
                 </p>
               )}
-              {configOpen && edit.bindings.configuration && (
-                <TemplateConfiguration
-                  key={`configuration:${edit.id}`}
-                  configuration={edit.bindings.configuration}
-                  name={edit.flow.name}
-                  close={() => setConfigOpen(false)}
-                  apply={async (values) => {
-                    checkEditorInput('保存实例配置');
-                    setBusy(true);
-                    setError('');
-                    try {
-                      const saved = await api('flow.save', {
-                        flow: edit.flow,
-                        bindings: {
-                          ...edit.bindings,
-                          configuration: { ...edit.bindings.configuration!, values },
-                        },
-                      });
-                      inputGroup.current = undefined;
-                      inputTarget.current = null;
-                      setEdit(saved);
-                      setNotice('已保存实例配置');
-                      await refresh();
-                    } finally {
-                      setBusy(false);
-                    }
-                  }}
-                />
-              )}
               <Editor
                 key={edit.id}
-                active={!nodeSession}
+                active={!nodeSession && !moreOpen}
                 outlineOpen={outlineOpen}
                 outlineMemory={outlineMemory}
                 closeOutline={closeOutline}
+                openMore={openMore}
                 activeRunId={active?.flowId === edit.id ? active.id : undefined}
                 draftSaved={draftSaved}
                 save={save}
@@ -1625,23 +1655,7 @@ export default function App() {
                     });
                 }}
                 openParameters={openParameters}
-                openScript={(nodeId: string) => {
-                  try {
-                    checkEditorInput('打开脚本编辑器');
-                  } catch (e) {
-                    setError((e as Error).message);
-                    return;
-                  }
-                  setNodeSession({
-                    kind: 'script',
-                    record: structuredClone(edit),
-                    nodeId,
-                    browserOpen,
-                    scroll: document.querySelector('main')?.scrollTop ?? 0,
-                  });
-                  setBrowserOpen(false);
-                  document.querySelector('main')?.scrollTo(0, 0);
-                }}
+                openScript={openScript}
                 openExcel={(nodeId: string) => {
                   try {
                     checkEditorInput('打开 Excel 映射编辑器');
@@ -1678,8 +1692,96 @@ export default function App() {
               />
             </div>
           )}
+          {section === 'editor' && configOpen && edit?.bindings.configuration && (
+            <TemplateConfiguration
+              key={`configuration:${edit.id}`}
+              configuration={edit.bindings.configuration}
+              name={edit.flow.name}
+              close={() => setConfigOpen(false)}
+              apply={async (values) => {
+                checkEditorInput('保存实例配置');
+                setBusy(true);
+                setError('');
+                try {
+                  const saved = await api('flow.save', {
+                    flow: edit.flow,
+                    bindings: {
+                      ...edit.bindings,
+                      configuration: { ...edit.bindings.configuration!, values },
+                    },
+                  });
+                  inputGroup.current = undefined;
+                  inputTarget.current = null;
+                  setEdit(saved);
+                  setNotice('已保存实例配置');
+                  await refresh();
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            />
+          )}
+          {edit && moreOpen && (
+            <EditorMorePage
+              key={edit.id}
+              active={section === 'editor' && !nodeSession}
+              record={edit}
+              saved={draftSaved}
+              busy={busy}
+              back={closeMore}
+              exportZip={exportDraft}
+              parameters={openParameters}
+              configuration={
+                edit.bindings.configuration
+                  ? () => {
+                      if (edit.bindings.template)
+                        requestEditorLeave(() => setSection('templates'), '模板实例');
+                      else setConfigOpen(true);
+                    }
+                  : undefined
+              }
+              outline={openOutline}
+              script={openScript}
+              openRun={(next) =>
+                requestEditorLeave(() => {
+                  setDetail(next);
+                  setRunOrigin('editor');
+                  setRunTab('current');
+                  setRunFilter(false);
+                  setSection('runs');
+                }, '运行详情')
+              }
+              copy={async (name, id) => {
+                setBusy(true);
+                try {
+                  const { sourceTemplate: _source, ...definition } = structuredClone(edit.flow);
+                  const copied = await api('flow.save', {
+                    flow: { ...definition, id, name },
+                    bindings: {
+                      files: {},
+                      credentials: [],
+                      ...(edit.bindings.configuration
+                        ? { configuration: structuredClone(edit.bindings.configuration) }
+                        : {}),
+                    },
+                  });
+                  await refresh();
+                  return copied as FlowRecord;
+                } finally {
+                  setBusy(false);
+                }
+              }}
+              openCopy={(copied) =>
+                requestEditorLeave(() => {
+                  setTaskReturn(false);
+                  openFlow(copied);
+                }, '新流程')
+              }
+            />
+          )}
           {section === 'editor' && nodeSession?.kind === 'parameters' && (
             <FlowParametersPage
+              returnLabel={moreOpen ? '更多操作' : '流程编排'}
               key={nodeSession.record.id}
               record={nodeSession.record}
               browsers={data.browsers}
@@ -1979,6 +2081,7 @@ function Editor({
   outlineOpen,
   outlineMemory,
   closeOutline,
+  openMore,
   activeRunId,
   draftSaved,
   save,
@@ -2099,6 +2202,7 @@ function Editor({
           save={save}
           showRun={showRun}
           memory={outlineMemory}
+          more={openMore}
         />
       )}
       <div

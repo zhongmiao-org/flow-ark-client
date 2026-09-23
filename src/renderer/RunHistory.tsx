@@ -19,6 +19,7 @@ export default function RunHistory({
   setFilterOpen,
   setPage,
   flows,
+  scope,
 }: {
   visible: boolean;
   open: (detail: any) => void;
@@ -26,9 +27,13 @@ export default function RunHistory({
   setFilterOpen: (open: boolean) => void;
   setPage: (page: number) => void;
   flows: FlowRecord[];
+  scope?: { id: string; name: string };
 }) {
-  const [query, setQuery] = useState<RunListQuery>(() => ({ limit: 6, ...historyTimeRange(7) }));
-  const [range, setRange] = useState('7');
+  const [query, setQuery] = useState<RunListQuery>(() => ({
+    limit: 6,
+    ...historyTimeRange(scope ? null : 7),
+  }));
+  const [range, setRange] = useState(scope ? 'all' : '7');
   const [draft, setDraft] = useState({
     query: '',
     state: '',
@@ -70,7 +75,7 @@ export default function RunHistory({
       query: query.query ?? '',
       state: query.state ?? '',
       source: query.source ?? '',
-      flowId: query.flowId ?? '',
+      flowId: scope?.id ?? query.flowId ?? '',
       range,
       limit: query.limit ?? 6,
     });
@@ -88,7 +93,11 @@ export default function RunHistory({
       if (pending) return;
       pending = true;
       try {
-        const result = await api('run.list', { ...query, ...(cursor ? { cursor } : {}) });
+        const result = await api('run.list', {
+          ...query,
+          ...(cursor ? { cursor } : {}),
+          ...(scope ? { flowId: scope.id } : {}),
+        });
         if (live) {
           setData(result);
           setError('');
@@ -107,7 +116,7 @@ export default function RunHistory({
       if (generation.current === id) generation.current++;
       clearInterval(timer);
     };
-  }, [query, cursor, revision, visible]);
+  }, [query, cursor, revision, visible, scope?.id]);
   useEffect(() => {
     if (!visible || filterOpen || loading || !data || !restore.current) return;
     const saved = restore.current;
@@ -217,6 +226,7 @@ export default function RunHistory({
             流程
             <select
               aria-label="运行流程筛选"
+              disabled={!!scope}
               value={draft.flowId}
               onChange={(e) => setDraft({ ...draft, flowId: e.target.value })}
             >
@@ -249,7 +259,14 @@ export default function RunHistory({
             <button
               type="button"
               onClick={() => {
-                setDraft({ query: '', state: '', source: '', flowId: '', range: 'all', limit: 6 });
+                setDraft({
+                  query: '',
+                  state: '',
+                  source: '',
+                  flowId: scope?.id ?? '',
+                  range: 'all',
+                  limit: 6,
+                });
               }}
             >
               清空条件
@@ -270,7 +287,7 @@ export default function RunHistory({
               filter({ ...query, ...historyTimeRange(days === 'all' ? null : Number(days)) });
             })}
             <button onClick={editFilters}>
-              {query.query || query.flowId ? '已筛选流程' : '所有流程'}
+              {scope ? '筛选当前流程' : query.query || query.flowId ? '已筛选流程' : '所有流程'}
             </button>
             <span aria-live="polite">
               {data
@@ -316,6 +333,11 @@ export default function RunHistory({
                       <td>
                         <b>{r.name}</b>
                         <small title={r.id}>{r.id.slice(0, 8)}</small>
+                        {scope && (
+                          <small className="history-version" title={r.versionId}>
+                            运行版本 {r.versionId.slice(0, 12)}
+                          </small>
+                        )}
                       </td>
                       <td>
                         <span className={'badge state-' + r.state}>{runStateLabels[r.state]}</span>

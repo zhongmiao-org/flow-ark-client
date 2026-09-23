@@ -380,3 +380,17 @@
     gap: 12px;
   }
 }
+
+/* Keep the primary editor operations on one row where space permits. */
+.app .editor-toolbar > button {
+  width: auto;
+  min-width: 88px;
+}
+.editor-toolbar .editor-flow-name {
+  flex: 1 1 260px;
+  width: auto;
+  min-width: 240px;
+}
+.app .editor-toolbar .draft-history {
+  width: 80px;
+}

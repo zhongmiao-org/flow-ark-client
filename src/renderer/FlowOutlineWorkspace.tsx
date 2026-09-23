@@ -42,6 +42,7 @@ export default function FlowOutlineWorkspace({
   save,
   showRun,
   memory,
+  more,
 }: {
   visible: boolean;
   record: FlowRecord;
@@ -51,6 +52,7 @@ export default function FlowOutlineWorkspace({
   editAI: (id: string) => void;
   activeRunId?: string;
   saved: boolean;
+  more?: () => void;
   save: () => void;
   showRun: (detail: any) => void;
   memory: MutableRefObject<Map<string, OutlineLocation>>;
@@ -333,6 +335,11 @@ export default function FlowOutlineWorkspace({
               收起全部分支
             </button>
             <button onClick={save}>保存草稿</button>
+            {more && (
+              <button aria-label="从大纲打开更多操作" onClick={more}>
+                任务的更多操作
+              </button>
+            )}
           </div>
         </details>
       </div>

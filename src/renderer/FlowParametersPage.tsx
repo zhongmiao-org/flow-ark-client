@@ -15,6 +15,7 @@ export default function FlowParametersPage({
   close,
   save,
   configuration,
+  returnLabel = '流程编排',
 }: {
   record: FlowRecord;
   browsers: BrowserBinding[];
@@ -23,6 +24,7 @@ export default function FlowParametersPage({
   close: (next?: () => void) => void;
   save: (record: FlowRecord) => Promise<void>;
   configuration: () => void;
+  returnLabel?: string;
 }) {
   const [credentialNames, setCredentialNames] = useState<Record<string, string>>({});
   const [credentialError, setCredentialError] = useState('');
@@ -288,10 +290,10 @@ export default function FlowParametersPage({
       </fieldset>
       <footer className="flow-parameters-actions">
         <button className="primary" disabled={!!busy} onClick={() => void persist()}>
-          {busy === 'save' ? '正在保存…' : '保存并返回编排'}
+          {busy === 'save' ? '正在保存…' : `保存并返回${returnLabel}`}
         </button>
         <button disabled={!!busy} onClick={() => leave()}>
-          返回流程编排
+          返回{returnLabel}
         </button>
       </footer>
       {pending && (
