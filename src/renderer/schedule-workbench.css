@@ -92,3 +92,33 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.schedule-workbench .template-schedule-item.selected {
+  border-color: var(--fa-action-primary);
+  background: var(--fa-action-subtle);
+}
+.schedule-feedback {
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  padding: 16px 20px;
+  background: var(--fa-action-subtle);
+  color: var(--fa-text-primary);
+  font-size: 13px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+.schedule-version-id,
+.schedule-history-summary small {
+  overflow-wrap: anywhere;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.schedule-history-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: var(--fa-bg-canvas);
+}
