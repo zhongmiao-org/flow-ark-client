@@ -83,6 +83,7 @@ export function planningResources(flow: Flow): string[] {
           ];
         if (n.type === 'file' || n.type === 'excel')
           return [`${n.type} · ${n.binding} · ${n.operation}`];
+        if (n.type === 'mcp') return [`工具 · ${n.tool} · 对象 ${n.target} · 外部影响待核对`];
         if (n.type === 'browser') return [`网页 · ${n.operation}`];
         if (n.type === 'http')
           return [`HTTP · ${n.method} · ${typeof n.url === 'string' ? n.url : '动态地址'}`];

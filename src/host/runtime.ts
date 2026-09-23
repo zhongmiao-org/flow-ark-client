@@ -354,6 +354,7 @@ export class Runtime {
     const record = {
       ...(previous?.webTarget ? { webTarget: previous.webTarget } : {}),
       ...(previous?.outputTarget ? { outputTarget: previous.outputTarget } : {}),
+      ...(previous?.toolTargets ? { toolTargets: previous.toolTargets } : {}),
       id: flow.id,
       flow: structuredClone(flow),
       bindings: structuredClone(bindings),
@@ -427,6 +428,8 @@ export class Runtime {
     };
     this.toolTargets.assertExecutable(record.id);
     const flow = validateFlow(record.flow);
+    if (walk(flow.steps).some((node) => node.type === 'mcp'))
+      throw new Error('工具方案已保存；工具调用尚未接入，暂不能执行此流程');
     const localIds = record.bindings.credentials.filter((id) => id.startsWith('local-'));
     if (localIds.length) await this.system('credential.local.check', { ids: localIds });
     this.toolTargets.assertExecutable(record.id);

@@ -1,6 +1,8 @@
 import type { PlanningTask } from '../shared/planning';
 import type { TaskMcpPreview, TaskMcpTarget, TaskMcpState } from '../shared/task-mcp-targets';
-import { toolsNotExecutable } from '../shared/task-mcp-targets';
+import { toolsNotExecutable, assertMcpPlan } from '../shared/task-mcp-targets';
+import type { Flow } from '../shared/types';
+import { OUTPUT_BINDING } from '../shared/task-output';
 import { digest, uid, now } from '../shared/utils';
 import type { Store } from './store';
 import type { ToolConnections } from './tool-connections';
@@ -106,6 +108,17 @@ export class TaskMcpTargets {
         };
       }
     });
+  }
+  verifyPlanning(task: PlanningTask, flow?: Flow) {
+    if (task.toolTargets?.length && task.webTarget)
+      throw new Error('当前不能混合只读网页和工具方案，请明确移除其中一种目标后继续');
+    for (const target of task.toolTargets ?? []) {
+      if (target.taskId !== task.id) throw new Error('工具目标不属于当前任务');
+      const record = this.connections.targetSource(target.connectionId, target.connectionRevision);
+      if (record.capabilityDigest !== target.capabilityDigest)
+        throw new Error('工具能力已变化，请重新选择');
+    }
+    if (flow) assertMcpPlan(flow, task.toolTargets, task.outputTarget ? OUTPUT_BINDING : undefined);
   }
   assertExecutable(flowId: string) {
     const tasks = this.store.list<PlanningTask>('ai-task').filter((task) => task.flowId === flowId);

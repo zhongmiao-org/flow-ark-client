@@ -159,7 +159,7 @@ export function LiteralValue({
               change(parsed);
               setError('');
             } catch (e: any) {
-              setError(type === 'json' ? '数组 / 对象 JSON 尚未完成' : e.message);
+              setError(e instanceof SyntaxError ? '数组 / 对象 JSON 尚未完成' : e.message);
             }
           }}
         />

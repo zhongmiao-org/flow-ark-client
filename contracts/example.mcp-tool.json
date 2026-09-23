@@ -1,0 +1,28 @@
+{
+  "formatVersion": "1.0",
+  "id": "tool-draft-example",
+  "name": "读取所选资料工具的标题",
+  "description": "虚构工具方案；本机绑定与执行授权不随流程携带",
+  "parameters": {
+    "query": "示例资料"
+  },
+  "requiredCapabilities": [
+    "mcp-tool-v1"
+  ],
+  "steps": [
+    {
+      "id": "lookup",
+      "type": "mcp",
+      "version": 1,
+      "name": "检索所选资料",
+      "target": "selected_documents",
+      "tool": "documents_search",
+      "arguments": {
+        "query": {
+          "$ref": "params.query"
+        }
+      },
+      "timeoutMs": 30000
+    }
+  ]
+}

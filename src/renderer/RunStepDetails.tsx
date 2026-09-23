@@ -37,6 +37,12 @@ const operations: Record<string, string> = {
 
 function fields(node: Step): [string, string][] {
   switch (node.type) {
+    case 'mcp':
+      return [
+        ['工具对象', node.target],
+        ['工具名称', node.tool],
+        ['工具参数', configured(node.arguments)],
+      ];
     case 'browser':
       return [
         ['网页动作', browserActions[node.operation]?.label ?? node.operation],

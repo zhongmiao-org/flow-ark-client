@@ -23,7 +23,7 @@ import type { TaskOutputs } from './task-output';
 import { assertOutputFlow, OUTPUT_BINDING } from '../shared/task-output';
 import { taskPlanningContext } from '../shared/planning-context';
 import type { TaskMcpTargets } from './task-mcp-targets';
-import { toolsNotExecutable } from '../shared/task-mcp-targets';
+import { assertMcpPlan } from '../shared/task-mcp-targets';
 import type { TaskAttachments } from './task-attachments';
 
 type SavedTask = PlanningTask & {
@@ -86,6 +86,11 @@ export class Planning {
   private attachmentInput(task: PlanningTask) {
     if (task.attachments?.length && !this.deps.attachments) throw new Error('附件服务不可用');
     return this.deps.attachments?.snapshot(task) ?? { context: [], images: [] };
+  }
+  private verifyTools(task: PlanningTask, flow?: Flow) {
+    if (task.toolTargets?.length && !this.deps.tools) throw new Error('任务工具校验不可用');
+    this.deps.tools?.verifyPlanning(task, flow);
+    if (flow) assertMcpPlan(flow, task.toolTargets, task.outputTarget ? OUTPUT_BINDING : undefined);
   }
   detail(id: string): TaskDetail {
     const { proposal, undo, ...task } = this.task(id);
@@ -404,7 +409,7 @@ export class Planning {
         proposal: undefined,
       });
     } else if (method === 'task.generate' || method === 'task.repair.generate') {
-      if (task.toolTargets?.length) throw new Error(toolsNotExecutable);
+      this.verifyTools(task);
       if (this.jobs.has(task.id)) throw new Error('该任务正在生成，请先取消或等待结果');
       if (!(task.scope?.instruction ?? task.description).trim())
         throw new Error(task.scope ? '请描述所选步骤需要怎样修改' : '请先描述你想完成的任务');
@@ -443,7 +448,21 @@ export class Planning {
                 'loop',
               ].includes(c),
             )
-          : [...capabilities],
+          : task.toolTargets?.length
+            ? capabilities.filter((c) =>
+                [
+                  'mcp-tool-v1',
+                  'value',
+                  'assert',
+                  'human',
+                  'condition',
+                  'loop',
+                  ...(task.outputTarget
+                    ? ['file', 'file-create-v1', 'file-create-numbered-v1']
+                    : []),
+                ].includes(c),
+              )
+            : capabilities.filter((c) => c !== 'mcp-tool-v1'),
       };
       if (task.outputTarget) {
         if (!this.deps.output) throw new Error('输出校验不可用');
@@ -511,7 +530,7 @@ export class Planning {
       this.abort(task.id);
       this.put({ ...task, proposal: undefined, status: 'draft', error: undefined });
     } else if (method === 'task.adopt') {
-      if (task.toolTargets?.length) throw new Error(toolsNotExecutable);
+      this.verifyTools(task);
       if (this.jobs.has(task.id)) throw new Error('请先取消正在生成的方案');
       const proposal = task.proposal;
       if (
@@ -524,12 +543,14 @@ export class Planning {
       const before = this.flow(task);
       if (
         (before?.webTarget && before.webTarget.taskId !== task.id) ||
-        (before?.outputTarget && before.outputTarget.taskId !== task.id)
+        (before?.outputTarget && before.outputTarget.taskId !== task.id) ||
+        before?.toolTargets?.some((target) => target.taskId !== task.id)
       )
         throw new Error('此流程由其他任务绑定，请从原任务继续');
       if (proposal.baseRevision !== task.revision || proposal.baseFlowHash !== flowHash(before))
         throw new Error('流程或资源绑定已修改，请基于当前版本重新生成；未覆盖手动编辑');
       this.validatePlan(proposal.result, task.flowId, proposal.baseFlow);
+      this.verifyTools(task, proposal.result.flow);
       if (task.webTarget) {
         if (!this.deps.web) throw new Error('网页对象校验不可用');
         assertWebFlow(proposal.result.flow, task.webTarget, task.outputTarget);
@@ -576,6 +597,7 @@ export class Planning {
           flowHash: '',
         };
       }
+      this.verifyTools(task, proposal.result.flow);
       this.store.tx(() => {
         const bindings = task.outputTarget
           ? this.deps.output!.bindings(task.outputTarget, before)
@@ -591,6 +613,9 @@ export class Planning {
           proposal.result.flow!,
           task.webTarget ? { ...bindings, browserId: 'embedded' } : bindings,
         );
+        saved.toolTargets = task.toolTargets?.length
+          ? structuredClone(task.toolTargets)
+          : undefined;
         saved.webTarget = task.webTarget;
         saved.outputTarget = task.outputTarget;
         this.store.put('flow', saved.id, saved);
@@ -623,13 +648,14 @@ export class Planning {
             ...restored,
             webTarget: undo.before.webTarget,
             outputTarget: undo.before.outputTarget,
+            toolTargets: undefined,
           });
         } else this.store.remove('flow', task.flowId);
         this.put({
           ...task,
           revision: task.revision + 1,
           undo: undefined,
-          toolsRequirePlan: undo.toolsRequirePlan,
+          toolsRequirePlan: undo.toolsRequirePlan || !!undo.before?.toolTargets?.length,
           scope: undefined,
           appliedRepair: undefined,
           proposal: undefined,
@@ -674,6 +700,7 @@ export class Planning {
       key = await this.deps.key(provider);
       if (!this.current(task, job)) return;
       this.deps.assertAvailable();
+      this.verifyTools(task);
       if (typeof key !== 'string' || !key) throw new Error('请先配置所选 AI 服务');
       if (task.scope) checkScope(task.scope, this.flow(task));
       if (task.webTarget) await this.deps.web!.verify(task.webTarget);
@@ -682,6 +709,7 @@ export class Planning {
         throw new Error('凭据等待期间流程或绑定已变化，请重新生成');
       if (repair) await this.deps.repair!.verify(task, repair);
       if (!this.current(task, job)) return;
+      this.verifyTools(task);
       const result = await (this.deps.generate ?? generatePlan)(
         input,
         provider,
@@ -724,6 +752,7 @@ export class Planning {
           verified.selection.target,
         );
       }
+      this.verifyTools(task, result.kind === 'plan' ? result.flow! : undefined);
       const saved = this.task(task.id);
       this.put({
         ...saved,

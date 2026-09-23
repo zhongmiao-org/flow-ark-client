@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { ToolDefinition } from './tool-connections';
 import type { PlanningContext } from './planning';
+import type { Flow, Step } from './types';
 
 const id = z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/);
 const revision = z
@@ -11,7 +12,7 @@ const revision = z
 const task = { id, revision };
 export const TOOL_CONTEXT_PREFIX = '_flowark_tool_';
 export const toolsNotExecutable =
-  '当前版本支持选择与保存工具对象；工具规划与执行尚未接入。可保留草稿，或移除工具选择后继续规划。';
+  '可核对所选工具并生成方案；工具调用尚未接入，方案可保存和编辑，暂不能执行。';
 export type TaskMcpTarget = {
   version: 1;
   selectionId: string;
@@ -58,4 +59,33 @@ export function toolContexts(targets: readonly TaskMcpTarget[] = []): PlanningCo
       tools: target.tools,
     }),
   }));
+}
+
+export function assertMcpPlan(
+  flow: Flow,
+  targets: readonly TaskMcpTarget[] = [],
+  outputBinding?: string,
+) {
+  const visit = (steps: Step[]) => {
+    for (const node of steps) {
+      if (node.type === 'mcp') {
+        const target = targets.find((target) => target.selectionId === node.target);
+        if (!target?.tools.some((tool) => tool.name === node.tool))
+          throw new Error('方案使用了未选择的连接或工具：' + node.id);
+      } else if (targets.length && node.type === 'file') {
+        if (!outputBinding || node.binding !== outputBinding)
+          throw new Error('工具方案只能写入明确选择的任务输出');
+      } else if (
+        targets.length &&
+        !['value', 'assert', 'condition', 'loop', 'human'].includes(node.type)
+      )
+        throw new Error('工具方案不支持通过其他连接、HTTP、脚本或网页绕过所选工具范围');
+      if (node.type === 'condition') {
+        visit(node.then);
+        visit(node.else);
+      }
+      if (node.type === 'loop') visit(node.body);
+    }
+  };
+  visit(flow.steps);
 }

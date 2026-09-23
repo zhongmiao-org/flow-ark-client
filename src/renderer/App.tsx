@@ -70,6 +70,7 @@ import Schedules from './Schedules';
 import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 import LogicNodeConfiguration from './LogicNodeConfiguration';
 import ResourceNodeConfiguration from './ResourceNodeConfiguration';
+import McpNodeConfiguration from './McpNodeConfiguration';
 import FlowParametersPage from './FlowParametersPage';
 import NodeTiming from './NodeTiming';
 import RunHistory from './RunHistory';
@@ -249,6 +250,7 @@ export default function App() {
   const edit = history.present?.record ?? null,
     selected = history.present?.selected ?? '';
   const editorBrowser = section === 'editor' && browserOpen;
+  const draftHasTools = !!edit && flatten(edit.flow.steps).some((step) => step.type === 'mcp');
   const compactDrawer =
     editorBrowser && compactEditor && ['actions', 'node', 'params'].includes(editorPanel);
   const inputGroup = useRef<string | undefined>(undefined);
@@ -1446,7 +1448,11 @@ export default function App() {
                     >
                       全图
                     </button>
-                    <button className="primary" onClick={() => run(edit, true)} disabled={busy}>
+                    <button
+                      className="primary"
+                      onClick={() => run(edit, true)}
+                      disabled={busy || draftHasTools}
+                    >
                       逐步调试
                     </button>
                     <button onClick={() => setBrowserOpen(false)}>收起网页</button>
@@ -1518,17 +1524,26 @@ export default function App() {
                     <button aria-label="打开流程参数与资源" onClick={openParameters}>
                       参数与绑定
                     </button>
-                    <button onClick={() => run(edit, true)} disabled={busy}>
+                    <button onClick={() => run(edit, true)} disabled={busy || draftHasTools}>
                       逐步调试
                     </button>
                     <button onClick={() => setBrowserOpen(!browserOpen)}>
                       {browserOpen ? '收起网页' : '显示网页'}
                     </button>
-                    <button className="primary" onClick={() => run(edit)} disabled={busy}>
+                    <button
+                      className="primary"
+                      onClick={() => run(edit)}
+                      disabled={busy || draftHasTools}
+                    >
                       运行
                     </button>
                   </div>
                 ))}
+              {draftHasTools && (
+                <p className="note" role="status">
+                  工具方案可保存与编辑，实际调用尚未接入，暂不能运行或逐步调试。
+                </p>
+              )}
               {configOpen && edit.bindings.configuration && (
                 <TemplateConfiguration
                   key={`configuration:${edit.id}`}
@@ -2003,6 +2018,7 @@ function Editor({
           ...new Set([
             ...r.flow.requiredCapabilities,
             ...(mapped ? ['excel-mapping-v1'] : []),
+            ...(flatten(steps).some((node) => node.type === 'mcp') ? ['mcp-tool-v1'] : []),
             ...(createsText ? ['file-create-v1'] : []),
             ...(numbersText ? ['file-create-numbered-v1'] : []),
           ]),
@@ -2328,6 +2344,15 @@ function Editor({
                         >
                           打开 Excel 映射编辑器
                         </button>
+                      )}
+                      {selectedNode.type === 'mcp' && (
+                        <McpNodeConfiguration
+                          key={selectedNode.id + ':' + revision}
+                          node={selectedNode}
+                          targets={r.toolTargets}
+                          choices={choices}
+                          change={updateNode}
+                        />
                       )}
                       <ResourceNodeConfiguration
                         key={selectedNode.id + ':resource:' + revision}

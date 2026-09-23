@@ -162,7 +162,7 @@ export default function TaskUnderstandingPage({
             {web
               ? `内置浏览器 · ${web.page.title || '未命名网页'} · 账号未核对`
               : task.toolTargets?.length
-                ? '已选择工具对象，尚未接入规划与执行。'
+                ? '已选择工具对象；可先核对内容并生成方案。'
                 : '尚未选择操作对象，按需求核对后再执行。'}
           </p>
         </div>
@@ -176,7 +176,7 @@ export default function TaskUnderstandingPage({
                 </li>
               ))}
             </ul>
-            <p>账号、工作区和读写影响尚未核对，所选定义尚未发送给模型。</p>
+            <p>账号、工作区和读写影响尚未核对，所选定义将在你核对并生成时发送给模型。</p>
           </div>
         )}
         <div className="task-understanding-fact">

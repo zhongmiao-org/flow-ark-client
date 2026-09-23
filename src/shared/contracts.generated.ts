@@ -222,6 +222,16 @@ export type Node =
       binding: string;
       content: Value;
       onConflict: 'number';
+    }
+  | {
+      id: string;
+      type: 'mcp';
+      version: 1;
+      name?: string;
+      timeoutMs?: number;
+      target: string;
+      tool: string;
+      arguments: Value;
     };
 export type Value =
   | Json

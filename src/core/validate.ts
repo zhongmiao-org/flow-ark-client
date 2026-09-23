@@ -17,6 +17,7 @@ export function validateObject<T>(name: string, value: unknown): T {
   return value as T;
 }
 export const capabilities = [
+  'mcp-tool-v1',
   'value',
   'assert',
   'http',
@@ -51,6 +52,12 @@ export function validateFlow(value: unknown): Flow {
     for (const n of steps) {
       if (++count > 1000 || all.has(n.id)) throw new Error('节点数量过多或 ID 重复：' + n.id);
       all.add(n.id);
+      if (n.type === 'mcp') {
+        if (!flow.requiredCapabilities.includes('mcp-tool-v1'))
+          throw new Error('工具步骤需要声明 mcp-tool-v1 能力');
+        if (!n.arguments || typeof n.arguments !== 'object' || Array.isArray(n.arguments))
+          throw new Error('工具参数必须为对象或对象引用');
+      }
       if (n.type === 'file' && n.operation === 'create') {
         const capability = n.version === 4 ? 'file-create-numbered-v1' : 'file-create-v1';
         if (!flow.requiredCapabilities.includes(capability))

@@ -29,7 +29,7 @@ const entries = [
     create: () => newBrowserStep(operation as BrowserOperation),
   })),
   ...Object.entries(kinds)
-    .filter(([type]) => !['browser'].includes(type))
+    .filter(([type]) => !['browser', 'mcp'].includes(type))
     .map(([type, kind]) => ({
       id: type,
       type,

@@ -6,6 +6,9 @@ import { kinds } from './node-kinds';
 import './planning-changes.css';
 
 const labels: Record<string, string> = {
+  target: '工具对象',
+  tool: '工具名称',
+  arguments: '工具参数',
   name: '名称',
   description: '说明',
   parameters: '流程参数',

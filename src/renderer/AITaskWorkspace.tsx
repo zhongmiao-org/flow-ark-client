@@ -13,8 +13,9 @@ import TaskWebTargetPage from './TaskWebTargetPage';
 import FirstTaskGuide from './FirstTaskGuide';
 import TaskUnderstandingPage, { type OutputOptions } from './TaskUnderstandingPage';
 import PlanningQuestions from './PlanningQuestions';
-import { toolsNotExecutable } from '../shared/task-mcp-targets';
+import { toolsNotExecutable, toolContexts } from '../shared/task-mcp-targets';
 import PlanningChanges from './PlanningChanges';
+import McpNodeConfiguration from './McpNodeConfiguration';
 import { outputContext, taskOutputNameSchema } from '../shared/task-output';
 import { learningSteps, type LearningStatus } from '../shared/learning';
 import { webContext } from '../shared/task-web-target';
@@ -767,6 +768,11 @@ export default function AITaskWorkspace(props: Props) {
             </p>
           ))}
           <p>{toolsNotExecutable}</p>
+          {detail.task.webTarget && (
+            <p className="field-error">
+              当前不能混合只读网页与工具方案，请移除其中一种目标后继续。
+            </p>
+          )}
           <button disabled={inputDisabled} onClick={() => void openTarget()}>
             查看或移除工具选择
           </button>
@@ -816,6 +822,13 @@ export default function AITaskWorkspace(props: Props) {
             </pre>
           </div>
         )}
+        {toolContexts(detail.task.toolTargets).map((entry) => (
+          <div key={entry.id}>
+            <h3>已选工具 · {entry.label}</h3>
+            <p>仅发送以下所选定义；连接地址、程序路径与凭据留在本机。</p>
+            <pre>{entry.text}</pre>
+          </div>
+        ))}
         {detail.task.outputTarget && (
           <div>
             <h3>已选输出 · 路径留在本机</h3>
@@ -871,7 +884,9 @@ export default function AITaskWorkspace(props: Props) {
             disabled={
               busy ||
               stale ||
-              !!detail.task.toolTargets?.length ||
+              (!!detail.task.toolTargets?.length &&
+                (!!detail.task.webTarget ||
+                  detail.toolTargetStates?.some((state) => !state.current))) ||
               !(scope?.instruction ?? draft.description).trim() ||
               scopeConflict ||
               !model.trim() ||
@@ -1598,7 +1613,16 @@ export default function AITaskWorkspace(props: Props) {
                               : kinds[selectedStep.type]?.label}{' '}
                             · {selectedStep.id}
                           </summary>
-                          <pre>{text(selectedStep)}</pre>
+                          {selectedStep.type === 'mcp' ? (
+                            <McpNodeConfiguration
+                              node={selectedStep}
+                              targets={
+                                detail.proposal ? detail.task.toolTargets : detail.flow?.toolTargets
+                              }
+                            />
+                          ) : (
+                            <pre>{text(selectedStep)}</pre>
+                          )}
                           {!scope && (
                             <button
                               disabled={inputDisabled || dirty || stale || !!detail.proposal}
@@ -1609,6 +1633,11 @@ export default function AITaskWorkspace(props: Props) {
                           )}
                         </details>
                       )}
+                      {flatten(flow.steps).some((step) => step.type === 'mcp') && (
+                        <p className="ai-task-note">
+                          工具方案可采纳和编辑，真实调用尚未开放，暂不能试运行。
+                        </p>
+                      )}
                       {detail.proposal && (
                         <>
                           <h2>资源与权限</h2>
@@ -1617,7 +1646,7 @@ export default function AITaskWorkspace(props: Props) {
                               <li key={i}>{resource}</li>
                             ))}
                             {!detail.resources.length && (
-                              <li>没有文件、浏览器、HTTP 或脚本资源操作。</li>
+                              <li>没有文件、浏览器、HTTP、脚本或工具资源操作。</li>
                             )}
                             <li>声明的能力：{flow.requiredCapabilities.join('、') || '无'}</li>
                           </ul>
@@ -1661,7 +1690,8 @@ export default function AITaskWorkspace(props: Props) {
                               generating ||
                               !!scope ||
                               !!detail.task.toolTargets?.length ||
-                              !!detail.task.toolsRequirePlan
+                              !!detail.task.toolsRequirePlan ||
+                              flatten(flow.steps).some((step) => step.type === 'mcp')
                             }
                             ref={trialButton}
                             data-run-review-start

@@ -10,6 +10,7 @@ export const planningFlowHash = (flow: FlowRecord | null) =>
       ? {
           flow: flow.flow,
           bindings: flow.bindings,
+          ...(flow.toolTargets?.length ? { toolTargets: flow.toolTargets } : {}),
           ...(flow.webTarget ? { webTarget: flow.webTarget } : {}),
           ...(flow.outputTarget ? { outputTarget: flow.outputTarget } : {}),
         }
@@ -32,6 +33,7 @@ export function validateScopedPlan(result: PlanningResult, before: Flow, scope: 
   const old = original as unknown as Record<string, unknown>;
   const next = proposed as unknown as Record<string, unknown>;
   const fixed = ['id', 'type', 'version', 'operation', 'binding', 'templateName', 'dependencies'];
+  if (original.type === 'mcp') fixed.push('target', 'tool');
   if (original.type === 'condition') fixed.push('then', 'else');
   if (original.type === 'loop') fixed.push('body');
   // HTTP body is editable; the endpoint, method and headers remain the same.

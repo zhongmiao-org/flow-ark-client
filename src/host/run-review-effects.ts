@@ -12,6 +12,11 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
       detail,
     });
     switch (node.type) {
+      case 'mcp':
+        return effect(
+          'unknown',
+          `工具 ${node.tool} · 对象 ${node.target}；外部影响待核对，当前工具调用尚未接入。`,
+        );
       case 'file':
       case 'excel': {
         const file = typeof node.name === 'string' ? `“${node.name}”` : '执行时确定名称的文件';
