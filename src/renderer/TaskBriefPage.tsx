@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { PlanningContext, PlanningTask } from '../shared/planning';
+import { IMAGE_TOTAL_BYTES } from '../shared/task-attachments';
 
 export default function TaskBriefPage({
   task,
@@ -33,8 +34,14 @@ export default function TaskBriefPage({
   const count =
     context.length +
     (task.attachments?.length ?? 0) +
+    (task.toolTargets?.length ?? 0) +
     Number(!!task.webTarget) +
     Number(!!task.outputTarget);
+  const images = (task.attachments ?? []).filter((entry) => entry.kind === 'image');
+  const imageBytes = images.reduce((total, image) => total + image.size, 0);
+  const imageSize =
+    imageBytes < 0.01 * 1024 * 1024 ? '不足 0.01' : (imageBytes / (1024 * 1024)).toFixed(2);
+  const imageLimit = images.length >= 4 || imageBytes >= IMAGE_TOTAL_BYTES;
   return (
     <div className="ai-task-columns task-brief-columns">
       <section className="ai-task-card task-brief-input">
@@ -53,12 +60,23 @@ export default function TaskBriefPage({
           <button disabled={busy} aria-label="网页链接与对象" onClick={target}>
             网页链接
           </button>
-          <button disabled={busy || count >= 20} onClick={() => choose('image')}>
+          <button disabled={busy || count >= 20 || imageLimit} onClick={() => choose('image')}>
             目标截图
           </button>
         </div>
         <section className="task-brief-context" aria-label="已选上下文">
           <h2>已选上下文 · {count} 项</h2>
+          <p className="task-context-budget" role="status">
+            全部资料 {count} / 20 项 · 图片 {images.length} / 4 张
+            {images.length > 0 && ` · ${imageSize} / 12 MiB`}
+          </p>
+          {(count >= 20 || imageLimit) && (
+            <p className="ai-task-note">
+              {count >= 20
+                ? '资料数量已达上限，请先移除不需要的资料、输出或工具选择。'
+                : '图片数量或总大小已达上限，请先移除不需要的图片。其他文本资料仍可添加。'}
+            </p>
+          )}
           {!count && <p>选择需要的资料；支持 UTF-8 文本、PNG / JPEG 图片。</p>}
           {task.webTarget && (
             <div aria-label="已选网页来源">
@@ -90,6 +108,16 @@ export default function TaskBriefPage({
             </div>
           ))}
           {task.outputTarget && <p>任务输出 / {task.outputTarget.name} · 路径留在本机</p>}
+          {!!task.toolTargets?.length && (
+            <div className="task-brief-tool-context" aria-label="已选工具资料">
+              {task.toolTargets.map((tool) => (
+                <p key={tool.selectionId}>
+                  {tool.displayName} · {tool.tools.length} 项工具定义
+                </p>
+              ))}
+              <small>每个连接计为一项资料；选择工具不会授予执行权限。</small>
+            </div>
+          )}
           {context.map((c, index) => (
             <fieldset className="ai-task-context" disabled={busy} key={c.id}>
               <label>
@@ -141,6 +169,10 @@ export default function TaskBriefPage({
         </section>
         <p className="task-brief-disclosure">
           本次只发送你核对的描述、资料、图片和相关能力说明。未选择的窗口与文件不会加入。
+        </p>
+        <p className="task-brief-disclosure">
+          文本支持 UTF-8，单项最多 200 KiB / 50000 字符；PNG / JPEG 单张最多 4 MiB。
+          截图入口选择已有图片，不会自动截取屏幕。副本保存在任务中，原文件变化后需移除重选。
         </p>
         {controls}
         <div className="ai-task-actions">

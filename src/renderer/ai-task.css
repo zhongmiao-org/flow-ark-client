@@ -1076,6 +1076,23 @@
   min-height: 28px;
   padding: 4px 8px;
 }
+.task-context-budget {
+  font-size: 12px;
+}
+.task-brief-tool-context {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.task-brief-tool-context small {
+  color: var(--fa-text-secondary);
+}
+.task-attachment-preview h2 {
+  overflow-wrap: anywhere;
+  min-width: 0;
+  scroll-margin-top: 24px;
+}
 .task-brief-context p,
 .task-brief-disclosure,
 .task-brief-explainer p {

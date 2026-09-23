@@ -106,6 +106,19 @@ export default function AITaskWorkspace(props: Props) {
   const [draft, setDraft] = useState<Draft>({ description: '', context: [], answers: {} });
   const [saved, setSaved] = useState('');
   const [attachmentPreview, setAttachmentPreview] = useState<AttachmentPreview>();
+  const attachmentHeading = useRef<HTMLHeadingElement>(null);
+  const attachmentOpener = useRef<HTMLElement | null>(null);
+  const attachmentRequest = useRef(0);
+  useEffect(() => {
+    if (!attachmentPreview) return;
+    attachmentHeading.current?.focus({ preventScroll: true });
+    attachmentHeading.current?.scrollIntoView({ block: 'start' });
+  }, [attachmentPreview]);
+  function closeAttachmentPreview() {
+    attachmentRequest.current++;
+    setAttachmentPreview(undefined);
+    if (attachmentOpener.current?.isConnected) attachmentOpener.current.focus();
+  }
   const [outputOptions, setOutputOptions] = useState<OutputOptions>({
     name: '结果.txt',
     onConflict: 'number',
@@ -142,10 +155,10 @@ export default function AITaskWorkspace(props: Props) {
     });
   }, [props.active]);
   const backToBrief = useCallback(() => setPage('brief'), []);
-  useEffect(
-    () => setAttachmentPreview(undefined),
-    [page, detail?.task.id, detail?.task.revision, props.active],
-  );
+  useEffect(() => {
+    attachmentRequest.current++;
+    setAttachmentPreview(undefined);
+  }, [page, detail?.task.id, detail?.task.revision, props.active]);
   const location = useRef({ active: props.active, page });
   location.current = { active: props.active, page };
   const previousPage = useRef(page);
@@ -922,14 +935,27 @@ export default function AITaskWorkspace(props: Props) {
     });
   }
   async function previewAttachment(attachmentId: string) {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     await run(async () => {
       if (!detail || stale) throw new Error('请重新读取任务后预览');
+      const ticket = epoch.current;
+      const sourcePage = location.current.page;
+      const previewTicket = ++attachmentRequest.current;
       const next = await api('task.attachment.preview', {
         id: detail.task.id,
         revision,
         attachmentId,
       });
-      if (props.active && selectedTask.current === detail.task.id) setAttachmentPreview(next);
+      if (
+        ticket === epoch.current &&
+        previewTicket === attachmentRequest.current &&
+        location.current.active &&
+        location.current.page === sourcePage &&
+        selectedTask.current === detail.task.id
+      ) {
+        attachmentOpener.current = opener;
+        setAttachmentPreview(next);
+      }
     });
   }
   async function showGuide() {
@@ -1385,15 +1411,29 @@ export default function AITaskWorkspace(props: Props) {
         </p>
       )}
       {attachmentPreview && (
-        <section className="ai-task-card task-attachment-preview" aria-label="附件预览">
+        <section
+          className="ai-task-card task-attachment-preview"
+          aria-label="附件预览"
+          onKeyDown={(event) => {
+            if (event.key === 'Escape' && !event.nativeEvent.isComposing) {
+              event.preventDefault();
+              event.stopPropagation();
+              closeAttachmentPreview();
+            }
+          }}
+        >
           <div className="ai-task-actions">
-            <h2>{attachmentPreview.name}</h2>
-            <button onClick={() => setAttachmentPreview(undefined)}>关闭附件预览</button>
+            <h2 ref={attachmentHeading} tabIndex={-1}>
+              {attachmentPreview.name}
+            </h2>
+            <button onClick={closeAttachmentPreview}>关闭附件预览</button>
           </div>
           {attachmentPreview.kind === 'image' ? (
             <img src={attachmentPreview.dataUrl} alt={attachmentPreview.name} />
           ) : (
-            <pre>{attachmentPreview.text}</pre>
+            <pre tabIndex={0} aria-label="附件完整文本">
+              {attachmentPreview.text}
+            </pre>
           )}
           <p>这是选入任务的完整副本；预览不会发送给 AI，也不会修改原文件。</p>
         </section>
