@@ -1,3 +1,4 @@
+import { taskStepTitle } from './task-step-presentation';
 import type { McpReceipt } from '../shared/mcp-run';
 import { mcpReceiptsForRun } from './mcp-run-presentation';
 import { presentRun } from '../shared/run-presentation';
@@ -54,6 +55,7 @@ export function taskRunPresentation(
   const completed = rows.filter((row) => row.ended);
   const unresolved = rows.filter((row) => row.started && !row.ended);
   const unvisited = rows.filter((row) => !row.started && !row.ended);
+  const nodes = new Map(flatten(input.snapshot?.steps ?? []).map((n) => [n.id, n]));
   const current = rows.find((row) => row.instance === view.step.instance);
   const success =
     input.run.state === 'SUCCEEDED' &&
@@ -76,7 +78,7 @@ export function taskRunPresentation(
     stopped:
       input.run.state === 'FAILED'
         ? current
-          ? `停在：${current.name}`
+          ? `停在：${nodes.has(current.nodeId) ? taskStepTitle(nodes.get(current.nodeId)!) : current.name}`
           : '本次试运行未完成'
         : input.run.state === 'CANCELLED'
           ? '本次试运行已取消'
@@ -97,7 +99,6 @@ export function taskRunPresentation(
       row.started &&
       ['browser', 'file', 'excel', 'http', 'script', 'desktop', 'mcp'].includes(row.type ?? ''),
   );
-  const nodes = new Map(flatten(input.snapshot?.steps ?? []).map((n) => [n.id, n]));
   const labels = new Map<string, number>();
   for (const row of operations) {
     const node = nodes.get(row.nodeId);

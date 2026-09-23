@@ -1,3 +1,4 @@
+import TaskRunFailure from './TaskRunFailure';
 import McpRunReceipts from './McpRunReceipts';
 import type { LearningStatus } from '../shared/learning';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -180,6 +181,7 @@ export default function TaskRunPage({
       : page === 'rerun'
         ? '重新运行前，核对已完成操作'
         : model.title;
+  const failed = run.state === 'FAILED' && !model.uncertain && !model.view.closing;
   const compactLive = !model.terminal && !model.uncertain && !model.view.closing;
   const stepNames = (rows: typeof model.rows, empty: string) =>
     rows
@@ -239,25 +241,27 @@ export default function TaskRunPage({
       {!model.artifacts.length && <p>本次尚无已登记的文件产物，可查看步骤输出。</p>}
     </>
   );
+  const canRepair =
+    !!run.task?.id &&
+    model.terminal &&
+    !model.success &&
+    !model.uncertain &&
+    !model.view.closing &&
+    model.node?.type === 'browser' &&
+    model.node.version !== 1 &&
+    model.node.operation !== 'navigate' &&
+    !!model.node.selector;
   const actions = (
     <>
-      {run.task?.id &&
-        model.terminal &&
-        !model.success &&
-        !model.uncertain &&
-        !model.view.closing &&
-        model.node?.type === 'browser' &&
-        model.node.version !== 1 &&
-        model.node.operation !== 'navigate' &&
-        !!model.node.selector && (
-          <>
-            <button className="primary" onClick={() => setPage('repair')}>
-              重新选择网页目标
-            </button>
-            <button onClick={() => setPage('repair')}>让 AI 提议修复</button>
-          </>
-        )}
-      <button className="primary" onClick={() => navigate('modify')}>
+      {canRepair && (
+        <>
+          <button className="primary" onClick={() => setPage('repair')}>
+            重新选择网页目标
+          </button>
+          <button onClick={() => setPage('repair')}>让 AI 提议修复</button>
+        </>
+      )}
+      <button className={canRepair ? undefined : 'primary'} onClick={() => navigate('modify')}>
         {model.success ? '告诉 AI 怎么改' : '修改需求与方案'}
       </button>
       {!model.success && <button onClick={() => navigate('plan')}>手动检查步骤</button>}
@@ -519,81 +523,96 @@ export default function TaskRunPage({
           <div
             className={
               'task-run-columns ' +
-              (model.terminal || model.uncertain ? 'task-run-stopped' : 'task-run-live')
+              (model.terminal || model.uncertain ? 'task-run-stopped' : 'task-run-live') +
+              (failed ? ' task-run-failed' : '')
             }
           >
             <section className="ai-task-card">
-              <span className={'badge state-' + (model.uncertain ? 'INTERRUPTED' : run.state)}>
-                {model.uncertain
-                  ? '需要核对'
-                  : runDisplayLabels[run.state as keyof typeof runDisplayLabels]}
-              </span>
-              <h2 className="task-run-current">{model.current?.name ?? model.view.step.label}</h2>
-              {target}
-              {run.error && (
-                <p className="field-error" role="alert">
-                  {run.error}
-                </p>
-              )}
-              {compactLive ? (
-                <div className="task-run-progress" aria-label="当前运行进度">
-                  <dl>
-                    <div>
-                      <dt>已完成</dt>
-                      <dd>{stepNames(model.completed, '尚无完成记录')}</dd>
-                    </div>
-                    <div>
-                      <dt>{model.view.step.kind === 'paused' ? '下一步' : '当前'}</dt>
-                      <dd>{model.view.step.label}</dd>
-                    </div>
-                    <div>
-                      <dt>尚未执行</dt>
-                      <dd>{stepNames(model.unvisited, '无尚未执行的步骤记录')}</dd>
-                    </div>
-                  </dl>
-                  {model.node?.type === 'human' && (
-                    <p className="task-run-human-prompt">需要你确认：{model.node.message}</p>
-                  )}
-                  <p>已记录耗时：{model.view.elapsed.label}</p>
-                  {model.view.progress.kind === 'reported' && <p>{model.view.progress.label}</p>}
-                </div>
+              {failed ? (
+                <TaskRunFailure model={model} error={run.error ?? ''} target={target} />
               ) : (
                 <>
-                  <div className="task-run-file">
-                    <h3>{model.node?.type === 'human' ? '需要你确认' : '当前步骤'}</h3>
-                    <p>
-                      {model.node?.type === 'human' ? model.node.message : model.view.step.label}
+                  <span className={'badge state-' + (model.uncertain ? 'INTERRUPTED' : run.state)}>
+                    {model.uncertain
+                      ? '需要核对'
+                      : runDisplayLabels[run.state as keyof typeof runDisplayLabels]}
+                  </span>
+                  <h2 className="task-run-current">
+                    {model.current?.name ?? model.view.step.label}
+                  </h2>
+                  {target}
+                  {run.error && (
+                    <p className="field-error" role="alert">
+                      {run.error}
                     </p>
-                    <p>已记录耗时：{model.view.elapsed.label}</p>
-                    {model.view.progress.kind === 'reported' && <p>{model.view.progress.label}</p>}
-                  </div>
-                  <div className="task-run-file">
-                    <h3>已完成</h3>
-                    <p>
-                      {model.completed
-                        .slice(0, 6)
-                        .map((r) => r.name)
-                        .join('、') || '尚无完成记录'}
-                      {model.completed.length > 6 &&
-                        ` 等 ${model.completed.length} 次，完整记录见执行步骤。`}
-                    </p>
-                  </div>
-                  <div className="task-run-file">
-                    <h3>尚未完成或未执行</h3>
-                    <p>
-                      {[...model.unresolved, ...model.unvisited]
-                        .slice(0, 6)
-                        .map((r) => r.name)
-                        .join('、') || '无未完成步骤记录'}
-                      {model.unresolved.length + model.unvisited.length > 6 &&
-                        ` 等 ${model.unresolved.length + model.unvisited.length} 条，完整记录见执行步骤。`}
-                    </p>
-                  </div>
-                  <div className="task-run-file">
-                    <h3>影响范围</h3>
-                    <p>{model.summary}</p>
-                    <p>{model.effectNote}</p>
-                  </div>
+                  )}
+                  {compactLive ? (
+                    <div className="task-run-progress" aria-label="当前运行进度">
+                      <dl>
+                        <div>
+                          <dt>已完成</dt>
+                          <dd>{stepNames(model.completed, '尚无完成记录')}</dd>
+                        </div>
+                        <div>
+                          <dt>{model.view.step.kind === 'paused' ? '下一步' : '当前'}</dt>
+                          <dd>{model.view.step.label}</dd>
+                        </div>
+                        <div>
+                          <dt>尚未执行</dt>
+                          <dd>{stepNames(model.unvisited, '无尚未执行的步骤记录')}</dd>
+                        </div>
+                      </dl>
+                      {model.node?.type === 'human' && (
+                        <p className="task-run-human-prompt">需要你确认：{model.node.message}</p>
+                      )}
+                      <p>已记录耗时：{model.view.elapsed.label}</p>
+                      {model.view.progress.kind === 'reported' && (
+                        <p>{model.view.progress.label}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="task-run-file">
+                        <h3>{model.node?.type === 'human' ? '需要你确认' : '当前步骤'}</h3>
+                        <p>
+                          {model.node?.type === 'human'
+                            ? model.node.message
+                            : model.view.step.label}
+                        </p>
+                        <p>已记录耗时：{model.view.elapsed.label}</p>
+                        {model.view.progress.kind === 'reported' && (
+                          <p>{model.view.progress.label}</p>
+                        )}
+                      </div>
+                      <div className="task-run-file">
+                        <h3>已完成</h3>
+                        <p>
+                          {model.completed
+                            .slice(0, 6)
+                            .map((r) => r.name)
+                            .join('、') || '尚无完成记录'}
+                          {model.completed.length > 6 &&
+                            ` 等 ${model.completed.length} 次，完整记录见执行步骤。`}
+                        </p>
+                      </div>
+                      <div className="task-run-file">
+                        <h3>尚未完成或未执行</h3>
+                        <p>
+                          {[...model.unresolved, ...model.unvisited]
+                            .slice(0, 6)
+                            .map((r) => r.name)
+                            .join('、') || '无未完成步骤记录'}
+                          {model.unresolved.length + model.unvisited.length > 6 &&
+                            ` 等 ${model.unresolved.length + model.unvisited.length} 条，完整记录见执行步骤。`}
+                        </p>
+                      </div>
+                      <div className="task-run-file">
+                        <h3>影响范围</h3>
+                        <p>{model.summary}</p>
+                        <p>{model.effectNote}</p>
+                      </div>
+                    </>
+                  )}
                 </>
               )}
               <div className="ai-task-actions">
@@ -645,7 +664,7 @@ export default function TaskRunPage({
               )}
             </section>
             {model.terminal || model.uncertain ? (
-              <section className="ai-task-card">
+              <section className="ai-task-card task-run-next">
                 <h2>下一步可以这样做</h2>
                 {actions}
                 <details>

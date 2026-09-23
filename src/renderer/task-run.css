@@ -375,6 +375,44 @@
   background: var(--fa-action-subtle);
   white-space: pre-wrap;
 }
+.task-run-failed > .ai-task-card {
+  min-height: 710px;
+}
+.task-failure-completed {
+  min-height: 100px;
+}
+.task-failure-remaining {
+  min-height: 108px;
+}
+.task-failure-impact {
+  min-height: 100px;
+  background: var(--fa-action-subtle);
+}
+.task-failure-details summary {
+  cursor: pointer;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.task-failure-details > p,
+.task-failure-details > section {
+  margin-top: 12px;
+}
+.task-run-page .task-failure-details pre {
+  max-height: 220px;
+  padding: 12px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-bg-canvas);
+}
+.task-failure-details pre:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 2px;
+}
+@container (max-width: 850px) {
+  .task-run-failed > .ai-task-card {
+    min-height: auto;
+  }
+}
 .task-run-live-impact summary {
   cursor: pointer;
   color: var(--fa-action-primary);
