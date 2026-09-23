@@ -1166,6 +1166,7 @@ export default function App() {
           )}
           <div hidden={section !== 'templates'}>
             <TemplateLibrary
+              refresh={refresh}
               navigation={templateNavigation}
               exportTemplate={(pkg) =>
                 setExportSource(
