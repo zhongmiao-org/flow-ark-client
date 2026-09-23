@@ -1,3 +1,4 @@
+import AttentionWorkspace, { type AttentionNavigation } from './AttentionWorkspace';
 import TemplateSchedulePage from './TemplateSchedulePage';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
 import { useState, useEffect, useCallback, useReducer, useRef, lazy, Suspense } from 'react';
@@ -112,6 +113,7 @@ function format(t: string) {
   });
 }
 export default function App() {
+  const [attentionNavigation, setAttentionNavigation] = useState<AttentionNavigation>();
   const templateNavigation = useRef<TemplateNavigation | undefined>(undefined);
   const toolNavigation = useRef<ToolNavigation | undefined>(undefined);
   const aiSettingsNavigation = useRef<AISettingsNavigation | undefined>(undefined);
@@ -138,7 +140,7 @@ export default function App() {
   const [runFilter, setRunFilter] = useState(false);
   const [runTab, setRunTab] = useState<RunTab>('current');
   const [runOrigin, setRunOrigin] = useState<
-    'history' | 'editor' | 'task' | 'template' | 'schedule'
+    'history' | 'editor' | 'task' | 'template' | 'schedule' | 'inbox'
   >('history');
   const [templateOrigin, setTemplateOrigin] = useState<TemplateEntryOrigin>();
   const scheduleNavigation = useRef<TemplateNavigation | undefined>(undefined);
@@ -278,7 +280,8 @@ export default function App() {
     templateOrigin?.back();
   }
   useEffect(() => {
-    if (section !== 'runs' || !['template', 'schedule'].includes(runOrigin) || !detail) return;
+    if (section !== 'runs' || !['template', 'schedule', 'inbox'].includes(runOrigin) || !detail)
+      return;
     const key = (event: KeyboardEvent) => {
       if (
         (event.target as HTMLElement).closest(
@@ -289,7 +292,10 @@ export default function App() {
       if ((event.altKey && event.key === 'ArrowLeft') || (event.metaKey && event.key === '[')) {
         event.preventDefault();
         if (runTab !== 'current') setRunTab('current');
-        else if (runOrigin === 'schedule') returnSchedule();
+        else if (runOrigin === 'inbox') {
+          setDetail(null);
+          setSection('inbox');
+        } else if (runOrigin === 'schedule') returnSchedule();
         else returnTemplate();
       }
     };
@@ -696,7 +702,8 @@ export default function App() {
                   else if (detail && runTab !== 'current') setRunTab('current');
                   else if (detail) {
                     setDetail(null);
-                    if (runOrigin === 'schedule') returnSchedule();
+                    if (runOrigin === 'inbox') setSection('inbox');
+                    else if (runOrigin === 'schedule') returnSchedule();
                     else if (runOrigin === 'template') returnTemplate();
                     else if (runOrigin === 'editor' && edit) setSection('editor');
                     else if (runOrigin === 'task') {
@@ -711,17 +718,19 @@ export default function App() {
                     ? '← 返回结果摘要'
                     : runTab !== 'current'
                       ? '← 返回运行详情'
-                      : runOrigin === 'schedule'
-                        ? '← 返回本机计划'
-                        : runOrigin === 'template'
-                          ? '← 返回模板入口'
-                          : runOrigin === 'task'
-                            ? '← 返回 AI 任务'
-                            : runOrigin === 'editor' && edit
-                              ? outlineOpen
-                                ? '← 返回长流程大纲'
-                                : '← 返回流程编排'
-                              : `← 返回记录第 ${runPage} 页`
+                      : runOrigin === 'inbox'
+                        ? '← 返回待办与提醒'
+                        : runOrigin === 'schedule'
+                          ? '← 返回本机计划'
+                          : runOrigin === 'template'
+                            ? '← 返回模板入口'
+                            : runOrigin === 'task'
+                              ? '← 返回 AI 任务'
+                              : runOrigin === 'editor' && edit
+                                ? outlineOpen
+                                  ? '← 返回长流程大纲'
+                                  : '← 返回流程编排'
+                                : `← 返回记录第 ${runPage} 页`
                   : '← 返回运行记录'}
               </button>
             )}
@@ -741,6 +750,11 @@ export default function App() {
                   : editorBrowser
                     ? '← 返回流程编排'
                     : '← 返回我的流程'}
+              </button>
+            )}
+            {section === 'inbox' && attentionNavigation?.back && (
+              <button className="context-back" onClick={attentionNavigation.back}>
+                ← 返回待办列表
               </button>
             )}
             <nav className="breadcrumbs" aria-label="当前位置">
@@ -786,6 +800,25 @@ export default function App() {
                       <span aria-hidden="true">/</span>
                     </>
                   )}
+                </>
+              )}
+              {((section === 'runs' && detail && runOrigin === 'inbox') ||
+                (section === 'inbox' && attentionNavigation?.back)) && (
+                <>
+                  <a
+                    href="#inbox"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      if (section === 'inbox') attentionNavigation?.back?.();
+                      else {
+                        setDetail(null);
+                        setSection('inbox');
+                      }
+                    }}
+                  >
+                    待办与提醒
+                  </a>
+                  <span aria-hidden="true">/</span>
                 </>
               )}
               {section === 'runs' && detail && runOrigin === 'schedule' && (
@@ -936,7 +969,9 @@ export default function App() {
                         ? '首次使用'
                         : section === 'tasks'
                           ? taskTitle
-                          : nav.find((n) => n[0] === section)?.[1]}
+                          : section === 'inbox'
+                            ? (attentionNavigation?.title ?? '待办与提醒')
+                            : nav.find((n) => n[0] === section)?.[1]}
               </span>
             </nav>
             <button
@@ -1538,48 +1573,22 @@ export default function App() {
               }}
             />
           </div>
-          {section === 'inbox' && (
-            <div className="page">
-              <Heading title="需要你看一眼" text="联系方式、待确认动作和异常结果会保存在这里。" />
-              {!data.attention.length ? (
-                <Empty text="目前没有待办。流程需要人工处理时，会在这里提醒。" />
-              ) : (
-                data.attention.map((a) => (
-                  <div className={'attention ' + (a.read ? 'read' : '')} key={a.id}>
-                    <Bell size={20} />
-                    <div>
-                      <b>{a.title}</b>
-                      <small>{format(a.time)}</small>
-                      <AttentionContent detail={a.detail} />
-                    </div>
-                    <button
-                      onClick={() =>
-                        action(
-                          () =>
-                            api('clipboard.copy', {
-                              value:
-                                a.kind === 'contact' && a.detail.value
-                                  ? a.detail.value
-                                  : JSON.stringify(a.detail, null, 2),
-                            }),
-                          '已复制',
-                        )
-                      }
-                    >
-                      <Copy size={14} />
-                      复制
-                    </button>
-                    <button onClick={() => action(() => api('attention.read', { id: a.id }))}>
-                      {a.read ? '已读' : '标为已读'}
-                    </button>
-                    {a.kind === 'template-input' && !a.detail?.answered && (
-                      <TemplateAnswer item={a} action={action} />
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          )}
+          <AttentionWorkspace
+            data={data}
+            active={section === 'inbox'}
+            refresh={refresh}
+            navigation={setAttentionNavigation}
+            showBrowser={() => setBrowserOpen(true)}
+            openRun={async (id) => {
+              const next = await api('run.detail', { id });
+              if (!next?.run) throw new Error('来源运行暂不可用');
+              setRunOrigin('inbox');
+              setRunTab('current');
+              setRunFilter(false);
+              setDetail(next);
+              setSection('runs');
+            }}
+          />
           {section === 'settings' && (
             <SettingsView
               data={data}
@@ -2316,50 +2325,6 @@ function JsonInput({ value, onChange }: { value: any; onChange: (v: any) => void
     </>
   );
 }
-function AttentionContent({ detail }: { detail: any }) {
-  return (
-    <div className="attention-detail">
-      <pre>{JSON.stringify(detail, null, 2)}</pre>
-    </div>
-  );
-}
-function TemplateAnswer({ item, action }: any) {
-  const [value, setValue] = useState('');
-  const [error, setError] = useState('');
-  const send = (value: any) => action(() => api('template.answer', { id: item.id, value }));
-  if (item.detail.schema?.type === 'boolean')
-    return (
-      <>
-        <button onClick={() => send(true)}>确认</button>
-        <button onClick={() => send(false)}>拒绝</button>
-      </>
-    );
-  return (
-    <div>
-      <textarea
-        aria-label="处理结果 JSON"
-        placeholder="输入符合 Schema 的 JSON"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-      />
-      <button
-        onClick={() => {
-          try {
-            const parsed = JSON.parse(value);
-            setError('');
-            send(parsed);
-          } catch {
-            setError('请输入有效 JSON');
-          }
-        }}
-      >
-        提交结果
-      </button>
-      <small>{error}</small>
-    </div>
-  );
-}
-
 function SettingsView({ data, action, openAI }: any) {
   const [candidates, setCandidates] = useState<any[]>([]);
   return (
