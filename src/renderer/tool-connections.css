@@ -1,4 +1,4 @@
-/* Figma 23:4867 / 23:5493 / 23:8773 / 23:8920. */
+/* Figma 23:4867 / 23:5033 / 23:5195 / 23:5348 / 23:5493 / 23:8773 / 23:8920. */
 .tools-host[hidden] {
   display: none;
 }
@@ -83,6 +83,59 @@
 }
 .tool-columns > .ai-task-card {
   min-height: 700px;
+}
+.tool-assistant-columns {
+  grid-template-columns: minmax(0, 660fr) minmax(0, 716fr);
+}
+.tool-assistant-steps {
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  gap: 24px;
+  padding: 0;
+  margin: 0 0 24px;
+  color: var(--fa-text-secondary);
+}
+.tool-assistant-steps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.tool-assistant-steps li[aria-current='step'] {
+  color: var(--fa-action-primary);
+  font-weight: 600;
+}
+.tool-assistant-steps li > span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--fa-radius-999);
+  background: var(--fa-bg-subtle);
+}
+.tool-assistant-facts {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+}
+.tool-assistant-facts > div {
+  display: grid;
+  gap: 6px;
+}
+.tool-assistant-facts dt {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.tool-assistant-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.tool-assistant-result.is-available {
+  background: var(--fa-status-success-bg);
+}
+.tool-assistant-result.is-warning {
+  background: var(--fa-status-warning-bg);
 }
 .tool-config > .ai-task-card {
   min-height: 730px;

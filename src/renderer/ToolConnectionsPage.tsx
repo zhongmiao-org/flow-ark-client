@@ -1,3 +1,4 @@
+import DesktopAssistantConnection from './DesktopAssistantConnection';
 import { usePageBack } from './use-page-back';
 import { useEffect, useRef, useState, type MutableRefObject, type ReactNode } from 'react';
 import {
@@ -110,7 +111,7 @@ export default function ToolConnectionsPage({
   parentTitle?: string;
   choose: (kind: 'web' | 'file' | 'window') => void;
 }) {
-  const [view, setView] = useState<'catalog' | 'config' | 'review' | 'saved' | 'unavailable'>(
+  const [view, setView] = useState<'catalog' | 'config' | 'review' | 'saved' | 'assistant'>(
     'catalog',
   );
   const [connections, setConnections] = useState<ToolConnection[]>([]);
@@ -390,9 +391,11 @@ export default function ToolConnectionsPage({
                 ? '连接可用能力，再为具体任务选择对象与授权。'
                 : view === 'config'
                   ? '高级设置 · 为熟悉来源和权限的用户提供'
-                  : content
-                    ? `${content.config.transport.type === 'http' ? '远程 / 本机 HTTP' : '本地程序'} · ${address(content.config)}`
-                    : '来源、系统权限和能力必须逐项核对'}
+                  : view === 'assistant'
+                    ? '核对来源 → 系统权限 → 只读检查，再为任务选择具体窗口'
+                    : content
+                      ? `${content.config.transport.type === 'http' ? '远程 / 本机 HTTP' : '本地程序'} · ${address(content.config)}`
+                      : '来源、系统权限和能力必须逐项核对'}
             </p>
           </div>
         </div>
@@ -426,14 +429,13 @@ export default function ToolConnectionsPage({
               </section>
               <section className="ai-task-card">
                 <h2>本机应用助手</h2>
-                <span className="tool-status">macOS · TextEdit 窗口发现</span>
+                <span className="tool-status">macOS · 按任务选择窗口</span>
                 <p>
-                  查看窗口、核对选中段落
+                  发现窗口、核对选区与改动
                   <br />
-                  只读预览，文档写入尚未开放
+                  执行前重新核对能力与授权
                 </p>
-                <button onClick={() => choose('window')}>查看应用窗口</button>
-                <button onClick={() => move('unavailable')}>查看连接要求</button>
+                <button onClick={() => move('assistant')}>连接应用助手</button>
               </section>
             </div>
             <div className="tool-catalog-bottom">
@@ -815,27 +817,12 @@ export default function ToolConnectionsPage({
             </section>
           </div>
         )}
-        {view === 'unavailable' && (
-          <div className="tool-columns">
-            <section className="ai-task-card">
-              <h2>来源与运行方式</h2>
-              <span className="tool-status">随客户端提供窗口发现</span>
-              <p>
-                当前可在 macOS 查看已打开的 TextEdit
-                窗口标题与状态。选择窗口并明确点击后，可在本地预览选中段落；进入页面不会自动读取正文。
-              </p>
-              <p>自定义 MCP 连接可以检查已有工具服务，但不会因此获得操作任意应用窗口的权限。</p>
-              <button onClick={() => choose('window')}>查看应用窗口</button>
-            </section>
-            <section className="ai-task-card">
-              <h2>授权与测试</h2>
-              <p className="ai-task-note">
-                系统权限、窗口发现和任务授权分别核对。预览会在到期或离开后清除，任务窗口绑定、选区规划与写入回读仍未开放，连接
-                MCP 不会授予这些能力。
-              </p>
-              <button onClick={catalog}>返回应用与工具</button>
-            </section>
-          </div>
+        {view === 'assistant' && (
+          <DesktopAssistantConnection
+            active={active}
+            choose={() => choose('window')}
+            back={catalog}
+          />
         )}
       </section>
       {pendingLeave && (

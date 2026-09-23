@@ -11,7 +11,7 @@ const release = (observationId?: string) => {
   if (observationId)
     void window.flowark.request('desktop.windows.release', { observationId }).catch(() => {});
 };
-export default function useDesktopWindows(active: boolean, identity: string) {
+export default function useDesktopWindows(active: boolean, identity: string, autoRefresh = true) {
   const [snapshot, setSnapshot] = useState<DesktopWindowDiscovery>();
   const [selectedId, setSelectedId] = useState<string>();
   const [preview, setPreviewState] = useState<DesktopSelectionPreview>();
@@ -86,14 +86,14 @@ export default function useDesktopWindows(active: boolean, identity: string) {
     setSettingsPending(false);
     setLoading(false);
     clearPreview();
-    if (active) void refresh();
+    if (active && autoRefresh) void refresh();
     return () => {
       epoch.current++;
       previewEpoch.current++;
       discard(previewRef.current);
       releaseCurrent();
     };
-  }, [active, identity]);
+  }, [active, identity, autoRefresh]);
   useEffect(() => {
     if (!snapshot?.expiresAt) return;
     const timer = setTimeout(
