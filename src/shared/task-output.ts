@@ -25,18 +25,16 @@ const version = {
     .min(1)
     .max(Number.MAX_SAFE_INTEGER - 1),
 };
-const options = {
-  name: z
-    .string()
-    .trim()
-    .min(1)
-    .max(255)
-    .refine(
-      (v) => !/[\\/\x00-\x1f\x7f:]/.test(v) && !['.', '..'].includes(v),
-      '请输入不含路径的文件名',
-    ),
-  onConflict: z.enum(['number', 'overwrite']),
-};
+export const taskOutputNameSchema = z
+  .string()
+  .trim()
+  .min(1, '请输入输出文件名')
+  .max(255, '文件名最多 255 个字符')
+  .refine(
+    (value) => !/[\\/\x00-\x1f\x7f:]/.test(value) && !['.', '..'].includes(value),
+    '请输入不含路径分隔符、冒号或控制字符的文件名，不能使用 . 或 ..',
+  );
+const options = { name: taskOutputNameSchema, onConflict: z.enum(['number', 'overwrite']) };
 export const outputMethods = {
   'task.output.choose': z.object({ ...version, ...options }).strict(),
   'task.output.configure': z.object({ ...version, ...options }).strict(),

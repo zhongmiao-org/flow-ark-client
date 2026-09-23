@@ -12,7 +12,8 @@ import { stepTitle } from './flow-outline';
 import TaskWebTargetPage from './TaskWebTargetPage';
 import FirstTaskGuide from './FirstTaskGuide';
 import TaskUnderstandingPage, { type OutputOptions } from './TaskUnderstandingPage';
-import { outputContext } from '../shared/task-output';
+import PlanningQuestions from './PlanningQuestions';
+import { outputContext, taskOutputNameSchema } from '../shared/task-output';
 import { learningSteps, type LearningStatus } from '../shared/learning';
 import { webContext } from '../shared/task-web-target';
 import TaskBriefPage from './TaskBriefPage';
@@ -141,6 +142,10 @@ export default function AITaskWorkspace(props: Props) {
   const [selected, setSelected] = useState('');
   const [editingProposal, setEditingProposal] = useState(false);
   const contentDirty = !!detail && JSON.stringify(draft) !== saved;
+  const outputNameCheck = taskOutputNameSchema.safeParse(outputOptions.name);
+  const outputNameError = outputNameCheck.success
+    ? undefined
+    : outputNameCheck.error.issues[0].message;
   const outputDirty = !!detail?.task.outputTarget && JSON.stringify(outputOptions) !== savedOutput;
   const dirty = contentDirty || outputDirty;
   const generating = detail?.task.status === 'generating';
@@ -373,6 +378,7 @@ export default function AITaskWorkspace(props: Props) {
   async function save(): Promise<TaskDetail> {
     if (!detail) throw new Error('请先创建任务');
     if (stale) throw new Error('任务已在其他位置修改，请重新读取后继续');
+    if (detail.task.outputTarget && outputNameError) throw new Error(outputNameError);
     let next = detail;
     if (contentDirty) {
       next = await api('task.save', { id: detail.task.id, revision, ...draft });
@@ -528,6 +534,7 @@ export default function AITaskWorkspace(props: Props) {
   async function chooseOutput() {
     await run(async () => {
       if (!detail || stale) throw new Error('请重新读取任务后选择');
+      if (outputNameError) throw new Error(outputNameError);
       let next = detail;
       if (contentDirty) {
         next = await api('task.save', { id: detail.task.id, revision, ...draft });
@@ -803,6 +810,14 @@ export default function AITaskWorkspace(props: Props) {
           </>
         )}
       </details>
+      {detail.task.outputTarget && outputNameError && page !== 'understand' && (
+        <div className="ai-task-note" role="alert">
+          <p>{outputNameError}</p>
+          <button disabled={inputDisabled} onClick={() => setPage('understand')}>
+            修改输出文件名
+          </button>
+        </div>
+      )}
       <label className="ai-task-checkbox">
         <input
           type="checkbox"
@@ -839,7 +854,7 @@ export default function AITaskWorkspace(props: Props) {
               (page === 'understand' &&
                 learning?.taskId === detail.task.id &&
                 !detail.task.outputTarget) ||
-              (!!detail.task.outputTarget && !outputOptions.name.trim())
+              (!!detail.task.outputTarget && !!outputNameError)
             }
             onClick={() => void generate()}
           >
@@ -853,7 +868,9 @@ export default function AITaskWorkspace(props: Props) {
           </button>
         )}
         <button
-          disabled={inputDisabled || !dirty || stale}
+          disabled={
+            inputDisabled || !dirty || stale || (!!detail.task.outputTarget && !!outputNameError)
+          }
           onClick={() =>
             void run(async () => {
               await save();
@@ -1175,6 +1192,9 @@ export default function AITaskWorkspace(props: Props) {
               <TaskUnderstandingPage
                 task={detail.task}
                 description={draft.description}
+                context={draft.context}
+                outputDirty={outputDirty}
+                outputNameError={outputNameError}
                 result={result}
                 answers={draft.answers}
                 options={outputOptions}
@@ -1397,45 +1417,16 @@ export default function AITaskWorkspace(props: Props) {
                           </button>
                         </div>
                       )}
-                      {result?.kind === 'clarify' &&
-                        result.questions.map((question) => (
-                          <fieldset
-                            className="ai-task-question"
-                            key={question.id}
-                            disabled={inputDisabled}
-                          >
-                            <legend>{question.prompt}</legend>
-                            <div className="ai-task-options">
-                              {question.options.map((option) => (
-                                <button
-                                  type="button"
-                                  key={option}
-                                  aria-pressed={draft.answers[question.id] === option}
-                                  onClick={() =>
-                                    edit({
-                                      ...draft,
-                                      answers: { ...draft.answers, [question.id]: option },
-                                    })
-                                  }
-                                >
-                                  {option}
-                                </button>
-                              ))}
-                            </div>
-                            <textarea
-                              aria-label={question.prompt}
-                              value={draft.answers[question.id] ?? ''}
-                              maxLength={3000}
-                              placeholder="也可以直接补充说明"
-                              onChange={(e) =>
-                                edit({
-                                  ...draft,
-                                  answers: { ...draft.answers, [question.id]: e.target.value },
-                                })
-                              }
-                            />
-                          </fieldset>
-                        ))}
+                      {result?.kind === 'clarify' && (
+                        <PlanningQuestions
+                          questions={result.questions}
+                          answers={draft.answers}
+                          busy={inputDisabled || stale}
+                          answer={(id, value) =>
+                            edit({ ...draft, answers: { ...draft.answers, [id]: value } })
+                          }
+                        />
+                      )}
                       {planningControls}
                       {page === 'review' && (
                         <button disabled={busy} onClick={() => setPage('brief')}>
