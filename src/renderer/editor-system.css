@@ -185,7 +185,8 @@
 .editor-region .browser-sidebar {
   width: calc(50% - 12px);
   flex: 0 0 calc(50% - 12px);
-  min-width: 481px;
+  /* Keep 480 px of native viewport after the card padding and border. */
+  min-width: 522px;
   min-height: 0;
   padding: 20px;
   gap: 16px;

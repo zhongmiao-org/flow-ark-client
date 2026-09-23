@@ -73,6 +73,7 @@ export default function BrowserSidebar({
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const focused = useRef(false);
+  const addressEdited = useRef(false);
   const obscuredRef = useRef(hidden);
   const enabled = useRef(false);
   obscuredRef.current = hidden;
@@ -94,7 +95,8 @@ export default function BrowserSidebar({
         const s = await api('browser.embedded.status');
         if (live) {
           setStatus(s);
-          if (!focused.current) setAddress(s.url === 'about:blank' ? '' : s.url);
+          if (!focused.current && !addressEdited.current)
+            setAddress(s.url === 'about:blank' ? '' : s.url);
         }
       } catch (e) {
         if (live) setError(String(e));
@@ -156,6 +158,7 @@ export default function BrowserSidebar({
       await api('browser.embedded.navigate', {
         url: /^https?:\/\//.test(url) ? url : 'https://' + url,
       });
+      addressEdited.current = false;
     } catch (e) {
       setError(String(e));
     } finally {
@@ -203,24 +206,41 @@ export default function BrowserSidebar({
         }
       }}
     >
-      <header className="browser-observation-header">
-        <div>
-          <Globe size={18} />
-          <strong>内置浏览器</strong>
-          <span className="badge">
-            {status.blocked
-              ? '网页已停止'
-              : running
-                ? '任务执行中'
-                : `桌面宽度 ${desktopViewportWidth}`}
-          </span>
-        </div>
-        <div className="browser-observation-actions">
-          {expanded ? (
+      <header className={`browser-observation-header${expanded ? ' topbar' : ''}`}>
+        {expanded ? (
+          <>
             <button ref={returnButton} onClick={restorePanel}>
-              返回右侧面板
+              ← 返回右侧面板
             </button>
-          ) : (
+            <nav className="breadcrumbs" aria-label="当前位置">
+              <a
+                href="#browser-panel"
+                onClick={(event) => {
+                  event.preventDefault();
+                  restorePanel();
+                }}
+              >
+                内置网页
+              </a>
+              <span aria-hidden="true">/</span>
+              <span aria-current="page">扩大查看网页</span>
+            </nav>
+          </>
+        ) : (
+          <div>
+            <Globe size={18} />
+            <strong>内置浏览器</strong>
+            <span className="badge">
+              {status.blocked
+                ? '网页已停止'
+                : running
+                  ? '任务执行中'
+                  : `桌面宽度 ${desktopViewportWidth}`}
+            </span>
+          </div>
+        )}
+        <div className="browser-observation-actions">
+          {!expanded && (
             <button ref={expandButton} onClick={() => setExpanded(true)}>
               扩大查看
             </button>
@@ -230,77 +250,88 @@ export default function BrowserSidebar({
           </button>
         </div>
       </header>
-      <div className="browser-observation-summary" role="status">
-        <span>
-          {expanded ? '全宽查看' : '网页总览'} ·{' '}
-          {scale === undefined ? '正在计算显示比例' : `适应宽度 ${scale}%`}
-        </span>
-        <span>网页布局保持 {desktopViewportWidth} CSS px</span>
+      <div className="browser-observation-workspace">
+        {expanded && (
+          <div className="browser-observation-heading">
+            <h1>扩大查看网页</h1>
+            <p>网页布局宽度保持 {desktopViewportWidth} CSS px · 当前按可见区域适应宽度</p>
+          </div>
+        )}
+        <div className="browser-observation-summary" role="status">
+          <span>
+            {expanded ? '全宽总览' : '网页总览'} ·{' '}
+            {scale === undefined ? '正在计算显示比例' : `适应宽度 ${scale}%`}
+          </span>
+          <span>网页布局保持 {desktopViewportWidth} CSS px</span>
+        </div>
+        <form
+          className="browser-address"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void navigate();
+          }}
+        >
+          <input
+            aria-label="网页地址"
+            placeholder="输入网址，打开网页"
+            value={address}
+            disabled={running || loading || !!status.blocked}
+            onFocus={() => {
+              focused.current = true;
+            }}
+            onBlur={() => {
+              focused.current = false;
+            }}
+            onChange={(e) => {
+              addressEdited.current = true;
+              setAddress(e.target.value);
+            }}
+          />
+          <button
+            type="submit"
+            disabled={running || loading || !!status.blocked || !address}
+            title="访问网页"
+            aria-label="访问网页"
+          >
+            <ArrowRight size={17} />
+          </button>
+          <button
+            type="button"
+            disabled={
+              running || loading || !!status.blocked || !status.url || status.url === 'about:blank'
+            }
+            onClick={() => navigate(status.url)}
+            title="重新加载"
+            aria-label="重新加载"
+          >
+            <RefreshCw size={15} />
+          </button>
+        </form>
+        {status.blocked && (
+          <div className="browser-error" role="alert">
+            {status.blocked}
+          </div>
+        )}
+        {error && (
+          <div className="browser-error" role="alert">
+            {error}
+            <button onClick={() => setError('')}>关闭</button>
+          </div>
+        )}
+        <div className="browser-viewport" ref={viewport} data-testid="browser-viewport" />
+        <footer>
+          <span className="local-dot" />
+          {status.blocked
+            ? '请完整退出并重开应用后核对结果'
+            : loading
+              ? '正在打开网页…'
+              : status.started
+                ? status.title ||
+                  (status.url === 'about:blank' ? '在上方输入网址，或运行浏览器流程' : '网页已就绪')
+                : '运行流程或输入网址打开网页'}
+          {!status.blocked && <span>收起面板后任务继续</span>}
+        </footer>
       </div>
-      <form
-        className="browser-address"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void navigate();
-        }}
-      >
-        <input
-          aria-label="网页地址"
-          placeholder="输入网址，打开网页"
-          value={address}
-          disabled={running || loading || !!status.blocked}
-          onFocus={() => {
-            focused.current = true;
-          }}
-          onBlur={() => {
-            focused.current = false;
-          }}
-          onChange={(e) => setAddress(e.target.value)}
-        />
-        <button
-          type="submit"
-          disabled={running || loading || !!status.blocked || !address}
-          title="访问网页"
-          aria-label="访问网页"
-        >
-          <ArrowRight size={17} />
-        </button>
-        <button
-          type="button"
-          disabled={
-            running || loading || !!status.blocked || !status.url || status.url === 'about:blank'
-          }
-          onClick={() => navigate(status.url)}
-          title="重新加载"
-          aria-label="重新加载"
-        >
-          <RefreshCw size={15} />
-        </button>
-      </form>
-      {status.blocked && (
-        <div className="browser-error" role="alert">
-          {status.blocked}
-        </div>
-      )}
-      {error && (
-        <div className="browser-error" role="alert">
-          {error}
-          <button onClick={() => setError('')}>关闭</button>
-        </div>
-      )}
-      <div className="browser-viewport" ref={viewport} data-testid="browser-viewport" />
-      <footer>
-        <span className="local-dot" />
-        {status.blocked
-          ? '请完整退出并重开应用后核对结果'
-          : loading
-            ? '正在打开网页…'
-            : status.started
-              ? status.title ||
-                (status.url === 'about:blank' ? '在上方输入网址，或运行浏览器流程' : '网页已就绪')
-              : '运行流程或输入网址打开网页'}
-        {!status.blocked && <span>收起面板后任务继续</span>}
-      </footer>
     </aside>
   );
 }
