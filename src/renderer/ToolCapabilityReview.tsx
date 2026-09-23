@@ -46,7 +46,7 @@ const valueText = (value: unknown) =>
       ? value || '空文本'
       : JSON.stringify(value, null, 2);
 
-function Definition({ tool }: { tool: ToolDefinition }) {
+export function ToolDefinitionDetails({ tool }: { tool: ToolDefinition }) {
   return (
     <>
       <p>{tool.description || '服务未提供说明，请向提供者核对用途。'}</p>
@@ -231,7 +231,7 @@ export default function ToolCapabilityReview({
               {chosen.change === 'removed' && baseline && (
                 <p className="tool-warning">本次发现已不包含该工具。以下为原保存定义。</p>
               )}
-              <Definition tool={chosen.tool} />
+              <ToolDefinitionDetails tool={chosen.tool} />
               {chosen.change === 'changed' && chosen.previous && chosen.next && (
                 <section aria-label="定义变化">
                   <h3>定义变化</h3>

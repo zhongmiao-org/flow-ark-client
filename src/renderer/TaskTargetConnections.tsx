@@ -3,6 +3,7 @@ import type { ToolConnection } from '../shared/tool-connections';
 import type { PlanningTask, TaskDetail } from '../shared/planning';
 import { toolsNotExecutable, type TaskMcpPreview } from '../shared/task-mcp-targets';
 import ToolCapabilityReview from './ToolCapabilityReview';
+import TaskToolPicker from './TaskToolPicker';
 import './editor-leave.css';
 import './task-tool-targets.css';
 const api = (method: string, args: unknown = {}): Promise<any> =>
@@ -32,7 +33,18 @@ export default function TaskTargetConnections({
   const [error, setError] = useState(''),
     [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState('');
-  const [names, setNames] = useState<string[]>([]);
+  const [choices, setChoices] = useState<
+    Record<
+      string,
+      {
+        taskId: string;
+        taskRevision: number;
+        revision: number;
+        digest: string;
+        names: string[];
+      }
+    >
+  >({});
   const [refresh, setRefresh] = useState(0);
   const [candidate, setCandidate] = useState<{ preview: TaskMcpPreview; record: ToolConnection }>();
   const [reviewed, setReviewed] = useState(false);
@@ -46,6 +58,11 @@ export default function TaskTargetConnections({
     locked = useRef(false);
   const titleId = useId();
   const identity = { id: task.id, revision: task.revision };
+  useEffect(() => {
+    setSelectedId('');
+    setChoices({});
+    setQuery('');
+  }, [task.id]);
   const cancelCandidate = () => {
     if (token.current)
       void api('task.tools.cancel', { id: task.id, token: token.current }).catch(() => {});
@@ -63,11 +80,6 @@ export default function TaskTargetConnections({
         if (ticket !== epoch.current) return;
         setRecords(next);
         setLoading(false);
-        setNames((previous) =>
-          previous.filter((name) =>
-            next.find((item) => item.id === selectedId)?.tools.some((tool) => tool.name === name),
-          ),
-        );
       },
       (reason) => {
         if (ticket !== epoch.current) return;
@@ -130,14 +142,44 @@ export default function TaskTargetConnections({
       .includes(query.trim().toLocaleLowerCase()),
   );
   const record = records.find((item) => item.id === selectedId);
+  const saved = task.toolTargets?.find((target) => target.connectionId === selectedId);
+  const choice = choices[selectedId];
+  const sameTask = choice?.taskId === task.id && choice.taskRevision === task.revision;
+  const matchingChoice =
+    sameTask && choice.revision === record?.revision && choice.digest === record?.capabilityDigest;
+  const matchingSaved =
+    saved?.connectionRevision === record?.revision &&
+    saved?.capabilityDigest === record?.capabilityDigest;
+  const names =
+    record?.status === 'verified'
+      ? (sameTask
+          ? matchingChoice
+            ? choice.names
+            : []
+          : matchingSaved
+            ? (saved?.tools.map((tool) => tool.name) ?? [])
+            : []
+        ).filter((name) => record.tools.some((tool) => tool.name === name))
+      : [];
+  const selectionChanged = sameTask ? !matchingChoice : !!saved && !matchingSaved;
+  const connectionLimit = (task.toolTargets?.length ?? 0) >= 5 && !saved;
+  const blocked = loading || !!error || record?.status !== 'verified' || connectionLimit;
   const choose = (next: ToolConnection) => {
     cancelCandidate();
     setSelectedId(next.id);
-    setNames(
-      (task.toolTargets?.find((target) => target.connectionId === next.id)?.tools ?? [])
-        .map((tool) => tool.name)
-        .filter((name) => next.tools.some((tool) => tool.name === name)),
-    );
+  };
+  const changeNames = (next: string[]) => {
+    if (!record || busy || blocked) return;
+    setChoices((previous) => ({
+      ...previous,
+      [record.id]: {
+        taskId: task.id,
+        taskRevision: task.revision,
+        revision: record.revision,
+        digest: record.capabilityDigest,
+        names: next,
+      },
+    }));
   };
   return (
     <div className="task-target-connections" aria-busy={loading || busy}>
@@ -153,6 +195,11 @@ export default function TaskTargetConnections({
       {error && (
         <p className="alert error" role="alert">
           {error}
+        </p>
+      )}
+      {error && !!records.length && (
+        <p className="ai-task-note">
+          下方保留上次读取的连接资料。重新加载成功后才能核对并保存新的工具选择。
         </p>
       )}
       {!!task.toolTargets?.length && (
@@ -228,7 +275,7 @@ export default function TaskTargetConnections({
               <button
                 key={item.id}
                 className="task-target-connection"
-                disabled={busy}
+                disabled={busy || loading}
                 aria-pressed={selectedId === item.id}
                 onClick={() => choose(item)}
               >
@@ -253,6 +300,11 @@ export default function TaskTargetConnections({
               </div>
             )}
           </div>
+          {selectedId && !record && (
+            <p className="ai-task-note" role="status">
+              之前选择的连接已不在当前列表中，请选择其他连接；已保存的任务选择仍保留在上方。
+            </p>
+          )}
           {record && (
             <section className="task-web-object task-target-capabilities" aria-label="选择任务工具">
               <h3>{record.config.displayName}</h3>
@@ -261,39 +313,33 @@ export default function TaskTargetConnections({
                 {record.config.transport.type === 'stdio' ? '本机程序' : 'HTTP 服务'}
               </p>
               <p>仅选择本次需要的工具（最多 30 项）。服务声明不替代任务授权。</p>
-              <fieldset
-                disabled={busy || record.status !== 'verified'}
-                className="task-tools-options"
-              >
-                <legend>本次工具 · 已选 {names.length} 项</legend>
-                {record.tools.map((tool) => (
-                  <label className="ai-task-checkbox" key={tool.name}>
-                    <input
-                      type="checkbox"
-                      checked={names.includes(tool.name)}
-                      disabled={!names.includes(tool.name) && names.length >= 30}
-                      onChange={(event) => {
-                        setNames(
-                          event.target.checked
-                            ? [...names, tool.name]
-                            : names.filter((name) => name !== tool.name),
-                        );
-                      }}
-                    />
-                    <span>
-                      <strong>{tool.title || tool.name}</strong>
-                      <small>{tool.name}</small>
-                      <p>{tool.description || '尚无用途说明'}</p>
-                    </span>
-                  </label>
-                ))}
-                {!record.tools.length && <p>该连接没有可选择的工具。</p>}
-              </fieldset>
+              {selectionChanged && (
+                <p className="ai-task-note" role="status">
+                  连接资料或能力已经变化，旧勾选已清除，请按当前定义重新选择。
+                </p>
+              )}
+              {connectionLimit && (
+                <p className="ai-task-note" role="status">
+                  本任务已选择 5 个连接。可以修改已有连接的工具，或先移除一个任务选择。
+                </p>
+              )}
+              {record.status !== 'verified' && (
+                <p className="ai-task-note" role="status">
+                  此连接当前不能用于规划，请先管理连接并重新核对能力。
+                </p>
+              )}
+              <TaskToolPicker
+                key={`${task.id}:${selectedId}:${record.revision}:${record.capabilityDigest}`}
+                tools={record.tools}
+                names={names}
+                disabled={busy || blocked}
+                change={changeNames}
+              />
               <div className="ai-task-actions">
                 <button
                   className="primary"
                   ref={reviewButton}
-                  disabled={busy || loading || record.status !== 'verified' || !names.length}
+                  disabled={busy || blocked || !names.length}
                   onClick={() =>
                     void act(async () => {
                       const ticket = epoch.current;

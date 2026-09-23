@@ -10,11 +10,47 @@
   padding: 0 0 12px;
   font-weight: 600;
 }
-.task-tools-options > label {
+.task-tools-options > .task-tool-option {
   padding: 12px;
   margin-bottom: 8px;
   background: var(--fa-bg-canvas);
   border-radius: var(--fa-radius-8);
+}
+.task-tool-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.task-tool-option > button {
+  font-size: 12px;
+  height: auto;
+  min-height: 32px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  margin-top: 8px;
+}
+.task-tool-definition {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--fa-bg-surface);
+  border-radius: var(--fa-radius-8);
+  font-size: 12px;
+}
+.task-tool-definition pre {
+  max-height: 200px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.task-tool-option .ai-task-checkbox {
+  align-items: flex-start;
+}
+.task-tool-option .ai-task-checkbox p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 .task-tools-options small {
   display: block;
