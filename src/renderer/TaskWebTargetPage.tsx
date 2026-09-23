@@ -3,12 +3,18 @@ import type { PlanningTask, TaskDetail } from '../shared/planning';
 import { sameWebPage, type TaskWebPreview } from '../shared/task-web-target';
 import { toolsNotExecutable } from '../shared/task-mcp-targets';
 import TaskTargetConnections from './TaskTargetConnections';
+import {
+  DesktopWindowList,
+  DesktopWindowCapabilities,
+  useDesktopWindows,
+} from './TaskDesktopWindows';
 const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
 export default function TaskWebTargetPage({
   active = true,
   task,
   initialUrl,
+  initialTab,
   selected,
   back,
   showBrowser,
@@ -18,6 +24,7 @@ export default function TaskWebTargetPage({
   active?: boolean;
   task: PlanningTask;
   initialUrl?: string;
+  initialTab?: 'web' | 'window';
   selected: (next: TaskDetail) => void;
   back: () => void;
   showBrowser: () => void;
@@ -26,9 +33,10 @@ export default function TaskWebTargetPage({
 }) {
   const [preview, setPreview] = useState<TaskWebPreview>({ ready: false });
   const [tab, setTab] = useState<'web' | 'window' | 'tools'>(
-    task.toolTargets?.length ? 'tools' : 'web',
+    initialTab ?? (task.toolTargets?.length ? 'tools' : 'web'),
   );
   const tabId = useId();
+  const desktop = useDesktopWindows(active && tab === 'window', `${task.id}:${task.revision}`);
   const tabs = [
     { id: 'web', label: '网页' },
     { id: 'window', label: '应用窗口' },
@@ -105,7 +113,7 @@ export default function TaskWebTargetPage({
           {error}
         </div>
       )}
-      <div className="task-web-columns">
+      <div className={`task-web-columns${tab === 'window' ? ' is-desktop' : ''}`}>
         <section className="ai-task-card">
           <div className="task-web-tabs" role="tablist" aria-label="对象类型">
             {tabs.map((item, index) => (
@@ -202,18 +210,7 @@ export default function TaskWebTargetPage({
             aria-labelledby={`${tabId}-window`}
             hidden={tab !== 'window'}
           >
-            <div className="task-target-empty">
-              <h2>选择一个应用窗口</h2>
-              <p>应用窗口接入尚未开放。你仍可以先选择网页，或前往应用与工具查看已有连接。</p>
-              <div className="ai-task-actions">
-                <button className="primary" disabled={busy} onClick={() => setTab('web')}>
-                  选择网页
-                </button>
-                <button disabled={busy} onClick={openTools}>
-                  管理应用与工具
-                </button>
-              </div>
-            </div>
+            <DesktopWindowList state={desktop} />
           </div>
           <div
             className="task-target-tab-panel"
@@ -232,7 +229,13 @@ export default function TaskWebTargetPage({
           </div>
         </section>
         <section className="ai-task-card">
-          {tab === 'tools' ? (
+          {tab === 'window' ? (
+            <DesktopWindowCapabilities
+              state={desktop}
+              back={back}
+              chooseWeb={() => setTab('web')}
+            />
+          ) : tab === 'tools' ? (
             <>
               <h2>任务工具选择</h2>
               <p>在左侧选择连接和本次需要的工具，核对后保存到任务。</p>

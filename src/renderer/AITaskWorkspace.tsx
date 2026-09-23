@@ -55,7 +55,7 @@ const text = (value: unknown): string =>
 type Props = {
   configuredAI?: { key: string; provider: 'deepseek' | 'openai-codex'; model: string };
   configuredAIHandled: () => void;
-  toolSelection?: { key: string; kind: 'web' | 'file' };
+  toolSelection?: { key: string; kind: 'web' | 'file' | 'window' };
   toolSelectionHandled: () => void;
   openTools: () => void;
   guideEntry?: number;
@@ -572,6 +572,10 @@ export default function AITaskWorkspace(props: Props) {
       );
     });
   }
+  const [targetEntry, setTargetEntry] = useState<{ key: string; tab: 'web' | 'window' }>();
+  useEffect(() => {
+    if (page !== 'target') setTargetEntry(undefined);
+  }, [page]);
   async function create(description: string) {
     await run(async () => {
       if (detail && dirty) await save();
@@ -601,7 +605,8 @@ export default function AITaskWorkspace(props: Props) {
         if (dirty) await save();
       } else accept(await api('task.create'));
       setReviewed(false);
-      setPage(selection.kind === 'web' ? 'target' : 'brief');
+      if (selection.kind !== 'file') setTargetEntry({ key: selection.key, tab: selection.kind });
+      setPage(selection.kind === 'file' ? 'brief' : 'target');
     }).finally(props.toolSelectionHandled);
   }, [props.active, props.toolSelection?.key, busy]);
   function generationDestination(next: TaskDetail): 'generation' | 'review' | 'understand' {
@@ -1504,6 +1509,8 @@ export default function AITaskWorkspace(props: Props) {
         />
       ) : page === 'target' && detail ? (
         <TaskWebTargetPage
+          key={targetEntry?.key}
+          initialTab={targetEntry?.tab}
           active={props.active}
           openTools={props.openTools}
           task={detail.task}

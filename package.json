@@ -8,7 +8,7 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "985ae65696b932741ac37c2622d592ac0e4fdb13",
+    "governanceBaseline": "6a2928cf5533cbe86f8b888310df50b4a82cec3a",
     "contractsVersion": "0.13.0",
     "contractsTag": "contracts-v0.13.0"
   },
@@ -91,6 +91,7 @@
     "productName": "FlowArk",
     "asar": true,
     "asarUnpack": [
+      "dist/native/**/*",
       "node_modules/@esbuild/**/*",
       "node_modules/esbuild/bin/*"
     ],

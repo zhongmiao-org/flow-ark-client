@@ -123,7 +123,10 @@ export default function App() {
     provider: AIProviderId;
     model: string;
   }>();
-  const [toolSelection, setToolSelection] = useState<{ key: string; kind: 'web' | 'file' }>();
+  const [toolSelection, setToolSelection] = useState<{
+    key: string;
+    kind: 'web' | 'file' | 'window';
+  }>();
   const [browserOpen, setBrowserOpen] = useState(false);
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);

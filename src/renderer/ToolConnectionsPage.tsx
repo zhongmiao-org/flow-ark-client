@@ -102,7 +102,7 @@ export default function ToolConnectionsPage({
   navigation: MutableRefObject<ToolNavigation | undefined>;
   leave: () => void;
   parentTitle?: string;
-  choose: (kind: 'web' | 'file') => void;
+  choose: (kind: 'web' | 'file' | 'window') => void;
 }) {
   const [view, setView] = useState<'catalog' | 'config' | 'review' | 'saved' | 'unavailable'>(
     'catalog',
@@ -417,12 +417,13 @@ export default function ToolConnectionsPage({
               </section>
               <section className="ai-task-card">
                 <h2>本机应用助手</h2>
-                <span className="tool-status warning">尚未接入</span>
+                <span className="tool-status">macOS · TextEdit 窗口发现</span>
                 <p>
-                  读取窗口、操作选中控件
+                  查看窗口标题与状态
                   <br />
-                  范围：明确选择的应用窗口
+                  文档选区读写尚未开放
                 </p>
+                <button onClick={() => choose('window')}>查看应用窗口</button>
                 <button onClick={() => move('unavailable')}>查看连接要求</button>
               </section>
             </div>
@@ -809,15 +810,19 @@ export default function ToolConnectionsPage({
           <div className="tool-columns">
             <section className="ai-task-card">
               <h2>来源与运行方式</h2>
-              <span className="tool-status warning">尚未接入</span>
-              <p>本机应用助手需要明确的程序来源、窗口能力和系统授权。当前没有已核对的预设助手。</p>
+              <span className="tool-status">随客户端提供窗口发现</span>
+              <p>
+                当前可在 macOS 查看已打开的 TextEdit
+                窗口标题与状态。进入窗口页后检查系统辅助功能权限，不读取文档正文或选区。
+              </p>
               <p>自定义 MCP 连接可以检查已有工具服务，但不会因此获得操作任意应用窗口的权限。</p>
-              <button onClick={() => edit()}>配置已有 MCP 服务</button>
+              <button onClick={() => choose('window')}>查看应用窗口</button>
             </section>
             <section className="ai-task-card">
               <h2>授权与测试</h2>
               <p className="ai-task-note">
-                本机助手、系统辅助功能和任务窗口绑定仍待接入。这里不会安装程序或申请后台窗口权限。
+                系统权限、窗口发现和任务授权分别核对。任务窗口绑定、选区规划与写入回读仍未开放，连接
+                MCP 不会授予这些能力。
               </p>
               <button onClick={catalog}>返回应用与工具</button>
             </section>

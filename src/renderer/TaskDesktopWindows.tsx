@@ -1,0 +1,252 @@
+import { useEffect, useRef, useState } from 'react';
+import { desktopWindowDiscovery, type DesktopWindowDiscovery } from '../shared/desktop-windows';
+import './task-desktop-windows.css';
+
+export function useDesktopWindows(active: boolean, identity: string) {
+  const [snapshot, setSnapshot] = useState<DesktopWindowDiscovery>();
+  const [selectedId, setSelectedId] = useState<string>();
+  const [loading, setLoading] = useState(false);
+  const [settingsPending, setSettingsPending] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const epoch = useRef(0);
+  const refresh = async () => {
+    const ticket = ++epoch.current;
+    setSnapshot(undefined);
+    setSelectedId(undefined);
+    setError('');
+    setNotice('');
+    setLoading(true);
+    try {
+      const next = desktopWindowDiscovery.parse(
+        await window.flowark.request('desktop.windows.list'),
+      );
+      if (epoch.current === ticket) setSnapshot(next);
+    } catch {
+      if (epoch.current === ticket) setError('无法读取应用窗口，请重新检查。');
+    } finally {
+      if (epoch.current === ticket) setLoading(false);
+    }
+  };
+  useEffect(() => {
+    setSnapshot(undefined);
+    setSelectedId(undefined);
+    setError('');
+    setNotice('');
+    setSettingsPending(false);
+    setLoading(false);
+    if (active) void refresh();
+    return () => {
+      epoch.current++;
+    };
+  }, [active, identity]);
+  const openSettings = async () => {
+    const ticket = epoch.current;
+    setSettingsPending(true);
+    setError('');
+    try {
+      await window.flowark.request('desktop.accessibility.openSettings');
+      if (epoch.current === ticket) setNotice('已请求打开系统设置。完成调整后，请返回并重新检查。');
+    } catch {
+      if (epoch.current === ticket)
+        setError('系统设置未能打开，请手动进入系统设置 → 隐私与安全性 → 辅助功能。');
+    } finally {
+      if (epoch.current === ticket) setSettingsPending(false);
+    }
+  };
+  return {
+    snapshot,
+    loading,
+    settingsPending,
+    error,
+    notice,
+    selected: snapshot?.windows.find((window) => window.id === selectedId),
+    select: setSelectedId,
+    refresh,
+    openSettings,
+  };
+}
+type DesktopState = ReturnType<typeof useDesktopWindows>;
+
+export function DesktopWindowList({ state }: { state: DesktopState }) {
+  const { snapshot, selected, loading, error, notice } = state;
+  const title = useRef<HTMLHeadingElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  const previous = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (selected) title.current?.focus();
+    else if (previous.current) list.current?.querySelector('button')?.focus();
+    previous.current = selected?.id;
+  }, [selected?.id]);
+  return (
+    <div className="task-desktop-list">
+      <div className="task-target-section-heading">
+        <h2>文本编辑的窗口</h2>
+        <button onClick={() => void state.refresh()} disabled={loading || state.settingsPending}>
+          {loading ? '正在检查…' : '重新检查'}
+        </button>
+      </div>
+      {!selected && (
+        <p className="ai-task-note">查看已打开的 TextEdit 窗口。选择后可核对窗口信息和可用能力。</p>
+      )}
+      {loading && <p role="status">正在检查系统权限与窗口…</p>}
+      {error && (
+        <p className="ai-task-note ai-task-failure" role="alert">
+          {error}
+        </p>
+      )}
+      {notice && (
+        <p className="ai-task-note" role="status">
+          {notice}
+        </p>
+      )}
+      {snapshot?.availability === 'available' && (
+        <>
+          {selected ? (
+            <>
+              <div className="task-web-object task-desktop-identity task-web-current">
+                <h3 ref={title} tabIndex={-1}>
+                  文本编辑 · {selected.title || '未命名窗口'}
+                </h3>
+                <p>窗口状态：{selected.minimized ? '已最小化' : '未最小化'} · 来自本次检查</p>
+                <p>任务状态：尚未绑定窗口 · 尚未授权操作</p>
+              </div>
+              <div className="task-web-object task-desktop-account">
+                <h3>工作区与账号</h3>
+                <p>本机 TextEdit · 未读取文档正文、选区或文件路径</p>
+                <p>账号与文档归属尚未核对</p>
+              </div>
+              <button className="task-desktop-change" onClick={() => state.select(undefined)}>
+                更换窗口
+              </button>
+            </>
+          ) : snapshot.windows.length ? (
+            <div
+              className="task-desktop-window-list"
+              ref={list}
+              role="group"
+              aria-label="已发现的 TextEdit 窗口"
+            >
+              {snapshot.windows.map((window, index) => (
+                <button
+                  className="task-target-connection"
+                  key={window.id}
+                  onClick={() => state.select(window.id)}
+                >
+                  <strong>{window.title || '未命名窗口'}</strong>
+                  <span>
+                    文本编辑 · 窗口 {index + 1} · {window.minimized ? '已最小化' : '未最小化'}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="task-target-empty" role="status">
+              <h3>没有发现可显示的窗口</h3>
+              <p>请在文本编辑中打开文档，然后重新检查。</p>
+            </div>
+          )}
+          {snapshot.truncated && (
+            <p className="ai-task-note" role="status">
+              清单可能不完整：部分窗口未能读取，或已达到本次显示上限。
+            </p>
+          )}
+          <p className="task-desktop-observed">
+            检查时间：{new Date(snapshot.observedAt).toLocaleTimeString('zh-CN')} · 本次观察
+          </p>
+        </>
+      )}
+      {snapshot?.availability === 'permission-required' && (
+        <div className="task-target-empty">
+          <h3>尚需辅助功能权限</h3>
+          <p>
+            系统尚未允许本机助手识别应用窗口。先查看右侧授权说明，再由你决定是否在系统设置中开启。
+          </p>
+        </div>
+      )}
+      {snapshot?.availability === 'unsupported' && (
+        <div className="task-target-empty">
+          <h3>当前系统暂不支持应用窗口</h3>
+          <p>应用窗口发现当前仅接入 macOS 的文本编辑。你可以继续使用网页或已连接工具。</p>
+        </div>
+      )}
+      {snapshot?.availability === 'unavailable' && (
+        <div className="task-target-empty" role="status">
+          <h3>暂时无法取得窗口</h3>
+          <p>{snapshot.reason || '请检查文本编辑是否可以正常响应，再重新检查。'}</p>
+        </div>
+      )}
+      <p className="ai-task-note">
+        窗口关闭、内容或选区变化后需要重新核对。刷新会清除本次查看选择，不会自动选择同名窗口。
+      </p>
+    </div>
+  );
+}
+
+export function DesktopWindowCapabilities({
+  state,
+  back,
+  chooseWeb,
+}: {
+  state: DesktopState;
+  back: () => void;
+  chooseWeb: () => void;
+}) {
+  const { snapshot, loading } = state;
+  const permission = snapshot?.accessibility;
+  return (
+    <div className="task-desktop-capabilities">
+      <h2>支持哪些操作</h2>
+      {[
+        { label: '识别应用窗口信息', checked: snapshot?.availability === 'available' },
+        { label: '读取当前文档选区 · 尚未接入', checked: false },
+        { label: '编辑选中段落并回读 · 尚未接入', checked: false },
+        { label: '发送邮件 / 后台操作其他窗口 · 不支持', checked: false },
+      ].map(({ label, checked }) => (
+        <label className="ai-task-checkbox" key={label}>
+          <input type="checkbox" checked={checked} disabled />
+          {label}
+        </label>
+      ))}
+      <div
+        className={`task-desktop-permission ${permission === 'not-granted' ? 'is-warning' : ''}`}
+        role="status"
+      >
+        <h3>
+          {loading
+            ? '正在检查系统权限'
+            : permission === 'granted'
+              ? '系统权限已就绪'
+              : permission === 'not-granted'
+                ? '尚需系统授权'
+                : '系统权限尚未核对'}
+        </h3>
+        <p>
+          {permission === 'granted'
+            ? '辅助功能已授予本机助手；这不代表当前任务已获准读取或修改文档。'
+            : permission === 'not-granted'
+              ? '辅助功能权限未授予，当前不能识别或操作窗口。系统授权须由你在设置中决定。'
+              : '取得权限状态后才能判断窗口发现是否可用。'}
+        </p>
+        {snapshot?.platform === 'macos' && (
+          <button
+            disabled={state.settingsPending || loading}
+            onClick={() => void state.openSettings()}
+          >
+            {state.settingsPending ? '正在打开…' : '查看系统辅助功能设置'}
+          </button>
+        )}
+      </div>
+      <p className="ai-task-note">
+        窗口发现已接入；选区规划和执行仍未开放。查看窗口不会把文档发送给
+        AI，也不会改变已选网页或工具。
+      </p>
+      <div className="ai-task-actions">
+        <button className="primary" onClick={chooseWeb}>
+          改用网页目标
+        </button>
+        <button onClick={back}>返回描述与资料</button>
+      </div>
+    </div>
+  );
+}

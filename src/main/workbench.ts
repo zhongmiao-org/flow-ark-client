@@ -13,6 +13,7 @@ import {
   powerMonitor,
 } from 'electron';
 import { EmbeddedBrowser } from './embedded-browser';
+import { DesktopWindows } from './desktop-windows';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { templateFilename, zipExportPath } from '../shared/template-filename';
@@ -194,6 +195,19 @@ app
       knownSecrets.add(key),
     );
     const localCredentials = new LocalCredentials(vault, (value) => knownSecrets.add(value));
+    const desktopWindows = new DesktopWindows(
+      app.isPackaged
+        ? join(
+            process.resourcesPath,
+            'app.asar.unpacked',
+            'dist',
+            'native',
+            'flowark-window-discovery',
+          )
+        : join(__dirname, 'native', 'flowark-window-discovery'),
+      () => [...knownSecrets],
+    );
+    app.on('before-quit', () => desktopWindows.stop());
     let ready: Promise<any>;
     ipcMain.handle('flowark:request', async (event, method: string, raw: unknown) => {
       const pending =
@@ -228,6 +242,14 @@ app
         )
           throw new Error('IPC 来源无效');
         const args: any = validateIPC(method, raw ?? {});
+        if (method === 'desktop.windows.list') return desktopWindows.list();
+        if (method === 'desktop.accessibility.openSettings') {
+          if (process.platform !== 'darwin') throw new Error('应用窗口发现当前仅支持 macOS');
+          await shell.openExternal(
+            'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility',
+          );
+          return true;
+        }
         if (method === 'browser.embedded.viewport') return embedded.viewport(args);
         if (method === 'file.choose') {
           const r = await dialog.showOpenDialog(win, {
