@@ -520,6 +520,25 @@
   align-items: flex-start;
   gap: 12px;
 }
+.run-review-check > div {
+  min-width: 0;
+  flex: 1;
+}
+.run-review-check-detail {
+  margin-top: 12px;
+}
+.run-review-check-detail pre {
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 8px 0 0;
+  padding: 12px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-bg-subtle);
+  font: 12px/20px var(--fa-font-latin);
+}
 .run-review-check > span {
   color: var(--fa-status-success);
   width: 16px;

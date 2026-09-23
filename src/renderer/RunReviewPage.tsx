@@ -6,6 +6,7 @@ import './desktop-run.css';
 import type { RunReviewInput, RunReviewPreview, ReviewResource } from '../shared/run-review';
 import { RunReviewSession } from './run-review-session';
 import RunReviewTools from './RunReviewTools';
+import RunReviewCheck from './RunReviewCheck';
 
 type Props = {
   active: boolean;
@@ -259,13 +260,7 @@ export default function RunReviewPage(props: Props) {
           {!attempt && (
             <>
               {preview?.checks.map((check, i) => (
-                <div key={i} className={`run-review-check ${check.passed ? '' : 'failed'}`}>
-                  <span aria-hidden="true">{check.passed ? '✓' : '!'}</span>
-                  <div>
-                    <b>{check.name}</b>
-                    <p>{check.detail}</p>
-                  </div>
-                </div>
+                <RunReviewCheck key={`${i}:${check.detail}`} check={check} />
               ))}
               <label className="run-review-toggle">
                 <input
