@@ -38,7 +38,7 @@ export default function TaskPlanConversation({
       {dirty && (
         <div className="ai-task-note" role="status">
           <p>
-            还有未保存的任务修改。右侧仍是原方案，请继续编辑并重新生成，或放弃这些输入后再确认。
+            还有未保存的任务修改。当前仍显示原方案，请继续编辑并重新生成，或放弃这些输入后再确认。
           </p>
           <button disabled={busy || stale} onClick={discard}>
             放弃未保存修改
@@ -52,9 +52,7 @@ export default function TaskPlanConversation({
         {graph ? '查看步骤清单' : '查看完整流程图'}
       </button>
       {pending && (
-        <p className="task-plan-approval-note">
-          先检查右侧方案和修改范围，采纳后再决定是否试运行。
-        </p>
+        <p className="task-plan-approval-note">先检查方案和修改范围，采纳后再决定是否试运行。</p>
       )}
       {children}
     </div>

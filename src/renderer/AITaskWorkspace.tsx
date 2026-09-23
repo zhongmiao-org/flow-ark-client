@@ -1,5 +1,6 @@
 import TaskStepList from './TaskStepList';
 import TaskPlanConversation from './TaskPlanConversation';
+import TaskProposalReview from './TaskProposalReview';
 import TaskModificationPage from './TaskModificationPage';
 import TaskGenerationPage from './TaskGenerationPage';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -105,6 +106,7 @@ export default function AITaskWorkspace(props: Props) {
     | 'generation'
     | 'modify'
   >('home');
+  const [proposalView, setProposalView] = useState<{ id: string; mode: 'changes' | 'flow' }>();
   const missingOrigin = useRef<'brief' | 'understand' | 'review' | 'generation' | 'modify'>(
     'brief',
   );
@@ -207,6 +209,11 @@ export default function AITaskWorkspace(props: Props) {
   const scopeConflict = !!scope && scope.baseFlowHash !== detail?.flowHash;
   const scopedProposal = result?.kind === 'plan' && !!detail?.proposal?.scope;
   const scopeDiffView = scopedProposal && !editingProposal;
+  const fullModification =
+    result?.kind === 'plan' && !!detail?.proposal?.baseFlow && !scopedProposal;
+  const changesView =
+    fullModification &&
+    (proposalView?.id !== detail?.proposal?.id || proposalView?.mode === 'changes');
   const title =
     page === 'modify'
       ? '接着修改当前任务'
@@ -653,6 +660,18 @@ export default function AITaskWorkspace(props: Props) {
       );
       setPage(next.flow ? 'review' : 'brief');
       await props.changed();
+      requestAnimationFrame(() => {
+        if (
+          !location.current.active ||
+          selectedTask.current !== next.task.id ||
+          location.current.page !== (next.flow ? 'review' : 'brief')
+        )
+          return;
+        document.querySelector('main')?.scrollTo({ top: 0 });
+        document
+          .querySelector<HTMLHeadingElement>('.ai-task-page:not([hidden]) .ai-task-heading h1')
+          ?.focus({ preventScroll: true });
+      });
     });
   }
   async function back() {
@@ -1129,7 +1148,9 @@ export default function AITaskWorkspace(props: Props) {
                               ? '正在理解本次任务，你可以取消生成。'
                               : scope
                                 ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : scope.nodeId} · 尚未执行`
-                                : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
+                                : fullModification
+                                  ? `完整流程修改 · 任务基线修订 ${detail?.proposal?.baseRevision} · 尚未采纳`
+                                  : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
           </p>
         </div>
         {page !== 'home' &&
@@ -1436,7 +1457,11 @@ export default function AITaskWorkspace(props: Props) {
             )}
             {!scopeDiffView && page !== 'understand' && page !== 'brief' && (
               <div className="ai-task-state" role="status">
-                <span>{status[detail.task.status]}</span>
+                <span>
+                  {detail.task.status === 'plan' && !detail.proposal && detail.flow
+                    ? '方案已保存'
+                    : status[detail.task.status]}
+                </span>
                 <span>
                   {dirty ? '有未保存修改' : '草稿已保存'} · 修订 {revision}
                 </span>
@@ -1515,7 +1540,7 @@ export default function AITaskWorkspace(props: Props) {
               />
             ) : (
               <div
-                className={`ai-task-columns ${page === 'review' ? 'ai-task-review' : ''}${page === 'review' && !scope && flow ? ' ai-task-plan-review' : ''}`}
+                className={`ai-task-columns ${page === 'review' ? 'ai-task-review' : ''}${page === 'review' && !scope && flow ? ' ai-task-plan-review' : ''}${fullModification ? ' ai-task-proposal-columns' : ''}`}
               >
                 <section className="ai-task-card ai-task-input">
                   {page === 'review' &&
@@ -1535,7 +1560,7 @@ export default function AITaskWorkspace(props: Props) {
                       dirty={dirty}
                       busy={inputDisabled}
                       stale={stale}
-                      graph={view === 'graph'}
+                      graph={!changesView && view === 'graph'}
                       edit={() => {
                         if (!detail.proposal && !dirty) {
                           beginModification();
@@ -1548,7 +1573,9 @@ export default function AITaskWorkspace(props: Props) {
                         );
                       }}
                       toggleView={() => {
-                        setView(view === 'graph' ? 'list' : 'graph');
+                        if (fullModification && detail.proposal)
+                          setProposalView({ id: detail.proposal.id, mode: 'flow' });
+                        setView(changesView || view !== 'graph' ? 'graph' : 'list');
                         requestAnimationFrame(() => {
                           const heading = document.querySelector<HTMLHeadingElement>(
                             '[data-plan-preview-heading]',
@@ -1563,6 +1590,23 @@ export default function AITaskWorkspace(props: Props) {
                         setEditingProposal(false);
                       }}
                     >
+                      {fullModification && detail.proposal && (
+                        <button
+                          disabled={busy}
+                          onClick={() => {
+                            setProposalView({ id: detail.proposal!.id, mode: 'changes' });
+                            requestAnimationFrame(() => {
+                              const heading = document.querySelector<HTMLHeadingElement>(
+                                '[data-proposal-diff-heading]',
+                              );
+                              heading?.scrollIntoView({ block: 'nearest' });
+                              heading?.focus({ preventScroll: true });
+                            });
+                          }}
+                        >
+                          检查修改差异
+                        </button>
+                      )}
                       {!detail.proposal && (
                         <button disabled={inputDisabled} onClick={() => setPage('brief')}>
                           编辑描述与资料
@@ -1600,7 +1644,7 @@ export default function AITaskWorkspace(props: Props) {
                         <>
                           <h2>调整任务要求</h2>
                           <p className="ai-task-note">
-                            修改要求不会直接改写右侧提案。重新生成后，仍需检查并明确采纳。
+                            修改要求不会直接改写当前提案。重新生成后，仍需检查并明确采纳。
                           </p>
                           <button
                             disabled={inputDisabled}
@@ -1896,98 +1940,144 @@ export default function AITaskWorkspace(props: Props) {
                     </>
                   ) : flow ? (
                     <>
-                      <div className="ai-task-meta">
-                        <h2 tabIndex={-1} data-plan-preview-heading>
-                          {flow.name}
-                        </h2>
-                        <span className="badge">
-                          {detail.proposal ? '待采纳方案' : '已保存草稿'}
-                        </span>
-                      </div>
-                      <div className="ai-task-actions" aria-label="方案视图">
-                        <button aria-pressed={view === 'list'} onClick={() => setView('list')}>
-                          步骤清单
-                        </button>
-                        <button aria-pressed={view === 'graph'} onClick={() => setView('graph')}>
-                          流程图
-                        </button>
-                      </div>
-                      {view === 'list' ? (
-                        <TaskStepList
-                          flow={flow}
-                          selected={selected}
-                          select={setSelected}
-                          context={{
-                            bindings: detail.flow?.bindings,
-                            webTarget: detail.proposal
-                              ? detail.task.webTarget
-                              : detail.flow?.webTarget,
-                            outputTarget: detail.proposal
-                              ? detail.task.outputTarget
-                              : detail.flow?.outputTarget,
-                            toolTargets: detail.proposal
-                              ? detail.task.toolTargets
-                              : detail.flow?.toolTargets,
-                          }}
-                        />
-                      ) : (
-                        <div className="ai-task-graph">
-                          <DiagramCanvas {...diagram} selected={selected} select={setSelected} />
+                      {fullModification && detail.proposal && (
+                        <div
+                          className="ai-task-actions task-proposal-tabs"
+                          aria-label="提案核对视图"
+                        >
+                          <button
+                            aria-pressed={changesView}
+                            onClick={() =>
+                              setProposalView({ id: detail.proposal!.id, mode: 'changes' })
+                            }
+                          >
+                            修改差异
+                          </button>
+                          <button
+                            aria-pressed={!changesView}
+                            onClick={() =>
+                              setProposalView({ id: detail.proposal!.id, mode: 'flow' })
+                            }
+                          >
+                            完整新方案
+                          </button>
                         </div>
                       )}
-                      {selectedStep && (
-                        <details open className="ai-task-disclosure">
-                          <summary>
-                            所选步骤 ·{' '}
-                            {typeof selectedStep.name === 'string' && selectedStep.name
-                              ? selectedStep.name
-                              : kinds[selectedStep.type]?.label}{' '}
-                            · {selectedStep.id}
-                          </summary>
-                          {selectedStep.type === 'mcp' ? (
-                            <McpNodeConfiguration
-                              node={selectedStep}
-                              targets={
-                                detail.proposal ? detail.task.toolTargets : detail.flow?.toolTargets
-                              }
+                      {!changesView && (
+                        <>
+                          <div className="ai-task-meta">
+                            <h2 tabIndex={-1} data-plan-preview-heading>
+                              {flow.name}
+                            </h2>
+                            <span className="badge">
+                              {detail.proposal ? '待采纳方案' : '已保存草稿'}
+                            </span>
+                          </div>
+                          <div className="ai-task-actions" aria-label="方案视图">
+                            <button aria-pressed={view === 'list'} onClick={() => setView('list')}>
+                              步骤清单
+                            </button>
+                            <button
+                              aria-pressed={view === 'graph'}
+                              onClick={() => setView('graph')}
+                            >
+                              流程图
+                            </button>
+                          </div>
+                          {view === 'list' ? (
+                            <TaskStepList
+                              flow={flow}
+                              selected={selected}
+                              select={setSelected}
+                              context={{
+                                bindings: detail.flow?.bindings,
+                                webTarget: detail.proposal
+                                  ? detail.task.webTarget
+                                  : detail.flow?.webTarget,
+                                outputTarget: detail.proposal
+                                  ? detail.task.outputTarget
+                                  : detail.flow?.outputTarget,
+                                toolTargets: detail.proposal
+                                  ? detail.task.toolTargets
+                                  : detail.flow?.toolTargets,
+                              }}
                             />
                           ) : (
-                            <pre>{text(selectedStep)}</pre>
+                            <div className="ai-task-graph">
+                              <DiagramCanvas
+                                {...diagram}
+                                selected={selected}
+                                select={setSelected}
+                              />
+                            </div>
                           )}
-                          {!scope && (
-                            <button
-                              disabled={inputDisabled || dirty || stale || !!detail.proposal}
-                              onClick={() => void run(() => chooseScope(detail, selectedStep.id))}
-                            >
-                              用 AI 修改此步
-                            </button>
+                          {selectedStep && (
+                            <details open className="ai-task-disclosure">
+                              <summary>
+                                所选步骤 ·{' '}
+                                {typeof selectedStep.name === 'string' && selectedStep.name
+                                  ? selectedStep.name
+                                  : kinds[selectedStep.type]?.label}{' '}
+                                · {selectedStep.id}
+                              </summary>
+                              {selectedStep.type === 'mcp' ? (
+                                <McpNodeConfiguration
+                                  node={selectedStep}
+                                  targets={
+                                    detail.proposal
+                                      ? detail.task.toolTargets
+                                      : detail.flow?.toolTargets
+                                  }
+                                />
+                              ) : (
+                                <pre>{text(selectedStep)}</pre>
+                              )}
+                              {!scope && (
+                                <button
+                                  disabled={inputDisabled || dirty || stale || !!detail.proposal}
+                                  onClick={() =>
+                                    void run(() => chooseScope(detail, selectedStep.id))
+                                  }
+                                >
+                                  用 AI 修改此步
+                                </button>
+                              )}
+                            </details>
                           )}
-                        </details>
-                      )}
-                      {flatten(flow.steps).some((step) => step.type === 'mcp') && (
-                        <p className="ai-task-note">
-                          可进入检查页核对工具和参数。真实调用尚未开放，检查不会执行工具。
-                        </p>
+                          {flatten(flow.steps).some((step) => step.type === 'mcp') && (
+                            <p className="ai-task-note">
+                              可进入检查页核对工具和参数。真实调用尚未开放，检查不会执行工具。
+                            </p>
+                          )}
+                        </>
                       )}
                       {detail.proposal && (
                         <>
-                          <h2>资源与权限</h2>
-                          <ul className="ai-task-resources">
-                            {detail.resources.map((resource, i) => (
-                              <li key={i}>{resource}</li>
-                            ))}
-                            {!detail.resources.length && (
-                              <li>没有文件、浏览器、HTTP、脚本或工具资源操作。</li>
-                            )}
-                            <li>声明的能力：{flow.requiredCapabilities.join('、') || '无'}</li>
-                          </ul>
-                          <PlanningChanges
-                            key={detail.proposal.id}
-                            changes={detail.changes}
-                            before={detail.proposal.baseFlow}
-                            after={flow}
-                            revision={detail.proposal.baseRevision}
-                          />
+                          {fullModification ? (
+                            <div hidden={!changesView}>
+                              <TaskProposalReview key={detail.proposal.id} detail={detail} />
+                            </div>
+                          ) : (
+                            <>
+                              <h2>资源与权限</h2>
+                              <ul className="ai-task-resources">
+                                {detail.resources.map((resource, i) => (
+                                  <li key={i}>{resource}</li>
+                                ))}
+                                {!detail.resources.length && (
+                                  <li>没有文件、浏览器、HTTP、脚本或工具资源操作。</li>
+                                )}
+                                <li>声明的能力：{flow.requiredCapabilities.join('、') || '无'}</li>
+                              </ul>
+                              <PlanningChanges
+                                key={detail.proposal.id}
+                                changes={detail.changes}
+                                before={detail.proposal.baseFlow}
+                                after={flow}
+                                revision={detail.proposal.baseRevision}
+                              />
+                            </>
+                          )}
                           {detail.conflict && (
                             <p className="ai-task-note ai-task-failure" role="alert">
                               原流程或绑定已变化，请重新生成方案后再采纳。
@@ -1999,7 +2089,7 @@ export default function AITaskWorkspace(props: Props) {
                               disabled={busy || dirty || stale || detail.conflict}
                               onClick={() => void proposalAction('adopt')}
                             >
-                              采纳方案
+                              {fullModification ? '采纳修改' : '采纳方案'}
                             </button>
                             <button
                               disabled={busy || dirty || stale}

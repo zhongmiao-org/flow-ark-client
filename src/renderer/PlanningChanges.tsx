@@ -65,7 +65,7 @@ const fieldValue = (field: string, value: unknown) => {
         notEquals: '不等于',
         contains: '包含',
         gt: '大于（数字）',
-        exists: '不是空值',
+        exists: '不是 null 或未定义',
       },
       language: { js: 'JavaScript', ts: 'TypeScript' },
     };
@@ -85,14 +85,17 @@ export default function PlanningChanges({
   before,
   after,
   revision,
+  prioritizeDetail = false,
 }: {
   changes: PlanningChange[];
   before: Flow | null;
   after: Flow;
   revision: number;
+  prioritizeDetail?: boolean;
 }) {
   const id = useId(),
     search = useRef<HTMLInputElement>(null);
+  const detailHeading = useRef<HTMLHeadingElement>(null);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<PlanningChange['kind'] | 'all'>('all');
   const [selected, setSelected] = useState(0);
@@ -132,16 +135,80 @@ export default function PlanningChanges({
     setFilter('all');
     search.current?.focus();
   };
+  const detailContent = change && (
+    <div id={`${id}-detail`} className="planning-change-detail" key={active.index}>
+      <h3 ref={detailHeading} tabIndex={-1}>
+        {title(change)}
+      </h3>
+      <div className="planning-change-values">
+        {(['before', 'after'] as const).map((side) => {
+          const value = change[side];
+          const node =
+            (change.kind === 'added' || change.kind === 'removed') &&
+            value &&
+            typeof value === 'object' &&
+            'node' in value
+              ? value.node
+              : null;
+          const missing =
+            (change.kind === 'added' && side === 'before') ||
+            (change.kind === 'removed' && side === 'after');
+          return (
+            <section key={side} className={`planning-change-${side}`}>
+              <h4>{side === 'before' ? '原值' : '新值'}</h4>
+              {missing ? (
+                <p>{side === 'before' ? '原草稿没有此步骤' : '新方案移除此步骤'}</p>
+              ) : node && typeof node === 'object' ? (
+                <>
+                  <p>{position((value as { position?: unknown }).position, side)}</p>
+                  <dl>
+                    {Object.entries(node).map(([field, item]) => (
+                      <div key={field}>
+                        <dt>{field === 'id' ? '步骤编号' : (labels[field] ?? field)}</dt>
+                        <dd>
+                          <pre>{fieldValue(field, item)}</pre>
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </>
+              ) : (
+                <pre>
+                  {change.kind === 'moved'
+                    ? position(value, side)
+                    : fieldValue(change.path.split('/').at(-1)!, value)}
+                </pre>
+              )}
+            </section>
+          );
+        })}
+      </div>
+      <details>
+        <summary>查看完整原始差异</summary>
+        <p>{change.path}</p>
+        <pre>{raw({ before: change.before, after: change.after })}</pre>
+      </details>
+    </div>
+  );
   return (
-    <section className="planning-changes" aria-labelledby={`${id}-heading`}>
-      <header>
-        <h2 id={`${id}-heading`}>检查修改 · {changes.length} 项</h2>
-        <span>{before ? `任务基线修订 ${revision}` : '首次生成方案'}</span>
-      </header>
-      <p>
-        涉及 {affected} 个步骤、{settings} 项流程设置。
-        {before ? `原草稿：${before.name}。` : '尚无原草稿。'}采纳只更新草稿。
-      </p>
+    <section
+      className="planning-changes"
+      aria-labelledby={prioritizeDetail ? undefined : `${id}-heading`}
+      aria-label={prioritizeDetail ? '逐项修改对照' : undefined}
+    >
+      {!prioritizeDetail && (
+        <>
+          <header>
+            <h2 id={`${id}-heading`}>检查修改 · {changes.length} 项</h2>
+            <span>{before ? `任务基线修订 ${revision}` : '首次生成方案'}</span>
+          </header>
+          <p>
+            涉及 {affected} 个步骤、{settings} 项流程设置。
+            {before ? `原草稿：${before.name}。` : '尚无原草稿。'}采纳只更新草稿。
+          </p>
+        </>
+      )}
+      {prioritizeDetail && detailContent}
       {changes.length ? (
         <>
           <label htmlFor={`${id}-search`}>查找修改</label>
@@ -183,7 +250,14 @@ export default function PlanningChanges({
                 type="button"
                 key={index}
                 aria-pressed={active?.index === index}
-                onClick={() => setSelected(index)}
+                onClick={() => {
+                  setSelected(index);
+                  if (prioritizeDetail)
+                    requestAnimationFrame(() => {
+                      detailHeading.current?.scrollIntoView({ block: 'nearest' });
+                      detailHeading.current?.focus({ preventScroll: true });
+                    });
+                }}
                 aria-controls={`${id}-detail`}
               >
                 <span>
@@ -199,59 +273,7 @@ export default function PlanningChanges({
           {!visible.length && (
             <p className="planning-changes-empty">没有匹配的修改。清除筛选可查看完整清单。</p>
           )}
-          {change && (
-            <div id={`${id}-detail`} className="planning-change-detail" key={active.index}>
-              <h3>{title(change)}</h3>
-              <div className="planning-change-values">
-                {(['before', 'after'] as const).map((side) => {
-                  const value = change[side];
-                  const node =
-                    (change.kind === 'added' || change.kind === 'removed') &&
-                    value &&
-                    typeof value === 'object' &&
-                    'node' in value
-                      ? value.node
-                      : null;
-                  const missing =
-                    (change.kind === 'added' && side === 'before') ||
-                    (change.kind === 'removed' && side === 'after');
-                  return (
-                    <section key={side} className={`planning-change-${side}`}>
-                      <h4>{side === 'before' ? '原值' : '新值'}</h4>
-                      {missing ? (
-                        <p>{side === 'before' ? '原草稿没有此步骤' : '新方案移除此步骤'}</p>
-                      ) : node && typeof node === 'object' ? (
-                        <>
-                          <p>{position((value as { position?: unknown }).position, side)}</p>
-                          <dl>
-                            {Object.entries(node).map(([field, item]) => (
-                              <div key={field}>
-                                <dt>{field === 'id' ? '步骤编号' : (labels[field] ?? field)}</dt>
-                                <dd>
-                                  <pre>{fieldValue(field, item)}</pre>
-                                </dd>
-                              </div>
-                            ))}
-                          </dl>
-                        </>
-                      ) : (
-                        <pre>
-                          {change.kind === 'moved'
-                            ? position(value, side)
-                            : fieldValue(change.path.split('/').at(-1)!, value)}
-                        </pre>
-                      )}
-                    </section>
-                  );
-                })}
-              </div>
-              <details>
-                <summary>查看完整原始差异</summary>
-                <p>{change.path}</p>
-                <pre>{raw({ before: change.before, after: change.after })}</pre>
-              </details>
-            </div>
-          )}
+          {!prioritizeDetail && detailContent}
         </>
       ) : (
         <p className="planning-changes-empty">没有检测到草稿内容变化。</p>

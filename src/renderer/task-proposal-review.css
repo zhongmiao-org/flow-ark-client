@@ -1,0 +1,70 @@
+/* Figma taskdiff 23:3467: 400 px conversation and a 728 px review column. */
+.ai-task-columns.ai-task-plan-review.ai-task-proposal-columns {
+  grid-template-columns: minmax(0, 400fr) minmax(0, 728fr);
+}
+.ai-task-columns.ai-task-proposal-columns > .ai-task-card {
+  min-height: 700px;
+}
+.task-proposal-review {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.task-proposal-review header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.task-proposal-review header span {
+  color: var(--fa-text-secondary);
+}
+.task-proposal-review p,
+.task-proposal-review li {
+  overflow-wrap: anywhere;
+}
+.task-proposal-review > .planning-changes {
+  padding-top: 0;
+  border: 0;
+}
+.task-proposal-review .planning-change-values {
+  grid-template-columns: minmax(0, 1fr);
+}
+.task-proposal-review .planning-change-values > section {
+  min-height: 108px;
+}
+.task-proposal-permissions,
+.task-proposal-source {
+  border-top: 1px solid var(--fa-border-default);
+  padding-top: 16px;
+}
+.task-proposal-review h3 {
+  font-size: 16px;
+  margin: 0 0 8px;
+}
+.task-proposal-review details p,
+.task-proposal-review details ul {
+  margin-top: 12px;
+}
+.task-proposal-review summary {
+  cursor: pointer;
+  color: var(--fa-action-primary);
+}
+.task-proposal-tabs {
+  margin-bottom: 8px;
+}
+.task-proposal-tabs [aria-pressed='true'] {
+  color: var(--fa-action-primary);
+  border-color: var(--fa-action-primary);
+  background: var(--fa-action-subtle);
+}
+@container (max-width: 900px) {
+  .ai-task-columns.ai-task-plan-review.ai-task-proposal-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ai-task-columns.ai-task-proposal-columns > .ai-task-card {
+    min-height: auto;
+  }
+}
