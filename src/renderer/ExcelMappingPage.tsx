@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import type { FlowRecord } from '../shared/types';
 import {
   ExcelMappingError,
@@ -29,6 +29,10 @@ export default function ExcelMappingPage({
   const node = flatten(draft.flow.steps).find((step) => step.id === nodeId) as MappedExcel;
   const [error, setError] = useState(''),
     [saving, setSaving] = useState(false);
+  const issueId = useId();
+  const [issue, setIssue] = useState<{ field: string; mapping?: number }>();
+  const focusRequest = useRef<string | undefined>(undefined);
+  const [focusRevision, setFocusRevision] = useState(0);
   const [preview, setPreview] = useState<ReturnType<typeof mappingPreview>>();
   const [pending, setPending] = useState<{ next?: () => void }>();
   const root = useRef<HTMLElement>(null),
@@ -42,6 +46,7 @@ export default function ExcelMappingPage({
   const change = (next: MappedExcel) => {
     setPreview(undefined);
     setError('');
+    setIssue(undefined);
     setDraft((current) => ({
       ...current,
       flow: { ...current.flow, steps: changeSteps(current.flow.steps, nodeId, () => next) },
@@ -68,22 +73,55 @@ export default function ExcelMappingPage({
     if (pending) dialog.current?.showModal();
     else dialog.current?.close();
   }, [pending]);
-  const report = (error: unknown) => {
-    setError((error as Error).message);
+  useEffect(() => {
+    if (pending || !focusRequest.current) return;
+    const element = root.current?.querySelector<HTMLElement>(focusRequest.current);
+    if (!element) return;
+    let ancestor = element.parentElement;
+    while (ancestor && ancestor !== root.current) {
+      if (ancestor instanceof HTMLDetailsElement) ancestor.open = true;
+      ancestor = ancestor.parentElement;
+    }
+    const target = element.matches('input,textarea,select,button')
+      ? element
+      : (element.querySelector<HTMLElement>('textarea') ??
+        element.querySelector<HTMLElement>('input,select,button') ??
+        element);
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ block: 'nearest' });
+    focusRequest.current = undefined;
+  }, [focusRevision, pending, draft]);
+  const report = (reason: unknown) => {
+    setFocusRevision((revision) => revision + 1);
+    setError(reason instanceof Error ? reason.message : '配置未完成，请检查后重试');
     setPending(undefined);
     setPreview(undefined);
-    if (error instanceof ExcelMappingError) {
-      const selector =
-        error.mapping === undefined
-          ? `[data-excel-field="${error.field}"]`
-          : `[data-mapping="${error.mapping}"] [data-excel-field="${error.field}"]`;
-      const element = root.current?.querySelector<HTMLElement>(selector);
-      const details = element?.closest('details');
-      if (details) details.open = true;
-      element?.focus();
-      element?.scrollIntoView({ block: 'nearest' });
+    if (reason instanceof ExcelMappingError) {
+      setIssue({ field: reason.field, mapping: reason.mapping });
+      focusRequest.current =
+        reason.mapping === undefined
+          ? `[data-excel-field="${reason.field}"]`
+          : `[data-mapping="${reason.mapping}"] [data-excel-field="${reason.field}"]`;
+    } else {
+      setIssue(undefined);
+      focusRequest.current = incomplete() ? '[data-value-invalid]' : '[data-excel-error]';
     }
   };
+  const invalid = (field: string, mapping?: number) =>
+    issue?.field === field && issue.mapping === mapping;
+  const fieldProps = (field: string, mapping?: number) => ({
+    'data-excel-field': field,
+    'aria-invalid': invalid(field, mapping) || undefined,
+    'aria-describedby': invalid(field, mapping)
+      ? `${issueId}-${field}-${mapping ?? 'node'}`
+      : undefined,
+  });
+  const fieldError = (field: string, mapping?: number) =>
+    invalid(field, mapping) ? (
+      <span className="excel-field-error" id={`${issueId}-${field}-${mapping ?? 'node'}`}>
+        {error}
+      </span>
+    ) : null;
   const validate = () => {
     if (incomplete()) {
       const invalid = root.current?.querySelector<HTMLElement>('[data-value-invalid]');
@@ -128,7 +166,7 @@ export default function ExcelMappingPage({
   const choose = async () => {
     if (choosing.current || persisting.current) return;
     if (!node.binding.trim() || ['__proto__', 'constructor', 'prototype'].includes(node.binding)) {
-      setError('请先填写有效的目录绑定名称');
+      report(new ExcelMappingError('请先填写有效的目录绑定名称', 'binding'));
       return;
     }
     choosing.current = true;
@@ -163,39 +201,43 @@ export default function ExcelMappingPage({
         <p>写入普通工作簿 · 修改草稿，不自动修改源文件</p>
       </header>
       {error && (
-        <p className="alert error" role="alert">
+        <p className="alert error" role="alert" data-excel-error tabIndex={-1}>
           {error}
         </p>
       )}
       <fieldset disabled={saving}>
         <div className="excel-workbook-fields">
-          <ValueField
-            label="工作簿"
-            value={node.name}
-            choices={choices}
-            defaultValue="mapped.xlsx"
-            change={(name) => change({ ...node, name })}
-          >
-            {typeof node.name === 'string' ? (
-              <label>
-                工作簿
-                <input
-                  aria-label="输出工作簿"
-                  data-excel-field="name"
-                  value={node.name}
-                  onChange={(event) => change({ ...node, name: event.target.value })}
-                />
-              </label>
-            ) : undefined}
-          </ValueField>
+          <div className="excel-workbook-name" {...fieldProps('name')} tabIndex={-1}>
+            <ValueField
+              label="工作簿"
+              value={node.name}
+              choices={choices}
+              defaultValue="mapped.xlsx"
+              change={(name) => change({ ...node, name })}
+            >
+              {typeof node.name === 'string' ? (
+                <label>
+                  工作簿
+                  <input
+                    aria-label="输出工作簿"
+                    {...fieldProps('name')}
+                    value={node.name}
+                    onChange={(event) => change({ ...node, name: event.target.value })}
+                  />
+                </label>
+              ) : undefined}
+            </ValueField>
+            {fieldError('name')}
+          </div>
           <label>
             工作表
             <input
               aria-label="映射工作表"
-              data-excel-field="sheet"
+              {...fieldProps('sheet')}
               value={node.sheet}
               onChange={(event) => change({ ...node, sheet: event.target.value })}
             />
+            {fieldError('sheet')}
           </label>
           <label>
             写入方式
@@ -212,22 +254,24 @@ export default function ExcelMappingPage({
                     来源
                     <input
                       aria-label={`映射 ${i + 1} 来源`}
-                      data-excel-field="source"
+                      {...fieldProps('source', i)}
                       value={item.source}
                       placeholder="记录字段名，或数组索引 0"
                       onChange={(event) => patchMapping(i, { source: event.target.value })}
                     />
+                    {fieldError('source', i)}
                   </label>
                   <label>
                     目标列
                     <input
                       aria-label={`映射 ${i + 1} 目标列`}
-                      data-excel-field="column"
+                      {...fieldProps('column', i)}
                       value={item.column}
                       onChange={(event) =>
                         patchMapping(i, { column: event.target.value.toUpperCase() })
                       }
                     />
+                    {fieldError('column', i)}
                   </label>
                   <details className="excel-column-options">
                     <summary>
@@ -238,16 +282,17 @@ export default function ExcelMappingPage({
                       表头
                       <input
                         aria-label={`映射 ${i + 1} 表头`}
-                        data-excel-field="header"
+                        {...fieldProps('header', i)}
                         value={item.header}
                         onChange={(event) => patchMapping(i, { header: event.target.value })}
                       />
+                      {fieldError('header', i)}
                     </label>
                     <label>
                       类型
                       <select
                         aria-label={`映射 ${i + 1} 类型`}
-                        data-excel-field="type"
+                        {...fieldProps('type', i)}
                         value={item.type}
                         onChange={(event) =>
                           patchMapping(i, { type: event.target.value as ExcelMapping['type'] })
@@ -257,16 +302,21 @@ export default function ExcelMappingPage({
                         <option value="number">数字</option>
                         <option value="boolean">布尔</option>
                       </select>
+                      {fieldError('type', i)}
                     </label>
                     <button
-                      onClick={() =>
+                      onClick={() => {
+                        focusRequest.current =
+                          node.mappings.length > 1
+                            ? `[data-mapping="${Math.min(i, node.mappings.length - 2)}"] [data-excel-field="source"]`
+                            : '[data-excel-field="mappings"]';
                         change({
                           ...node,
                           mappings: node.mappings.filter(
                             (_, j) => j !== i,
                           ) as MappedExcel['mappings'],
-                        })
-                      }
+                        });
+                      }}
                     >
                       删除映射 {i + 1}
                     </button>
@@ -276,11 +326,12 @@ export default function ExcelMappingPage({
             </div>
             <div className="excel-actions">
               <button
-                data-excel-field="mappings"
+                {...fieldProps('mappings')}
                 disabled={node.mappings.length >= 256}
                 onClick={() => {
                   let i = 0;
                   while (node.mappings.some((item) => item.column === columnName(i))) i++;
+                  focusRequest.current = `[data-mapping="${node.mappings.length}"] [data-excel-field="source"]`;
                   change({
                     ...node,
                     mappings: [
@@ -298,6 +349,7 @@ export default function ExcelMappingPage({
                   try {
                     setPreview(validate());
                     setError('');
+                    setIssue(undefined);
                   } catch (error) {
                     report(error);
                   }
@@ -306,22 +358,28 @@ export default function ExcelMappingPage({
                 预览 3 行
               </button>
             </div>
+            {fieldError('mappings')}
             <details className="excel-source-settings">
               <summary>来源数据、输出目录与表头</summary>
-              <ValueField
-                label="来源记录"
-                value={node.rows}
-                choices={choices}
-                defaultValue={[]}
-                change={(rows) => change({ ...node, rows })}
-              />
+              <div className="excel-source-value" {...fieldProps('rows')} tabIndex={-1}>
+                <ValueField
+                  label="来源记录"
+                  value={node.rows}
+                  choices={choices}
+                  defaultValue={[]}
+                  change={(rows) => change({ ...node, rows })}
+                />
+                {fieldError('rows')}
+              </div>
               <label>
                 输出目录绑定
                 <input
                   aria-label="映射目录绑定"
+                  {...fieldProps('binding')}
                   value={node.binding}
                   onChange={(event) => change({ ...node, binding: event.target.value })}
                 />
+                {fieldError('binding')}
               </label>
               <p className="path-text">
                 {draft.bindings.files[node.binding] || '尚未绑定；运行前需要选择输出目录'}
@@ -344,7 +402,12 @@ export default function ExcelMappingPage({
                 <p>
                   已核对全部 {preview.count} 条记录。以下显示前 {rows.length} 条，未写入文件。
                 </p>
-                <div className="excel-preview-scroll">
+                <div
+                  className="excel-preview-scroll"
+                  tabIndex={0}
+                  role="region"
+                  aria-label="映射结果表格，可滚动查看"
+                >
                   <table aria-label="Excel 映射预览">
                     <thead>
                       <tr>
@@ -373,6 +436,7 @@ export default function ExcelMappingPage({
                     </tbody>
                   </table>
                 </div>
+                {!rows.length && <p>来源记录为空；当前预览没有数据行。</p>}
                 <p className="note">未映射的列保留空白；预览仅展示选定列。</p>
               </>
             ) : (
@@ -397,13 +461,15 @@ export default function ExcelMappingPage({
       <dialog
         ref={dialog}
         className="script-leave-dialog"
+        aria-labelledby={`${issueId}-leave-title`}
+        aria-describedby={`${issueId}-leave-description`}
         onCancel={(event) => {
           event.preventDefault();
-          setPending(undefined);
+          if (!persisting.current) setPending(undefined);
         }}
       >
-        <h2>映射有未保存的修改</h2>
-        <p>保存后离开，或放弃本次映射编辑。</p>
+        <h2 id={`${issueId}-leave-title`}>映射有未保存的修改</h2>
+        <p id={`${issueId}-leave-description`}>保存后离开，或放弃本次映射编辑。</p>
         <div>
           <button className="primary" disabled={saving} onClick={() => void persist(pending?.next)}>
             保存并离开

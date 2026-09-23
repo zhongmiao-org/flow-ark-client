@@ -49,10 +49,10 @@
 .excel-mapping-page .value-field {
   margin: 0;
 }
-.excel-workbook-fields > .value-field {
+.excel-workbook-name > .value-field {
   position: relative;
 }
-.excel-workbook-fields > .value-field > .value-source-button {
+.excel-workbook-name > .value-field > .value-source-button {
   position: absolute;
   right: 0;
   top: -4px;
@@ -213,4 +213,19 @@
   .excel-workbook-fields > :last-child {
     grid-column: 1/-1;
   }
+}
+
+.excel-workbook-name {
+  min-width: 0;
+}
+.excel-field-error {
+  display: block;
+  color: var(--fa-status-error);
+  font-size: 12px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.excel-mapping-page [aria-invalid='true']:is(input, select),
+.excel-source-value[aria-invalid='true'] textarea {
+  border-color: var(--fa-status-error);
 }
