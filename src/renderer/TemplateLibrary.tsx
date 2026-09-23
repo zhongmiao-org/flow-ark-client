@@ -1,3 +1,4 @@
+import { usePageBack } from './use-page-back';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
 import { useState, useEffect, useRef, type MutableRefObject } from 'react';
 import type { Bootstrap } from '../shared/types';
@@ -221,23 +222,12 @@ export default function TemplateLibrary({
         : null;
     (target ?? heading.current)?.focus({ preventScroll: true });
   }, [view, detail, active]);
-  useEffect(() => {
-    if (!active || detail || view === 'library') return;
-    const onKey = (event: KeyboardEvent) => {
-      if (
-        (event.target as HTMLElement).closest(
-          'input,textarea,select,dialog,[contenteditable="true"]',
-        )
-      )
-        return;
-      if ((event.altKey && event.key === 'ArrowLeft') || (event.metaKey && event.key === '[')) {
-        event.preventDefault();
-        if (!locked.current) back();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [active, detail, view, preview?.token]);
+  usePageBack(
+    () => {
+      if (!locked.current) back();
+    },
+    active && !detail && view !== 'library',
+  );
   if (detail)
     return (
       <TemplateInstancePage

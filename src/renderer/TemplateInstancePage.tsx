@@ -1,3 +1,4 @@
+import { usePageBack } from './use-page-back';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import type { Bootstrap } from '../shared/types';
@@ -182,23 +183,7 @@ export default function TemplateInstancePage({
   useEffect(() => {
     if (leaving) dialog.current?.showModal();
   }, [leaving]);
-  useEffect(() => {
-    if (!active) return;
-    const keydown = (event: KeyboardEvent) => {
-      if (
-        (event.target as HTMLElement)?.closest(
-          'input, textarea, select, [contenteditable="true"], dialog',
-        )
-      )
-        return;
-      if ((event.metaKey && event.key === '[') || (event.altKey && event.key === 'ArrowLeft')) {
-        event.preventDefault();
-        go(close);
-      }
-    };
-    window.addEventListener('keydown', keydown);
-    return () => window.removeEventListener('keydown', keydown);
-  });
+  usePageBack(() => go(close), active);
   const switchTab = (next: Tab) => {
     if (lock.current) return;
     scrolls.current.set(tab, document.querySelector('main')?.scrollTop ?? 0);

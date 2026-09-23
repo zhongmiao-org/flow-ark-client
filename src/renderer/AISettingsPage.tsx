@@ -1,3 +1,4 @@
+import { usePageBack } from './use-page-back';
 import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import {
   aiErrorMessage,
@@ -149,23 +150,7 @@ export default function AISettingsPage({
   };
   navigation.current = go;
   const returnToSource = () => go(back);
-  useEffect(() => {
-    if (!active) return;
-    const keydown = (event: KeyboardEvent) => {
-      if (
-        (event.target as HTMLElement)?.closest(
-          'input, textarea, select, [contenteditable="true"], dialog',
-        )
-      )
-        return;
-      if ((event.metaKey && event.key === '[') || (event.altKey && event.key === 'ArrowLeft')) {
-        event.preventDefault();
-        returnToSource();
-      }
-    };
-    window.addEventListener('keydown', keydown);
-    return () => window.removeEventListener('keydown', keydown);
-  });
+  usePageBack(returnToSource, active);
   useEffect(
     () => () => {
       epoch.current++;

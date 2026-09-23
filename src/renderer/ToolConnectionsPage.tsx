@@ -1,3 +1,4 @@
+import { usePageBack } from './use-page-back';
 import { useEffect, useRef, useState, type MutableRefObject, type ReactNode } from 'react';
 import {
   connectionConfig,
@@ -53,8 +54,13 @@ function ToolDialog({
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
-    ref.current?.showModal();
-    return () => ref.current?.close();
+    const trigger = document.activeElement as HTMLElement | null;
+    const element = ref.current;
+    element?.showModal();
+    return () => {
+      element?.close();
+      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+    };
   }, []);
   return (
     <dialog
@@ -348,6 +354,9 @@ export default function ToolConnectionsPage({
               .catch((e) => setError(connectionError(e)));
           }
         : catalog;
+  usePageBack(back, active);
+  const backLabel =
+    view === 'catalog' ? parentTitle : view === 'review' ? '连接设置' : '应用与工具';
   return (
     <div className="tools-host" hidden={!active}>
       <header className="topbar">
@@ -356,7 +365,7 @@ export default function ToolConnectionsPage({
           onClick={back}
           disabled={busy === 'save' || busy === 'manage'}
         >
-          ← 返回
+          ← 返回{backLabel}
         </button>
         <nav className="breadcrumbs" aria-label="当前位置">
           <a

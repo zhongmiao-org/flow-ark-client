@@ -1,3 +1,4 @@
+import { usePageBack } from './use-page-back';
 import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import type { Bootstrap, Schedule } from '../shared/types';
 import { scheduleCreateSchema } from '../shared/schedules';
@@ -135,22 +136,7 @@ export default function TemplateSchedulePage({
   useEffect(() => {
     if (leaving) dialog.current?.showModal();
   }, [leaving]);
-  useEffect(() => {
-    const key = (event: KeyboardEvent) => {
-      if (
-        (event.target as HTMLElement).closest(
-          'input,textarea,select,dialog,[contenteditable="true"]',
-        )
-      )
-        return;
-      if ((event.altKey && event.key === 'ArrowLeft') || (event.metaKey && event.key === '[')) {
-        event.preventDefault();
-        go(back);
-      }
-    };
-    window.addEventListener('keydown', key);
-    return () => window.removeEventListener('keydown', key);
-  });
+  usePageBack(() => go(back));
   const plans = data.schedules.filter((plan) => plan.flowId === origin.flowId);
   return (
     <div

@@ -1,3 +1,4 @@
+import { usePageBack } from './use-page-back';
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import type { Bootstrap, FlowRecord, Schedule } from '../shared/types';
 import {
@@ -185,24 +186,7 @@ export default function ScheduleWorkbench({
   useEffect(() => {
     if (leaving) leaveRef.current?.showModal();
   }, [leaving]);
-  useEffect(() => {
-    if (!active) return;
-    const key = (event: KeyboardEvent) => {
-      if (
-        (event.target as HTMLElement).closest(
-          'input,textarea,select,dialog,[contenteditable="true"]',
-        )
-      )
-        return;
-      if ((event.altKey && event.key === 'ArrowLeft') || (event.metaKey && event.key === '[')) {
-        if (!draft) return;
-        event.preventDefault();
-        go(() => assign());
-      }
-    };
-    window.addEventListener('keydown', key);
-    return () => window.removeEventListener('keydown', key);
-  });
+  usePageBack(() => go(() => assign()), active && !!draft);
   async function save() {
     if (!draft || lock.current || changed) return false;
     if (draft.mode === 'create' && (!draft.flow || !draft.adopt)) {

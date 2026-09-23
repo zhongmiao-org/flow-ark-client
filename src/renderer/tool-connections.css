@@ -3,7 +3,8 @@
   display: none;
 }
 .tools-host .topbar .context-back {
-  width: 92px;
+  width: auto;
+  white-space: nowrap;
 }
 .tool-dialog {
   width: min(600px, calc(100vw - 48px));

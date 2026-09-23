@@ -1,3 +1,4 @@
+import { usePageBack } from './use-page-back';
 import DesktopStepDetails from './DesktopStepDetails';
 import EditorLeaveDialog from './EditorLeaveDialog';
 import EditorMorePage from './EditorMorePage';
@@ -335,32 +336,23 @@ export default function App() {
     setSection('templates');
     templateOrigin?.back();
   }
-  useEffect(() => {
-    if (section !== 'runs' || runOrigin === 'task' || !detail) return;
-    const key = (event: KeyboardEvent) => {
-      if (
-        (event.target as HTMLElement).closest(
-          'input,textarea,select,dialog,[contenteditable="true"]',
-        )
-      )
-        return;
-      if ((event.altKey && event.key === 'ArrowLeft') || (event.metaKey && event.key === '[')) {
-        event.preventDefault();
-        if (runTab !== 'current') returnRunSubview();
-        else if (runOrigin === 'inbox') {
-          setDetail(null);
-          setSection('inbox');
-        } else if (runOrigin === 'schedule') returnSchedule();
-        else if (runOrigin === 'template') returnTemplate();
-        else {
-          setDetail(null);
-          if (runOrigin === 'editor' && edit) setSection('editor');
-        }
+  const returnRun = () => {
+    if (detail && runOrigin === 'task' && taskRunView !== 'overview') setTaskRunView('overview');
+    else if (detail && runTab !== 'current') returnRunSubview();
+    else if (detail) {
+      setDetail(null);
+      if (runOrigin === 'inbox') setSection('inbox');
+      else if (runOrigin === 'schedule') returnSchedule();
+      else if (runOrigin === 'template') returnTemplate();
+      else if (runOrigin === 'editor' && edit) setSection('editor');
+      else if (runOrigin === 'task') {
+        setSection('tasks');
+        taskRunBack.current?.();
       }
-    };
-    window.addEventListener('keydown', key);
-    return () => window.removeEventListener('keydown', key);
-  }, [section, runOrigin, detail?.run?.id, runTab, templateOrigin, runRerunBusy]);
+    } else setRunFilter(false);
+  };
+  usePageBack(returnRun, section === 'runs' && !!(detail || runFilter));
+
   function leaveTemplateContext(next: () => void) {
     setDetail(null);
     setSection('templates');
@@ -593,25 +585,18 @@ export default function App() {
       }, '本地设置');
     else returnHome();
   };
-  useEffect(() => {
-    if (section !== 'editor' || nodeSession) return;
-    const back = (event: KeyboardEvent) => {
-      if (
-        event.defaultPrevented ||
-        document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]') ||
-        (event.target as HTMLElement | null)?.closest(
-          'input,textarea,select,[contenteditable="true"],.monaco-editor',
-        )
-      )
-        return;
-      if ((event.altKey && event.key === 'ArrowLeft') || (event.metaKey && event.key === '[')) {
-        event.preventDefault();
-        returnEditor();
-      }
-    };
-    window.addEventListener('keydown', back);
-    return () => window.removeEventListener('keydown', back);
-  });
+  usePageBack(returnEditor, section === 'editor' && !nodeSession);
+  usePageBack(
+    () => nodeNavigation.current?.(),
+    section === 'editor' && !!nodeSession && nodeSession.kind !== 'parameters',
+  );
+  usePageBack(taskNavigation.back, section === 'tasks');
+  usePageBack(attentionNavigation?.back, section === 'inbox');
+  usePageBack(
+    settingsNavigation?.back ?? (taskReturn ? returnToTaskEditor : undefined),
+    section === 'settings',
+  );
+
   const leaveNodeEditor = (next: () => void, destination: string) => {
     const source = nodeSession;
     nodeNavigation.current?.(() =>
@@ -988,22 +973,7 @@ export default function App() {
               <button
                 disabled={runOrigin !== 'task' && runTab === 'rerun' && runRerunBusy}
                 className="context-back"
-                onClick={() => {
-                  if (detail && runOrigin === 'task' && taskRunView !== 'overview')
-                    setTaskRunView('overview');
-                  else if (detail && runTab !== 'current') returnRunSubview();
-                  else if (detail) {
-                    setDetail(null);
-                    if (runOrigin === 'inbox') setSection('inbox');
-                    else if (runOrigin === 'schedule') returnSchedule();
-                    else if (runOrigin === 'template') returnTemplate();
-                    else if (runOrigin === 'editor' && edit) setSection('editor');
-                    else if (runOrigin === 'task') {
-                      setSection('tasks');
-                      taskRunBack.current?.();
-                    }
-                  } else setRunFilter(false);
-                }}
+                onClick={returnRun}
               >
                 {detail
                   ? runOrigin === 'task' && taskRunView !== 'overview'

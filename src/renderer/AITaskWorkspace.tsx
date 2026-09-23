@@ -1,3 +1,4 @@
+import { usePageBack } from './use-page-back';
 import TaskStepList from './TaskStepList';
 import TaskStepInspector from './TaskStepInspector';
 import TaskPlanConversation from './TaskPlanConversation';
@@ -786,6 +787,7 @@ export default function AITaskWorkspace(props: Props) {
       setPage('home');
     });
   }
+  usePageBack(() => void back(), props.active && page === 'review' && !standaloneGraph);
   async function openTarget() {
     await run(async () => {
       await save();

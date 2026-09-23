@@ -1,3 +1,4 @@
+import { usePageBack } from './use-page-back';
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import type { BrowserBinding, FlowRecord, Json } from '../shared/types';
 import { referenceIssues } from '../shared/flow-references';
@@ -79,22 +80,7 @@ export default function FlowParametersPage({
     if (pending) dialog.current?.showModal();
     else dialog.current?.close();
   }, [pending]);
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (
-        (event.target as HTMLElement).closest(
-          'input,textarea,select,dialog,[contenteditable="true"]',
-        )
-      )
-        return;
-      if ((event.altKey && event.key === 'ArrowLeft') || (event.metaKey && event.key === '[')) {
-        event.preventDefault();
-        leave();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  });
+  usePageBack(leave);
   const stay = () => {
     if (locked.current) return;
     setPending(undefined);
