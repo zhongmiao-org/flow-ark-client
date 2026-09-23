@@ -82,14 +82,17 @@ export function LiteralValue({
   label,
   value,
   change,
+  compact = false,
 }: {
   label: string;
   value: Json;
   change: (value: Json) => void;
+  compact?: boolean;
 }) {
   const id = useId(),
     type = valueType(value);
-  const format = () => (type === 'json' ? JSON.stringify(value, null, 2) : String(value ?? ''));
+  const format = () =>
+    type === 'json' ? JSON.stringify(value, null, compact ? undefined : 2) : String(value ?? '');
   const [text, setText] = useState(format),
     [error, setError] = useState('');
   useEffect(() => {
@@ -110,8 +113,12 @@ export function LiteralValue({
         id={id + '-type'}
         value={type}
         onChange={(e) => {
-          setError('');
-          change(defaults[e.target.value]);
+          try {
+            change(defaults[e.target.value]);
+            setError('');
+          } catch (reason) {
+            setError(reason instanceof Error ? reason.message : '类型未修改，请检查引用');
+          }
         }}
       >
         <option value="string">文本</option>
@@ -131,7 +138,7 @@ export function LiteralValue({
       ) : (
         <textarea
           id={id}
-          rows={type === 'json' ? 5 : 2}
+          rows={compact ? 1 : type === 'json' ? 5 : 2}
           className={type === 'json' ? 'code-input small' : ''}
           value={text}
           aria-invalid={!!error}

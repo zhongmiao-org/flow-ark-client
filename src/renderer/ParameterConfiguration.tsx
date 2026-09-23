@@ -39,6 +39,7 @@ export default function ParameterConfiguration({
             </button>
           </header>
           <LiteralValue
+            compact
             label={'参数 ' + key}
             value={val}
             change={(next) => apply({ ...value, [key]: next })}
@@ -49,6 +50,7 @@ export default function ParameterConfiguration({
       <label htmlFor="parameter-name">新参数名称</label>
       <input
         id="parameter-name"
+        data-value-invalid={name ? '新参数名称尚未添加，请添加或清空' : undefined}
         value={name}
         placeholder="例如 userName"
         onChange={(e) => setName(e.target.value)}

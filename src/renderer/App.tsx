@@ -52,7 +52,6 @@ import {
   Download,
   Save,
   Copy,
-  FolderOpen,
   Trash2,
   Activity,
   Search,
@@ -67,19 +66,16 @@ import ExcelMappingPage from './ExcelMappingPage';
 import FlowOutlineWorkspace, { type OutlineLocation } from './FlowOutlineWorkspace';
 import BrowserSidebar from './BrowserSidebar';
 import Schedules from './Schedules';
-import { fileBindingNames } from './file-bindings';
 import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 import LogicNodeConfiguration from './LogicNodeConfiguration';
 import ResourceNodeConfiguration from './ResourceNodeConfiguration';
-import ParameterConfiguration from './ParameterConfiguration';
-import TemplateParameters from './TemplateParameters';
+import FlowParametersPage from './FlowParametersPage';
 import RunHistory from './RunHistory';
 import RunDetail, { type RunTab } from './RunDetail';
 import TaskRunPage from './TaskRunPage';
 import { taskRunPresentation, type TaskRunIntent, type TaskRunView } from './task-run-presentation';
 import { runStateLabels } from '../shared/run-history';
 import { referenceChoices } from './value-references';
-import { referenceIssues } from '../shared/flow-references';
 const CodeEditor = lazy(() => import('./CodeEditor'));
 const initial: Bootstrap = {
   flows: [],
@@ -129,7 +125,8 @@ export default function App() {
   const outlineBrowser = useRef(false);
   const outlineMemory = useRef(new Map<string, OutlineLocation>());
   const [nodeSession, setNodeSession] = useState<{
-    kind: 'script' | 'excel';
+    kind: 'script' | 'excel' | 'parameters';
+    panel?: string;
     record: FlowRecord;
     nodeId: string;
     browserOpen: boolean;
@@ -438,20 +435,41 @@ export default function App() {
     if (next) next();
     else {
       setBrowserOpen(source?.browserOpen ?? false);
-      setEditorPanel('node');
+      setEditorPanel(source?.kind === 'parameters' ? (source.panel ?? 'canvas') : 'node');
       requestAnimationFrame(() =>
         requestAnimationFrame(() => {
           document.querySelector('main')?.scrollTo({ top: source?.scroll ?? 0 });
           document
             .querySelector<HTMLElement>(
-              source?.kind === 'excel'
-                ? '[aria-label="打开 Excel 映射编辑器"]'
-                : '[aria-label="打开完整脚本编辑器"]',
+              source?.kind === 'parameters'
+                ? '[aria-label="打开流程参数与资源"]'
+                : source?.kind === 'excel'
+                  ? '[aria-label="打开 Excel 映射编辑器"]'
+                  : '[aria-label="打开完整脚本编辑器"]',
             )
             ?.focus({ preventScroll: true });
         }),
       );
     }
+  };
+  const openParameters = () => {
+    if (!edit) return;
+    try {
+      checkEditorInput('打开流程参数与资源');
+    } catch (reason) {
+      setError((reason as Error).message);
+      return;
+    }
+    setNodeSession({
+      kind: 'parameters',
+      record: structuredClone(edit),
+      nodeId: selected,
+      browserOpen,
+      panel: editorPanel,
+      scroll: document.querySelector('main')?.scrollTop ?? 0,
+    });
+    setBrowserOpen(false);
+    document.querySelector('main')?.scrollTo(0, 0);
   };
   const openOutline = () => {
     try {
@@ -633,7 +651,11 @@ export default function App() {
                 </a>
                 <span aria-hidden="true">/</span>
                 <span aria-current="page">
-                  {nodeSession.kind === 'excel' ? 'Excel 字段映射' : '脚本配置'}
+                  {nodeSession.kind === 'parameters'
+                    ? '流程参数与资源'
+                    : nodeSession.kind === 'excel'
+                      ? 'Excel 字段映射'
+                      : '脚本配置'}
                 </span>
               </nav>
             </header>
@@ -1339,11 +1361,7 @@ export default function App() {
                     >
                       导出 ZIP
                     </button>
-                    <button
-                      onClick={() => {
-                        if (guardInvalidNodeJson()) setEditorPanel('params');
-                      }}
-                    >
+                    <button aria-label="打开流程参数与资源" onClick={openParameters}>
                       参数与绑定
                     </button>
                     <button onClick={() => run(edit, true)} disabled={busy}>
@@ -1424,6 +1442,18 @@ export default function App() {
                 revision={history.revision}
                 record={edit}
                 setRecord={setEdit}
+                choose={async (binding: string) => {
+                  const path = await action(() => api('file.choose', { kind: 'directory' }));
+                  if (path)
+                    setEdit({
+                      ...edit,
+                      bindings: {
+                        ...edit.bindings,
+                        files: { ...edit.bindings.files, [binding]: path },
+                      },
+                    });
+                }}
+                openParameters={openParameters}
                 openScript={(nodeId: string) => {
                   try {
                     checkEditorInput('打开脚本编辑器');
@@ -1474,26 +1504,41 @@ export default function App() {
                     />
                   ) : null
                 }
-                editConfiguration={() => {
-                  if (guardInvalidNodeJson()) {
-                    if (edit.bindings.template) setSection('templates');
-                    else setConfigOpen(true);
-                  }
-                }}
-                browsers={data.browsers}
-                choose={async (binding: string) => {
-                  const path = await action(() => api('file.choose', { kind: 'directory' }));
-                  if (path)
-                    setEdit({
-                      ...edit,
-                      bindings: {
-                        ...edit.bindings,
-                        files: { ...edit.bindings.files, [binding]: path },
-                      },
-                    });
-                }}
               />
             </div>
+          )}
+          {section === 'editor' && nodeSession?.kind === 'parameters' && (
+            <FlowParametersPage
+              key={nodeSession.record.id}
+              record={nodeSession.record}
+              browsers={data.browsers}
+              credentials={data.credentials}
+              navigation={nodeNavigation}
+              close={closeNodeEditor}
+              configuration={() => {
+                if (nodeSession.record.bindings.template) setSection('templates');
+                else setConfigOpen(true);
+              }}
+              save={async (record) => {
+                if (JSON.stringify(edit) !== JSON.stringify(nodeSession.record))
+                  throw new Error(
+                    '来源流程草稿已经变化，请保留输入并返回重新打开，避免覆盖其他修改',
+                  );
+                const saved = await api('flow.save', {
+                  flow: record.flow,
+                  bindings: record.bindings,
+                });
+                inputGroup.current = undefined;
+                setEdit(saved);
+                setNotice('已保存参数、资源绑定及流程草稿');
+                await refresh().catch((reason) => {
+                  setError(
+                    '参数已保存，但列表刷新失败：' +
+                      (reason instanceof Error ? reason.message : '请稍后刷新'),
+                  );
+                });
+              }}
+            />
           )}
           {section === 'editor' && nodeSession?.kind === 'script' && (
             <ScriptEditorPage
@@ -1736,16 +1781,15 @@ function Editor({
   setRecord,
   selected,
   setSelected,
-  browsers,
-  choose,
   revision,
   guardInvalidNodeJson,
-  editConfiguration,
   compact,
   panel,
   setPanel,
   browserOpen,
   browserPanel,
+  choose,
+  openParameters,
   openScript,
   openExcel,
   openStepAI,
@@ -1842,20 +1886,12 @@ function Editor({
     setRaw(JSON.stringify(next, null, 2));
     setInvalid('');
   };
-  const updateParameters = (parameters: any) => {
-    if (!parameters || typeof parameters !== 'object' || Array.isArray(parameters))
-      throw new Error('运行参数必须为对象');
-    const before = new Set(
-      referenceIssues(r.flow.steps, r.flow.parameters).map((issue) => JSON.stringify(issue)),
-    );
-    const added = referenceIssues(r.flow.steps, parameters).find(
-      (issue) => !before.has(JSON.stringify(issue)),
-    );
-    if (added) throw new Error(`${added.nodeId} 仍引用 ${added.reference}，请先调整引用`);
-    setRecord({ ...r, flow: { ...r.flow, parameters } });
-  };
   const { nodes, edges, stepCount } = buildDiagram(r.flow.steps, selected);
   const changePanel = (value: string) => {
+    if (value === 'params') {
+      openParameters();
+      return;
+    }
     if (guardInvalidNodeJson()) setPanel(value);
   };
   return (
@@ -1966,16 +2002,19 @@ function Editor({
               <p>当前步骤保持可见；动作库与配置使用互斥抽屉。</p>
             </section>
             <aside className="inspector">
-              <div className="tabs" role="tablist" aria-label="检查器内容">
+              <div className="tabs" role="group" aria-label="检查器内容">
                 {[
                   ['node', '节点'],
                   ['params', '参数'],
                 ].map(([k, t]) => (
                   <button
                     key={k}
-                    role="tab"
-                    aria-selected={tab === k}
+                    aria-pressed={tab === k}
                     onClick={() => {
+                      if (k === 'params') {
+                        openParameters();
+                        return;
+                      }
                       if (guardInvalidNodeJson()) {
                         setTab(k);
                         if (compact) setPanel(k);
@@ -2268,87 +2307,6 @@ function Editor({
                 ) : (
                   <Empty text="选择画布节点，编辑参数或脚本。" />
                 ))}
-              {tab === 'params' && (
-                <>
-                  <h3>运行参数</h3>
-                  {r.bindings.configuration?.adapter === 'flow-parameters-v1' ? (
-                    <TemplateParameters
-                      value={r.bindings.configuration.values}
-                      edit={editConfiguration}
-                    />
-                  ) : (
-                    <>
-                      <ParameterConfiguration
-                        key={revision}
-                        value={r.flow.parameters}
-                        change={updateParameters}
-                      />
-                      <details className="parameters-advanced">
-                        <summary>参数 JSON · 高级</summary>
-                        <JsonInput
-                          key={revision}
-                          value={r.flow.parameters}
-                          onChange={updateParameters}
-                        />
-                      </details>
-                    </>
-                  )}
-                  <label htmlFor="flow-browser-binding">本机浏览器</label>
-                  <select
-                    id="flow-browser-binding"
-                    value={r.bindings.browserId ?? ''}
-                    onChange={(e) =>
-                      setRecord({
-                        ...r,
-                        bindings: {
-                          ...r.bindings,
-                          browserId: e.target.value || undefined,
-                        },
-                      })
-                    }
-                  >
-                    <option value="">尚未绑定</option>
-                    {browsers.map((b: any) => (
-                      <option key={b.id} value={b.id}>
-                        {b.product === 'embedded' ? 'FlowArk 内置浏览器' : b.product} {b.version}
-                      </option>
-                    ))}
-                  </select>
-                  {fileBindingNames(r.flow.steps, r.bindings.files, r.flow.parameters).map(
-                    (binding) => (
-                      <section key={binding} className="file-binding">
-                        <label>{binding} 文件目录</label>
-                        <p className="path-text">{r.bindings.files[binding] ?? '尚未选择'}</p>
-                        <button aria-label={`选择 ${binding} 目录`} onClick={() => choose(binding)}>
-                          <FolderOpen size={15} /> 选择目录
-                        </button>
-                      </section>
-                    ),
-                  )}
-                  <label>允许脚本读取的凭据</label>
-                  {['openai-codex', 'deepseek'].map((id) => (
-                    <label className="check-label" key={id}>
-                      <input
-                        type="checkbox"
-                        checked={r.bindings.credentials.includes(id)}
-                        onChange={(e) =>
-                          setRecord({
-                            ...r,
-                            bindings: {
-                              ...r.bindings,
-                              credentials: e.target.checked
-                                ? [...r.bindings.credentials, id]
-                                : r.bindings.credentials.filter((x: string) => x !== id),
-                            },
-                          })
-                        }
-                      />
-                      {id}
-                    </label>
-                  ))}
-                  <p className="note">本地绑定不随流程导出。计划使用创建时的固定版本。</p>
-                </>
-              )}
               {compact && browserOpen && ['node', 'params'].includes(panel) && (
                 <div className="drawer-footer">
                   <button className="primary" onClick={() => changePanel('canvas')}>
@@ -2361,36 +2319,6 @@ function Editor({
           {browserPanel}
         </div>
       </div>
-    </>
-  );
-}
-function JsonInput({ value, onChange }: { value: any; onChange: (v: any) => void }) {
-  const [text, setText] = useState(JSON.stringify(value, null, 2)),
-    [err, setErr] = useState('');
-  useEffect(() => {
-    try {
-      if (JSON.stringify(JSON.parse(text)) === JSON.stringify(value)) return;
-    } catch {}
-    setText(JSON.stringify(value, null, 2));
-    setErr('');
-  }, [JSON.stringify(value)]);
-  return (
-    <>
-      <textarea
-        className="code-input small"
-        data-value-invalid={err || undefined}
-        value={text}
-        onChange={(e) => {
-          setText(e.target.value);
-          try {
-            onChange(JSON.parse(e.target.value));
-            setErr('');
-          } catch (error: any) {
-            setErr(error.message || 'JSON 格式尚未完成');
-          }
-        }}
-      />
-      {err && <small className="field-error">{err}</small>}
     </>
   );
 }
