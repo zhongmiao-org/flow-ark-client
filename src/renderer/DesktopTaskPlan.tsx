@@ -4,6 +4,7 @@ import type { DesktopSelectionPreview, DesktopWindow } from '../shared/desktop-w
 import { desktopPlanResponse, type DesktopPlanResponse } from '../shared/desktop-planning';
 import { aiModel, type AIConfigurationState, type AIProviderId } from '../shared/ai-settings';
 import './desktop-task-plan.css';
+import DesktopModificationCheck from './DesktopModificationCheck';
 
 type Ready = Extract<DesktopSelectionPreview, { status: 'ready' }>;
 const api = (method: string, args: unknown) => window.flowark.request(method, args);
@@ -31,6 +32,7 @@ export default function DesktopTaskPlan({
   const [message, setMessage] = useState('');
   const [result, setResult] = useState<DesktopPlanResponse>();
   const [view, setView] = useState<'plan' | 'changes'>('plan');
+  const completedRequest = useRef<string | undefined>(undefined);
   const request = useRef<string | undefined>(undefined),
     epoch = useRef(0);
   const heading = useRef<HTMLParagraphElement>(null);
@@ -39,6 +41,11 @@ export default function DesktopTaskPlan({
     epoch.current++;
     if (request.current)
       void api('desktop.plan.cancel', { id: task.id, requestId: request.current }).catch(() => {});
+    if (completedRequest.current)
+      void api('desktop.plan.cancel', { id: task.id, requestId: completedRequest.current }).catch(
+        () => {},
+      );
+    completedRequest.current = undefined;
     request.current = undefined;
     setBusy(false);
     setReviewed(false);
@@ -50,6 +57,11 @@ export default function DesktopTaskPlan({
         void api('desktop.plan.cancel', { id: task.id, requestId: request.current }).catch(
           () => {},
         );
+      if (completedRequest.current)
+        void api('desktop.plan.cancel', {
+          id: task.id,
+          requestId: completedRequest.current,
+        }).catch(() => {});
     },
     [task.id],
   );
@@ -101,6 +113,7 @@ export default function DesktopTaskPlan({
     const requestId = crypto.randomUUID(),
       ticket = ++epoch.current;
     request.current = requestId;
+    completedRequest.current = undefined;
     setBusy(true);
     setMessage('');
     setResult(undefined);
@@ -132,6 +145,7 @@ export default function DesktopTaskPlan({
         next.expiresAt <= Date.now()
       )
         throw new Error('候选来源已失效，请重新核对');
+      completedRequest.current = next.requestId;
       setResult(next);
       heading.current?.focus();
     } catch {
@@ -219,15 +233,7 @@ export default function DesktopTaskPlan({
                   </ul>
                 </div>
               )}
-              <h2>本次授权</h2>
-              <label className="ai-task-checkbox">
-                <input type="checkbox" checked={false} disabled />
-                读取选区、替换选区并回读
-              </label>
-              <p>文档写入与回读尚未接入。本次仅生成文字预览，未授予修改权限。</p>
-              <button className="primary" disabled>
-                确认修改并试运行 · 尚未开放
-              </button>
+              <DesktopModificationCheck candidate={result!} unchanged={unchanged} back={back} />
               <button onClick={() => setView('plan')}>取消，回到方案</button>
             </>
           ) : (

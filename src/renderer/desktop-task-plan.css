@@ -121,3 +121,57 @@
 .desktop-plan-heading > button {
   flex-shrink: 0;
 }
+
+.desktop-modification-check {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
+}
+.desktop-modification-check-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+}
+.desktop-modification-check-title button {
+  flex-shrink: 0;
+}
+.desktop-modification-check dl {
+  margin: 0;
+  width: 100%;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  overflow: hidden;
+}
+.desktop-modification-check dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+}
+.desktop-modification-check dl > div + div {
+  border-top: 1px solid var(--fa-border-default);
+}
+.desktop-modification-check dd {
+  margin: 0;
+  color: var(--fa-text-secondary);
+  text-align: right;
+}
+.desktop-modification-check [data-state='unsupported'],
+.desktop-modification-check [data-state='unavailable'] {
+  background: var(--fa-status-warning-bg);
+}
+.desktop-modification-check > p {
+  font-size: 13px;
+  line-height: 21px;
+  color: var(--fa-text-secondary);
+}
+.desktop-modification-check [role='alert'] {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}

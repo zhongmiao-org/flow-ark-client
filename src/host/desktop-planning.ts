@@ -1,9 +1,16 @@
 import { generate } from '../ai/providers';
 import { redactArtifactText } from '../shared/utils';
 import { aiModel, type AIConfiguration, type AIProviderId } from '../shared/ai-settings';
-import { desktopSelectionPreview, type SelectionReference } from '../shared/desktop-windows';
+import {
+  desktopSelectionInspection,
+  desktopSelectionPreview,
+  type SelectionReference,
+} from '../shared/desktop-windows';
 import {
   desktopPlanGenerate,
+  desktopPlanInspect,
+  desktopPlanInspection,
+  type DesktopPlanResponse,
   desktopPlanMethods,
   desktopPlanResponse,
   desktopPlanResult,
@@ -11,6 +18,11 @@ import {
 } from '../shared/desktop-planning';
 import type { PlanningTask } from '../shared/planning';
 
+type Candidate = {
+  response: DesktopPlanResponse;
+  original: string;
+  timer: ReturnType<typeof setTimeout>;
+};
 type Job = { args: DesktopPlanGenerate; abort: AbortController };
 // Awaiting a credential/backend read must not prevent leaving the page or timing out.
 async function until<T>(read: Promise<T>, signal: AbortSignal): Promise<T> {
@@ -45,6 +57,7 @@ const resultSchema = {
 export class DesktopPlanning {
   private jobs = new Map<string, Job>();
   private consumed = new Map<string, number>();
+  private candidates = new Map<string, Candidate>();
   constructor(
     private deps: {
       task: (id: string) => PlanningTask;
@@ -53,6 +66,7 @@ export class DesktopPlanning {
       key: (provider: AIProviderId, revision: string) => Promise<string>;
       captureConfiguration: (provider: AIProviderId) => () => void;
       selection: (reference: SelectionReference) => Promise<unknown>;
+      inspect: (reference: SelectionReference) => Promise<unknown>;
       generate?: typeof generate;
     },
   ) {}
@@ -60,6 +74,7 @@ export class DesktopPlanning {
     return this.jobs.has(id);
   }
   cancelTask(id: string) {
+    this.clearCandidate(id);
     const job = this.jobs.get(id);
     this.jobs.delete(id);
     job?.abort.abort();
@@ -68,12 +83,91 @@ export class DesktopPlanning {
     return [...this.jobs.values()].some((job) => job.args.provider === provider);
   }
   invalidate(observationId?: string) {
+    for (const [id, candidate] of this.candidates) {
+      if (!observationId || candidate.response.observationId === observationId)
+        this.clearCandidate(id);
+    }
     for (const [id, job] of this.jobs) {
       if (observationId && job.args.observationId !== observationId) continue;
       this.jobs.delete(id);
       job.abort.abort();
     }
     return true;
+  }
+  private clearCandidate(id: string) {
+    const previous = this.candidates.get(id);
+    if (previous) clearTimeout(previous.timer);
+    this.candidates.delete(id);
+  }
+  private retain(response: DesktopPlanResponse, original: string) {
+    this.clearCandidate(response.id);
+    if (response.result.kind !== 'proposal' || response.expiresAt <= Date.now()) return;
+    const saved = {
+      response: structuredClone(response),
+      original,
+      timer: setTimeout(
+        () => {
+          if (this.candidates.get(response.id) === saved) this.clearCandidate(response.id);
+        },
+        Math.max(0, response.expiresAt - Date.now()),
+      ),
+    };
+    saved.timer.unref();
+    this.candidates.set(response.id, saved);
+  }
+  private async inspect(raw: unknown) {
+    const args = desktopPlanInspect.parse(raw);
+    const candidate = this.candidates.get(args.id);
+    const current = () => {
+      this.deps.assertAvailable();
+      const response = candidate?.response;
+      const task = this.deps.task(args.id);
+      if (
+        !response ||
+        this.candidates.get(args.id) !== candidate ||
+        this.jobs.has(args.id) ||
+        response.id !== args.id ||
+        response.revision !== args.revision ||
+        response.requestId !== args.requestId ||
+        response.observationId !== args.observationId ||
+        response.windowId !== args.windowId ||
+        response.previewId !== args.previewId ||
+        response.expiresAt <= Date.now() ||
+        task.revision !== args.revision ||
+        task.status === 'generating' ||
+        response.result.kind !== 'proposal' ||
+        response.result.replacement === candidate.original
+      )
+        throw new Error('候选或原段落已失效，或没有文字改动，请返回核对');
+      return response;
+    };
+    const response = current();
+    const reference = {
+      observationId: response.observationId,
+      windowId: response.windowId,
+      previewId: response.previewId,
+    };
+    try {
+      const checked = desktopSelectionInspection.parse(await this.deps.inspect(reference));
+      current();
+      if (
+        checked.observationId !== response.observationId ||
+        checked.windowId !== response.windowId ||
+        checked.previewId !== response.previewId ||
+        checked.expiresAt !== response.expiresAt ||
+        checked.expiresAt <= Date.now()
+      )
+        throw new Error('检查来源已失效');
+      return desktopPlanInspection.parse({
+        ...checked,
+        id: args.id,
+        revision: args.revision,
+        requestId: args.requestId,
+      });
+    } catch {
+      if (this.candidates.get(args.id) === candidate) this.clearCandidate(args.id);
+      throw new Error('未能核对修改条件，请返回窗口重新读取并生成候选');
+    }
   }
   private reserve(requestId: string) {
     for (const [key, expiresAt] of this.consumed)
@@ -83,8 +177,10 @@ export class DesktopPlanning {
     this.consumed.set(requestId, Date.now() + 5 * 60 * 1000);
   }
   async request(method: string, raw: unknown) {
+    if (method === 'desktop.plan.inspect') return this.inspect(raw);
     if (method === 'desktop.plan.cancel') {
       const { id, requestId } = desktopPlanMethods[method].parse(raw);
+      if (this.candidates.get(id)?.response.requestId === requestId) this.clearCandidate(id);
       const job = this.jobs.get(id);
       if (job?.args.requestId === requestId) {
         this.jobs.delete(id);
@@ -98,6 +194,7 @@ export class DesktopPlanning {
     this.deps.assertAvailable();
     if (this.jobs.has(args.id)) throw new Error('这个任务仍在生成，请先取消或等待完成');
     this.reserve(args.requestId);
+    this.clearCandidate(args.id);
     const job: Job = { args, abort: new AbortController() };
     this.jobs.set(args.id, job);
     const deadline = setTimeout(() => job.abort.abort(), 60000);
@@ -193,7 +290,7 @@ export class DesktopPlanning {
       if (source.text !== after.text || source.expiresAt !== after.expiresAt)
         throw new Error('生成期间选区已变化，请重新读取');
       current();
-      return desktopPlanResponse.parse({
+      const proposal = desktopPlanResponse.parse({
         version: 1,
         id: args.id,
         revision: args.revision,
@@ -204,6 +301,8 @@ export class DesktopPlanning {
         expiresAt: source.expiresAt,
         result,
       });
+      this.retain(proposal, source.text);
+      return proposal;
     } catch {
       // Neither provider output nor native/credential errors may leak through IPC.
       throw new Error(

@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import {
   nativeWindowDiscovery,
   nativeSelectionPreview,
+  nativeSelectionInspection,
+  desktopSelectionInspection,
   selectionReasons,
   type DesktopWindowDiscovery,
   type DesktopSelectionPreview,
@@ -90,6 +92,48 @@ export class DesktopWindows {
       throw new Error('窗口或选区已变化，请重新读取后核对');
     }
     return saved.value;
+  }
+  async inspect(reference: SelectionReference) {
+    await this.resolve(reference);
+    const saved = this.selection,
+      session = this.session;
+    const nativeId = session?.windows.get(reference.windowId);
+    if (
+      !saved ||
+      !this.matches(reference, saved.value) ||
+      saved.value.redacted ||
+      !session ||
+      !nativeId ||
+      session.closed ||
+      session.expiresAt <= Date.now()
+    )
+      throw new Error('原段落预览已失效，请重新读取');
+    try {
+      const result = nativeSelectionInspection.parse(
+        await session.call('inspect', { windowId: nativeId }),
+      );
+      if (
+        this.selection !== saved ||
+        this.session !== session ||
+        session.closed ||
+        session.expiresAt <= Date.now() ||
+        result.status !== 'ready' ||
+        digest({ text: result.text, range: result.range }) !== saved.fingerprint ||
+        redactArtifactText(result.text, this.secrets()).text !== saved.value.text
+      )
+        throw new Error('窗口或选区已变化');
+      return desktopSelectionInspection.parse({
+        version: 1,
+        ...reference,
+        checkedAt: new Date().toISOString(),
+        expiresAt: saved.value.expiresAt,
+        replacement: result.replacement,
+        readback: result.readback,
+      });
+    } catch {
+      this.clear(reference);
+      throw new Error('未能核对原窗口与选区，请重新读取后生成候选');
+    }
   }
   private async capture(
     identity: SelectionIdentity,

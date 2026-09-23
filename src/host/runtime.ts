@@ -277,6 +277,7 @@ export class Runtime {
       key: (provider, revision) => this.system('credentials.get', { id: provider, revision }),
       captureConfiguration: (provider) => this.aiSettings.capture([provider]),
       selection: (reference) => this.system('desktop.selection.resolve', reference),
+      inspect: (reference) => this.system('desktop.selection.inspect', reference),
     });
     this.scripts = new ScriptProcesses({
       store: this.store,

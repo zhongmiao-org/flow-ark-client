@@ -109,3 +109,26 @@ export type DesktopWindow = DesktopWindowDiscovery['windows'][number];
 export type SelectionIdentity = z.infer<typeof selectionIdentity>;
 export type SelectionReference = z.infer<typeof selectionReference>;
 export type DesktopSelectionPreview = z.infer<typeof desktopSelectionPreview>;
+
+const selectionCapability = z.enum(['available', 'unsupported', 'unavailable']);
+export const nativeSelectionInspection = z.discriminatedUnion('status', [
+  z
+    .object({
+      status: z.literal('ready'),
+      text: z.string().min(1).max(20000),
+      range,
+      replacement: selectionCapability,
+      readback: selectionCapability,
+    })
+    .strict()
+    .refine((v) => v.text.length === v.range.length),
+  z.object({ status: failureStatus }).strict(),
+]);
+export const desktopSelectionInspection = selectionReference.extend({
+  version: z.literal(1),
+  checkedAt: z.string().datetime(),
+  expiresAt: z.number().int().positive(),
+  replacement: selectionCapability,
+  readback: selectionCapability,
+});
+export type DesktopSelectionInspection = z.infer<typeof desktopSelectionInspection>;

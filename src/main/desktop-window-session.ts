@@ -54,7 +54,7 @@ export class DesktopWindowSession {
       }
     });
   }
-  async call(method: 'list' | 'preview', args: { windowId?: string } = {}) {
+  async call(method: 'list' | 'preview' | 'inspect', args: { windowId?: string } = {}) {
     if (this.closed || Date.now() >= this.expiresAt) throw new Error('窗口会话已失效');
     try {
       return await this.rpc.call(method, args, 8000);

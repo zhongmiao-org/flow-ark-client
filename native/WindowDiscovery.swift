@@ -2,7 +2,7 @@ import AppKit
 import ApplicationServices
 import Foundation
 
-// Window references stay in this process. Only list and explicit selection reads are accepted.
+// Window references stay in this process. All supported commands are read-only.
 struct WindowInfo: Encodable {
     let id: String
     let title: String
@@ -200,6 +200,55 @@ func preview(_ id: String) -> Selection {
         return Selection(status: SelectionError.unavailable.rawValue)
     }
 }
+// A successful capability query is not a write or authorization to write.
+struct Inspection: Encodable {
+    let status: String
+    var text: String? = nil
+    var range: TextRange? = nil
+    var replacement: String? = nil
+    var readback: String? = nil
+}
+func replacementAvailability(_ area: AXUIElement) -> String {
+    var settable: DarwinBoolean = false
+    let error = AXUIElementIsAttributeSettable(area, kAXSelectedTextAttribute as CFString, &settable)
+    if error == .success { return settable.boolValue ? "available" : "unsupported" }
+    if error == .attributeUnsupported || error == .noValue { return "unsupported" }
+    return "unavailable"
+}
+func rangeReadAvailability(_ area: AXUIElement, _ selection: (TextRange, String)) throws -> String {
+    var range = CFRange(location: selection.0.location, length: selection.0.length)
+    guard let parameter = AXValueCreate(.cfRange, &range) else { return "unavailable" }
+    var value: CFTypeRef?
+    let error = AXUIElementCopyParameterizedAttributeValue(area, kAXStringForRangeParameterizedAttribute as CFString, parameter, &value)
+    if error == .parameterizedAttributeUnsupported || error == .attributeUnsupported { return "unsupported" }
+    guard error == .success, let text = value as? String else { return "unavailable" }
+    guard text == selection.1, text.utf16.count == selection.0.length else { throw SelectionError.selectionChanged }
+    return "available"
+}
+func inspectSelection(_ id: String) -> Inspection {
+    guard let entry = entries[id] else { return Inspection(status: SelectionError.expired.rawValue) }
+    let deadline = ProcessInfo.processInfo.systemUptime + 5
+    do {
+        try checkedWindow(entry)
+        let area = try textArea(in: entry.window, deadline: deadline)
+        let first = try selectedText(area)
+        try checkDeadline(deadline)
+        let replacement = replacementAvailability(area)
+        try checkDeadline(deadline)
+        let readback = try rangeReadAvailability(area, first)
+        try checkDeadline(deadline)
+        let second = try selectedText(area)
+        let currentArea = try textArea(in: entry.window, deadline: deadline)
+        try checkedWindow(entry)
+        try checkDeadline(deadline)
+        guard CFEqual(area, currentArea), first.0 == second.0, first.1 == second.1 else { throw SelectionError.selectionChanged }
+        return Inspection(status: "ready", text: first.1, range: first.0, replacement: replacement, readback: readback)
+    } catch let error as SelectionError {
+        return Inspection(status: error.rawValue)
+    } catch {
+        return Inspection(status: SelectionError.unavailable.rawValue)
+    }
+}
 struct Arguments: Decodable { let windowId: String? }
 struct Request: Decodable { let rpc: String; let method: String; let args: Arguments }
 struct Reply<T: Encodable>: Encodable { let rpc: String; let reply = true; let result: T }
@@ -218,6 +267,9 @@ while let line = readLine() {
         case "preview":
             guard let id = request.args.windowId, UUID(uuidString: id) != nil else { exit(1) }
             try send(request, preview(id))
+        case "inspect":
+            guard let id = request.args.windowId, UUID(uuidString: id) != nil else { exit(1) }
+            try send(request, inspectSelection(id))
         default: exit(1)
         }
     } catch { exit(1) }

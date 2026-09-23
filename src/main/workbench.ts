@@ -362,6 +362,8 @@ app
                 executable: app.getPath('exe'),
                 version: process.versions.chrome,
               };
+            if (method === 'desktop.selection.inspect')
+              return desktopWindows.inspect(selectionReference.parse(args));
             if (method === 'desktop.selection.resolve')
               return desktopWindows.resolve(selectionReference.parse(args));
             if (method.startsWith('browser.embedded.')) return embedded.system(method, args);

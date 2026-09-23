@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { aiProvider, aiModel } from './ai-settings';
-import { selectionReference } from './desktop-windows';
+import { desktopSelectionInspection, selectionReference } from './desktop-windows';
 
 const id = z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/);
 const taskIdentity = {
@@ -18,7 +18,17 @@ export const desktopPlanGenerate = selectionReference.extend({
   configurationRevision: z.string().regex(/^[a-f0-9]{64}$/),
   reviewed: z.literal(true),
 });
+export const desktopPlanInspect = selectionReference.extend({
+  ...taskIdentity,
+  requestId: z.string().uuid(),
+});
+export const desktopPlanInspection = desktopSelectionInspection.extend({
+  ...taskIdentity,
+  requestId: z.string().uuid(),
+});
+export type DesktopPlanInspection = z.infer<typeof desktopPlanInspection>;
 export const desktopPlanMethods = {
+  'desktop.plan.inspect': desktopPlanInspect,
   'desktop.plan.generate': desktopPlanGenerate,
   'desktop.plan.cancel': z.object({ id, requestId: z.string().uuid() }).strict(),
 };

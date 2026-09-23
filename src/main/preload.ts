@@ -5,6 +5,7 @@ const allowed = new Set([
   'desktop.selection.preview',
   'desktop.selection.clear',
   'desktop.plan.generate',
+  'desktop.plan.inspect',
   'desktop.plan.cancel',
   'desktop.accessibility.openSettings',
   'tool.connection.list',
