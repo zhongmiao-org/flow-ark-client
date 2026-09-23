@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import type { Json } from '../shared/types';
 import { referenceOf, type ReferenceChoice } from './value-references';
 import VariablePicker from './VariablePicker';
@@ -95,6 +95,7 @@ export function LiteralValue({
     type === 'json' ? JSON.stringify(value, null, compact ? undefined : 2) : String(value ?? '');
   const [text, setText] = useState(format),
     [error, setError] = useState('');
+  const input = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     setText(format());
     setError('');
@@ -137,11 +138,13 @@ export function LiteralValue({
         <p className="note">null · 空值</p>
       ) : (
         <textarea
+          ref={input}
           id={id}
           rows={compact ? 1 : type === 'json' ? 5 : 2}
           className={type === 'json' ? 'code-input small' : ''}
           value={text}
           aria-invalid={!!error}
+          aria-describedby={error ? id + '-error' : undefined}
           onChange={(e) => {
             setText(e.target.value);
             try {
@@ -165,9 +168,23 @@ export function LiteralValue({
         />
       )}
       {error && (
-        <p className="field-error" role="alert">
-          {error}；修正后才能保存或运行。
-        </p>
+        <>
+          <p id={id + '-error'} className="field-error" role="alert">
+            {error}；修正后才能保存、运行或切换步骤。
+          </p>
+          <button
+            type="button"
+            className="literal-value-restore"
+            aria-label={'恢复已应用值 · ' + label}
+            onClick={() => {
+              setText(format());
+              setError('');
+              input.current?.focus({ preventScroll: true });
+            }}
+          >
+            恢复已应用值
+          </button>
+        </>
       )}
     </div>
   );

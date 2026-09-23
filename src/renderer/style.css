@@ -1919,6 +1919,14 @@ td small {
   font-size: 12px;
   border-color: var(--fa-border-default);
 }
+.literal-value textarea[aria-invalid='true'] {
+  border-color: var(--fa-status-error);
+}
+.literal-value-restore {
+  margin-top: 8px;
+  color: var(--fa-action-primary);
+  border-color: var(--fa-border-default);
+}
 .reference-value {
   display: flex;
   flex-direction: column;

@@ -273,15 +273,15 @@ export default function App() {
   const setEdit = (record: FlowRecord) =>
     dispatchDraft({ type: 'change', record, group: inputGroup.current });
   const setSelected = (selected: string) => {
-    if (guardInvalidNodeJson()) dispatchDraft({ type: 'select', selected });
+    if (guardNodeInput()) dispatchDraft({ type: 'select', selected });
   };
   const undo = () => {
-    if (!guardInvalidNodeJson()) return;
+    if (!guardNodeInput()) return;
     inputGroup.current = undefined;
     dispatchDraft({ type: 'undo' });
   };
   const redo = () => {
-    if (!guardInvalidNodeJson()) return;
+    if (!guardNodeInput()) return;
     inputGroup.current = undefined;
     dispatchDraft({ type: 'redo' });
   };
@@ -384,7 +384,7 @@ export default function App() {
     }
   }
   async function openFlow(r: FlowRecord, fromSettings = false) {
-    if (!guardInvalidNodeJson()) return false;
+    if (!guardNodeInput()) return false;
     setMoreOpen(false);
     setSettingsFlowId(fromSettings ? r.id : undefined);
     if (fromSettings) setTaskReturn(false);
@@ -398,29 +398,38 @@ export default function App() {
     return true;
   }
   async function create() {
-    if (!guardInvalidNodeJson()) return;
+    if (!guardNodeInput()) return;
     const r = await action(() => api('flow.create', {}));
     if (r) void openFlow(r);
   }
   function focusInvalidInput(invalid: HTMLElement) {
     const details = invalid.closest('details');
     if (details) details.open = true;
-    const input = invalid.matches('textarea,input')
+    const input = invalid.matches('textarea,input,select')
       ? invalid
       : (invalid.querySelector<HTMLElement>('[aria-invalid="true"]') ??
-        invalid.querySelector<HTMLElement>('textarea,input'));
-    input?.focus();
+        invalid.querySelector<HTMLElement>('textarea,input,select'));
+    if (compactEditor && invalid.closest('.inspector')) {
+      setEditorPanel('node');
+      requestAnimationFrame(() => input?.isConnected && input.focus());
+    } else input?.focus();
   }
-  function guardInvalidNodeJson() {
+  function guardNodeInput(includeValues = true) {
+    // Field edits may complete their own pending value. Navigation and structure
+    // changes must protect every unfinished field before replacing its component.
     const invalid = document.querySelector<HTMLElement>(
-      '.editor-page .node-advanced[data-value-invalid], .editor-page .node-timing[data-value-invalid]',
+      includeValues
+        ? '.editor-page [data-value-invalid]'
+        : '.editor-page .node-advanced[data-value-invalid], .editor-page .node-timing[data-value-invalid]',
     );
     if (!invalid) return true;
     focusInvalidInput(invalid);
     setError(
       invalid.classList.contains('node-timing')
         ? '请先修正节点期限，或关闭自定义期限恢复默认规则'
-        : '请先修正高级节点 JSON，或点击“恢复节点配置”放弃这段未完成输入',
+        : invalid.classList.contains('node-advanced')
+          ? '请先修正高级节点 JSON，或点击“恢复节点配置”放弃这段未完成输入'
+          : '请先修正当前值配置，再切换步骤、关闭配置或调整结构',
     );
     return false;
   }
@@ -454,7 +463,7 @@ export default function App() {
       await api('flow.save', { flow: r.flow, bindings: r.bindings });
       const run = await api('flow.run', { id: r.id, debug });
       const next = await api('run.detail', { id: run.id });
-      if (!guardInvalidNodeJson()) return;
+      if (!guardNodeInput()) return;
       setDetail(next);
       setRunOrigin('editor');
       setRunTab('current');
@@ -576,7 +585,7 @@ export default function App() {
       return;
     }
     if (editorBrowser) {
-      if (!guardInvalidNodeJson()) return;
+      if (!guardNodeInput()) return;
       if (compactDrawer) setEditorPanel('canvas');
       else setBrowserOpen(false);
     } else if (taskReturn) returnToTaskEditor();
@@ -1218,7 +1227,7 @@ export default function App() {
                     href="#editor"
                     onClick={(event) => {
                       event.preventDefault();
-                      if (guardInvalidNodeJson()) setBrowserOpen(false);
+                      if (guardNodeInput()) setBrowserOpen(false);
                     }}
                   >
                     {edit?.flow.name || '流程编排'}
@@ -1573,7 +1582,7 @@ export default function App() {
                     <button
                       aria-expanded={['actions', 'node', 'params'].includes(editorPanel)}
                       onClick={() => {
-                        if (guardInvalidNodeJson())
+                        if (guardNodeInput())
                           setEditorPanel(editorPanel === 'actions' ? 'node' : 'actions');
                       }}
                     >
@@ -1581,7 +1590,7 @@ export default function App() {
                     </button>
                     <button
                       onClick={() => {
-                        if (guardInvalidNodeJson()) setEditorPanel('graph');
+                        if (guardNodeInput()) setEditorPanel('graph');
                       }}
                     >
                       全图
@@ -1675,7 +1684,7 @@ export default function App() {
                 draftSaved={draftSaved}
                 save={save}
                 openStepAI={(nodeId: string) => {
-                  if (!guardInvalidNodeJson()) return;
+                  if (!guardNodeInput()) return;
                   if (!draftSaved) {
                     setError('请先保存当前流程草稿，再让 AI 修改所选步骤');
                     return;
@@ -1737,7 +1746,7 @@ export default function App() {
                 }}
                 selected={selected}
                 setSelected={setSelected}
-                guardInvalidNodeJson={guardInvalidNodeJson}
+                guardNodeInput={guardNodeInput}
                 compact={compactEditor}
                 panel={editorPanel}
                 setPanel={setEditorPanel}
@@ -2131,7 +2140,7 @@ function Editor({
   selected,
   setSelected,
   revision,
-  guardInvalidNodeJson,
+  guardNodeInput,
   compact,
   panel,
   setPanel,
@@ -2214,7 +2223,7 @@ function Editor({
     });
   };
   const structure = (build: () => Step[], nextSelected = selected) => {
-    if (!guardInvalidNodeJson()) return false;
+    if (!guardNodeInput()) return false;
     try {
       const steps = build();
       checkStructure(r.flow.steps, steps, r.flow.parameters);
@@ -2243,6 +2252,7 @@ function Editor({
     }
   };
   const insertAt = (side: 'before' | 'after') => {
+    if (!guardNodeInput()) return;
     setDestination(selected + ':' + side);
     setPanel('actions');
     requestAnimationFrame(() =>
@@ -2253,7 +2263,7 @@ function Editor({
   const targets = destinationChoices(r.flow.steps);
   const choices = referenceChoices(r.flow, selected);
   const updateNode = (next: Step) => {
-    if (!guardInvalidNodeJson()) return;
+    if (!guardNodeInput(false)) return;
     patch(() => next);
     setRaw(JSON.stringify(next, null, 2));
     setInvalid('');
@@ -2264,7 +2274,7 @@ function Editor({
       openParameters();
       return;
     }
-    if (guardInvalidNodeJson()) {
+    if (guardNodeInput()) {
       if (['canvas', 'graph'].includes(value) && keyboardStep.current)
         pendingStepFocus.current = 'canvas';
       setPanel(value);
@@ -2279,7 +2289,7 @@ function Editor({
           selected={selected}
           select={setSelected}
           edit={(id) => {
-            if (!guardInvalidNodeJson()) return;
+            if (!guardNodeInput()) return;
             setSelected(id);
             setTab('node');
             closeOutline('node');
@@ -2336,7 +2346,7 @@ function Editor({
                 edges={edges}
                 selected={selected}
                 select={(id, source) => {
-                  if (!guardInvalidNodeJson()) return;
+                  if (!guardNodeInput()) return;
                   keyboardStep.current = compact && source === 'keyboard' ? id : null;
                   pendingStepFocus.current = keyboardStep.current ? 'inspector' : null;
                   setSelected(id);
@@ -2394,7 +2404,7 @@ function Editor({
                         openParameters();
                         return;
                       }
-                      if (guardInvalidNodeJson()) {
+                      if (guardNodeInput()) {
                         setTab(k);
                         if (compact) setPanel(k);
                       }
@@ -2525,7 +2535,7 @@ function Editor({
                           node={selectedNode}
                           choices={choices}
                           change={(next) => {
-                            if (!guardInvalidNodeJson()) return;
+                            if (!guardNodeInput(false)) return;
                             patch(() => next);
                             setRaw(JSON.stringify(next, null, 2));
                             setInvalid('');
@@ -2578,7 +2588,7 @@ function Editor({
                                 selectedNode.language === 'ts' ? 'typescript' : 'javascript'
                               }
                               onChange={(code) => {
-                                if (!guardInvalidNodeJson()) return;
+                                if (!guardNodeInput(false)) return;
                                 patch((n) => ({ ...n, code }) as Step);
                                 setRaw(JSON.stringify({ ...selectedNode, code }, null, 2));
                               }}
@@ -2590,7 +2600,7 @@ function Editor({
                             node={selectedNode}
                             bindings={r.bindings}
                             bind={(info) => {
-                              if (!guardInvalidNodeJson()) return false;
+                              if (!guardNodeInput(false)) return false;
                               const conflict = flatten(r.flow.steps).some(
                                 (n: Step) =>
                                   n.id !== selectedNode.id &&
@@ -2630,7 +2640,7 @@ function Editor({
                               setInvalid('');
                             }}
                             remove={(name) => {
-                              if (!guardInvalidNodeJson()) return false;
+                              if (!guardNodeInput(false)) return false;
                               const next = {
                                 ...selectedNode,
                                 dependencies: selectedNode.dependencies.filter(
