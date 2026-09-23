@@ -54,6 +54,9 @@ export default function TaskRunPage({
   const detailScroll = useRef(0);
   const detailsButton = useRef<HTMLButtonElement>(null);
   const previousPage = useRef(page);
+  const returnAction = useRef<string | undefined>(undefined);
+  const previewButtons = useRef(new Map<string, HTMLButtonElement>());
+  const rerunButton = useRef<HTMLButtonElement>(null);
   const model = taskRunPresentation({ ...detail, fault: detail.fault ?? fault });
   const target = (
     <TaskRunTarget
@@ -109,8 +112,13 @@ export default function TaskRunPage({
   useLayoutEffect(() => {
     const returning = page === 'overview' && previousPage.current !== 'overview';
     document.querySelector('main')?.scrollTo(0, returning ? detailScroll.current : 0);
-    if (returning) detailsButton.current?.focus({ preventScroll: true });
-    else heading.current?.focus({ preventScroll: true });
+    if (returning) {
+      const origin =
+        returnAction.current === 'rerun'
+          ? rerunButton.current
+          : previewButtons.current.get(returnAction.current ?? '');
+      (origin && !origin.disabled ? origin : detailsButton.current)?.focus({ preventScroll: true });
+    } else heading.current?.focus({ preventScroll: true });
     previousPage.current = page;
   }, [run.id, page]);
   useEffect(() => {
@@ -160,6 +168,7 @@ export default function TaskRunPage({
   }
   function inspect(id?: string) {
     detailScroll.current = document.querySelector('main')?.scrollTop ?? 0;
+    returnAction.current = id;
     setSelected(id);
     setPage('details');
   }
@@ -184,10 +193,30 @@ export default function TaskRunPage({
       change={(view) => setStepsView({ ...view, runId: run.id })}
     />
   );
+  const previewButton = (a: (typeof model.artifacts)[number]) => (
+    <button
+      ref={(element) => {
+        if (element) previewButtons.current.set(a.artifactId, element);
+        else previewButtons.current.delete(a.artifactId);
+      }}
+      className="primary"
+      aria-label={`预览文件：${a.name}`}
+      disabled={!a.available || a.integrity !== 'verified'}
+      onClick={() => inspect(a.artifactId)}
+    >
+      预览文件
+    </button>
+  );
+  const singleResultFile = model.success && page === 'overview' && model.artifacts.length === 1;
   const fileCards = (
     <>
       {model.artifacts.map((a) => (
-        <div className="task-run-file" key={a.artifactId} data-artifact-id={a.artifactId}>
+        <section
+          className="task-run-file"
+          aria-label={`文件产物：${a.name}`}
+          key={a.artifactId}
+          data-artifact-id={a.artifactId}
+        >
           <h3>{a.name}</h3>
           <p>
             {a.size.toLocaleString('zh-CN')} 字节 · {artifactLabel(a)}
@@ -195,23 +224,15 @@ export default function TaskRunPage({
           <details>
             <summary>保存位置</summary>
             <p className="task-run-path">{a.path}</p>
-          </details>
-          <div className="ai-task-actions">
-            <button
-              className="primary"
-              disabled={!a.available || a.integrity !== 'verified'}
-              onClick={() => inspect(a.artifactId)}
-            >
-              预览文件
-            </button>
             <button
               disabled={!a.available || busy}
               onClick={() => void act(() => reveal(a.artifactId))}
             >
               定位文件
             </button>
-          </div>
-        </div>
+          </details>
+          {!singleResultFile && <div className="ai-task-actions">{previewButton(a)}</div>}
+        </section>
       ))}
       {!model.artifacts.length && <p>本次尚无已登记的文件产物，可查看步骤输出。</p>}
     </>
@@ -237,9 +258,16 @@ export default function TaskRunPage({
       <button className="primary" onClick={() => navigate('modify')}>
         {model.success ? '告诉 AI 怎么改' : '修改需求与方案'}
       </button>
-      <button onClick={() => navigate('plan')}>手动检查步骤</button>
+      {!model.success && <button onClick={() => navigate('plan')}>手动检查步骤</button>}
       {model.terminal && (
-        <button onClick={() => setPage('rerun')}>
+        <button
+          ref={rerunButton}
+          onClick={() => {
+            detailScroll.current = document.querySelector('main')?.scrollTop ?? 0;
+            returnAction.current = 'rerun';
+            setPage('rerun');
+          }}
+        >
           {model.success ? '再次运行前检查' : '核对后重新运行'}
         </button>
       )}
@@ -343,6 +371,8 @@ export default function TaskRunPage({
                   </p>
                   <pre
                     className="task-file-preview"
+                    tabIndex={0}
+                    aria-label={`文件内容：${visiblePreview.name}`}
                     data-artifact-preview={visiblePreview.artifactId}
                   >
                     {visiblePreview.text || '（空文件）'}
@@ -383,6 +413,10 @@ export default function TaskRunPage({
                   snapshot={detail.snapshot}
                 />
               </details>
+              <details className="task-run-outline">
+                <summary>查看本次执行步骤</summary>
+                {steps}
+              </details>
               <button className="primary" onClick={() => setPage('overview')}>
                 返回结果摘要
               </button>
@@ -399,23 +433,23 @@ export default function TaskRunPage({
               <section className="ai-task-card">
                 <h2>结果在哪里</h2>
                 {fileCards}
-                <button ref={detailsButton} onClick={() => inspect()}>
-                  详细信息
-                </button>
+                <div className="ai-task-actions task-run-result-actions">
+                  {singleResultFile && previewButton(model.artifacts[0])}
+                  <button ref={detailsButton} onClick={() => inspect()}>
+                    详细信息
+                  </button>
+                </div>
                 <p>
                   未确认完成的步骤：{model.unresolved.length} 次。尚未执行：{model.unvisited.length}{' '}
                   个（包含未选分支）。
                 </p>
               </section>
-              <section className="ai-task-card">
+              <section className="ai-task-card task-run-next">
                 <h2>继续完善这个任务</h2>
+                <p>描述你想调整的内容，先查看修改方案，再决定是否执行。</p>
                 {actions}
               </section>
             </div>
-            <details className="task-run-outline">
-              <summary>查看本次执行步骤</summary>
-              {steps}
-            </details>
           </>
         ) : (
           <div

@@ -126,6 +126,25 @@
 .task-run-file p {
   margin: 8px 0;
 }
+.task-run-file summary {
+  cursor: pointer;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.task-run-file .ai-task-actions {
+  margin-top: 16px;
+}
+.task-run-result-actions > button,
+.task-run-footer > button {
+  min-width: 144px;
+}
+.task-run-next > button {
+  width: 100%;
+}
+.task-file-preview:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 2px;
+}
 .task-run-path {
   font-size: 12px;
   overflow-wrap: anywhere;
@@ -162,6 +181,10 @@
   margin-bottom: 0;
 }
 .task-run-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 126px;
   padding: 24px;
   border: 1px solid var(--fa-border-default);
   border-radius: 12px;
@@ -169,6 +192,10 @@
 }
 .task-run-banner h2 {
   color: var(--fa-status-success);
+  line-height: 40px;
+}
+.task-run-banner p {
+  line-height: 20px;
 }
 .task-run-note {
   padding: 16px;
