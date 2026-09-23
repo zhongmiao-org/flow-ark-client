@@ -12,6 +12,20 @@ export default function BrowserSidebar({
   obscured: boolean;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
+  const [dialogOpen, setDialogOpen] = useState(() => !!document.querySelector('dialog[open]'));
+  const hidden = obscured || dialogOpen;
+  useEffect(() => {
+    const sync = () => setDialogOpen(!!document.querySelector('dialog[open]'));
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['open'],
+    });
+    sync();
+    return () => observer.disconnect();
+  }, []);
   const [status, setStatus] = useState<{
     started: boolean;
     url: string;
@@ -22,9 +36,9 @@ export default function BrowserSidebar({
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const focused = useRef(false);
-  const obscuredRef = useRef(obscured);
+  const obscuredRef = useRef(hidden);
   const enabled = useRef(false);
-  obscuredRef.current = obscured;
+  obscuredRef.current = hidden;
   useEffect(() => {
     let live = true;
     const bounds = () => {
@@ -76,10 +90,10 @@ export default function BrowserSidebar({
   }, []);
   useEffect(() => {
     if (enabled.current)
-      void api('browser.embedded.visibility', { visible: !obscured }).catch((error) =>
+      void api('browser.embedded.visibility', { visible: !hidden }).catch((error) =>
         setError(String(error)),
       );
-  }, [obscured]);
+  }, [hidden]);
   useEffect(() => {
     const r = viewport.current?.getBoundingClientRect();
     if (r)

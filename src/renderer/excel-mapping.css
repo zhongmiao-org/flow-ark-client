@@ -69,9 +69,7 @@
   background: var(--fa-bg-canvas);
   border-color: var(--fa-action-primary);
 }
-.excel-mapping-page .reference-picker {
-  border-color: var(--fa-border-default);
-}
+
 .excel-mapping-columns {
   display: grid;
   grid-template-columns: minmax(0, 600fr) minmax(0, 528fr);

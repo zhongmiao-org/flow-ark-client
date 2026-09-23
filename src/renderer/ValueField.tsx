@@ -1,6 +1,7 @@
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import type { Json } from '../shared/types';
-import { composeReference, referenceOf, type ReferenceChoice } from './value-references';
+import { referenceOf, type ReferenceChoice } from './value-references';
+import VariablePicker from './VariablePicker';
 
 type Props = {
   label: string;
@@ -19,32 +20,13 @@ export default function ValueField({
   children,
 }: Props) {
   const current = referenceOf(value);
-  const [open, setOpen] = useState(false),
-    [search, setSearch] = useState('');
-  const [base, setBase] = useState(''),
-    [suffix, setSuffix] = useState('');
+  const [open, setOpen] = useState(false);
   const available = choices ?? [];
   const source =
     available.find((choice) => choice.path === current) ??
     available
       .filter((choice) => current?.startsWith(choice.path + '.'))
       .sort((a, b) => b.path.length - a.path.length)[0];
-  const filtered = available.filter((choice) =>
-    `${choice.label} ${choice.path} ${choice.group}`.toLowerCase().includes(search.toLowerCase()),
-  );
-  let preview = '',
-    error = '';
-  try {
-    preview = composeReference(available, base, suffix);
-  } catch (e: any) {
-    error = e.message;
-  }
-  const show = () => {
-    setBase(source?.path ?? '');
-    setSuffix(source && current ? current.slice(source.path.length + 1) : '');
-    setSearch('');
-    setOpen(true);
-  };
   return (
     <section className="value-field" aria-label={label + '配置'}>
       {current !== undefined ? (
@@ -74,80 +56,22 @@ export default function ValueField({
           type="button"
           aria-expanded={open}
           aria-label={'选择变量 · ' + label}
-          onClick={show}
+          onClick={() => setOpen(true)}
         >
           ↳ {current !== undefined ? '更换变量' : '选择变量'}
         </button>
       )}
       {open && (
-        <div className="reference-picker" role="group" aria-label={label + '变量选择'}>
-          <input
-            autoFocus
-            aria-label={label + '变量搜索'}
-            placeholder="搜索名称或路径"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <select
-            aria-label={label + '变量来源'}
-            value={base}
-            onChange={(e) => {
-              setBase(e.target.value);
-              setSuffix('');
-            }}
-          >
-            <option value="">选择参数或前序输出…</option>
-            {base && !filtered.some((c) => c.path === base) && (
-              <option value={base}>{available.find((c) => c.path === base)?.label ?? base}</option>
-            )}
-            {(['流程参数', '前序步骤', '当前循环'] as const).map((group) => (
-              <optgroup key={group} label={group}>
-                {filtered
-                  .filter((c) => c.group === group)
-                  .map((c) => (
-                    <option key={c.path} value={c.path}>
-                      {c.label} · {c.path}
-                    </option>
-                  ))}
-              </optgroup>
-            ))}
-          </select>
-          {!filtered.length && <p className="note">没有匹配的可用变量。</p>}
-          {base && <p className="note">{available.find((c) => c.path === base)?.hint}</p>}
-          <details>
-            <summary>子路径 · 高级</summary>
-            <input
-              aria-label={label + '变量子路径'}
-              placeholder="例如 rows.0.name（可留空）"
-              value={suffix}
-              onChange={(e) => setSuffix(e.target.value)}
-            />
-            <p className="note">子字段在执行时核对；缺失将报错。不会执行表达式。</p>
-          </details>
-          {preview && <code className="reference-preview">{preview}</code>}
-          {base && error && (
-            <p className="field-error" role="alert">
-              {error}
-            </p>
-          )}
-          <div className="value-picker-actions">
-            <button type="button" onClick={() => setOpen(false)} aria-label={'取消选择 · ' + label}>
-              取消
-            </button>
-            <button
-              type="button"
-              className="primary"
-              disabled={!preview}
-              aria-label={'使用变量 · ' + label}
-              onClick={() => {
-                change({ $ref: preview });
-                setOpen(false);
-              }}
-            >
-              使用变量
-            </button>
-          </div>
-        </div>
+        <VariablePicker
+          label={label}
+          choices={available}
+          current={current}
+          choose={(path) => change({ $ref: path })}
+          fixed={() => {
+            if (current !== undefined) change(structuredClone(defaultValue));
+          }}
+          close={() => setOpen(false)}
+        />
       )}
     </section>
   );
