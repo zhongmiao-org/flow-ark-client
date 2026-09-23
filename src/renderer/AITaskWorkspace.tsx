@@ -1,3 +1,4 @@
+import TaskPlanConversation from './TaskPlanConversation';
 import TaskModificationPage from './TaskModificationPage';
 import TaskGenerationPage from './TaskGenerationPage';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -460,6 +461,7 @@ export default function AITaskWorkspace(props: Props) {
       if (detail && dirty) await save();
       const next: TaskDetail = await api('task.detail', { id });
       accept(next);
+      setEditingProposal(false);
       setReviewed(false);
       setSelected('');
       setProvider(next.task.provider ?? 'deepseek');
@@ -489,6 +491,7 @@ export default function AITaskWorkspace(props: Props) {
         answers: {},
       });
       accept(stored);
+      setEditingProposal(false);
       setReviewed(false);
       setPage('brief');
       setSelected('');
@@ -1505,27 +1508,61 @@ export default function AITaskWorkspace(props: Props) {
                 controls={planningControls}
               />
             ) : (
-              <div className={`ai-task-columns ${page === 'review' ? 'ai-task-review' : ''}`}>
+              <div
+                className={`ai-task-columns ${page === 'review' ? 'ai-task-review' : ''}${page === 'review' && !scope && flow ? ' ai-task-plan-review' : ''}`}
+              >
                 <section className="ai-task-card ai-task-input">
-                  {page === 'review' && !scope && !detail.proposal && detail.flow ? (
-                    <>
-                      <h2>当前任务</h2>
-                      <p>{draft.description || detail.flow.flow.name}</p>
-                      <p className="ai-task-note">
-                        当前方案已保存在草稿中。填写新的要求后，先查看差异，再决定是否采纳。
-                      </p>
-                      <button
-                        className="primary"
-                        data-task-modify
-                        disabled={inputDisabled || dirty || stale}
-                        onClick={beginModification}
-                      >
-                        继续描述修改
-                      </button>
-                      <button disabled={inputDisabled} onClick={() => setPage('brief')}>
-                        编辑描述与资料
-                      </button>
-                    </>
+                  {page === 'review' &&
+                  !scope &&
+                  flow &&
+                  !editingProposal &&
+                  (!detail.proposal || result?.kind === 'plan') ? (
+                    <TaskPlanConversation
+                      request={detail.task.description || flow.name}
+                      reply={
+                        detail.proposal
+                          ? result?.summary ||
+                            `已生成 ${flatten(flow.steps).length} 个步骤，请先检查方案。`
+                          : `当前流程草稿包含 ${flatten(flow.steps).length} 个步骤（含分支和循环内步骤）。你可以继续修改要求，或查看同一方案的流程图。`
+                      }
+                      pending={!!detail.proposal}
+                      dirty={dirty}
+                      busy={inputDisabled}
+                      stale={stale}
+                      graph={view === 'graph'}
+                      edit={() => {
+                        if (!detail.proposal && !dirty) {
+                          beginModification();
+                          return;
+                        }
+                        setEditingProposal(true);
+                        setReviewed(false);
+                        requestAnimationFrame(() =>
+                          document.querySelector<HTMLTextAreaElement>('#task-description')?.focus(),
+                        );
+                      }}
+                      toggleView={() => {
+                        setView(view === 'graph' ? 'list' : 'graph');
+                        requestAnimationFrame(() => {
+                          const heading = document.querySelector<HTMLHeadingElement>(
+                            '[data-plan-preview-heading]',
+                          );
+                          heading?.scrollIntoView({ block: 'nearest' });
+                          heading?.focus({ preventScroll: true });
+                        });
+                      }}
+                      discard={() => {
+                        accept(detail);
+                        setReviewed(false);
+                        setEditingProposal(false);
+                      }}
+                    >
+                      {!detail.proposal && (
+                        <button disabled={inputDisabled} onClick={() => setPage('brief')}>
+                          编辑描述与资料
+                        </button>
+                      )}
+                    </TaskPlanConversation>
                   ) : scopeDiffView ? (
                     <>
                       <div className="ai-step-user">
@@ -1553,6 +1590,28 @@ export default function AITaskWorkspace(props: Props) {
                     </>
                   ) : (
                     <>
+                      {!scope && page === 'review' && editingProposal && (
+                        <>
+                          <h2>调整任务要求</h2>
+                          <p className="ai-task-note">
+                            修改要求不会直接改写右侧提案。重新生成后，仍需检查并明确采纳。
+                          </p>
+                          <button
+                            disabled={inputDisabled}
+                            onClick={() => {
+                              setEditingProposal(false);
+                              setReviewed(false);
+                              requestAnimationFrame(() =>
+                                document
+                                  .querySelector<HTMLButtonElement>('[data-task-modify]')
+                                  ?.focus(),
+                              );
+                            }}
+                          >
+                            返回方案说明
+                          </button>
+                        </>
+                      )}
                       {scope && (
                         <div className="ai-task-scope-source">
                           <b>
@@ -1832,7 +1891,9 @@ export default function AITaskWorkspace(props: Props) {
                   ) : flow ? (
                     <>
                       <div className="ai-task-meta">
-                        <h2>{flow.name}</h2>
+                        <h2 tabIndex={-1} data-plan-preview-heading>
+                          {flow.name}
+                        </h2>
                         <span className="badge">
                           {detail.proposal ? '待采纳方案' : '已保存草稿'}
                         </span>

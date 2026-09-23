@@ -1119,3 +1119,47 @@
     min-height: auto;
   }
 }
+
+/* Figma taskplan/taskwork/taskv2: 408 px conversation beside one shared flow. */
+.task-plan-conversation {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.task-plan-conversation article {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+.task-plan-conversation article h2 {
+  font-size: 12px;
+  line-height: 20px;
+}
+.task-plan-conversation article p {
+  margin: 0;
+  color: var(--fa-text-primary);
+}
+.task-plan-conversation .ai-step-reply h2 {
+  color: var(--fa-action-primary);
+}
+.task-plan-conversation > button {
+  align-self: flex-start;
+  min-width: 240px;
+  max-width: 100%;
+}
+.task-plan-approval-note {
+  color: var(--fa-text-secondary);
+}
+.ai-task-columns.ai-task-plan-review > .ai-task-card {
+  min-height: 730px;
+}
+@container (max-width: 900px) {
+  .ai-task-columns.ai-task-plan-review {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ai-task-columns.ai-task-plan-review > .ai-task-card {
+    min-height: auto;
+  }
+}

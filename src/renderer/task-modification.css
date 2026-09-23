@@ -2,7 +2,7 @@
 .ai-task-columns.task-modification {
   grid-template-columns: minmax(320px, 440px) minmax(0, 1fr);
 }
-.task-modification textarea {
+.ai-task-page .task-modification textarea {
   min-height: 132px;
 }
 .task-modification > .ai-task-card > button {
