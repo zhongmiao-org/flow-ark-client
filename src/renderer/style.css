@@ -2288,13 +2288,6 @@ td small {
   color: #806239;
   font-size: 11px;
 }
-.storage-fault {
-  flex-wrap: wrap;
-}
-.storage-fault span {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
 @media (max-width: 1150px) {
   .with-browser .run-observation-metrics {
     grid-template-columns: 1fr;

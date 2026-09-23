@@ -85,7 +85,7 @@ export default function RunDetail({
       <div className="run-detail-content" hidden={tab === 'rerun'}>
         <div className="runs-heading run-detail-heading">
           <div>
-            <h1>{r.name}</h1>
+            <h1 tabIndex={-1}>{r.name}</h1>
             <p>
               <span title={r.id}>{r.id}</span> · {runSourceLabels[runSource(r)] ?? r.source} ·{' '}
               {time(r.createdAt)}

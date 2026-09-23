@@ -68,6 +68,7 @@ import ScriptEditorPage, { type ScriptNavigation } from './ScriptEditorPage';
 import ExcelMappingPage from './ExcelMappingPage';
 import FlowOutlineWorkspace, { type OutlineLocation } from './FlowOutlineWorkspace';
 import BrowserSidebar from './BrowserSidebar';
+import StorageFaultNotice from './StorageFaultNotice';
 import Schedules from './Schedules';
 import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 import LogicNodeConfiguration from './LogicNodeConfiguration';
@@ -526,6 +527,31 @@ export default function App() {
       else if (editorFocus.current?.isConnected) editorFocus.current.focus({ preventScroll: true });
     });
   };
+  const requestWorkspaceLeave = (navigate: () => void, label: string, id: string) => {
+    if (nodeSession) {
+      leaveNodeEditor(navigate, label);
+      return;
+    }
+    if (section === 'editor') requestEditorLeave(navigate, label);
+    else if (section === 'tools') toolNavigation.current?.(navigate);
+    else if (section === 'ai-settings')
+      aiSettingsNavigation.current?.(() =>
+        id === 'templates' ? navigate() : leaveAIContext(navigate),
+      );
+    else if (section === 'templates') templateNavigation.current?.(navigate);
+    else if (section === 'schedules') plansNavigation.current?.(navigate);
+    else if (section === 'template-schedule')
+      scheduleNavigation.current?.(() =>
+        id === 'templates' ? navigate() : leaveTemplateContext(navigate),
+      );
+    else if (section === 'runs' && runOrigin === 'schedule' && detail) {
+      if (id === 'schedules') returnSchedule();
+      else leaveScheduleContext(navigate);
+    } else if (section === 'runs' && runOrigin === 'template' && detail) {
+      if (id === 'templates') returnTemplate();
+      else leaveTemplateContext(navigate);
+    } else navigate();
+  };
   const returnHome = () =>
     requestEditorLeave(() => {
       setWelcomeDismissed(true);
@@ -819,25 +845,7 @@ export default function App() {
                     setDetail(null);
                     setRunFilter(false);
                   };
-                  if (section === 'editor') requestEditorLeave(navigate, label);
-                  else if (section === 'tools') toolNavigation.current?.(navigate);
-                  else if (section === 'ai-settings')
-                    aiSettingsNavigation.current?.(() =>
-                      id === 'templates' ? navigate() : leaveAIContext(navigate),
-                    );
-                  else if (section === 'templates') templateNavigation.current?.(navigate);
-                  else if (section === 'schedules') plansNavigation.current?.(navigate);
-                  else if (section === 'template-schedule')
-                    scheduleNavigation.current?.(() =>
-                      id === 'templates' ? navigate() : leaveTemplateContext(navigate),
-                    );
-                  else if (section === 'runs' && runOrigin === 'schedule' && detail) {
-                    if (id === 'schedules') returnSchedule();
-                    else leaveScheduleContext(navigate);
-                  } else if (section === 'runs' && runOrigin === 'template' && detail) {
-                    if (id === 'templates') returnTemplate();
-                    else leaveTemplateContext(navigate);
-                  } else navigate();
+                  requestWorkspaceLeave(navigate, label, id);
                 }}
               >
                 <Icon size={20} strokeWidth={1.6} />
@@ -1303,13 +1311,41 @@ export default function App() {
             )}
           </header>
           {data.fault && (
-            <div className="alert error storage-fault" role="alert">
-              <b>运行状态未能完整保存</b>
-              <span>
-                {data.fault}
-                。已停止接收新任务。以下状态为最后成功保存的记录，当前执行和最终结果请核对；重开不会自动重放。
-              </span>
-            </div>
+            <StorageFaultNotice
+              context={`${section}:${detail?.run?.id ?? ''}`}
+              data={data}
+              refresh={reloadSettingsData}
+              openHistory={() =>
+                requestWorkspaceLeave(
+                  () => {
+                    setTaskReturn(false);
+                    setDetail(null);
+                    setRunOrigin('history');
+                    setRunFilter(false);
+                    setSection('runs');
+                  },
+                  '运行记录',
+                  'runs',
+                )
+              }
+              openRun={(next) =>
+                requestWorkspaceLeave(
+                  () => {
+                    setTaskReturn(false);
+                    setRunOrigin('history');
+                    setRunTab('current');
+                    setRunFilter(false);
+                    setDetail(next);
+                    setSection('runs');
+                    requestAnimationFrame(() =>
+                      document.querySelector<HTMLElement>('.run-detail-heading h1')?.focus(),
+                    );
+                  },
+                  '运行详情',
+                  'runs',
+                )
+              }
+            />
           )}
           {data.runtimeBlock && (
             <div className="alert error" role="alert">
