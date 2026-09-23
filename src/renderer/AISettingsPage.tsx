@@ -449,7 +449,7 @@ export default function AISettingsPage({
                         setKey('');
                       }}
                     >
-                      {state.model}
+                      <span className="ai-model-name">{state.model}</span>
                       <span>修改</span>
                     </button>
                   </div>

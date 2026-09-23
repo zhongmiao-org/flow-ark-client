@@ -1,4 +1,5 @@
 import { usePageBack } from './use-page-back';
+import TaskMissingAI from './TaskMissingAI';
 import TaskStepList from './TaskStepList';
 import TaskStepInspector from './TaskStepInspector';
 import TaskPlanConversation from './TaskPlanConversation';
@@ -1466,39 +1467,24 @@ export default function AITaskWorkspace(props: Props) {
           skip={() => void skipLearning()}
         />
       ) : page === 'missing-ai' ? (
-        <section className="ai-task-card ai-missing-card">
-          <span className="ai-config-status warning">
-            {providerName} · {props.data.credentials.includes(provider) ? '已配置' : '未配置'}
-          </span>
-          <h2>配置一次，就能继续规划任务</h2>
-          <p>在本地设置中填写 Key 与模型并测试连接。返回时继续本次任务，不需要重新描述。</p>
-          <article className="ai-missing-draft">
-            <h3>当前草稿</h3>
-            <p>{draft.description || '尚未填写需求'}</p>
-          </article>
-          <div className="ai-task-actions">
-            <button
-              className="primary"
-              onClick={() => {
-                setPage(missingOrigin.current);
-                props.settings(provider, model, {
-                  title: draft.description.slice(0, 40) || '当前任务',
-                  taskId: detail?.task.id,
-                });
-              }}
-            >
-              去配置 AI 服务
-            </button>
-            <button
-              onClick={() => {
-                if (detail?.flow) props.openFlow(detail.flow);
-                else props.createFlow();
-              }}
-            >
-              先手动搭建
-            </button>
-          </div>
-        </section>
+        <TaskMissingAI
+          providerName={providerName}
+          configured={props.data.credentials.includes(provider)}
+          description={draft.description}
+          context={draft.context}
+          busy={busy}
+          configure={() => {
+            setPage(missingOrigin.current);
+            props.settings(provider, model, {
+              title: draft.description.slice(0, 40) || '当前任务',
+              taskId: detail?.task.id,
+            });
+          }}
+          manual={() => {
+            if (detail?.flow) props.openFlow(detail.flow);
+            else props.createFlow();
+          }}
+        />
       ) : page === 'home' ? (
         <>
           <section className="ai-task-composer">

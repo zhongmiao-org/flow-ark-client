@@ -123,7 +123,6 @@
   color: var(--fa-text-primary);
   font-size: 13px;
   line-height: 20px;
-  line-height: 20px;
   overflow-wrap: anywhere;
 }
 .ai-settings-field .ai-model-value {
@@ -131,6 +130,13 @@
   justify-content: flex-start;
   display: flex;
   gap: 20px;
+}
+.ai-model-value .ai-model-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ai-model-value > span:last-child {
+  flex-shrink: 0;
 }
 .ai-settings-page label.ai-settings-field {
   color: var(--fa-text-primary);
@@ -209,6 +215,42 @@ button.ai-remove-button {
 }
 .ai-missing-draft h3 {
   margin: 0 0 12px;
+}
+.ai-missing-description {
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ai-missing-context {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+}
+.ai-missing-context summary {
+  cursor: pointer;
+}
+.ai-missing-context ul {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  max-height: 200px;
+  overflow: auto;
+}
+.ai-missing-context li {
+  display: grid;
+  grid-template-columns: 6em minmax(0, 1fr);
+  gap: 12px;
+}
+.ai-missing-context strong {
+  color: var(--fa-text-primary);
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+.ai-missing-card .ai-task-actions button:not(.primary) {
+  min-width: 144px;
 }
 .ai-missing-card .primary {
   min-width: 200px;
