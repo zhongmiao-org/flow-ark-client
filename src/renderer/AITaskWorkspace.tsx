@@ -1,3 +1,4 @@
+import TaskGenerationPage from './TaskGenerationPage';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Bootstrap, FlowRecord, Step } from '../shared/types';
 import type { PlanningChange, PlanningContext, PlanningTask, TaskDetail } from '../shared/planning';
@@ -90,9 +91,17 @@ export default function AITaskWorkspace(props: Props) {
   const [learning, setLearning] = useState<LearningStatus>();
   const handledGuide = useRef(0);
   const [page, setPage] = useState<
-    'home' | 'guide' | 'brief' | 'target' | 'understand' | 'review' | 'check' | 'missing-ai'
+    | 'home'
+    | 'guide'
+    | 'brief'
+    | 'target'
+    | 'understand'
+    | 'review'
+    | 'check'
+    | 'missing-ai'
+    | 'generation'
   >('home');
-  const missingOrigin = useRef<'brief' | 'understand' | 'review'>('brief');
+  const missingOrigin = useRef<'brief' | 'understand' | 'review' | 'generation'>('brief');
   const settingsReturnScroll = useRef<number | undefined>(undefined);
   useLayoutEffect(() => {
     if (!props.active || settingsReturnScroll.current === undefined || page === 'missing-ai')
@@ -110,6 +119,16 @@ export default function AITaskWorkspace(props: Props) {
   );
   const location = useRef({ active: props.active, page });
   location.current = { active: props.active, page };
+  const previousPage = useRef(page);
+  useEffect(() => {
+    if (props.active && previousPage.current === 'generation' && page !== 'generation') {
+      document.querySelector('main')?.scrollTo(0, 0);
+      document
+        .querySelector<HTMLHeadingElement>('.ai-task-page:not([hidden]) .ai-task-heading h1')
+        ?.focus({ preventScroll: true });
+    }
+    previousPage.current = page;
+  }, [page, props.active]);
   const planScroll = useRef(0);
   const returnToTask = useRef<(id: string, intent: TaskRunIntent) => void>(() => {});
   const trialButton = useRef<HTMLButtonElement>(null);
@@ -165,54 +184,66 @@ export default function AITaskWorkspace(props: Props) {
   const scopedProposal = result?.kind === 'plan' && !!detail?.proposal?.scope;
   const scopeDiffView = scopedProposal && !editingProposal;
   const title =
-    page === 'understand'
-      ? '我理解你要……'
-      : page === 'guide'
-        ? '第一次，让我们一起完成'
-        : page === 'target'
-          ? '这次要操作哪里？'
-          : page === 'missing-ai'
-            ? '先连接 AI，需求会为你保留'
-            : page === 'check'
-              ? '试运行前，最后确认一次'
-              : page === 'home'
-                ? '开始任务'
-                : page === 'brief'
-                  ? '描述需求，带上必要资料'
-                  : result?.kind === 'clarify'
-                    ? '我理解你要……'
-                    : result?.kind === 'unsupported'
-                      ? '这项任务还需要支持'
-                      : result?.kind === 'plan' && detail?.proposal?.baseFlow
-                        ? '检查 AI 提议的修改'
-                        : '先看看任务步骤';
+    page === 'generation'
+      ? generating
+        ? '正在准备任务步骤'
+        : detail?.task.status === 'unsupported'
+          ? '当前工具还不能完成这项操作'
+          : '方案没有生成完成'
+      : page === 'understand'
+        ? '我理解你要……'
+        : page === 'guide'
+          ? '第一次，让我们一起完成'
+          : page === 'target'
+            ? '这次要操作哪里？'
+            : page === 'missing-ai'
+              ? '先连接 AI，需求会为你保留'
+              : page === 'check'
+                ? '试运行前，最后确认一次'
+                : page === 'home'
+                  ? '开始任务'
+                  : page === 'brief'
+                    ? '描述需求，带上必要资料'
+                    : result?.kind === 'clarify'
+                      ? '我理解你要……'
+                      : result?.kind === 'unsupported'
+                        ? '这项任务还需要支持'
+                        : result?.kind === 'plan' && detail?.proposal?.baseFlow
+                          ? '检查 AI 提议的修改'
+                          : '先看看任务步骤';
 
   useEffect(() => {
     if (props.active)
       props.onNavigation(
         title,
-        page === 'missing-ai'
-          ? () => setPage(missingOrigin.current)
-          : page === 'check'
-            ? backToPlan
+        page === 'generation'
+          ? () => (generating ? void cancelGeneration() : recoverDescription())
+          : page === 'missing-ai'
+            ? () => setPage(missingOrigin.current)
+            : page === 'check'
+              ? backToPlan
+              : page === 'understand'
+                ? () => void openTarget()
+                : page === 'target'
+                  ? backToBrief
+                  : page === 'guide' || page === 'brief'
+                    ? () => {
+                        void back();
+                      }
+                    : undefined,
+        page === 'generation'
+          ? generating
+            ? '取消并返回'
+            : '任务草稿'
+          : page === 'missing-ai'
+            ? '任务草稿'
             : page === 'understand'
-              ? () => void openTarget()
+              ? '选择操作对象'
               : page === 'target'
-                ? backToBrief
+                ? '描述与附件'
                 : page === 'guide' || page === 'brief'
-                  ? () => {
-                      void back();
-                    }
+                  ? '开始任务'
                   : undefined,
-        page === 'missing-ai'
-          ? '任务草稿'
-          : page === 'understand'
-            ? '选择操作对象'
-            : page === 'target'
-              ? '描述与附件'
-              : page === 'guide' || page === 'brief'
-                ? '开始任务'
-                : undefined,
       );
   }, [
     props.active,
@@ -256,13 +287,12 @@ export default function AITaskWorkspace(props: Props) {
           if (
             detail.task.status === 'generating' &&
             next.task.status !== 'generating' &&
-            next.proposal
-          )
-            setPage(
-              next.proposal?.result.kind === 'clarify' && !next.task.scope
-                ? 'understand'
-                : 'review',
-            );
+            location.current.page === 'generation'
+          ) {
+            setPage(generationDestination(next));
+            if (next.task.status === 'cancelled')
+              setMessage('已取消生成，需求、附件、补问及已保存草稿均保留。');
+          }
         }
       } catch (e: any) {
         if (live) setError(e.message);
@@ -407,13 +437,15 @@ export default function AITaskWorkspace(props: Props) {
       setProvider(next.task.provider ?? 'deepseek');
       setModel(next.task.model ?? 'deepseek-flash');
       setPage(
-        next.proposal?.result.kind === 'clarify' && !next.task.scope
-          ? 'understand'
-          : next.proposal || next.flow
-            ? 'review'
-            : next.task.webTarget || next.task.outputTarget || next.task.toolTargets?.length
-              ? 'understand'
-              : 'brief',
+        ['generating', 'failed', 'unsupported'].includes(next.task.status)
+          ? 'generation'
+          : next.proposal?.result.kind === 'clarify' && !next.task.scope
+            ? 'understand'
+            : next.proposal || next.flow
+              ? 'review'
+              : next.task.webTarget || next.task.outputTarget || next.task.toolTargets?.length
+                ? 'understand'
+                : 'brief',
       );
     });
   }
@@ -448,20 +480,56 @@ export default function AITaskWorkspace(props: Props) {
       setPage(selection.kind === 'web' ? 'target' : 'brief');
     }).finally(props.toolSelectionHandled);
   }, [props.active, props.toolSelection?.key, busy]);
+  function generationDestination(next: TaskDetail): 'generation' | 'review' | 'understand' {
+    if (['generating', 'failed', 'unsupported'].includes(next.task.status)) return 'generation';
+    if (next.proposal?.result.kind === 'plan') return 'review';
+    return next.task.scope ? 'review' : 'understand';
+  }
+  function recoverDescription() {
+    setReviewed(false);
+    setPage(scope ? 'review' : 'brief');
+    requestAnimationFrame(() => {
+      document.querySelector('main')?.scrollTo(0, 0);
+      document.querySelector<HTMLTextAreaElement>('#task-description')?.focus();
+    });
+  }
+  async function cancelGeneration() {
+    if (!detail) return;
+    await run(async () => {
+      const next = await api('task.cancel', { id: detail.task.id });
+      accept(next);
+      setReviewed(false);
+      setPage(generationDestination(next));
+      if (next.task.status === 'cancelled')
+        setMessage('已取消生成，需求、附件、补问及已保存草稿均保留。');
+    });
+  }
+  async function generationSettings() {
+    await run(async () => {
+      await save();
+      setReviewed(false);
+      settingsReturnScroll.current = document.querySelector('main')?.scrollTop ?? 0;
+      props.settings(provider, model, {
+        title: draft.description.slice(0, 40) || '当前任务',
+        taskId: detail?.task.id,
+      });
+    });
+  }
   async function generate() {
     await run(async () => {
       if (!reviewed) throw new Error('请先核对本次发送的内容');
       const next = await save();
       setEditingProposal(false);
-      accept(
-        await api('task.generate', {
-          id: next.task.id,
-          revision: next.task.revision,
-          provider,
-          model,
-          reviewed: true,
-        }),
-      );
+      const generated: TaskDetail = await api('task.generate', {
+        id: next.task.id,
+        revision: next.task.revision,
+        provider,
+        model,
+        reviewed: true,
+      });
+      accept(generated);
+      setPage(generationDestination(generated));
+      document.querySelector('main')?.scrollTo(0, 0);
       setReviewed(false);
     });
   }
@@ -616,15 +684,17 @@ export default function AITaskWorkspace(props: Props) {
       setProvider(next.detail.task.provider ?? 'deepseek');
       setModel(next.detail.task.model ?? 'deepseek-flash');
       setPage(
-        next.detail.proposal?.result.kind === 'clarify'
-          ? 'understand'
-          : next.detail.proposal || next.detail.flow
-            ? 'review'
-            : next.detail.task.webTarget ||
-                next.detail.task.outputTarget ||
-                next.detail.task.toolTargets?.length
-              ? 'understand'
-              : 'brief',
+        ['generating', 'failed', 'unsupported'].includes(next.detail.task.status)
+          ? 'generation'
+          : next.detail.proposal?.result.kind === 'clarify'
+            ? 'understand'
+            : next.detail.proposal || next.detail.flow
+              ? 'review'
+              : next.detail.task.webTarget ||
+                  next.detail.task.outputTarget ||
+                  next.detail.task.toolTargets?.length
+                ? 'understand'
+                : 'brief',
       );
       if (next.learning.latestRunId) {
         const result = await api('run.detail', { id: next.learning.latestRunId });
@@ -670,7 +740,7 @@ export default function AITaskWorkspace(props: Props) {
 
   const planningControls = detail && (
     <>
-      {page === 'understand' || page === 'brief' ? (
+      {page === 'understand' || page === 'brief' || page === 'generation' ? (
         <details className="task-understanding-provider">
           <summary>
             AI 服务 · {providerName} · {model}
@@ -743,7 +813,10 @@ export default function AITaskWorkspace(props: Props) {
               void run(async () => {
                 await save();
                 settingsReturnScroll.current = document.querySelector('main')?.scrollTop ?? 0;
-                missingOrigin.current = page === 'understand' || page === 'review' ? page : 'brief';
+                missingOrigin.current =
+                  page === 'understand' || page === 'review' || page === 'generation'
+                    ? page
+                    : 'brief';
                 setPage('missing-ai');
               })
             }
@@ -899,13 +972,15 @@ export default function AITaskWorkspace(props: Props) {
             }
             onClick={() => void generate()}
           >
-            {page === 'understand' || result?.kind === 'clarify'
-              ? '确认并生成方案'
-              : result || detail.flow
-                ? scope
-                  ? '生成这一步的修改'
-                  : '生成修改方案'
-                : '理解我的任务'}
+            {page === 'generation'
+              ? '确认并重试生成'
+              : page === 'understand' || result?.kind === 'clarify'
+                ? '确认并生成方案'
+                : result || detail.flow
+                  ? scope
+                    ? '生成这一步的修改'
+                    : '生成修改方案'
+                  : '理解我的任务'}
           </button>
         )}
         <button
@@ -932,25 +1007,31 @@ export default function AITaskWorkspace(props: Props) {
     >
       <div className="page-heading ai-task-heading">
         <div>
-          <h1>{page === 'home' ? '你想完成什么？' : title}</h1>
+          <h1 tabIndex={-1}>{page === 'home' ? '你想完成什么？' : title}</h1>
           <p>
-            {page === 'missing-ai'
-              ? '任务描述与已选附件仍在草稿中'
-              : page === 'guide'
-                ? '大约 2 分钟 · 使用无账号的示例网页和你选择的输出目录'
-                : page === 'home'
-                  ? '用一句话开始。FlowArk 先给你看步骤，由你决定何时执行。'
-                  : page === 'understand'
-                    ? '第 3 步 / 确认理解 · 缺少的信息用简单选择补齐'
-                    : page === 'brief' && !scope
-                      ? '第 1 步 / 描述 · 对话和附件作为本次任务草稿保留'
-                      : page === 'target'
-                        ? '第 2 步 / 选目标 · 只有你明确选择的对象会进入任务上下文'
-                        : generating
-                          ? '正在理解本次任务，你可以取消生成。'
-                          : scope
-                            ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : scope.nodeId} · 尚未执行`
-                            : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
+            {page === 'generation'
+              ? generating
+                ? `${providerName} · 仅规划，尚未执行本次任务`
+                : detail?.task.status === 'unsupported'
+                  ? '能力不足时停止规划，不生成可执行提案'
+                  : '原需求和已保存草稿均保留；本次没有开始执行'
+              : page === 'missing-ai'
+                ? '任务描述与已选附件仍在草稿中'
+                : page === 'guide'
+                  ? '大约 2 分钟 · 使用无账号的示例网页和你选择的输出目录'
+                  : page === 'home'
+                    ? '用一句话开始。FlowArk 先给你看步骤，由你决定何时执行。'
+                    : page === 'understand'
+                      ? '第 3 步 / 确认理解 · 缺少的信息用简单选择补齐'
+                      : page === 'brief' && !scope
+                        ? '第 1 步 / 描述 · 对话和附件作为本次任务草稿保留'
+                        : page === 'target'
+                          ? '第 2 步 / 选目标 · 只有你明确选择的对象会进入任务上下文'
+                          : generating
+                            ? '正在理解本次任务，你可以取消生成。'
+                            : scope
+                              ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : scope.nodeId} · 尚未执行`
+                              : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
           </p>
         </div>
         {page !== 'home' &&
@@ -958,7 +1039,8 @@ export default function AITaskWorkspace(props: Props) {
           page !== 'target' &&
           page !== 'guide' &&
           page !== 'understand' &&
-          page !== 'brief' && (
+          page !== 'brief' &&
+          page !== 'generation' && (
             <div className="ai-task-actions">
               {detail?.flow && detail.flow.id === props.sourceFlowId && (
                 <button
@@ -1004,6 +1086,24 @@ export default function AITaskWorkspace(props: Props) {
           )}
           <p>这是选入任务的完整副本；预览不会发送给 AI，也不会修改原文件。</p>
         </section>
+      )}
+      {stale && detail && (
+        <div className="alert error" role="alert">
+          <span>任务已在其他位置修改；重新读取会替换当前未保存输入。</span>
+          <button
+            disabled={busy}
+            onClick={() =>
+              void run(async () => {
+                const next: TaskDetail = await api('task.detail', { id: detail.task.id });
+                accept(next);
+                if (page === 'generation') setPage(generationDestination(next));
+                setReviewed(false);
+              })
+            }
+          >
+            重新读取任务
+          </button>
+        </div>
       )}
       {page === 'guide' ? (
         <FirstTaskGuide
@@ -1142,6 +1242,24 @@ export default function AITaskWorkspace(props: Props) {
             </button>
           </div>
         </>
+      ) : page === 'generation' && detail ? (
+        <TaskGenerationPage
+          key={detail.task.id}
+          task={detail.task}
+          result={result}
+          resetReview={() => setReviewed(false)}
+          busy={busy}
+          savedFlow={detail.flow?.flow.name}
+          controls={planningControls}
+          cancel={() => void cancelGeneration()}
+          edit={recoverDescription}
+          settings={() => void generationSettings()}
+          tools={props.openTools}
+          showSaved={() => {
+            setPage('review');
+            setReviewed(false);
+          }}
+        />
       ) : page === 'target' && detail ? (
         <TaskWebTargetPage
           active={props.active}
@@ -1186,22 +1304,6 @@ export default function AITaskWorkspace(props: Props) {
                 <span>
                   {dirty ? '有未保存修改' : '草稿已保存'} · 修订 {revision}
                 </span>
-              </div>
-            )}
-            {stale && (
-              <div className="alert error" role="alert">
-                <span>任务已在其他位置修改；重新读取会替换当前未保存输入。</span>
-                <button
-                  disabled={busy}
-                  onClick={() =>
-                    void run(async () => {
-                      accept(await api('task.detail', { id: detail.task.id }));
-                      setReviewed(false);
-                    })
-                  }
-                >
-                  重新读取任务
-                </button>
               </div>
             )}
             {detail.task.error && (
