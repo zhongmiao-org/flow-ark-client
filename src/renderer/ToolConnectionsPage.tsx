@@ -128,6 +128,38 @@ export default function ToolConnectionsPage({
   const [view, setView] = useState<'catalog' | 'config' | 'review' | 'saved' | 'assistant'>(
     'catalog',
   );
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof Form, string>>>({});
+  const [protocolOpen, setProtocolOpen] = useState(false);
+  const focusInvalid = useRef(false);
+  useEffect(() => {
+    if (!focusInvalid.current) return;
+    focusInvalid.current = false;
+    const first = (
+      ['name', 'type', 'url', 'auth', 'command', 'args', 'protocol', 'source'] as const
+    ).find((field) => fieldErrors[field]);
+    if (first) document.getElementById(`tool-config-${first}`)?.focus();
+  }, [fieldErrors]);
+  const fieldProps = (field: keyof Form) => ({
+    id: `tool-config-${field}`,
+    'aria-label': {
+      name: '显示名称',
+      source: '来源说明',
+      type: '连接方式',
+      url: '服务地址',
+      auth: '认证方式',
+      command: '本地程序绝对路径',
+      args: '程序参数（JSON 字符串数组）',
+      protocol: '协议版本',
+    }[field],
+    'aria-invalid': fieldErrors[field] ? true : undefined,
+    'aria-describedby': fieldErrors[field] ? `tool-config-${field}-error` : undefined,
+  });
+  const fieldError = (field: keyof Form) =>
+    fieldErrors[field] && (
+      <small className="tool-field-error" id={`tool-config-${field}-error`}>
+        {fieldErrors[field]}
+      </small>
+    );
   const [assistantPhase, setAssistantPhase] = useState<AssistantPhase>('setup');
   const [connections, setConnections] = useState<ToolConnection[]>([]);
   const [listLoading, setListLoading] = useState(false);
@@ -271,6 +303,8 @@ export default function ToolConnectionsPage({
     go(() => {
       setSelectedId(connection?.id);
       setForm(connection ? formOf(connection.config) : { ...empty });
+      setFieldErrors({});
+      setProtocolOpen(false);
       setOAuthInspection(undefined);
       setSourceReviewed(false);
       setCapabilitiesReviewed(false);
@@ -281,6 +315,12 @@ export default function ToolConnectionsPage({
   const change = (patch: Partial<Form>) => {
     setOAuthInspection(undefined);
     setForm((previous) => ({ ...previous, ...patch }));
+    setError('');
+    setFieldErrors((previous) =>
+      Object.fromEntries(
+        Object.entries(previous).filter(([field]) => !(field in patch) && !('type' in patch)),
+      ),
+    );
     setDirty(true);
     setSourceReviewed(false);
   };
@@ -289,12 +329,13 @@ export default function ToolConnectionsPage({
     setError('');
     let config: ConnectionConfig;
     try {
+      const errors: Partial<Record<keyof Form, string>> = {};
       let args: unknown = [];
       if (form.type === 'stdio') {
         try {
           args = JSON.parse(form.args);
         } catch {
-          throw new Error('程序参数请填写 JSON 字符串数组，例如 ["--mode", "read"]');
+          errors.args = '请填写 JSON 字符串数组，例如 ["--mode", "read"]';
         }
       }
       const result = connectionConfig.safeParse({
@@ -314,10 +355,42 @@ export default function ToolConnectionsPage({
               }
             : { type: 'stdio', command: form.command, args },
       });
-      if (!result.success)
-        throw new Error(
-          '请填写显示名称、来源说明和有效的连接配置；远程地址须为 HTTPS，本地程序须为绝对路径。',
-        );
+      if (!result.success) {
+        for (const issue of result.error.issues) {
+          const key = issue.path[0] === 'transport' ? issue.path[1] : issue.path[0];
+          const fields: Record<string, keyof Form> = {
+            displayName: 'name',
+            source: 'source',
+            protocolVersion: 'protocol',
+            url: 'url',
+            command: 'command',
+            args: 'args',
+            auth: 'auth',
+            type: 'type',
+          };
+          const field = fields[String(key)];
+          if (!field) continue;
+          const messages: Partial<Record<keyof Form, string>> = {
+            name: '请填写显示名称，不包含换行或控制字符。',
+            source: '请填写已核对的发布者或获取渠道，不包含换行或控制字符。',
+            url: '请使用 HTTPS 或本机回环 HTTP 地址，不包含账号密码、查询参数或片段。',
+            command: '请填写以 / 开头的可执行程序绝对路径，不包含换行或控制字符。',
+            args: '请使用 JSON 字符串数组，最多 40 项，每项不超过 4096 个字符且不包含空字符。',
+            protocol: '请选择支持的协议版本。',
+            auth: '请选择认证方式。',
+            type: '请选择连接方式。',
+          };
+          errors[field] ??= messages[field];
+        }
+      }
+      if (Object.keys(errors).length || !result.success) {
+        if (errors.protocol) setProtocolOpen(true);
+        focusInvalid.current = true;
+        setFieldErrors(errors);
+        setError('请修正标出的连接配置后重新检查；尚未连接服务或启动程序。');
+        return;
+      }
+      setFieldErrors({});
       if (!sourceReviewed) throw new Error('请先核对来源、地址或程序及其运行方式');
       config = result.data;
     } catch (e) {
@@ -705,6 +778,7 @@ export default function ToolConnectionsPage({
         {view === 'config' && (
           <form
             className="tool-columns tool-config"
+            noValidate
             onSubmit={(event) => {
               event.preventDefault();
               void discover();
@@ -714,17 +788,19 @@ export default function ToolConnectionsPage({
               <label className="tool-field">
                 显示名称
                 <input
+                  {...fieldProps('name')}
                   value={form.name}
                   maxLength={100}
                   placeholder="我的工具服务"
                   disabled={!!busy}
                   onChange={(e) => change({ name: e.target.value })}
                 />
+                {fieldError('name')}
               </label>
               <label className="tool-field">
                 连接方式
                 <select
-                  aria-label="连接方式"
+                  {...fieldProps('type')}
                   value={form.type}
                   disabled={!!busy}
                   onChange={(e) => {
@@ -735,12 +811,14 @@ export default function ToolConnectionsPage({
                   <option value="http">远程 HTTPS / 本机 HTTP</option>
                   <option value="stdio">本地程序（stdio）</option>
                 </select>
+                {fieldError('type')}
               </label>
               {form.type === 'http' ? (
                 <>
                   <label className="tool-field">
                     服务地址
                     <input
+                      {...fieldProps('url')}
                       value={form.url}
                       maxLength={2048}
                       placeholder="https://tools.example.com/mcp"
@@ -750,11 +828,12 @@ export default function ToolConnectionsPage({
                         setSecret('');
                       }}
                     />
+                    {fieldError('url')}
                   </label>
                   <label className="tool-field">
                     认证方式
                     <select
-                      aria-label="认证方式"
+                      {...fieldProps('auth')}
                       value={form.auth}
                       disabled={!!busy}
                       onChange={(e) => {
@@ -766,6 +845,7 @@ export default function ToolConnectionsPage({
                       <option value="bearer">Bearer Token</option>
                       <option value="oauth">OAuth · 浏览器登录</option>
                     </select>
+                    {fieldError('auth')}
                   </label>
                   {form.auth === 'bearer' && (
                     <label className="tool-field">
@@ -797,21 +877,25 @@ export default function ToolConnectionsPage({
                   <label className="tool-field">
                     本地程序绝对路径
                     <input
+                      {...fieldProps('command')}
                       value={form.command}
                       maxLength={4096}
                       placeholder="/绝对路径/可执行程序"
                       disabled={!!busy}
                       onChange={(e) => change({ command: e.target.value })}
                     />
+                    {fieldError('command')}
                   </label>
                   <label className="tool-field">
                     程序参数（JSON 字符串数组）
                     <textarea
+                      {...fieldProps('args')}
                       value={form.args}
                       disabled={!!busy}
                       rows={3}
                       onChange={(e) => change({ args: e.target.value })}
                     />
+                    {fieldError('args')}
                   </label>
                   <p className="ai-task-note">
                     只会启动你填写的程序，不自动安装、不使用
@@ -819,24 +903,32 @@ export default function ToolConnectionsPage({
                   </p>
                 </>
               )}
-              <label className="tool-field">
-                协议版本
-                <select
-                  aria-label="协议版本"
-                  value={form.protocol}
-                  disabled={!!busy}
-                  onChange={(e) => change({ protocol: e.target.value as Form['protocol'] })}
-                >
-                  <option value="2026-07-28">2026-07-28</option>
-                  <option value="2025-11-25">2025-11-25</option>
-                </select>
-              </label>
+              <details
+                className="tool-protocol-settings"
+                open={protocolOpen}
+                onToggle={(event) => setProtocolOpen(event.currentTarget.open)}
+              >
+                <summary>协议设置 · {form.protocol}</summary>
+                <label className="tool-field">
+                  协议版本
+                  <select
+                    {...fieldProps('protocol')}
+                    value={form.protocol}
+                    disabled={!!busy}
+                    onChange={(e) => change({ protocol: e.target.value as Form['protocol'] })}
+                  >
+                    <option value="2026-07-28">2026-07-28</option>
+                    <option value="2025-11-25">2025-11-25</option>
+                  </select>
+                  {fieldError('protocol')}
+                </label>
+              </details>
               <p>
                 {form.type === 'http' && form.auth === 'oauth'
                   ? '先读取认证站点与范围，再使用服务分配的公开客户端 ID 登录。能力核对后才保存连接。'
                   : '先发现能力并测试，确认工具列表、身份和范围后再保存。'}
               </p>
-              <div className="ai-task-actions">
+              <div className="ai-task-actions tool-config-actions">
                 {reusableOAuth && (
                   <button
                     type="button"
@@ -884,12 +976,14 @@ export default function ToolConnectionsPage({
               <label className="tool-field">
                 来源说明
                 <input
+                  {...fieldProps('source')}
                   value={form.source}
                   maxLength={500}
                   disabled={!!busy}
                   placeholder="填写你核对过的发布者或获取渠道"
                   onChange={(e) => change({ source: e.target.value })}
                 />
+                {fieldError('source')}
               </label>
               <label className="ai-task-checkbox">
                 <input

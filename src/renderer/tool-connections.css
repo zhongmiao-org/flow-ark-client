@@ -270,7 +270,27 @@
   min-height: 730px;
 }
 .tool-config > .ai-task-card:first-child {
-  gap: 24px;
+  gap: 32px;
+}
+.tool-config-actions .primary {
+  min-width: 208px;
+}
+.tool-config-actions button:not(.primary) {
+  min-width: 144px;
+}
+.tool-protocol-settings summary {
+  cursor: pointer;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.tool-protocol-settings[open] .tool-field {
+  margin-top: 16px;
+}
+.tool-field .tool-field-error {
+  color: var(--fa-status-error);
+}
+.tool-field :is(input, select, textarea)[aria-invalid='true'] {
+  border-color: var(--fa-status-error);
 }
 .tool-field {
   display: flex;
