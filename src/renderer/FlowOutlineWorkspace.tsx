@@ -16,6 +16,7 @@ import { kinds } from './node-kinds';
 import { runTimeline } from './run-timeline';
 import { branchCount, flowOutline, outlineMatches, revealOutline, stepTitle } from './flow-outline';
 import { useOutlineRun } from './use-outline-run';
+import OutlineStepSearch from './OutlineStepSearch';
 export type OutlineLocation = {
   mode: 'draft' | 'run';
   view: 'list' | 'graph';
@@ -65,8 +66,7 @@ export default function FlowOutlineWorkspace({
   const [collapsed, setCollapsed] = useState(
     origin?.collapsed ?? { draft: new Set<string>(), run: new Set<string>() },
   );
-  const [query, setQuery] = useState(origin?.query ?? ''),
-    [searching, setSearching] = useState(false);
+  const [query, setQuery] = useState(origin?.query ?? '');
   const [focusRequest, setFocusRequest] = useState(0);
   const root = useRef<HTMLElement>(null),
     list = useRef<HTMLDivElement>(null);
@@ -156,7 +156,6 @@ export default function FlowOutlineWorkspace({
     setMode(nextMode);
     setGroup((old) => ({ ...old, [nextMode]: revealed.group }));
     setCollapsed((old) => ({ ...old, [nextMode]: revealed.collapsed }));
-    setSearching(false);
     pendingFocus.current = id;
     setFocusRequest((n) => n + 1);
   };
@@ -259,39 +258,7 @@ export default function FlowOutlineWorkspace({
         </p>
       </header>
       <div className="outline-toolbar">
-        <div className="outline-search">
-          <label htmlFor="outline-search">搜索步骤</label>
-          <input
-            id="outline-search"
-            value={query}
-            placeholder="名称、步骤编号或动作类型"
-            autoComplete="off"
-            onFocus={() => setSearching(true)}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setSearching(true);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') setSearching(false);
-              if (event.key === 'Enter' && matches[0]) {
-                event.preventDefault();
-                choose(matches[0].step.id);
-              }
-            }}
-          />
-          {query && <span role="status">找到 {matches.length} 个步骤</span>}
-          {query && searching && (
-            <div className="outline-search-results" aria-label="步骤搜索结果">
-              {matches.map((item) => (
-                <button key={item.step.id} onClick={() => choose(item.step.id)}>
-                  {item.ordinal} · {stepTitle(item.step)}
-                  <small>{item.step.id}</small>
-                </button>
-              ))}
-              {!matches.length && <p>没有匹配的步骤。</p>}
-            </div>
-          )}
-        </div>
+        <OutlineStepSearch query={query} change={setQuery} matches={matches} choose={choose} />
         <button
           className="primary"
           disabled={!current?.nodeId}
