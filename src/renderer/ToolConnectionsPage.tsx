@@ -122,11 +122,13 @@ export default function ToolConnectionsPage({
   active,
   navigation,
   leave,
+  parentTitle = '开始任务',
   choose,
 }: {
   active: boolean;
   navigation: MutableRefObject<ToolNavigation | undefined>;
   leave: () => void;
+  parentTitle?: string;
   choose: (kind: 'web' | 'file') => void;
 }) {
   const [view, setView] = useState<'catalog' | 'config' | 'review' | 'saved' | 'unavailable'>(
@@ -388,7 +390,7 @@ export default function ToolConnectionsPage({
               back();
             }}
           >
-            {view === 'catalog' ? '开始任务' : view === 'review' ? '自定义 MCP' : '连接目录'}
+            {view === 'catalog' ? parentTitle : view === 'review' ? '自定义 MCP' : '连接目录'}
           </a>
           <span aria-hidden="true">/</span>
           <span aria-current="page">{title}</span>

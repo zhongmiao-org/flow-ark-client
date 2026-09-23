@@ -1,3 +1,4 @@
+import LocalSettingsPage, { type SettingsNavigation } from './LocalSettingsPage';
 import AttentionWorkspace, { type AttentionNavigation } from './AttentionWorkspace';
 import TemplateSchedulePage from './TemplateSchedulePage';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
@@ -5,11 +6,7 @@ import { useState, useEffect, useCallback, useReducer, useRef, lazy, Suspense } 
 import FlowLibrary from './FlowLibrary';
 import AITaskWorkspace from './AITaskWorkspace';
 import ToolConnectionsPage, { type ToolNavigation } from './ToolConnectionsPage';
-import AISettingsPage, {
-  AISettingsSummary,
-  type AISettingsEntry,
-  type AISettingsNavigation,
-} from './AISettingsPage';
+import AISettingsPage, { type AISettingsEntry, type AISettingsNavigation } from './AISettingsPage';
 import type { AIProviderId } from '../shared/ai-settings';
 import { buildDiagram } from './flow-diagram';
 import DiagramCanvas from './DiagramCanvas';
@@ -67,7 +64,6 @@ import ScriptPackages from './ScriptPackages';
 import ScriptEditorPage, { type ScriptNavigation } from './ScriptEditorPage';
 import ExcelMappingPage from './ExcelMappingPage';
 import FlowOutlineWorkspace, { type OutlineLocation } from './FlowOutlineWorkspace';
-import EmbeddedBrowserPanel from './EmbeddedBrowserPanel';
 import BrowserSidebar from './BrowserSidebar';
 import Schedules from './Schedules';
 import { fileBindingNames } from './file-bindings';
@@ -113,6 +109,9 @@ function format(t: string) {
   });
 }
 export default function App() {
+  const [settingsFlowId, setSettingsFlowId] = useState<string>();
+  const [toolsOrigin, setToolsOrigin] = useState<'tasks' | 'settings'>('tasks');
+  const [settingsNavigation, setSettingsNavigation] = useState<SettingsNavigation>();
   const [attentionNavigation, setAttentionNavigation] = useState<AttentionNavigation>();
   const templateNavigation = useRef<TemplateNavigation | undefined>(undefined);
   const toolNavigation = useRef<ToolNavigation | undefined>(undefined);
@@ -330,8 +329,10 @@ export default function App() {
       setBusy(false);
     }
   }
-  async function openFlow(r: FlowRecord) {
+  async function openFlow(r: FlowRecord, fromSettings = false) {
     if (!guardInvalidNodeJson()) return;
+    setSettingsFlowId(fromSettings ? r.id : undefined);
+    if (fromSettings) setTaskReturn(false);
     setConfigOpen(false);
     setEditorPanel('canvas');
     setOutlineOpen(false);
@@ -527,6 +528,8 @@ export default function App() {
                   }
                   if (!guardInvalidNodeJson()) return;
                   const navigate = () => {
+                    if (id === 'tools')
+                      setToolsOrigin(section === 'settings' ? 'settings' : 'tasks');
                     setTaskReturn(false);
                     setSection(id);
                     setDetail(null);
@@ -738,7 +741,20 @@ export default function App() {
               <button
                 className="context-back"
                 onClick={() => {
-                  if (!editorBrowser) returnHome();
+                  if (
+                    !editorBrowser &&
+                    section === 'editor' &&
+                    !!settingsFlowId &&
+                    settingsFlowId === edit?.id
+                  ) {
+                    if (!guardInvalidNodeJson()) return;
+                    if (!draftSaved) {
+                      setError('请先保存流程修改，再返回本地设置');
+                      return;
+                    }
+                    setSection('settings');
+                    setSettingsFlowId(undefined);
+                  } else if (!editorBrowser) returnHome();
                   else if (guardInvalidNodeJson()) {
                     if (compactDrawer) setEditorPanel('canvas');
                     else setBrowserOpen(false);
@@ -749,7 +765,14 @@ export default function App() {
                   ? '← 返回紧凑窗口与网页'
                   : editorBrowser
                     ? '← 返回流程编排'
-                    : '← 返回我的流程'}
+                    : section === 'editor' && !!settingsFlowId && settingsFlowId === edit?.id
+                      ? '← 返回本地设置'
+                      : '← 返回我的流程'}
+              </button>
+            )}
+            {section === 'settings' && settingsNavigation?.back && (
+              <button className="context-back" onClick={settingsNavigation.back}>
+                ← 返回本地设置
               </button>
             )}
             {section === 'inbox' && attentionNavigation?.back && (
@@ -758,6 +781,20 @@ export default function App() {
               </button>
             )}
             <nav className="breadcrumbs" aria-label="当前位置">
+              {section === 'settings' && settingsNavigation?.back && (
+                <>
+                  <a
+                    href="#settings"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      settingsNavigation.back?.();
+                    }}
+                  >
+                    本地设置
+                  </a>
+                  <span aria-hidden="true">/</span>
+                </>
+              )}
               {section === 'tasks' && taskNavigation.back && (
                 <>
                   <a
@@ -971,7 +1008,9 @@ export default function App() {
                           ? taskTitle
                           : section === 'inbox'
                             ? (attentionNavigation?.title ?? '待办与提醒')
-                            : nav.find((n) => n[0] === section)?.[1]}
+                            : section === 'settings'
+                              ? (settingsNavigation?.title ?? '本地设置')
+                              : nav.find((n) => n[0] === section)?.[1]}
               </span>
             </nav>
             <button
@@ -1042,6 +1081,7 @@ export default function App() {
               toolSelection={toolSelection}
               toolSelectionHandled={() => setToolSelection(undefined)}
               openTools={() => {
+                setToolsOrigin('tasks');
                 setSection('tools');
                 setBrowserOpen(false);
               }}
@@ -1087,7 +1127,8 @@ export default function App() {
           <ToolConnectionsPage
             active={section === 'tools'}
             navigation={toolNavigation}
-            leave={() => setSection('tasks')}
+            parentTitle={toolsOrigin === 'settings' ? '本地设置' : '开始任务'}
+            leave={() => setSection(toolsOrigin)}
             choose={(kind) => {
               setToolSelection({ key: crypto.randomUUID(), kind });
               setSection('tasks');
@@ -1589,18 +1630,25 @@ export default function App() {
               setSection('runs');
             }}
           />
-          {section === 'settings' && (
-            <SettingsView
-              data={data}
-              action={action}
-              openAI={(provider: AIProviderId, model: string) => {
-                setTaskAISettings({ key: crypto.randomUUID(), provider, model });
-                setTaskReturn(false);
-                setSection('ai-settings');
-                setBrowserOpen(false);
-              }}
-            />
-          )}
+          <LocalSettingsPage
+            data={data}
+            active={section === 'settings'}
+            refresh={refresh}
+            navigation={setSettingsNavigation}
+            showBrowser={() => setBrowserOpen(true)}
+            openTools={() => {
+              setToolsOrigin('settings');
+              setSection('tools');
+              setBrowserOpen(false);
+            }}
+            openFlow={(record) => openFlow(record, true)}
+            openAI={(provider, model) => {
+              setTaskAISettings({ key: crypto.randomUUID(), provider, model });
+              setTaskReturn(false);
+              setSection('ai-settings');
+              setBrowserOpen(false);
+            }}
+          />
           <AISettingsPage
             active={section === 'ai-settings'}
             entry={taskAISettings}
@@ -2323,95 +2371,5 @@ function JsonInput({ value, onChange }: { value: any; onChange: (v: any) => void
       />
       {err && <small className="field-error">{err}</small>}
     </>
-  );
-}
-function SettingsView({ data, action, openAI }: any) {
-  const [candidates, setCandidates] = useState<any[]>([]);
-  return (
-    <div className="page settings-page">
-      <Heading title="连接你的本机能力" text="选择内置或本机浏览器，配置自己的 AI 接口。" />
-      <EmbeddedBrowserPanel
-        enabled={data.browsers.some((b: any) => b.product === 'embedded')}
-        action={action}
-      />
-      <section className="panel">
-        <div className="section-row">
-          <div className="row">
-            <Globe size={22} />
-            <h2>本机浏览器</h2>
-          </div>
-          <div className="row">
-            <button
-              onClick={() => action(async () => setCandidates(await api('browser.discover')))}
-            >
-              发现已安装浏览器
-            </button>
-            <button
-              onClick={() =>
-                action(async () => {
-                  const path = await api('file.choose', { kind: 'browser' });
-                  if (path) await api('browser.bind', { path });
-                })
-              }
-            >
-              手动选择
-            </button>
-          </div>
-        </div>
-        <p>使用专用自动化会话。Chrome 为首个验证目标，Firefox / Safari 的兼容结果单独记录。</p>
-        {[
-          ...data.browsers.filter((b: any) => b.product !== 'embedded'),
-          ...candidates.filter((c) => !data.browsers.some((b: any) => b.id === c.id)),
-        ].map((b) => (
-          <div className="browser-row" key={b.id}>
-            <span className="icon-tile">
-              <Globe size={19} />
-            </span>
-            <div>
-              <b>
-                {b.product} <span className="muted">{b.version}</span>
-              </b>
-              <small>{b.executable}</small>
-            </div>
-            {data.browsers.some((x: any) => x.id === b.id) ? (
-              <span className="badge">已绑定</span>
-            ) : (
-              <button
-                onClick={() =>
-                  action(() => api('browser.bind', { path: b.executable }), '浏览器已绑定')
-                }
-              >
-                绑定此浏览器
-              </button>
-            )}
-            {b.product === 'firefox' && (
-              <button
-                onClick={() =>
-                  action(async () => {
-                    const driver = await api('file.choose', { kind: 'driver' });
-                    if (driver) await api('browser.bind', { path: b.executable, driver });
-                  })
-                }
-              >
-                选择驱动
-              </button>
-            )}
-          </div>
-        ))}
-        {!data.browsers.length && !candidates.length && (
-          <div className="note">尚未绑定浏览器。纯数据流程可以直接运行。</div>
-        )}
-      </section>
-      <AISettingsSummary open={openAI} />
-      <section className="panel">
-        <h2>本地数据</h2>
-        <p className="path-text">{data.dataPath || '正在初始化安全存储…'}</p>
-        <button onClick={() => action(() => api('app.showData'))}>
-          <FolderOpen size={15} />
-          打开数据目录
-        </button>
-        <p>关闭窗口后保留托盘和本机计划；选择「退出 FlowArk」后停止执行与调度。</p>
-      </section>
-    </div>
   );
 }

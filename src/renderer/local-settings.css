@@ -1,0 +1,298 @@
+/* Figma 1:3896 and 2:3333: settings surface, browser binding and resource navigation. */
+.local-settings-page[hidden] {
+  display: none;
+}
+.local-settings-page {
+  container-type: inline-size;
+}
+.local-settings-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.local-settings-heading h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  line-height: 40px;
+}
+.local-settings-heading h1:focus {
+  outline: none;
+}
+.local-settings-heading p {
+  margin: 0;
+  color: var(--fa-text-secondary);
+}
+.local-settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--fa-border-default);
+}
+.local-settings-tabs button {
+  border-color: transparent;
+  background: transparent;
+  padding: 10px 18px;
+}
+.local-settings-tabs button[aria-selected='true'] {
+  background: var(--fa-action-subtle);
+  color: var(--fa-action-primary);
+}
+.local-settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 24px;
+  align-items: start;
+}
+.local-settings-card {
+  padding: 28px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-surface);
+  min-width: 0;
+}
+.local-settings-card + .local-settings-card {
+  margin-top: 24px;
+}
+.local-settings-layout > .local-settings-card {
+  margin-top: 0;
+}
+.local-settings-card h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+  line-height: 28px;
+}
+.local-settings-card h3 {
+  font-size: 14px;
+  line-height: 24px;
+  margin: 0;
+}
+.local-settings-card p {
+  margin: 8px 0 16px;
+  color: var(--fa-text-secondary);
+  line-height: 24px;
+}
+.local-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.local-settings-row h2 {
+  margin: 0;
+}
+.local-settings-row h3 {
+  overflow-wrap: anywhere;
+}
+.local-browser-mode {
+  padding: 20px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  margin-top: 16px;
+}
+.local-browser-mode.is-ready {
+  border-color: var(--fa-action-primary);
+  background: var(--fa-action-subtle);
+}
+.local-browser-mode.is-ready h3 {
+  color: var(--fa-action-primary);
+}
+.local-settings-status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--fa-radius-999);
+  color: var(--fa-text-secondary);
+  background: var(--fa-bg-subtle);
+  font-size: 12px;
+}
+.local-settings-divider {
+  height: 1px;
+  background: var(--fa-border-default);
+  margin: 24px 0;
+}
+.local-settings-facts {
+  margin: 16px 0;
+  display: grid;
+  gap: 16px;
+}
+.local-settings-facts > div {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  gap: 16px;
+}
+.local-settings-facts dt {
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.local-settings-facts dd {
+  margin: 0;
+}
+.local-settings-health {
+  border-bottom: 1px solid var(--fa-border-default);
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+.local-settings-health strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.local-settings-path {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.local-settings-muted {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 20px;
+}
+.local-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+.local-settings-actions > button {
+  min-width: 160px;
+}
+.local-settings-banner {
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  background: var(--fa-bg-subtle);
+  border-radius: var(--fa-radius-8);
+  line-height: 24px;
+  overflow-wrap: anywhere;
+}
+.local-settings-banner p {
+  margin: 8px 0 0;
+  color: inherit;
+}
+.local-settings-banner.error {
+  color: var(--fa-status-error);
+  background: var(--fa-status-error-bg);
+}
+.local-settings-banner.success {
+  color: var(--fa-status-success);
+  background: var(--fa-status-success-bg);
+}
+.local-browser-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 24px 0;
+}
+.local-browser-choices button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: 16px;
+  gap: 8px;
+}
+.local-browser-choices button[aria-pressed='true'] {
+  border-color: var(--fa-action-primary);
+  background: var(--fa-action-subtle);
+}
+.local-browser-choices small,
+.local-browser-choices .local-settings-path {
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+  line-height: 20px;
+}
+.local-settings-field {
+  margin-bottom: 24px;
+}
+.local-settings-field > label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.local-settings-field > div {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.local-settings-field input {
+  flex: 1;
+  min-width: 200px;
+  background: var(--fa-bg-canvas);
+}
+.local-settings-field p {
+  font-size: 12px;
+}
+.local-settings-empty {
+  padding: 24px;
+  margin: 20px 0;
+  border: 1px dashed var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  color: var(--fa-text-secondary);
+  text-align: center;
+}
+.local-settings-inventory {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0;
+}
+.local-settings-inventory li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--fa-border-default);
+  gap: 12px;
+}
+.local-settings-inventory li span {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.local-settings-search {
+  display: grid;
+  gap: 8px;
+  max-width: 360px;
+  margin: 20px 0;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.local-settings-resource {
+  padding: 20px 0;
+  border-top: 1px solid var(--fa-border-default);
+}
+@container (max-width: 900px) {
+  .local-settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .local-settings-heading {
+    flex-wrap: wrap;
+  }
+}
+@container (max-width: 520px) {
+  .local-settings-card {
+    padding: 20px;
+  }
+  .local-settings-facts > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+  .local-settings-tabs {
+    gap: 4px;
+  }
+  .local-settings-tabs button {
+    padding: 8px 12px;
+  }
+  .local-settings-field input {
+    width: 100%;
+    flex-basis: 100%;
+  }
+}
+
+.local-settings-banner.warning {
+  color: var(--fa-status-warning);
+  background: var(--fa-status-warning-bg);
+}
