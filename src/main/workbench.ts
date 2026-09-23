@@ -208,6 +208,8 @@ app
       () => [...knownSecrets],
     );
     app.on('before-quit', () => desktopWindows.stop());
+    powerMonitor.on('suspend', () => desktopWindows.stop());
+    powerMonitor.on('lock-screen', () => desktopWindows.stop());
     let ready: Promise<any>;
     ipcMain.handle('flowark:request', async (event, method: string, raw: unknown) => {
       const pending =
@@ -242,7 +244,9 @@ app
         )
           throw new Error('IPC 来源无效');
         const args: any = validateIPC(method, raw ?? {});
-        if (method === 'desktop.windows.list') return desktopWindows.list();
+        if (method === 'desktop.windows.list') return desktopWindows.list(args.requestId);
+        if (method === 'desktop.windows.release') return desktopWindows.release(args.observationId);
+        if (method === 'desktop.selection.preview') return desktopWindows.preview(args);
         if (method === 'desktop.accessibility.openSettings') {
           if (process.platform !== 'darwin') throw new Error('应用窗口发现当前仅支持 macOS');
           await shell.openExternal(

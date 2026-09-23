@@ -63,6 +63,33 @@
   line-height: 22px;
   color: var(--fa-text-secondary);
 }
+.task-desktop-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+}
+.task-desktop-selection p {
+  font-size: 13px;
+  line-height: 21px;
+  color: var(--fa-text-secondary);
+}
+.task-web-columns .task-desktop-selection pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+  padding: 16px;
+  min-height: 120px;
+  max-height: 280px;
+  overflow: auto;
+  font: inherit;
+  line-height: 24px;
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-subtle);
+}
 @container (max-width: 950px) {
   .task-web-columns.is-desktop {
     grid-template-columns: 1fr;

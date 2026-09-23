@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron';
 const allowed = new Set([
   'desktop.windows.list',
+  'desktop.windows.release',
+  'desktop.selection.preview',
   'desktop.accessibility.openSettings',
   'tool.connection.list',
   'tool.connection.discover',

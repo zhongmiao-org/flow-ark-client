@@ -419,9 +419,9 @@ export default function ToolConnectionsPage({
                 <h2>本机应用助手</h2>
                 <span className="tool-status">macOS · TextEdit 窗口发现</span>
                 <p>
-                  查看窗口标题与状态
+                  查看窗口、核对选中段落
                   <br />
-                  文档选区读写尚未开放
+                  只读预览，文档写入尚未开放
                 </p>
                 <button onClick={() => choose('window')}>查看应用窗口</button>
                 <button onClick={() => move('unavailable')}>查看连接要求</button>
@@ -813,7 +813,7 @@ export default function ToolConnectionsPage({
               <span className="tool-status">随客户端提供窗口发现</span>
               <p>
                 当前可在 macOS 查看已打开的 TextEdit
-                窗口标题与状态。进入窗口页后检查系统辅助功能权限，不读取文档正文或选区。
+                窗口标题与状态。选择窗口并明确点击后，可在本地预览选中段落；进入页面不会自动读取正文。
               </p>
               <p>自定义 MCP 连接可以检查已有工具服务，但不会因此获得操作任意应用窗口的权限。</p>
               <button onClick={() => choose('window')}>查看应用窗口</button>
@@ -821,7 +821,7 @@ export default function ToolConnectionsPage({
             <section className="ai-task-card">
               <h2>授权与测试</h2>
               <p className="ai-task-note">
-                系统权限、窗口发现和任务授权分别核对。任务窗口绑定、选区规划与写入回读仍未开放，连接
+                系统权限、窗口发现和任务授权分别核对。预览会在到期或离开后清除，任务窗口绑定、选区规划与写入回读仍未开放，连接
                 MCP 不会授予这些能力。
               </p>
               <button onClick={catalog}>返回应用与工具</button>
