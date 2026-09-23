@@ -12,6 +12,11 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
       detail,
     });
     switch (node.type) {
+      case 'desktop':
+        return effect(
+          'write',
+          `替换应用目标“${node.target}”的原选区并按范围回读；单次授权与原生执行尚未开放。`,
+        );
       case 'mcp':
         return effect(
           'unknown',

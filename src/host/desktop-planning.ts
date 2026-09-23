@@ -17,6 +17,7 @@ import {
   type DesktopPlanGenerate,
 } from '../shared/desktop-planning';
 import type { PlanningTask } from '../shared/planning';
+import type { TaskDetail } from '../shared/planning';
 
 type Candidate = {
   response: DesktopPlanResponse;
@@ -67,6 +68,7 @@ export class DesktopPlanning {
       captureConfiguration: (provider: AIProviderId) => () => void;
       selection: (reference: SelectionReference) => Promise<unknown>;
       inspect: (reference: SelectionReference) => Promise<unknown>;
+      adopt: (candidate: DesktopPlanResponse, original: string) => TaskDetail;
       generate?: typeof generate;
     },
   ) {}
@@ -177,6 +179,18 @@ export class DesktopPlanning {
     this.consumed.set(requestId, Date.now() + 5 * 60 * 1000);
   }
   async request(method: string, raw: unknown) {
+    if (method === 'desktop.plan.adopt') {
+      const { adopted: _adopted, ...args } = desktopPlanMethods[method].parse(raw);
+      const candidate = this.candidates.get(args.id);
+      const checked = await this.inspect(args);
+      if (!candidate || this.candidates.get(args.id) !== candidate)
+        throw new Error('候选已变化，请重新核对');
+      if (checked.replacement !== 'available' || checked.readback !== 'available')
+        throw new Error('替换或回读条件尚未就绪，方案未保存');
+      const saved = this.deps.adopt(candidate.response, candidate.original);
+      this.clearCandidate(args.id);
+      return saved;
+    }
     if (method === 'desktop.plan.inspect') return this.inspect(raw);
     if (method === 'desktop.plan.cancel') {
       const { id, requestId } = desktopPlanMethods[method].parse(raw);

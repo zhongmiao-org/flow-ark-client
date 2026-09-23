@@ -77,7 +77,7 @@ function Contents({ preview }: { preview: RunReviewPreview }) {
           </ul>
         ) : (
           <p>
-            没有独立的文件或网页读取步骤。脚本、HTTP、上传与工具的读取范围需结合下方影响说明核对。
+            没有独立的文件或网页读取步骤。脚本、HTTP、上传、工具与应用选区的读取范围需结合下方影响说明核对。
           </p>
         )}
       </section>

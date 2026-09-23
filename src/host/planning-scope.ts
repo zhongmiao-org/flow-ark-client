@@ -13,6 +13,7 @@ export const planningFlowHash = (flow: FlowRecord | null) =>
           ...(flow.toolTargets?.length ? { toolTargets: flow.toolTargets } : {}),
           ...(flow.webTarget ? { webTarget: flow.webTarget } : {}),
           ...(flow.outputTarget ? { outputTarget: flow.outputTarget } : {}),
+          ...(flow.desktopTarget ? { desktopTarget: flow.desktopTarget } : {}),
         }
       : null,
   );

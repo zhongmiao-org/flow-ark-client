@@ -232,6 +232,16 @@ export type Node =
       target: string;
       tool: string;
       arguments: Value;
+    }
+  | {
+      id: string;
+      type: 'desktop';
+      version: 1;
+      name?: string;
+      timeoutMs?: number;
+      target: string;
+      operation: 'replace-selection';
+      text: string;
     };
 export type Value =
   | Json

@@ -12,6 +12,8 @@ import {
 const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
 export default function TaskWebTargetPage({
+  adopted,
+  adoptionUnavailable,
   phaseChanged,
   active = true,
   task,
@@ -23,6 +25,8 @@ export default function TaskWebTargetPage({
   changed,
   openTools,
 }: {
+  adopted: (detail: TaskDetail) => void;
+  adoptionUnavailable?: string;
   phaseChanged: (phase: 'window' | 'plan' | 'changes') => void;
   active?: boolean;
   task: PlanningTask;
@@ -120,6 +124,8 @@ export default function TaskWebTargetPage({
   if (desktopPlan && desktop.selected && desktop.preview?.status === 'ready')
     return (
       <DesktopTaskPlan
+        adopted={adopted}
+        adoptionUnavailable={adoptionUnavailable}
         phaseChanged={phaseChanged}
         key={desktop.preview.previewId}
         task={task}

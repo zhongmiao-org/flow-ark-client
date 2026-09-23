@@ -1516,6 +1516,24 @@ export default function AITaskWorkspace(props: Props) {
         />
       ) : page === 'target' && detail ? (
         <TaskWebTargetPage
+          adoptionUnavailable={
+            detail.flow ||
+            detail.proposal ||
+            detail.task.webTarget ||
+            detail.task.outputTarget ||
+            detail.task.toolTargets?.length
+              ? '此任务已有流程、提案或其他操作对象。请新建应用任务后保存，当前流程不会被替换。'
+              : undefined
+          }
+          adopted={(next) => {
+            epoch.current++;
+            accept(next);
+            setReviewed(false);
+            setView('list');
+            setPage('review');
+            props.showBrowser(false);
+            void props.changed();
+          }}
           phaseChanged={setDesktopPhase}
           key={targetEntry?.key}
           initialTab={targetEntry?.tab}
@@ -2105,7 +2123,9 @@ export default function AITaskWorkspace(props: Props) {
                               >
                                 {detail.task.toolTargets?.length ||
                                 detail.task.toolsRequirePlan ||
-                                flatten(flow.steps).some((step) => step.type === 'mcp')
+                                flatten(flow.steps).some((step) =>
+                                  ['mcp', 'desktop'].includes(step.type),
+                                )
                                   ? '查看试运行前检查'
                                   : '确认方案，去试运行'}
                               </button>
@@ -2216,6 +2236,11 @@ export default function AITaskWorkspace(props: Props) {
                               />
                             )}
                           </div>
+                          {flatten(flow.steps).some((step) => step.type === 'desktop') && (
+                            <p className="ai-task-note">
+                              应用方案已保存，文档尚未修改。可继续核对步骤；单次授权与实际写入回读尚未开放。
+                            </p>
+                          )}
                           {flatten(flow.steps).some((step) => step.type === 'mcp') && (
                             <p className="ai-task-note">
                               可进入检查页核对工具和参数。真实调用尚未开放，检查不会执行工具。

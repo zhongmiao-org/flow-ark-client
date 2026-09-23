@@ -17,6 +17,7 @@ export function validateObject<T>(name: string, value: unknown): T {
   return value as T;
 }
 export const capabilities = [
+  'desktop-selection-v1',
   'mcp-tool-v1',
   'value',
   'assert',
@@ -52,6 +53,12 @@ export function validateFlow(value: unknown): Flow {
     for (const n of steps) {
       if (++count > 1000 || all.has(n.id)) throw new Error('节点数量过多或 ID 重复：' + n.id);
       all.add(n.id);
+      if (n.type === 'desktop') {
+        if (!flow.requiredCapabilities.includes('desktop-selection-v1'))
+          throw new Error('应用选区步骤需要声明 desktop-selection-v1 能力');
+        if (!n.text.trim() || n.text.length > 20000)
+          throw new Error('替换文字必须为 1 至 20000 个 UTF-16 单元的非空纯文本');
+      }
       if (n.type === 'mcp') {
         if (!flow.requiredCapabilities.includes('mcp-tool-v1'))
           throw new Error('工具步骤需要声明 mcp-tool-v1 能力');

@@ -1,3 +1,4 @@
+import DesktopStepDetails from './DesktopStepDetails';
 import EditorLeaveDialog from './EditorLeaveDialog';
 import EditorMorePage from './EditorMorePage';
 import ExportReviewDialog, { captureDraftExport, type ExportSource } from './ExportReviewDialog';
@@ -259,7 +260,8 @@ export default function App() {
   const edit = history.present?.record ?? null,
     selected = history.present?.selected ?? '';
   const editorBrowser = section === 'editor' && browserOpen;
-  const draftHasTools = !!edit && flatten(edit.flow.steps).some((step) => step.type === 'mcp');
+  const draftHasTools =
+    !!edit && flatten(edit.flow.steps).some((step) => ['mcp', 'desktop'].includes(step.type));
   const compactDrawer =
     editorBrowser && compactEditor && ['actions', 'node', 'params'].includes(editorPanel);
   const inputGroup = useRef<string | undefined>(undefined);
@@ -1624,7 +1626,7 @@ export default function App() {
                 ))}
               {draftHasTools && (
                 <p className="note" role="status">
-                  工具方案可保存与编辑，实际调用尚未接入，暂不能运行或逐步调试。
+                  工具或应用选区方案可保存，实际调用尚未接入，暂不能运行或逐步调试。
                 </p>
               )}
               <Editor
@@ -2149,6 +2151,9 @@ function Editor({
             ...r.flow.requiredCapabilities,
             ...(mapped ? ['excel-mapping-v1'] : []),
             ...(flatten(steps).some((node) => node.type === 'mcp') ? ['mcp-tool-v1'] : []),
+            ...(flatten(steps).some((node) => node.type === 'desktop')
+              ? ['desktop-selection-v1']
+              : []),
             ...(createsText ? ['file-create-v1'] : []),
             ...(numbersText ? ['file-create-numbered-v1'] : []),
           ]),
@@ -2484,6 +2489,9 @@ function Editor({
                           choices={choices}
                           change={updateNode}
                         />
+                      )}
+                      {selectedNode.type === 'desktop' && (
+                        <DesktopStepDetails node={selectedNode} />
                       )}
                       <ResourceNodeConfiguration
                         key={selectedNode.id + ':resource:' + revision}

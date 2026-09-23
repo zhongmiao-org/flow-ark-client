@@ -26,7 +26,10 @@ export default function TaskRunTarget({
     flow && node ? taskStepValue(input, flow, node.id) : '来源不可确定';
   let note = '以下是本次运行的固定配置，不表示当前权限或外部结果已核对。';
   if (node) {
-    if (node.type === 'browser') {
+    if (node.type === 'desktop') {
+      facts.push(['应用目标', node.target], ['操作', '替换原选区并回读']);
+      note = '逻辑目标不是原生窗口授权。此处只展示固定配置，实际修改能力尚未开放。';
+    } else if (node.type === 'browser') {
       const browser = current?.browser;
       const product = {
         embedded: '内置浏览器',

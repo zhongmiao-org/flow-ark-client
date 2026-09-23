@@ -101,6 +101,8 @@ export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext
     return `${value(node.actual)} ${operators[node.operator]}${node.operator === 'exists' ? '' : ' ' + value(node.expected)}`;
   };
   switch (step.type) {
+    case 'desktop':
+      return `替换已核对的应用选区 · ${step.text.length} 个字符 · 写后按范围回读 · 尚未开放执行`;
     case 'value':
       return `输出数据：${value(step.value)}`;
     case 'assert':

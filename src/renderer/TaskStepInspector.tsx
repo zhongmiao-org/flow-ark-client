@@ -4,6 +4,7 @@ import { flatten } from './flow-editing';
 import { flowOutline } from './flow-outline';
 import { kinds } from './node-kinds';
 import McpNodeConfiguration from './McpNodeConfiguration';
+import DesktopStepDetails from './DesktopStepDetails';
 import {
   taskStepSummary,
   taskStepTitle,
@@ -173,6 +174,7 @@ export default function TaskStepInspector({
           {step.type === 'mcp' && (
             <McpNodeConfiguration node={step} targets={context.toolTargets} />
           )}
+          {step.type === 'desktop' && <DesktopStepDetails node={step} />}
           {step.type === 'condition' && (
             <>
               {branch('条件成立', step.then)}

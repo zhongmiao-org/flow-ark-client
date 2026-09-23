@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.13.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.14.0/p1.schema.json",
   "title": "FlowArk P1",
   "$defs": {
     "Json": {
@@ -1034,6 +1034,51 @@
             "target",
             "tool",
             "arguments"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "type": {
+              "const": "desktop"
+            },
+            "version": {
+              "const": 1
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 100000
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 60000
+            },
+            "target": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "operation": {
+              "const": "replace-selection"
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20000
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "version",
+            "target",
+            "operation",
+            "text"
           ],
           "additionalProperties": false
         }

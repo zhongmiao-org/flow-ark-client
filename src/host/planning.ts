@@ -1,6 +1,6 @@
 import { Store } from './store';
 import { capabilities, validateFlow, validateObject } from '../core/validate';
-import { canonical, now, redactedErrorText, uid } from '../shared/utils';
+import { canonical, digest, now, redactedErrorText, uid } from '../shared/utils';
 import {
   taskMethods,
   type PlanningInput,
@@ -25,6 +25,7 @@ import { taskPlanningContext } from '../shared/planning-context';
 import type { TaskMcpTargets } from './task-mcp-targets';
 import { assertMcpPlan } from '../shared/task-mcp-targets';
 import type { TaskAttachments } from './task-attachments';
+import type { DesktopPlanResponse } from '../shared/desktop-planning';
 
 type SavedTask = PlanningTask & {
   proposal?: PlanningProposal;
@@ -110,6 +111,72 @@ export class Planning {
       resources: result?.kind === 'plan' && result.flow ? planningResources(result.flow) : [],
       canUndo: !!undo && undo.afterHash === flowHash(flow),
     };
+  }
+  adoptDesktop(candidate: DesktopPlanResponse, original: string): TaskDetail {
+    this.deps.assertAvailable();
+    const task = this.task(candidate.id, candidate.revision);
+    if (
+      this.jobs.has(task.id) ||
+      task.status === 'generating' ||
+      task.proposal ||
+      this.flow(task) ||
+      task.webTarget ||
+      task.outputTarget ||
+      task.toolTargets?.length ||
+      candidate.expiresAt <= Date.now() ||
+      candidate.result.kind !== 'proposal' ||
+      candidate.result.replacement === original ||
+      task.revision >= Number.MAX_SAFE_INTEGER - 1
+    )
+      throw new Error('任务已有方案或其他对象，或候选已失效；未覆盖当前任务');
+    const flow = validateFlow({
+      formatVersion: '1.0',
+      id: task.flowId,
+      name: task.description.trim().slice(0, 100) || '整理选中段落',
+      description: task.description,
+      parameters: {},
+      requiredCapabilities: ['desktop-selection-v1'],
+      steps: [
+        {
+          id: 'replace-selection',
+          type: 'desktop',
+          version: 1,
+          name: '替换选中段落并回读',
+          target: 'selected-text',
+          operation: 'replace-selection',
+          text: candidate.result.replacement,
+          timeoutMs: 15000,
+        },
+      ],
+    });
+    this.store.tx(() => {
+      const saved = this.deps.save(flow, { files: {}, credentials: [] });
+      saved.desktopTarget = {
+        version: 1,
+        taskId: task.id,
+        requestId: candidate.requestId,
+        observationId: candidate.observationId,
+        windowId: candidate.windowId,
+        previewId: candidate.previewId,
+        expiresAt: candidate.expiresAt,
+        sourceHash: digest(original),
+        replacementHash: digest(candidate.result.replacement),
+      };
+      this.store.put('flow', saved.id, saved);
+      this.put({
+        ...task,
+        revision: task.revision + 1,
+        status: 'draft',
+        error: undefined,
+        provider: candidate.provider,
+        model: candidate.model,
+        scope: undefined,
+        proposal: undefined,
+        appliedRepair: undefined,
+        undo: { before: null, afterHash: flowHash(saved) },
+      });
+    });
+    return this.detail(task.id);
   }
   private abort(id: string) {
     this.deps.tools?.cancelTask(id);
@@ -462,7 +529,7 @@ export class Planning {
                     : []),
                 ].includes(c),
               )
-            : capabilities.filter((c) => c !== 'mcp-tool-v1'),
+            : capabilities.filter((c) => !['mcp-tool-v1', 'desktop-selection-v1'].includes(c)),
       };
       if (task.outputTarget) {
         if (!this.deps.output) throw new Error('输出校验不可用');

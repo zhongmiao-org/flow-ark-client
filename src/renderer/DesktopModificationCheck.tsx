@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import type { TaskDetail } from '../shared/planning';
 import {
   desktopPlanInspection,
   type DesktopPlanInspection,
@@ -14,21 +15,29 @@ export default function DesktopModificationCheck({
   candidate,
   unchanged,
   back,
+  adopted,
+  adoptionUnavailable,
 }: {
   candidate: DesktopPlanResponse;
   unchanged: boolean;
   back: () => void;
+  adopted: (detail: TaskDetail) => void;
+  adoptionUnavailable?: string;
 }) {
   const titleId = useId();
   const [checking, setChecking] = useState(false);
   const [checked, setChecked] = useState<DesktopPlanInspection>();
   const [error, setError] = useState('');
   const [expired, setExpired] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const savingRef = useRef(false);
   const epoch = useRef(0),
     locked = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const inspect = async () => {
-    if (locked.current || unchanged || candidate.expiresAt <= Date.now()) return;
+    if (locked.current || savingRef.current || unchanged || candidate.expiresAt <= Date.now())
+      return;
     const ticket = ++epoch.current;
     locked.current = true;
     setChecking(true);
@@ -74,6 +83,9 @@ export default function DesktopModificationCheck({
     setChecked(undefined);
     setError('');
     setExpired(false);
+    setSaving(false);
+    setSaveError('');
+    savingRef.current = false;
     locked.current = false;
     void inspect();
     const timer = setTimeout(
@@ -83,6 +95,8 @@ export default function DesktopModificationCheck({
         setChecking(false);
         setChecked(undefined);
         setExpired(true);
+        setSaving(false);
+        savingRef.current = false;
         setError('本次选区检查已到期，请返回窗口重新读取。');
       },
       Math.max(0, candidate.expiresAt - Date.now()),
@@ -101,6 +115,51 @@ export default function DesktopModificationCheck({
     unchanged,
   ]);
   const complete = checked?.replacement === 'available' && checked.readback === 'available';
+  const save = async () => {
+    if (
+      adoptionUnavailable ||
+      !complete ||
+      checking ||
+      savingRef.current ||
+      expired ||
+      candidate.expiresAt <= Date.now()
+    )
+      return;
+    const ticket = ++epoch.current;
+    savingRef.current = true;
+    setSaving(true);
+    setSaveError('');
+    try {
+      const detail: TaskDetail = await window.flowark.request('desktop.plan.adopt', {
+        id: candidate.id,
+        revision: candidate.revision,
+        requestId: candidate.requestId,
+        observationId: candidate.observationId,
+        windowId: candidate.windowId,
+        previewId: candidate.previewId,
+        adopted: true,
+      });
+      if (ticket !== epoch.current) return;
+      if (
+        detail.task.id !== candidate.id ||
+        detail.task.revision !== candidate.revision + 1 ||
+        detail.flow?.desktopTarget?.requestId !== candidate.requestId ||
+        detail.flow.id !== detail.task.flowId
+      )
+        throw new Error('保存返回来源不符');
+      adopted(detail);
+    } catch {
+      if (ticket === epoch.current)
+        setSaveError(
+          '未能确认方案保存结果。请返回任务查看当前草稿，再决定是否重新生成；未自动重试。',
+        );
+    } finally {
+      if (ticket === epoch.current) {
+        savingRef.current = false;
+        setSaving(false);
+      }
+    }
+  };
   return (
     <section className="desktop-modification-check" aria-labelledby={titleId}>
       <div className="desktop-modification-check-title">
@@ -108,7 +167,10 @@ export default function DesktopModificationCheck({
           修改条件
         </h2>
         {!unchanged && (
-          <button disabled={checking || expired || !!error} onClick={() => void inspect()}>
+          <button
+            disabled={checking || saving || expired || !!error}
+            onClick={() => void inspect()}
+          >
             {checking ? '正在检查…' : '重新检查'}
           </button>
         )}
@@ -160,6 +222,32 @@ export default function DesktopModificationCheck({
           <p className="ai-task-note ai-task-failure">{error}</p>
           <button onClick={back}>返回窗口重新读取</button>
         </div>
+      )}
+      {!unchanged && (
+        <>
+          <p>保存这份方案后，可在任务清单和流程图中继续核对；保存不会修改文档。</p>
+          {adoptionUnavailable && <p role="status">{adoptionUnavailable}</p>}
+          <button
+            className="primary"
+            disabled={
+              !!adoptionUnavailable ||
+              !complete ||
+              checking ||
+              saving ||
+              expired ||
+              !!error ||
+              !!saveError
+            }
+            onClick={() => void save()}
+          >
+            {saving ? '正在保存方案…' : '保存方案，继续核对'}
+          </button>
+          {saveError && (
+            <p className="ai-task-note ai-task-failure" role="alert">
+              {saveError}
+            </p>
+          )}
+        </>
       )}
       <h2>本次授权</h2>
       <label className="ai-task-checkbox">

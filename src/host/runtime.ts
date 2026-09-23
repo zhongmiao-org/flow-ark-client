@@ -278,6 +278,7 @@ export class Runtime {
       captureConfiguration: (provider) => this.aiSettings.capture([provider]),
       selection: (reference) => this.system('desktop.selection.resolve', reference),
       inspect: (reference) => this.system('desktop.selection.inspect', reference),
+      adopt: (candidate, original) => this.planning.adoptDesktop(candidate, original),
     });
     this.scripts = new ScriptProcesses({
       store: this.store,
@@ -445,6 +446,8 @@ export class Runtime {
     };
     this.toolTargets.assertExecutable(record.id);
     const flow = validateFlow(record.flow);
+    if (walk(flow.steps).some((node) => node.type === 'desktop'))
+      throw new Error('应用方案已保存；单次修改授权与写后回读尚未接入，暂不能执行此流程');
     if (walk(flow.steps).some((node) => node.type === 'mcp'))
       throw new Error('工具方案已保存；工具调用尚未接入，暂不能执行此流程');
     const localIds = record.bindings.credentials.filter((id) => id.startsWith('local-'));

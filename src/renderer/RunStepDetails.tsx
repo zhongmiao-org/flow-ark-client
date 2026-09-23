@@ -37,6 +37,12 @@ const operations: Record<string, string> = {
 
 function fields(node: Step): [string, string][] {
   switch (node.type) {
+    case 'desktop':
+      return [
+        ['应用目标', node.target],
+        ['动作', '替换选区并回读'],
+        ['替换文字', configured(node.text)],
+      ];
     case 'mcp':
       return [
         ['工具对象', node.target],

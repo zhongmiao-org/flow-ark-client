@@ -5,10 +5,13 @@ import { desktopPlanResponse, type DesktopPlanResponse } from '../shared/desktop
 import { aiModel, type AIConfigurationState, type AIProviderId } from '../shared/ai-settings';
 import './desktop-task-plan.css';
 import DesktopModificationCheck from './DesktopModificationCheck';
+import type { TaskDetail } from '../shared/planning';
 
 type Ready = Extract<DesktopSelectionPreview, { status: 'ready' }>;
 const api = (method: string, args: unknown) => window.flowark.request(method, args);
 export default function DesktopTaskPlan({
+  adopted,
+  adoptionUnavailable,
   phaseChanged,
   task,
   selection,
@@ -16,6 +19,8 @@ export default function DesktopTaskPlan({
   back,
   editDescription,
 }: {
+  adopted: (detail: TaskDetail) => void;
+  adoptionUnavailable?: string;
   phaseChanged: (phase: 'plan' | 'changes') => void;
   task: PlanningTask;
   selection: Ready;
@@ -233,7 +238,13 @@ export default function DesktopTaskPlan({
                   </ul>
                 </div>
               )}
-              <DesktopModificationCheck candidate={result!} unchanged={unchanged} back={back} />
+              <DesktopModificationCheck
+                candidate={result!}
+                unchanged={unchanged}
+                back={back}
+                adopted={adopted}
+                adoptionUnavailable={adoptionUnavailable}
+              />
               <button onClick={() => setView('plan')}>取消，回到方案</button>
             </>
           ) : (

@@ -28,6 +28,7 @@ export const desktopPlanInspection = desktopSelectionInspection.extend({
 });
 export type DesktopPlanInspection = z.infer<typeof desktopPlanInspection>;
 export const desktopPlanMethods = {
+  'desktop.plan.adopt': desktopPlanInspect.extend({ adopted: z.literal(true) }),
   'desktop.plan.inspect': desktopPlanInspect,
   'desktop.plan.generate': desktopPlanGenerate,
   'desktop.plan.cancel': z.object({ id, requestId: z.string().uuid() }).strict(),
@@ -52,3 +53,14 @@ export const desktopPlanResponse = selectionReference.extend({
 });
 export type DesktopPlanGenerate = z.infer<typeof desktopPlanGenerate>;
 export type DesktopPlanResponse = z.infer<typeof desktopPlanResponse>;
+export type DesktopTaskTarget = {
+  version: 1;
+  taskId: string;
+  requestId: string;
+  observationId: string;
+  windowId: string;
+  previewId: string;
+  expiresAt: number;
+  sourceHash: string;
+  replacementHash: string;
+};
