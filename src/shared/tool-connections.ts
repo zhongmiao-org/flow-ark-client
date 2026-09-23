@@ -36,7 +36,15 @@ export const connectionConfig = z
                 return false;
               }
             }, '请使用 HTTPS 或本机回环 HTTP 地址，不在地址中填写凭据、查询串或片段'),
-          auth: z.enum(['none', 'bearer']),
+          auth: z.enum(['none', 'bearer', 'oauth']),
+          oauth: z
+            .object({
+              issuer: text(2048),
+              clientId: text(500),
+              callbackPort: z.number().int().min(1024).max(65535),
+            })
+            .strict()
+            .optional(),
         })
         .strict(),
       z
@@ -72,6 +80,23 @@ export const connectionMethods = {
       reviewedSource: z.literal(true),
     })
     .strict(),
+  'tool.connection.oauth.authorize': z
+    .object({
+      requestId: id,
+      inspectionToken: id,
+      config: connectionConfig,
+      reviewedAuthorization: z.literal(true),
+      connectionId: id.optional(),
+      revision: revision.optional(),
+    })
+    .strict()
+    .refine((v) => !!v.connectionId === (v.revision !== undefined))
+    .refine(
+      (v) =>
+        v.config.transport.type === 'http' &&
+        v.config.transport.auth === 'oauth' &&
+        !!v.config.transport.oauth,
+    ),
   'tool.connection.discover': z
     .object({
       requestId: id,
@@ -119,7 +144,15 @@ export type ConnectionDiscovery = {
   capabilityDigest: string;
   testedAt: string;
 };
+export type OAuthSummary = {
+  issuer: string;
+  clientId: string;
+  resource: string;
+  scopes: string[];
+  expiresAt?: number;
+};
 export type ToolConnection = ConnectionDiscovery & {
+  oauth?: OAuthSummary;
   id: string;
   revision: number;
   config: ConnectionConfig;
@@ -129,6 +162,7 @@ export type ToolConnection = ConnectionDiscovery & {
   status: 'verified' | 'unverified' | 'disconnected' | 'failed';
 };
 export type ConnectionCandidate = ConnectionDiscovery & {
+  oauth?: OAuthSummary;
   token: string;
   requestId: string;
   config: ConnectionConfig;
@@ -138,6 +172,8 @@ export type ConnectionCandidate = ConnectionDiscovery & {
   changed: boolean;
 };
 export type OAuthInspection = {
+  inspectionToken?: string;
+  protocolVersion: string;
   version: 1;
   url: string;
   resource: string;
@@ -154,5 +190,7 @@ export type OAuthInspection = {
     tokenEndpoint?: string;
     registrationEndpoint?: string;
     clientIdMetadataSupported?: boolean;
+    publicClientSupported?: boolean;
+    issuerParameterSupported?: boolean;
   }[];
 };

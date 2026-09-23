@@ -103,9 +103,9 @@ export async function withMcpSession<T>(
   perform: (client: Client, discovery: ConnectionDiscovery, signal: AbortSignal) => Promise<T>,
 ): Promise<T> {
   connectionConfig.parse(config);
-  const auth = config.transport.type === 'http' && config.transport.auth === 'bearer';
+  const auth = config.transport.type === 'http' && config.transport.auth !== 'none';
   if (auth && (!token || !/^[\x21-\x7e]{1,8192}$/.test(token)))
-    throw new Error('请提供 Bearer Token');
+    throw new Error('请提供有效凭据或重新登录');
   if (!auth && token) throw new Error('此连接不接受 Bearer Token');
   const abort = new AbortController();
   const combined = AbortSignal.any([signal, abort.signal]);

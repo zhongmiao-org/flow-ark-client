@@ -1,10 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
 import type { OAuthInspection } from '../shared/tool-connections';
 
-export default function ToolOAuthInspection({ result }: { result: OAuthInspection }) {
+export default function ToolOAuthInspection({
+  result,
+  authorize,
+  disabled,
+  busy,
+  previous,
+  cancel,
+}: {
+  result: OAuthInspection;
+  authorize: (issuer: string, clientId: string, port: number) => Promise<void>;
+  disabled: boolean;
+  busy: boolean;
+  previous?: { issuer: string; clientId: string; callbackPort: number };
+  cancel: () => void;
+}) {
   const heading = useRef<HTMLHeadingElement>(null);
   const [clock, setClock] = useState(Date.now());
+  const [issuer, setIssuer] = useState('');
+  const [clientId, setClientId] = useState('');
+  const [port, setPort] = useState(String(previous?.callbackPort ?? 48185));
+  const [reviewed, setReviewed] = useState(false);
   useEffect(() => {
+    setIssuer('');
+    setClientId('');
+    setReviewed(false);
+    setClock(Date.now());
     heading.current?.focus();
     const timer = setInterval(() => setClock(Date.now()), 1000);
     return () => clearInterval(timer);
@@ -16,8 +38,11 @@ export default function ToolOAuthInspection({ result }: { result: OAuthInspectio
         认证站点与权限范围
       </h2>
       <p className="ai-task-note tool-warning" role="status">
-        {expired ? '本次检查已过期，请重新检查。' : '仅完成配置读取，尚未登录或保存连接。'}
-        登录授权与令牌接入尚未完成，本次结果不能用于执行任务。
+        {busy
+          ? '正在等待浏览器登录返回或读取工具清单，请完成登录后回到这里。最多等待 10 分钟，可取消登录。'
+          : expired
+            ? '本次检查已过期，请重新检查。'
+            : '仅完成配置读取。选择认证站点并登录后，还需核对工具能力才能保存。'}
       </p>
       <dl>
         <div>
@@ -67,11 +92,32 @@ export default function ToolOAuthInspection({ result }: { result: OAuthInspectio
           <h4>{server.issuer}</h4>
           <p>
             {server.status === 'ready'
-              ? '声明满足授权码与 S256 要求 · 待登录接入'
+              ? '声明满足授权码与 S256 要求'
               : server.status === 'unsupported'
                 ? '声明不满足当前授权要求'
                 : '检查未通过'}
           </p>
+          {server.status === 'ready' &&
+            (server.publicClientSupported ? (
+              <label className="ai-task-checkbox">
+                <input
+                  type="radio"
+                  name="oauth-issuer"
+                  checked={issuer === server.issuer}
+                  disabled={disabled || expired}
+                  onChange={() => {
+                    setIssuer(server.issuer);
+                    setClientId(previous?.issuer === server.issuer ? previous.clientId : '');
+                    setReviewed(false);
+                  }}
+                />
+                选择此认证站点登录
+              </label>
+            ) : (
+              <p>
+                此站点未声明支持公开客户端。当前无法使用其客户端秘密或动态注册，请向提供者核对。
+              </p>
+            ))}
           {!!server.issues.length && (
             <ul>
               {server.issues.map((issue) => (
@@ -113,8 +159,73 @@ export default function ToolOAuthInspection({ result }: { result: OAuthInspectio
         </ul>
       </details>
       <p>
-        以上信息由服务提供，不证明账号、工作区或发布者身份。本次没有发送凭据、注册客户端或调用工具。
+        以上信息由服务提供，不证明账号、工作区或发布者身份。配置检查不发送凭据、注册客户端或调用工具。
       </p>
+      {issuer && (
+        <fieldset disabled={disabled || expired} className="tool-oauth-login">
+          <legend>登录前核对</legend>
+          <label className="tool-field">
+            公开客户端 ID
+            <input
+              value={clientId}
+              maxLength={500}
+              onChange={(e) => {
+                setClientId(e.target.value);
+                setReviewed(false);
+              }}
+              placeholder="由此服务提供者分配，无需填写客户端秘密"
+            />
+          </label>
+          <label className="tool-field">
+            已登记的回调端口
+            <input
+              type="number"
+              min={1024}
+              max={65535}
+              step={1}
+              value={port}
+              onChange={(e) => {
+                setPort(e.target.value);
+                setReviewed(false);
+              }}
+            />
+          </label>
+          <p>
+            回调地址：<code>http://127.0.0.1:{port || '端口'}/oauth/callback</code>
+          </p>
+          <p>
+            请核对该地址已在此客户端登记。FlowArk
+            将打开系统浏览器，向所选认证站点请求上方展示的全部范围；登录后仅发现工具，不执行工具。
+          </p>
+          <label className="ai-task-checkbox">
+            <input
+              type="checkbox"
+              checked={reviewed}
+              onChange={(e) => setReviewed(e.target.checked)}
+            />
+            我已核对认证站点、客户端、回调地址和请求范围，同意打开登录网页
+          </label>
+          <button
+            type="button"
+            className="primary"
+            disabled={
+              !reviewed ||
+              !clientId.trim() ||
+              !Number.isInteger(Number(port)) ||
+              Number(port) < 1024 ||
+              Number(port) > 65535
+            }
+            onClick={() => void authorize(issuer, clientId.trim(), Number(port))}
+          >
+            登录并核对能力
+          </button>
+        </fieldset>
+      )}
+      {busy && (
+        <button type="button" onClick={cancel}>
+          取消本次登录
+        </button>
+      )}
     </section>
   );
 }

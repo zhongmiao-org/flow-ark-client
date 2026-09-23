@@ -318,3 +318,21 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.tool-oauth-login {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+}
+.tool-oauth-login legend {
+  padding: 0 8px;
+  font-weight: 600;
+}
+.tool-oauth-login p,
+.tool-oauth-login code {
+  overflow-wrap: anywhere;
+}

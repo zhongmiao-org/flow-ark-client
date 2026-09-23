@@ -1,3 +1,4 @@
+import { oauthGrant, toolSecretValues } from '../shared/mcp-oauth-grant';
 import {
   app,
   BrowserWindow,
@@ -324,7 +325,11 @@ app
           });
           return true;
         }
-        return await rpc.call(method, args);
+        return await rpc.call(
+          method,
+          args,
+          method === 'tool.connection.oauth.authorize' ? 615000 : 65000,
+        );
       } catch (error) {
         throw new Error(publicError(error, pending));
       }
@@ -441,6 +446,34 @@ app
                 outputDialogPending = false;
               }
             }
+            if (method === 'tool.oauth.open') {
+              if (
+                quitting ||
+                hostStopped ||
+                typeof args.url !== 'string' ||
+                args.url.length > 16384
+              )
+                throw new Error('登录网页当前无法打开');
+              const url = new URL(args.url);
+              if (
+                url.username ||
+                url.password ||
+                url.hash ||
+                !(
+                  url.protocol === 'https:' ||
+                  (url.protocol === 'http:' && ['127.0.0.1', '[::1]'].includes(url.hostname))
+                ) ||
+                url.searchParams.get('response_type') !== 'code' ||
+                url.searchParams.get('code_challenge_method') !== 'S256'
+              )
+                throw new Error('登录网页地址无效');
+              try {
+                await shell.openExternal(url.href);
+              } catch {
+                throw new Error('系统未能确认登录网页已打开，请取消后重新检查');
+              }
+              return true;
+            }
             if (method === 'credentials.list') return vault.list();
             if (
               [
@@ -494,14 +527,21 @@ app
               if (!/^mcp-[a-zA-Z0-9_-]{1,80}$/.test(args.id)) throw new Error('工具凭据 ID 无效');
               if (method === 'tool.credentials.get') {
                 const value = await vault.get(args.id);
-                knownSecrets.add(value);
+                for (const secret of toolSecretValues(value)) knownSecrets.add(secret);
                 return value;
               }
               if (method === 'tool.credentials.remove') await vault.removeToolCredential(args.id);
               else {
-                if (typeof args.value !== 'string' || !/^[\x21-\x7e]{1,8192}$/.test(args.value))
+                if (typeof args.value !== 'string' || args.value.length > 65536)
                   throw new Error('工具凭据无效');
-                knownSecrets.add(args.value);
+                if (!/^[\x21-\x7e]{1,8192}$/.test(args.value)) {
+                  try {
+                    oauthGrant.parse(JSON.parse(args.value));
+                  } catch {
+                    throw new Error('工具凭据包无效');
+                  }
+                }
+                for (const secret of toolSecretValues(args.value)) knownSecrets.add(secret);
                 await vault.set(args.id, args.value);
               }
               return true;

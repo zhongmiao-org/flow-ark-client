@@ -14,6 +14,7 @@ const allowed = new Set([
   'desktop.accessibility.openSettings',
   'tool.connection.list',
   'tool.connection.oauth.inspect',
+  'tool.connection.oauth.authorize',
   'tool.connection.discover',
   'tool.connection.cancel',
   'tool.connection.save',

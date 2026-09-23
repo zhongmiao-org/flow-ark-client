@@ -133,9 +133,9 @@ export default function ToolConnectionsPage({
   const [oauthInspection, setOAuthInspection] = useState<OAuthInspection>();
   const [reviewBaseline, setReviewBaseline] = useState<ToolConnection>();
   const [dirty, setDirty] = useState(false);
-  const [busy, setBusy] = useState<'discover' | 'save' | 'manage' | 'inspect' | 'open-task' | null>(
-    null,
-  );
+  const [busy, setBusy] = useState<
+    'discover' | 'authorize' | 'save' | 'manage' | 'inspect' | 'open-task' | null
+  >(null);
   const [pendingLeave, setPendingLeave] = useState<{ next: () => void }>();
   const [confirm, setConfirm] = useState<'disconnect' | 'remove'>();
   const [clock, setClock] = useState(Date.now());
@@ -156,6 +156,13 @@ export default function ToolConnectionsPage({
     epoch = useRef(0),
     request = useRef<string | undefined>(undefined);
   const selected = connections.find((connection) => connection.id === selectedId);
+  const reusableOAuth =
+    form.type === 'http' &&
+    form.auth === 'oauth' &&
+    selected?.config.transport.type === 'http' &&
+    selected.config.transport.auth === 'oauth' &&
+    selected.config.transport.url === form.url.trim() &&
+    selected.config.protocolVersion === form.protocol;
   const refresh = async () => {
     const records = await api('tool.connection.list');
     setConnections(records);
@@ -206,7 +213,7 @@ export default function ToolConnectionsPage({
     setSecret('');
   };
   const go = (next: () => void) => {
-    if (busy && busy !== 'discover') {
+    if (busy && busy !== 'discover' && busy !== 'authorize') {
       setError('请等待当前连接操作完成');
       return;
     }
@@ -248,7 +255,7 @@ export default function ToolConnectionsPage({
     setDirty(true);
     setSourceReviewed(false);
   };
-  const discover = async () => {
+  const discover = async (reuseOAuth = false) => {
     if (locked.current) return;
     setError('');
     let config: ConnectionConfig;
@@ -271,7 +278,10 @@ export default function ToolConnectionsPage({
             ? {
                 type: 'http',
                 url: form.url.trim(),
-                auth: form.auth === 'oauth' ? 'none' : form.auth,
+                auth: form.auth === 'oauth' ? (reuseOAuth ? 'oauth' : 'none') : form.auth,
+                ...(reuseOAuth && selected?.config.transport.type === 'http'
+                  ? { oauth: selected.config.transport.oauth }
+                  : {}),
               }
             : { type: 'stdio', command: form.command, args },
       });
@@ -295,7 +305,7 @@ export default function ToolConnectionsPage({
     const bearerToken = secret;
     setSecret('');
     try {
-      if (form.type === 'http' && form.auth === 'oauth') {
+      if (form.type === 'http' && form.auth === 'oauth' && !reuseOAuth) {
         const result: OAuthInspection = await api('tool.connection.oauth.inspect', {
           requestId,
           url: form.url.trim(),
@@ -323,6 +333,53 @@ export default function ToolConnectionsPage({
     } catch (e) {
       if (ticket === epoch.current) {
         setError(connectionError(e));
+        await refresh().catch(() => {});
+      }
+    } finally {
+      if (ticket === epoch.current) {
+        locked.current = false;
+        setBusy(null);
+      }
+    }
+  };
+  const authorize = async (issuer: string, clientId: string, callbackPort: number) => {
+    if (locked.current || !oauthInspection?.inspectionToken || !sourceReviewed) return;
+    locked.current = true;
+    setBusy('authorize');
+    setError('');
+    const ticket = ++epoch.current,
+      requestId = crypto.randomUUID();
+    request.current = requestId;
+    setReviewBaseline(selected ? structuredClone(selected) : undefined);
+    try {
+      const next: ConnectionCandidate = await api('tool.connection.oauth.authorize', {
+        requestId,
+        inspectionToken: oauthInspection.inspectionToken,
+        reviewedAuthorization: true,
+        config: {
+          version: 1,
+          displayName: form.name,
+          source: form.source,
+          protocolVersion: form.protocol,
+          transport: {
+            type: 'http',
+            url: form.url.trim(),
+            auth: 'oauth',
+            oauth: { issuer, clientId, callbackPort },
+          },
+        },
+        ...(selected ? { connectionId: selected.id, revision: selected.revision } : {}),
+      });
+      if (ticket !== epoch.current) return;
+      setCandidate(next);
+      setCapabilitiesReviewed(false);
+      setClock(Date.now());
+      setOAuthInspection(undefined);
+      move('review');
+    } catch (error) {
+      if (ticket === epoch.current) {
+        setError(connectionError(error));
+        setOAuthInspection(undefined);
         await refresh().catch(() => {});
       }
     } finally {
@@ -446,7 +503,11 @@ export default function ToolConnectionsPage({
   return (
     <div className="tools-host" hidden={!active}>
       <header className="topbar">
-        <button className="context-back" onClick={back} disabled={!!busy && busy !== 'discover'}>
+        <button
+          className="context-back"
+          onClick={back}
+          disabled={!!busy && busy !== 'discover' && busy !== 'authorize'}
+        >
           ← 返回{backLabel}
         </button>
         <nav className="breadcrumbs" aria-label="当前位置">
@@ -623,7 +684,7 @@ export default function ToolConnectionsPage({
                     >
                       <option value="none">无需凭据</option>
                       <option value="bearer">Bearer Token</option>
-                      <option value="oauth">OAuth · 授权前检查</option>
+                      <option value="oauth">OAuth · 浏览器登录</option>
                     </select>
                   </label>
                   {form.auth === 'bearer' && (
@@ -692,10 +753,19 @@ export default function ToolConnectionsPage({
               </label>
               <p>
                 {form.type === 'http' && form.auth === 'oauth'
-                  ? '先读取认证站点和范围。本阶段尚未接入登录授权，不会保存 OAuth 连接。'
+                  ? '先读取认证站点与范围，再使用服务分配的公开客户端 ID 登录。能力核对后才保存连接。'
                   : '先发现能力并测试，确认工具列表、身份和范围后再保存。'}
               </p>
               <div className="ai-task-actions">
+                {reusableOAuth && (
+                  <button
+                    type="button"
+                    disabled={!!busy || !sourceReviewed}
+                    onClick={() => void discover(true)}
+                  >
+                    使用已保存登录检查能力
+                  </button>
+                )}
                 <button className="primary" type="submit" disabled={!!busy || !sourceReviewed}>
                   {form.type === 'http' && form.auth === 'oauth'
                     ? busy === 'discover'
@@ -707,14 +777,14 @@ export default function ToolConnectionsPage({
                 </button>
                 <button
                   type="button"
-                  disabled={!!busy && busy !== 'discover'}
+                  disabled={!!busy && busy !== 'discover' && busy !== 'authorize'}
                   onClick={
-                    busy === 'discover'
+                    busy === 'discover' || busy === 'authorize'
                       ? () => void cancel().catch((e) => setError(connectionError(e)))
                       : catalog
                   }
                 >
-                  {busy === 'discover' ? '取消检查' : '取消'}
+                  {busy === 'authorize' ? '取消登录' : busy === 'discover' ? '取消检查' : '取消'}
                 </button>
               </div>
             </section>
@@ -749,15 +819,32 @@ export default function ToolConnectionsPage({
                   onChange={(e) => setSourceReviewed(e.target.checked)}
                 />
                 {form.type === 'http' && form.auth === 'oauth'
-                  ? '我已核对来源，同意读取此服务及其声明的认证站点配置'
+                  ? reusableOAuth
+                    ? '我已核对来源，同意检查认证配置或使用已保存登录读取能力'
+                    : '我已核对来源，同意读取此服务及其声明的认证站点配置'
                   : '我已核对来源、地址或程序及其运行方式'}
               </label>
               <p className="ai-task-note">
                 {form.type === 'http' && form.auth === 'oauth'
-                  ? '检查只读取公开的认证配置，不发送凭据、不打开登录网页、不注册客户端或调用工具。'
+                  ? reusableOAuth
+                    ? '认证配置检查不发送凭据；复用已保存登录会向此服务发送访问令牌，必要时向原认证站点刷新，不调用工具。'
+                    : '检查只读取公开的认证配置，不发送凭据、不打开登录网页、不注册客户端或调用工具。'
                   : '发现仅请求服务身份和工具清单，不调用工具。服务说明、提示词和网页内容不能替代用户授权。'}
               </p>
-              {oauthInspection && <ToolOAuthInspection result={oauthInspection} />}
+              {oauthInspection && (
+                <ToolOAuthInspection
+                  cancel={() => void cancel().catch((e) => setError(connectionError(e)))}
+                  result={oauthInspection}
+                  busy={busy === 'authorize'}
+                  disabled={!!busy || !sourceReviewed}
+                  authorize={authorize}
+                  previous={
+                    selected?.config.transport.type === 'http'
+                      ? selected.config.transport.oauth
+                      : undefined
+                  }
+                />
+              )}
               {selected && (
                 <p>
                   已有连接：{selected.config.displayName}
@@ -798,10 +885,33 @@ export default function ToolConnectionsPage({
                   {content.config.transport.type === 'http' &&
                   content.config.transport.auth === 'bearer'
                     ? 'Bearer Token'
-                    : '未使用认证凭据'}
+                    : content.config.transport.type === 'http' &&
+                        content.config.transport.auth === 'oauth'
+                      ? 'OAuth 浏览器登录'
+                      : '未使用认证凭据'}
                   <br />
                   最近发现：{when(content.testedAt)}
                 </p>
+                {content.oauth && (
+                  <div className="tool-oauth-inspection">
+                    <p>
+                      认证站点：{content.oauth.issuer}
+                      <br />
+                      目标资源：{content.oauth.resource}
+                      <br />
+                      客户端 ID：{content.oauth.clientId}
+                    </p>
+                    <p>
+                      授予范围：{content.oauth.scopes.join(' · ') || '服务未声明具体范围'}
+                      <br />
+                      令牌到期：
+                      {content.oauth.expiresAt
+                        ? when(new Date(content.oauth.expiresAt).toISOString())
+                        : '服务未提供，以后续响应为准'}
+                    </p>
+                    <p>登录结果不证明服务内账号或工作区身份，使用前仍需核对。</p>
+                  </div>
+                )}
               </article>
               {candidate?.changed && view === 'review' && (
                 <p className="ai-task-note tool-warning">
@@ -867,7 +977,7 @@ export default function ToolConnectionsPage({
                   <p role="status">
                     {clock >= candidate.expiresAt
                       ? '检查已过期，请返回设置重新发现。'
-                      : '检查结果保留五分钟；保存不会执行任何工具。'}
+                      : `检查结果有效至 ${when(new Date(candidate!.expiresAt).toISOString())}；保存不会执行任何工具。`}
                   </p>
                   <button
                     className="primary"
@@ -938,7 +1048,7 @@ export default function ToolConnectionsPage({
               继续编辑
             </button>
             <button
-              disabled={!!busy && busy !== 'discover'}
+              disabled={!!busy && busy !== 'discover' && busy !== 'authorize'}
               onClick={() => {
                 const next = pendingLeave.next;
                 void cancel()

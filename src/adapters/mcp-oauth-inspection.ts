@@ -164,6 +164,10 @@ export async function inspectMcpOAuth(
           tokenEndpoint,
           registrationEndpoint,
           clientIdMetadataSupported: metadata.client_id_metadata_document_supported === true,
+          publicClientSupported:
+            metadata.token_endpoint_auth_methods_supported?.includes('none') === true,
+          issuerParameterSupported:
+            metadata.authorization_response_iss_parameter_supported === true,
         });
       } catch (error) {
         signal.throwIfAborted();
@@ -181,6 +185,7 @@ export async function inspectMcpOAuth(
     signal.throwIfAborted();
     return {
       version: 1,
+      protocolVersion: args.protocolVersion,
       url: args.url,
       resource: resource.resource,
       checkedAt: new Date().toISOString(),

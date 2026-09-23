@@ -8,7 +8,9 @@ import {
 } from '../shared/tool-connections';
 import { discoverMcp, DiscoveryError, McpCleanupError } from '../adapters/mcp-discovery';
 import { callMcp } from '../adapters/mcp-call';
-import { inspectMcpOAuth } from '../adapters/mcp-oauth-inspection';
+import { inspectMcpOAuth, OAuthInspectionError } from '../adapters/mcp-oauth-inspection';
+import { authorizeMcpOAuth, refreshMcpOAuth } from '../adapters/mcp-oauth-authorization';
+import { oauthGrant, oauthSummary } from '../shared/mcp-oauth-grant';
 import type { TaskMcpTarget } from '../shared/task-mcp-targets';
 import type { McpToolResult } from '../shared/mcp-run';
 import { Store } from './store';
@@ -22,6 +24,8 @@ type Saved = ConnectionDiscovery & {
   config: ConnectionConfig;
   credentialRef?: string;
   disconnected?: boolean;
+  oauth?: import('../shared/tool-connections').OAuthSummary;
+  oauthRefreshPending?: boolean;
 };
 type Candidate = ConnectionCandidate & { secret?: string; saving?: boolean };
 type Job = {
@@ -30,6 +34,7 @@ type Job = {
   promise: Promise<ConnectionCandidate | OAuthInspection>;
 };
 export class ToolConnections {
+  private inspections = new Map<string, OAuthInspection>();
   private jobs = new Map<string, Job>();
   private calls = new Map<
     string,
@@ -83,7 +88,7 @@ export class ToolConnections {
           throw new Error('工具能力已变化，请重新核对');
       };
       try {
-        if (record.credentialRef) secret = await this.deps.credentials.get(record.credentialRef);
+        if (record.credentialRef) secret = await this.credential(record, signal);
         current();
         return await callMcp({
           ...input,
@@ -98,7 +103,7 @@ export class ToolConnections {
         });
       } catch (error) {
         if (error instanceof McpCleanupError) this.cleanupFault = true;
-        if (error instanceof DiscoveryError) throw error;
+        if (error instanceof DiscoveryError || error instanceof OAuthInspectionError) throw error;
         throw new Error('工具调用未能取得可确认的回复，请查看本次回执；未自动重试');
       } finally {
         secret = undefined;
@@ -106,6 +111,57 @@ export class ToolConnections {
       }
     });
     return job.promise;
+  }
+  private async credential(record: Saved, signal: AbortSignal): Promise<string> {
+    if (!record.credentialRef) throw new OAuthInspectionError('请重新登录授权');
+    const value = await this.deps.credentials.get(record.credentialRef);
+    if (record.config.transport.type !== 'http' || record.config.transport.auth !== 'oauth')
+      return value;
+    let grant;
+    try {
+      grant = oauthGrant.parse(JSON.parse(value));
+    } catch {
+      throw new OAuthInspectionError('OAuth 凭据无效，请重新授权');
+    }
+    const binding = record.config.transport.oauth;
+    if (
+      record.oauthRefreshPending ||
+      grant.url !== record.config.transport.url ||
+      grant.issuer !== binding?.issuer ||
+      grant.clientId !== binding.clientId
+    )
+      throw new OAuthInspectionError('OAuth 登录需要重新授权，请检查连接配置');
+    if (grant.expiresAt === undefined || grant.expiresAt > this.time() + 30000)
+      return grant.accessToken;
+    if (!grant.refreshToken) throw new OAuthInspectionError('登录已过期，请重新授权');
+    this.record(record.id, record.revision);
+    signal.throwIfAborted();
+    this.store.put('mcp-connection', record.id, { ...record, oauthRefreshPending: true });
+    let nextRef: string | undefined;
+    let committed = false;
+    try {
+      const next = await refreshMcpOAuth(grant, signal);
+      signal.throwIfAborted();
+      this.record(record.id, record.revision);
+      nextRef = 'mcp-' + uid();
+      await this.deps.credentials.set(nextRef, JSON.stringify(next));
+      signal.throwIfAborted();
+      const current = this.record(record.id, record.revision);
+      this.store.put('mcp-connection', record.id, {
+        ...current,
+        credentialRef: nextRef,
+        oauth: oauthSummary(next),
+        oauthRefreshPending: false,
+      });
+      committed = true;
+      await this.deps.credentials.remove(record.credentialRef).catch(() => {});
+      return next.accessToken;
+    } catch {
+      this.states.set(record.id, 'failed');
+      throw new OAuthInspectionError('登录刷新未完成，请重新授权；未自动重试');
+    } finally {
+      if (!committed && nextRef) await this.deps.credentials.remove(nextRef).catch(() => {});
+    }
   }
   private candidates = new Map<string, Candidate>();
   private states = new Map<string, ToolConnection['status']>();
@@ -120,6 +176,7 @@ export class ToolConnections {
         set: (id: string, value: string) => Promise<void>;
         remove: (id: string) => Promise<void>;
       };
+      openOAuth?: (url: string) => Promise<void>;
       discover?: typeof discoverMcp;
       time?: () => number;
     },
@@ -142,7 +199,7 @@ export class ToolConnections {
     return record;
   }
   private publicRecord(record: Saved): ToolConnection {
-    const { credentialRef, disconnected, ...data } = record;
+    const { credentialRef, disconnected, oauthRefreshPending: _, ...data } = record;
     const references = this.store
       .list<PlanningTask>('ai-task')
       .filter((task) => task.toolTargets?.some((target) => target.connectionId === record.id));
@@ -162,7 +219,9 @@ export class ToolConnections {
             flowIds.has(run.flowId) &&
             ['QUEUED', 'RUNNING', 'PAUSED', 'WAITING_INPUT', 'CANCELLING'].includes(run.state),
         ).length,
-      status: this.states.get(record.id) ?? (disconnected ? 'disconnected' : 'unverified'),
+      status: record.oauthRefreshPending
+        ? 'failed'
+        : (this.states.get(record.id) ?? (disconnected ? 'disconnected' : 'unverified')),
     };
   }
   targetSource(id: string, revision: number): ToolConnection {
@@ -198,6 +257,8 @@ export class ToolConnections {
     const args: any = schema.parse(raw);
     for (const [token, candidate] of this.candidates)
       if (candidate.expiresAt <= this.time()) this.candidates.delete(token);
+    for (const [token, inspection] of this.inspections)
+      if (inspection.expiresAt <= this.time()) this.inspections.delete(token);
     if (method === 'tool.connection.list')
       return this.store.list<Saved>('mcp-connection').map((record) => this.publicRecord(record));
     if (method === 'tool.connection.cancel') {
@@ -211,6 +272,7 @@ export class ToolConnections {
     this.available();
     if (method === 'tool.connection.oauth.inspect') {
       if (this.jobs.size) throw new Error('另一个连接仍在检查或关闭，请等待完成');
+      this.inspections.clear();
       const abort = new AbortController();
       const deadline = setTimeout(() => abort.abort(), 30000);
       const job: Job = { abort, promise: undefined! };
@@ -219,12 +281,95 @@ export class ToolConnections {
         .then((result) => {
           this.available();
           abort.signal.throwIfAborted();
-          return result;
+          const inspectionToken = uid();
+          const inspected = { ...result, inspectionToken };
+          this.inspections.set(inspectionToken, inspected);
+          setTimeout(() => this.inspections.delete(inspectionToken), 300000).unref();
+          return inspected;
         })
         .finally(() => {
           clearTimeout(deadline);
           if (this.jobs.get(args.requestId) === job) this.jobs.delete(args.requestId);
         });
+      return job.promise;
+    }
+    if (method === 'tool.connection.oauth.authorize') {
+      if (this.jobs.size || this.candidates.size >= 8)
+        throw new Error('请先完成或取消当前连接检查');
+      const inspection = this.inspections.get(args.inspectionToken);
+      const transport = args.config.transport;
+      if (
+        !inspection ||
+        inspection.expiresAt <= this.time() ||
+        transport.type !== 'http' ||
+        transport.url !== inspection.url ||
+        args.config.protocolVersion !== inspection.protocolVersion ||
+        !transport.oauth ||
+        !this.deps.openOAuth
+      )
+        throw new Error('认证检查已过期或配置不符，请重新检查');
+      const previous = args.connectionId
+        ? this.record(args.connectionId, args.revision)
+        : undefined;
+      if (previous) {
+        this.assertIdle(previous.id);
+        this.invalidate(previous.id);
+      }
+      this.inspections.delete(args.inspectionToken);
+      const abort = new AbortController();
+      const deadline = setTimeout(() => abort.abort(), 600000);
+      const job: Job = { abort, connectionId: previous?.id, promise: undefined! };
+      this.jobs.set(args.requestId, job);
+      job.promise = (async () => {
+        const current = () => {
+          this.available();
+          abort.signal.throwIfAborted();
+          if (previous) this.record(previous.id, previous.revision);
+        };
+        try {
+          current();
+          const grant = await authorizeMcpOAuth(
+            args.config,
+            inspection,
+            abort.signal,
+            this.deps.openOAuth!,
+          );
+          current();
+          const discovered = await (this.deps.discover ?? discoverMcp)(
+            args.config,
+            grant.accessToken,
+            abort.signal,
+          );
+          current();
+          const candidate: Candidate = {
+            ...discovered,
+            config: args.config,
+            requestId: args.requestId,
+            token: uid(),
+            expiresAt: Math.min(this.time() + 300000, grant.expiresAt ?? Infinity),
+            ...(previous ? { connectionId: previous.id, revision: previous.revision } : {}),
+            changed: !!previous && previous.capabilityDigest !== discovered.capabilityDigest,
+            secret: JSON.stringify(grant),
+            oauth: oauthSummary(grant),
+          };
+          if (candidate.expiresAt <= this.time())
+            throw new OAuthInspectionError('登录已过期，请重新授权');
+          this.candidates.set(candidate.token, candidate);
+          setTimeout(() => this.candidates.delete(candidate.token), 300000).unref();
+          return this.publicCandidate(candidate);
+        } catch (error) {
+          if (error instanceof McpCleanupError) this.cleanupFault = true;
+          if (error instanceof OAuthInspectionError || error instanceof DiscoveryError) throw error;
+          throw new Error(
+            abort.signal.aborted
+              ? '登录授权已取消或超时'
+              : '登录或能力核对未完成，请重新检查；连接尚未保存',
+          );
+        } finally {
+          clearTimeout(deadline);
+          if (this.jobs.get(args.requestId) === job) this.jobs.delete(args.requestId);
+        }
+      })();
       return job.promise;
     }
     if (method === 'tool.connection.discover') {
@@ -251,6 +396,14 @@ export class ToolConnections {
           if (previous) this.record(previous.id, previous.revision);
         };
         try {
+          if (args.config.transport.type === 'http' && args.config.transport.auth === 'oauth') {
+            if (
+              !previous?.credentialRef ||
+              canonical(previous.config.transport) !== canonical(args.config.transport)
+            )
+              throw new OAuthInspectionError('OAuth 配置已变化，请先检查并重新登录授权');
+            secret = await this.credential(previous, abort.signal);
+          }
           const wantsBearer =
             args.config.transport.type === 'http' && args.config.transport.auth === 'bearer';
           if (!secret && wantsBearer && previous?.credentialRef) {
@@ -273,8 +426,25 @@ export class ToolConnections {
             ...(previous ? { connectionId: previous.id, revision: previous.revision } : {}),
             expiresAt: this.time() + 300000,
             changed: !!previous && previous.capabilityDigest !== discovered.capabilityDigest,
-            secret,
+            secret:
+              args.config.transport.type === 'http' &&
+              args.config.transport.auth === 'oauth' &&
+              previous?.credentialRef
+                ? await this.deps.credentials.get(
+                    this.record(previous.id, previous.revision).credentialRef!,
+                  )
+                : secret,
+            ...(args.config.transport.type === 'http' &&
+            args.config.transport.auth === 'oauth' &&
+            previous
+              ? { oauth: this.record(previous.id, previous.revision).oauth }
+              : {}),
           };
+          current();
+          if (candidate.oauth?.expiresAt !== undefined)
+            candidate.expiresAt = Math.min(candidate.expiresAt, candidate.oauth.expiresAt);
+          if (candidate.expiresAt <= this.time())
+            throw new OAuthInspectionError('登录已过期，请重新授权');
           this.candidates.set(candidate.token, candidate);
           const candidateToken = candidate.token;
           setTimeout(() => this.candidates.delete(candidateToken), 300000).unref();
@@ -288,7 +458,12 @@ export class ToolConnections {
           )
             this.states.set(previous.id, 'failed');
           if (abort.signal.aborted) throw new Error('连接发现已取消');
-          if (error instanceof DiscoveryError || error instanceof McpCleanupError) throw error;
+          if (
+            error instanceof DiscoveryError ||
+            error instanceof McpCleanupError ||
+            error instanceof OAuthInspectionError
+          )
+            throw error;
           // Adapter errors are bounded; key storage and supplied dependencies
           // must never leak their raw errors across the public interface.
           if (error instanceof Error && error.message && !secret?.length) throw error;
@@ -319,7 +494,8 @@ export class ToolConnections {
         this.candidate(args.token);
         this.assertIdle(id);
         if (Date.now() >= deadline) throw new Error('连接保存已超时');
-        const { server, tools, capabilityDigest, testedAt, protocolVersion, config } = candidate;
+        const { server, tools, capabilityDigest, testedAt, protocolVersion, config, oauth } =
+          candidate;
         const record: Saved = {
           id,
           revision: (previous?.revision ?? 0) + 1,
@@ -330,6 +506,7 @@ export class ToolConnections {
           testedAt,
           protocolVersion,
           ...(credentialRef ? { credentialRef } : {}),
+          ...(oauth ? { oauth } : {}),
         };
         this.store.put('mcp-connection', id, record);
         committed = true;
@@ -388,6 +565,7 @@ export class ToolConnections {
     const calls = this.settleCalls();
     const pending = [...this.jobs.values()];
     this.candidates.clear();
+    this.inspections.clear();
     for (const job of pending) job.abort.abort();
     await Promise.all([calls, ...pending.map((job) => job.promise.catch(() => {}))]);
     this.states.clear();

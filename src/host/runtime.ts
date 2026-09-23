@@ -1,3 +1,4 @@
+import { toolSecretValues } from '../shared/mcp-oauth-grant';
 import { redactMcpReceipt } from './mcp-redaction';
 import { McpRuns } from './mcp-runs';
 import { templateSourceSchema, type TemplateSource } from '../shared/template-source';
@@ -182,6 +183,7 @@ export class Runtime {
         this.system('credential.local.write', { id, revision, update }),
     });
     this.toolConnections = new ToolConnections(this.store, {
+      openOAuth: (url) => this.system('tool.oauth.open', { url }),
       assertAvailable: () => {
         if (this.stopping || this.suspended) throw new Error('应用正在退出或休眠');
         if (this.store.fault) throw new Error(this.store.fault);
@@ -189,10 +191,13 @@ export class Runtime {
       credentials: {
         get: async (id) => {
           const secret = await this.system('tool.credentials.get', { id });
-          if (typeof secret === 'string' && secret) this.secrets.push(secret);
+          if (typeof secret === 'string' && secret) this.secrets.push(...toolSecretValues(secret));
           return secret;
         },
-        set: (id, value) => this.system('tool.credentials.set', { id, value }),
+        set: (id, value) => {
+          this.secrets.push(...toolSecretValues(value));
+          return this.system('tool.credentials.set', { id, value });
+        },
         remove: (id) => this.system('tool.credentials.remove', { id }),
       },
     });
