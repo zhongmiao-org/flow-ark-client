@@ -1,0 +1,166 @@
+/* Figma capability review: reuse the connection page surfaces and tokens. */
+.tool-capability-review {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  container-type: inline-size;
+}
+.tool-capability-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.tool-capability-heading h2 {
+  margin: 0;
+}
+.tool-capability-heading > span,
+.tool-capability-count {
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+}
+.tool-capability-review p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.tool-capability-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.tool-capability-filters button {
+  min-height: 40px;
+  font-size: 12px;
+  padding: 8px 12px;
+}
+.tool-capability-filters [aria-pressed='true'],
+.tool-capability-list [aria-pressed='true'] {
+  background: var(--fa-action-subtle);
+  border-color: var(--fa-action-primary);
+  color: var(--fa-action-primary);
+}
+.tool-capability-list {
+  display: grid;
+  gap: 8px;
+  max-height: 264px;
+  overflow: auto;
+  padding: 2px;
+}
+.tool-capability-list button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  text-align: left;
+  min-height: 64px;
+}
+.tool-capability-list button > span:first-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tool-capability-list small,
+.tool-capability-name {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.tool-capability-change {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-bg-subtle);
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.tool-capability-change.is-added {
+  background: var(--fa-status-success-bg);
+  color: var(--fa-status-success);
+}
+.tool-capability-change.is-changed,
+.tool-capability-change.is-removed {
+  background: var(--fa-status-warning-bg);
+  color: var(--fa-status-warning);
+}
+.tool-capability-hints {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0;
+}
+.tool-capability-hints > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 12px;
+}
+.tool-capability-hints dt {
+  color: var(--fa-text-secondary);
+}
+.tool-capability-hints dd {
+  margin: 0;
+  flex-shrink: 0;
+}
+.tool-capability-identity {
+  padding: 16px;
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-status-warning-bg);
+}
+.tool-capability-review summary {
+  cursor: pointer;
+  line-height: 24px;
+  overflow-wrap: anywhere;
+}
+.tool-capability-field {
+  margin-top: 12px;
+  min-width: 0;
+}
+.tool-capability-field h3 {
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+.tool-capability-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.tool-capability-comparison > div {
+  min-width: 0;
+}
+.tool-capability-comparison h4 {
+  margin: 8px 0;
+  font-size: 12px;
+}
+.tool-capability-review pre {
+  padding: 12px;
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-bg-subtle);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  max-height: 240px;
+  overflow: auto;
+  margin: 8px 0;
+}
+.tool-capability-empty {
+  border: 1px dashed var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+.tool-capability-detail .tool-warning {
+  padding: 12px;
+  border-radius: var(--fa-radius-8);
+}
+@container (max-width:460px) {
+  .tool-capability-comparison {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.tool-review-columns {
+  align-items: start;
+}

@@ -4,9 +4,9 @@ import {
   type ConnectionConfig,
   type ConnectionCandidate,
   type ToolConnection,
-  type ToolDefinition,
 } from '../shared/tool-connections';
 import './tool-connections.css';
+import ToolCapabilityReview from './ToolCapabilityReview';
 
 const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
@@ -90,33 +90,6 @@ function formOf(config: ConnectionConfig): Form {
         }),
   };
 }
-function ToolCard({ tool }: { tool: ToolDefinition }) {
-  return (
-    <article className="tool-definition">
-      <h3>工具：{tool.title || tool.name}</h3>
-      {tool.title && <p>{tool.name}</p>}
-      <p>{tool.description || '服务未提供说明，请先向提供者核对用途。'}</p>
-      <p className="tool-disclaimer">
-        {tool.annotations?.readOnlyHint === true ? '服务声明：只读' : '读写范围：未确认'} ·
-        声明不等于本次任务授权
-      </p>
-      <details>
-        <summary>查看参数与能力声明</summary>
-        <pre>
-          {JSON.stringify(
-            {
-              inputSchema: tool.inputSchema,
-              outputSchema: tool.outputSchema,
-              annotations: tool.annotations,
-            },
-            null,
-            2,
-          )}
-        </pre>
-      </details>
-    </article>
-  );
-}
 
 export default function ToolConnectionsPage({
   active,
@@ -143,6 +116,7 @@ export default function ToolConnectionsPage({
     [capabilitiesReviewed, setCapabilitiesReviewed] = useState(false);
   const [selectedId, setSelectedId] = useState<string>();
   const [candidate, setCandidate] = useState<ConnectionCandidate>();
+  const [reviewBaseline, setReviewBaseline] = useState<ToolConnection>();
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState<'discover' | 'save' | 'manage' | null>(null);
   const [pendingLeave, setPendingLeave] = useState<{ next: () => void }>();
@@ -196,6 +170,7 @@ export default function ToolConnectionsPage({
     locked.current = false;
     setBusy(null);
     setCandidate(undefined);
+    setReviewBaseline(undefined);
     setCapabilitiesReviewed(false);
     setSecret('');
   };
@@ -270,6 +245,7 @@ export default function ToolConnectionsPage({
     }
     locked.current = true;
     setBusy('discover');
+    setReviewBaseline(selected ? structuredClone(selected) : undefined);
     const ticket = ++epoch.current,
       requestId = crypto.randomUUID();
     request.current = requestId;
@@ -679,7 +655,7 @@ export default function ToolConnectionsPage({
           </form>
         )}
         {content && (
-          <div className="tool-columns">
+          <div className="tool-columns tool-review-columns">
             <section className="ai-task-card">
               <span
                 className={`tool-status ${view === 'review' || selected?.status === 'verified' ? 'success' : 'warning'}`}
@@ -718,12 +694,17 @@ export default function ToolConnectionsPage({
                   服务身份或能力定义已变化，请重新核对以下完整清单。已有连接在保存前保持不变。
                 </p>
               )}
-              {!content.tools.length && (
-                <p className="ai-task-note">该服务未返回任何工具，连接不能据此提供执行能力。</p>
-              )}
-              {content.tools.map((tool) => (
-                <ToolCard key={tool.name} tool={tool} />
-              ))}
+              <ToolCapabilityReview
+                key={view === 'review' ? candidate?.token : `${selected?.id}:${selected?.revision}`}
+                current={content}
+                baseline={
+                  view === 'review' &&
+                  candidate?.connectionId === reviewBaseline?.id &&
+                  candidate?.revision === reviewBaseline?.revision
+                    ? reviewBaseline
+                    : undefined
+                }
+              />
             </section>
             <section className="ai-task-card">
               <h2>使用规则</h2>
