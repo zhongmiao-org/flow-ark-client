@@ -24,6 +24,8 @@ export default function TaskExecutionSteps({
   const id = useId();
   const { query = '', filter = 'all', scroll = 0 } = view ?? {};
   const [focusRequest, setFocusRequest] = useState(0);
+  const [filtersOpen, setFiltersOpen] = useState<boolean>();
+  const showFilters = filtersOpen ?? (model.rows.length > 8 || !!query || filter !== 'all');
   const list = useRef<HTMLOListElement>(null);
   const search = useRef<HTMLInputElement>(null);
   const elements = useRef(new Map<string, HTMLLIElement>());
@@ -88,34 +90,47 @@ export default function TaskExecutionSteps({
             type="button"
             onClick={() => {
               change({ query: '', filter: 'all', scroll: 0 });
-              search.current?.focus();
+              setFiltersOpen(true);
+              requestAnimationFrame(() => search.current?.focus());
             }}
           >
             清除步骤筛选
           </button>
         )}
+        <button
+          type="button"
+          className="task-execution-filter-toggle"
+          aria-expanded={showFilters}
+          aria-controls={`${id}-filters`}
+          onClick={() => setFiltersOpen(!showFilters)}
+        >
+          {showFilters ? '收起查找与筛选' : '查找与筛选步骤'}
+          {!!query || filter !== 'all' ? ' · 已有筛选条件' : ''}
+        </button>
       </div>
-      <label htmlFor={`${id}-search`}>查找执行步骤</label>
-      <input
-        ref={search}
-        id={`${id}-search`}
-        value={query}
-        placeholder="步骤名称、编号或循环位置"
-        onChange={(event) => change({ query: event.target.value, filter, scroll: 0 })}
-      />
-      <div className="task-execution-actions" aria-label="执行步骤状态">
-        {(Object.keys(filters) as Filter[]).map((value) => (
-          <button
-            type="button"
-            key={value}
-            aria-pressed={value === filter}
-            onClick={() => change({ query, filter: value, scroll: 0 })}
-          >
-            {filters[value]} · {value === 'all' ? model.rows.length : model[value].length}
-          </button>
-        ))}
+      <div id={`${id}-filters`} className="task-execution-filters" hidden={!showFilters}>
+        <label htmlFor={`${id}-search`}>查找执行步骤</label>
+        <input
+          ref={search}
+          id={`${id}-search`}
+          value={query}
+          placeholder="步骤名称、编号或循环位置"
+          onChange={(event) => change({ query: event.target.value, filter, scroll: 0 })}
+        />
+        <div className="task-execution-actions" aria-label="执行步骤状态">
+          {(Object.keys(filters) as Filter[]).map((value) => (
+            <button
+              type="button"
+              key={value}
+              aria-pressed={value === filter}
+              onClick={() => change({ query, filter: value, scroll: 0 })}
+            >
+              {filters[value]} · {value === 'all' ? model.rows.length : model[value].length}
+            </button>
+          ))}
+        </div>
       </div>
-      <p role="status">
+      <p role="status" hidden={!showFilters && !query && filter === 'all'}>
         显示 {visible.length} / {model.rows.length}{' '}
         条。序号沿用完整清单；同一步骤的循环执行分别记录。
       </p>

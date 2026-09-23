@@ -237,3 +237,39 @@
 .task-run-page .badge {
   align-self: flex-start;
 }
+
+.task-run-progress,
+.task-run-progress dl {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+.task-run-progress dl > div {
+  display: grid;
+  grid-template-columns: 5em minmax(0, 1fr);
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.task-run-progress dt {
+  color: var(--fa-text-secondary);
+}
+.task-run-progress dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.task-run-progress .task-run-human-prompt {
+  color: var(--fa-text-primary);
+  padding: 12px;
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-action-subtle);
+  white-space: pre-wrap;
+}
+.task-run-live-impact summary {
+  cursor: pointer;
+  color: var(--fa-action-primary);
+}
+.task-run-live-impact p {
+  margin-top: 8px;
+}

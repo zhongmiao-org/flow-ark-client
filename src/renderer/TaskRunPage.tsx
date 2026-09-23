@@ -169,6 +169,12 @@ export default function TaskRunPage({
       : page === 'rerun'
         ? '重新运行前，核对已完成操作'
         : model.title;
+  const compactLive = !model.terminal && !model.uncertain && !model.view.closing;
+  const stepNames = (rows: typeof model.rows, empty: string) =>
+    rows
+      .slice(0, 6)
+      .map((row) => row.name)
+      .join('、') + (rows.length > 6 ? ` 等 ${rows.length} 条，完整记录见执行步骤。` : '') || empty;
   const allowed = model.view.activity === 'active' && !model.view.closing && !model.uncertain;
   const steps = (
     <TaskExecutionSteps
@@ -431,39 +437,67 @@ export default function TaskRunPage({
                   {run.error}
                 </p>
               )}
-              <div className="task-run-file">
-                <h3>{model.node?.type === 'human' ? '需要你确认' : '当前步骤'}</h3>
-                <p>{model.node?.type === 'human' ? model.node.message : model.view.step.label}</p>
-                <p>已记录耗时：{model.view.elapsed.label}</p>
-                {model.view.progress.kind === 'reported' && <p>{model.view.progress.label}</p>}
-              </div>
-              <div className="task-run-file">
-                <h3>已完成</h3>
-                <p>
-                  {model.completed
-                    .slice(0, 6)
-                    .map((r) => r.name)
-                    .join('、') || '尚无完成记录'}
-                  {model.completed.length > 6 &&
-                    ` 等 ${model.completed.length} 次，完整记录见执行步骤。`}
-                </p>
-              </div>
-              <div className="task-run-file">
-                <h3>尚未完成或未执行</h3>
-                <p>
-                  {[...model.unresolved, ...model.unvisited]
-                    .slice(0, 6)
-                    .map((r) => r.name)
-                    .join('、') || '无未完成步骤记录'}
-                  {model.unresolved.length + model.unvisited.length > 6 &&
-                    ` 等 ${model.unresolved.length + model.unvisited.length} 条，完整记录见执行步骤。`}
-                </p>
-              </div>
-              <div className="task-run-file">
-                <h3>影响范围</h3>
-                <p>{model.summary}</p>
-                <p>{model.effectNote}</p>
-              </div>
+              {compactLive ? (
+                <div className="task-run-progress" aria-label="当前运行进度">
+                  <dl>
+                    <div>
+                      <dt>已完成</dt>
+                      <dd>{stepNames(model.completed, '尚无完成记录')}</dd>
+                    </div>
+                    <div>
+                      <dt>{model.view.step.kind === 'paused' ? '下一步' : '当前'}</dt>
+                      <dd>{model.view.step.label}</dd>
+                    </div>
+                    <div>
+                      <dt>尚未执行</dt>
+                      <dd>{stepNames(model.unvisited, '无尚未执行的步骤记录')}</dd>
+                    </div>
+                  </dl>
+                  {model.node?.type === 'human' && (
+                    <p className="task-run-human-prompt">需要你确认：{model.node.message}</p>
+                  )}
+                  <p>已记录耗时：{model.view.elapsed.label}</p>
+                  {model.view.progress.kind === 'reported' && <p>{model.view.progress.label}</p>}
+                </div>
+              ) : (
+                <>
+                  <div className="task-run-file">
+                    <h3>{model.node?.type === 'human' ? '需要你确认' : '当前步骤'}</h3>
+                    <p>
+                      {model.node?.type === 'human' ? model.node.message : model.view.step.label}
+                    </p>
+                    <p>已记录耗时：{model.view.elapsed.label}</p>
+                    {model.view.progress.kind === 'reported' && <p>{model.view.progress.label}</p>}
+                  </div>
+                  <div className="task-run-file">
+                    <h3>已完成</h3>
+                    <p>
+                      {model.completed
+                        .slice(0, 6)
+                        .map((r) => r.name)
+                        .join('、') || '尚无完成记录'}
+                      {model.completed.length > 6 &&
+                        ` 等 ${model.completed.length} 次，完整记录见执行步骤。`}
+                    </p>
+                  </div>
+                  <div className="task-run-file">
+                    <h3>尚未完成或未执行</h3>
+                    <p>
+                      {[...model.unresolved, ...model.unvisited]
+                        .slice(0, 6)
+                        .map((r) => r.name)
+                        .join('、') || '无未完成步骤记录'}
+                      {model.unresolved.length + model.unvisited.length > 6 &&
+                        ` 等 ${model.unresolved.length + model.unvisited.length} 条，完整记录见执行步骤。`}
+                    </p>
+                  </div>
+                  <div className="task-run-file">
+                    <h3>影响范围</h3>
+                    <p>{model.summary}</p>
+                    <p>{model.effectNote}</p>
+                  </div>
+                </>
+              )}
               <div className="ai-task-actions">
                 {allowed && run.state === 'RUNNING' && (
                   <button disabled={busy} onClick={() => void act(() => control(run.id, 'pause'))}>
@@ -503,6 +537,14 @@ export default function TaskRunPage({
                   详细信息
                 </button>
               </div>
+              {compactLive && (
+                <details className="task-run-live-impact">
+                  <summary>已记录的操作与影响</summary>
+                  <p>{model.summary}</p>
+                  <p>{model.effectNote}</p>
+                  <p>尚未执行的清单包含未选择的分支；循环次数由运行时数据决定。</p>
+                </details>
+              )}
             </section>
             {model.terminal || model.uncertain ? (
               <section className="ai-task-card">

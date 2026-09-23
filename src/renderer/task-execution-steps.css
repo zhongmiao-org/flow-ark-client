@@ -36,3 +36,15 @@
   border: 1px solid var(--fa-border-default);
   border-radius: var(--fa-radius-8);
 }
+
+.task-execution-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.task-execution-filters[hidden] {
+  display: none;
+}
+.task-execution-filter-toggle {
+  align-self: flex-start;
+}
