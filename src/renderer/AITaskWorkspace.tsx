@@ -3,6 +3,7 @@ import TaskStepList from './TaskStepList';
 import TaskStepInspector from './TaskStepInspector';
 import TaskPlanConversation from './TaskPlanConversation';
 import TaskProposalReview from './TaskProposalReview';
+import TaskPlanScope from './TaskPlanScope';
 import TaskModificationPage from './TaskModificationPage';
 import TaskGenerationPage from './TaskGenerationPage';
 import {
@@ -2413,6 +2414,32 @@ export default function AITaskWorkspace(props: Props) {
                               />
                             )}
                           </div>
+                          <TaskPlanScope
+                            flow={flow}
+                            context={{
+                              bindings: detail.flow?.bindings,
+                              webTarget: detail.proposal
+                                ? detail.task.webTarget
+                                : detail.flow?.webTarget,
+                              outputTarget: detail.proposal
+                                ? detail.task.outputTarget
+                                : detail.flow?.outputTarget,
+                              toolTargets: detail.proposal
+                                ? detail.task.toolTargets
+                                : detail.flow?.toolTargets,
+                            }}
+                            select={(id) => {
+                              setSelected(id);
+                              setGraphFocus((value) => (value ?? 0) + 1);
+                              requestAnimationFrame(() => {
+                                const heading = document.querySelector<HTMLHeadingElement>(
+                                  '[data-task-step-heading]',
+                                );
+                                heading?.scrollIntoView({ block: 'nearest' });
+                                heading?.focus({ preventScroll: true });
+                              });
+                            }}
+                          />
                           {flatten(flow.steps).some((step) => step.type === 'desktop') && (
                             <p className="ai-task-note">
                               应用方案已保存。进入试运行检查后重新选择窗口与原文，核对替换文字并明确授权单次修改；保存草稿本身不会修改文档。
@@ -2433,23 +2460,28 @@ export default function AITaskWorkspace(props: Props) {
                             </div>
                           ) : (
                             <>
-                              <h2>资源与权限</h2>
-                              <ul className="ai-task-resources">
-                                {detail.resources.map((resource, i) => (
-                                  <li key={i}>{resource}</li>
-                                ))}
-                                {!detail.resources.length && (
-                                  <li>没有文件、浏览器、HTTP、脚本或工具资源操作。</li>
-                                )}
-                                <li>声明的能力：{flow.requiredCapabilities.join('、') || '无'}</li>
-                              </ul>
-                              <PlanningChanges
-                                key={detail.proposal.id}
-                                changes={detail.changes}
-                                before={detail.proposal.baseFlow}
-                                after={flow}
-                                revision={detail.proposal.baseRevision}
-                              />
+                              <details className="task-proposal-source">
+                                <summary>查看完整资源声明与生成差异</summary>
+                                <h2>资源与权限</h2>
+                                <ul className="ai-task-resources">
+                                  {detail.resources.map((resource, i) => (
+                                    <li key={i}>{resource}</li>
+                                  ))}
+                                  {!detail.resources.length && (
+                                    <li>没有文件、浏览器、HTTP、脚本或工具资源操作。</li>
+                                  )}
+                                  <li>
+                                    声明的能力：{flow.requiredCapabilities.join('、') || '无'}
+                                  </li>
+                                </ul>
+                                <PlanningChanges
+                                  key={detail.proposal.id}
+                                  changes={detail.changes}
+                                  before={detail.proposal.baseFlow}
+                                  after={flow}
+                                  revision={detail.proposal.baseRevision}
+                                />
+                              </details>
                             </>
                           )}
                           {detail.conflict && (

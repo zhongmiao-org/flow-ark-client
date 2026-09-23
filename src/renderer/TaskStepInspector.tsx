@@ -148,7 +148,9 @@ export default function TaskStepInspector({
             <p className="task-step-position">
               第 {entry.ordinal} / {entries.length} 步 · {kinds[step.type].label}
             </p>
-            <h2>{taskStepTitle(step)}</h2>
+            <h2 tabIndex={-1} data-task-step-heading>
+              {taskStepTitle(step)}
+            </h2>
           </div>
           <p className="task-step-summary">{taskStepSummary(step, flow, context)}</p>
           {!!entry.ancestors.length && (
