@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Globe, X, ArrowRight, RefreshCw } from 'lucide-react';
+import './browser-observation.css';
 import { desktopViewportWidth } from '../shared/browser-viewport';
 const api = (method: string, args?: unknown) => window.flowark.request(method, args);
 export default function BrowserSidebar({
@@ -12,6 +13,12 @@ export default function BrowserSidebar({
   obscured: boolean;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
+  const panel = useRef<HTMLElement>(null);
+  const expandButton = useRef<HTMLButtonElement>(null);
+  const returnButton = useRef<HTMLButtonElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [scale, setScale] = useState<number>();
+  const restoreFocus = useRef(false);
   const [dialogOpen, setDialogOpen] = useState(() => !!document.querySelector('dialog[open]'));
   const hidden = obscured || dialogOpen;
   useEffect(() => {
@@ -26,6 +33,36 @@ export default function BrowserSidebar({
     sync();
     return () => observer.disconnect();
   }, []);
+  useEffect(() => {
+    if (!expanded || hidden || !panel.current) return;
+    const saved: { element: HTMLElement; inert: boolean }[] = [];
+    let branch: HTMLElement = panel.current;
+    while (branch.parentElement) {
+      const parent = branch.parentElement;
+      for (const sibling of Array.from(parent.children)) {
+        if (sibling !== branch && sibling instanceof HTMLElement) {
+          saved.push({ element: sibling, inert: sibling.inert });
+          sibling.inert = true;
+        }
+      }
+      if (parent === document.body) break;
+      branch = parent;
+    }
+    returnButton.current?.focus({ preventScroll: true });
+    return () => {
+      for (const item of saved) item.element.inert = item.inert;
+    };
+  }, [expanded, hidden]);
+  useEffect(() => {
+    if (!expanded && restoreFocus.current) {
+      restoreFocus.current = false;
+      expandButton.current?.focus({ preventScroll: true });
+    }
+  }, [expanded]);
+  const restorePanel = () => {
+    restoreFocus.current = true;
+    setExpanded(false);
+  };
   const [status, setStatus] = useState<{
     started: boolean;
     url: string;
@@ -43,6 +80,7 @@ export default function BrowserSidebar({
     let live = true;
     const bounds = () => {
       const r = viewport.current?.getBoundingClientRect();
+      if (r) setScale(Math.round((r.width / desktopViewportWidth) * 100));
       if (r)
         void api('browser.embedded.viewport', {
           x: Math.max(0, Math.round(r.x)),
@@ -104,6 +142,13 @@ export default function BrowserSidebar({
         height: Math.round(r.height),
       }).catch(() => {});
   }, [error]);
+  const closePanel = () => {
+    const toggle = document.querySelector<HTMLElement>('[aria-label="收起网页面板"]');
+    close();
+    requestAnimationFrame(() => {
+      if (toggle?.isConnected) toggle.focus({ preventScroll: true });
+    });
+  };
   const navigate = async (url = address) => {
     setLoading(true);
     setError('');
@@ -118,8 +163,47 @@ export default function BrowserSidebar({
     }
   };
   return (
-    <aside className="browser-sidebar" aria-label="内置网页面板">
-      <header>
+    <aside
+      ref={panel}
+      className={`browser-sidebar browser-observation${expanded ? ' browser-observation-expanded' : ''}`}
+      role={expanded && !hidden ? 'dialog' : undefined}
+      aria-modal={expanded && !hidden ? true : undefined}
+      aria-label={expanded ? '全宽网页查看' : '内置网页面板'}
+      onKeyDown={(event) => {
+        if (!expanded || hidden) return;
+        if (
+          event.key === 'Escape' ||
+          (event.altKey && event.key === 'ArrowLeft') ||
+          (event.metaKey && event.key === '[')
+        ) {
+          if (
+            (event.target as HTMLElement).closest('input,textarea,[contenteditable="true"]') &&
+            event.key !== 'Escape'
+          )
+            return;
+          event.preventDefault();
+          event.stopPropagation();
+          restorePanel();
+        }
+        if (event.key === 'Tab') {
+          const controls = Array.from(
+            panel.current?.querySelectorAll<HTMLElement>(
+              'button:not(:disabled),input:not(:disabled),[tabindex="0"]',
+            ) ?? [],
+          );
+          const first = controls[0],
+            last = controls[controls.length - 1];
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last?.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first?.focus();
+          }
+        }
+      }}
+    >
+      <header className="browser-observation-header">
         <div>
           <Globe size={18} />
           <strong>内置浏览器</strong>
@@ -131,10 +215,28 @@ export default function BrowserSidebar({
                 : `桌面宽度 ${desktopViewportWidth}`}
           </span>
         </div>
-        <button title="关闭网页面板" aria-label="关闭网页面板" onClick={close}>
-          <X size={17} />
-        </button>
+        <div className="browser-observation-actions">
+          {expanded ? (
+            <button ref={returnButton} onClick={restorePanel}>
+              返回右侧面板
+            </button>
+          ) : (
+            <button ref={expandButton} onClick={() => setExpanded(true)}>
+              扩大查看
+            </button>
+          )}
+          <button title="关闭网页面板" aria-label="关闭网页面板" onClick={closePanel}>
+            <X size={17} />
+          </button>
+        </div>
       </header>
+      <div className="browser-observation-summary" role="status">
+        <span>
+          {expanded ? '全宽查看' : '网页总览'} ·{' '}
+          {scale === undefined ? '正在计算显示比例' : `适应宽度 ${scale}%`}
+        </span>
+        <span>网页布局保持 {desktopViewportWidth} CSS px</span>
+      </div>
       <form
         className="browser-address"
         onSubmit={(e) => {
