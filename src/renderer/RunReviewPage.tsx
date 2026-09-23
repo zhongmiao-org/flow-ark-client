@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import type { RunReviewInput, RunReviewPreview, ReviewResource } from '../shared/run-review';
 import { RunReviewSession } from './run-review-session';
+import RunReviewTools from './RunReviewTools';
 
 type Props = {
   active: boolean;
@@ -27,6 +28,7 @@ function Resource({ resource }: { resource: ReviewResource }) {
   );
 }
 function Contents({ preview }: { preview: RunReviewPreview }) {
+  const tools = preview.toolCalls ?? [];
   const objects = preview.resources.filter((r) => !['file', 'directory'].includes(r.kind));
   const locations = preview.resources.filter((r) => ['file', 'directory'].includes(r.kind));
   const reads = preview.effects.filter((e) => e.kind === 'read');
@@ -44,6 +46,9 @@ function Contents({ preview }: { preview: RunReviewPreview }) {
       )}
       <section className="run-review-card">
         <h2>操作对象</h2>
+        {!!tools.length && (
+          <p>包含 {tools.length} 个工具步骤；已保存连接及当前记录状态见下方“工具调用与参数”。</p>
+        )}
         {objects.length ? (
           <ul>
             {objects.map((r) => (
@@ -56,7 +61,7 @@ function Contents({ preview }: { preview: RunReviewPreview }) {
               ? locations.length
                 ? `本机文件资源：${locations.map((r) => r.name).join('、')}。实际位置见下方。`
                 : '在本机处理流程中的数据，无网页或文件资源。'
-              : '检查尚未完成，请先处理右侧提示。'}
+              : '检查尚未完成，请先处理执行前检查中的提示。'}
           </p>
         )}
       </section>
@@ -71,7 +76,9 @@ function Contents({ preview }: { preview: RunReviewPreview }) {
             ))}
           </ul>
         ) : (
-          <p>没有独立的文件或网页读取步骤。脚本、HTTP 与上传中的读取见“会产生的更改”。</p>
+          <p>
+            没有独立的文件或网页读取步骤。脚本、HTTP、上传与工具的读取范围需结合下方影响说明核对。
+          </p>
         )}
       </section>
       <section className="run-review-card">
@@ -88,6 +95,7 @@ function Contents({ preview }: { preview: RunReviewPreview }) {
           <p>当前步骤仅在本地计算、判断、循环或等待人工；运行记录和结果会保存在本机。</p>
         )}
       </section>
+      {!!tools.length && <RunReviewTools calls={tools} />}
       <section className="run-review-card">
         <h2>保存位置</h2>
         {locations.length ? (
@@ -110,7 +118,11 @@ function Contents({ preview }: { preview: RunReviewPreview }) {
           {preview.flow.name} · {preview.flow.stepCount} 个步骤 ·{' '}
           {preview.debug ? '逐步调试' : '正常试运行'}
         </p>
-        <p>采用已检查的固定方案，运行中修改草稿不影响此次执行。</p>
+        <p>
+          {preview.ready
+            ? '采用已检查的固定方案，运行中修改草稿不影响此次执行。'
+            : '当前显示已保存方案；检查尚未通过，还没有创建运行或固定执行版本。'}
+        </p>
         <details>
           <summary>查看版本与参数</summary>
           <p className="run-review-version">{preview.flow.versionId || '检查通过后固定版本'}</p>

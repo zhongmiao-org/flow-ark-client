@@ -553,7 +553,7 @@
 .run-review-receipt > b {
   overflow-wrap: anywhere;
 }
-@container (max-width: 850px) {
+@container (max-width: 900px) {
   .run-review-columns {
     grid-template-columns: minmax(0, 1fr);
   }

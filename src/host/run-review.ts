@@ -19,6 +19,8 @@ import {
   type RunReviewOutcome,
 } from '../shared/run-review';
 import { reviewEffects } from './run-review-effects';
+import { reviewToolCalls } from './run-review-tools';
+import type { TaskMcpState } from '../shared/task-mcp-targets';
 
 export type ReviewTemplate = {
   resources: {
@@ -55,6 +57,7 @@ type Authorization = {
 type Snapshot = FlowRecord & Partial<PreparedScripts> & { runReviewAuthorization?: Authorization };
 type RequestRecord = { requestId: string; fingerprint: string; runId: string };
 type Dependencies = {
+  tools?: (record: FlowRecord) => TaskMcpState[];
   learnedTrial?: (run: Run) => void;
   busy?: (runId: string) => boolean;
   target?: (selection: RepairSelection) => Promise<RepairSelection>;
@@ -351,6 +354,7 @@ export class RunReview {
       checks: [],
       limitations,
     };
+    result.toolCalls = reviewToolCalls(record, this.deps.tools?.(record));
     try {
       const prepared = await this.prepare(args);
       result.ready = true;

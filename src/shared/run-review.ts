@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import type { Run, ScriptBundle } from './types';
+import type { Run, ScriptBundle, Step } from './types';
+import type { TaskMcpTarget } from './task-mcp-targets';
+import type { ToolDefinition } from './tool-connections';
 
 const selection = {
   rerun: z
@@ -52,7 +54,21 @@ export type ReviewEffect = {
   kind: 'read' | 'write' | 'network' | 'control' | 'unknown';
   detail: string;
 };
+/** Saved plan data for inspection only, never a tool-call authorization. */
+export type ReviewToolCall = {
+  step: Extract<Step, { type: 'mcp' }>;
+  ordinal: number;
+  context: string[];
+  target?: Pick<
+    TaskMcpTarget,
+    'displayName' | 'source' | 'transport' | 'protocolVersion' | 'connectionRevision' | 'selectedAt'
+  >;
+  definition?: ToolDefinition;
+  current: boolean;
+  reason: string;
+};
 export type RunReviewPreview = {
+  toolCalls?: ReviewToolCall[];
   rerun?: { runId: string; name: string; state: string };
   ready: boolean;
   token?: string;

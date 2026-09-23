@@ -294,6 +294,7 @@ export class Runtime {
     );
     this.sessions = new Sessions(dir, executable, dataPath, system);
     this.runReview = new RunReview(this.store, {
+      tools: (record) => this.toolTargets.reviewStates(record),
       learnedTrial: (run) => this.learning.trial(run),
       busy: (id) =>
         this.active?.id === id ||

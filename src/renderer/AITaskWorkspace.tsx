@@ -1966,7 +1966,7 @@ export default function AITaskWorkspace(props: Props) {
                       )}
                       {flatten(flow.steps).some((step) => step.type === 'mcp') && (
                         <p className="ai-task-note">
-                          工具方案可采纳和编辑，真实调用尚未开放，暂不能试运行。
+                          可进入检查页核对工具和参数。真实调用尚未开放，检查不会执行工具。
                         </p>
                       )}
                       {detail.proposal && (
@@ -2014,16 +2014,7 @@ export default function AITaskWorkspace(props: Props) {
                         <div className="ai-task-actions">
                           <button
                             className="primary"
-                            disabled={
-                              busy ||
-                              dirty ||
-                              stale ||
-                              generating ||
-                              !!scope ||
-                              !!detail.task.toolTargets?.length ||
-                              !!detail.task.toolsRequirePlan ||
-                              flatten(flow.steps).some((step) => step.type === 'mcp')
-                            }
+                            disabled={busy || dirty || stale || generating || !!scope}
                             ref={trialButton}
                             data-run-review-start
                             onClick={() => {
@@ -2033,7 +2024,11 @@ export default function AITaskWorkspace(props: Props) {
                               setPage('check');
                             }}
                           >
-                            确认方案，去试运行
+                            {detail.task.toolTargets?.length ||
+                            detail.task.toolsRequirePlan ||
+                            flatten(flow.steps).some((step) => step.type === 'mcp')
+                              ? '查看试运行前检查'
+                              : '确认方案，去试运行'}
                           </button>
                           <button
                             disabled={busy}

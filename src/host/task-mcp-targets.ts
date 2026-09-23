@@ -1,7 +1,7 @@
 import type { PlanningTask } from '../shared/planning';
 import type { TaskMcpPreview, TaskMcpTarget, TaskMcpState } from '../shared/task-mcp-targets';
 import { toolsNotExecutable, assertMcpPlan } from '../shared/task-mcp-targets';
-import type { Flow } from '../shared/types';
+import type { Flow, FlowRecord } from '../shared/types';
 import { OUTPUT_BINDING } from '../shared/task-output';
 import { digest, uid, now } from '../shared/utils';
 import type { Store } from './store';
@@ -119,6 +119,25 @@ export class TaskMcpTargets {
         throw new Error('工具能力已变化，请重新选择');
     }
     if (flow) assertMcpPlan(flow, task.toolTargets, task.outputTarget ? OUTPUT_BINDING : undefined);
+  }
+  reviewStates(record: FlowRecord): TaskMcpState[] {
+    return (record.toolTargets ?? []).map((target) => {
+      const task = this.store.get<PlanningTask>('ai-task', target.taskId);
+      const selected = task?.toolTargets?.find((entry) => entry.selectionId === target.selectionId);
+      if (
+        !task ||
+        task.flowId !== record.id ||
+        task.toolsRequirePlan ||
+        !selected ||
+        digest(selected) !== digest(target)
+      )
+        return {
+          selectionId: target.selectionId,
+          current: false,
+          reason: '原任务的工具选择已变化或需要重新规划，请重新生成并采纳完整方案。',
+        };
+      return this.states([target])[0];
+    });
   }
   assertExecutable(flowId: string) {
     const tasks = this.store.list<PlanningTask>('ai-task').filter((task) => task.flowId === flowId);
