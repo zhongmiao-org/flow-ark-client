@@ -1,4 +1,5 @@
 import TaskStepList from './TaskStepList';
+import TaskStepInspector from './TaskStepInspector';
 import TaskPlanConversation from './TaskPlanConversation';
 import TaskProposalReview from './TaskProposalReview';
 import TaskModificationPage from './TaskModificationPage';
@@ -20,7 +21,6 @@ import TaskUnderstandingPage, { type OutputOptions } from './TaskUnderstandingPa
 import PlanningQuestions from './PlanningQuestions';
 import { toolsNotExecutable, toolContexts } from '../shared/task-mcp-targets';
 import PlanningChanges from './PlanningChanges';
-import McpNodeConfiguration from './McpNodeConfiguration';
 import { outputContext, taskOutputNameSchema } from '../shared/task-output';
 import { learningSteps, type LearningStatus } from '../shared/learning';
 import { webContext } from '../shared/task-web-target';
@@ -171,6 +171,7 @@ export default function AITaskWorkspace(props: Props) {
   }, [props.active, props.configuredAI?.key]);
   const [reviewed, setReviewed] = useState(false);
   const [view, setView] = useState<'list' | 'graph'>('list');
+  const [graphFocus, setGraphFocus] = useState<number>();
   const [selected, setSelected] = useState('');
   const [editingProposal, setEditingProposal] = useState(false);
   const [modification, setModification] = useState<{
@@ -216,6 +217,17 @@ export default function AITaskWorkspace(props: Props) {
   const changesView =
     fullModification &&
     (proposalView?.id !== detail?.proposal?.id || proposalView?.mode === 'changes');
+  const standaloneGraph =
+    page === 'review' && !!flow && !scope && !editingProposal && !changesView && view === 'graph';
+  const returnToConversation = useCallback(() => {
+    setView('list');
+    requestAnimationFrame(() => {
+      if (!location.current.active || location.current.page !== 'review') return;
+      const conversation = document.querySelector<HTMLElement>('[data-task-conversation]');
+      conversation?.scrollIntoView({ block: 'nearest' });
+      conversation?.focus({ preventScroll: true });
+    });
+  }, []);
   const moreUnavailable = moreOperationReason();
   function moreOperationReason() {
     if (busy || generating) return '请等当前操作结束后再打开更多操作。';
@@ -280,8 +292,9 @@ export default function AITaskWorkspace(props: Props) {
       });
     });
   }
-  const title =
-    page === 'modify'
+  const title = standaloneGraph
+    ? '同一个任务，两种视图'
+    : page === 'modify'
       ? '接着修改当前任务'
       : page === 'generation'
         ? generating
@@ -315,41 +328,47 @@ export default function AITaskWorkspace(props: Props) {
     if (props.active)
       props.onNavigation(
         title,
-        page === 'modify'
-          ? returnFromModification
-          : page === 'generation'
-            ? () => (generating ? void cancelGeneration() : recoverDescription())
-            : page === 'missing-ai'
-              ? () => setPage(missingOrigin.current)
-              : page === 'check'
-                ? backToPlan
+        standaloneGraph
+          ? returnToConversation
+          : page === 'modify'
+            ? returnFromModification
+            : page === 'generation'
+              ? () => (generating ? void cancelGeneration() : recoverDescription())
+              : page === 'missing-ai'
+                ? () => setPage(missingOrigin.current)
+                : page === 'check'
+                  ? backToPlan
+                  : page === 'understand'
+                    ? () => void openTarget()
+                    : page === 'target'
+                      ? backToBrief
+                      : page === 'guide' || page === 'brief'
+                        ? () => {
+                            void back();
+                          }
+                        : undefined,
+        standaloneGraph
+          ? '确认方案'
+          : page === 'modify'
+            ? '当前方案'
+            : page === 'generation'
+              ? generating
+                ? '取消并返回'
+                : '任务草稿'
+              : page === 'missing-ai'
+                ? '任务草稿'
                 : page === 'understand'
-                  ? () => void openTarget()
+                  ? '选择操作对象'
                   : page === 'target'
-                    ? backToBrief
+                    ? '描述与附件'
                     : page === 'guide' || page === 'brief'
-                      ? () => {
-                          void back();
-                        }
+                      ? '开始任务'
                       : undefined,
-        page === 'modify'
-          ? '当前方案'
-          : page === 'generation'
-            ? generating
-              ? '取消并返回'
-              : '任务草稿'
-            : page === 'missing-ai'
-              ? '任务草稿'
-              : page === 'understand'
-                ? '选择操作对象'
-                : page === 'target'
-                  ? '描述与附件'
-                  : page === 'guide' || page === 'brief'
-                    ? '开始任务'
-                    : undefined,
       );
   }, [
     props.active,
+    standaloneGraph,
+    returnToConversation,
     title,
     page,
     backToPlan,
@@ -1606,9 +1625,15 @@ export default function AITaskWorkspace(props: Props) {
               />
             ) : (
               <div
-                className={`ai-task-columns ${page === 'review' ? 'ai-task-review' : ''}${page === 'review' && !scope && flow ? ' ai-task-plan-review' : ''}${fullModification ? ' ai-task-proposal-columns' : ''}`}
+                className={`ai-task-columns ${page === 'review' ? 'ai-task-review' : ''}${page === 'review' && !scope && flow ? ' ai-task-plan-review' : ''}${fullModification ? ' ai-task-proposal-columns' : ''}${standaloneGraph ? ' ai-task-full-graph' : ''}`}
               >
-                <section className="ai-task-card ai-task-input">
+                <section
+                  className="ai-task-card ai-task-input"
+                  data-task-conversation
+                  tabIndex={-1}
+                  aria-label="任务方案对话"
+                  style={standaloneGraph ? { display: 'none' } : undefined}
+                >
                   {page === 'review' &&
                   !scope &&
                   flow &&
@@ -2085,66 +2110,97 @@ export default function AITaskWorkspace(props: Props) {
                               {moreUnavailable}
                             </p>
                           )}
-                          {view === 'list' ? (
-                            <TaskStepList
-                              flow={flow}
-                              selected={selected}
-                              select={setSelected}
-                              context={{
-                                bindings: detail.flow?.bindings,
-                                webTarget: detail.proposal
-                                  ? detail.task.webTarget
-                                  : detail.flow?.webTarget,
-                                outputTarget: detail.proposal
-                                  ? detail.task.outputTarget
-                                  : detail.flow?.outputTarget,
-                                toolTargets: detail.proposal
-                                  ? detail.task.toolTargets
-                                  : detail.flow?.toolTargets,
-                              }}
-                            />
-                          ) : (
-                            <div className="ai-task-graph">
-                              <DiagramCanvas
-                                {...diagram}
+                          <div
+                            className={
+                              standaloneGraph ? 'task-graph-workspace' : 'task-graph-inline'
+                            }
+                          >
+                            {view === 'list' ? (
+                              <TaskStepList
+                                flow={flow}
                                 selected={selected}
-                                select={setSelected}
+                                select={(id) => {
+                                  setSelected(id);
+                                  setGraphFocus((value) => (value ?? 0) + 1);
+                                }}
+                                context={{
+                                  bindings: detail.flow?.bindings,
+                                  webTarget: detail.proposal
+                                    ? detail.task.webTarget
+                                    : detail.flow?.webTarget,
+                                  outputTarget: detail.proposal
+                                    ? detail.task.outputTarget
+                                    : detail.flow?.outputTarget,
+                                  toolTargets: detail.proposal
+                                    ? detail.task.toolTargets
+                                    : detail.flow?.toolTargets,
+                                }}
                               />
-                            </div>
-                          )}
-                          {selectedStep && (
-                            <details open className="ai-task-disclosure">
-                              <summary>
-                                所选步骤 ·{' '}
-                                {typeof selectedStep.name === 'string' && selectedStep.name
-                                  ? selectedStep.name
-                                  : kinds[selectedStep.type]?.label}{' '}
-                                · {selectedStep.id}
-                              </summary>
-                              {selectedStep.type === 'mcp' ? (
-                                <McpNodeConfiguration
-                                  node={selectedStep}
-                                  targets={
-                                    detail.proposal
-                                      ? detail.task.toolTargets
-                                      : detail.flow?.toolTargets
-                                  }
+                            ) : (
+                              <div className="ai-task-graph" aria-label="任务流程图">
+                                <DiagramCanvas
+                                  {...diagram}
+                                  focusRequest={graphFocus}
+                                  active={props.active && page === 'review'}
+                                  selected={selected}
+                                  select={setSelected}
                                 />
-                              ) : (
-                                <pre>{text(selectedStep)}</pre>
-                              )}
-                              {!scope && (
-                                <button
-                                  disabled={inputDisabled || dirty || stale || !!detail.proposal}
-                                  onClick={() =>
-                                    void run(() => chooseScope(detail, selectedStep.id))
-                                  }
-                                >
-                                  用 AI 修改此步
-                                </button>
-                              )}
-                            </details>
-                          )}
+                              </div>
+                            )}
+                            {(view === 'graph' || selectedStep) && (
+                              <TaskStepInspector
+                                flow={flow}
+                                selected={selected}
+                                select={(id) => {
+                                  setSelected(id);
+                                  setGraphFocus((value) => (value ?? 0) + 1);
+                                }}
+                                context={{
+                                  bindings: detail.flow?.bindings,
+                                  webTarget: detail.proposal
+                                    ? detail.task.webTarget
+                                    : detail.flow?.webTarget,
+                                  outputTarget: detail.proposal
+                                    ? detail.task.outputTarget
+                                    : detail.flow?.outputTarget,
+                                  toolTargets: detail.proposal
+                                    ? detail.task.toolTargets
+                                    : detail.flow?.toolTargets,
+                                }}
+                                actions={
+                                  <>
+                                    {selectedStep && !scope && (
+                                      <button
+                                        className="primary"
+                                        disabled={
+                                          inputDisabled || dirty || stale || !!detail.proposal
+                                        }
+                                        onClick={() =>
+                                          void run(() => chooseScope(detail, selectedStep.id))
+                                        }
+                                      >
+                                        用 AI 修改此步
+                                      </button>
+                                    )}
+                                    {selectedStep &&
+                                      !scope &&
+                                      (dirty || stale || !!detail.proposal) && (
+                                        <p className="task-step-position">
+                                          {detail.proposal
+                                            ? '采纳当前方案后，才能单独修改这一步。'
+                                            : dirty
+                                              ? '先保存或放弃当前任务输入，再修改所选步骤。'
+                                              : '任务已变化，请重新读取后继续。'}
+                                        </p>
+                                      )}
+                                    {view === 'graph' && (
+                                      <button onClick={returnToConversation}>回到对话</button>
+                                    )}
+                                  </>
+                                }
+                              />
+                            )}
+                          </div>
                           {flatten(flow.steps).some((step) => step.type === 'mcp') && (
                             <p className="ai-task-note">
                               可进入检查页核对工具和参数。真实调用尚未开放，检查不会执行工具。

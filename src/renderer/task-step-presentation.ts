@@ -52,34 +52,36 @@ export function taskStepTitle(step: Step): string {
   );
 }
 
+export function taskStepValue(input: unknown, flow: Flow, stepId: string): string {
+  const scope = referenceScope(flow.steps, stepId);
+  const reference = referenceOf(input);
+  if (reference !== undefined) {
+    const [root, key, ...path] = reference.split('.');
+    const suffix = path.length ? ' / ' + path.join(' / ') : '';
+    if (root === 'steps') {
+      const source = scope?.steps.find((node) => node.id === key);
+      if (source) return `「${taskStepTitle(source)}」的输出${suffix}`;
+    }
+    if (root === 'params' && key && Object.hasOwn(flow.parameters, key))
+      return `参数「${concise(key)}」${suffix}`;
+    if (root === 'item' && scope?.loop)
+      return `当前循环项${key ? ' / ' + [key, ...path].join(' / ') : ''}`;
+    if (root === 'index' && !key && scope?.loop) return '当前循环序号（从 0 开始）';
+    return `引用 ${concise(reference)}（需核对来源）`;
+  }
+  if (typeof input === 'string')
+    return input === '' ? '空文本' : !input.trim() ? '空白文本' : `「${concise(input)}」`;
+  if (input === null) return '空值';
+  if (input === undefined) return '未设置';
+  if (Array.isArray(input)) return `列表（${input.length} 项）`;
+  if (typeof input === 'object') return `数据对象（${Object.keys(input).length} 个字段）`;
+  if (typeof input === 'boolean') return input ? '是' : '否';
+  return String(input);
+}
+
 /** Describe the configured plan. Never resolve runtime values or infer execution success. */
 export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext = {}): string {
-  const scope = referenceScope(flow.steps, step.id);
-  function value(input: unknown): string {
-    const reference = referenceOf(input);
-    if (reference !== undefined) {
-      const [root, key, ...path] = reference.split('.');
-      const suffix = path.length ? ' / ' + path.join(' / ') : '';
-      if (root === 'steps') {
-        const source = scope?.steps.find((node) => node.id === key);
-        if (source) return `「${taskStepTitle(source)}」的输出${suffix}`;
-      }
-      if (root === 'params' && key && Object.hasOwn(flow.parameters, key))
-        return `参数「${concise(key)}」${suffix}`;
-      if (root === 'item' && scope?.loop)
-        return `当前循环项${key ? ' / ' + [key, ...path].join(' / ') : ''}`;
-      if (root === 'index' && !key && scope?.loop) return '当前循环序号（从 0 开始）';
-      return `引用 ${concise(reference)}（需核对来源）`;
-    }
-    if (typeof input === 'string')
-      return input === '' ? '空文本' : !input.trim() ? '空白文本' : `「${concise(input)}」`;
-    if (input === null) return '空值';
-    if (input === undefined) return '未设置';
-    if (Array.isArray(input)) return `列表（${input.length} 项）`;
-    if (typeof input === 'object') return `数据对象（${Object.keys(input).length} 个字段）`;
-    if (typeof input === 'boolean') return input ? '是' : '否';
-    return String(input);
-  }
+  const value = (input: unknown) => taskStepValue(input, flow, step.id);
   const resource = (binding: string) => {
     if (binding === 'task_output' && context.outputTarget)
       return `任务输出：${concise(context.outputTarget.directory)}`;
