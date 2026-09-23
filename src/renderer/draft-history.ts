@@ -8,12 +8,14 @@ export type DraftHistory = {
   revision: number;
 };
 export type DraftAction =
+  | { type: 'clear' }
   | { type: 'open'; record: FlowRecord }
   | { type: 'select'; selected: string }
   | { type: 'change'; record: FlowRecord; group?: string }
   | { type: 'undo' | 'redo' };
 export const emptyHistory: DraftHistory = { present: null, past: [], future: [], revision: 0 };
 export function draftHistory(state: DraftHistory, action: DraftAction): DraftHistory {
+  if (action.type === 'clear') return { ...emptyHistory, revision: state.revision + 1 };
   if (action.type === 'open')
     return {
       ...emptyHistory,

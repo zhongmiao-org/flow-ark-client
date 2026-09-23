@@ -1,3 +1,4 @@
+import EditorLeaveDialog from './EditorLeaveDialog';
 import ExportReviewDialog, { captureDraftExport, type ExportSource } from './ExportReviewDialog';
 import LocalSettingsPage, { type SettingsNavigation } from './LocalSettingsPage';
 import AttentionWorkspace, { type AttentionNavigation } from './AttentionWorkspace';
@@ -202,6 +203,16 @@ export default function App() {
     [loaded, setLoaded] = useState(false),
     [configOpen, setConfigOpen] = useState(false);
   const [history, dispatchDraft] = useReducer(draftHistory, emptyHistory);
+  const [editorLeave, setEditorLeave] = useState<{
+    next: () => void;
+    destination: string;
+    resume?: () => void;
+  }>();
+  const editorLeaveLocked = useRef(false);
+  const editorFocus = useRef<HTMLElement | null>(null);
+  const editorLeaveRequest = useRef<
+    (next: () => void, destination: string, resume?: () => void) => void
+  >(() => {});
   useEffect(() => {
     if (section === 'runs' && (detail || runFilter))
       document.querySelector('main')?.scrollTo({ top: 0 });
@@ -429,11 +440,99 @@ export default function App() {
     JSON.stringify(edit.bindings) === JSON.stringify(savedEdit.bindings);
   const welcomePage =
     section === 'flows' && loaded && !data.fault && !data.flows.length && !welcomeDismissed;
-  const returnHome = () => {
-    if (!guardInvalidNodeJson()) return;
-    setWelcomeDismissed(true);
-    setSection('flows');
-    setDetail(null);
+  const requestEditorLeave = (next: () => void, destination: string, resume?: () => void) => {
+    if (busy || editorLeaveLocked.current) return;
+    if (
+      section === 'editor' &&
+      edit &&
+      (!draftSaved || document.querySelector('.editor-page [data-value-invalid]'))
+    ) {
+      editorLeaveLocked.current = true;
+      if (!editorFocus.current?.isConnected)
+        editorFocus.current = document.activeElement as HTMLElement;
+      setEditorLeave({ next, destination, resume });
+    } else next();
+  };
+  editorLeaveRequest.current = requestEditorLeave;
+  const finishEditorLeave = () => {
+    const next = editorLeave?.next;
+    setEditorLeave(undefined);
+    editorLeaveLocked.current = false;
+    setError('');
+    setConfigOpen(false);
+    next?.();
+  };
+  const stayInEditor = () => {
+    const resume = editorLeave?.resume;
+    setEditorLeave(undefined);
+    editorLeaveLocked.current = false;
+    if (resume) {
+      resume();
+      return;
+    }
+    requestAnimationFrame(() => {
+      const invalid = document.querySelector<HTMLElement>('.editor-page [data-value-invalid]');
+      if (invalid) focusInvalidInput(invalid);
+      else if (editorFocus.current?.isConnected) editorFocus.current.focus({ preventScroll: true });
+    });
+  };
+  const returnHome = () =>
+    requestEditorLeave(() => {
+      setWelcomeDismissed(true);
+      setTaskReturn(false);
+      setSection('flows');
+      setDetail(null);
+    }, '我的流程');
+  const returnEditor = () => {
+    if (outlineOpen) {
+      closeOutline();
+      return;
+    }
+    if (editorBrowser) {
+      if (!guardInvalidNodeJson()) return;
+      if (compactDrawer) setEditorPanel('canvas');
+      else setBrowserOpen(false);
+    } else if (taskReturn)
+      requestEditorLeave(() => {
+        setSection('tasks');
+        setTaskReturn(false);
+      }, 'AI 任务');
+    else if (settingsFlowId === edit?.id && settingsFlowId)
+      requestEditorLeave(() => {
+        setSection('settings');
+        setSettingsFlowId(undefined);
+      }, '本地设置');
+    else returnHome();
+  };
+  useEffect(() => {
+    if (section !== 'editor' || nodeSession) return;
+    const back = (event: KeyboardEvent) => {
+      if (
+        event.defaultPrevented ||
+        document.querySelector('dialog[open]') ||
+        (event.target as HTMLElement | null)?.closest(
+          'input,textarea,select,[contenteditable="true"],.monaco-editor',
+        )
+      )
+        return;
+      if ((event.altKey && event.key === 'ArrowLeft') || (event.metaKey && event.key === '[')) {
+        event.preventDefault();
+        returnEditor();
+      }
+    };
+    window.addEventListener('keydown', back);
+    return () => window.removeEventListener('keydown', back);
+  });
+  const leaveNodeEditor = (next: () => void, destination: string) => {
+    const source = nodeSession;
+    nodeNavigation.current?.(() =>
+      requestAnimationFrame(() =>
+        editorLeaveRequest.current(next, destination, () => {
+          setNodeSession(source);
+          setBrowserOpen(false);
+        }),
+      ),
+    );
   };
   const closeNodeEditor = (next?: () => void) => {
     const source = nodeSession;
@@ -495,6 +594,35 @@ export default function App() {
   };
   return (
     <div className="application-shell">
+      {editorLeave && edit && (
+        <EditorLeaveDialog
+          name={edit.flow.name}
+          destination={editorLeave.destination}
+          stay={stayInEditor}
+          discard={() => {
+            if (savedEdit) dispatchDraft({ type: 'open', record: savedEdit });
+            else dispatchDraft({ type: 'clear' });
+            inputGroup.current = undefined;
+            inputTarget.current = null;
+            editorFocus.current = null;
+            finishEditorLeave();
+          }}
+          save={async () => {
+            checkEditorInput('保存并离开');
+            const saved = (await api('flow.save', {
+              flow: edit.flow,
+              bindings: edit.bindings,
+            })) as FlowRecord;
+            setEdit(saved);
+            setData((current) => ({
+              ...current,
+              flows: [...current.flows.filter((record) => record.id !== saved.id), saved],
+            }));
+            setNotice('已保存本地草稿');
+            finishEditorLeave();
+          }}
+        />
+      )}
       {exportSource && (
         <ExportReviewDialog
           source={exportSource}
@@ -551,15 +679,14 @@ export default function App() {
                 }
                 onClick={() => {
                   if (nodeSession) {
-                    nodeNavigation.current?.(() => {
+                    leaveNodeEditor(() => {
                       setTaskReturn(false);
                       setSection(id);
                       setDetail(null);
                       setRunFilter(false);
-                    });
+                    }, label);
                     return;
                   }
-                  if (!guardInvalidNodeJson()) return;
                   const navigate = () => {
                     if (id === 'tools')
                       setToolsOrigin(section === 'settings' ? 'settings' : 'tasks');
@@ -568,7 +695,8 @@ export default function App() {
                     setDetail(null);
                     setRunFilter(false);
                   };
-                  if (section === 'tools') toolNavigation.current?.(navigate);
+                  if (section === 'editor') requestEditorLeave(navigate, label);
+                  else if (section === 'tools') toolNavigation.current?.(navigate);
                   else if (section === 'ai-settings')
                     aiSettingsNavigation.current?.(() =>
                       id === 'templates' ? navigate() : leaveAIContext(navigate),
@@ -601,14 +729,14 @@ export default function App() {
               title="重新学习 · 2 分钟"
               disabled={!!nodeSession || (section === 'editor' && outlineOpen)}
               onClick={() => {
-                if (!guardInvalidNodeJson()) return;
                 const navigate = () => {
                   setTaskReturn(false);
                   setSection('tasks');
                   setGuideEntry((n) => n + 1);
                   setBrowserOpen(false);
                 };
-                if (section === 'tools') toolNavigation.current?.(navigate);
+                if (section === 'editor') requestEditorLeave(navigate, '首次教学');
+                else if (section === 'tools') toolNavigation.current?.(navigate);
                 else if (section === 'ai-settings')
                   aiSettingsNavigation.current?.(() => leaveAIContext(navigate));
                 else if (section === 'templates') templateNavigation.current?.(navigate);
@@ -637,10 +765,10 @@ export default function App() {
                   href="#flows"
                   onClick={(event) => {
                     event.preventDefault();
-                    nodeNavigation.current?.(() => {
+                    leaveNodeEditor(() => {
                       setSection('flows');
                       setTaskReturn(false);
-                    });
+                    }, '我的流程');
                   }}
                 >
                   我的流程
@@ -720,15 +848,12 @@ export default function App() {
             {taskReturn && ['settings', 'editor'].includes(section) && (
               <button
                 className="context-back"
-                onClick={() => {
-                  if (!guardInvalidNodeJson()) return;
-                  if (section === 'editor' && !draftSaved) {
-                    setError('请先保存流程修改，再返回 AI 任务');
-                    return;
-                  }
-                  setSection('tasks');
-                  setTaskReturn(false);
-                }}
+                onClick={() =>
+                  requestEditorLeave(() => {
+                    setSection('tasks');
+                    setTaskReturn(false);
+                  }, 'AI 任务')
+                }
               >
                 ← 返回 AI 任务
               </button>
@@ -775,29 +900,7 @@ export default function App() {
               </button>
             )}
             {((section === 'editor' && !taskReturn) || welcomePage) && (
-              <button
-                className="context-back"
-                onClick={() => {
-                  if (
-                    !editorBrowser &&
-                    section === 'editor' &&
-                    !!settingsFlowId &&
-                    settingsFlowId === edit?.id
-                  ) {
-                    if (!guardInvalidNodeJson()) return;
-                    if (!draftSaved) {
-                      setError('请先保存流程修改，再返回本地设置');
-                      return;
-                    }
-                    setSection('settings');
-                    setSettingsFlowId(undefined);
-                  } else if (!editorBrowser) returnHome();
-                  else if (guardInvalidNodeJson()) {
-                    if (compactDrawer) setEditorPanel('canvas');
-                    else setBrowserOpen(false);
-                  }
-                }}
-              >
+              <button className="context-back" onClick={returnEditor}>
                 {compactDrawer
                   ? '← 返回紧凑窗口与网页'
                   : editorBrowser
@@ -1241,6 +1344,7 @@ export default function App() {
                 const control = (event.target as HTMLElement).closest(
                   'input,textarea,select,[contenteditable="true"],.monaco-editor',
                 );
+                if (control instanceof HTMLElement) editorFocus.current = control;
                 inputTarget.current = control;
                 inputGroup.current = control ? crypto.randomUUID() : undefined;
               }}
@@ -1350,10 +1454,9 @@ export default function App() {
                     {edit.bindings.configuration && (
                       <button
                         onClick={() => {
-                          if (guardInvalidNodeJson()) {
-                            if (edit.bindings.template) setSection('templates');
-                            else setConfigOpen(true);
-                          }
+                          if (edit.bindings.template)
+                            requestEditorLeave(() => setSection('templates'), '模板实例');
+                          else if (guardInvalidNodeJson()) setConfigOpen(true);
                         }}
                       >
                         <Settings size={15} />
@@ -1438,13 +1541,15 @@ export default function App() {
                   setBrowserOpen(false);
                   document.querySelector('main')?.scrollTo(0, 0);
                 }}
-                showRun={(next: any) => {
-                  setDetail(next);
-                  setRunOrigin('editor');
-                  setRunTab('current');
-                  setRunFilter(false);
-                  setSection('runs');
-                }}
+                showRun={(next: any) =>
+                  requestEditorLeave(() => {
+                    setDetail(next);
+                    setRunOrigin('editor');
+                    setRunTab('current');
+                    setRunFilter(false);
+                    setSection('runs');
+                  }, '运行详情')
+                }
                 revision={history.revision}
                 record={edit}
                 setRecord={setEdit}
@@ -1522,7 +1627,10 @@ export default function App() {
               navigation={nodeNavigation}
               close={closeNodeEditor}
               configuration={() => {
-                if (nodeSession.record.bindings.template) setSection('templates');
+                if (nodeSession.record.bindings.template)
+                  requestAnimationFrame(() =>
+                    editorLeaveRequest.current(() => setSection('templates'), '模板实例'),
+                  );
                 else setConfigOpen(true);
               }}
               save={async (record) => {
