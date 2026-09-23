@@ -1,7 +1,14 @@
 import ToolConnectionUsage, { type ConnectionTaskReference } from './ToolConnectionUsage';
 import DesktopAssistantConnection from './DesktopAssistantConnection';
 import { usePageBack } from './use-page-back';
-import { useEffect, useRef, useState, type MutableRefObject, type ReactNode } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type MutableRefObject,
+  type ReactNode,
+} from 'react';
 import {
   connectionConfig,
   type ConnectionConfig,
@@ -122,6 +129,13 @@ export default function ToolConnectionsPage({
     'catalog',
   );
   const [connections, setConnections] = useState<ToolConnection[]>([]);
+  const [listLoading, setListLoading] = useState(false);
+  const [listError, setListError] = useState('');
+  const listRead = useRef(0);
+  const savedList = useRef<HTMLUListElement>(null);
+  const savedHeading = useRef<HTMLHeadingElement>(null);
+  const rowButtons = useRef(new Map<string, HTMLButtonElement>());
+  const catalogReturn = useRef<{ id: string; main: number; list: number } | undefined>(undefined);
   const [loaded, setLoaded] = useState(false),
     [error, setError] = useState('');
   const [form, setForm] = useState<Form>({ ...empty });
@@ -164,28 +178,38 @@ export default function ToolConnectionsPage({
     selected.config.transport.url === form.url.trim() &&
     selected.config.protocolVersion === form.protocol;
   const refresh = async () => {
-    const records = await api('tool.connection.list');
-    setConnections(records);
-    setLoaded(true);
-    return records as ToolConnection[];
+    const ticket = ++listRead.current;
+    setListLoading(true);
+    setListError('');
+    try {
+      const records: ToolConnection[] = await api('tool.connection.list');
+      if (ticket === listRead.current) {
+        setConnections(records);
+        setLoaded(true);
+      }
+      return records;
+    } catch (error) {
+      if (ticket === listRead.current) setListError(connectionError(error));
+      throw error;
+    } finally {
+      if (ticket === listRead.current) setListLoading(false);
+    }
   };
   useEffect(() => {
     if (!active) return;
-    let live = true;
-    void api('tool.connection.list')
-      .then((records) => {
-        if (live) {
-          setConnections(records);
-          setLoaded(true);
-        }
-      })
-      .catch((e) => {
-        if (live) setError(connectionError(e));
-      });
+    void refresh().catch(() => {});
     return () => {
-      live = false;
+      listRead.current++;
     };
   }, [active]);
+  useLayoutEffect(() => {
+    if (!active || view !== 'catalog' || !catalogReturn.current) return;
+    const position = catalogReturn.current;
+    catalogReturn.current = undefined;
+    if (savedList.current) savedList.current.scrollTop = position.list;
+    document.querySelector('main')?.scrollTo({ top: position.main });
+    (rowButtons.current.get(position.id) ?? savedHeading.current)?.focus({ preventScroll: true });
+  }, [active, view]);
   useEffect(() => {
     if (!candidate) return;
     const timer = setInterval(() => setClock(Date.now()), 1000);
@@ -222,6 +246,9 @@ export default function ToolConnectionsPage({
   };
   navigation.current = go;
   const move = (next: typeof view) => {
+    listRead.current++;
+    setListLoading(false);
+    if (next === 'catalog') void refresh().catch(() => {});
     setView(next);
     setError('');
     setConfirm(undefined);
@@ -399,6 +426,10 @@ export default function ToolConnectionsPage({
         token: candidate.token,
         reviewedCapabilities: true,
       });
+      listRead.current++;
+      setListLoading(false);
+      setListError('');
+      setLoaded(true);
       setConnections((list) => [...list.filter((c) => c.id !== saved.id), saved]);
       setSelectedId(saved.id);
       request.current = undefined;
@@ -500,6 +531,8 @@ export default function ToolConnectionsPage({
   usePageBack(back, active);
   const backLabel =
     view === 'catalog' ? parentTitle : view === 'review' ? '连接设置' : '应用与工具';
+  const pageError =
+    error || (view !== 'catalog' && listError ? `读取连接记录未完成：${listError}` : '');
   return (
     <div className="tools-host" hidden={!active}>
       <header className="topbar">
@@ -541,9 +574,9 @@ export default function ToolConnectionsPage({
             </p>
           </div>
         </div>
-        {error && (
+        {pageError && (
           <div className="alert error" role="alert">
-            {error}
+            {pageError}
           </div>
         )}
         {view === 'saved' && loaded && !selected && (
@@ -587,29 +620,68 @@ export default function ToolConnectionsPage({
               </section>
             </div>
             <div className="tool-catalog-bottom">
-              <section className="ai-task-card">
-                <h2>已保存连接</h2>
-                {!loaded ? (
-                  <p>正在读取本机连接…</p>
-                ) : !connections.length ? (
-                  <p>尚未保存自定义连接。账号和工作区需在使用前核对。</p>
-                ) : (
-                  connections.map((connection) => (
-                    <button
-                      className="tool-connection-row"
-                      key={connection.id}
-                      onClick={() => {
-                        setSelectedId(connection.id);
-                        move('saved');
-                      }}
-                    >
-                      <strong>{connection.config.displayName}</strong>
-                      <span>
-                        {labels[connection.status]} · {connection.tools.length} 项能力
-                      </span>
-                    </button>
-                  ))
+              <section
+                className="ai-task-card tool-saved-connections"
+                aria-labelledby="saved-connections-title"
+              >
+                <div className="tool-saved-heading">
+                  <h2 id="saved-connections-title" tabIndex={-1} ref={savedHeading}>
+                    已保存连接{loaded ? ` · ${connections.length}` : ''}
+                  </h2>
+                  <button disabled={listLoading} onClick={() => void refresh().catch(() => {})}>
+                    {listLoading ? '正在读取…' : listError ? '重新读取' : '刷新列表'}
+                  </button>
+                </div>
+                {listError && (
+                  <div role="alert" className="tool-list-error">
+                    <p>读取连接记录未完成：{listError}</p>
+                    {loaded && <p>下方保留上次读取的记录，当前状态需重新核对。</p>}
+                  </div>
                 )}
+                {!loaded && !listError ? (
+                  <p role="status">
+                    {listLoading ? '正在读取本机连接…' : '尚未取得本机连接记录。'}
+                  </p>
+                ) : loaded && !connections.length && !listError ? (
+                  <p>尚未保存自定义连接。账号和工作区需在使用前核对。</p>
+                ) : null}
+                {!!connections.length && (
+                  <ul ref={savedList} className="tool-saved-list" aria-label="已保存的工具连接">
+                    {connections.map((connection) => (
+                      <li key={connection.id}>
+                        <button
+                          className="tool-connection-row"
+                          ref={(button) => {
+                            if (button) rowButtons.current.set(connection.id, button);
+                            else rowButtons.current.delete(connection.id);
+                          }}
+                          onClick={() => {
+                            catalogReturn.current = {
+                              id: connection.id,
+                              main: document.querySelector('main')?.scrollTop ?? 0,
+                              list: savedList.current?.scrollTop ?? 0,
+                            };
+                            setSelectedId(connection.id);
+                            move('saved');
+                          }}
+                        >
+                          <strong>{connection.config.displayName}</strong>
+                          <span
+                            className={`tool-status ${connection.status === 'verified' ? 'success' : 'warning'}`}
+                          >
+                            {labels[connection.status]}
+                          </span>
+                          <span className="tool-connection-source">
+                            {connection.config.source} ·{' '}
+                            {connection.config.transport.type === 'http' ? 'HTTP' : '本地程序'} ·{' '}
+                            {connection.tools.length} 项能力
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p className="tool-list-note">刷新只读取本机记录，不重新连接服务或授予任务权限。</p>
               </section>
               <section className="ai-task-card">
                 <h2>高级设置</h2>
