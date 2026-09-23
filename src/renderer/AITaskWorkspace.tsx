@@ -13,6 +13,7 @@ import TaskWebTargetPage from './TaskWebTargetPage';
 import FirstTaskGuide from './FirstTaskGuide';
 import TaskUnderstandingPage, { type OutputOptions } from './TaskUnderstandingPage';
 import PlanningQuestions from './PlanningQuestions';
+import PlanningChanges from './PlanningChanges';
 import { outputContext, taskOutputNameSchema } from '../shared/task-output';
 import { learningSteps, type LearningStatus } from '../shared/learning';
 import { webContext } from '../shared/task-web-target';
@@ -1594,35 +1595,13 @@ export default function AITaskWorkspace(props: Props) {
                             )}
                             <li>声明的能力：{flow.requiredCapabilities.join('、') || '无'}</li>
                           </ul>
-                          <details className="ai-task-diff" open={!!detail.proposal.baseFlow}>
-                            <summary>检查修改 · {detail.changes.length} 项</summary>
-                            {detail.changes.map((change, index) => (
-                              <div className="ai-task-change" key={index}>
-                                <h3>
-                                  {
-                                    {
-                                      added: '新增',
-                                      removed: '删除',
-                                      changed: '修改',
-                                      moved: '移动',
-                                    }[change.kind]
-                                  }{' '}
-                                  · {change.label}
-                                </h3>
-                                <small>{change.path}</small>
-                                <div>
-                                  <section>
-                                    <b>原值</b>
-                                    <pre>{text(change.before)}</pre>
-                                  </section>
-                                  <section>
-                                    <b>新值</b>
-                                    <pre>{text(change.after)}</pre>
-                                  </section>
-                                </div>
-                              </div>
-                            ))}
-                          </details>
+                          <PlanningChanges
+                            key={detail.proposal.id}
+                            changes={detail.changes}
+                            before={detail.proposal.baseFlow}
+                            after={flow}
+                            revision={detail.proposal.baseRevision}
+                          />
                           {detail.conflict && (
                             <p className="ai-task-note ai-task-failure" role="alert">
                               原流程或绑定已变化，请重新生成方案后再采纳。
