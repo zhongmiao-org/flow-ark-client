@@ -248,7 +248,7 @@ export default function ExportReviewDialog({
                     : '确认导出 ZIP'}
               </button>
               <button disabled={!!busy} onClick={close}>
-                {draft ? '取消，返回编辑' : '取消，返回模板库'}
+                {draft ? '取消，返回编辑' : '取消，返回模板详情'}
               </button>
             </div>
           </footer>

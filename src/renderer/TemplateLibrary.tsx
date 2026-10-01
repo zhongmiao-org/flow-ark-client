@@ -1,3 +1,4 @@
+import { FileSpreadsheet, Folder, Globe, MousePointer2, Workflow } from 'lucide-react';
 import { usePageBack } from './use-page-back';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
 import { useState, useEffect, useRef, type MutableRefObject } from 'react';
@@ -112,12 +113,13 @@ export default function TemplateLibrary({
   ].sort();
   const references = pkg ? data.instances.filter((i) => i.packageKey === pkg.key) : [];
   const flowRefs = pkg ? data.flows.filter((f) => f.bindings.template?.packageKey === pkg.key) : [];
+  const instancePackage = data.templates.find((item) => item.key === instanceFilter);
   const title = {
     library: '模板库',
     inspect: '检查并安装模板',
     installed: '模板已安装',
     package: pkg?.manifest.name ?? '模板版本不可用',
-    instances: '本地实例',
+    instances: instancePackage ? `${instancePackage.manifest.name} · 实例` : '本地实例',
     remove: '卸载模板版本',
   }[view];
   const message = (reason: unknown) =>
@@ -240,6 +242,11 @@ export default function TemplateLibrary({
         showRun={showRun}
         schedule={schedule}
         settings={settings}
+        returnLabel={title}
+        home={() => {
+          setDetail(undefined);
+          home();
+        }}
         close={() => setDetail(undefined)}
         choose={(id) => void openInstance(id)}
       />
@@ -309,6 +316,7 @@ export default function TemplateLibrary({
                       : '从已安装的模板定义开始，创建独立实例并配置本机资源。'}
             </p>
           </div>
+          {view === 'instances' && instancePackage && createButton(instancePackage)}
           {view === 'library' && (
             <button className="primary" disabled={!!busy} onClick={() => void selectZip()}>
               {busy === 'inspect' ? '正在检查 ZIP…' : '导入 ZIP 模板'}
@@ -359,7 +367,7 @@ export default function TemplateLibrary({
             <div className="template-catalog-toolbar">
               <strong>已安装 {data.templates.length} 个版本</strong>
               <label>
-                搜索模板
+                <span className="sr-only">搜索模板</span>
                 <input
                   type="search"
                   placeholder="名称、说明或作者"
@@ -368,7 +376,7 @@ export default function TemplateLibrary({
                 />
               </label>
               <label>
-                能力
+                <span className="sr-only">能力</span>
                 <select value={capability} onChange={(e) => setCapability(e.target.value)}>
                   <option value="">全部能力</option>
                   {caps.map((c) => (
@@ -379,7 +387,7 @@ export default function TemplateLibrary({
                 </select>
               </label>
               <label>
-                排序
+                <span className="sr-only">排序</span>
                 <select value={sort} onChange={(e) => setSort(e.target.value)}>
                   <option value="recent">最近安装</option>
                   <option value="name">名称</option>
@@ -394,41 +402,44 @@ export default function TemplateLibrary({
               </button>
             </div>
             <div className="template-catalog-grid">
-              {matches.map((p) => (
-                <article className="template-catalog-card" key={p.key}>
-                  <div className="template-catalog-row">
-                    <span className="template-catalog-status">v{p.manifest.version}</span>
-                    <span className="template-catalog-muted">
-                      {p.manifest.entries.length} 个入口
-                    </span>
-                  </div>
-                  <h2>{p.manifest.name}</h2>
-                  <p>{p.manifest.description}</p>
-                  <div className="template-catalog-tags">
-                    {[...new Set(p.manifest.entries.flatMap((e) => e.capabilities))]
-                      .slice(0, 4)
-                      .map((c) => (
-                        <span key={c}>{capabilityLabel(c)}</span>
-                      ))}
-                  </div>
-                  <div className="template-catalog-actions">
-                    <button
-                      disabled={!!busy}
-                      data-catalog-focus={`package-${p.key}`}
-                      onClick={() => openPackage(p)}
-                    >
-                      查看与配置
-                    </button>
-                    <button
-                      disabled={!!busy}
-                      data-catalog-focus={`instances-${p.key}`}
-                      onClick={() => showInstances(p.key)}
-                    >
-                      实例 {data.instances.filter((i) => i.packageKey === p.key).length}
-                    </button>
-                  </div>
-                </article>
-              ))}
+              {matches.map((p) => {
+                const capabilities = [
+                  ...new Set(p.manifest.entries.flatMap((entry) => entry.capabilities)),
+                ];
+                const Icon = capabilities.includes('browser-forms-v1')
+                  ? MousePointer2
+                  : capabilities.includes('browser')
+                    ? Globe
+                    : capabilities.includes('excel') || capabilities.includes('excel-mapping-v1')
+                      ? FileSpreadsheet
+                      : capabilities.includes('file')
+                        ? Folder
+                        : Workflow;
+                return (
+                  <article className="template-catalog-card template-library-card" key={p.key}>
+                    <div className="template-library-category">
+                      <Icon size={28} strokeWidth={1.6} aria-hidden="true" />
+                      <span>
+                        {capabilities.slice(0, 4).map(capabilityLabel).join(' · ') || '通用流程'}
+                      </span>
+                    </div>
+                    <h2>{p.manifest.name}</h2>
+                    <p>{p.manifest.description}</p>
+                    <div className="template-library-footer">
+                      <span className="template-catalog-muted">
+                        v{p.manifest.version} · {p.manifest.entries.length} 个入口
+                      </span>
+                      <button
+                        disabled={!!busy}
+                        data-catalog-focus={`package-${p.key}`}
+                        onClick={() => openPackage(p)}
+                      >
+                        查看模板与实例
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
             {!matches.length && (
               <div className="template-catalog-empty">
@@ -602,7 +613,7 @@ export default function TemplateLibrary({
             <div className="template-catalog-toolbar">
               <strong>{instances.length} 个实例</strong>
               <label>
-                搜索实例
+                <span className="sr-only">搜索实例</span>
                 <input
                   type="search"
                   value={instanceQuery}
@@ -611,10 +622,15 @@ export default function TemplateLibrary({
                 />
               </label>
               <label>
-                模板版本
+                <span className="sr-only">模板版本</span>
                 <select value={instanceFilter} onChange={(e) => setInstanceFilter(e.target.value)}>
                   <option value="">全部版本</option>
-                  {[...new Set(data.instances.map((i) => i.packageKey))].map((key) => (
+                  {[
+                    ...new Set([
+                      ...data.templates.map((item) => item.key),
+                      ...data.instances.map((i) => i.packageKey),
+                    ]),
+                  ].map((key) => (
                     <option key={key} value={key}>
                       {key}
                     </option>
@@ -623,10 +639,19 @@ export default function TemplateLibrary({
               </label>
             </div>
             <div className="template-instance-list">
-              {instances.map((i) => (
-                <article className="template-catalog-card" key={i.id}>
-                  <div className="template-catalog-row">
-                    <h2>{i.name}</h2>
+              {instances.map((i) => {
+                const source = data.templates.find((item) => item.key === i.packageKey);
+                return (
+                  <article className="template-catalog-card template-instance-card" key={i.id}>
+                    <h2 title={`${i.id} · 创建于 ${date(i.createdAt)}`}>{i.name}</h2>
+                    <p>
+                      {source
+                        ? `${instanceFilter ? '' : source.manifest.name + ' · '}v${source.manifest.version}`
+                        : i.packageKey}
+                      {' · '}
+                      {Object.keys(i.entryFlows).length} 个入口
+                      {' · '}已保存 {Object.keys(i.resources).length} 项资源，运行前复核
+                    </p>
                     <button
                       className="primary"
                       disabled={!!busy}
@@ -638,16 +663,9 @@ export default function TemplateLibrary({
                     >
                       打开实例
                     </button>
-                  </div>
-                  <p>
-                    {i.packageKey} · {Object.keys(i.entryFlows).length} 个入口
-                  </p>
-                  <p className="template-catalog-muted">
-                    创建于 {date(i.createdAt)} · {i.id}
-                  </p>
-                  <p>资源已保存 {Object.keys(i.resources).length} 项；运行前按所选入口检查。</p>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
             {!instances.length && (
               <div className="template-catalog-empty">

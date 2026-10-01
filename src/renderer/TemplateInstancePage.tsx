@@ -41,6 +41,8 @@ export default function TemplateInstancePage({
   showRun,
   schedule,
   settings,
+  returnLabel,
+  home,
   close,
   choose,
 }: {
@@ -52,6 +54,8 @@ export default function TemplateInstancePage({
   showRun: (detail: any, origin: TemplateEntryOrigin, output?: boolean) => void;
   schedule: (origin: TemplateEntryOrigin) => void;
   settings: (entry: AISettingsEntry) => void;
+  returnLabel: string;
+  home: () => void;
   close: () => void;
   choose: (id: string) => void;
 }) {
@@ -183,7 +187,7 @@ export default function TemplateInstancePage({
     setDraft((current) => acceptTemplateSave(current, submitted, next, request, scope));
     return true;
   };
-  const go: TemplateNavigation = (next, destination = '模板库') => {
+  const go: TemplateNavigation = (next, destination = returnLabel) => {
     if (lock.current || pending.current) return;
     if (templateDirty(draft, saved) || rawInvalid()) {
       if (!focus.current?.offsetParent) focus.current = document.activeElement as HTMLElement;
@@ -271,14 +275,14 @@ export default function TemplateInstancePage({
     >
       <header className="topbar">
         <button className="context-back" disabled={busy} onClick={() => go(close)}>
-          ← 返回模板库
+          ← 返回{returnLabel}
         </button>
         <nav className="breadcrumbs" aria-label="当前位置">
           <a
             href="#templates"
             onClick={(event) => {
               event.preventDefault();
-              go(close);
+              go(home, '模板库');
             }}
           >
             模板库
@@ -337,7 +341,7 @@ export default function TemplateInstancePage({
               >
                 放弃未保存内容并重新读取实例
               </button>
-              <button onClick={() => go(close)}>返回模板库</button>
+              <button onClick={() => go(home, '模板库')}>返回模板库</button>
             </div>
           </div>
         )}
