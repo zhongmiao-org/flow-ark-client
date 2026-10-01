@@ -60,7 +60,7 @@ export default function TemplateInstancePage({
   exportTemplate: (pkg: InstalledPackage, returnLabel?: string) => void;
   home: () => void;
   close: () => void;
-  choose: (id: string) => void;
+  choose: (id: string) => Promise<boolean>;
 }) {
   const [draft, setDraft] = useState(initial),
     [saved, setSaved] = useState(structuredClone(initial));
@@ -75,6 +75,8 @@ export default function TemplateInstancePage({
   const [configurationGeneration, setConfigurationGeneration] = useState(0);
   const [others, setOthers] = useState(false),
     [version, setVersion] = useState('');
+  const [createdVersion, setCreatedVersion] = useState<{ id: string; version: string }>();
+  const [adopting, setAdopting] = useState(false);
   const [leaving, setLeaving] = useState<{ next: () => void; destination: string }>();
   const lock = useRef(false),
     pending = useRef(false),
@@ -264,6 +266,29 @@ export default function TemplateInstancePage({
   const alternatives = data.templates.filter(
     (p) => p.manifest.id === draft.manifest.id && p.key !== instance.packageKey,
   );
+  const selectedVersion = alternatives.find((pkg) => pkg.key === version);
+  const adoptVersion = () => {
+    if (blocked || (!createdVersion && !selectedVersion)) return;
+    const target = selectedVersion;
+    go(
+      () => {
+        setAdopting(true);
+        void work(async () => {
+          let created = createdVersion;
+          if (!created && target) {
+            const next = await api('template.create', { key: target.key, copyFrom: instance.id });
+            created = { id: next.id, version: target.manifest.version };
+            setCreatedVersion(created);
+          }
+          if (created && !(await choose(created.id)))
+            throw new Error('实例已创建，但暂时无法打开。请重试打开已创建实例，无需再次创建。');
+        }).finally(() => setAdopting(false));
+      },
+      createdVersion
+        ? `已创建实例 · v${createdVersion.version}`
+        : `新版实例 · v${target?.manifest.version}`,
+    );
+  };
   return (
     <div
       ref={root}
@@ -491,47 +516,62 @@ export default function TemplateInstancePage({
                 <dt>内容摘要</dt>
                 <dd>{draft.manifest.contentDigest}</dd>
               </dl>
-              <h3>采用模板新版</h3>
-              <p>创建独立实例，复制符合新模板字段规则的已保存普通配置，资源和权限重新核对。</p>
-              {alternatives.length ? (
-                <label className="ai-settings-field">
-                  已安装的其他版本
-                  <select
-                    aria-label="采用模板版本"
-                    value={version}
-                    onChange={(event) => setVersion(event.target.value)}
-                  >
-                    <option value="">选择版本</option>
-                    {alternatives.map((item) => (
-                      <option key={item.key} value={item.key}>
-                        v{item.manifest.version}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : (
-                <p>本机尚未安装其他版本。</p>
-              )}
-              <button
-                className="primary"
-                disabled={blocked || !version}
-                onClick={() =>
-                  go(
-                    () =>
-                      void work(async () => {
-                        const created = await api('template.create', {
-                          key: version,
-                          copyFrom: instance.id,
-                        });
-                        choose(created.id);
-                        return created;
-                      }),
-                    `新版实例 · ${version}`,
-                  )
-                }
-              >
-                创建新版实例
-              </button>
+              <div className="template-version-adoption">
+                <span className="ai-config-status neutral">创建新实例</span>
+                <h3>采用模板新版</h3>
+                <p>
+                  创建独立实例，复制符合新模板字段规则的已保存普通配置，资源和权限重新核对，不迁移业务状态。
+                </p>
+                {alternatives.length ? (
+                  <label className="ai-settings-field">
+                    已安装的其他版本
+                    <select
+                      aria-label="采用模板版本"
+                      disabled={blocked || !!createdVersion}
+                      value={version}
+                      onChange={(event) => setVersion(event.target.value)}
+                    >
+                      <option value="">选择版本</option>
+                      {alternatives.map((item) => (
+                        <option key={item.key} value={item.key}>
+                          v{item.manifest.version}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : (
+                  <p>本机尚未安装其他版本。</p>
+                )}
+                {selectedVersion && !createdVersion && (
+                  <div className="template-version-summary" role="status">
+                    <strong>将创建 v{selectedVersion.manifest.version} 的独立实例</strong>
+                    <p>
+                      当前实例继续使用 v{draft.manifest.version}
+                      。只复制已保存且符合目标字段规则的普通配置。
+                    </p>
+                    <p>新实例的资源绑定、动作权限和业务状态均需重新配置。</p>
+                  </div>
+                )}
+                {createdVersion && (
+                  <div className="template-version-summary" role="status">
+                    <strong>v{createdVersion.version} 的新实例已创建</strong>
+                    <p>暂时无法打开时，可以继续打开这个实例；原实例仍保留。</p>
+                  </div>
+                )}
+                <button
+                  className="primary"
+                  disabled={blocked || (!createdVersion && !selectedVersion)}
+                  onClick={adoptVersion}
+                >
+                  {adopting
+                    ? createdVersion
+                      ? '正在打开…'
+                      : '正在创建…'
+                    : createdVersion
+                      ? '打开已创建实例'
+                      : '创建新版实例'}
+                </button>
+              </div>
             </section>
             <aside className="ai-task-card template-instance-guide">
               <h2>导出原模板定义</h2>

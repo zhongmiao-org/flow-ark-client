@@ -220,6 +220,7 @@ export default function TemplateLibrary({
       const next = await api('template.detail', { id });
       setDetail(next);
       setResumeInstance(undefined);
+      return true;
     });
   const create = (p: InstalledPackage, copy?: string) =>
     work('create', async () => {
@@ -270,7 +271,7 @@ export default function TemplateLibrary({
           home();
         }}
         close={() => setDetail(undefined)}
-        choose={(id) => void openInstance(id)}
+        choose={async (id) => (await openInstance(id)) === true}
       />
     );
   navigation.current = (next) => {
