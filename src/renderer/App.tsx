@@ -1493,10 +1493,11 @@ export default function App() {
             <TemplateLibrary
               refresh={refresh}
               navigation={templateNavigation}
-              exportTemplate={(pkg) =>
+              exportTemplate={(pkg, returnLabel) =>
                 setExportSource(
                   structuredClone({
                     kind: 'template',
+                    returnLabel,
                     key: pkg.key,
                     name: pkg.manifest.name,
                     version: pkg.manifest.version,

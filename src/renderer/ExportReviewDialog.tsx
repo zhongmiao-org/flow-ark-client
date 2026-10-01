@@ -10,7 +10,14 @@ export type ExportSource =
       configuration?: { adapter: string; schema: unknown };
       saved: boolean;
     }
-  | { kind: 'template'; key: string; name: string; version: string; entries: string[] };
+  | {
+      kind: 'template';
+      key: string;
+      name: string;
+      version: string;
+      entries: string[];
+      returnLabel?: string;
+    };
 
 export function captureDraftExport(record: FlowRecord, saved: boolean): ExportSource {
   const configuration = record.bindings.configuration;
@@ -45,6 +52,7 @@ export default function ExportReviewDialog({
   const [notice, setNotice] = useState('');
   const draft = source.kind === 'draft';
   const name = draft ? source.flow.name : source.name;
+  const templateReturnLabel = source.kind === 'template' ? (source.returnLabel ?? '模板详情') : '';
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     dialog.current?.showModal();
@@ -149,7 +157,7 @@ export default function ExportReviewDialog({
               {busy === 'import' ? '正在选择文件…' : '选择 ZIP 进行导入验证'}
             </button>
             <button disabled={!!busy} onClick={close}>
-              {draft ? '返回流程编排' : '返回模板库'}
+              {draft ? '返回流程编排' : `返回${templateReturnLabel}`}
             </button>
           </div>
         </section>
@@ -248,7 +256,7 @@ export default function ExportReviewDialog({
                     : '确认导出 ZIP'}
               </button>
               <button disabled={!!busy} onClick={close}>
-                {draft ? '取消，返回编辑' : '取消，返回模板详情'}
+                {draft ? '取消，返回编辑' : `取消，返回${templateReturnLabel}`}
               </button>
             </div>
           </footer>

@@ -2,6 +2,7 @@ import { usePageBack } from './use-page-back';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import type { Bootstrap } from '../shared/types';
+import type { InstalledPackage } from '../templates/archive';
 import type { AISettingsEntry } from './AISettingsPage';
 import { Field } from './TemplateConfiguration';
 import TemplateEntry from './TemplateEntry';
@@ -42,6 +43,7 @@ export default function TemplateInstancePage({
   schedule,
   settings,
   returnLabel,
+  exportTemplate,
   home,
   close,
   choose,
@@ -55,6 +57,7 @@ export default function TemplateInstancePage({
   schedule: (origin: TemplateEntryOrigin) => void;
   settings: (entry: AISettingsEntry) => void;
   returnLabel: string;
+  exportTemplate: (pkg: InstalledPackage, returnLabel?: string) => void;
   home: () => void;
   close: () => void;
   choose: (id: string) => void;
@@ -257,6 +260,7 @@ export default function TemplateInstancePage({
     });
   };
   const blocked = busy || checking || !!sourceError;
+  const originalPackage = data.templates.find((pkg) => pkg.key === instance.packageKey);
   const alternatives = data.templates.filter(
     (p) => p.manifest.id === draft.manifest.id && p.key !== instance.packageKey,
   );
@@ -534,13 +538,14 @@ export default function TemplateInstancePage({
               <p>保留原版本与身份；不包含配置值、密钥、本机路径或历史。</p>
               <button
                 className="primary"
-                disabled={busy}
-                onClick={() =>
-                  void work(() => api('template.export', { key: instance.packageKey }))
-                }
+                disabled={blocked || !originalPackage}
+                onClick={() => {
+                  if (!blocked && originalPackage) exportTemplate(originalPackage, '来源与版本');
+                }}
               >
                 导出 ZIP
               </button>
+              {!originalPackage && <p role="status">原模板包不可用，请先恢复此版本后再导出。</p>}
               <h3>原实例保持原样</h3>
               <p>新旧版本并存。模板更新不会覆盖本实例、计划或正在运行的快照。</p>
               <span className="ai-config-status warning">该版本仍被引用</span>

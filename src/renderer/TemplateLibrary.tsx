@@ -33,7 +33,7 @@ export default function TemplateLibrary({
   navigation: MutableRefObject<TemplateNavigation | undefined>;
   showRun: (detail: any, origin: TemplateEntryOrigin, output?: boolean) => void;
   schedule: (origin: TemplateEntryOrigin) => void;
-  exportTemplate: (pkg: InstalledPackage) => void;
+  exportTemplate: (pkg: InstalledPackage, returnLabel?: string) => void;
   data: Bootstrap;
   action: (fn: () => Promise<any>, message?: string) => Promise<any>;
   refresh: () => Promise<void>;
@@ -264,6 +264,7 @@ export default function TemplateLibrary({
         schedule={schedule}
         settings={settings}
         returnLabel={title}
+        exportTemplate={exportTemplate}
         home={() => {
           setDetail(undefined);
           home();
