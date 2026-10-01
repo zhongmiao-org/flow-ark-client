@@ -86,7 +86,7 @@ export default function DesktopSelectionPreview({
         <button
           className="primary"
           onClick={plan}
-          disabled={actionDisabled || expired || reading || state.loading}
+          disabled={actionDisabled || expired || reading || state.loading || state.settingsPending}
         >
           {actionLabel}
         </button>

@@ -196,7 +196,9 @@ export default function AITaskWorkspace(props: Props) {
   const handledTool = useRef<string | undefined>(undefined);
   const handledConfiguration = useRef<string | undefined>(undefined);
   const [targetFromRun, setTargetFromRun] = useState(false);
-  const [desktopPhase, setDesktopPhase] = useState<'window' | 'plan' | 'changes'>('window');
+  const [desktopPhase, setDesktopPhase] = useState<'window' | 'window-ready' | 'plan' | 'changes'>(
+    'window',
+  );
   const [provider, setProvider] = useState<'deepseek' | 'openai-codex'>('deepseek');
   const [model, setModel] = useState('deepseek-flash');
   useLayoutEffect(() => {
@@ -364,7 +366,9 @@ export default function AITaskWorkspace(props: Props) {
                 ? '整理所选段落的方案'
                 : desktopPhase === 'changes'
                   ? '核对这次应用改动'
-                  : '这次要操作哪里？'
+                  : desktopPhase === 'window-ready'
+                    ? '选择应用、窗口与能力'
+                    : '这次要操作哪里？'
               : page === 'missing-ai'
                 ? '先连接 AI，需求会为你保留'
                 : page === 'check'
@@ -1391,7 +1395,9 @@ export default function AITaskWorkspace(props: Props) {
                           : page === 'target'
                             ? desktopPhase === 'window'
                               ? '第 2 步 / 选目标 · 只有你明确选择的对象会进入任务上下文'
-                              : '应用任务 · 改动预览 · 尚未修改文档'
+                              : desktopPhase === 'window-ready'
+                                ? '仅操作明确绑定的窗口；连接状态与操作权限分别显示'
+                                : '应用任务 · 改动预览 · 尚未修改文档'
                             : generating
                               ? '正在理解本次任务，你可以取消生成。'
                               : scope

@@ -27,7 +27,7 @@ export default function TaskWebTargetPage({
 }: {
   adopted: (detail: TaskDetail) => void;
   adoptionUnavailable?: string;
-  phaseChanged: (phase: 'window' | 'plan' | 'changes') => void;
+  phaseChanged: (phase: 'window' | 'window-ready' | 'plan' | 'changes') => void;
   active?: boolean;
   task: PlanningTask;
   initialUrl?: string;
@@ -45,12 +45,15 @@ export default function TaskWebTargetPage({
   );
   const [desktopPlan, setDesktopPlan] = useState(false);
   const [toolDetails, setToolDetails] = useState<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!desktopPlan) phaseChanged('window');
-  }, [desktopPlan, phaseChanged]);
   useEffect(() => () => phaseChanged('window'), [phaseChanged]);
   const tabId = useId();
   const desktop = useDesktopWindows(active && tab === 'window', `${task.id}:${task.revision}`);
+  useEffect(() => {
+    if (!desktopPlan)
+      phaseChanged(
+        tab === 'window' && desktop.selected && !desktop.expired ? 'window-ready' : 'window',
+      );
+  }, [desktopPlan, phaseChanged, tab, desktop.selected, desktop.expired]);
   useEffect(() => {
     setDesktopPlan(false);
   }, [desktop.preview?.status === 'ready' ? desktop.preview.previewId : undefined]);
@@ -146,7 +149,12 @@ export default function TaskWebTargetPage({
       )}
       <div className={`task-web-columns${tab === 'window' ? ' is-desktop' : ''}`}>
         <section className="ai-task-card">
-          <div className="task-web-tabs" role="tablist" aria-label="对象类型">
+          <div
+            className="task-web-tabs"
+            role="tablist"
+            aria-label="对象类型"
+            hidden={tab === 'window' && !!desktop.selected && !desktop.expired}
+          >
             {tabs.map((item, index) => (
               <button
                 key={item.id}
@@ -241,7 +249,7 @@ export default function TaskWebTargetPage({
             aria-labelledby={`${tabId}-window`}
             hidden={tab !== 'window'}
           >
-            <DesktopWindowList state={desktop} />
+            <DesktopWindowList state={desktop} compactSelected />
           </div>
           <div
             className="task-target-tab-panel"

@@ -40,6 +40,17 @@
 .task-desktop-change {
   align-self: flex-start;
 }
+.task-web-tabs[hidden] {
+  display: none;
+}
+.task-desktop-list.is-selected .task-desktop-identity h3,
+.task-desktop-list.is-selected .task-desktop-account h3 {
+  font-size: 18px;
+  line-height: 28px;
+}
+.task-desktop-list.is-selected .task-desktop-change {
+  min-width: 176px;
+}
 .task-desktop-observed {
   font-size: 12px;
   color: var(--fa-text-secondary);
@@ -57,6 +68,24 @@
 }
 .task-desktop-permission.is-warning {
   background: var(--fa-status-warning-bg);
+}
+.task-desktop-permission.is-ready {
+  background: var(--fa-status-success-bg);
+}
+.task-desktop-capabilities > .ai-task-checkbox {
+  font-size: 14px;
+  line-height: 22px;
+}
+.task-desktop-selection > button.primary {
+  align-self: flex-start;
+  min-width: 200px;
+}
+.task-desktop-permission-settings {
+  font-size: 13px;
+  color: var(--fa-text-secondary);
+}
+.task-desktop-permission-settings p {
+  margin: 12px 0;
 }
 .task-desktop-permission p {
   font-size: 14px;

@@ -6,8 +6,15 @@ export { useDesktopWindows };
 
 type DesktopState = ReturnType<typeof useDesktopWindows>;
 
-export function DesktopWindowList({ state }: { state: DesktopState }) {
+export function DesktopWindowList({
+  state,
+  compactSelected = false,
+}: {
+  state: DesktopState;
+  compactSelected?: boolean;
+}) {
   const { snapshot, selected, loading, error, notice } = state;
+  const ready = compactSelected && !!selected && !state.expired;
   const title = useRef<HTMLHeadingElement>(null);
   const list = useRef<HTMLDivElement>(null);
   const previous = useRef<string | undefined>(undefined);
@@ -17,13 +24,15 @@ export function DesktopWindowList({ state }: { state: DesktopState }) {
     previous.current = selected?.id;
   }, [selected?.id]);
   return (
-    <div className="task-desktop-list">
-      <div className="task-target-section-heading">
-        <h2>文本编辑的窗口</h2>
-        <button onClick={() => void state.refresh()} disabled={loading || state.settingsPending}>
-          {loading ? '正在检查…' : '重新检查'}
-        </button>
-      </div>
+    <div className={`task-desktop-list${ready ? ' is-selected' : ''}`}>
+      {!ready && (
+        <div className="task-target-section-heading">
+          <h2>文本编辑的窗口</h2>
+          <button onClick={() => void state.refresh()} disabled={loading || state.settingsPending}>
+            {loading ? '正在检查…' : '重新检查'}
+          </button>
+        </div>
+      )}
       {!selected && (
         <p className="ai-task-note">查看已打开的 TextEdit 窗口。选择后可核对窗口信息和可用能力。</p>
       )}
@@ -54,9 +63,19 @@ export function DesktopWindowList({ state }: { state: DesktopState }) {
                 <p>本机 TextEdit · 只在明确点击后读取选中段落</p>
                 <p>未读取其他段落或文件路径；账号与文档归属尚未核对</p>
               </div>
-              <button className="task-desktop-change" onClick={() => state.select(undefined)}>
-                更换窗口
-              </button>
+              <div className="ai-task-actions">
+                <button className="task-desktop-change" onClick={() => state.select(undefined)}>
+                  更换窗口
+                </button>
+                {ready && (
+                  <button
+                    disabled={loading || state.settingsPending}
+                    onClick={() => void state.refresh()}
+                  >
+                    重新检查
+                  </button>
+                )}
+              </div>
             </>
           ) : snapshot.windows.length ? (
             <div
@@ -90,9 +109,11 @@ export function DesktopWindowList({ state }: { state: DesktopState }) {
               清单可能不完整：部分窗口未能读取，或已达到本次显示上限。
             </p>
           )}
-          <p className="task-desktop-observed">
-            检查时间：{new Date(snapshot.observedAt).toLocaleTimeString('zh-CN')} · 本次观察
-          </p>
+          {!ready && (
+            <p className="task-desktop-observed">
+              检查时间：{new Date(snapshot.observedAt).toLocaleTimeString('zh-CN')} · 本次观察
+            </p>
+          )}
         </>
       )}
       {snapshot?.availability === 'permission-required' && (
@@ -118,6 +139,12 @@ export function DesktopWindowList({ state }: { state: DesktopState }) {
       <p className="ai-task-note">
         窗口关闭、内容或选区变化后需要重新核对。刷新会清除本次查看选择，不会自动选择同名窗口。
       </p>
+      {ready && snapshot && (
+        <details className="task-desktop-observed">
+          <summary>窗口检查记录</summary>
+          <p>检查时间：{new Date(snapshot.observedAt).toLocaleTimeString('zh-CN')} · 本次观察</p>
+        </details>
+      )}
     </div>
   );
 }
@@ -136,7 +163,8 @@ export function DesktopWindowCapabilities({
   plan: () => void;
 }) {
   const { snapshot, loading } = state;
-  const permission = state.expired ? undefined : snapshot?.accessibility;
+  const permission =
+    state.expired || loading || state.settingsPending ? undefined : snapshot?.accessibility;
   return (
     <div className="task-desktop-capabilities">
       <h2>支持哪些操作</h2>
@@ -158,7 +186,7 @@ export function DesktopWindowCapabilities({
         </label>
       ))}
       <div
-        className={`task-desktop-permission ${permission === 'not-granted' ? 'is-warning' : ''}`}
+        className={`task-desktop-permission ${permission === 'granted' ? 'is-ready' : permission === 'not-granted' ? 'is-warning' : ''}`}
         role="status"
       >
         <h3>
@@ -177,25 +205,27 @@ export function DesktopWindowCapabilities({
               ? '辅助功能权限未授予，当前不能识别或操作窗口。系统授权须由你在设置中决定。'
               : '取得权限状态后才能判断窗口发现是否可用。'}
         </p>
-        {snapshot?.platform === 'macos' && (
+      </div>
+      <DesktopSelectionPreview state={state} plan={plan} />
+      {snapshot?.platform === 'macos' && (
+        <details className="task-desktop-permission-settings" open={permission !== 'granted'}>
+          <summary>系统权限与重新检查</summary>
+          <p>打开系统设置会清除这次窗口选择和选区预览。返回后重新检查，再选择任务对象。</p>
           <button
             disabled={state.settingsPending || loading}
             onClick={() => void state.openSettings()}
           >
             {state.settingsPending ? '正在打开…' : '查看系统辅助功能设置'}
           </button>
-        )}
-      </div>
-      <DesktopSelectionPreview state={state} plan={plan} />
+        </details>
+      )}
       {!state.selected && (
         <p className="ai-task-note">
           选择窗口并读取段落后可生成改动预览；保存方案后，还需重新绑定原选区并确认试运行。
         </p>
       )}
       <div className="ai-task-actions">
-        <button className="primary" onClick={chooseWeb}>
-          改用网页目标
-        </button>
+        <button onClick={chooseWeb}>改用网页目标</button>
         <button onClick={back}>{backLabel}</button>
       </div>
     </div>

@@ -165,9 +165,16 @@ export default function useDesktopWindows(active: boolean, identity: string, aut
     }
   };
   const openSettings = async () => {
-    const ticket = epoch.current;
+    if (settingsPending) return;
+    const ticket = ++epoch.current;
+    clearPreview();
+    releaseCurrent();
+    setSelectedId(undefined);
+    setExpired(true);
+    setLoading(false);
     setSettingsPending(true);
     setError('');
+    setNotice('窗口检查已失效。完成系统设置后，请重新检查并选择窗口。');
     try {
       await window.flowark.request('desktop.accessibility.openSettings');
       if (epoch.current === ticket) setNotice('已请求打开系统设置。完成调整后，请返回并重新检查。');
