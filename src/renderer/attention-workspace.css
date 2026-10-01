@@ -57,7 +57,7 @@
 }
 .attention-list {
   display: grid;
-  gap: 20px;
+  gap: 24px;
 }
 .attention-card,
 .attention-detail-card {
@@ -67,11 +67,8 @@
   border-radius: var(--fa-radius-12);
   padding: 24px;
 }
-.attention-card.is-warning {
+.attention-card.is-expanded.is-warning {
   border-color: var(--fa-status-warning);
-}
-.attention-card.is-error {
-  border-color: var(--fa-status-error);
 }
 .attention-card-heading {
   display: flex;
@@ -288,4 +285,75 @@
   .attention-search input {
     width: 100%;
   }
+}
+
+.attention-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 8px;
+  background: currentColor;
+}
+.attention-status.is-success {
+  background: var(--fa-status-success-bg);
+  color: var(--fa-status-success);
+}
+.attention-card.is-compact {
+  padding-bottom: 12px;
+}
+.attention-card.is-compact .attention-card-heading {
+  justify-content: flex-start;
+  gap: 12px 16px;
+}
+.attention-card.is-compact h2 {
+  flex: 1;
+  margin: 0;
+  min-width: min(240px, 100%);
+}
+.attention-card.is-compact .attention-actions {
+  margin-top: 16px;
+}
+.attention-card.is-compact .attention-actions button {
+  min-width: 120px;
+}
+.attention-card.is-expanded > .attention-actions > .primary {
+  min-width: 180px;
+}
+.attention-card.is-expanded > .attention-actions > button:not(.primary) {
+  min-width: 152px;
+}
+.attention-card.is-expanded {
+  padding-bottom: 16px;
+}
+.attention-card > p {
+  font-size: 14px;
+  line-height: 22px;
+  margin: 16px 0 0;
+}
+.attention-card > .attention-actions {
+  margin-top: 16px;
+}
+.attention-status {
+  padding: 5px 12px;
+}
+
+.attention-toolbar label,
+.attention-toolbar input,
+.attention-toolbar select {
+  margin: 0;
+}
+.attention-toolbar input,
+.attention-toolbar select {
+  height: 40px;
+}
+.attention-tabs {
+  gap: 24px;
+}
+.attention-tabs button {
+  padding-inline: 0;
+  background: transparent;
+}
+.attention-tabs button[aria-selected='true'] {
+  background: transparent;
 }

@@ -221,6 +221,8 @@ export default function AttentionWorkspace({
   const locked = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const listScroll = useRef(0);
+  const listFocus = useRef('');
+  const runReturn = useRef<{ focus: HTMLElement; scroll: number } | null>(null);
   const selected = data.attention.find((item) => item.id === selectedId);
   const state = selected && human(selected) ? requestState(selected, data, now) : undefined;
   const completed = (item: Attention) =>
@@ -261,8 +263,17 @@ export default function AttentionWorkspace({
   useEffect(() => {
     if (!active) return;
     const main = document.querySelector('main');
-    if (main) main.scrollTop = selectedId ? 0 : listScroll.current;
-    heading.current?.focus({ preventScroll: true });
+    const returning = runReturn.current;
+    if (main) main.scrollTop = returning?.scroll ?? (selectedId ? 0 : listScroll.current);
+    const target = returning?.focus.isConnected
+      ? returning.focus
+      : !selectedId && listFocus.current
+        ? (document.querySelector<HTMLElement>(
+            `[data-attention-open="${CSS.escape(listFocus.current)}"]`,
+          ) ?? heading.current)
+        : heading.current;
+    target?.focus({ preventScroll: true });
+    runReturn.current = null;
   }, [selectedId, active]);
   const act = async (operation: () => Promise<void>, message = '') => {
     if (locked.current) return;
@@ -286,18 +297,35 @@ export default function AttentionWorkspace({
       setBusy(false);
     }
   };
+  const viewRun = (id: string, trigger: HTMLButtonElement) => {
+    runReturn.current = { focus: trigger, scroll: document.querySelector('main')?.scrollTop ?? 0 };
+    void act(async () => {
+      try {
+        await openRun(id);
+      } catch (error) {
+        runReturn.current = null;
+        throw error;
+      }
+    });
+  };
   const open = (item: Attention) => {
+    listFocus.current = item.id;
     listScroll.current = document.querySelector('main')?.scrollTop ?? 0;
     setSelectedId(item.id);
     setError('');
     setNotice('');
   };
-  const tone = (item: Attention) =>
-    item.kind === 'unknown-result' || human(item)
+  const tone = (item: Attention) => {
+    if (human(item)) {
+      const state = requestState(item, data, now);
+      return state === 'answered' ? 'success' : state === 'expired' ? 'error' : 'warning';
+    }
+    return item.kind === 'unknown-result'
       ? 'warning'
       : /error|fail|limitation/.test(item.kind)
         ? 'error'
         : 'neutral';
+  };
   const label = (item: Attention) => {
     if (human(item))
       return {
@@ -380,7 +408,7 @@ export default function AttentionWorkspace({
               ))}
             </div>
             <label className="attention-search">
-              <span>搜索待办</span>
+              <span className="sr-only">搜索待办</span>
               <input
                 type="search"
                 placeholder="搜索标题或说明"
@@ -389,7 +417,7 @@ export default function AttentionWorkspace({
               />
             </label>
             <label className="attention-filter">
-              <span>提醒类型</span>
+              <span className="sr-only">提醒类型</span>
               <select value={kind} onChange={(event) => setKind(event.target.value)}>
                 <option value="all">全部类型</option>
                 <option value="human">人工请求</option>
@@ -410,12 +438,17 @@ export default function AttentionWorkspace({
             aria-labelledby={`attention-tab-${tab}`}
           >
             {visible.map((item) => (
-              <article className={`attention-card is-${tone(item)}`} key={item.id}>
+              <article
+                className={`attention-card is-${tone(item)} ${item.kind === 'unknown-result' ? 'is-expanded' : 'is-compact'}`}
+                key={item.id}
+                aria-label={item.title}
+              >
                 <div className="attention-card-heading">
                   <span className={`attention-status is-${tone(item)}`}>{label(item)}</span>
+                  {item.kind !== 'unknown-result' && <h2>{item.title}</h2>}
                   <time dateTime={item.time}>{date(item.time)}</time>
                 </div>
-                <h2>{item.title}</h2>
+                {item.kind === 'unknown-result' && <h2>{item.title}</h2>}
                 <p>{description(item)}</p>
                 {item.kind === 'unknown-result' && (
                   <p className="attention-muted">
@@ -424,15 +457,20 @@ export default function AttentionWorkspace({
                 )}
                 <div className="attention-actions">
                   <button
-                    className={item.kind === 'unknown-result' || human(item) ? 'primary' : ''}
+                    className={item.kind === 'unknown-result' ? 'primary' : ''}
+                    data-attention-open={item.id}
                     onClick={() => open(item)}
                   >
-                    {human(item) && !completed(item) ? '查看本次请求' : '查看详情'}
+                    {item.kind === 'unknown-result'
+                      ? '查看证据并核对'
+                      : human(item) && !completed(item)
+                        ? '查看本次请求'
+                        : '查看详情'}
                   </button>
                   {sourceId(item) && (
                     <button
                       disabled={busy}
-                      onClick={() => void act(() => openRun(sourceId(item)!))}
+                      onClick={(event) => viewRun(sourceId(item)!, event.currentTarget)}
                     >
                       查看运行详情
                     </button>
@@ -555,7 +593,10 @@ export default function AttentionWorkspace({
               超时、取消或宿主退出后，人工请求失效。结果未知的操作不会自动重放。
             </p>
             {sourceId(selected) ? (
-              <button disabled={busy} onClick={() => void act(() => openRun(sourceId(selected)!))}>
+              <button
+                disabled={busy}
+                onClick={(event) => viewRun(sourceId(selected)!, event.currentTarget)}
+              >
                 查看来源运行
               </button>
             ) : (
@@ -565,7 +606,11 @@ export default function AttentionWorkspace({
               selected.detail.runIds
                 .filter((id: unknown) => typeof id === 'string')
                 .map((id: string) => (
-                  <button key={id} disabled={busy} onClick={() => void act(() => openRun(id))}>
+                  <button
+                    key={id}
+                    disabled={busy}
+                    onClick={(event) => viewRun(id, event.currentTarget)}
+                  >
                     查看运行 {id}
                   </button>
                 ))}
