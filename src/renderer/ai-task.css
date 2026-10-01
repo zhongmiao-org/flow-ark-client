@@ -584,6 +584,42 @@
 .run-review-receipt > b {
   overflow-wrap: anywhere;
 }
+.run-review-page.is-task-review .run-review-columns > .ai-task-card {
+  padding: 23px;
+}
+.run-review-page.is-task-review .run-review-card {
+  padding: 15px;
+}
+.run-review-page.is-task-review .run-review-card > p {
+  color: var(--fa-text-secondary);
+}
+.run-review-page.is-task-review .run-review-card > ul {
+  list-style: none;
+  padding-left: 0;
+}
+.run-review-check-compact {
+  min-height: 28px;
+  gap: 10px;
+}
+.run-review-check-compact > span {
+  color: var(--fa-action-primary);
+  flex-basis: 22px;
+  width: 22px;
+}
+.run-review-check-compact > details {
+  flex: 1;
+}
+.run-review-check-compact > details > summary {
+  color: var(--fa-text-primary);
+  font-size: 14px;
+  line-height: 22px;
+}
+.run-review-options > :not(summary) {
+  margin-top: 16px;
+}
+.run-review-options > button {
+  width: 100%;
+}
 @container (max-width: 900px) {
   .run-review-columns {
     grid-template-columns: minmax(0, 1fr);

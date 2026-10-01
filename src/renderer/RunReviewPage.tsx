@@ -34,7 +34,7 @@ function Resource({ resource }: { resource: ReviewResource }) {
     </li>
   );
 }
-function Contents({ preview }: { preview: RunReviewPreview }) {
+function Contents({ preview, compact }: { preview: RunReviewPreview; compact: boolean }) {
   if (preview.desktop) return <DesktopRunConfirmation preview={preview} />;
   const tools = preview.toolCalls ?? [];
   const objects = preview.resources.filter((r) => !['file', 'directory'].includes(r.kind));
@@ -43,6 +43,12 @@ function Contents({ preview }: { preview: RunReviewPreview }) {
   const destinations = locations.filter((r) => ['write', 'readwrite'].includes(r.access));
   const reads = preview.effects.filter((e) => e.kind === 'read');
   const changes = preview.effects.filter((e) => ['write', 'network', 'unknown'].includes(e.kind));
+  const versionSummary = (
+    <p>
+      {preview.flow.name} · {preview.flow.stepCount} 个步骤 ·{' '}
+      {preview.debug ? '逐步调试' : '正常试运行'}
+    </p>
+  );
   return (
     <>
       {preview.rerun && (
@@ -141,10 +147,7 @@ function Contents({ preview }: { preview: RunReviewPreview }) {
       </section>
       <section className="run-review-card">
         <h2>执行版本</h2>
-        <p>
-          {preview.flow.name} · {preview.flow.stepCount} 个步骤 ·{' '}
-          {preview.debug ? '逐步调试' : '正常试运行'}
-        </p>
+        {!compact && versionSummary}
         <p>
           {preview.ready
             ? '采用已检查的固定方案，运行中修改草稿不影响此次执行。'
@@ -152,6 +155,7 @@ function Contents({ preview }: { preview: RunReviewPreview }) {
         </p>
         <details>
           <summary>查看版本与参数</summary>
+          {compact && versionSummary}
           <p className="run-review-version">{preview.flow.versionId || '检查通过后固定版本'}</p>
           <p>参数：{preview.flow.parameterNames.join('、') || '无'}</p>
           <p>声明能力：{preview.flow.capabilities.join('、') || '无'}</p>
@@ -216,9 +220,42 @@ export default function RunReviewPage(props: Props) {
               : preview?.ready
                 ? '检查通过'
                 : '需要处理';
+  const compactReview = !!props.selection?.task && !preview?.desktop;
+  const debugToggle = !attempt ? (
+    <label className="run-review-toggle">
+      <input
+        type="checkbox"
+        checked={!!state.selection?.debug}
+        disabled={state.loading || binding}
+        onChange={(e) => void session.refresh(e.target.checked)}
+      />
+      逐步调试，在每个步骤前暂停
+    </label>
+  ) : null;
+  const refreshButton = !locked && (
+    <button
+      onClick={() => void session.refresh()}
+      disabled={state.loading || state.opening || binding}
+    >
+      {attempt?.run ? '检查新的试运行' : '重新检查'}
+    </button>
+  );
+  const configureButton = !locked && !attempt?.run && (
+    <button onClick={props.edit}>配置流程与资源</button>
+  );
+  const reviewUtilities = (
+    <>
+      {refreshButton}
+      {configureButton}
+    </>
+  );
   return (
     <div
-      className={'page run-review-page' + (preview?.desktop ? ' is-desktop' : '')}
+      className={
+        'page run-review-page' +
+        (preview?.desktop ? ' is-desktop' : '') +
+        (compactReview ? ' is-task-review' : '')
+      }
       hidden={!props.active}
       aria-busy={state.loading}
     >
@@ -246,7 +283,7 @@ export default function RunReviewPage(props: Props) {
               }}
             />
           ) : preview ? (
-            <Contents preview={preview} />
+            <Contents preview={preview} compact={compactReview} />
           ) : (
             <div role="status">
               <h2>{state.loading ? '正在核对保存的流程与资源' : '尚未取得检查结果'}</h2>
@@ -255,22 +292,18 @@ export default function RunReviewPage(props: Props) {
           )}
         </div>
         <section className="ai-task-card run-review-confirm" aria-label="执行前检查">
-          <h2>{preview?.desktop ? '本次授权' : title}</h2>
+          <h2 aria-live="polite">{preview?.desktop ? '本次授权' : title}</h2>
           {preview?.desktop && <p aria-live="polite">{title}</p>}
           {!attempt && (
             <>
               {preview?.checks.map((check, i) => (
-                <RunReviewCheck key={`${i}:${check.detail}`} check={check} />
-              ))}
-              <label className="run-review-toggle">
-                <input
-                  type="checkbox"
-                  checked={!!state.selection?.debug}
-                  disabled={state.loading || binding}
-                  onChange={(e) => void session.refresh(e.target.checked)}
+                <RunReviewCheck
+                  key={`${i}:${check.detail}`}
+                  check={check}
+                  compact={compactReview}
                 />
-                逐步调试，在每个步骤前暂停
-              </label>
+              ))}
+              {!compactReview && debugToggle}
               <label className="run-review-toggle">
                 <input
                   type="checkbox"
@@ -339,16 +372,29 @@ export default function RunReviewPage(props: Props) {
               重新选择窗口与原选区
             </button>
           )}
-          {!locked && (
-            <button
-              onClick={() => void session.refresh()}
-              disabled={state.loading || state.opening || binding}
-            >
-              {attempt?.run ? '检查新的试运行' : '重新检查'}
-            </button>
-          )}
+          {!compactReview && refreshButton}
           <button onClick={props.back}>{preview?.desktop ? '取消，回到方案' : '回去修改'}</button>
-          {!locked && !attempt?.run && <button onClick={props.edit}>配置流程与资源</button>}
+          {compactReview && !attempt ? (
+            <>
+              <details className="run-review-options">
+                <summary>试运行选项与重新检查</summary>
+                {debugToggle}
+                {(preview?.ready || state.loading) && reviewUtilities}
+              </details>
+              {!preview?.ready && !state.loading && reviewUtilities}
+            </>
+          ) : (
+            <>
+              {compactReview ? (
+                <>
+                  {debugToggle}
+                  {reviewUtilities}
+                </>
+              ) : (
+                configureButton
+              )}
+            </>
+          )}
           {preview && (
             <details className="run-review-limitations">
               <summary>检查范围与限制</summary>

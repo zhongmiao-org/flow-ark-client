@@ -33,9 +33,28 @@ function explanation(detail: string) {
   return { summary: detail || '尚未取得可用的检查结果。', next: '' };
 }
 
-export default function RunReviewCheck({ check }: { check: Check }) {
+export default function RunReviewCheck({
+  check,
+  compact = false,
+}: {
+  check: Check;
+  compact?: boolean;
+}) {
   const issue = check.passed ? { summary: check.detail, next: '' } : explanation(check.detail);
   const expandedDetail = issue.summary !== check.detail && !!check.detail;
+  if (compact && check.passed)
+    return (
+      <div className="run-review-check run-review-check-compact">
+        <span aria-hidden="true">☑</span>
+        <details>
+          <summary>
+            <span className="sr-only">通过：</span>
+            {check.name}
+          </summary>
+          <p>{check.detail}</p>
+        </details>
+      </div>
+    );
   return (
     <div className={`run-review-check ${check.passed ? '' : 'failed'}`}>
       <span aria-hidden="true">{check.passed ? '✓' : '!'}</span>
