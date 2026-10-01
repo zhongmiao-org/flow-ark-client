@@ -1343,7 +1343,9 @@ export default function AITaskWorkspace(props: Props) {
         detail.task.toolsRequirePlan ||
         flatten(flow.steps).some((step) => ['mcp', 'desktop'].includes(step.type))
           ? '查看试运行前检查'
-          : '确认方案，去试运行'}
+          : standaloneGraph
+            ? '试运行'
+            : '确认方案，去试运行'}
       </button>
     ) : null;
 
@@ -1384,9 +1386,11 @@ export default function AITaskWorkspace(props: Props) {
                                 ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : scope.nodeId} · 尚未执行`
                                 : fullModification
                                   ? `完整流程修改 · 任务基线修订 ${detail?.proposal?.baseRevision} · 尚未采纳`
-                                  : planListView
-                                    ? '第 4 步 / 确认方案 · 确认后进入试运行前检查'
-                                    : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
+                                  : standaloneGraph
+                                    ? `${flow?.name} · 修订 ${revision} · ${stale ? '草稿已变化，请重新读取' : dirty ? '有未保存修改' : detail?.proposal ? '待采纳方案' : '清单和流程图使用同一份流程草稿'}`
+                                    : planListView
+                                      ? '第 4 步 / 确认方案 · 确认后进入试运行前检查'
+                                      : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
           </p>
         </div>
         {page !== 'home' &&
@@ -1765,18 +1769,22 @@ export default function AITaskWorkspace(props: Props) {
                 <small>学习记录与运行进度分开保存</small>
               </div>
             )}
-            {!scopeDiffView && !planListView && page !== 'understand' && page !== 'brief' && (
-              <div className="ai-task-state" role="status">
-                <span>
-                  {detail.task.status === 'plan' && !detail.proposal && detail.flow
-                    ? '方案已保存'
-                    : status[detail.task.status]}
-                </span>
-                <span>
-                  {dirty ? '有未保存修改' : '草稿已保存'} · 修订 {revision}
-                </span>
-              </div>
-            )}
+            {!scopeDiffView &&
+              !planListView &&
+              !standaloneGraph &&
+              page !== 'understand' &&
+              page !== 'brief' && (
+                <div className="ai-task-state" role="status">
+                  <span>
+                    {detail.task.status === 'plan' && !detail.proposal && detail.flow
+                      ? '方案已保存'
+                      : status[detail.task.status]}
+                  </span>
+                  <span>
+                    {dirty ? '有未保存修改' : '草稿已保存'} · 修订 {revision}
+                  </span>
+                </div>
+              )}
             {detail.task.error && (
               <p className="ai-task-note ai-task-failure" role="alert">
                 {detail.task.error}
@@ -2304,7 +2312,7 @@ export default function AITaskWorkspace(props: Props) {
                               dirty={dirty}
                               stale={stale}
                             />
-                          ) : (
+                          ) : !standaloneGraph ? (
                             <div className="ai-task-meta">
                               <h2 tabIndex={-1} data-plan-preview-heading>
                                 {flow.name}
@@ -2313,9 +2321,11 @@ export default function AITaskWorkspace(props: Props) {
                                 {detail.proposal ? '待采纳方案' : '已保存草稿'}
                               </span>
                             </div>
-                          )}
+                          ) : null}
                           <div
-                            className={`ai-task-actions${planListView ? ' task-plan-tabs' : ''}`}
+                            className={`ai-task-actions${planListView ? ' task-plan-tabs' : ''}${standaloneGraph ? ' task-graph-toolbar' : ''}`}
+                            tabIndex={standaloneGraph ? -1 : undefined}
+                            data-plan-preview-heading={standaloneGraph ? true : undefined}
                             aria-label="方案视图"
                           >
                             <button aria-pressed={view === 'list'} onClick={() => setView('list')}>
@@ -2382,6 +2392,7 @@ export default function AITaskWorkspace(props: Props) {
                             )}
                             {(view === 'graph' || selectedStep) && (
                               <TaskStepInspector
+                                presentation={standaloneGraph ? 'graph' : 'full'}
                                 flow={flow}
                                 selected={selected}
                                 select={(id) => {

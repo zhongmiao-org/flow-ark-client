@@ -7,6 +7,17 @@
   border: 0;
   background: transparent;
   min-height: 0;
+  gap: 24px;
+}
+.ai-task-full-graph .task-graph-toolbar {
+  gap: 16px;
+}
+.ai-task-full-graph .task-graph-toolbar > button {
+  min-width: 144px;
+}
+.ai-task-full-graph .task-graph-toolbar > button[aria-pressed='true'] {
+  color: var(--fa-text-inverse);
+  background: var(--fa-action-primary);
 }
 .task-graph-workspace {
   display: grid;
@@ -16,9 +27,13 @@
 }
 .task-graph-workspace > .ai-task-graph {
   height: 710px;
-  padding: 16px;
+  padding: 15px;
+  border: 1px solid var(--fa-border-default);
   background: var(--fa-bg-surface);
   border-radius: 12px;
+}
+.task-graph-workspace > .ai-task-graph > .react-flow {
+  height: calc(100% - 14px) !important;
 }
 .task-step-inspector {
   min-width: 0;
@@ -111,6 +126,41 @@
 }
 .task-step-actions {
   margin-top: auto;
+}
+.task-step-graph {
+  padding: 23px;
+}
+.task-step-graph .task-step-actions {
+  margin-top: 0;
+  gap: 16px;
+}
+.task-step-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.task-step-field h3 {
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+}
+.task-step-field > p {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  color: var(--fa-text-secondary);
+}
+.task-step-graph-details {
+  min-width: 0;
+  font-size: 13px;
+}
+.task-step-graph-details > summary {
+  cursor: pointer;
+  color: var(--fa-text-secondary);
+}
+.task-step-graph-details[open] > :not(summary) {
+  margin-top: 16px;
 }
 .task-graph-inline {
   display: flex;
