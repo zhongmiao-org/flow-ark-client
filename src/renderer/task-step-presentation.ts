@@ -6,6 +6,7 @@ import { kinds } from './node-kinds';
 import { referenceOf, referenceScope } from './value-references';
 
 export type TaskStepContext = {
+  snapshot?: boolean;
   bindings?: Bindings;
   webTarget?: TaskWebTarget;
   outputTarget?: TaskOutputTarget;
@@ -88,7 +89,9 @@ export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext
     const path = context.bindings?.files[binding];
     return typeof path === 'string' && path
       ? concise(path)
-      : `资源「${concise(binding)}」（尚未绑定目录）`;
+      : context.snapshot
+        ? `资源引用「${concise(binding)}」`
+        : `资源「${concise(binding)}」（尚未绑定目录）`;
   };
   const comparison = (node: Extract<Step, { type: 'condition' | 'assert' }>) => {
     const operators = {
@@ -120,7 +123,7 @@ export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext
     case 'mcp': {
       const target = context.toolTargets?.find((entry) => entry.selectionId === step.target);
       const tool = target?.tools.find((entry) => entry.name === step.tool);
-      return `${target ? concise(target.displayName) : '工具对象尚未匹配'} · ${concise(tool?.title || step.tool)} · 试运行前核对外部影响`;
+      return `${target ? concise(target.displayName) : context.snapshot ? '工具对象引用：' + concise(step.target) : '工具对象尚未匹配'} · ${concise(tool?.title || step.tool)} · ${context.snapshot ? '外部影响以调用回执为准' : '试运行前核对外部影响'}`;
     }
     case 'file': {
       const destination = `${resource(step.binding)} · 文件：${value(step.name)}`;
@@ -146,7 +149,9 @@ export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext
       if (step.operation === 'navigate') return `打开地址：${value(step.value)}`;
       const page = context.webTarget?.page.title
         ? concise(context.webTarget.page.title)
-        : '当前浏览器页面';
+        : context.snapshot
+          ? '本次运行的浏览器页面'
+          : '当前浏览器页面';
       const frame =
         'framePath' in step && step.framePath.length
           ? ` · ${step.framePath.length} 层内嵌页面`

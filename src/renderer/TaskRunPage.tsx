@@ -183,6 +183,15 @@ export default function TaskRunPage({
         : model.title;
   const failed = run.state === 'FAILED' && !model.uncertain && !model.view.closing;
   const compactLive = !model.terminal && !model.uncertain && !model.view.closing;
+  const linearPosition =
+    compactLive &&
+    model.current &&
+    detail.snapshot?.steps.length === model.rows.length &&
+    model.rows.every(
+      (row) => row.instance === row.nodeId && !['condition', 'loop'].includes(row.type ?? ''),
+    )
+      ? `${model.view.step.kind === 'paused' ? '下一步' : '第'} ${model.rows.indexOf(model.current) + 1} / ${model.rows.length}${model.view.step.kind === 'paused' ? '' : ' 步'}`
+      : undefined;
   const stepNames = (rows: typeof model.rows, empty: string) =>
     rows
       .slice(0, 6)
@@ -193,6 +202,8 @@ export default function TaskRunPage({
     <TaskExecutionSteps
       key={run.id}
       model={model}
+      compact={compactLive && page === 'overview'}
+      snapshot={detail.snapshot}
       view={stepsView?.runId === run.id ? stepsView : undefined}
       change={(view) => setStepsView({ ...view, runId: run.id })}
     />
@@ -536,6 +547,7 @@ export default function TaskRunPage({
                     {model.uncertain
                       ? '需要核对'
                       : runDisplayLabels[run.state as keyof typeof runDisplayLabels]}
+                    {linearPosition && ` · ${linearPosition}`}
                   </span>
                   <h2 className="task-run-current">
                     {model.current?.name ?? model.view.step.label}

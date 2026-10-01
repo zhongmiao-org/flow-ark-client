@@ -48,3 +48,45 @@
 .task-execution-filter-toggle {
   align-self: flex-start;
 }
+
+.task-execution-steps.is-compact > ol {
+  padding: 0;
+  max-height: 520px;
+  margin-right: -2px;
+}
+.task-execution-steps.is-compact li {
+  min-height: 88px;
+}
+.task-execution-steps.is-compact li > div {
+  flex: 1;
+}
+.task-execution-steps.is-compact .task-execution-row-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+.task-execution-steps.is-compact strong {
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 28px;
+}
+.task-execution-steps.is-compact .task-run-index {
+  flex: 0 0 28px;
+  line-height: 28px;
+}
+.task-execution-steps.is-compact .task-execution-summary {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.task-execution-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task-execution-steps.is-compact li[aria-current] {
+  outline-offset: -1px;
+}

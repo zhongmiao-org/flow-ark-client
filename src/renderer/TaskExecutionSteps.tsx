@@ -1,6 +1,9 @@
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import type { taskRunPresentation } from './task-run-presentation';
 import './task-execution-steps.css';
+import type { Flow } from '../shared/types';
+import { flatten } from './flow-editing';
+import { taskStepSummary, taskStepTitle } from './task-step-presentation';
 
 type Model = ReturnType<typeof taskRunPresentation>;
 type Filter = 'all' | 'completed' | 'unresolved' | 'unvisited';
@@ -16,8 +19,12 @@ export default function TaskExecutionSteps({
   model,
   view,
   change,
+  compact = false,
+  snapshot,
 }: {
   model: Model;
+  compact?: boolean;
+  snapshot?: Flow;
   view?: TaskExecutionView;
   change: (view: TaskExecutionView) => void;
 }) {
@@ -41,6 +48,7 @@ export default function TaskExecutionSteps({
     element?.focus({ preventScroll: true });
     element?.scrollIntoView({ block: 'nearest' });
   }, [focusRequest]);
+  const nodes = new Map(flatten(snapshot?.steps ?? []).map((node) => [node.id, node]));
   const needle = query.trim().toLocaleLowerCase();
   const visible = model.rows
     .map((row, index) => ({ row, index }))
@@ -52,9 +60,12 @@ export default function TaskExecutionSteps({
             : filter === 'unresolved'
               ? row.started && !row.ended
               : !row.started && !row.ended)) &&
-        [row.name, row.nodeId, row.instance].some((value) =>
-          value.toLocaleLowerCase().includes(needle),
-        ),
+        [
+          row.name,
+          row.nodeId,
+          row.instance,
+          compact && nodes.has(row.nodeId) ? taskStepTitle(nodes.get(row.nodeId)!) : '',
+        ].some((value) => value.toLocaleLowerCase().includes(needle)),
     );
   const focusLabel =
     model.terminal || model.uncertain || model.view.closing
@@ -62,12 +73,8 @@ export default function TaskExecutionSteps({
       : model.view.step.kind === 'paused'
         ? '定位下一步'
         : '定位当前步骤';
-  return (
-    <section
-      className="ai-task-card task-run-steps task-execution-steps"
-      aria-labelledby={`${id}-heading`}
-    >
-      <h2 id={`${id}-heading`}>执行步骤</h2>
+  const controls = (
+    <>
       <p>
         {model.completed.length} 次已完成 · {model.unresolved.length} 次已开始未确认完成 ·{' '}
         {model.unvisited.length} 个尚未执行
@@ -134,35 +141,64 @@ export default function TaskExecutionSteps({
         显示 {visible.length} / {model.rows.length}{' '}
         条。序号沿用完整清单；同一步骤的循环执行分别记录。
       </p>
+    </>
+  );
+  return (
+    <section
+      className={
+        'ai-task-card task-run-steps task-execution-steps' + (compact ? ' is-compact' : '')
+      }
+      aria-labelledby={`${id}-heading`}
+    >
+      <h2 id={`${id}-heading`}>执行步骤</h2>
+      {!compact && controls}
       <ol
         ref={list}
         aria-label="执行步骤清单"
         onScroll={(event) => change({ query, filter, scroll: event.currentTarget.scrollTop })}
       >
-        {visible.map(({ row, index }) => (
-          <li
-            key={row.instance}
-            tabIndex={-1}
-            ref={(element) => {
-              if (element) elements.current.set(row.instance, element);
-              else elements.current.delete(row.instance);
-            }}
-            aria-current={row.current ? 'step' : undefined}
-          >
-            <span className="task-run-index">{String(index + 1).padStart(2, '0')}</span>
-            <div>
-              <strong>{row.name}</strong>
-              <p>
-                <span className={'run-status run-tone-' + row.tone}>{row.label}</span>
-              </p>
-              <small>
-                {row.instance !== row.nodeId ? '循环/分支位置：' : '步骤编号：'}
-                {row.instance}
-              </small>
-            </div>
-          </li>
-        ))}
+        {visible.map(({ row, index }) => {
+          const node = nodes.get(row.nodeId);
+          const summary =
+            compact && node && snapshot
+              ? taskStepSummary(node, snapshot, { snapshot: true })
+              : undefined;
+          return (
+            <li
+              key={row.instance}
+              tabIndex={-1}
+              ref={(element) => {
+                if (element) elements.current.set(row.instance, element);
+                else elements.current.delete(row.instance);
+              }}
+              aria-current={row.current ? 'step' : undefined}
+            >
+              <span className="task-run-index">{String(index + 1).padStart(2, '0')}</span>
+              <div>
+                <div className="task-execution-row-heading">
+                  <strong>{compact && node ? taskStepTitle(node) : row.name}</strong>
+                  {compact && (
+                    <span className={'run-status run-tone-' + row.tone}>{row.label}</span>
+                  )}
+                </div>
+                {summary && <p className="task-execution-summary">配置：{summary}</p>}
+                {!compact && (
+                  <p>
+                    <span className={'run-status run-tone-' + row.tone}>{row.label}</span>
+                  </p>
+                )}
+                {(!compact || row.instance !== row.nodeId) && (
+                  <small>
+                    {row.instance !== row.nodeId ? '循环/分支位置：' : '步骤编号：'}
+                    {row.instance}
+                  </small>
+                )}
+              </div>
+            </li>
+          );
+        })}
       </ol>
+      {compact && <div className="task-execution-tools">{controls}</div>}
       {!visible.length && (
         <p className="task-execution-empty">
           {model.rows.length
