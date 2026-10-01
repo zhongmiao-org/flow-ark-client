@@ -1,4 +1,4 @@
-/* Figma nodes 1:198 and 1:4023; other page interiors migrate independently. */
+/* Shared navigation: Figma 23:6897. Page interiors migrate independently. */
 .application-shell {
   height: 100vh;
   display: flex;
@@ -24,12 +24,13 @@
   width: 224px;
   flex: 0 0 224px;
   padding: 24px;
-  gap: 24px;
+  gap: 16px;
   background: var(--fa-bg-nav);
   color: var(--fa-text-nav);
 }
 .app .brand {
   height: 40px;
+  flex: 0 0 40px;
   padding: 0;
   gap: 10px;
   font: 600 22px/32px var(--fa-font-latin);
@@ -48,37 +49,37 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
+  gap: 0;
   margin: 0;
-  min-height: 52px;
-  color: var(--fa-text-inverse);
+  min-height: 18px;
+  flex-shrink: 0;
+  color: var(--fa-text-nav);
   letter-spacing: 0;
 }
 .app .workspace-label span {
   border: 0;
   border-radius: 0;
   padding: 0;
-  font-size: 13px;
-  line-height: 20px;
-  letter-spacing: 0;
-}
-.app .workspace-label small {
-  color: var(--fa-text-nav);
   font-size: 12px;
   line-height: 18px;
-  font-weight: 400;
   letter-spacing: 0;
 }
 .app .sidebar nav {
-  gap: 24px;
-  margin: 0;
+  gap: 16px;
+  margin: -4px;
+  padding: 4px;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
 }
 .app .sidebar nav button {
   width: 100%;
-  height: 44px;
-  min-height: 44px;
-  padding: 12px;
-  gap: 12px;
+  height: 40px;
+  min-height: 40px;
+  flex-shrink: 0;
+  padding: 10px;
+  gap: 10px;
   color: var(--fa-text-nav);
   border: 0;
   background: transparent;
@@ -95,13 +96,21 @@
 .app .sidebar nav button svg {
   flex-shrink: 0;
 }
+.navigation-icon {
+  display: block;
+  flex: 0 0 auto;
+}
+.navigation-icon-inverse {
+  filter: brightness(0) invert(1);
+}
 .app .sidebar nav button b {
   background: var(--fa-bg-surface);
   color: var(--fa-action-primary);
 }
 .app .sidebar-bottom {
   padding: 0;
-  gap: 24px;
+  gap: 16px;
+  flex-shrink: 0;
   flex-direction: column;
   align-items: flex-start;
   color: var(--fa-text-nav);
@@ -119,12 +128,12 @@
   align-items: flex-start;
   justify-content: flex-start;
   gap: 10px;
-  min-height: 28px;
+  min-height: 20px;
   padding: 0;
   color: var(--fa-text-nav);
-  font-size: 12px;
-  line-height: 18px;
-  font-weight: 400;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
   border: 0;
   background: transparent;
 }
@@ -417,6 +426,12 @@
   padding: 8px;
   position: relative;
 }
+.app.editing-workspace .sidebar nav button b,
+.app.with-browser .sidebar nav button b {
+  position: absolute;
+  top: -4px;
+  right: -2px;
+}
 @media (max-width: 1439px) {
   .app .sidebar {
     width: 72px;
@@ -437,7 +452,7 @@
   .app .sidebar nav button b {
     position: absolute;
     top: -4px;
-    right: -6px;
+    right: -2px;
   }
 }
 @media (max-width: 1100px) {

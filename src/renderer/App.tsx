@@ -2,6 +2,7 @@ import { usePageBack } from './use-page-back';
 import DesktopStepDetails from './DesktopStepDetails';
 import EditorLeaveDialog from './EditorLeaveDialog';
 import EditorMorePage from './EditorMorePage';
+import NavigationIcon from './NavigationIcon';
 import ExportReviewDialog, { captureDraftExport, type ExportSource } from './ExportReviewDialog';
 import LocalSettingsPage, { type SettingsNavigation } from './LocalSettingsPage';
 import AttentionWorkspace, { type AttentionNavigation } from './AttentionWorkspace';
@@ -36,11 +37,6 @@ import {
   Workflow,
   Play,
   Plus,
-  LayoutTemplate,
-  History,
-  Clock,
-  Bell,
-  Settings,
   ArrowUpRight,
   ArrowUp,
   ArrowDown,
@@ -473,15 +469,25 @@ export default function App() {
   }
   const unread = data.attention.filter((a) => !a.read).length;
   const nav = [
-    ['tasks', '开始任务', Workflow],
-    ['flows', '我的流程', Workflow],
-    ['tools', '应用与工具', Settings],
-    ['templates', '模板库', LayoutTemplate],
-    ['runs', '运行记录', History],
-    ['schedules', '本机计划', Clock],
-    ['inbox', '待办与提醒', Bell],
-    ['settings', '本地设置', Settings],
+    ['tasks', '开始任务'],
+    ['flows', '我的流程'],
+    ['tools', '应用与工具'],
+    ['templates', '模板库'],
+    ['runs', '运行记录'],
+    ['schedules', '本机计划'],
+    ['inbox', '需要我处理'],
+    ['settings', '本地设置'],
   ] as const;
+  const selectedNavigation =
+    section === 'runs' && detail && runOrigin === 'task'
+      ? 'tasks'
+      : section === 'editor'
+        ? 'flows'
+        : section === 'ai-settings'
+          ? 'settings'
+          : section === 'template-schedule'
+            ? 'schedules'
+            : section;
   const observedActive = data.execution?.active;
   const active = observedActive
     ? ([data.runOverview.active, ...data.runs].find((run) => run?.id === observedActive.runId) ??
@@ -789,40 +795,21 @@ export default function App() {
         <aside className="sidebar">
           <div className="brand">
             <span className="brand-mark">
-              <Workflow size={20} strokeWidth={1.6} />
+              <NavigationIcon item="tasks" active />
             </span>
             <span className="brand-name">FlowArk</span>
           </div>
           <div className="workspace-label">
             <span>个人工作空间</span>
-            <small>LOCAL WORKSPACE</small>
           </div>
-          <nav>
-            {nav.map(([id, label, Icon]) => (
+          <nav aria-label="工作区导航">
+            {nav.map(([id, label]) => (
               <button
                 key={id}
                 title={label}
                 aria-label={label}
-                className={
-                  (section === 'runs' && detail && runOrigin === 'task'
-                    ? id === 'tasks'
-                    : section === id) ||
-                  (section === 'editor' && id === 'flows') ||
-                  (section === 'ai-settings' && id === 'settings') ||
-                  (section === 'template-schedule' && id === 'schedules')
-                    ? 'selected'
-                    : ''
-                }
-                aria-current={
-                  (section === 'runs' && detail && runOrigin === 'task'
-                    ? id === 'tasks'
-                    : section === id) ||
-                  (section === 'editor' && id === 'flows') ||
-                  (section === 'ai-settings' && id === 'settings') ||
-                  (section === 'template-schedule' && id === 'schedules')
-                    ? 'page'
-                    : undefined
-                }
+                className={selectedNavigation === id ? 'selected' : ''}
+                aria-current={selectedNavigation === id ? 'page' : undefined}
                 onClick={() => {
                   if (nodeSession) {
                     leaveNodeEditor(() => {
@@ -844,7 +831,7 @@ export default function App() {
                   requestWorkspaceLeave(navigate, label, id);
                 }}
               >
-                <Icon size={20} strokeWidth={1.6} />
+                <NavigationIcon item={id} active={selectedNavigation === id} />
                 <span className="nav-label">{label}</span>
                 {id === 'inbox' && unread > 0 && <b>{unread}</b>}
               </button>
