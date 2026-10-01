@@ -185,3 +185,24 @@
   min-height: 40px;
   resize: vertical;
 }
+.flow-parameters-leave {
+  min-height: 320px;
+}
+.flow-parameters-leave h2 {
+  font-size: 28px;
+  line-height: 40px;
+}
+.flow-parameters-leave .editor-leave-status::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: middle;
+}
+.flow-parameters-leave .editor-leave-discard {
+  border-color: transparent;
+  background: var(--fa-status-error-bg);
+}

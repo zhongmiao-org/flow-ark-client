@@ -616,13 +616,15 @@ export default function App() {
 
   const leaveNodeEditor = (next: () => void, destination: string) => {
     const source = nodeSession;
-    nodeNavigation.current?.(() =>
-      requestAnimationFrame(() =>
-        editorLeaveRequest.current(next, destination, () => {
-          setNodeSession(source);
-          setBrowserOpen(false);
-        }),
-      ),
+    nodeNavigation.current?.(
+      () =>
+        requestAnimationFrame(() =>
+          editorLeaveRequest.current(next, destination, () => {
+            setNodeSession(source);
+            setBrowserOpen(false);
+          }),
+        ),
+      destination,
     );
   };
   const closeNodeEditor = (next?: () => void) => {

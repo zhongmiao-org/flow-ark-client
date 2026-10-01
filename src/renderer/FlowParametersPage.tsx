@@ -7,6 +7,7 @@ import ParameterConfiguration from './ParameterConfiguration';
 import TemplateParameters from './TemplateParameters';
 import type { ScriptNavigation } from './ScriptEditorPage';
 import './flow-parameters.css';
+import './editor-leave.css';
 
 export default function FlowParametersPage({
   record,
@@ -47,20 +48,22 @@ export default function FlowParametersPage({
   const [draft, setDraft] = useState(() => structuredClone(record));
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
-  const [pending, setPending] = useState<{ next?: () => void }>();
+  const [pending, setPending] = useState<{ next?: () => void; destination: string }>();
   const root = useRef<HTMLElement>(null),
-    dialog = useRef<HTMLDialogElement>(null);
+    dialog = useRef<HTMLDialogElement>(null),
+    dialogHeading = useRef<HTMLHeadingElement>(null),
+    continueButton = useRef<HTMLButtonElement>(null);
   const locked = useRef(false),
     alive = useRef(true),
     lastFocus = useRef<HTMLElement | null>(null);
   const dirty = JSON.stringify(record) !== JSON.stringify(draft);
   const incomplete = () => !!root.current?.querySelector('[data-value-invalid]');
-  const leave: ScriptNavigation = (next) => {
+  const leave: ScriptNavigation = (next, destination = returnLabel) => {
     if (locked.current || pending) return;
     if (dirty || incomplete()) {
       if (!lastFocus.current?.isConnected)
         lastFocus.current = document.activeElement as HTMLElement;
-      setPending({ next });
+      setPending({ next, destination });
     } else close(next);
   };
   useLayoutEffect(() => {
@@ -77,9 +80,14 @@ export default function FlowParametersPage({
     };
   }, []);
   useEffect(() => {
-    if (pending) dialog.current?.showModal();
-    else dialog.current?.close();
+    if (pending) {
+      dialog.current?.showModal();
+      continueButton.current?.focus();
+    } else dialog.current?.close();
   }, [pending]);
+  useEffect(() => {
+    if (pending && error) dialogHeading.current?.focus();
+  }, [pending, error]);
   usePageBack(leave);
   const stay = () => {
     if (locked.current) return;
@@ -181,11 +189,14 @@ export default function FlowParametersPage({
           <p>普通流程自由编辑参数；删除被引用的参数会被阻止，并标出引用步骤。</p>
           {managed ? (
             managedValues ? (
-              <TemplateParameters value={managedValues} edit={() => leave(configuration)} />
+              <TemplateParameters
+                value={managedValues}
+                edit={() => leave(configuration, '实例配置')}
+              />
             ) : (
               <>
                 <p role="alert">实例参数格式不可用，请打开实例配置核对。</p>
-                <button type="button" onClick={() => leave(configuration)}>
+                <button type="button" onClick={() => leave(configuration, '实例配置')}>
                   编辑实例配置
                 </button>
               </>
@@ -284,36 +295,48 @@ export default function FlowParametersPage({
       </footer>
       {pending && (
         <dialog
-          className="script-leave-dialog ai-settings-dialog"
+          className="editor-leave-dialog flow-parameters-leave"
           ref={dialog}
           aria-labelledby="parameter-leave-title"
+          aria-describedby="parameter-leave-description"
           onCancel={(event) => {
             event.preventDefault();
             stay();
           }}
         >
-          <h2 id="parameter-leave-title">保存参数与资源更改再离开？</h2>
-          <p>
-            成功保存后前往刚才选择的位置。放弃仅撤销本页未保存的更改，打开前的流程草稿保持原状。
+          <span className={`editor-leave-status${error ? ' is-error' : ''}`}>
+            {error ? '未保存 · 留在当前页' : '存在未保存更改'}
+          </span>
+          <h2 id="parameter-leave-title" ref={dialogHeading} tabIndex={-1}>
+            {error ? '保存未完成，尚未离开' : '离开前保存更改？'}
+          </h2>
+          <p id="parameter-leave-description">
+            当前参数与资源更改尚未保存。保存成功后前往“{pending.destination}
+            ”；不保存只放弃本页更改。
           </p>
+          <p className="editor-leave-note">打开前的流程草稿、已开始的运行和固定计划保持原状。</p>
           {error && (
-            <p role="alert" className="field-error">
+            <p role="alert" className="editor-leave-error">
               {error}
             </p>
           )}
-          <div className="flow-parameters-actions">
-            <button autoFocus disabled={!!busy} onClick={stay}>
+          <div className="editor-leave-actions">
+            <button autoFocus ref={continueButton} disabled={!!busy} onClick={stay}>
               继续编辑
+            </button>
+            <button
+              className="editor-leave-discard"
+              disabled={!!busy}
+              onClick={() => close(pending.next)}
+            >
+              不保存离开
             </button>
             <button
               className="primary"
               disabled={!!busy}
               onClick={() => void persist(pending.next)}
             >
-              保存并离开
-            </button>
-            <button disabled={!!busy} onClick={() => close(pending.next)}>
-              不保存离开
+              {busy === 'save' ? '正在保存…' : error ? '重试保存并离开' : '保存并离开'}
             </button>
           </div>
         </dialog>

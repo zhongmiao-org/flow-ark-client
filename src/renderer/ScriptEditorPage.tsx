@@ -20,7 +20,7 @@ import {
   type ScriptNode,
 } from './script-editor';
 const CodeEditor = lazy(() => import('./CodeEditor'));
-export type ScriptNavigation = (next?: () => void) => void;
+export type ScriptNavigation = (next?: () => void, destination?: string) => void;
 type Diagnostic = { lineNumber: number; column: number; message: string };
 const json = (value: unknown) => {
   const text = JSON.stringify(value, null, 2) ?? '没有输出';
