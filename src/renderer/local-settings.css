@@ -399,3 +399,109 @@
   color: var(--fa-status-warning);
   background: var(--fa-status-warning-bg);
 }
+
+.local-settings-tabs[hidden] {
+  display: none;
+}
+.local-browser-binding-page .local-settings-heading {
+  margin-bottom: 32px;
+}
+.local-browser-binding {
+  min-height: 656px;
+}
+.local-browser-binding-fields {
+  max-width: 720px;
+}
+.local-browser-binding .local-settings-field {
+  margin-bottom: 30px;
+}
+.local-browser-binding .local-settings-field > label {
+  font-size: 13px;
+  line-height: 20px;
+  margin: 0 0 8px;
+}
+.local-browser-binding .local-settings-field input,
+.local-browser-binding .local-settings-field select,
+.local-browser-file-choice {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 8px;
+  background: var(--fa-bg-surface);
+  color: var(--fa-text-secondary);
+  text-align: left;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+}
+.local-browser-binding .local-browser-discovery-row {
+  flex-wrap: nowrap;
+}
+.local-browser-discovery-row select {
+  flex: 1;
+}
+.local-browser-discovery-row button {
+  flex-shrink: 0;
+}
+.local-browser-file-choice {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.local-browser-binding .local-browser-driver-field {
+  margin-bottom: 18px;
+}
+.local-browser-binding .local-browser-driver-field > label {
+  font-size: 12px;
+  line-height: 18px;
+  margin: 0 0 6px;
+  color: var(--fa-text-secondary);
+}
+.local-browser-driver-field .local-browser-file-choice {
+  height: 32px;
+  min-height: 32px;
+  padding: 5px 8px;
+  border: 0;
+  background: var(--fa-bg-canvas);
+  color: var(--fa-text-primary);
+  font-size: 13px;
+}
+.local-browser-clear-driver {
+  margin-top: 8px;
+}
+.local-browser-binding-receipt strong {
+  margin-left: 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.local-browser-binding-receipt p {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+.local-browser-binding .local-settings-actions {
+  margin-top: 16px;
+}
+.local-browser-binding .local-settings-actions button {
+  width: 180px;
+}
+.local-browser-binding > .local-settings-muted {
+  margin: 16px 0 0;
+  font-size: 14px;
+}
+.local-browser-binding-help {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+}
+@container (max-width: 550px) {
+  .local-browser-binding .local-browser-discovery-row {
+    flex-wrap: wrap;
+  }
+  .local-browser-discovery-row select {
+    flex-basis: 100%;
+  }
+}

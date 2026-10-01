@@ -255,7 +255,11 @@ export default function LocalSettingsPage({
     </button>
   );
   return (
-    <section className="page local-settings-page" hidden={!active} aria-label="本地设置">
+    <section
+      className={`page local-settings-page${local && tab === 'browser' ? ' local-browser-binding-page' : ''}`}
+      hidden={!active}
+      aria-label="本地设置"
+    >
       <header className="local-settings-heading">
         <div>
           <h1 ref={heading} tabIndex={-1}>
@@ -267,13 +271,13 @@ export default function LocalSettingsPage({
               : '管理运行环境、模型接口和这台 Mac 的资源。'}
           </p>
         </div>
-        {local && tab === 'browser' && (
-          <button onClick={back} disabled={!!busy}>
-            返回浏览器设置
-          </button>
-        )}
       </header>
-      <div className="local-settings-tabs" role="tablist" aria-label="设置分类">
+      <div
+        className="local-settings-tabs"
+        role="tablist"
+        aria-label="设置分类"
+        hidden={local && tab === 'browser'}
+      >
         {tabs.map(([id, label], index) => (
           <button
             key={id}
@@ -485,116 +489,114 @@ export default function LocalSettingsPage({
             </div>
           ) : (
             <section className="local-settings-card local-browser-binding" aria-busy={!!busy}>
-              <div className="local-settings-row">
-                <h2>本机浏览器绑定</h2>
-                <button
-                  disabled={!!busy}
-                  onClick={() =>
-                    void act('discover', async () => {
-                      setCandidates(await api('browser.discover'));
-                      setDiscovered(true);
-                    })
-                  }
-                >
-                  {busy === 'discover' ? '正在发现…' : '发现已安装浏览器'}
-                </button>
-              </div>
-              <p>发现结果只读取安装信息；检测并保存后，才可在流程中选择。</p>
-              <div className="local-browser-choices" role="group" aria-label="本机浏览器">
-                {choices.map((b) => (
-                  <button
-                    key={b.id}
-                    disabled={!!busy}
-                    aria-pressed={picked?.id === b.id}
-                    onClick={() => select(b)}
-                  >
-                    <strong>{browserName(b.product)}</strong>
-                    <span>{b.version}</span>
-                    <small>
-                      {bound.some((x) => x.id === b.id) ? '已保存绑定' : '已发现 · 尚未绑定'}
-                    </small>
-                    <span className="local-settings-path">{b.executable}</span>
-                  </button>
-                ))}
-              </div>
-              {!choices.length && (
-                <div className="local-settings-empty">
-                  {discovered
-                    ? '未发现支持的安装，请手动选择这台 Mac 上的浏览器应用。'
-                    : '可以发现已安装浏览器，也可以直接选择安装位置。'}
+              <div className="local-browser-binding-fields">
+                <div className="local-settings-field">
+                  <label htmlFor="local-browser-mode">执行方式</label>
+                  <input id="local-browser-mode" readOnly value="本机已安装浏览器" />
                 </div>
-              )}
-              <div className="local-settings-field">
-                <label htmlFor="local-browser-path">安装位置</label>
-                <div>
-                  <input
+                <div className="local-settings-field">
+                  <label htmlFor="local-browser-choice">浏览器</label>
+                  <div className="local-browser-discovery-row">
+                    <select
+                      id="local-browser-choice"
+                      disabled={!!busy}
+                      value={picked?.id ?? ''}
+                      onChange={(event) => {
+                        const next = choices.find((item) => item.id === event.target.value);
+                        if (next) select(next);
+                      }}
+                    >
+                      <option value="" disabled>
+                        {path ? '手动选择的安装 · 保存时识别' : '选择已发现或已绑定的浏览器'}
+                      </option>
+                      {choices.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {browserName(b.product)} · {b.version} ·{' '}
+                          {bound.some((item) => item.id === b.id) ? '已保存' : '尚未绑定'}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      disabled={!!busy}
+                      onClick={() =>
+                        void act('discover', async () => {
+                          setCandidates(await api('browser.discover'));
+                          setDiscovered(true);
+                        })
+                      }
+                    >
+                      {busy === 'discover' ? '正在发现…' : '发现已安装浏览器'}
+                    </button>
+                  </div>
+                  {discovered && !choices.length && (
+                    <p role="status">未发现支持的安装，请通过下方选择应用。</p>
+                  )}
+                </div>
+                <div className="local-settings-field">
+                  <label htmlFor="local-browser-path">安装位置</label>
+                  <button
                     id="local-browser-path"
-                    readOnly
-                    value={path}
-                    placeholder="从这台 Mac 选择浏览器应用"
-                  />
-                  <button disabled={!!busy} onClick={() => void choose('browser')}>
-                    选择应用
+                    className="local-browser-file-choice"
+                    disabled={!!busy}
+                    aria-label="选择应用"
+                    title={path || undefined}
+                    onClick={() => void choose('browser')}
+                  >
+                    {path || '[从这台 Mac 选择应用]'}
                   </button>
                 </div>
-              </div>
-              <div className="local-settings-field">
-                <label htmlFor="local-driver-path">驱动来源（Firefox 需要）</label>
-                <div>
-                  <input
-                    id="local-driver-path"
-                    readOnly
-                    value={driver}
-                    placeholder={
-                      picked?.product === 'safari'
-                        ? '使用系统 safaridriver'
-                        : '手动选择已准备的驱动'
-                    }
-                  />
+                <div className="local-settings-field local-browser-driver-field">
+                  <label htmlFor="local-driver-path">驱动来源（Firefox 需要）</label>
                   <button
+                    id="local-driver-path"
+                    className="local-browser-file-choice"
                     disabled={!!busy || picked?.product === 'safari'}
+                    aria-label="选择驱动"
+                    title={driver || undefined}
                     onClick={() => void choose('driver')}
                   >
-                    选择驱动
+                    {picked?.product === 'safari'
+                      ? '使用系统 safaridriver'
+                      : driver || '手动选择已准备的驱动'}
                   </button>
                   {driver && picked?.product !== 'safari' && (
                     <button
+                      className="local-browser-clear-driver"
                       disabled={!!busy}
                       onClick={() => {
                         setDriver('');
                         setReceipt(undefined);
                       }}
                     >
-                      清除选择
+                      清除驱动选择
                     </button>
                   )}
                 </div>
-                <p>不自动下载驱动或浏览器。Safari 使用系统驱动；Chrome 不需要此字段。</p>
-              </div>
-              <div
-                className={`local-settings-banner ${receipt ? (receipt.product === 'firefox' && !receipt.driver ? 'warning' : 'success') : ''}`}
-                role="status"
-                ref={receiptBanner}
-                tabIndex={-1}
-              >
-                {receipt ? (
-                  <>
-                    <strong>
-                      {browserName(receipt.product)} · {receipt.version} · 绑定已保存
-                    </strong>
-                    <p>
-                      {receipt.product === 'firefox' && !receipt.driver
-                        ? '尚未选择 geckodriver，Firefox 任务仍会被阻止。'
-                        : '安装信息检测通过；网页操作与环境兼容性仍以实际运行为准。'}
-                    </p>
-                    {receipt.driverVersion && <p>{receipt.driverVersion}</p>}
-                    <p>请在需要它的流程中明确选择此浏览器。</p>
-                  </>
-                ) : path ? (
-                  '安装位置已选择，尚未检测保存。'
-                ) : (
-                  '尚未选择本机安装。'
-                )}
+                <div
+                  className="local-browser-binding-receipt"
+                  role="status"
+                  ref={receiptBanner}
+                  tabIndex={-1}
+                >
+                  <span
+                    className={`badge ${receipt ? (receipt.product === 'firefox' && !receipt.driver ? 'state-INTERRUPTED' : 'state-SUCCEEDED') : ''}`}
+                  >
+                    {receipt ? '绑定已保存' : path ? '尚未检测保存' : '尚未选择本机安装'}
+                  </span>
+                  {receipt && (
+                    <>
+                      <strong>
+                        {browserName(receipt.product)} · {receipt.version}
+                      </strong>
+                      <p>
+                        {receipt.product === 'firefox' && !receipt.driver
+                          ? '尚未选择 geckodriver，Firefox 任务仍会被阻止。'
+                          : '安装信息检测通过；网页操作与环境兼容性仍以实际运行为准。'}
+                      </p>
+                      {receipt.driverVersion && <p>{receipt.driverVersion}</p>}
+                    </>
+                  )}
+                </div>
               </div>
               {refreshError && (
                 <div
@@ -623,8 +625,16 @@ export default function LocalSettingsPage({
                 </button>
               </div>
               <p className="local-settings-muted">
-                返回只切换设置页面，不修改任何流程的浏览器绑定，也不关闭用户原有窗口。
+                请在流程资源中明确选择浏览器。返回不修改已有绑定，也不关闭用户原有窗口。
               </p>
+              <details className="local-browser-binding-help">
+                <summary>浏览器与驱动说明</summary>
+                <p>发现只读取安装信息；检测并保存后才可在流程中选择。</p>
+                <p>
+                  不自动下载驱动或浏览器。Safari 使用系统驱动；Chrome 不需要驱动文件，Firefox
+                  需显式选择 geckodriver。
+                </p>
+              </details>
             </section>
           ))}
         {tab === 'ai' && active && <AISettingsSummary open={openAI} />}
