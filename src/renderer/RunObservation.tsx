@@ -111,9 +111,7 @@ export function RunOutput({
       {output.available ? (
         <>
           <p className="muted">
-            {layout === 'task'
-              ? '已保存的脱敏 JSON；业务结果请结合回执核对。'
-              : '已保存的脱敏输出；业务结果请结合回执核对。'}
+            {layout === 'task' ? '已脱敏 JSON' : '已保存的脱敏输出；业务结果请结合回执核对。'}
           </p>
           {output.truncated && !expanded && (
             <p className="output-limit">

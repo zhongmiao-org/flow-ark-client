@@ -392,14 +392,16 @@ export default function TaskRunPage({
                 </>
               )}
               <div className="task-file-content">
+                <p>
+                  文件内容
+                  {visiblePreview?.status === 'text' && visiblePreview.truncated
+                    ? ' · 内容已截断'
+                    : ''}
+                </p>
                 {loading ? (
                   <p role="status">正在读取并核对文件副本…</p>
                 ) : visiblePreview?.status === 'text' ? (
                   <>
-                    <p>
-                      已核对保存的副本 · 纯文本预览，已按当前脱敏规则处理
-                      {visiblePreview.truncated ? ' · 内容已截断' : ''}
-                    </p>
                     <pre
                       className="task-file-preview"
                       tabIndex={0}
@@ -433,40 +435,53 @@ export default function TaskRunPage({
             </section>
             <section className="ai-task-card task-run-evidence" aria-label="执行证据">
               <h2>执行证据</h2>
-              <dl>
+              <dl className="task-run-evidence-summary">
                 <div>
-                  <dt>运行标识</dt>
+                  <dt className="sr-only">运行标识</dt>
                   <dd className="task-run-path">{run.id}</dd>
                 </div>
                 <div>
-                  <dt>记录状态</dt>
-                  <dd>{runDisplayLabels[run.state as keyof typeof runDisplayLabels]}</dd>
+                  <dt className="sr-only">执行步骤</dt>
+                  <dd>{model.completed.length} 次步骤已确认完成</dd>
                 </div>
                 <div>
-                  <dt>执行步骤</dt>
+                  <dt className="sr-only">文件产物</dt>
                   <dd>
-                    {model.completed.length} 次已完成 · {model.unresolved.length} 次未确认完成 ·{' '}
-                    {model.unvisited.length} 个尚未执行（含未选分支）
+                    {model.artifacts.length} 个文件产物 · {model.verified.length} 个副本已核对
                   </dd>
                 </div>
                 <div>
-                  <dt>文件产物</dt>
+                  <dt className="sr-only">待核对步骤</dt>
                   <dd>
-                    {model.artifacts.length} 个已登记 · {model.verified.length} 个副本已核对
+                    {model.unresolved.length} 次未确认完成 · {model.unvisited.length}{' '}
+                    个尚未执行（含未选分支）
                   </dd>
-                </div>
-                <div>
-                  <dt>已记录耗时</dt>
-                  <dd>{model.view.elapsed.label}</dd>
                 </div>
               </dl>
               {run.error && <p className="field-error">{run.error}</p>}
               <button className="primary" onClick={() => setPage('overview')}>
                 返回结果摘要
               </button>
+              <details className="task-run-record-info">
+                <summary>运行状态与耗时</summary>
+                <dl>
+                  <div>
+                    <dt>记录状态</dt>
+                    <dd>{runDisplayLabels[run.state as keyof typeof runDisplayLabels]}</dd>
+                  </div>
+                  <div>
+                    <dt>已记录耗时</dt>
+                    <dd>{model.view.elapsed.label}</dd>
+                  </div>
+                </dl>
+                <p>输出为已保存的脱敏内容；业务结果请结合回执核对。</p>
+              </details>
               {selected && (
                 <details className="task-run-file-info">
                   <summary>文件信息与保存位置</summary>
+                  {visiblePreview?.status === 'text' && (
+                    <p>已核对保存的副本 · 纯文本预览，已按当前脱敏规则处理</p>
+                  )}
                   {item && (
                     <>
                       <p>
