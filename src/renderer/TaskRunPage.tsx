@@ -227,7 +227,7 @@ export default function TaskRunPage({
     <>
       {model.artifacts.map((a) => (
         <section
-          className="task-run-file"
+          className={'task-run-file' + (singleResultFile ? ' task-run-single-file' : '')}
           aria-label={`文件产物：${a.name}`}
           key={a.artifactId}
           data-artifact-id={a.artifactId}
@@ -236,16 +236,18 @@ export default function TaskRunPage({
           <p>
             {a.size.toLocaleString('zh-CN')} 字节 · {artifactLabel(a)}
           </p>
-          <details>
-            <summary>保存位置</summary>
-            <p className="task-run-path">{a.path}</p>
-            <button
-              disabled={!a.available || busy}
-              onClick={() => void act(() => reveal(a.artifactId))}
-            >
-              定位文件
-            </button>
-          </details>
+          {!singleResultFile && (
+            <details>
+              <summary>保存位置</summary>
+              <p className="task-run-path">{a.path}</p>
+              <button
+                disabled={!a.available || busy}
+                onClick={() => void act(() => reveal(a.artifactId))}
+              >
+                定位文件
+              </button>
+            </details>
+          )}
           {!singleResultFile && <div className="ai-task-actions">{previewButton(a)}</div>}
         </section>
       ))}
@@ -288,7 +290,14 @@ export default function TaskRunPage({
           {model.success ? '再次运行前检查' : '核对后重新运行'}
         </button>
       )}
-      <p>修改先保存为草稿。重新执行需确认版本和已完成操作，从第一个步骤创建新的运行。</p>
+      {model.success ? (
+        <details className="task-run-next-help">
+          <summary>修改与再次运行说明</summary>
+          <p>修改先保存为草稿。重新执行需确认版本和已完成操作，从第一个步骤创建新的运行。</p>
+        </details>
+      ) : (
+        <p>修改先保存为草稿。重新执行需确认版本和已完成操作，从第一个步骤创建新的运行。</p>
+      )}
     </>
   );
   if (model.desktop)
@@ -504,8 +513,11 @@ export default function TaskRunPage({
           </div>
         ) : model.success ? (
           <>
-            <section className="task-run-banner">
-              <h2>{model.summary}</h2>
+            <section className="task-run-banner" aria-label="运行结果摘要">
+              <h2>
+                <span aria-hidden="true">✓ </span>
+                {model.summary}
+              </h2>
               <p>{model.effectNote}</p>
             </section>
             <div className="task-run-columns task-run-result">
@@ -519,8 +531,9 @@ export default function TaskRunPage({
                   </button>
                 </div>
                 <p>
-                  未确认完成的步骤：{model.unresolved.length} 次。尚未执行：{model.unvisited.length}{' '}
-                  个（包含未选分支）。
+                  未确认完成：{model.unresolved.length} 次。
+                  <br />
+                  尚未执行：{model.unvisited.length} 个（包含未选分支）。
                 </p>
               </section>
               <section className="ai-task-card task-run-next">

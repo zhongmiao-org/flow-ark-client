@@ -507,3 +507,30 @@
 .task-run-live-impact p {
   margin-top: 8px;
 }
+
+.task-run-result .task-run-single-file {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 112px;
+  margin-right: -2px;
+}
+.task-run-result .task-run-single-file h3 {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.task-run-result .task-run-single-file p {
+  margin: 0;
+  line-height: 22px;
+}
+.task-run-next-help summary {
+  cursor: pointer;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.task-run-next-help p {
+  margin-top: 12px;
+}
