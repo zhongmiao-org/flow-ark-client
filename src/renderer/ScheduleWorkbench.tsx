@@ -1,5 +1,12 @@
 import { usePageBack } from './use-page-back';
-import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type MutableRefObject,
+  type ReactNode,
+} from 'react';
 import type { Bootstrap, FlowRecord, Schedule } from '../shared/types';
 import {
   scheduleCreateSchema,
@@ -30,18 +37,20 @@ export default function ScheduleWorkbench({
   data,
   action,
   active,
+  browserControl,
   navigation,
   showRun,
 }: {
   data: Bootstrap;
   action: (fn: () => Promise<any>, message?: string) => Promise<any>;
   active: boolean;
+  browserControl?: ReactNode;
   navigation: MutableRefObject<TemplateNavigation | undefined>;
   showRun: (detail: any, back: () => void) => void;
 }) {
   const [draft, setDraft] = useState<Draft>();
   const [initial, setInitial] = useState<Draft>();
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState<{ title: string; detail: string; badge: string }>();
   const [error, setError] = useState('');
   const [conflict, setConflict] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -81,14 +90,14 @@ export default function ScheduleWorkbench({
     setInitial(value);
     setError('');
     setConflict(false);
-    setNotice('');
+    setNotice(undefined);
   };
   async function perform(fn: () => Promise<any>, message?: string) {
     if (lock.current) return;
     lock.current = true;
     setBusy(true);
     setError('');
-    setNotice('');
+    setNotice(undefined);
     try {
       return await action(async () => {
         try {
@@ -217,11 +226,14 @@ export default function ScheduleWorkbench({
     );
     if (!result) return false;
     assign();
-    setNotice(
-      draft.mode === 'edit'
-        ? '计划已保存，保留原启停状态，仅影响未来触发。'
-        : '计划已创建并启用，首次执行在所选间隔之后。',
-    );
+    setNotice({
+      title: draft.mode === 'edit' ? '计划已保存' : '计划已创建',
+      badge: '固定版本',
+      detail:
+        draft.mode === 'edit'
+          ? `按每 ${draft.minutes} 分钟执行；保留原启停状态，仅影响未来触发。`
+          : `按每 ${draft.minutes} 分钟执行；已启用，首次执行在所选间隔之后。`,
+    });
     return true;
   }
   async function readHistory(id: string, cursor?: ScheduleCursor) {
@@ -307,6 +319,7 @@ export default function ScheduleWorkbench({
           )}
           <span aria-current="page">{viewTitle}</span>
         </nav>
+        {browserControl}
       </header>
       <div
         className="page ai-task-page schedules-page"
@@ -340,7 +353,9 @@ export default function ScheduleWorkbench({
         </div>
         {notice && (
           <div className="schedule-feedback" role="status">
-            {notice}
+            <span className="ai-config-status success">{notice.badge}</span>
+            <h2>{notice.title}</h2>
+            <p>{notice.detail}</p>
           </div>
         )}
         <datalist id="schedule-timezones">
@@ -378,14 +393,10 @@ export default function ScheduleWorkbench({
                 <span className={'ai-config-status ' + (plan.enabled ? 'success' : 'neutral')}>
                   {plan.enabled ? '已启用' : '已暂停'}
                 </span>
-                <p>
-                  每 {plan.intervalMinutes} 分钟 · {plan.timezone}
+                <p className="schedule-plan-timing">
+                  每 {plan.intervalMinutes} 分钟 · {plan.timezone} ·{' '}
+                  {plan.enabled ? '下次 ' + inZone(plan.nextAt, plan.timezone) : '暂无下次执行'}
                 </p>
-                <small>
-                  {plan.enabled
-                    ? '下次：' + inZone(plan.nextAt, plan.timezone)
-                    : '已暂停 · 启用后重新计算下次时间'}
-                </small>
                 <div className="ai-task-actions">
                   <button
                     disabled={busy}
@@ -400,11 +411,13 @@ export default function ScheduleWorkbench({
                           const name =
                             data.flows.find((flow) => flow.id === plan.flowId)?.flow.name ??
                             '此计划';
-                          setNotice(
-                            plan.enabled
-                              ? `${name}已暂停，固定版本保持不变；已有运行不受影响。`
+                          setNotice({
+                            title: plan.enabled ? '计划已暂停' : '计划已启用',
+                            badge: '固定版本保持不变',
+                            detail: plan.enabled
+                              ? `${name}已暂停；已有运行不受影响。`
                               : `${name}已启用，下次执行按当前间隔重新计算；不会补跑错过的计划。`,
-                          );
+                          });
                           return result;
                         });
                       };
@@ -412,7 +425,7 @@ export default function ScheduleWorkbench({
                       else toggle();
                     }}
                   >
-                    {plan.enabled ? '暂停计划' : '启用计划'}
+                    {plan.enabled ? '暂停' : '启用'}
                   </button>
                   <button
                     aria-label="编辑计划"
@@ -532,15 +545,26 @@ export default function ScheduleWorkbench({
                     : '创建后启用，首次执行在所选间隔之后。不采用未保存草稿。'}
                 </p>
                 {changed && (
-                  <div role="alert" className="ai-task-error">
-                    计划或已保存流程已改变，输入已保留，请重新核对。
+                  <div role="alert" className="schedule-conflict">
+                    <span className="ai-config-status error">保存被拒绝</span>
+                    <h3>
+                      {draft.mode === 'edit' && !currentPlan ? '计划已不可用' : '计划或来源已更新'}
+                    </h3>
+                    <p>
+                      编辑期间计划或所选流程发生变化。当前输入已保留，重新编辑前请核对最新内容。
+                    </p>
                     <button
+                      className="primary"
                       type="button"
                       onClick={() =>
-                        go(() => (draft.plan ? void open(draft.plan) : assign(blank())))
+                        go(() => {
+                          if (draft.mode === 'edit' && !currentPlan) assign();
+                          else if (draft.plan) void open(draft.plan);
+                          else assign(blank());
+                        })
                       }
                     >
-                      放弃更改并重新核对
+                      {draft.mode === 'edit' && !currentPlan ? '返回计划' : '重新编辑'}
                     </button>
                   </div>
                 )}

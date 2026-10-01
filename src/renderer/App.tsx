@@ -954,6 +954,7 @@ export default function App() {
               section === 'tools' ||
               section === 'templates' ||
               section === 'template-schedule' ||
+              section === 'schedules' ||
               section === 'ai-settings' ||
               (section === 'editor' && outlineOpen)
                 ? { display: 'none' }
@@ -2009,6 +2010,16 @@ export default function App() {
               data={data}
               action={action}
               active={section === 'schedules'}
+              browserControl={
+                <button
+                  className="embedded-show"
+                  aria-label={browserOpen ? '收起网页面板' : '打开网页面板'}
+                  aria-pressed={browserOpen}
+                  onClick={() => setBrowserOpen(!browserOpen)}
+                >
+                  {browserOpen ? '收起网页' : '显示网页'}
+                </button>
+              }
               navigation={plansNavigation}
               showRun={(next, back) => {
                 scheduleRunBack.current = back;
