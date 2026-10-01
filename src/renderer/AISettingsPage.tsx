@@ -8,6 +8,7 @@ import {
   type AIProviderId,
 } from '../shared/ai-settings';
 import './ai-settings.css';
+import './editor-leave.css';
 
 const api = (method: string, args: unknown): Promise<any> =>
   window.flowark.request('ai.configuration.' + method, args);
@@ -31,7 +32,7 @@ export type AISettingsEntry = {
         view?: 'resources' | 'entry';
       };
 };
-export type AISettingsNavigation = (next: () => void) => void;
+export type AISettingsNavigation = (next: () => void, destination?: string) => void;
 const providerName = (id: AIProviderId) => (id === 'deepseek' ? 'DeepSeek' : 'OpenAI');
 const mask = (state: AIConfigurationState) => `••••••••${state.tail ? ' ' + state.tail : ''}`;
 
@@ -50,7 +51,7 @@ export default function AISettingsPage({
   back: () => void;
   changed: () => Promise<void>;
   onSaved: (state: AIConfigurationState) => void;
-  home: () => void;
+  home: (tab?: 'browser') => void;
 }) {
   const [storedState, setState] = useState<AIConfigurationState>();
   const [loadedEntry, setLoadedEntry] = useState<string>();
@@ -67,13 +68,16 @@ export default function AISettingsPage({
   const focusField = useRef<'model' | 'key' | undefined>(undefined),
     focusResult = useRef(false);
   const [busy, setBusy] = useState<'save' | 'remove' | 'test' | null>(null);
-  const [leaving, setLeaving] = useState<{ next: () => void }>(),
+  const [leaving, setLeaving] = useState<{ next: () => void; destination: string }>(),
     [removing, setRemoving] = useState(false);
   const lock = useRef(false),
     epoch = useRef(0),
     request = useRef<string | undefined>(undefined);
   const title = useRef<HTMLHeadingElement>(null),
-    dialog = useRef<HTMLDialogElement>(null);
+    dialog = useRef<HTMLDialogElement>(null),
+    dialogHeading = useRef<HTMLHeadingElement>(null),
+    continueButton = useRef<HTMLButtonElement>(null),
+    lastInput = useRef<HTMLElement | null>(null);
   const provider = entry.provider,
     fromTemplate = entry.source?.kind === 'template',
     templateLabel =
@@ -82,6 +86,9 @@ export default function AISettingsPage({
         : '模板入口',
     name = providerName(provider),
     testing = busy === 'test' || state?.operation === 'testing';
+  const sourceLabel = fromTemplate
+    ? `${templateLabel} · ${entry.source!.title}`
+    : entry.source?.title || '本地设置';
   useLayoutEffect(() => {
     if (!active) return;
     if (editing && focusField.current) {
@@ -109,6 +116,7 @@ export default function AISettingsPage({
     setInvalid(undefined);
     focusField.current = undefined;
     focusResult.current = false;
+    lastInput.current = null;
     setEditing(false);
     setLeaving(undefined);
     setRemoving(false);
@@ -129,8 +137,16 @@ export default function AISettingsPage({
     };
   }, [active, entry.key]);
   useEffect(() => {
-    if (leaving || removing) dialog.current?.showModal();
+    if (leaving || removing) {
+      if (!lastInput.current?.isConnected)
+        lastInput.current = document.activeElement as HTMLElement;
+      dialog.current?.showModal();
+      continueButton.current?.focus();
+    }
   }, [leaving, removing]);
+  useEffect(() => {
+    if ((leaving || removing) && error) dialogHeading.current?.focus();
+  }, [leaving, removing, error]);
   useEffect(() => {
     if (!active || !state || busy) return;
     let live = true,
@@ -157,19 +173,28 @@ export default function AISettingsPage({
       clearInterval(timer);
     };
   }, [active, entry.key, state?.revision, busy]);
-  const go = (next: () => void) => {
+  const go: AISettingsNavigation = (next, destination = sourceLabel) => {
     if (busy === 'save' || busy === 'remove') {
       setError('请等待配置保存或移除完成');
       return;
     }
-    if (dirty || testing) setLeaving({ next });
+    if (dirty || testing) setLeaving({ next, destination });
     else {
       setKey('');
+      lastInput.current = null;
       next();
     }
   };
   navigation.current = go;
   const returnToSource = () => go(back);
+  const stay = () => {
+    if (busy === 'save' || busy === 'remove') return;
+    setLeaving(undefined);
+    setRemoving(false);
+    requestAnimationFrame(() => {
+      if (lastInput.current?.isConnected) lastInput.current.focus({ preventScroll: true });
+    });
+  };
   usePageBack(returnToSource, active);
   useEffect(
     () => () => {
@@ -230,7 +255,7 @@ export default function AISettingsPage({
       setError('');
       setDirty(false);
       setEditing(!state?.configured);
-    });
+    }, '当前 AI 配置');
   const test = async () => {
     if (!state?.configured || !state.revision || lock.current) return;
     const requestId = crypto.randomUUID(),
@@ -320,7 +345,15 @@ export default function AISettingsPage({
           ? 'error'
           : 'warning';
   return (
-    <div className="ai-settings-host" hidden={!active}>
+    <div
+      className="ai-settings-host"
+      hidden={!active}
+      onFocusCapture={(event) => {
+        const target = event.target as HTMLElement;
+        if (target.matches('input,textarea,select') && !target.closest('dialog'))
+          lastInput.current = target;
+      }}
+    >
       <header className="topbar">
         <button
           className={`context-back${entry.source ? ' from-task' : ''}`}
@@ -333,7 +366,7 @@ export default function AISettingsPage({
             href="#ai-source"
             onClick={(e) => {
               e.preventDefault();
-              if (fromTemplate) go(home);
+              if (fromTemplate) go(home, '本地设置');
               else returnToSource();
             }}
           >
@@ -368,7 +401,7 @@ export default function AISettingsPage({
         </div>
         {(!entry.source || fromTemplate) && (
           <nav className="ai-settings-tabs" aria-label="设置分类">
-            <button onClick={() => go(home)}>浏览器</button>
+            <button onClick={() => go(() => home('browser'), '浏览器设置')}>浏览器</button>
             <span aria-current="page">AI 服务</span>
             <span aria-disabled="true">凭据与文件</span>
             <span aria-disabled="true">脚本</span>
@@ -609,38 +642,44 @@ export default function AISettingsPage({
       {(leaving || removing) && (
         <dialog
           ref={dialog}
-          className="script-leave-dialog ai-settings-dialog"
+          className={
+            removing
+              ? 'script-leave-dialog ai-settings-dialog'
+              : 'editor-leave-dialog ai-settings-leave'
+          }
           aria-labelledby="ai-settings-dialog-title"
+          aria-describedby="ai-settings-dialog-description"
           onCancel={(e) => {
             e.preventDefault();
-            if (!busy || testing) {
-              setLeaving(undefined);
-              setRemoving(false);
-            }
+            stay();
           }}
         >
-          <h2 id="ai-settings-dialog-title">
-            {removing
-              ? `移除 ${name} 配置？`
-              : testing
-                ? '取消测试并离开？'
-                : '保存当前配置再离开？'}
+          {!removing && (
+            <span className={`editor-leave-status${error ? ' is-error' : ''}`}>
+              {testing ? '连接测试尚未结束' : error ? '未保存 · 留在当前页' : '存在未保存更改'}
+            </span>
+          )}
+          <h2 id="ai-settings-dialog-title" ref={dialogHeading} tabIndex={-1}>
+            {removing ? `移除 ${name} 配置？` : testing ? '取消测试并离开？' : '离开前保存更改？'}
           </h2>
-          <p>
+          <p id="ai-settings-dialog-description">
             {removing
               ? `将移除这台 Mac 保存的 Key${state?.tail ? `（尾四位 ${state.tail}）` : ''}。依赖此资源的入口下次运行前需要重新配置；不会撤销供应商平台上的 Key，也不会删除任务或运行历史。`
               : testing
-                ? '测试尚未完成，离开将取消本次请求，已保存配置保持不变。'
-                : '保存成功后继续前往刚才选择的位置；不保存只会放弃本次编辑，保留原 Key 和验证状态。'}
+                ? `测试尚未完成。取消后前往“${leaving?.destination}”，已保存配置保持不变。`
+                : `当前配置尚未保存。保存成功后前往“${leaving?.destination}”；${state?.configured ? '不保存只放弃本次编辑，原 Key 和验证状态保持不变。' : '不保存将放弃本次输入，不会保存 Key。'}`}
           </p>
-          <div className="ai-task-actions">
+          {error && (
+            <p className="editor-leave-error" role="alert">
+              {error}
+            </p>
+          )}
+          <div className={removing ? 'ai-task-actions' : 'editor-leave-actions'}>
             <button
               autoFocus
+              ref={continueButton}
               disabled={busy === 'save' || busy === 'remove'}
-              onClick={() => {
-                setLeaving(undefined);
-                setRemoving(false);
-              }}
+              onClick={stay}
             >
               {removing ? '取消' : testing ? '继续等待' : '继续编辑'}
             </button>
@@ -650,6 +689,24 @@ export default function AISettingsPage({
               </button>
             ) : (
               <>
+                <button
+                  className="editor-leave-discard"
+                  disabled={busy === 'save' || busy === 'remove'}
+                  onClick={() => {
+                    const next = leaving!.next;
+                    void (testing ? cancelTest() : Promise.resolve())
+                      .then(() => {
+                        setKey('');
+                        setDirty(false);
+                        setLeaving(undefined);
+                        lastInput.current = null;
+                        next();
+                      })
+                      .catch((e) => setError(message(e)));
+                  }}
+                >
+                  {testing ? '取消测试并离开' : '不保存离开'}
+                </button>
                 {!testing && (
                   <button
                     className="primary"
@@ -659,34 +716,18 @@ export default function AISettingsPage({
                       void save().then((ok) => {
                         if (ok) {
                           setLeaving(undefined);
+                          lastInput.current = null;
                           next();
                         }
                       });
                     }}
                   >
-                    保存并离开
+                    {busy === 'save' ? '正在保存…' : error ? '重试保存并离开' : '保存并离开'}
                   </button>
                 )}
-                <button
-                  disabled={busy === 'save' || busy === 'remove'}
-                  onClick={() => {
-                    const next = leaving!.next;
-                    void (testing ? cancelTest() : Promise.resolve())
-                      .then(() => {
-                        setKey('');
-                        setDirty(false);
-                        setLeaving(undefined);
-                        next();
-                      })
-                      .catch((e) => setError(message(e)));
-                  }}
-                >
-                  {testing ? '取消测试并离开' : '不保存离开'}
-                </button>
               </>
             )}
           </div>
-          {error && <p role="alert">{error}</p>}
         </dialog>
       )}
     </div>

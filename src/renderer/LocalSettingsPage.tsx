@@ -33,6 +33,7 @@ export default function LocalSettingsPage({
   openRuns,
   showBrowser,
   navigation,
+  browserRequest = 0,
 }: {
   data: Bootstrap;
   active: boolean;
@@ -43,9 +44,15 @@ export default function LocalSettingsPage({
   openRuns: () => void;
   showBrowser: () => void;
   navigation: (value: SettingsNavigation | undefined) => void;
+  browserRequest?: number;
 }) {
   const [tab, setTab] = useState<Tab>('browser');
   const [local, setLocal] = useState(false);
+  useEffect(() => {
+    if (!browserRequest) return;
+    setTab('browser');
+    setLocal(false);
+  }, [browserRequest]);
   const [candidates, setCandidates] = useState<BrowserBinding[]>([]);
   const [discovered, setDiscovered] = useState(false);
   const [path, setPath] = useState('');

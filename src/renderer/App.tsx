@@ -142,6 +142,7 @@ export default function App() {
     scroll: number;
   }>();
   const nodeNavigation = useRef<ScriptNavigation | undefined>(undefined);
+  const [settingsBrowserRequest, setSettingsBrowserRequest] = useState(0);
   const [editorPanel, setEditorPanel] = useState('canvas');
   const [runPage, setRunPage] = useState(1);
   const [runFilter, setRunFilter] = useState(false);
@@ -544,8 +545,9 @@ export default function App() {
     if (section === 'editor') requestEditorLeave(navigate, label);
     else if (section === 'tools') toolNavigation.current?.(navigate);
     else if (section === 'ai-settings')
-      aiSettingsNavigation.current?.(() =>
-        id === 'templates' ? navigate() : leaveAIContext(navigate),
+      aiSettingsNavigation.current?.(
+        () => (id === 'templates' ? navigate() : leaveAIContext(navigate)),
+        label,
       );
     else if (section === 'templates') templateNavigation.current?.(navigate);
     else if (section === 'schedules') plansNavigation.current?.(navigate);
@@ -855,7 +857,7 @@ export default function App() {
                 if (section === 'editor') requestEditorLeave(navigate, '首次教学');
                 else if (section === 'tools') toolNavigation.current?.(navigate);
                 else if (section === 'ai-settings')
-                  aiSettingsNavigation.current?.(() => leaveAIContext(navigate));
+                  aiSettingsNavigation.current?.(() => leaveAIContext(navigate), '首次教学');
                 else if (section === 'templates') templateNavigation.current?.(navigate);
                 else if (section === 'schedules') plansNavigation.current?.(navigate);
                 else if (section === 'runs' && runOrigin === 'schedule' && detail)
@@ -2029,6 +2031,7 @@ export default function App() {
             }}
           />
           <LocalSettingsPage
+            browserRequest={settingsBrowserRequest}
             data={data}
             active={section === 'settings'}
             refresh={reloadSettingsData}
@@ -2059,7 +2062,12 @@ export default function App() {
           <AISettingsPage
             active={section === 'ai-settings'}
             entry={taskAISettings}
-            home={() => leaveAIContext(() => setSection('settings'))}
+            home={(tab) =>
+              leaveAIContext(() => {
+                if (tab === 'browser') setSettingsBrowserRequest((value) => value + 1);
+                setSection('settings');
+              })
+            }
             navigation={aiSettingsNavigation}
             changed={refresh}
             onSaved={(configuration) => {
