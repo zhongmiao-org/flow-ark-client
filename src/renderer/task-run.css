@@ -191,6 +191,26 @@
 .task-run-page .page-heading {
   margin-bottom: 0;
 }
+.task-run-source > button {
+  display: inline;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--fa-action-primary);
+  font: inherit;
+  overflow-wrap: anywhere;
+  text-align: start;
+}
+.task-run-source > button:hover {
+  text-decoration: underline;
+}
+.task-run-source > button:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 3px;
+}
 .task-run-page h2 {
   font-size: 18px;
   margin: 0;

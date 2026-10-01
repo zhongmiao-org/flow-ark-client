@@ -15,6 +15,7 @@ import RunEventLog from './RunEventLog';
 import TaskRunTarget from './TaskRunTarget';
 import DesktopRunReceipt from './DesktopRunReceipt';
 import DesktopTaskRun from './DesktopTaskRun';
+import TaskRunSource from './TaskRunSource';
 
 export default function TaskRunPage({
   detail,
@@ -79,6 +80,12 @@ export default function TaskRunPage({
     previousMode.current = model.mode;
   }, [model.mode, page]);
   const run = detail.run;
+  const versionLabel =
+    run.rerun?.mode === 'saved'
+      ? '已保存方案快照'
+      : run.rerun?.mode === 'snapshot'
+        ? '原执行快照'
+        : '固定方案快照';
   const item = model.artifacts.find((a) => a.artifactId === selected);
   const fileState = JSON.stringify(item);
   const visiblePreview =
@@ -323,7 +330,22 @@ export default function TaskRunPage({
               {title}
             </h1>
             <p>
-              {run.name} · 运行 {run.id} · 固定方案快照
+              {model.success && page === 'overview' ? (
+                <>
+                  运行 {run.id} · 已完成 · {model.completed.length} 次步骤已确认完成
+                </>
+              ) : (
+                <>
+                  {run.name} · 本次执行 {run.id} · {versionLabel}
+                  {run.task && ` · 任务修订 ${run.task.revision}`}
+                  {run.rerun && page === 'overview' && (
+                    <>
+                      {' '}
+                      · <TaskRunSource key={run.id} run={run} open={open} />
+                    </>
+                  )}
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -508,6 +530,18 @@ export default function TaskRunPage({
               <details className="task-run-fixed-evidence">
                 <summary>固定版本与已记录影响</summary>
                 <p className="task-run-path">版本：{run.versionId}</p>
+                <p>
+                  {versionLabel}
+                  {run.task && ` · 任务修订 ${run.task.revision}`}
+                </p>
+                {run.rerun && (
+                  <>
+                    <p>
+                      <TaskRunSource key={run.id} run={run} open={open} />
+                    </p>
+                    <p>本次从第一步创建独立运行，原运行的结果与产物保持保留。</p>
+                  </>
+                )}
                 <p>{model.effectNote}</p>
                 {target}
               </details>
