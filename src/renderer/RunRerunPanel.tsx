@@ -39,6 +39,8 @@ export default function RunRerunPanel({
   activeRef.current = active;
   const choiceId = useId();
   const previewHeading = useRef<HTMLHeadingElement>(null);
+  const previewRegion = useRef<HTMLFormElement>(null);
+  const errorPanel = useRef<HTMLParagraphElement>(null);
   const [mode, setMode] = useState<RunRerunMode>(initialMode);
   const [debug, setDebug] = useState(false);
   const [preview, setPreview] = useState<RunRerunPreview>();
@@ -68,11 +70,14 @@ export default function RunRerunPanel({
     };
   }, []);
   useEffect(() => {
-    if (preview && active) previewHeading.current?.focus();
-  }, [preview, active]);
+    if (preview && active) (page ? previewRegion.current : previewHeading.current)?.focus();
+  }, [preview, active, page]);
   useEffect(() => {
     if (active && created && !submitting && !opening) createdButton.current?.focus();
   }, [created, submitting, opening, active]);
+  useEffect(() => {
+    if (error && active) errorPanel.current?.focus();
+  }, [error, active]);
   const current = (id: number) => live.current && generation.current === id;
   const reset = (preserveCreated = false) => {
     generation.current++;
@@ -84,6 +89,16 @@ export default function RunRerunPanel({
     if (!preserveCreated) setCreated(undefined);
     setOpening(undefined);
     setError('');
+  };
+  const leave = () => {
+    if (sending.current) return;
+    if (cancel) {
+      reset(true);
+      cancel();
+    } else {
+      reset();
+      previewButton.current?.focus();
+    }
   };
   const load = async () => {
     if (sending.current || !related?.available) return;
@@ -180,7 +195,7 @@ export default function RunRerunPanel({
               <p>可以查看原运行的输出、日志和关联记录。</p>
             </div>
           )}
-          {terminal && (
+          {terminal && !created && (
             <>
               <div className="run-rerun-options">
                 <fieldset className="run-rerun-mode" disabled={submitting}>
@@ -224,6 +239,7 @@ export default function RunRerunPanel({
                 </label>
                 <button
                   type="button"
+                  hidden={!!preview}
                   ref={previewButton}
                   disabled={loading || submitting || !related?.available}
                   onClick={() => void load()}
@@ -231,7 +247,7 @@ export default function RunRerunPanel({
                   {loading ? '正在准备预览…' : '预览重新运行'}
                 </button>
               </div>
-              <p className="note">
+              <p className="note" hidden={!!preview}>
                 {mode === 'snapshot'
                   ? '使用原运行的流程、参数、本地绑定和固定脚本，并重新检查当前授权。'
                   : '使用当前已保存的内容；编辑器尚未保存的修改不在本次范围内。'}
@@ -255,7 +271,7 @@ export default function RunRerunPanel({
             </p>
           )}
           {error && (
-            <p className="field-error" role="alert">
+            <p ref={errorPanel} tabIndex={-1} className="field-error" role="alert">
               {error}
             </p>
           )}
@@ -267,43 +283,63 @@ export default function RunRerunPanel({
           {preview && (
             <form
               aria-label="重新运行预览"
+              ref={previewRegion}
+              tabIndex={-1}
               className="run-rerun-preview"
               onSubmit={(event) => {
                 event.preventDefault();
                 void confirm();
               }}
             >
-              <h3 ref={previewHeading} tabIndex={-1}>
+              <h3 ref={previewHeading} tabIndex={-1} className={page ? 'sr-only' : undefined}>
                 {preview.flow.name} · 本次预览
               </h3>
-              <dl className="run-rerun-facts">
-                <dt>原运行</dt>
-                <dd>
-                  {preview.source.name} · <code>{preview.source.id}</code>
-                </dd>
-                <dt>内容来源</dt>
-                <dd>{modes[preview.mode]}</dd>
-                <dt>原执行版本</dt>
-                <dd>
-                  <code>{preview.source.versionId}</code>
-                </dd>
-                <dt>采用版本</dt>
-                <dd>
-                  <code>{preview.flow.versionId}</code>
-                </dd>
-                <dt>执行方式</dt>
-                <dd>
-                  {preview.debug ? '逐步调试' : '连续运行'} · {preview.flow.stepCount} 个步骤
-                </dd>
-                <dt>参数名</dt>
-                <dd>{names(preview.flow.parameterNames)}</dd>
-                <dt>目录绑定名</dt>
-                <dd>{names(preview.flow.directoryBindings)}</dd>
-                <dt>凭据引用名</dt>
-                <dd>{names(preview.flow.credentialRefs)}</dd>
-                <dt>浏览器标识</dt>
-                <dd>{preview.flow.browserId ?? '无'}</dd>
+              <dl className="run-rerun-summary">
+                <div>
+                  <dt>来源运行</dt>
+                  <dd>
+                    {preview.source.id} · {modes[preview.mode]}
+                  </dd>
+                </div>
+                <div>
+                  <dt>内容摘要</dt>
+                  <dd>
+                    {preview.flow.stepCount} 个步骤 · {preview.debug ? '逐步调试' : '连续运行'} ·
+                    参数 {names(preview.flow.parameterNames)}
+                  </dd>
+                </div>
               </dl>
+              <details className="run-rerun-configuration">
+                <summary>查看版本、绑定与引用明细</summary>
+                <dl className="run-rerun-facts">
+                  <dt>原运行</dt>
+                  <dd>
+                    {preview.source.name} · <code>{preview.source.id}</code>
+                  </dd>
+                  <dt>内容来源</dt>
+                  <dd>{modes[preview.mode]}</dd>
+                  <dt>原执行版本</dt>
+                  <dd>
+                    <code>{preview.source.versionId}</code>
+                  </dd>
+                  <dt>采用版本</dt>
+                  <dd>
+                    <code>{preview.flow.versionId}</code>
+                  </dd>
+                  <dt>执行方式</dt>
+                  <dd>
+                    {preview.debug ? '逐步调试' : '连续运行'} · {preview.flow.stepCount} 个步骤
+                  </dd>
+                  <dt>参数名</dt>
+                  <dd>{names(preview.flow.parameterNames)}</dd>
+                  <dt>目录绑定名</dt>
+                  <dd>{names(preview.flow.directoryBindings)}</dd>
+                  <dt>凭据引用名</dt>
+                  <dd>{names(preview.flow.credentialRefs)}</dd>
+                  <dt>浏览器标识</dt>
+                  <dd>{preview.flow.browserId ?? '无'}</dd>
+                </dl>
+              </details>
               {!!preview.flow.scriptBundles.length && (
                 <details>
                   <summary>固定脚本与依赖 · {preview.flow.scriptBundles.length} 个节点</summary>
@@ -318,7 +354,7 @@ export default function RunRerunPanel({
                 </details>
               )}
               {preview.warnings.map((warning, index) => (
-                <p className="note" key={index}>
+                <p className="run-rerun-warning" key={index}>
                   {warning}
                 </p>
               ))}
@@ -331,30 +367,28 @@ export default function RunRerunPanel({
                 />
                 已核对原运行的输出与外部结果，确认从头执行
               </label>
-              <button
-                type="submit"
-                className="primary"
-                disabled={submitting || !reviewed || (!related?.available && !attempt.current)}
-              >
-                {retry ? '重试此次确认' : '确认从头运行'}
-              </button>
+              <div className="run-rerun-actions">
+                <button
+                  type="submit"
+                  className="primary"
+                  disabled={submitting || !reviewed || (!related?.available && !attempt.current)}
+                >
+                  {submitting ? '正在确认…' : retry ? '重试此次确认' : '确认创建新运行'}
+                </button>
+                <button type="button" disabled={submitting} onClick={leave}>
+                  取消
+                </button>
+              </div>
             </form>
           )}
-          {(cancel || loading || preview || retry) && (
+          {!preview && (cancel || loading || retry || created) && (
             <button
               type="button"
               className="run-rerun-cancel"
               disabled={submitting}
-              onClick={() => {
-                if (sending.current) return;
-                if (cancel) cancel();
-                else {
-                  reset();
-                  previewButton.current?.focus();
-                }
-              }}
+              onClick={leave}
             >
-              {cancel ? '取消并返回' : '取消重新运行'}
+              {created ? '返回原运行' : cancel ? '取消并返回' : '取消重新运行'}
             </button>
           )}
         </div>
@@ -371,9 +405,11 @@ export default function RunRerunPanel({
             </div>
           )}
           <p className="run-rerun-availability" role="status">
-            {terminal && related?.available
-              ? '可以预览执行内容'
-              : (related?.reason ?? '当前运行暂不可重新运行。')}
+            {created
+              ? '新运行已创建，请先查看记录'
+              : terminal && related?.available
+                ? '可以预览执行内容'
+                : (related?.reason ?? '当前运行暂不可重新运行。')}
           </p>
           <p>
             预览不会启动任务。确认时会重新检查当前授权、资源和执行环境，旧快照不会恢复已撤销的授权。
