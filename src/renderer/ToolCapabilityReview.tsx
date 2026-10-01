@@ -46,10 +46,16 @@ const valueText = (value: unknown) =>
       ? value || '空文本'
       : JSON.stringify(value, null, 2);
 
-export function ToolDefinitionDetails({ tool }: { tool: ToolDefinition }) {
+export function ToolDefinitionDetails({
+  tool,
+  showDescription = true,
+}: {
+  tool: ToolDefinition;
+  showDescription?: boolean;
+}) {
   return (
     <>
-      <p>{tool.description || '服务未提供说明，请向提供者核对用途。'}</p>
+      {showDescription && <p>{tool.description || '服务未提供说明，请向提供者核对用途。'}</p>}
       <dl className="tool-capability-hints">
         {hints.map(([key, label]) => (
           <div key={key}>
@@ -125,6 +131,26 @@ export default function ToolCapabilityReview({
         ['发现协议', baseline.protocolVersion, current.protocolVersion],
       ].filter(([, before, after]) => !same(before, after))
     : [];
+  if (!baseline && current.tools.length > 0 && current.tools.length <= 6)
+    return (
+      <section className="tool-capability-review tool-capability-cards" aria-label="工具能力核对">
+        {current.tools.map((tool) => (
+          <article className="tool-definition tool-capability-card" key={tool.name}>
+            <h2>工具：{tool.title || tool.name}</h2>
+            <p>{tool.description || '服务未提供说明，请向提供者核对用途。'}</p>
+            <details>
+              <summary>查看参数与行为声明</summary>
+              <p className="tool-capability-name">{tool.name}</p>
+              <ToolDefinitionDetails tool={tool} showDescription={false} />
+            </details>
+          </article>
+        ))}
+        <p className="tool-disclaimer">
+          共 {current.tools.length}{' '}
+          项，以上均为服务声明，不代表系统权限或本次任务授权。查看不会调用工具。
+        </p>
+      </section>
+    );
   return (
     <section className="tool-capability-review" aria-label="工具能力核对">
       <div className="tool-capability-heading">

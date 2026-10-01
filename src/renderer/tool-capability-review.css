@@ -164,3 +164,31 @@
 .tool-review-columns {
   align-items: start;
 }
+
+.tool-capability-card {
+  min-height: 114px;
+}
+.tool-capability-cards .tool-capability-card > h2 {
+  font-size: 18px;
+  line-height: 28px;
+}
+.tool-capability-card > details,
+.tool-identity-details {
+  margin-top: 8px;
+}
+.tool-identity-details > p {
+  margin-top: 8px;
+}
+.tool-connection-maintenance[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.tool-connection-maintenance > button {
+  width: 100%;
+}
+.tool-connection-maintenance > summary,
+.tool-identity-details > summary {
+  color: var(--fa-action-primary);
+  cursor: pointer;
+}

@@ -199,6 +199,11 @@ export default function ToolConnectionsPage({
     });
     return () => cancelAnimationFrame(frame);
   }, [active]);
+  const pageHeading = useRef<HTMLHeadingElement>(null);
+  useLayoutEffect(() => {
+    if (active && (view === 'review' || view === 'saved') && !referenceReturn.current)
+      pageHeading.current?.focus({ preventScroll: true });
+  }, [active, view]);
   const locked = useRef(false),
     epoch = useRef(0),
     request = useRef<string | undefined>(undefined);
@@ -639,7 +644,9 @@ export default function ToolConnectionsPage({
       <section className="page ai-task-page tools-page" aria-label="应用与工具工作区">
         <div className="page-heading">
           <div>
-            <h1>{title}</h1>
+            <h1 ref={pageHeading} tabIndex={-1}>
+              {title}
+            </h1>
             <p>
               {view === 'catalog'
                 ? '连接可用能力，再为具体任务选择对象与授权。'
@@ -1038,21 +1045,12 @@ export default function ToolConnectionsPage({
                 {view === 'review'
                   ? '发现通过 · 尚未保存'
                   : selected
-                    ? labels[selected.status]
+                    ? `已保存 · ${labels[selected.status]}`
                     : ''}
               </span>
               <article className="tool-definition">
                 <h2>身份与范围</h2>
                 <p>
-                  连接：{content.config.displayName}
-                  <br />
-                  服务声明：
-                  {content.server
-                    ? `${content.server.name} / ${content.server.version}`
-                    : '未提供身份'}
-                  <br />
-                  来源说明：{content.config.source}
-                  <br />
                   账号 / 工作区：尚未核对
                   <br />
                   认证：
@@ -1063,9 +1061,22 @@ export default function ToolConnectionsPage({
                         content.config.transport.auth === 'oauth'
                       ? 'OAuth 浏览器登录'
                       : '未使用认证凭据'}
-                  <br />
-                  最近发现：{when(content.testedAt)}
                 </p>
+                <details className="tool-identity-details">
+                  <summary>查看连接来源与发现记录</summary>
+                  <p>
+                    连接：{content.config.displayName}
+                    <br />
+                    服务声明：
+                    {content.server
+                      ? `${content.server.name} / ${content.server.version}`
+                      : '未提供身份'}
+                    <br />
+                    来源说明：{content.config.source}
+                    <br />
+                    最近发现：{when(content.testedAt)}
+                  </p>
+                </details>
                 {content.oauth && (
                   <div className="tool-oauth-inspection">
                     <p>
@@ -1126,15 +1137,6 @@ export default function ToolConnectionsPage({
                       相关任务暂不能使用此连接；重新连接后仍需回到原任务核对工具选择，不会自动继续执行。
                     </p>
                   )}
-                  <ToolConnectionUsage
-                    connection={selected}
-                    busy={!!busy}
-                    openTask={(task) => void openReference(task)}
-                  />
-                  <button disabled={!!busy} onClick={() => void inspect()}>
-                    {busy === 'inspect' ? '正在刷新引用…' : '刷新连接与任务引用'}
-                  </button>
-                  {busy === 'open-task' && <p role="status">正在保存原任务草稿并核对目标任务…</p>}
                 </>
               )}
               {view === 'review' && candidate ? (
@@ -1181,24 +1183,49 @@ export default function ToolConnectionsPage({
                           ? '配置与历史能力已保留，重新连接需要再次检查。'
                           : '能力发现已关闭测试连接；任务使用前仍须核对实时状态。'}
                     </p>
-                    <button className="primary" disabled={!!busy} onClick={() => edit(selected)}>
-                      重新检查连接
+                    <button
+                      className={selected.status === 'verified' ? 'primary' : undefined}
+                      disabled={!!busy}
+                      onClick={catalog}
+                    >
+                      返回应用与工具
                     </button>
                     <button disabled={!!busy} onClick={() => edit(selected)}>
                       查看连接设置
                     </button>
-                    <button
-                      disabled={!!busy || selected.status === 'disconnected'}
-                      onClick={() => void inspect('disconnect')}
-                    >
-                      断开连接
-                    </button>
-                    <button disabled={!!busy} onClick={() => void inspect('remove')}>
-                      删除连接
-                    </button>
-                    <button disabled={!!busy} onClick={catalog}>
-                      返回应用与工具
-                    </button>
+                    {selected.status !== 'verified' && (
+                      <button className="primary" disabled={!!busy} onClick={() => edit(selected)}>
+                        重新检查连接
+                      </button>
+                    )}
+                    <details className="tool-connection-maintenance">
+                      <summary>连接维护与任务引用</summary>
+                      {selected.status === 'verified' && (
+                        <button disabled={!!busy} onClick={() => edit(selected)}>
+                          重新检查连接
+                        </button>
+                      )}
+                      <ToolConnectionUsage
+                        connection={selected}
+                        busy={!!busy}
+                        openTask={(task) => void openReference(task)}
+                      />
+                      <button disabled={!!busy} onClick={() => void inspect()}>
+                        {busy === 'inspect' ? '正在刷新引用…' : '刷新连接与任务引用'}
+                      </button>
+                      {busy === 'open-task' && (
+                        <p role="status">正在保存原任务草稿并核对目标任务…</p>
+                      )}
+                      <button
+                        disabled={!!busy || selected.status === 'disconnected'}
+                        onClick={() => void inspect('disconnect')}
+                      >
+                        断开连接
+                      </button>
+                      <button disabled={!!busy} onClick={() => void inspect('remove')}>
+                        删除连接
+                      </button>
+                    </details>
                   </>
                 )
               )}
