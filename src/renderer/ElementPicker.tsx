@@ -7,11 +7,19 @@ export default function ElementPicker({
   framePath,
   onSelect,
   onInspect,
+  onStart,
+  allowInspect = true,
+  disabled = false,
+  active = true,
 }: {
   selector: string;
   framePath: string[];
   onSelect: (target: ElementTarget, requestId: string) => void;
   onInspect: (target: ElementTarget) => void;
+  onStart?: () => void;
+  allowInspect?: boolean;
+  disabled?: boolean;
+  active?: boolean;
 }) {
   const [picking, setPicking] = useState(false),
     [validating, setValidating] = useState(false);
@@ -44,7 +52,7 @@ export default function ElementPicker({
       setPicking(false);
       void api('browser.embedded.pick.cancel', { requestId: id }).catch(() => {});
     }
-  }, [selector, JSON.stringify(framePath)]);
+  }, [selector, JSON.stringify(framePath), active]);
   const open = async () => {
     window.dispatchEvent(new Event('flowark:open-browser'));
     await api('browser.embedded.enable');
@@ -58,6 +66,8 @@ export default function ElementPicker({
     if (requestId) await api('browser.embedded.pick.cancel', { requestId }).catch(() => {});
   };
   const pick = async () => {
+    if (disabled || !active) return;
+    onStart?.();
     const requestId = crypto.randomUUID();
     request.current = requestId;
     setPicking(true);
@@ -123,7 +133,11 @@ export default function ElementPicker({
   return (
     <div className="element-picker">
       <div className="element-picker-actions">
-        <button className="primary" disabled={picking || validating} onClick={() => void pick()}>
+        <button
+          className="primary"
+          disabled={!active || disabled || picking || validating}
+          onClick={() => void pick()}
+        >
           <Crosshair size={15} />
           从网页选取
         </button>
@@ -132,12 +146,15 @@ export default function ElementPicker({
             <X size={14} />
             取消
           </button>
-        ) : (
-          <button disabled={!selector || validating} onClick={() => void validate()}>
+        ) : allowInspect ? (
+          <button
+            disabled={!active || disabled || !selector || validating}
+            onClick={() => void validate()}
+          >
             <Check size={14} />
             {validating ? '验证中…' : '验证定位'}
           </button>
-        )}
+        ) : null}
       </div>
       {message && (
         <p className="picker-message" role="status">

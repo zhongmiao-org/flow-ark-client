@@ -47,6 +47,7 @@ export default function TaskRepairPage({
   const mutation = useRef(0);
   const ownPick = useRef('');
   const heading = useRef<HTMLHeadingElement>(null);
+  const pickConfirm = useRef<HTMLButtonElement>(null);
   const observation = taskRunPresentation(runDetail);
   const node = observation.node;
   const stepName = typeof node?.name === 'string' ? node.name : node?.id;
@@ -134,6 +135,9 @@ export default function TaskRepairPage({
     document.querySelector('main')?.scrollTo(0, 0);
     heading.current?.focus({ preventScroll: true });
   }, [phase, active]);
+  useLayoutEffect(() => {
+    if (active && phase === 'pick' && picked) pickConfirm.current?.focus({ preventScroll: true });
+  }, [active, phase, picked]);
   async function act(fn: (epoch: number) => Promise<void>) {
     if (lock.current) return;
     lock.current = true;
@@ -215,45 +219,90 @@ export default function TaskRepairPage({
           </p>
         )}
         {phase === 'pick' ? (
-          <div className="ai-task-card task-repair-pick">
-            <h2>从真实网页选择元素</h2>
-            <p>在右侧网页打开要修复的页面，然后点选目标。选取不会点击、填写或提交网页。</p>
-            {node?.type === 'browser' && (
-              <ElementPicker
-                selector={node.selector}
-                framePath={'framePath' in node ? node.framePath : []}
-                onSelect={(target, requestId) => {
-                  ownPick.current = requestId;
-                  setPicked({ target, requestId });
-                  setPreview(undefined);
-                  setReviewed(false);
-                }}
-                onInspect={() => setError('验证原定位不等于重新选择，请从网页选取修复目标。')}
-              />
-            )}
-            {picked && (
-              <div className="task-repair-box task-repair-new">
-                <h3>已选目标</h3>
-                <p>{picked.target.label || picked.target.tag}</p>
-                <p>
-                  元素类型：{picked.target.tag} · {picked.target.framePath.length} 层框架
-                </p>
-              </div>
-            )}
-            <div className="ai-task-actions">
+          <>
+            <div className="ai-task-actions task-repair-pick-actions" aria-label="重新拾取操作">
+              <button onClick={back}>取消重新拾取</button>
               <button
+                ref={pickConfirm}
                 className="primary"
                 disabled={!picked || !task || busy || generating}
                 onClick={() => void act(confirmTarget)}
               >
-                确认这个目标
+                {busy ? '正在核对目标…' : '确认这个目标'}
               </button>
-              <button onClick={back}>取消重新拾取</button>
+              <button onClick={back}>返回失败详情</button>
             </div>
-            <p className="task-run-note">
-              无法唯一匹配时不允许确认。确认后可收起网页；页面或目标变化时需要重新核对。
+            <section className="ai-task-card task-repair-pick" aria-label="重新拾取的目标">
+              <h2>{picked ? picked.target.label || picked.target.tag : '从真实网页选择元素'}</h2>
+              <p>
+                {picked
+                  ? '这是所选元素的摘要；完整内容请在右侧网页核对。'
+                  : '在右侧网页打开要修复的页面，然后点选目标。选取不会点击、填写或提交网页。'}
+              </p>
+              <div className="task-repair-pick-meta">
+                {picked ? (
+                  <>
+                    <p>
+                      元素类型：{picked.target.tag}
+                      {picked.target.inputType ? ` · ${picked.target.inputType}` : ''}
+                    </p>
+                    <p>
+                      所在框架：
+                      {picked.target.framePath.length
+                        ? `${picked.target.framePath.length} 层嵌套框架`
+                        : '网页主框架'}
+                    </p>
+                    <p>
+                      {picked.target.structural
+                        ? '采用结构定位，网页布局变化后需要重新选择。'
+                        : '确认时会重新核对页面与目标是否仍唯一匹配。'}
+                    </p>
+                  </>
+                ) : (
+                  <p role="status">尚未选取修复目标，请使用下方“从网页选取”。</p>
+                )}
+              </div>
+            </section>
+            <p className="task-run-note task-repair-pick-note">
+              定位来自选择的真实元素；无法唯一匹配时不会采用。返回保留任务草稿，修复不会自动重复执行。
             </p>
-          </div>
+            <details className="task-repair-picker-options" open={!picked}>
+              <summary>{picked ? '重新选择其他目标' : '选择网页目标'}</summary>
+              {node?.type === 'browser' && (
+                <ElementPicker
+                  selector={node.selector}
+                  framePath={'framePath' in node ? node.framePath : []}
+                  allowInspect={false}
+                  active={active && phase === 'pick'}
+                  disabled={busy || generating}
+                  onStart={() => {
+                    setError('');
+                    const previous = ownPick.current;
+                    ownPick.current = '';
+                    setPicked(undefined);
+                    setPreview(undefined);
+                    setSelection(undefined);
+                    setReviewed(false);
+                    if (previous)
+                      void api('browser.embedded.pick.cancel', { requestId: previous }).catch(
+                        () => {},
+                      );
+                  }}
+                  onSelect={(target, requestId) => {
+                    if (!location.current.active || location.current.phase !== 'pick') {
+                      void api('browser.embedded.pick.cancel', { requestId }).catch(() => {});
+                      return;
+                    }
+                    ownPick.current = requestId;
+                    setPicked({ target, requestId });
+                    setPreview(undefined);
+                    setReviewed(false);
+                  }}
+                  onInspect={() => setError('验证原定位不等于重新选择，请从网页选取修复目标。')}
+                />
+              )}
+            </details>
+          </>
         ) : phase === 'review' ? (
           <div className="task-run-columns task-repair-columns">
             <section className="ai-task-card">

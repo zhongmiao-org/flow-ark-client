@@ -145,7 +145,48 @@
   min-width: 0;
 }
 .task-repair-pick {
-  min-height: 400px;
+  min-height: 236px;
+}
+.task-repair-page[data-repair-phase='pick']:not([hidden]) {
+  gap: 8px;
+}
+.task-repair-page[data-repair-phase='pick'] .page-heading {
+  min-height: 72px;
+}
+.task-repair-pick-actions > button {
+  min-width: 180px;
+}
+.task-repair-pick-actions > button:first-child {
+  min-width: 144px;
+}
+.task-run-page .task-repair-pick h2 {
+  font-size: 28px;
+  line-height: 40px;
+  overflow-wrap: anywhere;
+}
+.task-repair-pick-meta {
+  border-top: 1px solid var(--fa-border-default);
+  padding-top: 16px;
+}
+.task-run-page .task-repair-pick-meta p {
+  color: var(--fa-text-primary);
+  line-height: 22px;
+}
+.task-repair-pick-note {
+  min-height: 72px;
+}
+.task-repair-picker-options summary {
+  cursor: pointer;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.task-repair-picker-options .element-picker {
+  margin-top: 12px;
+}
+@media (max-width: 1100px) {
+  .task-repair-page[data-repair-phase='pick'] {
+    margin: -8px 8px 0 -8px;
+  }
 }
 .task-run-page .page-heading {
   margin-bottom: 0;
