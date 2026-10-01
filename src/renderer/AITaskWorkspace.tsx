@@ -3,6 +3,7 @@ import TaskMissingAI from './TaskMissingAI';
 import TaskStepList from './TaskStepList';
 import TaskStepInspector from './TaskStepInspector';
 import TaskPlanConversation from './TaskPlanConversation';
+import TaskPlanIdentity from './TaskPlanIdentity';
 import TaskProposalReview from './TaskProposalReview';
 import TaskPlanScope from './TaskPlanScope';
 import TaskLatestRun from './TaskLatestRun';
@@ -257,6 +258,8 @@ export default function AITaskWorkspace(props: Props) {
     (proposalView?.id !== detail?.proposal?.id || proposalView?.mode === 'changes');
   const standaloneGraph =
     page === 'review' && !!flow && !scope && !editingProposal && !changesView && view === 'graph';
+  const planListView =
+    page === 'review' && !!flow && !scope && !editingProposal && !changesView && view === 'list';
   const returnToConversation = useCallback(() => {
     setView('list');
     requestAnimationFrame(() => {
@@ -1322,6 +1325,28 @@ export default function AITaskWorkspace(props: Props) {
     </>
   );
 
+  const trialAction =
+    detail?.flow && !detail.proposal && flow ? (
+      <button
+        className="primary"
+        disabled={busy || dirty || stale || generating || !!scope}
+        ref={trialButton}
+        data-run-review-start
+        onClick={() => {
+          planScroll.current = document.querySelector('main')?.scrollTop ?? 0;
+          setMessage('');
+          setError('');
+          setPage('check');
+        }}
+      >
+        {detail.task.toolTargets?.length ||
+        detail.task.toolsRequirePlan ||
+        flatten(flow.steps).some((step) => ['mcp', 'desktop'].includes(step.type))
+          ? '查看试运行前检查'
+          : '确认方案，去试运行'}
+      </button>
+    ) : null;
+
   const workspace = (
     <div
       className={`page ai-task-page${page === 'target' ? ' ai-task-web-target' : ''}${scope ? ' ai-task-scoped' : ''}${scopeDiffView ? ' ai-task-scoped-diff' : ''}`}
@@ -1359,7 +1384,9 @@ export default function AITaskWorkspace(props: Props) {
                                 ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : scope.nodeId} · 尚未执行`
                                 : fullModification
                                   ? `完整流程修改 · 任务基线修订 ${detail?.proposal?.baseRevision} · 尚未采纳`
-                                  : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
+                                  : planListView
+                                    ? '第 4 步 / 确认方案 · 确认后进入试运行前检查'
+                                    : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
           </p>
         </div>
         {page !== 'home' &&
@@ -1738,7 +1765,7 @@ export default function AITaskWorkspace(props: Props) {
                 <small>学习记录与运行进度分开保存</small>
               </div>
             )}
-            {!scopeDiffView && page !== 'understand' && page !== 'brief' && (
+            {!scopeDiffView && !planListView && page !== 'understand' && page !== 'brief' && (
               <div className="ai-task-state" role="status">
                 <span>
                   {detail.task.status === 'plan' && !detail.proposal && detail.flow
@@ -1823,7 +1850,7 @@ export default function AITaskWorkspace(props: Props) {
               />
             ) : (
               <div
-                className={`ai-task-columns ${page === 'review' ? 'ai-task-review' : ''}${page === 'review' && !scope && flow ? ' ai-task-plan-review' : ''}${fullModification ? ' ai-task-proposal-columns' : ''}${standaloneGraph ? ' ai-task-full-graph' : ''}`}
+                className={`ai-task-columns ${page === 'review' ? 'ai-task-review' : ''}${page === 'review' && !scope && flow ? ' ai-task-plan-review' : ''}${fullModification ? ' ai-task-proposal-columns' : ''}${standaloneGraph ? ' ai-task-full-graph' : ''}${planListView ? ' ai-task-readable-plan' : ''}`}
               >
                 <section
                   className="ai-task-card ai-task-input"
@@ -2269,15 +2296,28 @@ export default function AITaskWorkspace(props: Props) {
                       )}
                       {!changesView && (
                         <>
-                          <div className="ai-task-meta">
-                            <h2 tabIndex={-1} data-plan-preview-heading>
-                              {flow.name}
-                            </h2>
-                            <span className="badge">
-                              {detail.proposal ? '待采纳方案' : '已保存草稿'}
-                            </span>
-                          </div>
-                          <div className="ai-task-actions" aria-label="方案视图">
+                          {planListView ? (
+                            <TaskPlanIdentity
+                              name={flow.name}
+                              revision={revision}
+                              pending={!!detail.proposal}
+                              dirty={dirty}
+                              stale={stale}
+                            />
+                          ) : (
+                            <div className="ai-task-meta">
+                              <h2 tabIndex={-1} data-plan-preview-heading>
+                                {flow.name}
+                              </h2>
+                              <span className="badge">
+                                {detail.proposal ? '待采纳方案' : '已保存草稿'}
+                              </span>
+                            </div>
+                          )}
+                          <div
+                            className={`ai-task-actions${planListView ? ' task-plan-tabs' : ''}`}
+                            aria-label="方案视图"
+                          >
                             <button aria-pressed={view === 'list'} onClick={() => setView('list')}>
                               步骤清单
                             </button>
@@ -2287,29 +2327,7 @@ export default function AITaskWorkspace(props: Props) {
                             >
                               流程图
                             </button>
-                            {!detail.proposal && detail.flow && (
-                              <button
-                                className="primary"
-                                disabled={busy || dirty || stale || generating || !!scope}
-                                ref={trialButton}
-                                data-run-review-start
-                                onClick={() => {
-                                  planScroll.current =
-                                    document.querySelector('main')?.scrollTop ?? 0;
-                                  setMessage('');
-                                  setError('');
-                                  setPage('check');
-                                }}
-                              >
-                                {detail.task.toolTargets?.length ||
-                                detail.task.toolsRequirePlan ||
-                                flatten(flow.steps).some((step) =>
-                                  ['mcp', 'desktop'].includes(step.type),
-                                )
-                                  ? '查看试运行前检查'
-                                  : '确认方案，去试运行'}
-                              </button>
-                            )}
+                            {!planListView && trialAction}
                             <button
                               ref={moreButton}
                               aria-label="打开任务更多操作"
@@ -2418,6 +2436,7 @@ export default function AITaskWorkspace(props: Props) {
                           </div>
                           <TaskPlanScope
                             flow={flow}
+                            compact={planListView}
                             context={{
                               bindings: detail.flow?.bindings,
                               webTarget: detail.proposal
@@ -2509,7 +2528,8 @@ export default function AITaskWorkspace(props: Props) {
                         </>
                       )}
                       {!detail.proposal && detail.flow && (
-                        <div className="ai-task-actions">
+                        <div className="ai-task-actions task-plan-confirm">
+                          {planListView && trialAction}
                           <button
                             disabled={busy}
                             onClick={() =>
@@ -2519,7 +2539,7 @@ export default function AITaskWorkspace(props: Props) {
                               })
                             }
                           >
-                            打开流程编排
+                            {planListView ? '手动编辑' : '打开流程编排'}
                           </button>
                           {detail.canUndo && (
                             <button
@@ -2531,9 +2551,11 @@ export default function AITaskWorkspace(props: Props) {
                           )}
                         </div>
                       )}
-                      <p className="ai-task-note">
-                        采纳只更新草稿。当前运行和已建立的计划继续使用原快照。
-                      </p>
+                      {!planListView && (
+                        <p className="ai-task-note">
+                          采纳只更新草稿。当前运行和已建立的计划继续使用原快照。
+                        </p>
+                      )}
                     </>
                   ) : (
                     <>

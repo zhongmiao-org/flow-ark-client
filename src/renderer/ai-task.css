@@ -1242,3 +1242,93 @@
 .task-home-navigation button {
   min-width: 144px;
 }
+
+/* Figma taskv2/list: saved identity and confirmation follow the readable plan. */
+.ai-task-readable-plan > .ai-task-card {
+  padding: 23px;
+}
+.task-plan-identity {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.task-plan-identity h2,
+.task-plan-identity > span {
+  margin: 0;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: var(--fa-bg-subtle);
+  color: var(--fa-text-secondary);
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.task-plan-identity img {
+  flex: 0 0 auto;
+}
+.task-plan-identity > .task-plan-saved {
+  color: var(--fa-status-success);
+  background: var(--fa-status-success-bg);
+}
+.ai-task-readable-plan .task-plan-tabs {
+  gap: 24px;
+  min-height: 40px;
+}
+.ai-task-readable-plan .task-plan-tabs > button {
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--fa-text-secondary);
+}
+.ai-task-readable-plan .task-plan-tabs > button[aria-pressed='true'] {
+  color: var(--fa-action-primary);
+}
+.ai-task-readable-plan .task-plan-tabs > button:last-child {
+  margin-left: auto;
+}
+.ai-task-readable-plan .task-plan-conversation article h2 {
+  font-size: 13px;
+  font-weight: 500;
+}
+.ai-task-readable-plan .ai-step-user {
+  min-height: 116px;
+}
+.ai-task-readable-plan .ai-step-reply {
+  min-height: 152px;
+}
+.ai-task-readable-plan .ai-task-step {
+  gap: 16px;
+}
+.ai-task-readable-plan .ai-task-step > span {
+  gap: 6px;
+}
+.ai-task-readable-plan .task-plan-scope-compact {
+  min-height: 72px;
+  gap: 4px;
+  border-color: var(--fa-border-default);
+}
+.ai-task-readable-plan .task-plan-scope-compact p,
+.ai-task-readable-plan .task-plan-scope-compact summary {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--fa-action-primary);
+}
+.ai-task-readable-plan .task-plan-scope-compact details[open] > p {
+  margin-top: 12px;
+  color: var(--fa-text-secondary);
+}
+.ai-task-readable-plan .task-plan-confirm > .primary {
+  min-width: 200px;
+}
+.ai-task-readable-plan .task-plan-confirm > button:not(.primary) {
+  min-width: 144px;
+}
