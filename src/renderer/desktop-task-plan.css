@@ -1,7 +1,7 @@
 /* Figma 23:8190 / 23:8344: plan and original/replacement review. */
 .desktop-plan-columns {
   display: grid;
-  grid-template-columns: minmax(0, 450fr) minmax(0, 720fr);
+  grid-template-columns: minmax(0, 450fr) minmax(0, 678fr);
   gap: 24px;
 }
 .desktop-plan-columns.is-changes {
@@ -13,6 +13,43 @@
   gap: 16px;
   min-width: 0;
 }
+.desktop-plan-columns:not(.is-changes) > .desktop-plan-stack {
+  min-height: 720px;
+}
+.desktop-plan-description {
+  min-height: 116px;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-canvas);
+}
+.desktop-plan-description h2 {
+  font-size: 14px;
+  line-height: 22px;
+}
+.desktop-plan-columns:not(.is-changes) .desktop-plan-scope {
+  min-height: 130px;
+  background: var(--fa-bg-surface);
+}
+.desktop-plan-source > .desktop-plan-text {
+  margin: 12px 0;
+}
+.desktop-plan-generation > :not(summary) {
+  margin-top: 16px;
+}
+.desktop-plan-generation > summary,
+.desktop-plan-source > summary,
+.desktop-plan-candidate-summary {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--fa-text-secondary);
+}
+.desktop-plan-actions > .primary {
+  min-width: 216px;
+}
+.desktop-plan-actions > button:not(.primary) {
+  min-width: 144px;
+}
 .desktop-plan-stack h2,
 .desktop-plan-stack h3,
 .desktop-plan-stack p {
@@ -22,9 +59,9 @@
   font-size: 16px;
   line-height: 24px;
 }
-.desktop-plan-description p {
+.desktop-task-plan .desktop-plan-description p {
   white-space: pre-wrap;
-  margin: 12px 0;
+  margin: 12px 0 0;
 }
 .desktop-plan-scope,
 .desktop-plan-text,
@@ -38,9 +75,9 @@
 .desktop-plan-scope {
   min-height: 120px;
 }
-.desktop-plan-scope p,
+.desktop-task-plan .desktop-plan-scope h2 + p,
 .desktop-plan-candidate p {
-  margin: 8px 0;
+  margin-top: 8px;
 }
 .desktop-task-plan .desktop-plan-text pre {
   white-space: pre-wrap;
@@ -65,7 +102,7 @@
 .desktop-plan-steps {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   padding: 0;
   margin: 0;
   list-style: none;
@@ -74,17 +111,22 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 20px;
+  padding: 16px;
   min-height: 104px;
   border: 1px solid var(--fa-border-default);
   border-radius: var(--fa-radius-12);
 }
 .desktop-plan-steps li > span {
-  font-size: 16px;
+  font-size: 18px;
+  line-height: 28px;
   font-weight: 600;
-  color: var(--fa-text-secondary);
+  color: var(--fa-text-primary);
 }
-.desktop-plan-steps p {
+.desktop-plan-steps h3 {
+  font-size: 18px;
+  line-height: 28px;
+}
+.desktop-task-plan .desktop-plan-steps p {
   margin-top: 8px;
   color: var(--fa-text-secondary);
 }
@@ -108,18 +150,9 @@
   .desktop-plan-columns.is-changes {
     grid-template-columns: 1fr;
   }
-}
-
-.desktop-plan-heading {
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-.desktop-plan-heading > div {
-  min-width: 0;
-}
-.desktop-plan-heading > button {
-  flex-shrink: 0;
+  .desktop-plan-columns:not(.is-changes) > .desktop-plan-stack {
+    min-height: 0;
+  }
 }
 
 .desktop-modification-check {
