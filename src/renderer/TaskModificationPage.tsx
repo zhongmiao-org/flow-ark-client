@@ -32,6 +32,7 @@ export default function TaskModificationPage({
 }) {
   const [review, setReview] = useState(false);
   const input = useRef<HTMLTextAreaElement>(null);
+  const reviewButton = useRef<HTMLButtonElement>(null);
   const disclosure = useRef<HTMLDivElement>(null);
   useEffect(() => {
     setReview(false);
@@ -55,7 +56,8 @@ export default function TaskModificationPage({
           value={instruction}
           disabled={busy}
           maxLength={10000}
-          aria-describedby="task-modification-help"
+          aria-invalid={!!invalid || undefined}
+          aria-describedby={`task-modification-help${invalid ? ' task-modification-error' : ''}`}
           onChange={(event) => {
             change(event.target.value);
             setReview(false);
@@ -70,14 +72,16 @@ export default function TaskModificationPage({
           </div>
         )}
         {invalid && (
-          <p className="field-error" role="alert">
+          <p id="task-modification-error" className="field-error" role="alert">
             {invalid}
           </p>
         )}
         <button
+          ref={reviewButton}
           className="primary"
           disabled={busy || conflict || !!invalid || !instruction.trim()}
           aria-expanded={review}
+          aria-controls={review ? 'task-modification-review' : undefined}
           onClick={() => {
             resetReview();
             setReview(true);
@@ -86,10 +90,11 @@ export default function TaskModificationPage({
           核对修改要求
         </button>
         <p id="task-modification-help">
-          填写要求后，先核对发送内容，再生成基于当前草稿的差异。尚未提出新修改时，不重新套用之前的提议。
+          先核对发送内容，再生成当前草稿的修改差异。未提出新要求时，不重新套用之前的提议。
         </p>
         {review && (
           <div
+            id="task-modification-review"
             className="task-modification-review"
             ref={disclosure}
             tabIndex={-1}
@@ -97,6 +102,16 @@ export default function TaskModificationPage({
           >
             <h2>发送前再确认</h2>
             {controls}
+            <button
+              disabled={busy}
+              onClick={() => {
+                resetReview();
+                setReview(false);
+                reviewButton.current?.focus({ preventScroll: true });
+              }}
+            >
+              收起核对
+            </button>
           </div>
         )}
         <button disabled={busy} onClick={back}>
