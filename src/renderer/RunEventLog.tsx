@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
-import type { Event, Flow } from '../shared/types';
+import { useId, useMemo, useRef, useState } from 'react';
+import type { Event, Flow, Run } from '../shared/types';
 import { flatten } from './flow-editing';
 import { kinds } from './node-kinds';
 import { runEventMessage, runEventTitle } from './run-event-presentation';
+import { runSource, runSourceLabels } from '../shared/run-history';
 import './run-event-log.css';
 
 function LogText({ text, label }: { text: string; label: string }) {
@@ -79,12 +80,18 @@ export default function RunEventLog({
   runId,
   events,
   snapshot,
+  run,
 }: {
   runId: string;
   events: Event[];
   snapshot?: Flow;
+  run?: Run;
 }) {
   const [limit, setLimit] = useState(100);
+  const [instance, setInstance] = useState('*');
+  const [latest, setLatest] = useState<number | null>(null);
+  const instanceId = useId();
+  const readingHeading = useRef<HTMLHeadingElement>(null);
   const records = useMemo(
     () => events.filter((event) => event.runId === runId).sort((a, b) => a.sequence - b.sequence),
     [events, runId],
@@ -101,17 +108,111 @@ export default function RunEventLog({
       ),
     [snapshot],
   );
-  const shown = records.slice(0, limit);
+  const instances = [...new Set(records.map((event) => event.nodeInstance).filter(Boolean))];
+  const matching =
+    instance === '*' ? records : records.filter((event) => event.nodeInstance === instance);
+  const available =
+    latest === null ? matching : matching.filter((event) => event.sequence <= latest);
+  const shown = latest === null ? available.slice(0, limit) : available.slice(-limit);
+  const newCount = matching.length - available.length;
+  const changeInstance = (value: string) => {
+    setInstance(value);
+    setLimit(100);
+    setLatest(null);
+  };
+  const showLatest = () => {
+    setLimit(100);
+    setLatest(matching.at(-1)?.sequence ?? null);
+    readingHeading.current?.focus();
+  };
   return (
     <section className="run-event-log" aria-label="运行事件记录">
+      {run && (
+        <div className="run-log-context">
+          <section aria-label="日志来源与快照">
+            <h3>来源与快照</h3>
+            <dl>
+              <div>
+                <dt>Run</dt>
+                <dd>{run.id}</dd>
+              </div>
+              <div>
+                <dt>来源</dt>
+                <dd>{runSourceLabels[runSource(run)] ?? run.source}</dd>
+              </div>
+              <div>
+                <dt>启动时固定版本</dt>
+                <dd>{run.versionId}</dd>
+              </div>
+            </dl>
+            {run.rerun && (
+              <p>
+                原运行：{run.rerun.runId} ·{' '}
+                {run.rerun.mode === 'snapshot' ? '原快照' : '当前已保存版本'}
+              </p>
+            )}
+          </section>
+          <section aria-label="日志步骤实例">
+            <h3>步骤实例</h3>
+            <label htmlFor={instanceId}>位置</label>
+            <select
+              id={instanceId}
+              value={instance}
+              onChange={(event) => changeInstance(event.target.value)}
+            >
+              <option value="*">全部步骤与运行级记录</option>
+              <option value="">仅运行级记录</option>
+              {instances.map((value) => (
+                <option key={value} value={value}>
+                  {names.get(value.split('/').at(-1) ?? '') ?? '步骤'} · {value}
+                </option>
+              ))}
+            </select>
+            <dl>
+              <div>
+                <dt>已记录实例</dt>
+                <dd>{instances.length} 个</dd>
+              </div>
+              <div>
+                <dt>当前范围</dt>
+                <dd>{matching.length} 条记录</dd>
+              </div>
+            </dl>
+          </section>
+          <section aria-label="脱敏日志阅读位置">
+            <h3>脱敏日志</h3>
+            <dl>
+              <div>
+                <dt>已保存记录</dt>
+                <dd>{records.length} 条</dd>
+              </div>
+              <div>
+                <dt>显示范围</dt>
+                <dd>
+                  {shown.length ? `#${shown[0].sequence} — #${shown.at(-1)!.sequence}` : '暂无记录'}
+                </dd>
+              </div>
+            </dl>
+            <button disabled={!matching.length} onClick={showLatest}>
+              查看最新记录
+            </button>
+            <p>只显示已保存内容，不重新执行步骤。</p>
+          </section>
+        </div>
+      )}
       <div className="run-log-heading">
-        <h3>运行日志</h3>
-        <span role="status">{records.length} 条已保存记录</span>
+        <h3 ref={readingHeading} tabIndex={-1}>
+          运行日志
+        </h3>
+        <span role="status">
+          {matching.length} 条已保存记录{latest !== null ? ' · 最近记录' : ''}
+          {newCount > 0 && ` · 另有 ${newCount} 条新记录`}
+        </span>
       </div>
       <p className="note">
         按记录顺序展示本次运行的事件、节点实例与脱敏内容。历史日志不代表当前执行状态。
       </p>
-      {records.length ? (
+      {matching.length ? (
         <>
           <ol>
             {shown.map((event) => (
@@ -122,20 +223,21 @@ export default function RunEventLog({
               />
             ))}
           </ol>
-          {shown.length < records.length && (
+          {shown.length < available.length && (
             <div className="run-log-more">
               <p>
-                已显示 {shown.length} / {records.length} 条
+                已显示 {shown.length} / {available.length} 条
               </p>
               <button onClick={() => setLimit((value) => value + 100)}>
-                显示后续 {Math.min(100, records.length - shown.length)} 条记录
+                显示{latest !== null ? '较早' : '后续'}{' '}
+                {Math.min(100, available.length - shown.length)} 条记录
               </button>
             </div>
           )}
         </>
       ) : (
         <div className="run-log-empty">
-          <h4>尚无已保存的运行事件</h4>
+          <h4>{records.length ? '此范围尚无已保存记录' : '尚无已保存的运行事件'}</h4>
           <p>收到记录后会显示在这里；没有日志不代表执行成功。</p>
         </div>
       )}

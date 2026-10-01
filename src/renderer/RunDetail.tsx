@@ -67,11 +67,14 @@ export default function RunDetail({
   const [rerunOpened, setRerunOpened] = useState(tab === 'rerun');
   const previousTab = useRef(tab);
   const rerunHeading = useRef<HTMLHeadingElement>(null);
+  const pageHeading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     if (tab === 'rerun') {
       setRerunOpened(true);
       rerunHeading.current?.focus({ preventScroll: true });
-    } else if (previousTab.current === 'rerun') {
+    } else if (tab === 'logs') {
+      pageHeading.current?.focus({ preventScroll: true });
+    } else if (previousTab.current === 'rerun' || previousTab.current === 'logs') {
       document.getElementById('run-tab-' + tab)?.focus({ preventScroll: true });
     }
     previousTab.current = tab;
@@ -154,12 +157,15 @@ export default function RunDetail({
         }[command.action]
       : '正在发送控制请求…');
   return (
-    <div className="run-detail">
+    <div className={'run-detail' + (tab === 'logs' ? ' is-logs' : '')}>
       <div className="run-detail-content" hidden={tab === 'rerun'}>
         <div className="runs-heading run-detail-heading">
           <div>
-            <h1 tabIndex={-1}>{r.name}</h1>
+            <h1 ref={pageHeading} tabIndex={-1}>
+              {tab === 'logs' ? '日志与步骤输出' : r.name}
+            </h1>
             <p>
+              {tab === 'logs' && `${r.name} · `}
               <span title={r.id}>{r.id}</span> · {runSourceLabels[runSource(r)] ?? r.source} ·{' '}
               {time(r.createdAt)}
             </p>
@@ -168,7 +174,7 @@ export default function RunDetail({
             查看网页
           </button>
         </div>
-        <section className="run-runtime-summary" aria-label="运行状态">
+        <section className="run-runtime-summary" aria-label="运行状态" hidden={tab === 'logs'}>
           <div className="run-runtime-line">
             <span role="status" className={'badge state-' + (lastSaved ? 'INTERRUPTED' : r.state)}>
               {command?.action === 'pause' && command.accepted && !lastSaved
@@ -255,8 +261,8 @@ export default function RunDetail({
           running={!terminal && view.activity === 'active'}
         />
         <DesktopRunReceipt runId={r.id} receipts={d.desktopReceipts} snapshot={d.snapshot} />
-        <div className={'run-observation-layout' + (tab === 'output' ? ' is-output' : '')}>
-          <aside className="run-timeline" aria-label="执行步骤" hidden={tab === 'output'}>
+        <div className={'run-observation-layout' + (tab !== 'current' ? ' is-output' : '')}>
+          <aside className="run-timeline" aria-label="执行步骤" hidden={tab !== 'current'}>
             <h2>执行步骤</h2>
             {timeline.length ? (
               <ol>
@@ -280,7 +286,12 @@ export default function RunDetail({
             )}
           </aside>
           <section className="run-observation-content">
-            <div className="run-detail-tabs" role="tablist" aria-label="运行详情内容">
+            <div
+              className="run-detail-tabs"
+              role="tablist"
+              aria-label="运行详情内容"
+              hidden={tab === 'logs'}
+            >
               {tabs.map(([id, label], index) => (
                 <button
                   key={id}
@@ -359,7 +370,13 @@ export default function RunDetail({
               aria-labelledby="run-tab-logs"
               hidden={tab !== 'logs'}
             >
-              <RunEventLog key={r.id} runId={r.id} events={d.events} snapshot={d.snapshot} />
+              <RunEventLog
+                key={r.id}
+                runId={r.id}
+                run={r}
+                events={d.events}
+                snapshot={d.snapshot}
+              />
               {d.scriptBundles?.length > 0 && (
                 <details className="script-bundles">
                   <summary>已固定的脚本与依赖 · {d.scriptBundles.length} 个节点</summary>

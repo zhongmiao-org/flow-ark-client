@@ -121,3 +121,85 @@
   border-radius: 12px;
   background: var(--fa-bg-canvas);
 }
+
+.run-event-log:has(.run-log-context) {
+  container-type: inline-size;
+  gap: 24px;
+}
+.run-log-context {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.run-log-context > section {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-surface);
+}
+.run-log-context h3 {
+  margin: 0 0 16px;
+  font-size: 18px;
+  line-height: 28px;
+}
+.run-log-context dl {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+.run-log-context dt,
+.run-log-context label,
+.run-log-context p {
+  margin: 0 0 4px;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.run-log-context dd,
+.run-log-context select {
+  margin: 0;
+  padding: 6px;
+  min-height: 32px;
+  background: var(--fa-bg-canvas);
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.run-log-context select {
+  width: 100%;
+  margin-bottom: 14px;
+}
+.run-log-context button {
+  width: 100%;
+  margin: 14px 0 8px;
+}
+.run-log-context p {
+  margin-top: 8px;
+}
+.run-event-log:has(.run-log-context) > ol,
+.run-event-log:has(.run-log-context) > .run-log-empty {
+  padding: 20px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-surface);
+}
+.run-event-log:has(.run-log-context) > ol > li:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+@container (max-width: 760px) {
+  .run-log-context {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.run-detail.is-logs .run-runtime-summary[hidden],
+.run-detail.is-logs .run-detail-tabs[hidden] {
+  display: none;
+}
+.run-detail.is-logs .run-log-context > section {
+  min-height: 362px;
+}
