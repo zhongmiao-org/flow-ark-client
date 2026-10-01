@@ -1,5 +1,5 @@
 import { usePageBack } from './use-page-back';
-import { useEffect, useRef, useState, type MutableRefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import {
   aiErrorMessage,
   aiModel,
@@ -60,6 +60,12 @@ export default function AISettingsPage({
   const [editing, setEditing] = useState(false),
     [dirty, setDirty] = useState(false),
     [error, setError] = useState('');
+  const [invalid, setInvalid] = useState<'model' | 'key'>();
+  const modelInput = useRef<HTMLInputElement>(null),
+    keyInput = useRef<HTMLInputElement>(null),
+    resultHeading = useRef<HTMLHeadingElement>(null);
+  const focusField = useRef<'model' | 'key' | undefined>(undefined),
+    focusResult = useRef(false);
   const [busy, setBusy] = useState<'save' | 'remove' | 'test' | null>(null);
   const [leaving, setLeaving] = useState<{ next: () => void }>(),
     [removing, setRemoving] = useState(false);
@@ -76,6 +82,17 @@ export default function AISettingsPage({
         : '模板入口',
     name = providerName(provider),
     testing = busy === 'test' || state?.operation === 'testing';
+  useLayoutEffect(() => {
+    if (!active) return;
+    if (editing && focusField.current) {
+      (focusField.current === 'model' ? modelInput : keyInput).current?.focus();
+      focusField.current = undefined;
+    }
+    if (!editing && !busy && focusResult.current) {
+      resultHeading.current?.focus({ preventScroll: true });
+      focusResult.current = false;
+    }
+  });
   const reload = async () => {
     const next: AIConfigurationState = await api('get', { provider });
     setState(next);
@@ -89,6 +106,9 @@ export default function AISettingsPage({
     setKey('');
     setDirty(false);
     setError('');
+    setInvalid(undefined);
+    focusField.current = undefined;
+    focusResult.current = false;
     setEditing(false);
     setLeaving(undefined);
     setRemoving(false);
@@ -162,15 +182,20 @@ export default function AISettingsPage({
   const save = async () => {
     if (!state || lock.current) return false;
     if (!aiModel.safeParse(model).success) {
+      setInvalid('model');
+      modelInput.current?.focus();
       setError('请填写有效的模型 ID');
       return false;
     }
     if ((!state.configured || key) && !aiKey.safeParse(key).success) {
+      setInvalid('key');
+      keyInput.current?.focus();
       setError('请填写有效的 API Key，不能包含空白字符');
       return false;
     }
     lock.current = true;
     setBusy('save');
+    setInvalid(undefined);
     setError('');
     try {
       const saved: AIConfigurationState = await api('save', {
@@ -179,6 +204,7 @@ export default function AISettingsPage({
         model,
         ...(key ? { apiKey: key } : {}),
       });
+      focusResult.current = true;
       setState(saved);
       setModel(saved.model);
       setKey('');
@@ -199,6 +225,9 @@ export default function AISettingsPage({
     go(() => {
       setKey('');
       setModel(state?.model ?? entry.model);
+      focusResult.current = !!state?.configured;
+      setInvalid(undefined);
+      setError('');
       setDirty(false);
       setEditing(!state?.configured);
     });
@@ -217,7 +246,10 @@ export default function AISettingsPage({
         requestId,
         reviewedCost: true,
       });
-      if (ticket === epoch.current) setState(next);
+      if (ticket === epoch.current) {
+        focusResult.current = true;
+        setState(next);
+      }
     } catch (error) {
       if (ticket === epoch.current) setError(message(error));
     } finally {
@@ -329,7 +361,7 @@ export default function AISettingsPage({
               {entry.source
                 ? fromTemplate
                   ? `来自：${entry.source.title} · 返回后保留本次输入`
-                  : `来自：开始任务 / ${entry.source.title} · 配置后继续原草稿`
+                  : `来源：${entry.source.title} · 配置后继续原草稿`
                 : '配置这台 Mac 的模型服务，供已授权的流程和模板使用。'}
             </p>
           </div>
@@ -343,7 +375,7 @@ export default function AISettingsPage({
           </nav>
         )}
         {error && (
-          <div className="ai-task-error" role="alert">
+          <div className="ai-task-error" role="alert" id="ai-settings-error">
             {error}
           </div>
         )}
@@ -366,7 +398,7 @@ export default function AISettingsPage({
           </section>
         ) : (
           <div className="ai-settings-columns">
-            <section className="ai-task-card ai-provider-card">
+            <section className={`ai-task-card ai-provider-card${editing ? ' is-editing' : ''}`}>
               <div className="ai-provider-heading">
                 <h2>{name}</h2>
                 <span className="ai-config-status neutral">
@@ -386,11 +418,18 @@ export default function AISettingsPage({
                   <label className="ai-settings-field">
                     模型 ID
                     <input
+                      ref={modelInput}
+                      aria-invalid={invalid === 'model'}
+                      aria-describedby={invalid === 'model' ? 'ai-settings-error' : undefined}
                       value={model}
                       disabled={!!busy || state.inUse}
                       onChange={(e) => {
                         setModel(e.target.value);
                         setDirty(true);
+                        if (invalid === 'model') {
+                          setInvalid(undefined);
+                          setError('');
+                        }
                       }}
                     />
                   </label>
@@ -403,6 +442,9 @@ export default function AISettingsPage({
                   <label className="ai-settings-field">
                     {state.configured ? '新的 API Key（可选）' : 'API Key'}
                     <input
+                      ref={keyInput}
+                      aria-invalid={invalid === 'key'}
+                      aria-describedby={invalid === 'key' ? 'ai-settings-error' : undefined}
                       type="password"
                       autoComplete="off"
                       spellCheck={false}
@@ -414,6 +456,10 @@ export default function AISettingsPage({
                       onChange={(e) => {
                         setKey(e.target.value);
                         setDirty(true);
+                        if (invalid === 'key') {
+                          setInvalid(undefined);
+                          setError('');
+                        }
                       }}
                     />
                   </label>
@@ -445,6 +491,7 @@ export default function AISettingsPage({
                       className="ai-model-value"
                       disabled={!!busy || state.inUse}
                       onClick={() => {
+                        focusField.current = 'model';
                         setEditing(true);
                         setKey('');
                       }}
@@ -464,6 +511,7 @@ export default function AISettingsPage({
                     <button
                       disabled={!!busy || state.inUse}
                       onClick={() => {
+                        focusField.current = 'key';
                         setEditing(true);
                         setKey('');
                       }}
@@ -491,7 +539,9 @@ export default function AISettingsPage({
               )}
             </section>
             <section className="ai-task-card ai-connection-card">
-              <h2>连接状态</h2>
+              <h2 ref={resultHeading} tabIndex={-1}>
+                连接状态
+              </h2>
               <span role="status" className={`ai-config-status ${tone}`}>
                 {summary}
               </span>

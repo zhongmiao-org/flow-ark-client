@@ -266,3 +266,19 @@ button.ai-remove-button {
     max-width: 190px;
   }
 }
+
+.ai-provider-heading h2 {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+.ai-provider-card.is-editing > label.ai-settings-field {
+  min-height: 82px;
+  gap: 8px;
+}
+.ai-settings-page .ai-provider-card.is-editing .ai-task-actions button:not(.primary) {
+  min-width: 112px;
+}
+.ai-settings-page input[aria-invalid='true'] {
+  border-color: var(--fa-status-error);
+}
