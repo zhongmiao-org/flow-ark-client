@@ -72,9 +72,13 @@ export default function RunDetail({
     if (tab === 'rerun') {
       setRerunOpened(true);
       rerunHeading.current?.focus({ preventScroll: true });
-    } else if (tab === 'logs') {
+    } else if (tab === 'logs' || tab === 'output') {
       pageHeading.current?.focus({ preventScroll: true });
-    } else if (previousTab.current === 'rerun' || previousTab.current === 'logs') {
+    } else if (
+      previousTab.current === 'rerun' ||
+      previousTab.current === 'logs' ||
+      previousTab.current === 'output'
+    ) {
       document.getElementById('run-tab-' + tab)?.focus({ preventScroll: true });
     }
     previousTab.current = tab;
@@ -157,15 +161,19 @@ export default function RunDetail({
         }[command.action]
       : '正在发送控制请求…');
   return (
-    <div className={'run-detail' + (tab === 'logs' ? ' is-logs' : '')}>
+    <div
+      className={
+        'run-detail' + (tab === 'logs' ? ' is-logs' : tab === 'output' ? ' is-output-page' : '')
+      }
+    >
       <div className="run-detail-content" hidden={tab === 'rerun'}>
         <div className="runs-heading run-detail-heading">
           <div>
             <h1 ref={pageHeading} tabIndex={-1}>
-              {tab === 'logs' ? '日志与步骤输出' : r.name}
+              {tab === 'logs' ? '日志与步骤输出' : tab === 'output' ? '运行结果与产物' : r.name}
             </h1>
             <p>
-              {tab === 'logs' && `${r.name} · `}
+              {tab !== 'current' && `${r.name} · `}
               <span title={r.id}>{r.id}</span> · {runSourceLabels[runSource(r)] ?? r.source} ·{' '}
               {time(r.createdAt)}
             </p>
@@ -174,7 +182,7 @@ export default function RunDetail({
             查看网页
           </button>
         </div>
-        <section className="run-runtime-summary" aria-label="运行状态" hidden={tab === 'logs'}>
+        <section className="run-runtime-summary" aria-label="运行状态" hidden={tab !== 'current'}>
           <div className="run-runtime-line">
             <span role="status" className={'badge state-' + (lastSaved ? 'INTERRUPTED' : r.state)}>
               {command?.action === 'pause' && command.accepted && !lastSaved
@@ -362,7 +370,12 @@ export default function RunDetail({
               aria-labelledby="run-tab-output"
               hidden={tab !== 'output'}
             >
-              <RunOutputWorkspace detail={observed} reveal={reveal} reload={reload} />
+              <RunOutputWorkspace
+                detail={observed}
+                reveal={reveal}
+                reload={reload}
+                rerun={() => setTab('rerun')}
+              />
             </div>
             <div
               id="run-panel-logs"
@@ -398,7 +411,7 @@ export default function RunDetail({
             </div>
           </section>
         </div>
-        <div className="run-rerun-entry">
+        <div className="run-rerun-entry" hidden={tab === 'output'}>
           <div>
             <h2>重新运行与关联记录</h2>
             <p>先核对已保存输出和外部结果，再选择执行内容。查看不会创建运行。</p>

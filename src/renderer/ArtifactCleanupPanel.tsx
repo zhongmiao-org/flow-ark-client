@@ -51,6 +51,7 @@ function CleanupDialog({
     try {
       const next: ArtifactCleanupPreview = await api('run.artifacts.preview', { id: run.id });
       if (!live.current) return;
+      if (next.runId !== run.id) throw new Error('清理预览与当前运行不一致，请重新读取');
       setPreview(next);
       setStage('review');
     } catch (reason) {
@@ -276,17 +277,22 @@ export default function ArtifactCleanupPanel({
   run,
   cleanup,
   changed,
+  compact = false,
 }: {
   run: Run;
   cleanup?: ArtifactCleanupRecord;
+  compact?: boolean;
   changed: () => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const terminal = ['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(run.state);
   return (
-    <section className="artifact-cleanup" aria-label="运行产物管理">
+    <section
+      className={'artifact-cleanup' + (compact ? ' is-compact' : '')}
+      aria-label="运行产物管理"
+    >
       <div className="section-row">
-        <div>
+        <div hidden={compact}>
           <h3>产物保留与清理</h3>
           <p>默认保留。仅清理本次运行在应用内保存的副本。</p>
         </div>

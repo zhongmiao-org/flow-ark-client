@@ -18,7 +18,7 @@
 }
 .run-output-columns {
   display: grid;
-  grid-template-columns: minmax(0, 1.47fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 28fr) minmax(0, 19fr);
   align-items: start;
   gap: 24px;
 }
@@ -122,5 +122,84 @@
 @container (max-width: 760px) {
   .run-output-columns {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.run-detail.is-output-page .run-runtime-summary[hidden],
+.run-detail .run-rerun-entry[hidden] {
+  display: none;
+}
+.run-output-result,
+.run-output-files {
+  min-height: 646px;
+}
+.run-output-result > .badge {
+  align-self: flex-start;
+}
+.run-output-result .run-output {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.run-output-result .run-output h3,
+.run-output-files h3 {
+  font-size: 18px;
+  line-height: 28px;
+}
+.run-output-result .run-output pre {
+  min-height: 140px;
+}
+.run-artifact-card .run-artifact-status {
+  border-radius: 999px;
+}
+.run-artifact-status::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 6px;
+  background: currentColor;
+}
+.run-artifact-card .is-verified {
+  background: var(--fa-status-success-bg);
+}
+.run-artifact-card .is-unavailable {
+  color: var(--fa-status-error);
+  background: var(--fa-status-error-bg);
+}
+.run-artifact-card .is-unverified {
+  color: var(--fa-status-warning);
+  background: var(--fa-status-warning-bg);
+}
+.run-artifact-card .is-cleared {
+  color: var(--fa-text-secondary);
+}
+.run-artifact-card > button {
+  min-width: 180px;
+  min-height: 40px;
+}
+.run-artifact-card .field-error:focus-visible {
+  outline: 2px solid var(--fa-status-error);
+  outline-offset: 4px;
+}
+.run-output-files .artifact-cleanup.is-compact {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.run-output-files .artifact-cleanup.is-compact .section-row {
+  margin: 0;
+}
+.run-output-files .artifact-cleanup.is-compact button,
+.run-output-files > button {
+  width: 100%;
+  min-height: 40px;
+}
+@container (max-width: 760px) {
+  .run-output-result,
+  .run-output-files {
+    min-height: 0;
   }
 }
