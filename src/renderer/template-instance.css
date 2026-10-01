@@ -85,6 +85,26 @@
   align-self: stretch;
   white-space: nowrap;
 }
+.template-resources-columns .template-resource-fields {
+  gap: 20px;
+}
+.template-resources-columns .ai-settings-field {
+  gap: 4px;
+}
+.template-resources-columns .template-resource input,
+.template-resources-columns .template-resource select,
+.template-resources-columns .template-action-grant select {
+  padding: 5px 6px;
+  line-height: 20px;
+}
+.template-resources-columns .template-resource-file > button {
+  min-height: 32px;
+  padding: 5px 12px;
+  line-height: 20px;
+}
+.template-resource-actions > button:last-child {
+  min-width: 120px;
+}
 .template-resource input,
 .template-resource select,
 .template-action-grant select {

@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from 'react';
+import { useId, type Dispatch, type SetStateAction } from 'react';
 import type { Bootstrap } from '../shared/types';
 import { equal, type TemplateDetail } from './template-draft';
 const api = (method: string, args: unknown = {}) => window.flowark.request(method, args);
@@ -28,6 +28,7 @@ export default function TemplateResources({
   openEntry: (id: string) => void;
 }) {
   const { instance, manifest } = detail;
+  const scopeId = useId();
   const patch = (
     id: string,
     binding: TemplateDetail['instance']['resources'][string] | undefined,
@@ -44,7 +45,7 @@ export default function TemplateResources({
       instance: { ...current.instance, grants: { ...current.instance.grants, [id]: mode } },
     }));
   return (
-    <div className="template-instance-columns">
+    <div className="template-instance-columns template-resources-columns">
       <section className="ai-task-card template-instance-form">
         <h2>本机资源绑定</h2>
         <fieldset disabled={busy} className="template-resource-fields">
@@ -158,11 +159,12 @@ export default function TemplateResources({
         {manifest.actions.map((action) => (
           <div className="template-action-grant" key={action.id}>
             <strong>{action.name}</strong>
-            <p>{action.description}</p>
+            <p id={`${scopeId}-${action.id}-description`}>{action.description}</p>
             <label className="ai-settings-field">
               允许范围
               <select
                 aria-label={action.name + '授权'}
+                aria-describedby={`${scopeId}-${action.id}-description`}
                 disabled={busy}
                 value={instance.grants[action.id] ?? 'deny'}
                 onChange={(event) =>
@@ -178,6 +180,7 @@ export default function TemplateResources({
               className="template-grant-options"
               role="group"
               aria-label={action.name + '权限模式'}
+              aria-describedby={`${scopeId}-${action.id}-description`}
             >
               {(
                 [
@@ -200,7 +203,7 @@ export default function TemplateResources({
           </div>
         ))}
         <p>默认为禁止。选择目录只建立资源绑定，不等于授权写入。</p>
-        <div className="ai-task-actions">
+        <div className="ai-task-actions template-resource-actions">
           <button className="primary" disabled={blocked} onClick={save}>
             保存授权
           </button>
@@ -232,8 +235,13 @@ export default function TemplateResources({
               (id) => (instance.grants[id] ?? 'deny') !== (saved.grants[id] ?? 'deny'),
             );
           return (
-            <div className="template-entry-check" key={entry.id}>
+            <section
+              className="template-entry-check"
+              key={entry.id}
+              aria-label={`${entry.name}资源检查`}
+            >
               <span
+                role="status"
                 className={'ai-config-status ' + (pending || incomplete ? 'warning' : 'neutral')}
               >
                 {entry.name} ·{' '}
@@ -261,7 +269,7 @@ export default function TemplateResources({
               <button disabled={busy} onClick={() => openEntry(entry.id)}>
                 打开 {entry.name}
               </button>
-            </div>
+            </section>
           );
         })}
       </aside>
