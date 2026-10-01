@@ -44,7 +44,11 @@ export default function TaskGenerationPage({
     review.current?.focus({ preventScroll: true });
   }, [retry]);
   return (
-    <section className="ai-task-card task-generation" aria-labelledby="generation-heading">
+    <section
+      className="ai-task-card task-generation"
+      data-generation-state={generating ? 'generating' : unsupported ? 'unsupported' : 'failed'}
+      aria-labelledby="generation-heading"
+    >
       <span
         className={`badge state-${generating ? 'RUNNING' : unsupported ? 'WAITING_INPUT' : 'FAILED'}`}
         role="status"

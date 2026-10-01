@@ -1,16 +1,25 @@
 /* Figma 23:10659 / 23:10802 / 23:10940. */
-.task-generation {
+.ai-task-card.task-generation {
   min-height: 500px;
   padding: 32px;
-  gap: 24px;
+  gap: 16px;
   align-items: flex-start;
 }
 .task-generation h2 {
   font-size: 28px;
-  line-height: 1.45;
+  line-height: 40px;
 }
 .task-generation h3 {
   margin: 0;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+.ai-task-card.task-generation[data-generation-state='generating'] {
+  min-height: 550px;
+}
+.ai-task-card.task-generation[data-generation-state='unsupported'] {
+  min-height: 520px;
 }
 .task-generation-current,
 .task-generation-review {
@@ -25,6 +34,8 @@
 }
 .task-generation-current {
   min-height: 116px;
+  padding: 16px;
+  gap: 8px;
 }
 .task-generation-current p,
 .task-generation-reason,
@@ -44,7 +55,13 @@
   padding-left: 24px;
 }
 .task-generation .ai-task-actions button {
-  min-width: 160px;
+  min-width: 184px;
+}
+.task-generation[data-generation-state='generating'] .ai-task-actions button {
+  min-width: 144px;
+}
+.task-generation[data-generation-state='unsupported'] .ai-task-actions button.primary {
+  min-width: 208px;
 }
 .task-generation-review > button {
   align-self: flex-start;
@@ -53,7 +70,8 @@
   font-size: 13px;
 }
 @container (max-width: 760px) {
-  .task-generation {
+  .ai-task-card.task-generation,
+  .ai-task-card.task-generation[data-generation-state] {
     padding: 24px;
     min-height: 420px;
   }
