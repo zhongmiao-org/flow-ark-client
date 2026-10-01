@@ -1484,26 +1484,25 @@ export default function App() {
               setBrowserOpen(false);
             }}
           />
-          {section === 'flows' && (
-            <FlowLibrary
-              data={data}
-              loaded={loaded}
-              busy={busy}
-              active={active}
-              create={create}
-              open={openFlow}
-              importTemplate={() =>
-                action(async () => {
-                  const preview = await api('template.inspect');
-                  if (preview) {
-                    setImportPreview(preview);
-                    setSection('templates');
-                  }
-                })
-              }
-              showAttention={() => setSection('inbox')}
-            />
-          )}
+          <FlowLibrary
+            visible={section === 'flows'}
+            data={data}
+            loaded={loaded}
+            busy={busy}
+            active={active}
+            create={create}
+            open={openFlow}
+            importTemplate={() =>
+              action(async () => {
+                const preview = await api('template.inspect');
+                if (preview) {
+                  setImportPreview(preview);
+                  setSection('templates');
+                }
+              })
+            }
+            showAttention={() => setSection('inbox')}
+          />
           <div hidden={section !== 'templates'}>
             <TemplateLibrary
               refresh={refresh}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { FileText, Folder, Globe, Search, Workflow } from 'lucide-react';
 import type { Bootstrap, FlowRecord, Run } from '../shared/types';
 import { runStateLabels } from '../shared/run-history';
@@ -6,6 +6,7 @@ import { flatten } from './flow-editing';
 import { filterFlows, relativeEditTime } from './flow-library';
 
 type Props = {
+  visible: boolean;
   data: Bootstrap;
   loaded: boolean;
   busy: boolean;
@@ -16,6 +17,7 @@ type Props = {
   showAttention: () => void;
 };
 export default function FlowLibrary({
+  visible,
   data,
   loaded,
   busy,
@@ -27,6 +29,27 @@ export default function FlowLibrary({
 }: Props) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'recent' | 'template'>('all');
+  const page = useRef<HTMLElement>(null);
+  const search = useRef<HTMLInputElement>(null);
+  const returnFocus = useRef<HTMLElement | null>(null);
+  const scroll = useRef(0);
+  const visited = useRef(false);
+  useLayoutEffect(() => {
+    if (!visible) return;
+    const main = page.current?.closest('main');
+    if (visited.current) {
+      if (main) main.scrollTop = scroll.current;
+      const target = returnFocus.current;
+      if (target?.isConnected && !target.closest('[hidden]')) target.focus({ preventScroll: true });
+      else page.current?.querySelector<HTMLElement>('h1')?.focus({ preventScroll: true });
+    }
+    visited.current = true;
+    const rememberScroll = () => {
+      scroll.current = main?.scrollTop ?? 0;
+    };
+    main?.addEventListener('scroll', rememberScroll, { passive: true });
+    return () => main?.removeEventListener('scroll', rememberScroll);
+  }, [visible]);
   const ready = loaded && !data.fault;
   const first = ready && data.flows.length === 0;
   const now = new Date();
@@ -34,10 +57,18 @@ export default function FlowLibrary({
   const today = data.runOverview.today;
   const unread = data.attention.filter((a) => !a.read).length;
   return (
-    <section className="page flows-page" aria-label="流程工作空间">
+    <section
+      ref={page}
+      hidden={!visible}
+      className="page flows-page"
+      aria-label="流程工作空间"
+      onFocusCapture={(event) => {
+        returnFocus.current = event.target;
+      }}
+    >
       <div className="page-heading">
         <div>
-          <h1>{first ? '从第一个流程开始' : '我的流程'}</h1>
+          <h1 tabIndex={-1}>{first ? '从第一个流程开始' : '我的流程'}</h1>
           <p>
             {first
               ? '把一次重复操作，变成可持续使用的流程。'
@@ -88,15 +119,17 @@ export default function FlowLibrary({
             </div>
             <div>
               <span>正在运行</span>
-              <strong>{data.execution ? (active ? '01' : '00') : '—'}</strong>
+              <strong>{data.execution ? (data.execution.active ? '01' : '00') : '—'}</strong>
               <small title={active?.name}>
                 {active
                   ? active.name
-                  : data.fault || data.runtimeBlock
-                    ? '资源状态待核对，请处理上方提示'
-                    : data.execution
-                      ? '当前没有活动任务'
-                      : '正在核对执行状态'}
+                  : data.execution?.active
+                    ? '任务进行中，正在读取运行详情'
+                    : data.fault || data.runtimeBlock
+                      ? '资源状态待核对，请处理上方提示'
+                      : data.execution
+                        ? '当前没有活动任务'
+                        : '正在核对执行状态'}
                 {data.runOverview.queued > 0 ? ` · ${data.runOverview.queued} 个排队` : ''}
               </small>
             </div>
@@ -128,6 +161,7 @@ export default function FlowLibrary({
             <label className="search flow-search">
               <Search size={20} strokeWidth={1.6} aria-hidden="true" />
               <input
+                ref={search}
                 aria-label="搜索流程名称"
                 placeholder="搜索流程名称"
                 value={query}
@@ -150,10 +184,9 @@ export default function FlowLibrary({
               const historicalActive =
                 run &&
                 ['RUNNING', 'PAUSED', 'WAITING_INPUT', 'CANCELLING'].includes(run.state) &&
-                data.execution &&
-                data.execution.active?.runId !== run.id;
+                data.execution?.active?.runId !== run.id;
               return (
-                <article className="flow-card" key={record.id}>
+                <article className="flow-card" key={record.id} aria-label={record.flow.name}>
                   <div className="card-top">
                     <Icon size={28} strokeWidth={1.6} aria-hidden="true" />
                     <span
@@ -162,7 +195,7 @@ export default function FlowLibrary({
                       {historicalActive ? '待核对' : state ? runStateLabels[state] : '未运行'}
                     </span>
                   </div>
-                  <h2>{record.flow.name}</h2>
+                  <h2 title={record.flow.name}>{record.flow.name}</h2>
                   <p title={record.flow.description}>
                     {record.flow.description || '你的下一个自动化流程'}
                   </p>
@@ -170,7 +203,11 @@ export default function FlowLibrary({
                     <span title={new Date(record.updatedAt).toLocaleString('zh-CN')}>
                       {steps.length} 个步骤 · {relativeEditTime(record.updatedAt, now)}
                     </span>
-                    <button aria-label={`编辑 ${record.flow.name}`} onClick={() => open(record)}>
+                    <button
+                      disabled={busy}
+                      aria-label={`编辑 ${record.flow.name}`}
+                      onClick={() => open(record)}
+                    >
                       打开
                     </button>
                   </footer>
@@ -186,6 +223,7 @@ export default function FlowLibrary({
                 onClick={() => {
                   setQuery('');
                   setFilter('all');
+                  search.current?.focus();
                 }}
               >
                 清除筛选
