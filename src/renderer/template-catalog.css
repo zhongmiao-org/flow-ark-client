@@ -326,6 +326,27 @@
 .template-installed {
   padding: 32px;
 }
+.template-install-receipt {
+  min-height: 384px;
+}
+.template-install-receipt h2 {
+  margin: 16px 0;
+  font-size: 28px;
+  line-height: 40px;
+}
+.template-install-receipt p {
+  margin: 0 0 16px;
+  line-height: 22px;
+  color: var(--fa-text-secondary);
+}
+.template-install-receipt .template-catalog-actions {
+  gap: 12px;
+  margin-top: 16px;
+}
+.template-install-receipt .template-catalog-actions button {
+  width: 180px;
+  min-height: 40px;
+}
 .template-instance-list {
   display: grid;
   gap: 24px;

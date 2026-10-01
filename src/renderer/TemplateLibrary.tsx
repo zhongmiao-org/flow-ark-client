@@ -285,14 +285,14 @@ export default function TemplateLibrary({
     setError('');
     setNotice('');
   };
-  const createButton = (p: InstalledPackage) => (
+  const createButton = (p: InstalledPackage, label = '创建独立实例') => (
     <button
       className="primary"
       disabled={!!busy || !!resumeInstance}
       data-catalog-focus={`create-${p.key}`}
       onClick={() => void create(p)}
     >
-      {busy === 'create' ? '正在创建…' : '创建独立实例'}
+      {busy === 'create' ? '正在创建…' : label}
     </button>
   );
   return (
@@ -589,23 +589,17 @@ export default function TemplateLibrary({
           </div>
         )}
         {view === 'installed' && shown && (
-          <section className="template-catalog-card template-installed">
-            <span className="template-catalog-status success">安装已确认</span>
+          <section
+            className="template-catalog-card template-installed template-install-receipt"
+            aria-label="模板安装结果"
+          >
+            <span className="badge state-SUCCEEDED">安装成功</span>
             <h2>
               {shown.manifest.name} · v{shown.manifest.version}
             </h2>
             <p>{shown.manifest.entries.length} 个入口 · 普通配置和业务状态由每个实例独立保存。</p>
             <div className="template-catalog-actions">
-              {createButton(shown)}
-              <button
-                disabled={!!busy}
-                onClick={() => {
-                  setSelectedKey(shown.key);
-                  setView('package');
-                }}
-              >
-                查看模板定义
-              </button>
+              {createButton(shown, '创建实例')}
               <button disabled={!!busy} onClick={home}>
                 返回模板库
               </button>

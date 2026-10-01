@@ -11,9 +11,9 @@ type Props = {
   loaded: boolean;
   busy: boolean;
   active: Run | null;
-  create: () => void;
+  create: () => void | Promise<unknown>;
   open: (record: FlowRecord) => void;
-  importTemplate: () => void;
+  importTemplate: () => void | Promise<unknown>;
   showAttention: () => void;
 };
 export default function FlowLibrary({
@@ -34,6 +34,33 @@ export default function FlowLibrary({
   const returnFocus = useRef<HTMLElement | null>(null);
   const scroll = useRef(0);
   const visited = useRef(false);
+  const entryLocked = useRef(false);
+  const [entryAction, setEntryAction] = useState<'create' | 'import' | ''>('');
+  const [entryError, setEntryError] = useState('');
+  const entryErrorPanel = useRef<HTMLParagraphElement>(null);
+  useLayoutEffect(() => {
+    if (visible && entryError) entryErrorPanel.current?.focus();
+  }, [visible, entryError]);
+  const startEntry = async (kind: 'create' | 'import') => {
+    if (busy || entryLocked.current) return;
+    const trigger = document.activeElement as HTMLElement;
+    entryLocked.current = true;
+    setEntryAction(kind);
+    setEntryError('');
+    let failed = false;
+    try {
+      await (kind === 'create' ? create() : importTemplate());
+    } catch (reason) {
+      failed = true;
+      setEntryError(reason instanceof Error ? reason.message : '操作未完成，请重试。');
+    } finally {
+      entryLocked.current = false;
+      setEntryAction('');
+      requestAnimationFrame(() => {
+        if (!failed && trigger.isConnected && !trigger.closest('[hidden]')) trigger.focus();
+      });
+    }
+  };
   useLayoutEffect(() => {
     if (!visible) return;
     const main = page.current?.closest('main');
@@ -86,19 +113,28 @@ export default function FlowLibrary({
           {data.fault ? '本地记录读取异常，请先处理上方提示。' : '正在读取本地工作空间…'}
         </div>
       ) : first ? (
-        <div className="first-flow">
+        <div className="first-flow" aria-busy={!!entryAction}>
           <Workflow size={56} strokeWidth={1.6} aria-hidden="true" />
           <h2>你的工作流，从这里开始。</h2>
           <p>从空白流程搭建，或导入可信模板。所有流程和运行记录保存在本机。</p>
           <div className="row">
-            <button className="primary" disabled={busy} onClick={create}>
-              创建空白流程
+            <button
+              className="primary"
+              disabled={busy || !!entryAction}
+              onClick={() => void startEntry('create')}
+            >
+              {entryAction === 'create' ? '正在创建…' : '创建空白流程'}
             </button>
-            <button disabled={busy} onClick={importTemplate}>
-              导入模板包
+            <button disabled={busy || !!entryAction} onClick={() => void startEntry('import')}>
+              {entryAction === 'import' ? '正在检查模板…' : '导入模板包'}
             </button>
           </div>
           <small>无需连接 FlowArk 平台即可开始。</small>
+          {entryError && (
+            <p ref={entryErrorPanel} role="alert" tabIndex={-1}>
+              {entryError}
+            </p>
+          )}
         </div>
       ) : (
         <>
