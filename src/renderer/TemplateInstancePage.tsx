@@ -16,7 +16,8 @@ import {
   type TemplateSaveScope,
 } from './template-draft';
 import './template-instance.css';
-export type TemplateNavigation = (next: () => void) => void;
+import './editor-leave.css';
+export type TemplateNavigation = (next: () => void, destination?: string) => void;
 type Tab = 'configuration' | 'resources' | 'entry' | 'source';
 const tabs: [Tab, string][] = [
   ['configuration', '共享配置'],
@@ -67,10 +68,12 @@ export default function TemplateInstancePage({
   const [configurationGeneration, setConfigurationGeneration] = useState(0);
   const [others, setOthers] = useState(false),
     [version, setVersion] = useState('');
-  const [leaving, setLeaving] = useState<{ next: () => void }>();
+  const [leaving, setLeaving] = useState<{ next: () => void; destination: string }>();
   const lock = useRef(false),
     pending = useRef(false),
     root = useRef<HTMLDivElement>(null);
+  const dialogHeading = useRef<HTMLHeadingElement>(null),
+    continueButton = useRef<HTMLButtonElement>(null);
   const dialog = useRef<HTMLDialogElement>(null),
     focus = useRef<HTMLElement | null>(null);
   const scrolls = useRef(new Map<string, number>());
@@ -180,20 +183,20 @@ export default function TemplateInstancePage({
     setDraft((current) => acceptTemplateSave(current, submitted, next, request, scope));
     return true;
   };
-  const go: TemplateNavigation = (next) => {
+  const go: TemplateNavigation = (next, destination = '模板库') => {
     if (lock.current || pending.current) return;
     if (templateDirty(draft, saved) || rawInvalid()) {
       if (!focus.current?.offsetParent) focus.current = document.activeElement as HTMLElement;
       pending.current = true;
       setError('');
-      setLeaving({ next });
+      setLeaving({ next, destination });
     } else next();
   };
-  navigation.current = (next) =>
+  navigation.current = (next, destination) =>
     go(() => {
       close();
       next();
-    });
+    }, destination);
   const stay = () => {
     if (lock.current) return;
     dialog.current?.close();
@@ -202,8 +205,14 @@ export default function TemplateInstancePage({
     requestAnimationFrame(() => focus.current?.focus({ preventScroll: true }));
   };
   useEffect(() => {
-    if (leaving) dialog.current?.showModal();
+    if (leaving) {
+      dialog.current?.showModal();
+      continueButton.current?.focus();
+    }
   }, [leaving]);
+  useEffect(() => {
+    if (leaving && (error || sourceError)) dialogHeading.current?.focus();
+  }, [leaving, error, sourceError]);
   usePageBack(() => go(close), active);
   const switchTab = (next: Tab) => {
     if (lock.current) return;
@@ -393,7 +402,7 @@ export default function TemplateInstancePage({
                       <button
                         key={other.id}
                         disabled={busy}
-                        onClick={() => go(() => choose(other.id))}
+                        onClick={() => go(() => choose(other.id), `实例 · ${other.name}`)}
                       >
                         {other.name} · {other.id.slice(0, 8)}
                       </button>
@@ -509,6 +518,7 @@ export default function TemplateInstancePage({
                         choose(created.id);
                         return created;
                       }),
+                    `新版实例 · ${version}`,
                   )
                 }
               >
@@ -538,18 +548,48 @@ export default function TemplateInstancePage({
       {leaving && (
         <dialog
           ref={dialog}
-          className="script-leave-dialog ai-settings-dialog"
+          className="editor-leave-dialog template-instance-leave"
           aria-labelledby="template-leave-title"
+          aria-describedby="template-leave-description"
           onCancel={(event) => {
             event.preventDefault();
             stay();
           }}
         >
-          <h2 id="template-leave-title">保存实例更改再离开？</h2>
-          <p>共享配置、资源授权和各入口输入将在一次保存成功后一起保留，再前往刚才选择的位置。</p>
-          <div className="ai-task-actions">
-            <button autoFocus disabled={busy} onClick={stay}>
+          <span className={`editor-leave-status${error || sourceError ? ' is-error' : ''}`}>
+            {error || sourceError ? '更改仍保留' : '存在未保存更改'}
+          </span>
+          <h2 id="template-leave-title" ref={dialogHeading} tabIndex={-1}>
+            {error || sourceError ? '保存未完成，尚未离开' : '保存实例更改再离开？'}
+          </h2>
+          <p id="template-leave-description">
+            共享配置、资源授权和各入口输入将在一次保存成功后一起保留，再前往“{leaving.destination}
+            ”。 不保存只放弃本实例的未保存更改。
+          </p>
+          <p className="editor-leave-note">已保存的 AI 配置和已开始的运行保持原状。</p>
+          {(error || sourceError) && (
+            <p role="alert" className="editor-leave-error">
+              {error || sourceError}
+            </p>
+          )}
+          <div className="editor-leave-actions">
+            <button autoFocus ref={continueButton} disabled={busy} onClick={stay}>
               继续编辑
+            </button>
+            <button
+              className="editor-leave-discard"
+              disabled={busy}
+              onClick={() => {
+                const next = leaving.next;
+                setDraft(structuredClone(saved));
+                setGeneration((v) => v + 1);
+                dialog.current?.close();
+                pending.current = false;
+                setLeaving(undefined);
+                next();
+              }}
+            >
+              不保存离开
             </button>
             <button
               className="primary"
@@ -566,24 +606,9 @@ export default function TemplateInstancePage({
                 });
               }}
             >
-              保存并离开
-            </button>
-            <button
-              disabled={busy}
-              onClick={() => {
-                const next = leaving.next;
-                setDraft(structuredClone(saved));
-                setGeneration((v) => v + 1);
-                dialog.current?.close();
-                pending.current = false;
-                setLeaving(undefined);
-                next();
-              }}
-            >
-              不保存离开
+              {busy ? '正在保存…' : error ? '重试保存并离开' : '保存并离开'}
             </button>
           </div>
-          {(error || sourceError) && <p role="alert">{error || sourceError}</p>}
         </dialog>
       )}
     </div>

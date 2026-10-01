@@ -352,19 +352,19 @@ export default function App() {
   };
   usePageBack(returnRun, section === 'runs' && !!(detail || runFilter));
 
-  function leaveTemplateContext(next: () => void) {
+  function leaveTemplateContext(next: () => void, destination: string) {
     setDetail(null);
     setSection('templates');
     requestAnimationFrame(() =>
-      templateNavigation.current ? templateNavigation.current(next) : next(),
+      templateNavigation.current ? templateNavigation.current(next, destination) : next(),
     );
   }
-  function leaveAIContext(next: () => void) {
+  function leaveAIContext(next: () => void, destination: string) {
     if (taskAISettings.source?.kind !== 'template') {
       next();
       return;
     }
-    leaveTemplateContext(next);
+    leaveTemplateContext(next, destination);
   }
   async function action(fn: () => Promise<any>, message?: string) {
     setBusy(true);
@@ -546,21 +546,21 @@ export default function App() {
     else if (section === 'tools') toolNavigation.current?.(navigate);
     else if (section === 'ai-settings')
       aiSettingsNavigation.current?.(
-        () => (id === 'templates' ? navigate() : leaveAIContext(navigate)),
+        () => (id === 'templates' ? navigate() : leaveAIContext(navigate, label)),
         label,
       );
-    else if (section === 'templates') templateNavigation.current?.(navigate);
+    else if (section === 'templates') templateNavigation.current?.(navigate, label);
     else if (section === 'schedules') plansNavigation.current?.(navigate);
     else if (section === 'template-schedule')
       scheduleNavigation.current?.(() =>
-        id === 'templates' ? navigate() : leaveTemplateContext(navigate),
+        id === 'templates' ? navigate() : leaveTemplateContext(navigate, label),
       );
     else if (section === 'runs' && runOrigin === 'schedule' && detail) {
       if (id === 'schedules') returnSchedule();
       else leaveScheduleContext(navigate);
     } else if (section === 'runs' && runOrigin === 'template' && detail) {
       if (id === 'templates') returnTemplate();
-      else leaveTemplateContext(navigate);
+      else leaveTemplateContext(navigate, label);
     } else navigate();
   };
   const returnHome = () =>
@@ -857,15 +857,19 @@ export default function App() {
                 if (section === 'editor') requestEditorLeave(navigate, '首次教学');
                 else if (section === 'tools') toolNavigation.current?.(navigate);
                 else if (section === 'ai-settings')
-                  aiSettingsNavigation.current?.(() => leaveAIContext(navigate), '首次教学');
-                else if (section === 'templates') templateNavigation.current?.(navigate);
+                  aiSettingsNavigation.current?.(
+                    () => leaveAIContext(navigate, '首次教学'),
+                    '首次教学',
+                  );
+                else if (section === 'templates')
+                  templateNavigation.current?.(navigate, '首次教学');
                 else if (section === 'schedules') plansNavigation.current?.(navigate);
                 else if (section === 'runs' && runOrigin === 'schedule' && detail)
                   leaveScheduleContext(navigate);
                 else if (section === 'template-schedule')
-                  scheduleNavigation.current?.(() => leaveTemplateContext(navigate));
+                  scheduleNavigation.current?.(() => leaveTemplateContext(navigate, '首次教学'));
                 else if (section === 'runs' && runOrigin === 'template' && detail)
-                  leaveTemplateContext(navigate);
+                  leaveTemplateContext(navigate, '首次教学');
                 else navigate();
               }}
             >
@@ -1155,7 +1159,8 @@ export default function App() {
                         setRunOrigin('history');
                       };
                       if (runOrigin === 'schedule' && detail) leaveScheduleContext(next);
-                      else if (runOrigin === 'template' && detail) leaveTemplateContext(next);
+                      else if (runOrigin === 'template' && detail)
+                        leaveTemplateContext(next, '运行记录');
                       else next();
                     }}
                   >
@@ -1995,7 +2000,7 @@ export default function App() {
               action={action}
               navigation={scheduleNavigation}
               back={returnTemplate}
-              manage={() => leaveTemplateContext(() => setSection('schedules'))}
+              manage={() => leaveTemplateContext(() => setSection('schedules'), '本机计划')}
             />
           )}
           <div hidden={section !== 'schedules'}>
@@ -2063,10 +2068,13 @@ export default function App() {
             active={section === 'ai-settings'}
             entry={taskAISettings}
             home={(tab) =>
-              leaveAIContext(() => {
-                if (tab === 'browser') setSettingsBrowserRequest((value) => value + 1);
-                setSection('settings');
-              })
+              leaveAIContext(
+                () => {
+                  if (tab === 'browser') setSettingsBrowserRequest((value) => value + 1);
+                  setSection('settings');
+                },
+                tab === 'browser' ? '浏览器设置' : '本地设置',
+              )
             }
             navigation={aiSettingsNavigation}
             changed={refresh}
