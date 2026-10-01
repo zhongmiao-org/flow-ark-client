@@ -21,6 +21,7 @@ import {
 import type { Bootstrap, FlowRecord, Step } from '../shared/types';
 import type { PlanningChange, PlanningContext, PlanningTask, TaskDetail } from '../shared/planning';
 import { buildDiagram } from './flow-diagram';
+import { buildTaskDiagram } from './task-diagram';
 import DiagramCanvas from './DiagramCanvas';
 import { kinds } from './node-kinds';
 import { flatten } from './flow-editing';
@@ -242,7 +243,6 @@ export default function AITaskWorkspace(props: Props) {
   const stale = !!detail && detail.task.revision !== revision;
   const result = detail?.proposal?.result;
   const flow = result?.kind === 'plan' ? result.flow : detail?.flow?.flow;
-  const diagram = useMemo(() => buildDiagram(flow?.steps ?? [], selected), [flow, selected]);
   const selectedStep = flow && flatten(flow.steps).find((step) => step.id === selected);
   const scope = draft.scope;
   const scopedSteps = flatten(detail?.flow?.flow.steps ?? []);
@@ -260,6 +260,18 @@ export default function AITaskWorkspace(props: Props) {
     page === 'review' && !!flow && !scope && !editingProposal && !changesView && view === 'graph';
   const planListView =
     page === 'review' && !!flow && !scope && !editingProposal && !changesView && view === 'list';
+  const diagram = useMemo(
+    () =>
+      standaloneGraph && flow
+        ? buildTaskDiagram(flow, selected, {
+            bindings: detail?.flow?.bindings,
+            webTarget: detail?.proposal ? detail.task.webTarget : detail?.flow?.webTarget,
+            outputTarget: detail?.proposal ? detail.task.outputTarget : detail?.flow?.outputTarget,
+            toolTargets: detail?.proposal ? detail.task.toolTargets : detail?.flow?.toolTargets,
+          })
+        : buildDiagram(flow?.steps ?? [], selected),
+    [flow, selected, standaloneGraph, detail],
+  );
   const returnToConversation = useCallback(() => {
     setView('list');
     requestAnimationFrame(() => {
@@ -2383,6 +2395,7 @@ export default function AITaskWorkspace(props: Props) {
                               <div className="ai-task-graph" aria-label="任务流程图">
                                 <DiagramCanvas
                                   {...diagram}
+                                  taskPresentation={standaloneGraph}
                                   focusRequest={graphFocus}
                                   active={props.active && page === 'review'}
                                   selected={selected}

@@ -15,18 +15,34 @@ import { diagramGeometry, diagramViewport, nodeBounds } from './diagram-viewport
 type Props = {
   active?: boolean;
   focusRequest?: number;
+  taskPresentation?: boolean;
   nodes: DiagramNode[];
   edges: DiagramEdge[];
   selected: string;
   select: (id: string, source?: 'keyboard') => void;
 };
 
-function Canvas({ nodes, edges, selected, select, active = true, focusRequest }: Props) {
+function Canvas({
+  nodes,
+  edges,
+  selected,
+  select,
+  active = true,
+  focusRequest,
+  taskPresentation = false,
+}: Props) {
   const { setViewport, viewportInitialized: ready } = useReactFlow();
   const width = useStore((state) => state.width);
   const height = useStore((state) => state.height);
   const { bounds, layoutKey } = diagramGeometry(nodes, edges);
-  const fullViewport = diagramViewport(bounds, width, height);
+  const startNode = nodes.find((node) => node.id === '@start');
+  const fullViewport = diagramViewport(
+    bounds,
+    width,
+    height,
+    taskPresentation,
+    startNode ? startNode.position.x + startNode.data.width / 2 : undefined,
+  );
   const selectedNode = nodes.find((node) => node.id === selected && node.data.step);
   const focusedViewport = diagramViewport(
     selectedNode ? nodeBounds(selectedNode) : null,

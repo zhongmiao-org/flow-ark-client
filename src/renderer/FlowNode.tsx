@@ -9,6 +9,7 @@ import {
 } from '@xyflow/react';
 import type { DiagramNode, DiagramEdge, FlowShape } from './flow-diagram';
 import { kinds } from './node-kinds';
+import TaskDiagramShape, { hasTaskArtwork } from './TaskDiagramShape';
 
 function Shape({
   shape,
@@ -76,22 +77,36 @@ const FlowNode = memo(function FlowNode({ data, selected }: NodeProps<DiagramNod
       isConnectable={false}
       style={
         id === 'out' && (shape === 'document' || shape === 'workbook')
-          ? { bottom: 16, left: (width - (shape === 'workbook' ? 12 : 0)) / 2 }
+          ? {
+              bottom: data.presentation === 'task' && shape === 'document' ? 0 : 16,
+              left: (width - (shape === 'workbook' ? 12 : 0)) / 2,
+            }
           : undefined
       }
     />
   );
   return (
     <div
-      className={`flow-shape flow-shape--${shape}${selected ? ' is-selected' : ''}`}
+      className={`flow-shape flow-shape--${shape}${selected ? ' is-selected' : ''}${data.presentation === 'task' ? ' flow-task-node' : ''}`}
       style={{ width, height }}
       data-shape={shape}
       data-step-id={step?.id}
     >
-      <svg className="flow-shape-outline" viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
-        <Shape shape={shape} width={width} height={height} />
-      </svg>
-      {step && kind && Icon ? (
+      {data.presentation === 'task' && hasTaskArtwork(shape) ? (
+        <TaskDiagramShape shape={shape} />
+      ) : (
+        <svg className="flow-shape-outline" viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
+          <Shape shape={shape} width={width} height={height} />
+        </svg>
+      )}
+      {data.task ? (
+        <div className="task-node-copy">
+          <b title={data.task.title}>
+            {String(data.task.ordinal).padStart(2, '0')} {data.task.title}
+          </b>
+          {shape !== 'decision' && <small title={data.task.summary}>{data.task.summary}</small>}
+        </div>
+      ) : step && kind && Icon ? (
         <div className="flow-shape-content">
           <span className="flow-node-icon">
             <Icon size={18} strokeWidth={1.8} />
@@ -170,8 +185,15 @@ function RoutedEdge({
       <BaseEdge id={id} path={d} markerEnd={markerEnd} style={style} />
       <EdgeLabelRenderer>
         <span
-          className={'flow-route-label' + (data?.returning ? ' is-returning' : '')}
-          style={{ transform: `translate(-50%, -50%) translate(${x}px, ${(sy + targetY) / 2}px)` }}
+          className={
+            'flow-route-label' +
+            (data?.returning ? ' is-returning' : '') +
+            (data?.labelY !== undefined ? ' task-branch-label' : '') +
+            (label === '成立' ? ' is-positive' : '')
+          }
+          style={{
+            transform: `translate(-50%, -50%) translate(${data?.labelX ?? x}px, ${data?.labelY ?? (sy + targetY) / 2}px)`,
+          }}
         >
           {label}
         </span>

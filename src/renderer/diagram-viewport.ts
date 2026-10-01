@@ -28,6 +28,8 @@ export function diagramGeometry(nodes: DiagramNode[], edges: DiagramEdge[]) {
       edge.type,
       edge.data?.routeX,
       edge.data?.returning,
+      edge.data?.labelX,
+      edge.data?.labelY,
     ]),
   ]);
   if (!nodes.length) return { layoutKey, bounds: null };
@@ -43,6 +45,11 @@ export function diagramGeometry(nodes: DiagramNode[], edges: DiagramEdge[]) {
     bottom = Math.max(bottom, bounds.y + bounds.height);
   }
   for (const edge of edges) {
+    const labelX = edge.data?.labelX;
+    if (labelX !== undefined) {
+      left = Math.min(left, labelX);
+      right = Math.max(right, labelX);
+    }
     const x = edge.data?.routeX;
     if (x !== undefined) {
       left = Math.min(left, x);
@@ -60,8 +67,36 @@ export function diagramGeometry(nodes: DiagramNode[], edges: DiagramEdge[]) {
   };
 }
 
-export function diagramViewport(bounds: Rect | null, width: number, height: number) {
+export function diagramViewport(
+  bounds: Rect | null,
+  width: number,
+  height: number,
+  task = false,
+  centerX?: number,
+) {
   if (!bounds || width <= 0 || height <= 0 || bounds.width <= 0 || bounds.height <= 0) return null;
+  if (task) {
+    // Keep short task plans at design size, centered on the start node and
+    // 16 px from the top. Clamp the center so asymmetric branches still fit.
+    const zoom = Math.min(
+      1,
+      Math.max(1, width - 32) / bounds.width,
+      Math.max(1, height - 32) / bounds.height,
+    );
+    const centered = (width - bounds.width * zoom) / 2 - bounds.x * zoom;
+    const x =
+      centerX === undefined
+        ? centered
+        : Math.max(
+            16 - bounds.x * zoom,
+            Math.min(width - 16 - (bounds.x + bounds.width) * zoom, width / 2 - centerX * zoom),
+          );
+    return {
+      x,
+      y: 16 - (bounds.y + edgeMargin) * zoom,
+      zoom,
+    };
+  }
   // Zero disables a fixed lower clamp only during this calculation. The
   // positive result becomes the canvas's actual lower zoom limit.
   return getViewportForBounds(bounds, width, height, 0, 1, 0.2);

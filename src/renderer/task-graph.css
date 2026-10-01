@@ -167,6 +167,82 @@
   flex-direction: column;
   gap: 16px;
 }
+.task-node-art {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.task-node-art img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: block;
+  max-width: none;
+}
+.task-node-art--document img {
+  top: -1px;
+  left: -1px;
+  transform: none;
+}
+.task-node-art--terminal {
+  border-radius: 999px;
+  background: var(--fa-bg-subtle);
+}
+.flow-task-node.is-selected .task-node-art,
+.react-flow__node-semantic:focus-visible .flow-task-node .task-node-art {
+  filter: drop-shadow(0 0 1px var(--fa-action-primary));
+}
+.flow-task-node .react-flow__handle {
+  opacity: 0;
+}
+.task-node-copy {
+  position: absolute;
+  top: 17px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+}
+.task-node-copy b {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+}
+.task-branch-label {
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 400;
+}
+.task-branch-label.is-positive {
+  color: var(--fa-status-success);
+}
+.task-node-copy small {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.task-node-copy b,
+.task-node-copy small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.flow-task-node.flow-shape--decision .task-node-copy {
+  top: 39px;
+  left: 32px;
+  right: 32px;
+}
+.flow-task-node.flow-shape--data .task-node-copy,
+.flow-task-node.flow-shape--manual .task-node-copy,
+.flow-task-node.flow-shape--loop .task-node-copy {
+  left: 36px;
+  right: 36px;
+}
 @container (max-width: 900px) {
   .task-graph-workspace {
     grid-template-columns: minmax(0, 1fr);
