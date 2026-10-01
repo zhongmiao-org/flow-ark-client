@@ -4,11 +4,6 @@ export default function DesktopRunConfirmation({ preview }: { preview: RunReview
   const desktop = preview.desktop!;
   return (
     <div className="desktop-run-confirmation" aria-label="本次选区修改">
-      <p>
-        {desktop.windowTitle
-          ? `本机应用助手 · 文本编辑 / ${desktop.windowTitle}`
-          : '重新选择本次 TextEdit 窗口与原选区后，才能确认修改。'}
-      </p>
       <section className="desktop-confirm-original">
         <h2>原选区</h2>
         {desktop.original !== undefined ? (
@@ -31,7 +26,9 @@ export default function DesktopRunConfirmation({ preview }: { preview: RunReview
           只替换本次明确选择的原文，并读取修改后的文字核对。不会自动保存文档；不包含发送消息或操作其他窗口的步骤。
         </p>
       </section>
-      <p>执行前再次核对窗口与原选区；发生变化或能力不可用时停止，结果未知不自动重放。</p>
+      <p className="desktop-confirm-notice">
+        执行前再次核对窗口与原选区；发生变化或能力不可用时停止，结果未知不自动重放。
+      </p>
       {desktop.expiresAt && (
         <p>
           绑定有效至 {new Date(desktop.expiresAt).toLocaleTimeString('zh-CN')}

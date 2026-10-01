@@ -241,6 +241,7 @@ export default function RunReviewPage(props: Props) {
               : preview?.ready
                 ? '检查通过'
                 : '需要处理';
+  const desktopReview = !!preview?.desktop;
   const compactReview = !!props.selection?.task && !preview?.desktop;
   const repairRevision =
     props.repair &&
@@ -271,6 +272,18 @@ export default function RunReviewPage(props: Props) {
   const configureButton = !locked && !attempt?.run && (
     <button onClick={props.edit}>配置流程与资源</button>
   );
+  const rebindButton =
+    !locked && !attempt?.run && desktopReview && props.selection?.task && props.bound ? (
+      <button
+        disabled={state.loading || binding}
+        onClick={() => {
+          session.setReviewed(false);
+          setBinding(true);
+        }}
+      >
+        重新选择窗口与原选区
+      </button>
+    ) : null;
   const reviewUtilities = (
     <>
       {refreshButton}
@@ -293,7 +306,13 @@ export default function RunReviewPage(props: Props) {
           <h1 ref={heading} tabIndex={-1}>
             {preview?.desktop ? '确认这次应用修改' : '试运行前，最后确认一次'}
           </h1>
-          <p>试运行也会执行已列出的操作；这不是无副作用的预览</p>
+          <p>
+            {desktopReview
+              ? preview?.desktop?.windowTitle
+                ? `本机应用助手 · 文本编辑 / ${preview.desktop.windowTitle}`
+                : '重新选择本次 TextEdit 窗口与原选区后，才能确认修改。'
+              : '试运行也会执行已列出的操作；这不是无副作用的预览'}
+          </p>
         </div>
       </div>
       <div className="run-review-columns">
@@ -322,17 +341,21 @@ export default function RunReviewPage(props: Props) {
         </div>
         <section className="ai-task-card run-review-confirm" aria-label="执行前检查">
           <h2 aria-live="polite">{preview?.desktop ? '本次授权' : title}</h2>
-          {preview?.desktop && <p aria-live="polite">{title}</p>}
+          {desktopReview && (!preview?.ready || attempt || state.loading) && (
+            <p aria-live="polite">{title}</p>
+          )}
           {!attempt && (
             <>
-              {preview?.checks.map((check, i) => (
-                <RunReviewCheck
-                  key={`${i}:${check.detail}`}
-                  check={check}
-                  compact={compactReview}
-                />
-              ))}
-              {!compactReview && debugToggle}
+              {preview?.checks
+                .filter((check) => !desktopReview || !check.passed)
+                .map((check, i) => (
+                  <RunReviewCheck
+                    key={`${i}:${check.detail}`}
+                    check={check}
+                    compact={compactReview}
+                  />
+                ))}
+              {!compactReview && !desktopReview && debugToggle}
               {compactReview && preview?.rerun && (
                 <p className="run-review-rerun-note">
                   从第 1 步创建新运行；已完成或结果未知的外部操作，可能再次发生。
@@ -346,11 +369,16 @@ export default function RunReviewPage(props: Props) {
                   onChange={(e) => session.setReviewed(e.target.checked)}
                 />
                 {preview?.desktop
-                  ? '我授权本次只替换已核对的原选区并回读，运行期间保持文档与选区不变'
+                  ? '读取选区、替换选区并回读'
                   : preview?.toolCalls?.length
                     ? '我授权本次按已列工具和参数来源执行，已核对外部影响；结果未知时不自动重试'
                     : '我已核对操作对象、可能更改和保存位置'}
               </label>
+              {desktopReview && (
+                <p className="desktop-confirm-authorization">
+                  我授权本次只替换已核对的原选区，并读取修改后的文字核对。试运行会实际修改文档；运行期间请保持文档与选区不变，结果未知不自动重放。
+                </p>
+              )}
               <button
                 className="primary"
                 disabled={!preview?.ready || !state.reviewed || state.loading || binding}
@@ -395,20 +423,32 @@ export default function RunReviewPage(props: Props) {
               {state.error}
             </p>
           )}
-          {!locked && !attempt?.run && preview?.desktop && props.selection?.task && props.bound && (
-            <button
-              disabled={state.loading || binding}
-              onClick={() => {
-                session.setReviewed(false);
-                setBinding(true);
-              }}
-            >
-              重新选择窗口与原选区
-            </button>
-          )}
-          {!compactReview && refreshButton}
-          <button onClick={props.back}>{preview?.desktop ? '取消，回到方案' : '回去修改'}</button>
-          {compactReview && !attempt ? (
+          {!compactReview && !desktopReview && refreshButton}
+          <button onClick={props.back}>
+            {desktopReview
+              ? attempt && attempt.phase !== 'rejected'
+                ? '返回方案（不撤销本次运行）'
+                : '取消，回到方案'
+              : '回去修改'}
+          </button>
+          {desktopReview ? (
+            <>
+              {!preview?.ready && !state.loading && rebindButton}
+              <details className="run-review-options desktop-review-options">
+                <summary>窗口绑定、检查与试运行选项</summary>
+                <p aria-live="polite">{title}</p>
+                {!attempt &&
+                  preview?.checks
+                    .filter((check) => check.passed)
+                    .map((check, i) => (
+                      <RunReviewCheck key={`${i}:${check.detail}`} check={check} compact />
+                    ))}
+                {debugToggle}
+                {(preview?.ready || state.loading) && rebindButton}
+                {reviewUtilities}
+              </details>
+            </>
+          ) : compactReview && !attempt ? (
             <>
               <details className="run-review-options">
                 <summary>试运行选项与重新检查</summary>
