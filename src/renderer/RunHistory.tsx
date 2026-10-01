@@ -46,11 +46,20 @@ export default function RunHistory({
   const [revision, setRevision] = useState(0);
   const [data, setData] = useState<RunListPage | null>(null);
   const [error, setError] = useState('');
+  const [openError, setOpenError] = useState<{ id: string; message: string } | null>(null);
+  const errorPanel = useRef<HTMLParagraphElement>(null);
   const [loading, setLoading] = useState(false);
   const [opening, setOpening] = useState<string | null>(null);
   const generation = useRef(0),
     shown = useRef(visible);
   const root = useRef<HTMLDivElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const search = useRef<HTMLInputElement>(null);
+  const filterReturn = useRef<{
+    trigger: 'flow' | 'source';
+    scroll: number;
+    applied: boolean;
+  } | null>(null);
   const restore = useRef<{ id: string; scroll: number } | null>(null);
   shown.current = visible;
   const cursor = cursors[cursors.length - 1];
@@ -59,6 +68,7 @@ export default function RunHistory({
     setData(null);
     setLoading(true);
     setError('');
+    setOpenError(null);
   };
   const latest = () => {
     resetView();
@@ -70,7 +80,12 @@ export default function RunHistory({
     setQuery(next);
     setCursors([undefined]);
   };
-  const editFilters = () => {
+  const editFilters = (trigger: 'flow' | 'source') => {
+    filterReturn.current = {
+      trigger,
+      scroll: root.current?.closest('main')?.scrollTop ?? 0,
+      applied: false,
+    };
     setDraft({
       query: query.query ?? '',
       state: query.state ?? '',
@@ -81,6 +96,23 @@ export default function RunHistory({
     });
     setFilterOpen(true);
   };
+  useEffect(() => {
+    if (!visible) return;
+    if (filterOpen) {
+      root.current?.closest('main')?.scrollTo({ top: 0 });
+      search.current?.focus({ preventScroll: true });
+      return;
+    }
+    const saved = filterReturn.current;
+    if (!saved) return;
+    const target = !saved.applied
+      ? (root.current?.querySelector<HTMLElement>(`[data-history-filter="${saved.trigger}"]`) ??
+        heading.current)
+      : heading.current;
+    target?.focus({ preventScroll: true });
+    root.current?.closest('main')?.scrollTo({ top: saved.applied ? 0 : saved.scroll });
+    filterReturn.current = null;
+  }, [visible, filterOpen]);
   useEffect(() => {
     const id = ++generation.current;
     if (!visible) return;
@@ -130,10 +162,13 @@ export default function RunHistory({
     });
     return () => cancelAnimationFrame(frame);
   }, [visible, filterOpen, loading, data]);
+  useEffect(() => {
+    if (visible && !filterOpen && (error || openError)) errorPanel.current?.focus();
+  }, [visible, filterOpen, error, openError]);
   const inspect = async (id: string) => {
     const current = generation.current;
     setOpening(id);
-    setError('');
+    setOpenError(null);
     try {
       const detail = await api('run.detail', { id });
       if (shown.current && current === generation.current) {
@@ -142,7 +177,7 @@ export default function RunHistory({
         open(detail);
       }
     } catch (e: any) {
-      if (shown.current && current === generation.current) setError(e.message);
+      if (shown.current && current === generation.current) setOpenError({ id, message: e.message });
     } finally {
       if (current === generation.current) setOpening(null);
     }
@@ -166,9 +201,15 @@ export default function RunHistory({
     </select>
   );
   return (
-    <div ref={root} className="run-history" style={visible ? undefined : { display: 'none' }}>
+    <div
+      ref={root}
+      className={`run-history${filterOpen ? ' is-filtering' : ''}`}
+      style={visible ? undefined : { display: 'none' }}
+    >
       <div className="runs-heading">
-        <h1>{filterOpen ? '筛选运行记录' : '运行记录'}</h1>
+        <h1 ref={heading} tabIndex={-1}>
+          {filterOpen ? '筛选运行记录' : '运行记录'}
+        </h1>
         <p>
           {filterOpen
             ? '筛选与翻页保留当前位置；返回详情后保留条件。'
@@ -181,6 +222,7 @@ export default function RunHistory({
           aria-label="筛选运行记录"
           onSubmit={(e) => {
             e.preventDefault();
+            if (filterReturn.current) filterReturn.current.applied = true;
             setRange(draft.range);
             filter({
               limit: draft.limit,
@@ -193,65 +235,38 @@ export default function RunHistory({
             setFilterOpen(false);
           }}
         >
-          <label>
-            搜索流程或运行编号
-            <input
-              aria-label="搜索运行记录"
-              maxLength={200}
-              placeholder="流程名称、运行或流程 ID"
-              value={draft.query}
-              onChange={(e) => setDraft({ ...draft, query: e.target.value })}
-            />
-          </label>
-          <label>状态{stateSelect(draft.state, (state) => setDraft({ ...draft, state }))}</label>
-          <label>
-            触发来源
-            <select
-              aria-label="运行来源筛选"
-              value={draft.source}
-              onChange={(e) => setDraft({ ...draft, source: e.target.value })}
-            >
-              <option value="">全部来源</option>
-              {Object.entries(runSourceLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            时间范围{rangeSelect(draft.range, (range) => setDraft({ ...draft, range }))}
-          </label>
-          <label>
-            流程
-            <select
-              aria-label="运行流程筛选"
-              disabled={!!scope}
-              value={draft.flowId}
-              onChange={(e) => setDraft({ ...draft, flowId: e.target.value })}
-            >
-              <option value="">所有流程</option>
-              {flows.map((flow) => (
-                <option key={flow.id} value={flow.id}>
-                  {flow.flow.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            每页
-            <select
-              aria-label="每页运行条数"
-              value={draft.limit}
-              onChange={(e) => setDraft({ ...draft, limit: Number(e.target.value) })}
-            >
-              {[6, 25, 50, 100].map((n) => (
-                <option key={n} value={n}>
-                  {n} 条
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="history-primary-filters">
+            <label>
+              搜索流程或运行编号
+              <input
+                ref={search}
+                aria-label="搜索运行记录"
+                maxLength={200}
+                placeholder="流程名称、运行或流程 ID"
+                value={draft.query}
+                onChange={(e) => setDraft({ ...draft, query: e.target.value })}
+              />
+            </label>
+            <label>状态{stateSelect(draft.state, (state) => setDraft({ ...draft, state }))}</label>
+            <label>
+              触发来源
+              <select
+                aria-label="运行来源筛选"
+                value={draft.source}
+                onChange={(e) => setDraft({ ...draft, source: e.target.value })}
+              >
+                <option value="">全部来源</option>
+                {Object.entries(runSourceLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              时间范围{rangeSelect(draft.range, (range) => setDraft({ ...draft, range }))}
+            </label>
+          </div>
           <div className="history-filter-actions">
             <button className="primary" type="submit">
               应用筛选
@@ -275,6 +290,45 @@ export default function RunHistory({
               取消
             </button>
           </div>
+          <details
+            className="history-extra-filters"
+            open={!!draft.flowId || draft.limit !== 6 || undefined}
+          >
+            <summary>更多条件 · 流程与每页条数</summary>
+            <div>
+              {' '}
+              <label>
+                流程
+                <select
+                  aria-label="运行流程筛选"
+                  disabled={!!scope}
+                  value={draft.flowId}
+                  onChange={(e) => setDraft({ ...draft, flowId: e.target.value })}
+                >
+                  <option value="">所有流程</option>
+                  {flows.map((flow) => (
+                    <option key={flow.id} value={flow.id}>
+                      {flow.flow.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                每页
+                <select
+                  aria-label="每页运行条数"
+                  value={draft.limit}
+                  onChange={(e) => setDraft({ ...draft, limit: Number(e.target.value) })}
+                >
+                  {[6, 25, 50, 100].map((n) => (
+                    <option key={n} value={n}>
+                      {n} 条
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </details>
         </form>
       ) : (
         <>
@@ -286,8 +340,12 @@ export default function RunHistory({
               setRange(days);
               filter({ ...query, ...historyTimeRange(days === 'all' ? null : Number(days)) });
             })}
-            <button onClick={editFilters}>
-              {scope ? '筛选当前流程' : query.query || query.flowId ? '已筛选流程' : '所有流程'}
+            <button data-history-filter="flow" onClick={() => editFilters('flow')}>
+              {scope
+                ? '筛选当前流程'
+                : query.query || query.flowId || query.source
+                  ? '已设置筛选'
+                  : '所有流程'}
             </button>
             <span aria-live="polite">
               {data
@@ -297,30 +355,42 @@ export default function RunHistory({
                   : '运行记录暂不可用'}
             </span>
           </div>
-          {error && (
-            <p className="field-error" role="alert">
-              {error}
-              <button onClick={latest}>查看最新</button>
+          {(error || openError) && (
+            <p ref={errorPanel} tabIndex={-1} className="field-error history-error" role="alert">
+              <span>{error || openError?.message}</span>
+              {error ? (
+                <button onClick={() => setRevision((value) => value + 1)}>重试读取</button>
+              ) : (
+                <button
+                  disabled={!!opening}
+                  onClick={() => openError && void inspect(openError.id)}
+                >
+                  重试打开详情
+                </button>
+              )}
             </p>
           )}
+          {query.source && (
+            <p className="history-applied-source">触发来源：{runSourceLabels[query.source]}</p>
+          )}
           <div className="table-wrap" aria-busy={loading}>
-            <table>
+            <table aria-label="运行记录">
               <colgroup>
                 <col className="history-flow-col" />
-                <col />
-                <col />
+                <col className="history-state-col" />
+                <col className="history-source-col" />
                 <col className="history-time-col" />
-                <col />
+                <col className="history-duration-col" />
                 <col className="history-open-col" />
               </colgroup>
               <thead>
                 <tr>
-                  <th>流程 / 运行编号</th>
-                  <th>状态</th>
-                  <th>触发方式</th>
-                  <th>开始时间</th>
-                  <th>耗时</th>
-                  <th>
+                  <th scope="col">流程 / 运行编号</th>
+                  <th scope="col">状态</th>
+                  <th scope="col">触发方式</th>
+                  <th scope="col">开始时间</th>
+                  <th scope="col">耗时</th>
+                  <th scope="col">
                     <span className="sr-only">操作</span>
                   </th>
                 </tr>
@@ -329,7 +399,7 @@ export default function RunHistory({
                 {data?.runs.map((r) => {
                   const elapsed = data.elapsed[r.id];
                   return (
-                    <tr key={r.id}>
+                    <tr key={r.id} aria-label={`${r.name} · ${r.id}`}>
                       <td>
                         <b>{r.name}</b>
                         <small title={r.id}>{r.id.slice(0, 8)}</small>
@@ -369,7 +439,7 @@ export default function RunHistory({
                       <td>
                         <button
                           className="history-open"
-                          aria-label="查看"
+                          aria-label={`查看 ${r.name} · ${r.id}`}
                           title={`查看 ${r.name} · ${r.id}`}
                           data-run-id={r.id}
                           disabled={!!opening}
@@ -383,6 +453,11 @@ export default function RunHistory({
                 })}
               </tbody>
             </table>
+            {!data && (
+              <p className="history-empty" role="status">
+                {loading ? '正在读取运行记录…' : '运行记录暂不可用，请重试读取。'}
+              </p>
+            )}
             {data && !data.runs.length && (
               <p className="history-empty">
                 {data.totalCount
@@ -395,7 +470,9 @@ export default function RunHistory({
             <span aria-live="polite">
               {data
                 ? `显示 ${data.runs.length ? (cursors.length - 1) * (query.limit ?? 6) + 1 : 0}–${data.runs.length ? (cursors.length - 1) * (query.limit ?? 6) + data.runs.length : 0} 条，共 ${data.matchedCount} 条`
-                : '读取中…'}{' '}
+                : loading
+                  ? '读取中…'
+                  : '读取失败'}{' '}
               · <span>第 {cursors.length} 页</span>
             </span>
             <div className="history-page-actions">
@@ -419,7 +496,9 @@ export default function RunHistory({
               >
                 下一页
               </button>
-              <button onClick={editFilters}>触发来源筛选</button>
+              <button data-history-filter="source" onClick={() => editFilters('source')}>
+                触发来源筛选
+              </button>
               <button className="history-refresh" onClick={latest}>
                 查看最新
               </button>

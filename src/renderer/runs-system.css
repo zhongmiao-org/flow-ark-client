@@ -74,7 +74,8 @@
   font-weight: 400;
 }
 .run-history td {
-  height: 84px;
+  height: 80px;
+  vertical-align: top;
   padding: 16px;
   color: var(--fa-text-secondary);
   border: 0;
@@ -100,11 +101,20 @@
 .history-flow-col {
   width: 30%;
 }
+.history-state-col {
+  width: 13.72%;
+}
+.history-source-col {
+  width: 13.02%;
+}
 .history-time-col {
-  width: 19%;
+  width: 17.01%;
+}
+.history-duration-col {
+  width: 8.07%;
 }
 .history-open-col {
-  width: 7%;
+  width: 18.18%;
 }
 .run-history .history-open {
   width: 40px;
@@ -140,39 +150,68 @@
   background: transparent;
   color: var(--fa-text-secondary);
 }
+.run-history h1:focus {
+  outline: none;
+}
 .history-filter-panel {
   min-height: 620px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 20px;
   padding: 28px;
   border: 1px solid var(--fa-border-default);
   border-radius: 12px;
   background: var(--fa-bg-surface);
 }
-.history-filter-panel > label {
+.history-primary-filters {
+  display: grid;
+  gap: 30px;
+  max-width: 720px;
+}
+.history-filter-panel label {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  width: min(720px, 100%);
-  color: var(--fa-text-secondary);
-  font-size: 12px;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  color: var(--fa-text-primary);
+  font-size: 13px;
+  line-height: 20px;
 }
 .history-filter-panel input,
 .history-filter-panel select {
   width: 100%;
   height: 40px;
   margin: 0;
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 22px;
 }
 .history-filter-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 4px;
+  gap: 12px;
+  margin-top: 30px;
 }
 .history-filter-actions button {
-  min-width: 150px;
+  min-width: 180px;
+}
+.history-extra-filters {
+  margin-top: 24px;
+  max-width: 720px;
+  font-size: 13px;
+  color: var(--fa-text-secondary);
+}
+.history-extra-filters summary {
+  cursor: pointer;
+}
+.history-extra-filters > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 180px);
+  gap: 20px;
+  margin-top: 20px;
+}
+.history-applied-source {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  margin: 0 0 12px;
 }
 .run-detail {
   display: flex;
@@ -420,4 +459,17 @@
   .app .runs-page {
     padding: 24px;
   }
+}
+
+.run-history.is-filtering .runs-heading {
+  margin-bottom: 24px;
+}
+.history-error {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.history-error > span {
+  overflow-wrap: anywhere;
 }
