@@ -460,7 +460,15 @@ export default function TaskRunPage({
               <dl className="task-run-evidence-summary">
                 <div>
                   <dt className="sr-only">运行标识</dt>
-                  <dd className="task-run-path">{run.id}</dd>
+                  <dd className="task-run-path">
+                    {run.id}
+                    {run.rerun && (
+                      <>
+                        {' · '}
+                        <TaskRunSource key={run.id} run={run} open={open} />
+                      </>
+                    )}
+                  </dd>
                 </div>
                 <div>
                   <dt className="sr-only">执行步骤</dt>
@@ -534,14 +542,7 @@ export default function TaskRunPage({
                   {versionLabel}
                   {run.task && ` · 任务修订 ${run.task.revision}`}
                 </p>
-                {run.rerun && (
-                  <>
-                    <p>
-                      <TaskRunSource key={run.id} run={run} open={open} />
-                    </p>
-                    <p>本次从第一步创建独立运行，原运行的结果与产物保持保留。</p>
-                  </>
-                )}
+                {run.rerun && <p>本次从第一步创建独立运行，原运行的结果与产物保持保留。</p>}
                 <p>{model.effectNote}</p>
                 {target}
               </details>
