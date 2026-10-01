@@ -79,11 +79,15 @@ function AnswerForm({
   busy,
   submit,
   drafts,
+  cancel,
+  blocked,
 }: {
   item: Attention;
   state: string;
   busy: boolean;
   drafts: Map<string, AnswerDraft>;
+  cancel?: () => void;
+  blocked?: boolean;
   submit: (value: unknown) => Promise<void>;
 }) {
   const schema = item.detail?.schema ?? { type: 'boolean' };
@@ -110,7 +114,7 @@ function AnswerForm({
   const [reviewed, setReviewed] = useState(false);
   const [error, setError] = useState('');
   const form = useRef<HTMLFormElement>(null);
-  const enabled = state === 'waiting' && !busy;
+  const enabled = state === 'waiting' && !busy && !blocked;
   return (
     <form
       ref={form}
@@ -134,6 +138,7 @@ function AnswerForm({
           }
         }
         setError('');
+        setReviewed(false);
         void submit(answer);
       }}
     >
@@ -183,8 +188,26 @@ function AnswerForm({
         <button className="primary" type="submit" disabled={!enabled || !reviewed}>
           {busy ? '正在提交…' : simpleBoolean ? '确认本次动作' : '提交本次结果'}
         </button>
+        {cancel && (
+          <button
+            type="button"
+            className="danger"
+            data-attention-cancel
+            disabled={!enabled}
+            onClick={cancel}
+          >
+            取消本次运行
+          </button>
+        )}
         {simpleBoolean && (
-          <button type="button" disabled={!enabled} onClick={() => void submit(false)}>
+          <button
+            type="button"
+            disabled={!enabled}
+            onClick={() => {
+              setReviewed(false);
+              void submit(false);
+            }}
+          >
             拒绝本次请求
           </button>
         )}
@@ -215,6 +238,9 @@ export default function AttentionWorkspace({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [acknowledged, setAcknowledged] = useState<Set<string>>(() => new Set());
+  const errorPanel = useRef<HTMLDivElement>(null);
+  const stopPanel = useRef<HTMLDivElement>(null);
   const [now, setNow] = useState(Date.now());
   const [cancelRun, setCancelRun] = useState(false);
   const drafts = useRef(new Map<string, AnswerDraft>());
@@ -224,8 +250,11 @@ export default function AttentionWorkspace({
   const listFocus = useRef('');
   const runReturn = useRef<{ focus: HTMLElement; scroll: number } | null>(null);
   const selected = data.attention.find((item) => item.id === selectedId);
-  const state = selected && human(selected) ? requestState(selected, data, now) : undefined;
+  const currentState = (item: Attention) =>
+    acknowledged.has(item.id) ? 'answered' : requestState(item, data, now);
+  const state = selected && human(selected) ? currentState(selected) : undefined;
   const completed = (item: Attention) =>
+    acknowledged.has(item.id) ||
     item.detail?.answered ||
     (item.read && (!human(item) || requestState(item, data, now) === 'expired'));
   const pendingCount = data.attention.filter((item) => !completed(item)).length;
@@ -243,8 +272,18 @@ export default function AttentionWorkspace({
         .toLocaleLowerCase()
         .includes(query.trim().toLocaleLowerCase()),
   );
-  const title = selected ? (human(selected) ? '确认本次请求' : '提醒详情') : '待办与提醒';
+  const title = selected
+    ? human(selected)
+      ? state === 'answered'
+        ? '人工事项已处理'
+        : state === 'expired'
+          ? '人工请求已失效'
+          : '确认本次请求'
+      : '提醒详情'
+    : '待办与提醒';
+  const sourceRun = selected ? data.runs.find((run) => run.id === sourceId(selected)) : undefined;
   const back = () => {
+    if (locked.current) return;
     setSelectedId('');
     setError('');
     setNotice('');
@@ -275,22 +314,31 @@ export default function AttentionWorkspace({
     target?.focus({ preventScroll: true });
     runReturn.current = null;
   }, [selectedId, active]);
-  const act = async (operation: () => Promise<void>, message = '') => {
+  useEffect(() => {
+    if (active && error) errorPanel.current?.focus();
+  }, [active, error]);
+  useEffect(() => {
+    if (cancelRun) stopPanel.current?.focus();
+  }, [cancelRun]);
+  const act = async (operation: () => Promise<void>, message = '', acknowledgedMessage = '') => {
     if (locked.current) return;
     locked.current = true;
     setBusy(true);
     setError('');
     setNotice('');
+    let accepted = false;
     try {
       await operation();
+      accepted = true;
       await refresh();
       setNotice(message);
     } catch (reason) {
       setError(
-        (reason instanceof Error ? reason.message : '操作未完成，请重试').replace(
-          /^Error invoking remote method 'flowark:request': (?:Error: )?/,
-          '',
-        ),
+        (accepted && acknowledgedMessage ? acknowledgedMessage + '：' : '') +
+          (reason instanceof Error ? reason.message : '操作未完成，请重试').replace(
+            /^Error invoking remote method 'flowark:request': (?:Error: )?/,
+            '',
+          ),
       );
     } finally {
       locked.current = false;
@@ -317,7 +365,7 @@ export default function AttentionWorkspace({
   };
   const tone = (item: Attention) => {
     if (human(item)) {
-      const state = requestState(item, data, now);
+      const state = currentState(item);
       return state === 'answered' ? 'success' : state === 'expired' ? 'error' : 'warning';
     }
     return item.kind === 'unknown-result'
@@ -333,7 +381,7 @@ export default function AttentionWorkspace({
         answered: '已回应',
         expired: '请求已失效',
         unavailable: '当前不可确认',
-      }[requestState(item, data, now)];
+      }[currentState(item)];
     return item.kind === 'unknown-result'
       ? '结果待核对'
       : item.read
@@ -351,19 +399,18 @@ export default function AttentionWorkspace({
           </h1>
           <p>
             {selected
-              ? `创建于 ${date(selected.time)}${sourceId(selected) ? ' · ' + sourceId(selected) : ''}`
+              ? `${sourceRun ? '来自 ' + sourceRun.name + ' · ' : ''}创建于 ${date(selected.time)}`
               : '把需要你的判断，放在清楚的位置。'}
           </p>
         </div>
-        {selected && (
-          <button disabled={busy} onClick={back}>
-            返回待办列表
-          </button>
-        )}
       </header>
       {error && (
-        <div className="attention-banner is-error" role="alert">
-          {error}
+        <div ref={errorPanel} tabIndex={-1} className="attention-banner is-error" role="alert">
+          <strong>请核对当前处理状态</strong>
+          <p>{error}</p>
+          <button disabled={busy} onClick={() => void act(async () => {}, '已刷新当前处理状态')}>
+            刷新状态
+          </button>
         </div>
       )}
       {notice && (
@@ -508,23 +555,35 @@ export default function AttentionWorkspace({
         </>
       ) : (
         <div className="attention-detail-layout">
-          <article className="attention-detail-card">
+          <article
+            className={`attention-detail-card${human(selected) ? ' attention-request-card' : ''}`}
+          >
             <span className={`attention-status is-${tone(selected)}`}>{label(selected)}</span>
             <h2>{selected.title}</h2>
             {state === 'answered' ? (
               <div className="attention-banner is-success">
-                本次请求已回应。是否继续及执行结果以来源运行为准。
+                <strong>本次请求已回应</strong>
+                <p>不会重复提交。是否继续及执行结果以来源运行为准。</p>
               </div>
             ) : state === 'expired' ? (
               <div className="attention-banner is-error">
-                请求已超时或来源运行已结束，旧确认不能继续执行。
+                <strong>人工请求已失效</strong>
+                <p>请求已超时或来源运行已结束，旧确认不能继续执行。可查看来源运行和保留的证据。</p>
               </div>
             ) : state === 'unavailable' ? (
               <div className="attention-banner is-warning">
-                当前无法确认该请求仍在等待处理，请查看来源运行。旧按钮不会继续执行。
+                <strong>当前无法确认请求状态</strong>
+                <p>请查看来源运行，或刷新状态后重新核对。旧按钮不会继续执行。</p>
               </div>
             ) : null}
-            <ReadableDetails item={selected} />
+            {human(selected) ? (
+              <div className="attention-request-content">
+                <span>本次请求内容</span>
+                <div>{description(selected)}</div>
+              </div>
+            ) : (
+              <ReadableDetails item={selected} />
+            )}
             {human(selected) && state !== 'answered' && (
               <AnswerForm
                 drafts={drafts.current}
@@ -532,10 +591,19 @@ export default function AttentionWorkspace({
                 item={selected}
                 state={state!}
                 busy={busy}
+                blocked={cancelRun}
+                cancel={
+                  state === 'waiting' && sourceId(selected) ? () => setCancelRun(true) : undefined
+                }
                 submit={(value) =>
-                  act(async () => {
-                    await api('template.answer', { id: selected.id, value });
-                  }, '已回应本次请求，正在更新来源运行。')
+                  act(
+                    async () => {
+                      await api('template.answer', { id: selected.id, value });
+                      setAcknowledged((previous) => new Set(previous).add(selected.id));
+                    },
+                    '已回应本次请求，正在更新来源运行。',
+                    '请求已回应，但列表更新失败；请刷新状态，不要重复提交',
+                  )
                 }
               />
             )}
@@ -581,6 +649,47 @@ export default function AttentionWorkspace({
                 归档失效提醒
               </button>
             )}
+            {human(selected) && state === 'waiting' && sourceId(selected) && cancelRun && (
+              <div
+                ref={stopPanel}
+                tabIndex={-1}
+                className="attention-banner is-warning attention-stop-confirm"
+              >
+                <strong>停止这个运行？</strong>
+                <p>已产生的结果会保留；尚未执行的步骤不会继续。</p>
+                <div className="attention-actions">
+                  <button
+                    className="danger"
+                    disabled={busy}
+                    onClick={() =>
+                      void act(async () => {
+                        await api('run.control', { id: sourceId(selected), action: 'cancel' });
+                        setCancelRun(false);
+                      }, '已请求停止，请查看运行最终状态。')
+                    }
+                  >
+                    确认停止
+                  </button>
+                  <button
+                    disabled={busy}
+                    onClick={() => {
+                      setCancelRun(false);
+                      requestAnimationFrame(() =>
+                        document.querySelector<HTMLElement>('[data-attention-cancel]')?.focus(),
+                      );
+                    }}
+                  >
+                    继续查看
+                  </button>
+                </div>
+              </div>
+            )}
+            {human(selected) && (
+              <details className="attention-request-technical">
+                <summary>查看请求详情与格式</summary>
+                <ReadableDetails item={selected} />
+              </details>
+            )}
           </article>
           <aside className="attention-detail-card attention-context">
             <h2>{human(selected) ? '仅对本次请求生效' : '查看来源与证据'}</h2>
@@ -592,6 +701,14 @@ export default function AttentionWorkspace({
             <p className="attention-muted">
               超时、取消或宿主退出后，人工请求失效。结果未知的操作不会自动重放。
             </p>
+            {sourceId(selected) && (
+              <dl className="attention-source-facts">
+                <div>
+                  <dt>来源运行</dt>
+                  <dd>{sourceId(selected)}</dd>
+                </div>
+              </dl>
+            )}
             {sourceId(selected) ? (
               <button
                 disabled={busy}
@@ -618,37 +735,6 @@ export default function AttentionWorkspace({
               查看当前网页
             </button>
             <p className="attention-muted">当前网页可能已切换，请先核对地址与目标。</p>
-            {human(selected) && state === 'waiting' && sourceId(selected) && (
-              <>
-                {!cancelRun ? (
-                  <button className="danger" disabled={busy} onClick={() => setCancelRun(true)}>
-                    取消本次运行
-                  </button>
-                ) : (
-                  <div className="attention-banner is-warning">
-                    <strong>停止这个运行？</strong>
-                    <p>已产生的结果会保留；尚未执行的步骤不会继续。</p>
-                    <div className="attention-actions">
-                      <button
-                        className="danger"
-                        disabled={busy}
-                        onClick={() =>
-                          void act(async () => {
-                            await api('run.control', { id: sourceId(selected), action: 'cancel' });
-                            setCancelRun(false);
-                          }, '已请求停止，请查看运行最终状态。')
-                        }
-                      >
-                        确认停止
-                      </button>
-                      <button disabled={busy} onClick={() => setCancelRun(false)}>
-                        继续查看
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
           </aside>
         </div>
       )}

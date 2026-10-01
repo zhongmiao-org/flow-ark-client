@@ -282,14 +282,21 @@ export default function App() {
     inputGroup.current = undefined;
     dispatchDraft({ type: 'redo' });
   };
+  const dataRefreshError = useRef('');
   const reloadSettingsData = useCallback(async () => {
     setData(await api('bootstrap'));
     setLoaded(true);
+    if (dataRefreshError.current) {
+      const previousError = dataRefreshError.current;
+      dataRefreshError.current = '';
+      setError((current) => (current === previousError ? '' : current));
+    }
   }, []);
   const refresh = useCallback(async () => {
     try {
       await reloadSettingsData();
     } catch (e: any) {
+      dataRefreshError.current = e.message;
       setError(e.message);
     }
   }, [reloadSettingsData]);
@@ -2041,7 +2048,7 @@ export default function App() {
           <AttentionWorkspace
             data={data}
             active={section === 'inbox'}
-            refresh={refresh}
+            refresh={reloadSettingsData}
             navigation={setAttentionNavigation}
             showBrowser={() => setBrowserOpen(true)}
             openRun={async (id) => {

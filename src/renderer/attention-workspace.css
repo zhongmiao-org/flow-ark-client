@@ -357,3 +357,112 @@
 .attention-tabs button[aria-selected='true'] {
   background: transparent;
 }
+
+/* 2:2911: request content and schema fields stay in the 728/400 split. */
+.attention-detail-layout > .attention-detail-card {
+  min-height: 676px;
+}
+.attention-detail-layout > .attention-context {
+  padding: 24px;
+  gap: 16px;
+}
+.attention-context p,
+.attention-request-content > div {
+  font-size: 14px;
+  line-height: 22px;
+}
+.attention-request-content {
+  margin: 20px 0;
+}
+.attention-request-content > span,
+.attention-source-facts dt {
+  display: block;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--fa-text-secondary);
+  margin-bottom: 8px;
+}
+.attention-request-content > div {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 12px;
+  min-height: 108px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-subtle);
+}
+.attention-request-card .attention-answer {
+  border: 0;
+  margin-top: 20px;
+  padding: 0;
+}
+.attention-request-card .attention-fields {
+  border: 0;
+  padding: 0;
+  margin-bottom: 28px;
+}
+.attention-request-card .attention-fields > legend {
+  padding: 0;
+  margin-bottom: 12px;
+}
+.attention-request-card .attention-fields input:not([type='checkbox']),
+.attention-request-card .attention-fields select {
+  min-height: 40px;
+  margin: 0;
+}
+.attention-request-card .attention-answer .attention-actions {
+  margin-top: 20px;
+}
+.attention-request-card .attention-actions button {
+  min-width: 180px;
+}
+.attention-stop-confirm {
+  margin-top: 20px;
+}
+.attention-request-technical {
+  margin-top: 28px;
+  border-top: 1px solid var(--fa-border-default);
+  padding-top: 16px;
+}
+.attention-request-technical > summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+}
+.attention-source-facts {
+  margin: 4px 0;
+}
+.attention-source-facts dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.attention-banner > strong {
+  font-size: 16px;
+  line-height: 24px;
+}
+.attention-banner > p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 22px;
+}
+.attention-banner > button {
+  margin-top: 12px;
+}
+@container (max-width: 850px) {
+  .attention-detail-layout > .attention-detail-card {
+    min-height: 0;
+  }
+}
+
+.attention-request-card .attention-fields > .template-field {
+  margin: 0;
+}
+.attention-request-card .attention-fields input:not([type='checkbox']),
+.attention-request-card .attention-fields select {
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 22px;
+  height: 40px;
+}
