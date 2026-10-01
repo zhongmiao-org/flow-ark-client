@@ -4,7 +4,10 @@ import type { LocalCredentialState } from '../shared/local-credentials';
 import './local-credentials.css';
 const api = (method: string, args: unknown = {}) => window.flowark.request(method, args);
 const failure = (reason: unknown) =>
-  reason instanceof Error ? reason.message : '操作未完成，请刷新列表核对。';
+  (reason instanceof Error ? reason.message : '操作未完成，请刷新列表核对。').replace(
+    /^Error invoking remote method 'flowark:request': (?:Error: )?/,
+    '',
+  );
 type Editor = { kind: 'edit' | 'remove'; id: string; entry?: LocalCredentialState };
 
 function CredentialDialog({
@@ -19,7 +22,7 @@ function CredentialDialog({
   const id = useId();
   const dialog = useRef<HTMLDialogElement>(null);
   const nameInput = useRef<HTMLInputElement>(null);
-  const errorMessage = useRef<HTMLParagraphElement>(null);
+  const errorMessage = useRef<HTMLDivElement>(null);
   const stayButton = useRef<HTMLButtonElement>(null);
   const [name, setName] = useState(editor.entry?.name ?? '');
   const [value, setValue] = useState('');
@@ -138,9 +141,16 @@ function CredentialDialog({
           </p>
         </header>
         {error && (
-          <p className="field-error" role="alert" ref={errorMessage} tabIndex={-1}>
-            {error}
-          </p>
+          <div className="local-resource-error" role="alert" ref={errorMessage} tabIndex={-1}>
+            <span className="badge state-FAILED">{removing ? '移除未完成' : '保存未完成'}</span>
+            <h3>
+              {error.startsWith('系统安全存储不可用，已阻止保存；不会明文降级')
+                ? '凭据保护不可用'
+                : '凭据操作未完成'}
+            </h3>
+            <p>{error}</p>
+            {!removing && <p>本次输入仍保留，可继续修改；返回时可选择放弃输入。</p>}
+          </div>
         )}
         {leaving ? (
           <div className="local-credential-actions">
@@ -221,7 +231,7 @@ function CredentialDialog({
             {blocked && !removing && <p role="status">凭据正在被运行使用，请等待结束后再编辑。</p>}
             <footer className="local-credential-actions">
               <button type="button" disabled={busy} onClick={cancel}>
-                取消
+                {error ? '返回凭据设置' : '取消'}
               </button>
               <button
                 className={removing ? 'danger' : 'primary'}
@@ -255,6 +265,10 @@ export default function LocalCredentialsPanel({
   const [entries, setEntries] = useState<LocalCredentialState[]>();
   const [query, setQuery] = useState('');
   const [error, setError] = useState('');
+  const [listError, setListError] = useState('');
+  const listIssue = useRef<HTMLDivElement>(null);
+  const receipt = useRef<HTMLParagraphElement>(null);
+  const awaitingReceipt = useRef(false);
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
   const [editor, setEditor] = useState<Editor>();
@@ -266,13 +280,14 @@ export default function LocalCredentialsPanel({
     search = useRef<HTMLInputElement>(null);
   const read = async () => {
     const token = ++generation.current;
+    if (listIssue.current?.contains(document.activeElement)) awaitingReceipt.current = true;
     setLoading(true);
-    setError('');
+    setListError('');
     try {
       const result: LocalCredentialState[] = await api('credential.local.list');
       if (alive.current && token === generation.current) setEntries(result);
     } catch (reason) {
-      if (alive.current && token === generation.current) setError(failure(reason));
+      if (alive.current && token === generation.current) setListError(failure(reason));
     } finally {
       if (alive.current && token === generation.current) setLoading(false);
     }
@@ -291,7 +306,14 @@ export default function LocalCredentialsPanel({
       createButton.current?.focus({ preventScroll: true });
     }
   }, [entries]);
+  useEffect(() => {
+    if (loading) return;
+    if (listError) listIssue.current?.focus();
+    else if (awaitingReceipt.current) (receipt.current ?? createButton.current)?.focus();
+    awaitingReceipt.current = false;
+  }, [loading, listError]);
   const begin = (next: Editor) => {
+    if (loading || listError) return;
     setNotice('');
     setError('');
     setEditor(next);
@@ -320,12 +342,13 @@ export default function LocalCredentialsPanel({
   };
   return (
     <div className={`local-credentials-layout${compact ? ' is-compact' : ''}`}>
-      <section className="local-settings-card" aria-label="通用本机凭据">
+      <section className="local-settings-card" aria-label="通用本机凭据" aria-busy={loading}>
         <div className="local-settings-row">
           <h2>{compact ? '凭据' : '通用本机凭据'}</h2>
           <button
             ref={createButton}
             className="primary"
+            disabled={loading || !!listError}
             onClick={() => begin({ kind: 'edit', id: 'local-' + crypto.randomUUID() })}
           >
             新增凭据
@@ -353,12 +376,32 @@ export default function LocalCredentialsPanel({
             </button>
           </div>
         </details>
+        {loading && <p role="status">正在读取凭据清单…</p>}
+        {listError && (
+          <div className="local-resource-error" role="alert" ref={listIssue} tabIndex={-1}>
+            <span className="badge state-FAILED">读取未完成</span>
+            <h3>{entries ? '凭据列表尚未更新' : '暂时无法读取凭据'}</h3>
+            <p>{listError}</p>
+            <p>
+              {entries
+                ? '下方保留上次读取的列表，请重新读取后再新增、编辑或移除。'
+                : '尚未取得凭据清单，不能据此判断是否已保存凭据。'}
+            </p>
+            <button disabled={loading} onClick={() => void read()}>
+              重新读取凭据
+            </button>
+          </div>
+        )}
         {error && (
           <p role="alert" className="field-error">
             {error}
           </p>
         )}
-        {notice && <p role="status">{notice}</p>}
+        {notice && (
+          <p role="status" ref={receipt} tabIndex={-1}>
+            {notice}
+          </p>
+        )}
         {shown?.map((entry) => (
           <article className="local-credential-card" key={entry.id}>
             {compact ? (
@@ -380,8 +423,16 @@ export default function LocalCredentialsPanel({
             <p className="local-credential-mask">••••••••</p>
             {!compact && <code>{entry.id}</code>}
             <div className="local-credential-actions">
-              <button onClick={() => begin({ kind: 'edit', id: entry.id, entry })}>编辑凭据</button>
-              <button onClick={() => begin({ kind: 'remove', id: entry.id, entry })}>
+              <button
+                disabled={loading || !!listError}
+                onClick={() => begin({ kind: 'edit', id: entry.id, entry })}
+              >
+                编辑凭据
+              </button>
+              <button
+                disabled={loading || !!listError}
+                onClick={() => begin({ kind: 'remove', id: entry.id, entry })}
+              >
                 移除凭据
               </button>
             </div>
@@ -404,7 +455,7 @@ export default function LocalCredentialsPanel({
             </details>
           </article>
         ))}
-        {entries && !shown?.length && (
+        {entries && !listError && !shown?.length && (
           <div className="local-settings-empty">
             {query ? (
               <>
@@ -457,6 +508,7 @@ export default function LocalCredentialsPanel({
             }
             setEditor(undefined);
             setNotice(message);
+            awaitingReceipt.current = true;
             void read();
             void refresh().catch(() => {
               if (alive.current) setError('凭据操作已完成，但设置摘要未刷新，请重新打开设置核对。');

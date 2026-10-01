@@ -27,6 +27,7 @@ export default function StorageFaultNotice({
   const id = useId();
   const toggle = useRef<HTMLButtonElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const outcome = useRef<HTMLParagraphElement>(null);
   const currentContext = useRef({ value: context, revision: 0 });
   if (currentContext.current.value !== context)
     currentContext.current = { value: context, revision: currentContext.current.revision + 1 };
@@ -44,6 +45,9 @@ export default function StorageFaultNotice({
       live.current = false;
     };
   }, []);
+  useEffect(() => {
+    if (!busy && expanded && (error || notice)) outcome.current?.focus();
+  }, [busy, expanded, error, notice]);
   const execution = data.execution;
   const owner = execution?.active;
   const records = [
@@ -194,11 +198,15 @@ export default function StorageFaultNotice({
             </section>
           </div>
           {error && (
-            <p className="field-error" role="alert">
+            <p className="field-error" role="alert" ref={outcome} tabIndex={-1}>
               {error}
             </p>
           )}
-          {notice && <p role="status">{notice}</p>}
+          {notice && (
+            <p role="status" ref={outcome} tabIndex={-1}>
+              {notice}
+            </p>
+          )}
           <button
             onClick={() => {
               setExpanded(false);
