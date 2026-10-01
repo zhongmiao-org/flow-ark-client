@@ -2003,7 +2003,7 @@ export default function App() {
                   cancelRerun={returnRunSubview}
                   rerunBusy={setRunRerunBusy}
                   showBrowser={() => setBrowserOpen(true)}
-                  control={(id, a) => action(() => api('run.control', { id, action: a }))}
+                  control={(id, a) => api('run.control', { id, action: a })}
                   reveal={(id) => api('artifact.reveal', { id })}
                 />
               )}

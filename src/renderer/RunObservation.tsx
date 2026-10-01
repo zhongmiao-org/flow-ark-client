@@ -6,7 +6,7 @@ import { kinds } from './node-kinds';
 import { flatten } from './flow-editing';
 import { browserActions } from './browser-actions';
 
-export function RunObservation({ detail }: { detail: any }) {
+export function RunObservation({ detail, compact = false }: { detail: any; compact?: boolean }) {
   const [, updateClock] = useState(0);
   useEffect(() => {
     const timer = setInterval(() => updateClock((tick) => tick + 1), 1000);
@@ -35,44 +35,51 @@ export function RunObservation({ detail }: { detail: any }) {
     unknown: '运行耗时',
   }[view.elapsed.kind];
   return (
-    <section className="run-observation panel" aria-label="运行概览">
+    <section
+      className={`run-observation panel${compact ? ' is-compact' : ''}`}
+      aria-label="运行概览"
+    >
       <div className="run-observation-step">
-        <span className="run-observation-label">
-          <ListChecks size={15} />
-          {stepLabel}
-        </span>
+        {(!compact || view.step.kind !== 'current') && (
+          <span className="run-observation-label">
+            <ListChecks size={15} />
+            {stepLabel}
+          </span>
+        )}
         <strong data-testid="run-current-step">
           {view.step.name === view.step.nodeId && view.step.type
             ? (defaultName ?? view.step.name)
             : (view.step.name ?? view.step.label)}
         </strong>
-        {view.step.instance && <code>{view.step.instance}</code>}
+        {view.step.instance && !compact && <code>{view.step.instance}</code>}
       </div>
       <div className="run-observation-metrics">
-        <div>
-          <span className="run-observation-label">
-            <Clock size={14} />
-            {elapsedLabel}
-          </span>
-          <strong
-            data-testid="run-elapsed"
-            data-duration-ms={view.elapsed.milliseconds ?? ''}
-            data-elapsed-kind={view.elapsed.kind}
-          >
-            {view.elapsed.milliseconds === null
-              ? '待核对'
-              : formatRunDuration(view.elapsed.milliseconds)}
-          </strong>
-          <small>{view.elapsed.note}</small>
-        </div>
+        {!compact && (
+          <div>
+            <span className="run-observation-label">
+              <Clock size={14} />
+              {elapsedLabel}
+            </span>
+            <strong
+              data-testid="run-elapsed"
+              data-duration-ms={view.elapsed.milliseconds ?? ''}
+              data-elapsed-kind={view.elapsed.kind}
+            >
+              {view.elapsed.milliseconds === null
+                ? '待核对'
+                : formatRunDuration(view.elapsed.milliseconds)}
+            </strong>
+            <small>{view.elapsed.note}</small>
+          </div>
+        )}
         <div>
           <span className="run-observation-label">脚本报告的进度</span>
           <strong data-testid="run-progress">{view.progress.label}</strong>
           <small>仅显示该步骤报告的数量</small>
         </div>
       </div>
-      {view.statusNote && <p className="run-observation-note">{view.statusNote}</p>}
-      <RunStepDetails detail={detail} step={view.step} />
+      {view.statusNote && !compact && <p className="run-observation-note">{view.statusNote}</p>}
+      <RunStepDetails detail={detail} step={view.step} compact={compact} />
     </section>
   );
 }

@@ -44,7 +44,7 @@ export default function RunDetail({
 }: {
   detail: any;
   fault?: string;
-  control: (id: string, action: string) => void;
+  control: (id: string, action: string) => Promise<boolean>;
   reveal: (id: string) => Promise<unknown>;
   reload: () => Promise<void>;
   open: (detail: any) => void;
@@ -54,6 +54,16 @@ export default function RunDetail({
   cancelRerun: () => void;
   rerunBusy: (busy: boolean) => void;
 }) {
+  const [controlError, setControlError] = useState('');
+  const [controlBusy, setControlBusy] = useState(false);
+  const [command, setCommand] = useState<{
+    action: string;
+    state: string;
+    sequence: number;
+    accepted: boolean;
+  } | null>(null);
+  const sending = useRef(false);
+  const controlFeedback = useRef<HTMLDivElement>(null);
   const [rerunOpened, setRerunOpened] = useState(tab === 'rerun');
   const previousTab = useRef(tab);
   const rerunHeading = useRef<HTMLHeadingElement>(null);
@@ -81,6 +91,68 @@ export default function RunDetail({
   const timeline = runTimeline(observed);
   const results = d.events.filter((event: Event) => typeof event.data?.outputPreview === 'string');
   const pause = [...d.events].reverse().find((event: Event) => event.type === 'debug-pause');
+  useEffect(() => {
+    if (!command?.accepted) return;
+    const progressed = d.events.some(
+      (event: Event) =>
+        event.sequence > command.sequence &&
+        (event.type === 'debug-pause' || event.type === 'node-start'),
+    );
+    if (
+      terminal ||
+      view.closing ||
+      (command.state !== 'QUEUED' && view.activity !== 'active') ||
+      r.state !== command.state ||
+      (command.action !== 'pause' && progressed)
+    )
+      setCommand(null);
+  }, [command, d.events, r.state, terminal, view.closing, view.activity]);
+  useEffect(() => {
+    if (controlError) controlFeedback.current?.focus();
+  }, [controlError]);
+  const sendControl = async (action: string) => {
+    if (sending.current || (command && action !== 'cancel')) return;
+    sending.current = true;
+    setControlBusy(true);
+    setControlError('');
+    const request = {
+      action,
+      state: r.state,
+      sequence: d.events.reduce(
+        (latest: number, event: Event) => Math.max(latest, event.sequence),
+        0,
+      ),
+      accepted: false,
+    };
+    setCommand(request);
+    let accepted = false;
+    try {
+      accepted = await control(r.id, action);
+      setCommand(accepted ? { ...request, accepted: true } : null);
+      await reload();
+      if (!accepted) setControlError('本次控制未执行，运行可能已经结束，请核对最新状态。');
+    } catch (error) {
+      if (!accepted) setCommand(null);
+      setControlError(
+        (accepted ? '控制请求已接收，但状态读取失败：' : '控制请求未确认，请先刷新状态：') +
+          (error instanceof Error ? error.message : '暂时无法读取运行状态'),
+      );
+    } finally {
+      sending.current = false;
+      setControlBusy(false);
+    }
+  };
+  const controlPending = controlBusy || !!command;
+  const controlNote =
+    command &&
+    (command.accepted
+      ? {
+          pause: '暂停请求已接收，将在步骤边界暂停；当前步骤可能仍在执行。',
+          resume: '继续请求已接收，等待执行状态更新。',
+          step: '单步请求已接收，等待新的步骤记录；不会重复发送。',
+          cancel: '取消请求已接收，等待停止与资源回收；尚未确认结束。',
+        }[command.action]
+      : '正在发送控制请求…');
   return (
     <div className="run-detail">
       <div className="run-detail-content" hidden={tab === 'rerun'}>
@@ -98,23 +170,42 @@ export default function RunDetail({
         </div>
         <section className="run-runtime-summary" aria-label="运行状态">
           <div className="run-runtime-line">
-            <span className={'badge state-' + (lastSaved ? 'INTERRUPTED' : r.state)}>
-              {lastSaved ? '最后保存：' : ''}
-              {runStateLabels[r.state]}
+            <span role="status" className={'badge state-' + (lastSaved ? 'INTERRUPTED' : r.state)}>
+              {command?.action === 'pause' && command.accepted && !lastSaved
+                ? '暂停请求中'
+                : `${lastSaved ? '最后保存：' : ''}${runStateLabels[r.state]}`}
             </span>
-            <strong>{view.closing ? '正在收尾' : view.step.label}</strong>
+            <strong>
+              {r.state === 'QUEUED'
+                ? '正在等待执行'
+                : view.closing
+                  ? '正在收尾'
+                  : command?.action === 'pause' && command.accepted
+                    ? '将在步骤边界暂停'
+                    : view.step.label}
+            </strong>
             <div className="run-controls">
               {controllable && !observed.fault && r.state === 'RUNNING' && (
-                <button onClick={() => control(r.id, 'pause')}>请求暂停</button>
+                <button disabled={controlPending} onClick={() => void sendControl('pause')}>
+                  {command?.action === 'pause' ? '暂停请求中' : '请求暂停'}
+                </button>
               )}
               {controllable && !observed.fault && ['PAUSED', 'WAITING_INPUT'].includes(r.state) && (
-                <button onClick={() => control(r.id, 'resume')}>继续</button>
+                <button disabled={controlPending} onClick={() => void sendControl('resume')}>
+                  继续运行
+                </button>
               )}
               {controllable && !observed.fault && r.state === 'PAUSED' && (
-                <button onClick={() => control(r.id, 'step')}>执行下一步</button>
+                <button disabled={controlPending} onClick={() => void sendControl('step')}>
+                  执行下一步
+                </button>
               )}
               {!terminal && (controllable || (r.state === 'QUEUED' && !observed.fault)) && (
-                <button className="danger" onClick={() => control(r.id, 'cancel')}>
+                <button
+                  className="danger"
+                  disabled={controlBusy || (!!command && command.action === 'cancel')}
+                  onClick={() => void sendControl('cancel')}
+                >
                   取消运行
                 </button>
               )}
@@ -127,7 +218,30 @@ export default function RunDetail({
               : formatRunDuration(view.elapsed.milliseconds)}{' '}
             · 使用启动时的固定版本 <code title={r.versionId}>{r.versionId.slice(0, 12)}</code>
           </p>
+          {controlNote && <p role="status">{controlNote}</p>}
           {view.statusNote && <p role="status">{view.statusNote}</p>}
+          {(controlError || controlPending) && (
+            <div
+              ref={controlFeedback}
+              tabIndex={-1}
+              className="run-control-feedback"
+              role={controlError ? 'alert' : undefined}
+            >
+              {controlError && <p>{controlError}</p>}
+              <button
+                disabled={controlBusy}
+                onClick={() =>
+                  void reload().then(
+                    () => setControlError(''),
+                    (error) =>
+                      setControlError(error instanceof Error ? error.message : '状态读取失败'),
+                  )
+                }
+              >
+                刷新状态
+              </button>
+            </div>
+          )}
           {r.error && (
             <p className="field-error" role="alert">
               {r.error}
@@ -205,7 +319,7 @@ export default function RunDetail({
               aria-labelledby="run-tab-current"
               hidden={tab !== 'current'}
             >
-              <RunObservation detail={observed} />
+              <RunObservation detail={observed} compact />
               {r.business && <p className="run-business-note">{r.business}</p>}
               {r.debug && (
                 <p className="note">

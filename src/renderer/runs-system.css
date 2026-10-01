@@ -473,3 +473,47 @@
 .history-error > span {
   overflow-wrap: anywhere;
 }
+
+.run-detail .run-observation.is-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.run-detail .run-observation.is-compact .run-observation-metrics {
+  padding: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+.run-detail .run-observation.is-compact .run-observation-metrics strong {
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 500;
+}
+.run-snapshot-details {
+  border-top: 1px solid var(--fa-border-default);
+  padding-top: 16px;
+}
+.run-snapshot-details > summary {
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--fa-text-secondary);
+}
+.run-snapshot-details[open] > * + * {
+  margin-top: 16px;
+}
+.run-control-feedback {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.run-control-feedback[role='alert'] {
+  color: var(--fa-status-error);
+}
+.run-control-feedback[role='alert'] p {
+  color: inherit;
+}
+.run-control-feedback button {
+  min-width: 120px;
+}

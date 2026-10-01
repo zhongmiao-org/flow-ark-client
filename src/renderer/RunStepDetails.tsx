@@ -109,9 +109,11 @@ function fields(node: Step): [string, string][] {
 export default function RunStepDetails({
   detail,
   step,
+  compact = false,
 }: {
   detail: RunPresentationInput;
   step: RunStepPresentation;
+  compact?: boolean;
 }) {
   const node = flatten(detail.snapshot?.steps ?? []).find((item) => item.id === step.nodeId);
   const events = step.instance
@@ -120,31 +122,33 @@ export default function RunStepDetails({
         .sort((a, b) => a.sequence - b.sequence)
     : [];
   const recent = events.slice(-6);
+  const configuration = node ? (
+    <>
+      <header>
+        <h3>{kinds[node.type]?.label ?? node.type} · 启动时配置</h3>
+        <span>只读快照</span>
+      </header>
+      <p>以下为本次运行保存的配置；变量引用保留原路径，不代表运行时解析值或动作回执。</p>
+      <dl>
+        {fields(node).map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </>
+  ) : (
+    <p>
+      {step.instance
+        ? '未取得此步骤的固定配置，保留已保存的步骤记录。'
+        : '尚未取得明确步骤位置，收到记录后会显示对应配置。'}
+    </p>
+  );
   return (
     <section className="run-step-details" aria-label="当前步骤信息">
-      {node ? (
-        <>
-          <header>
-            <h3>{kinds[node.type]?.label ?? node.type} · 启动时配置</h3>
-            <span>只读快照</span>
-          </header>
-          <p>以下为本次运行保存的配置；变量引用保留原路径，不代表运行时解析值或动作回执。</p>
-          <dl>
-            {fields(node).map(([label, value]) => (
-              <div key={label}>
-                <dt>{label}</dt>
-                <dd>{value}</dd>
-              </div>
-            ))}
-          </dl>
-        </>
-      ) : (
-        <p>
-          {step.instance
-            ? '未取得此步骤的固定配置，保留已保存的步骤记录。'
-            : '尚未取得明确步骤位置，收到记录后会显示对应配置。'}
-        </p>
-      )}
+      {!compact && configuration}
+
       <div className="run-step-events">
         <h3>此步骤的最近记录</h3>
         {recent.length ? (
@@ -173,6 +177,13 @@ export default function RunStepDetails({
           <p>尚无此节点实例的已保存记录。</p>
         )}
       </div>
+      {compact && (
+        <details className="run-snapshot-details">
+          <summary>启动时配置 · 只读快照</summary>
+          {step.instance && <p>节点实例：{step.instance}</p>}
+          {configuration}
+        </details>
+      )}
     </section>
   );
 }
