@@ -74,6 +74,8 @@ export default function TemplateInstancePage({
   const dialog = useRef<HTMLDialogElement>(null),
     focus = useRef<HTMLElement | null>(null);
   const scrolls = useRef(new Map<string, number>());
+  const aiReturn = useRef<{ trigger: HTMLButtonElement; scroll: number } | null>(null);
+  const loadingSource = useRef(false);
   const instance = draft.instance;
   const rawInvalid = (scope: TemplateSaveScope = 'all', inputId?: string) => {
     const containers =
@@ -93,6 +95,7 @@ export default function TemplateInstancePage({
   useLayoutEffect(() => {
     if (!active) return;
     let live = true;
+    loadingSource.current = true;
     setChecking(true);
     void api('template.detail', { id: saved.instance.id })
       .then((fresh: TemplateDetail) => {
@@ -110,12 +113,23 @@ export default function TemplateInstancePage({
         if (live) setSourceError('暂时无法读取原实例或入口。当前输入仍保留，请重试或返回模板库。');
       })
       .finally(() => {
-        if (live) setChecking(false);
+        if (live) {
+          loadingSource.current = false;
+          setChecking(false);
+        }
       });
     return () => {
       live = false;
     };
   }, [active, saved.instance.id, saved.revision, reload]);
+  useLayoutEffect(() => {
+    if (!active || checking || loadingSource.current || !aiReturn.current) return;
+    const { trigger, scroll } = aiReturn.current;
+    document.querySelector('main')?.scrollTo({ top: scroll });
+    if (trigger.isConnected && !trigger.matches(':disabled'))
+      trigger.focus({ preventScroll: true });
+    aiReturn.current = null;
+  }, [active, checking]);
   const work = async (fn: () => Promise<any>, notice?: string) => {
     if (lock.current) return;
     lock.current = true;
@@ -211,7 +225,8 @@ export default function TemplateInstancePage({
     if (scope === 'configuration') setConfigurationGeneration((v) => v + 1);
     setError('');
   };
-  const openAI = (resourceId: string) => {
+  const openAI = (resourceId: string, trigger: HTMLButtonElement) => {
+    aiReturn.current = { trigger, scroll: document.querySelector('main')?.scrollTop ?? 0 };
     const resource = instance.resources[resourceId];
     const provider = resource?.provider === 'openai-codex' ? 'openai-codex' : 'deepseek';
     settings({

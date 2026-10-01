@@ -169,8 +169,9 @@ export default function TemplateEntry({
     if (await save('input', entryId)) setInputSaved((value) => value + 1);
   };
   const saveConfiguration = () => save('instance');
-  const openSettings = (resourceId: string) => {
+  const openSettings = (resourceId: string, trigger: HTMLButtonElement) => {
     scroll.current = document.querySelector('main')?.scrollTop ?? 0;
+    returnFocus.current = trigger;
     const provider = selectedProvider(resourceId);
     settings({
       key: crypto.randomUUID(),
@@ -501,7 +502,7 @@ export default function TemplateEntry({
                   <button
                     className="primary"
                     disabled={busy || checking || !!readError}
-                    onClick={() => openSettings(resource.id)}
+                    onClick={(event) => openSettings(resource.id, event.currentTarget)}
                   >
                     {state?.configured ? '管理 AI 配置' : `去配置 ${providerName(provider)}`}
                   </button>

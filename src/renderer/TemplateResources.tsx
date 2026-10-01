@@ -22,7 +22,7 @@ export default function TemplateResources({
   blocked: boolean;
   change: Dispatch<SetStateAction<TemplateDetail>>;
   work: (fn: () => Promise<any>, notice?: string) => Promise<any>;
-  openAI: (id: string) => void;
+  openAI: (id: string, trigger: HTMLButtonElement) => void;
   save: () => void;
   cancel: () => void;
   openEntry: (id: string) => void;
@@ -144,7 +144,9 @@ export default function TemplateResources({
                         }
                       />
                     </label>
-                    <button onClick={() => openAI(resource.id)}>管理 AI 配置</button>
+                    <button onClick={(event) => openAI(resource.id, event.currentTarget)}>
+                      管理 AI 配置
+                    </button>
                   </>
                 )}
               </div>
