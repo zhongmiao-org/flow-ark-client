@@ -1805,16 +1805,6 @@ export default function App() {
               busy={busy}
               back={closeMore}
               exportZip={exportDraft}
-              parameters={openParameters}
-              configuration={
-                edit.bindings.configuration
-                  ? () => {
-                      if (edit.bindings.template)
-                        requestEditorLeave(() => setSection('templates'), '模板实例');
-                      else setConfigOpen(true);
-                    }
-                  : undefined
-              }
               outline={openOutline}
               script={openScript}
               openRun={(next) =>

@@ -9,7 +9,7 @@
   min-height: 620px;
   padding: 24px;
   border: 1px solid var(--fa-border-default);
-  border-radius: 16px;
+  border-radius: var(--fa-radius-12);
   background: var(--fa-bg-surface);
   display: flex;
   flex-direction: column;
@@ -19,6 +19,7 @@
   margin: 0;
   font-size: 18px;
   line-height: 28px;
+  font-weight: 500;
   overflow-wrap: anywhere;
 }
 .editor-more-card p {
@@ -28,14 +29,10 @@
   color: var(--fa-text-secondary);
   overflow-wrap: anywhere;
 }
-.editor-more-card .editor-more-state {
-  font-size: 12px;
-  margin-top: -12px;
-}
 .editor-more-actions {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 .editor-more-actions button {
   width: 100%;
@@ -53,8 +50,23 @@
   color: var(--fa-text-secondary);
   font-size: 12px;
 }
-.editor-more-card > .note:last-child {
-  margin-top: auto;
+.editor-more-menu > .note {
+  margin: 0;
+  padding: 16px;
+  min-height: 72px;
+  height: 72px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-action-subtle);
+  color: var(--fa-action-primary);
+}
+/* The Figma content slots include the two pixels occupied by the card border. */
+.editor-more-menu > .editor-more-actions,
+.editor-more-menu > .note {
+  width: calc(100% + 2px);
+}
+.editor-more-card .field-error {
+  color: var(--fa-status-error);
 }
 .editor-more-card label {
   display: flex;
@@ -74,7 +86,7 @@
   margin-top: 3px;
 }
 .editor-more-page > .note,
-.editor-more-page > div > .note {
+.editor-more-page > div:not(.editor-more-card) > .note {
   margin-bottom: 16px;
 }
 .editor-more-page .runs-heading {
@@ -95,5 +107,8 @@
   .editor-more-card {
     min-height: 0;
     padding: 20px;
+  }
+  .editor-more-menu > .note {
+    height: auto;
   }
 }

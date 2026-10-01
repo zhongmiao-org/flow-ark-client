@@ -11,8 +11,6 @@ type Props = {
   busy: boolean;
   back: () => void;
   exportZip: () => void;
-  parameters: () => void;
-  configuration?: () => void;
   outline: () => void;
   script: (id: string) => void;
   openRun: (detail: unknown) => void;
@@ -28,13 +26,23 @@ export default function EditorMorePage(props: Props) {
   const [reviewed, setReviewed] = useState(false);
   const [receipt, setReceipt] = useState<FlowRecord>();
   const [error, setError] = useState('');
+  const [copying, setCopying] = useState(false);
   const locked = useRef(false);
   const copyId = useRef(crypto.randomUUID());
   const heading = useRef<HTMLHeadingElement>(null);
+  const receiptHeading = useRef<HTMLHeadingElement>(null);
+  const copyError = useRef<HTMLParagraphElement>(null);
+  const unavailable = busy || copying;
   const scripts = flatten(record.flow.steps).filter((step) => step.type === 'script');
   useEffect(() => {
-    if (active) heading.current?.focus({ preventScroll: true });
+    if (active) {
+      const target = page === 'copy' && receipt ? receiptHeading.current : heading.current;
+      target?.focus({ preventScroll: true });
+    }
   }, [active, page, receipt]);
+  useEffect(() => {
+    if (active && page === 'copy' && error && !unavailable) copyError.current?.focus();
+  }, [active, page, error, unavailable]);
   useEffect(() => {
     if (!active) return;
     const escape = (event: KeyboardEvent) => {
@@ -46,7 +54,7 @@ export default function EditorMorePage(props: Props) {
         return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      if (!busy) {
+      if (!unavailable && !locked.current) {
         if (page === 'menu') props.back();
         else if (page === 'history' && filterOpen) setFilterOpen(false);
         else setPage('menu');
@@ -54,14 +62,14 @@ export default function EditorMorePage(props: Props) {
     };
     window.addEventListener('keydown', escape);
     return () => window.removeEventListener('keydown', escape);
-  }, [active, busy, page, filterOpen, props.back]);
+  }, [active, unavailable, page, filterOpen, props.back]);
   const title =
     page === 'menu'
       ? '任务的更多操作'
       : page === 'scripts'
         ? '选择要编辑的脚本'
         : page === 'copy'
-          ? '复制为新流程'
+          ? '复制为新任务'
           : '版本与运行历史';
   return (
     <section
@@ -79,17 +87,16 @@ export default function EditorMorePage(props: Props) {
           </p>
         </div>
         {page !== 'menu' && (
-          <button disabled={busy} onClick={() => setPage('menu')}>
+          <button disabled={unavailable} onClick={() => setPage('menu')}>
             返回更多操作
           </button>
         )}
       </div>
       {page === 'menu' && (
-        <div className="editor-more-card">
-          <h2>{record.flow.name}</h2>
-          <p className="editor-more-state">
-            {saved ? '草稿已保存' : '有未保存修改'} · {flatten(record.flow.steps).length} 个步骤
-          </p>
+        <div className="editor-more-card editor-more-menu">
+          <h2>
+            {record.flow.name} · {saved ? '已保存' : '有未保存修改'}
+          </h2>
           <div className="editor-more-actions">
             <button disabled={busy} onClick={props.exportZip}>
               导出 ZIP
@@ -98,27 +105,26 @@ export default function EditorMorePage(props: Props) {
               版本与历史
             </button>
             <button disabled={busy} onClick={() => setPage('copy')}>
-              复制为新流程
+              复制为新任务
             </button>
-            <button disabled={busy} onClick={() => setPage('scripts')}>
-              编辑脚本{scripts.length ? ` · ${scripts.length}` : ''}
+            <button
+              disabled={busy}
+              onClick={() =>
+                scripts.length === 1 ? props.script(scripts[0].id) : setPage('scripts')
+              }
+            >
+              编辑脚本
             </button>
             <button disabled={busy} onClick={props.outline}>
               长流程大纲
             </button>
-            <button disabled={busy} onClick={props.parameters}>
-              参数与绑定
-            </button>
-            {props.configuration && (
-              <button disabled={busy} onClick={props.configuration}>
-                实例配置
-              </button>
-            )}
             <button disabled={busy} onClick={props.back}>
               返回任务
             </button>
           </div>
-          <p className="note">保存状态常驻任务顶部。显示网页统一从编排工具栏打开。</p>
+          <p className="note">
+            保存状态常驻任务顶部。显示网页只有一个入口，不在工具栏与属性区重复放置。
+          </p>
         </div>
       )}
       {page === 'scripts' && (
@@ -146,10 +152,12 @@ export default function EditorMorePage(props: Props) {
       {page === 'copy' && (
         <form
           className="editor-more-card"
+          aria-busy={copying}
           onSubmit={async (event) => {
             event.preventDefault();
             if (!reviewed || !name.trim() || locked.current || busy || receipt) return;
             locked.current = true;
+            setCopying(true);
             setError('');
             try {
               setReceipt(await props.copy(name.trim(), copyId.current));
@@ -157,12 +165,15 @@ export default function EditorMorePage(props: Props) {
               setError(reason instanceof Error ? reason.message : '复制未完成，请稍后重试');
             } finally {
               locked.current = false;
+              setCopying(false);
             }
           }}
         >
           {receipt ? (
             <>
-              <h2 tabIndex={-1}>新流程已创建</h2>
+              <h2 ref={receiptHeading} tabIndex={-1}>
+                新流程已创建
+              </h2>
               <p role="status">{receipt.flow.name} 已保存。原流程及其未保存编辑仍保留。</p>
               <p className="note">
                 新流程需要重新选择本机资源、凭据与授权。复制没有创建运行或计划。
@@ -184,7 +195,7 @@ export default function EditorMorePage(props: Props) {
                   value={name}
                   maxLength={100}
                   required
-                  disabled={busy}
+                  disabled={unavailable}
                   onChange={(event) => setName(event.target.value)}
                 />
               </label>
@@ -196,18 +207,18 @@ export default function EditorMorePage(props: Props) {
                 <input
                   type="checkbox"
                   checked={reviewed}
-                  disabled={busy}
+                  disabled={unavailable}
                   onChange={(event) => setReviewed(event.target.checked)}
                 />
                 我已核对要保留的内容，创建后重新绑定资源
               </label>
-              <button className="primary" disabled={busy || !reviewed || !name.trim()}>
-                {busy ? '正在创建…' : '创建独立副本'}
+              <button className="primary" disabled={unavailable || !reviewed || !name.trim()}>
+                {copying ? '正在创建…' : '创建独立副本'}
               </button>
             </>
           )}
           {error && (
-            <p role="alert" className="field-error">
+            <p ref={copyError} tabIndex={-1} role="alert" className="field-error">
               {error}
             </p>
           )}
