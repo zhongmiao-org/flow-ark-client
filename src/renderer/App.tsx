@@ -325,10 +325,12 @@ export default function App() {
     setSection('schedules');
     scheduleRunBack.current?.();
   }
-  function leaveScheduleContext(next: () => void) {
+  function leaveScheduleContext(next: () => void, destination: string) {
     setDetail(null);
     setSection('schedules');
-    requestAnimationFrame(() => (plansNavigation.current ? plansNavigation.current(next) : next()));
+    requestAnimationFrame(() =>
+      plansNavigation.current ? plansNavigation.current(next, destination) : next(),
+    );
   }
   function returnTemplate() {
     setDetail(null);
@@ -550,14 +552,15 @@ export default function App() {
         label,
       );
     else if (section === 'templates') templateNavigation.current?.(navigate, label);
-    else if (section === 'schedules') plansNavigation.current?.(navigate);
+    else if (section === 'schedules') plansNavigation.current?.(navigate, label);
     else if (section === 'template-schedule')
-      scheduleNavigation.current?.(() =>
-        id === 'templates' ? navigate() : leaveTemplateContext(navigate, label),
+      scheduleNavigation.current?.(
+        () => (id === 'templates' ? navigate() : leaveTemplateContext(navigate, label)),
+        label,
       );
     else if (section === 'runs' && runOrigin === 'schedule' && detail) {
       if (id === 'schedules') returnSchedule();
-      else leaveScheduleContext(navigate);
+      else leaveScheduleContext(navigate, label);
     } else if (section === 'runs' && runOrigin === 'template' && detail) {
       if (id === 'templates') returnTemplate();
       else leaveTemplateContext(navigate, label);
@@ -863,11 +866,14 @@ export default function App() {
                   );
                 else if (section === 'templates')
                   templateNavigation.current?.(navigate, '首次教学');
-                else if (section === 'schedules') plansNavigation.current?.(navigate);
+                else if (section === 'schedules') plansNavigation.current?.(navigate, '首次教学');
                 else if (section === 'runs' && runOrigin === 'schedule' && detail)
-                  leaveScheduleContext(navigate);
+                  leaveScheduleContext(navigate, '首次教学');
                 else if (section === 'template-schedule')
-                  scheduleNavigation.current?.(() => leaveTemplateContext(navigate, '首次教学'));
+                  scheduleNavigation.current?.(
+                    () => leaveTemplateContext(navigate, '首次教学'),
+                    '首次教学',
+                  );
                 else if (section === 'runs' && runOrigin === 'template' && detail)
                   leaveTemplateContext(navigate, '首次教学');
                 else navigate();
@@ -1159,7 +1165,8 @@ export default function App() {
                         setSection('runs');
                         setRunOrigin('history');
                       };
-                      if (runOrigin === 'schedule' && detail) leaveScheduleContext(next);
+                      if (runOrigin === 'schedule' && detail)
+                        leaveScheduleContext(next, '运行记录');
                       else if (runOrigin === 'template' && detail)
                         leaveTemplateContext(next, '运行记录');
                       else next();

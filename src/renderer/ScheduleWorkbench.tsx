@@ -17,6 +17,7 @@ import {
 import { runDisplayLabels } from '../shared/run-history';
 import { Timing, inZone } from './schedule-fields';
 import type { TemplateNavigation } from './TemplateInstancePage';
+import ScheduleLeaveDialog from './ScheduleLeaveDialog';
 import './template-schedule.css';
 import './schedule-workbench.css';
 
@@ -54,7 +55,7 @@ export default function ScheduleWorkbench({
   const [error, setError] = useState('');
   const [conflict, setConflict] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [leaving, setLeaving] = useState<{ next: () => void }>();
+  const [leaving, setLeaving] = useState<{ next: () => void; destination: string }>();
   const [history, setHistory] = useState<{
     id: string;
     result?: ScheduleInspection;
@@ -165,7 +166,7 @@ export default function ScheduleWorkbench({
       focusAfter.current = null;
     }
   }, [active, history]);
-  const go: TemplateNavigation = (next) => {
+  const go: TemplateNavigation = (next, target = '本机计划') => {
     if (lock.current || destination.current) return;
     if (!dirty) {
       next();
@@ -173,9 +174,9 @@ export default function ScheduleWorkbench({
     }
     destination.current = true;
     setError('');
-    setLeaving({ next });
+    setLeaving({ next, destination: target });
   };
-  navigation.current = (next) => {
+  navigation.current = (next, target) => {
     if (lock.current || destination.current) return;
     historyRef.current?.close();
     setHistory(undefined);
@@ -183,7 +184,7 @@ export default function ScheduleWorkbench({
       assign();
       setHistory(undefined);
       next();
-    });
+    }, target);
   };
   const stay = () => {
     if (lock.current) return;
@@ -192,9 +193,6 @@ export default function ScheduleWorkbench({
     destination.current = false;
     requestAnimationFrame(() => draftFocus.current?.focus({ preventScroll: true }));
   };
-  useEffect(() => {
-    if (leaving) leaveRef.current?.showModal();
-  }, [leaving]);
   usePageBack(() => go(() => assign()), active && !!draft);
   async function save() {
     if (!draft || lock.current || changed) return false;
@@ -345,7 +343,7 @@ export default function ScheduleWorkbench({
               go(() => {
                 listFocus.current = trigger;
                 assign(blank());
-              });
+              }, '创建计划');
             }}
           >
             创建计划
@@ -421,7 +419,8 @@ export default function ScheduleWorkbench({
                           return result;
                         });
                       };
-                      if (draft?.plan?.id === plan.id) go(toggle);
+                      if (draft?.plan?.id === plan.id)
+                        go(toggle, plan.enabled ? '暂停计划' : '启用计划');
                       else toggle();
                     }}
                   >
@@ -431,9 +430,12 @@ export default function ScheduleWorkbench({
                     aria-label="编辑计划"
                     disabled={busy}
                     onClick={() =>
-                      go(() => {
-                        void open(plan);
-                      })
+                      go(
+                        () => {
+                          void open(plan);
+                        },
+                        `编辑计划 · ${data.flows.find((flow) => flow.id === plan.flowId)?.flow.name ?? plan.id}`,
+                      )
                     }
                   >
                     编辑
@@ -574,7 +576,10 @@ export default function ScheduleWorkbench({
                   </p>
                 )}
                 <div className="ai-task-actions">
-                  <button className="primary" disabled={changed}>
+                  <button
+                    className="primary"
+                    disabled={changed || (draft.mode === 'create' && (!draft.flow || !draft.adopt))}
+                  >
                     {busy ? '正在保存…' : draft.mode === 'edit' ? '保存计划' : '创建计划'}
                   </button>
                   <button
@@ -612,58 +617,35 @@ export default function ScheduleWorkbench({
           )}
         </div>
         {leaving && (
-          <dialog
-            ref={leaveRef}
-            className="script-leave-dialog ai-settings-dialog"
-            aria-labelledby="plan-leave-title"
-            onCancel={(event) => {
-              event.preventDefault();
-              stay();
+          <ScheduleLeaveDialog
+            dialogRef={leaveRef}
+            destination={leaving.destination}
+            creating={draft?.mode === 'create'}
+            busy={busy}
+            blocked={changed}
+            unconfirmed={draft?.mode === 'create' && (!draft.flow || !draft.adopt)}
+            error={error || (changed ? '计划或来源已改变，请继续编辑后重新核对。' : '')}
+            stay={stay}
+            discard={() => {
+              const next = leaving.next;
+              leaveRef.current?.close();
+              setLeaving(undefined);
+              destination.current = false;
+              assign();
+              next();
             }}
-          >
-            <h2 id="plan-leave-title">保存计划更改再离开？</h2>
-            <p>成功保存后前往刚才选择的位置；新计划会创建并启用。</p>
-            <div className="ai-task-actions">
-              <button autoFocus disabled={busy} onClick={stay}>
-                继续编辑
-              </button>
-              <button
-                className="primary"
-                disabled={busy || changed}
-                onClick={() => {
-                  const next = leaving.next;
-                  void save().then((ok) => {
-                    if (ok) {
-                      leaveRef.current?.close();
-                      setLeaving(undefined);
-                      destination.current = false;
-                      next();
-                    }
-                  });
-                }}
-              >
-                保存并离开
-              </button>
-              <button
-                disabled={busy}
-                onClick={() => {
-                  const next = leaving.next;
+            save={() => {
+              const next = leaving.next;
+              void save().then((ok) => {
+                if (ok) {
                   leaveRef.current?.close();
                   setLeaving(undefined);
                   destination.current = false;
-                  assign();
                   next();
-                }}
-              >
-                不保存离开
-              </button>
-            </div>
-            {(error || changed) && (
-              <p role="alert" className="ai-task-error">
-                {error || '计划或来源已改变，请继续编辑后重新核对。'}
-              </p>
-            )}
-          </dialog>
+                }
+              });
+            }}
+          />
         )}
         {history && (
           <dialog

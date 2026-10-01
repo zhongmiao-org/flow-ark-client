@@ -5,6 +5,7 @@ import { scheduleCreateSchema } from '../shared/schedules';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
 import type { TemplateNavigation } from './TemplateInstancePage';
 import { Timing, inZone } from './Schedules';
+import ScheduleLeaveDialog from './ScheduleLeaveDialog';
 import './template-schedule.css';
 const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
@@ -34,7 +35,7 @@ export default function TemplateSchedulePage({
   const [error, setError] = useState(''),
     [busy, setBusy] = useState(false),
     [created, setCreated] = useState<Schedule>();
-  const [leaving, setLeaving] = useState<{ next: () => void }>();
+  const [leaving, setLeaving] = useState<{ next: () => void; destination: string }>();
   const lock = useRef(false),
     pending = useRef(false),
     dialog = useRef<HTMLDialogElement>(null);
@@ -115,7 +116,7 @@ export default function TemplateSchedulePage({
     setCreated(result);
     return true;
   };
-  const go: TemplateNavigation = (next) => {
+  const go: TemplateNavigation = (next, destination = '模板入口') => {
     if (lock.current || pending.current) return;
     if (!dirty) {
       next();
@@ -123,7 +124,7 @@ export default function TemplateSchedulePage({
     }
     pending.current = true;
     setError('');
-    setLeaving({ next });
+    setLeaving({ next, destination });
   };
   navigation.current = go;
   const stay = () => {
@@ -133,9 +134,6 @@ export default function TemplateSchedulePage({
     setLeaving(undefined);
     requestAnimationFrame(() => focus.current?.focus({ preventScroll: true }));
   };
-  useEffect(() => {
-    if (leaving) dialog.current?.showModal();
-  }, [leaving]);
   usePageBack(() => go(back));
   const plans = data.schedules.filter((plan) => plan.flowId === origin.flowId);
   return (
@@ -156,7 +154,7 @@ export default function TemplateSchedulePage({
             href="#schedules"
             onClick={(event) => {
               event.preventDefault();
-              go(manage);
+              go(manage, '本机计划');
             }}
           >
             本机计划
@@ -214,7 +212,7 @@ export default function TemplateSchedulePage({
             ) : (
               <p>此入口还没有本机计划。</p>
             )}
-            <button disabled={busy} onClick={() => go(manage)}>
+            <button disabled={busy} onClick={() => go(manage, '本机计划')}>
               管理本机计划
             </button>
           </section>
@@ -277,7 +275,10 @@ export default function TemplateSchedulePage({
               </>
             ) : (
               <div className="ai-task-actions">
-                <button className="primary" disabled={busy || checking || !!sourceError}>
+                <button
+                  className="primary"
+                  disabled={busy || checking || !!sourceError || !confirmed}
+                >
                   创建计划
                 </button>
                 <button type="button" disabled={busy} onClick={() => go(back)}>
@@ -289,53 +290,34 @@ export default function TemplateSchedulePage({
         </div>
       </section>
       {leaving && (
-        <dialog
-          ref={dialog}
-          className="script-leave-dialog ai-settings-dialog"
-          aria-labelledby="schedule-leave-title"
-          onCancel={(event) => {
-            event.preventDefault();
-            stay();
+        <ScheduleLeaveDialog
+          dialogRef={dialog}
+          destination={leaving.destination}
+          creating
+          busy={busy}
+          blocked={checking || !!sourceError}
+          unconfirmed={!confirmed}
+          error={error || sourceError}
+          stay={stay}
+          discard={() => {
+            const next = leaving.next;
+            dialog.current?.close();
+            pending.current = false;
+            setLeaving(undefined);
+            next();
           }}
-        >
-          <h2 id="schedule-leave-title">保存计划再离开？</h2>
-          <p>保存会创建并启用一个固定版本的计划，成功后前往刚才选择的位置。</p>
-          <div className="ai-task-actions">
-            <button autoFocus disabled={busy} onClick={stay}>
-              继续编辑
-            </button>
-            <button
-              className="primary"
-              disabled={busy || checking || !!sourceError}
-              onClick={() => {
-                const next = leaving.next;
-                void create().then((ok) => {
-                  if (ok) {
-                    dialog.current?.close();
-                    pending.current = false;
-                    setLeaving(undefined);
-                    next();
-                  }
-                });
-              }}
-            >
-              保存并离开
-            </button>
-            <button
-              disabled={busy}
-              onClick={() => {
-                const next = leaving.next;
+          save={() => {
+            const next = leaving.next;
+            void create().then((ok) => {
+              if (ok) {
                 dialog.current?.close();
                 pending.current = false;
                 setLeaving(undefined);
                 next();
-              }}
-            >
-              不保存离开
-            </button>
-          </div>
-          {(error || sourceError) && <p role="alert">{error || sourceError}</p>}
-        </dialog>
+              }
+            });
+          }}
+        />
       )}
     </div>
   );
