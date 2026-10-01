@@ -240,12 +240,14 @@ export default function LocalSettingsPage({
       focusAfter.current = 'refresh';
     }
   };
-  const changeTab = (next: Tab) => {
+  const changeTab = (next: Tab, focusTab = false) => {
     if (locked.current) return;
     setTab(next);
     setError('');
     setNotice('');
     setQuery('');
+    if (focusTab)
+      requestAnimationFrame(() => document.getElementById(`settings-tab-${next}`)?.focus());
   };
   const flowLink = (flow: FlowRecord) => (
     <button disabled={!!busy} onClick={() => void act('flow', () => openFlow(flow))}>
@@ -316,57 +318,53 @@ export default function LocalSettingsPage({
       <div id="settings-content" role="tabpanel" aria-labelledby={`settings-tab-${tab}`}>
         {tab === 'browser' &&
           (!local ? (
-            <div className="local-settings-layout">
-              <section className="local-settings-card">
+            <div className="local-settings-layout local-browser-overview">
+              <section className="local-settings-card local-browser-options">
                 <h2>浏览器执行方式</h2>
-                <p>先准备本机资源，再在每个流程中明确选择执行方式。</p>
-                <div className={`local-browser-mode${embedded ? ' is-ready' : ''}`}>
-                  <div className="local-settings-row">
-                    <h3>内置浏览器</h3>
-                    <span className="local-settings-status">
-                      {embedded ? '已启用' : '尚未启用'}
-                    </span>
-                  </div>
-                  <p>在主窗口右侧操作网页，复用应用内核。</p>
-                  {embedded ? (
-                    <button onClick={showBrowser}>打开右侧网页面板</button>
-                  ) : (
-                    <button
-                      className="primary"
-                      disabled={!!busy}
-                      onClick={() =>
-                        void act('enable', async () => {
+                <button
+                  className={`local-browser-mode${embedded ? ' is-ready' : ''}`}
+                  aria-label={embedded ? '打开右侧网页面板' : '启用内置浏览器'}
+                  disabled={!!busy}
+                  onClick={() =>
+                    embedded
+                      ? showBrowser()
+                      : void act('enable', async () => {
                           await api('browser.embedded.enable');
                           await refresh();
                           setStatusRevision((v) => v + 1);
                           setNotice('已启用内置浏览器，请在流程资源中选择。');
                         })
-                      }
-                    >
-                      {busy === 'enable' ? '正在启用…' : '启用内置浏览器'}
-                    </button>
-                  )}
-                </div>
-                <div className="local-browser-mode">
-                  <div className="local-settings-row">
-                    <h3>本机浏览器</h3>
-                    <span className="local-settings-status">
-                      {bound.length ? `已保存 ${bound.length} 个绑定` : '尚未绑定'}
+                  }
+                >
+                  <span className="local-browser-mode-title">
+                    内置浏览器
+                    <span>
+                      {busy === 'enable' ? '正在启用…' : embedded ? '打开网页 →' : '启用 →'}
                     </span>
-                  </div>
-                  <p>使用你已安装并明确选择的浏览器。</p>
-                  <button
-                    ref={bindingEntry}
-                    disabled={!!busy}
-                    onClick={() => {
-                      setLocal(true);
-                      setError('');
-                      setNotice('');
-                    }}
-                  >
-                    选择与管理本机浏览器
-                  </button>
-                </div>
+                  </span>
+                  <span className="local-browser-mode-description">
+                    在主窗口右侧操作网页，复用应用内核。
+                  </span>
+                </button>
+                <button
+                  className="local-browser-mode"
+                  ref={bindingEntry}
+                  disabled={!!busy}
+                  aria-label="选择与管理本机浏览器"
+                  onClick={() => {
+                    setLocal(true);
+                    setError('');
+                    setNotice('');
+                  }}
+                >
+                  <span className="local-browser-mode-title">
+                    本机浏览器
+                    <span>{bound.length ? `${bound.length} 个绑定 · 管理 →` : '选择与管理 →'}</span>
+                  </span>
+                  <span className="local-browser-mode-description">
+                    使用你已安装并明确选择的浏览器。
+                  </span>
+                </button>
                 <div className="local-settings-divider" />
                 {refreshError && (
                   <div
@@ -381,66 +379,108 @@ export default function LocalSettingsPage({
                     </button>
                   </div>
                 )}
-                <h3>网页展示</h3>
+                <h2>网页展示</h2>
                 <dl className="local-settings-facts">
                   <div>
                     <dt>页面布局</dt>
                     <dd>桌面宽度 · 1920 CSS px</dd>
                   </div>
-                  <div>
-                    <dt>展示位置</dt>
-                    <dd>主窗口右侧面板，等比缩放</dd>
-                  </div>
                 </dl>
-                <p>展开与收起保留会话；收起面板不会停止运行。</p>
+                <p className="local-browser-display-note">
+                  右侧面板等比缩放显示，展开与收起保留会话。
+                </p>
+                <p className="local-settings-muted">
+                  执行方式在每个流程的资源中选择；启用或绑定不会改动已有流程。
+                </p>
               </section>
-              <aside className="local-settings-card">
+              <aside className="local-settings-card local-environment">
                 <h2>环境状态</h2>
                 <div className="local-settings-health">
-                  <h3>内置网页</h3>
-                  {sessionError ? (
-                    <>
-                      <p role="alert">{sessionError}</p>
-                      <button onClick={() => setStatusRevision((v) => v + 1)}>重新读取状态</button>
-                    </>
-                  ) : (
-                    <>
-                      <strong>
-                        {!session
-                          ? '正在读取状态…'
+                  <div className="local-health-heading">
+                    <h3>浏览器</h3>
+                    <span
+                      className={`badge ${sessionError || session?.blocked ? 'state-INTERRUPTED' : session && embedded ? 'state-SUCCEEDED' : ''}`}
+                    >
+                      {sessionError
+                        ? '状态未取得'
+                        : !session
+                          ? '读取中'
                           : session.blocked
-                            ? '资源回收待确认'
-                            : session.started
-                              ? session.visible
-                                ? '网页面板已显示'
-                                : '会话在后台运行'
-                              : '尚未打开会话'}
-                      </strong>
-                      <p className="local-settings-path">
-                        {session?.blocked ||
-                          session?.url ||
-                          '只有打开网页或执行网页步骤时才创建会话。'}
-                      </p>
-                    </>
-                  )}
+                            ? '待核对'
+                            : embedded
+                              ? '已启用'
+                              : '未启用'}
+                    </span>
+                  </div>
+                  <p role={sessionError ? 'alert' : undefined}>
+                    {sessionError || !session
+                      ? '会话状态尚未确认。'
+                      : session.blocked
+                        ? '原会话回收尚未确认。'
+                        : session.started
+                          ? session.visible
+                            ? '网页面板已显示'
+                            : '会话在后台运行'
+                          : '尚未打开网页会话'}
+                  </p>
                 </div>
                 <div className="local-settings-health">
-                  <h3>AI 服务</h3>
+                  <button
+                    className="local-health-link"
+                    onClick={() => changeTab('ai', true)}
+                    aria-label="管理 AI 服务"
+                  >
+                    <span>AI 服务</span>
+                    <span className="badge">
+                      {data.credentials.some((id) => id === 'deepseek' || id === 'openai-codex')
+                        ? '已配置 · 待核对'
+                        : '未配置'}
+                    </span>
+                  </button>
                   <p>
                     {data.credentials.some((id) => id === 'deepseek' || id === 'openai-codex')
-                      ? '已有服务配置，连接状态在 AI 服务中查看。'
+                      ? '连接验证状态在 AI 服务中查看。'
                       : '尚未配置服务密钥。'}
                   </p>
-                  <button onClick={() => changeTab('ai')}>管理 AI 服务</button>
                 </div>
                 <div className="local-settings-health">
-                  <h3>输出与文件</h3>
-                  <p>{fileFlows.length} 个流程保存了本机文件或目录绑定。</p>
-                  <button onClick={() => changeTab('storage')}>查看文件与存储</button>
+                  <button
+                    className="local-health-link"
+                    onClick={() => changeTab('storage', true)}
+                    aria-label="查看文件与存储"
+                  >
+                    <span>输出与文件</span>
+                    <span className="badge">
+                      {fileFlows.length ? `${fileFlows.length} 个流程有绑定` : '未绑定'}
+                    </span>
+                  </button>
+                  <p>按流程保存本机文件或目录绑定。</p>
                 </div>
-                <p className="local-settings-muted">
-                  只有使用相应资源的流程才需要完成绑定。最小化不会阻止电脑休眠；应用退出后停止执行与调度。
-                </p>
+                <div className="local-settings-health">
+                  <button
+                    className="local-health-link"
+                    onClick={() => changeTab('credentials', true)}
+                    aria-label="管理本机凭据"
+                  >
+                    <span>凭据保护</span>
+                    <span className="badge">保存时核验</span>
+                  </button>
+                  <p>系统保护不可用时拒绝保存。</p>
+                </div>
+                <p className="local-settings-muted">只有使用相应资源的流程才需要完成绑定。</p>
+                <details className="local-session-details">
+                  <summary>网页会话详情</summary>
+                  <p className="local-settings-path">
+                    {sessionError ||
+                      session?.blocked ||
+                      session?.url ||
+                      '打开网页或执行网页步骤时才创建会话。'}
+                  </p>
+                  <button onClick={() => setStatusRevision((v) => v + 1)}>重新读取状态</button>
+                  <p className="local-settings-muted">
+                    收起面板不会停止运行；最小化不阻止电脑休眠，退出后停止执行与调度。
+                  </p>
+                </details>
               </aside>
             </div>
           ) : (
