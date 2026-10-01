@@ -238,12 +238,14 @@ function CredentialDialog({
 }
 
 export default function LocalCredentialsPanel({
+  compact = false,
   data,
   refresh,
   openAI,
   openTools,
   openFlow,
 }: {
+  compact?: boolean;
   data: Bootstrap;
   refresh: () => Promise<void>;
   openAI: () => void;
@@ -317,10 +319,10 @@ export default function LocalCredentialsPanel({
     }
   };
   return (
-    <div className="local-credentials-layout">
+    <div className={`local-credentials-layout${compact ? ' is-compact' : ''}`}>
       <section className="local-settings-card" aria-label="通用本机凭据">
         <div className="local-settings-row">
-          <h2>通用本机凭据</h2>
+          <h2>{compact ? '凭据' : '通用本机凭据'}</h2>
           <button
             ref={createButton}
             className="primary"
@@ -330,24 +332,27 @@ export default function LocalCredentialsPanel({
           </button>
         </div>
         <p>名称便于识别，保存值只供明确绑定的流程读取。</p>
-        <label className="local-settings-search">
-          搜索凭据
-          <input
-            ref={search}
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="名称、标识或引用流程"
-          />
-        </label>
-        <div className="local-settings-row">
-          <span>
-            {entries ? `${shown?.length} / ${entries.length} 个凭据` : '尚未读取凭据清单'}
-          </span>
-          <button disabled={loading} onClick={() => void read()}>
-            {loading ? '正在读取…' : '刷新列表'}
-          </button>
-        </div>
+        <details className="local-resource-search-controls" open={compact ? undefined : true}>
+          <summary hidden={!compact}>查找与刷新凭据{entries ? ` · ${entries.length}` : ''}</summary>
+          <label className="local-settings-search">
+            搜索凭据
+            <input
+              ref={search}
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="名称、标识或引用流程"
+            />
+          </label>
+          <div className="local-settings-row">
+            <span>
+              {entries ? `${shown?.length} / ${entries.length} 个凭据` : '尚未读取凭据清单'}
+            </span>
+            <button disabled={loading} onClick={() => void read()}>
+              {loading ? '正在读取…' : '刷新列表'}
+            </button>
+          </div>
+        </details>
         {error && (
           <p role="alert" className="field-error">
             {error}
@@ -356,12 +361,24 @@ export default function LocalCredentialsPanel({
         {notice && <p role="status">{notice}</p>}
         {shown?.map((entry) => (
           <article className="local-credential-card" key={entry.id}>
-            <div className="local-settings-row">
-              <h3>{entry.name}</h3>
-              <span>{entry.inUse ? '运行正在使用' : '已保存'}</span>
-            </div>
+            {compact ? (
+              <>
+                <label className="local-resource-field-label">
+                  名称
+                  <input readOnly value={entry.name} />
+                </label>
+                <div className="local-resource-field-label">
+                  值 · {entry.inUse ? '运行正在使用' : '已保存'}
+                </div>
+              </>
+            ) : (
+              <div className="local-settings-row">
+                <h3>{entry.name}</h3>
+                <span>{entry.inUse ? '运行正在使用' : '已保存'}</span>
+              </div>
+            )}
             <p className="local-credential-mask">••••••••</p>
-            <code>{entry.id}</code>
+            {!compact && <code>{entry.id}</code>}
             <div className="local-credential-actions">
               <button onClick={() => begin({ kind: 'edit', id: entry.id, entry })}>编辑凭据</button>
               <button onClick={() => begin({ kind: 'remove', id: entry.id, entry })}>
@@ -370,6 +387,7 @@ export default function LocalCredentialsPanel({
             </div>
             <details>
               <summary>引用流程 · {entry.boundFlows.length}</summary>
+              {compact && <code>{entry.id}</code>}
               {entry.boundFlows.length ? (
                 <ul>
                   {entry.boundFlows.map((flow) => (
@@ -405,9 +423,16 @@ export default function LocalCredentialsPanel({
             )}
           </div>
         )}
+        {compact && (
+          <p className="local-credential-protection">系统保护不可用时拒绝保存，不降级为明文。</p>
+        )}
       </section>
-      <aside className="local-settings-card" aria-label="凭据使用说明">
-        <h2>绑定与保护</h2>
+      <details
+        className={compact ? 'local-credential-help' : 'local-settings-card'}
+        open={compact ? undefined : true}
+      >
+        <summary>绑定与保护说明</summary>
+
         <p>
           在流程参数与资源中勾选要使用的凭据。替换不改变 ID，旧运行继续受固定快照和在用保护约束。
         </p>
@@ -419,7 +444,7 @@ export default function LocalCredentialsPanel({
           <button onClick={openAI}>管理 AI 密钥</button>
           <button onClick={openTools}>管理工具认证</button>
         </div>
-      </aside>
+      </details>
       {editor && (
         <CredentialDialog
           key={`${editor.kind}:${editor.id}`}

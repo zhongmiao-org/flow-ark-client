@@ -505,3 +505,137 @@
     flex-basis: 100%;
   }
 }
+
+/* Figma 2:3227: credentials and machine resources share one overview. */
+.local-resources-page .local-settings-heading {
+  margin-bottom: 32px;
+}
+.local-resources-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+.local-resources-layout > .is-compact {
+  display: block;
+  min-width: 0;
+  min-height: 656px;
+  padding: 24px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-surface);
+}
+.local-resources-layout .is-compact > .local-settings-card {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+}
+.local-resources-layout .local-settings-search {
+  max-width: none;
+  margin: 20px 0 12px;
+}
+.local-resources-layout .local-settings-search input {
+  min-height: 32px;
+  height: 32px;
+  padding: 5px 8px;
+  margin-top: 6px;
+  background: var(--fa-bg-canvas);
+  font-size: 13px;
+}
+.local-resources-layout .local-settings-card > p,
+.local-credential-help {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--fa-text-secondary);
+}
+.local-resources-layout .local-settings-resource,
+.local-resources-layout .local-credential-card {
+  padding: 16px 0;
+  border: 0;
+  border-top: 1px solid var(--fa-border-default);
+  border-radius: 0;
+}
+.local-resources-layout .local-credential-mask,
+.local-resources-layout .local-storage-resources .local-settings-path {
+  padding: 5px 8px;
+  min-height: 32px;
+  background: var(--fa-bg-canvas);
+  border-radius: 6px;
+  line-height: 22px;
+}
+.local-resources-layout .local-storage-resources li {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.local-resources-layout .local-storage-resource-title {
+  justify-content: flex-start;
+}
+.local-resources-layout .local-credential-actions button {
+  flex: 1;
+}
+.local-resources-layout .local-credential-help {
+  margin-top: 16px;
+}
+.local-resources-layout .local-credential-help p {
+  line-height: 20px;
+}
+.local-resources-layout .local-storage-location {
+  padding: 16px 0;
+}
+@container (max-width: 800px) {
+  .local-resources-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .local-resources-layout > .is-compact {
+    min-height: 0;
+  }
+}
+.local-resources-layout .local-resource-search-controls {
+  margin: 16px 0;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.local-resources-layout .local-resource-field-label {
+  display: block;
+  margin: 0 0 6px;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.local-resources-layout .local-resource-field-label input {
+  width: 100%;
+  min-height: 32px;
+  height: 32px;
+  margin: 6px 0 20px;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--fa-bg-canvas);
+  color: var(--fa-text-primary);
+  font-size: 13px;
+}
+.local-resources-layout .local-credential-mask {
+  margin-top: 0;
+}
+.local-resources-layout .local-credential-card:first-of-type,
+.local-resources-layout .local-settings-resource:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+.local-resources-layout .local-storage-data {
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+}
+.local-resources-layout .local-storage-help {
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+}
+.local-resources-layout .local-storage-help p {
+  font-size: 12px;
+  line-height: 18px;
+}
+.local-resources-layout .local-settings-row:has(> h2) {
+  align-items: flex-start;
+}

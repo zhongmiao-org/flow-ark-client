@@ -15,8 +15,7 @@ const browserName = (product: BrowserBinding['product']) =>
 const tabs = [
   ['browser', '浏览器'],
   ['ai', 'AI 服务'],
-  ['credentials', '凭据'],
-  ['storage', '文件与存储'],
+  ['resources', '凭据与本机资源'],
   ['scripts', '脚本包'],
 ] as const;
 type Tab = (typeof tabs)[number][0];
@@ -48,6 +47,9 @@ export default function LocalSettingsPage({
 }) {
   const [tab, setTab] = useState<Tab>('browser');
   const [local, setLocal] = useState(false);
+  const resourcesPage = tab === 'resources';
+  const resourceEntry = useRef('settings-tab-resources');
+  const returningResources = useRef(false);
   useEffect(() => {
     if (!browserRequest) return;
     setTab('browser');
@@ -103,7 +105,10 @@ export default function LocalSettingsPage({
   );
   const back = () => {
     if (locked.current) return;
-    restoreEntry.current = true;
+    if (resourcesPage) {
+      returningResources.current = true;
+      setTab('browser');
+    } else restoreEntry.current = true;
     setLocal(false);
     setError('');
     setNotice('');
@@ -111,8 +116,12 @@ export default function LocalSettingsPage({
   useEffect(() => {
     if (!active) return;
     navigation({
-      title: local && tab === 'browser' ? '本机浏览器绑定' : '本地设置',
-      back: local && tab === 'browser' ? back : undefined,
+      title: resourcesPage
+        ? '凭据与本机资源'
+        : local && tab === 'browser'
+          ? '本机浏览器绑定'
+          : '本地设置',
+      back: resourcesPage || (local && tab === 'browser') ? back : undefined,
       busy: !!busy,
     });
     return () => navigation(undefined);
@@ -148,11 +157,16 @@ export default function LocalSettingsPage({
   }, [active, tab, statusRevision]);
   useEffect(() => {
     if (!active) return;
-    if (restoreEntry.current && !local) {
+    if (returningResources.current && !resourcesPage) {
+      returningResources.current = false;
+      const origin = document.getElementById(resourceEntry.current);
+      if (origin?.isConnected && !origin.closest('[hidden]')) origin.focus({ preventScroll: true });
+      else document.getElementById('settings-tab-resources')?.focus();
+    } else if (restoreEntry.current && !local) {
       restoreEntry.current = false;
       bindingEntry.current?.focus({ preventScroll: true });
     } else heading.current?.focus({ preventScroll: true });
-  }, [active, local]);
+  }, [active, local, resourcesPage]);
   useEffect(() => {
     if (busy || !focusAfter.current) return;
     const pending = focusAfter.current;
@@ -242,11 +256,13 @@ export default function LocalSettingsPage({
   };
   const changeTab = (next: Tab, focusTab = false) => {
     if (locked.current) return;
+    if (next === 'resources')
+      resourceEntry.current = document.activeElement?.id || 'settings-tab-resources';
     setTab(next);
     setError('');
     setNotice('');
     setQuery('');
-    if (focusTab)
+    if (focusTab && next !== 'resources')
       requestAnimationFrame(() => document.getElementById(`settings-tab-${next}`)?.focus());
   };
   const flowLink = (flow: FlowRecord) => (
@@ -256,19 +272,25 @@ export default function LocalSettingsPage({
   );
   return (
     <section
-      className={`page local-settings-page${local && tab === 'browser' ? ' local-browser-binding-page' : ''}`}
+      className={`page local-settings-page${local && tab === 'browser' ? ' local-browser-binding-page' : ''}${resourcesPage ? ' local-resources-page' : ''}`}
       hidden={!active}
       aria-label="本地设置"
     >
       <header className="local-settings-heading">
         <div>
           <h1 ref={heading} tabIndex={-1}>
-            {local && tab === 'browser' ? '选择本机浏览器' : '本地设置'}
+            {resourcesPage
+              ? '凭据与本机资源'
+              : local && tab === 'browser'
+                ? '选择本机浏览器'
+                : '本地设置'}
           </h1>
           <p>
-            {local && tab === 'browser'
-              ? '实际使用你选择的安装；失效时阻止运行，不下载或自动切换。'
-              : '管理运行环境、模型接口和这台 Mac 的资源。'}
+            {resourcesPage
+              ? '本地路径与密钥不随 ZIP 导出；资源只提供给明确绑定的流程。'
+              : local && tab === 'browser'
+                ? '实际使用你选择的安装；失效时阻止运行，不下载或自动切换。'
+                : '管理运行环境、模型接口和这台 Mac 的资源。'}
           </p>
         </div>
       </header>
@@ -276,7 +298,7 @@ export default function LocalSettingsPage({
         className="local-settings-tabs"
         role="tablist"
         aria-label="设置分类"
-        hidden={local && tab === 'browser'}
+        hidden={resourcesPage || (local && tab === 'browser')}
       >
         {tabs.map(([id, label], index) => (
           <button
@@ -450,7 +472,8 @@ export default function LocalSettingsPage({
                 <div className="local-settings-health">
                   <button
                     className="local-health-link"
-                    onClick={() => changeTab('storage', true)}
+                    onClick={() => changeTab('resources', true)}
+                    id="settings-file-resources"
                     aria-label="查看文件与存储"
                   >
                     <span>输出与文件</span>
@@ -463,7 +486,8 @@ export default function LocalSettingsPage({
                 <div className="local-settings-health">
                   <button
                     className="local-health-link"
-                    onClick={() => changeTab('credentials', true)}
+                    onClick={() => changeTab('resources', true)}
+                    id="settings-credential-resources"
                     aria-label="管理本机凭据"
                   >
                     <span>凭据保护</span>
@@ -638,28 +662,30 @@ export default function LocalSettingsPage({
             </section>
           ))}
         {tab === 'ai' && active && <AISettingsSummary open={openAI} />}
-        {tab === 'credentials' && active && (
-          <LocalCredentialsPanel
-            data={data}
-            refresh={refresh}
-            openAI={() => changeTab('ai')}
-            openTools={openTools}
-            openFlow={openFlow}
-          />
-        )}
-        {tab === 'storage' && (
-          <LocalStoragePanel
-            data={data}
-            busy={!!busy}
-            openFlow={(flow) => void act('flow', () => openFlow(flow))}
-            openRuns={openRuns}
-            showData={() =>
-              void act('data', async () => {
-                await api('app.showData');
-                setNotice('已请求在文件管理器中打开数据目录。');
-              })
-            }
-          />
+        {resourcesPage && active && (
+          <div className="local-resources-layout">
+            <LocalCredentialsPanel
+              compact
+              data={data}
+              refresh={refresh}
+              openAI={() => changeTab('ai', true)}
+              openTools={openTools}
+              openFlow={openFlow}
+            />
+            <LocalStoragePanel
+              compact
+              data={data}
+              busy={!!busy}
+              openFlow={(flow) => void act('flow', () => openFlow(flow))}
+              openRuns={openRuns}
+              showData={() =>
+                void act('data', async () => {
+                  await api('app.showData');
+                  setNotice('已请求在文件管理器中打开数据目录。');
+                })
+              }
+            />
+          </div>
         )}
         {tab === 'scripts' && (
           <section className="local-settings-card">

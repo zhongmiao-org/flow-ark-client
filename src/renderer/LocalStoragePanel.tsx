@@ -45,12 +45,14 @@ function resourcesFor(flow: FlowRecord, templates: Bootstrap['templates']): Reso
 }
 
 export default function LocalStoragePanel({
+  compact = false,
   data,
   busy,
   openFlow,
   showData,
   openRuns,
 }: {
+  compact?: boolean;
   data: Bootstrap;
   busy: boolean;
   openFlow: (flow: FlowRecord) => void;
@@ -75,23 +77,26 @@ export default function LocalStoragePanel({
     .filter((item) => item.resources.length);
   const count = filtered.reduce((sum, item) => sum + item.resources.length, 0);
   return (
-    <div className="local-storage-layout">
+    <div className={`local-storage-layout${compact ? ' is-compact' : ''}`}>
       <section className="local-settings-card local-storage-bindings">
-        <h2>文件与目录绑定</h2>
+        <h2>{compact ? '文件与存储' : '文件与目录绑定'}</h2>
         <p>本地路径只保存在这台 Mac 上。重新选择位置，请打开所属流程的资源配置。</p>
-        <label className="local-settings-search">
-          搜索本机资源
-          <input
-            ref={search}
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="流程名称、资源名称或路径"
-          />
-        </label>
-        <div className="local-storage-count" role="status">
-          {filtered.length} 个流程 · {count} 项资源
-        </div>
+        <details className="local-resource-search-controls" open={compact ? undefined : true}>
+          <summary hidden={!compact}>查找本机资源 · {count}</summary>
+          <label className="local-settings-search">
+            搜索本机资源
+            <input
+              ref={search}
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="流程名称、资源名称或路径"
+            />
+          </label>
+          <div className="local-storage-count" role="status">
+            {filtered.length} 个流程 · {count} 项资源
+          </div>
+        </details>
         {filtered.map(({ flow, resources }) => (
           <article className="local-settings-resource" key={flow.id}>
             <div className="local-settings-row">
@@ -137,30 +142,48 @@ export default function LocalStoragePanel({
             )}
           </div>
         )}
-        <p className="local-settings-muted">
-          用途来自模板声明，选择路径不等于授权执行；已保存路径是否可用，会在运行前重新检查。
-        </p>
+        {!compact && (
+          <p className="local-settings-muted">
+            用途来自模板声明，选择路径不等于授权执行；已保存路径是否可用，会在运行前重新检查。
+          </p>
+        )}
       </section>
       <section className="local-settings-card local-storage-locations">
-        <h2>文件与存储</h2>
+        {!compact && <h2>文件与存储</h2>}
         <div className="local-storage-location">
           <h3>应用内产物</h3>
-          <p>按运行独立保存。进入运行详情的“输出 / 产物”，查看文件状态、保存位置或清理预览。</p>
-          <button className="primary" disabled={busy} onClick={openRuns}>
+          <p>
+            {compact
+              ? '按运行独立保存。'
+              : '按运行独立保存。进入运行详情的“输出 / 产物”，查看文件状态、保存位置或清理预览。'}
+          </p>
+          <button className={compact ? undefined : 'primary'} disabled={busy} onClick={openRuns}>
             查看运行与产物
           </button>
         </div>
-        <div className="local-storage-location">
-          <h3>本地数据目录</h3>
+        <details
+          className="local-storage-location local-storage-data"
+          open={compact ? undefined : true}
+        >
+          <summary hidden={!compact}>本地数据目录</summary>
+          {!compact && <h3>本地数据目录</h3>}
           <p className="local-settings-path">{data.dataPath || '正在初始化安全存储…'}</p>
           <button disabled={busy || !data.dataPath} onClick={showData}>
             打开数据目录
           </button>
-        </div>
-        <p className="local-settings-muted">
-          本地路径和凭据不随流程 ZIP
-          导出。外部输出文件与应用内副本的状态，以对应运行的产物记录为准。
-        </p>
+        </details>
+        <details className="local-storage-help" open={compact ? undefined : true}>
+          <summary hidden={!compact}>资源使用说明</summary>
+          {compact && (
+            <p className="local-settings-muted">
+              用途来自模板声明，选择路径不等于授权执行；已保存路径是否可用，会在运行前重新检查。
+            </p>
+          )}
+          <p className="local-settings-muted">
+            本地路径和凭据不随流程 ZIP
+            导出。外部输出文件与应用内副本的状态，以对应运行的产物记录为准。
+          </p>
+        </details>
       </section>
     </div>
   );
