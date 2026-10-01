@@ -89,7 +89,7 @@
   max-height: 280px;
   margin: 12px 0 0;
 }
-.desktop-task-run-panel {
+.desktop-task-run .desktop-task-run-panel {
   min-height: 560px;
   padding: 32px;
 }
@@ -98,7 +98,7 @@
 }
 .desktop-task-run .desktop-task-run-panel > h2 {
   font-size: 28px;
-  line-height: 1.4;
+  line-height: 40px;
 }
 .desktop-task-run-status {
   display: flex;
@@ -107,12 +107,42 @@
   gap: 16px;
   color: var(--fa-text-secondary);
 }
-.desktop-task-readback {
+.desktop-task-object {
+  min-height: 120px;
+}
+.desktop-task-run .desktop-task-object h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+.desktop-task-run .desktop-task-readback h3 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 400;
+  color: var(--fa-text-secondary);
+}
+.desktop-task-run .desktop-task-readback pre {
+  margin: 0;
   padding: 16px;
   border: 1px solid var(--fa-border-default);
   border-radius: var(--fa-radius-12);
   min-height: 140px;
-  background: var(--fa-status-success-bg);
+  background: var(--fa-bg-canvas);
+  font-size: 14px;
+  line-height: 22px;
+}
+.desktop-task-record {
+  display: grid;
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+.desktop-task-run-panel > h2 {
+  overflow-wrap: anywhere;
+}
+.desktop-task-run-panel > .ai-task-actions > button {
+  min-width: 144px;
 }
 .desktop-task-details {
   align-self: flex-start;
@@ -124,7 +154,8 @@
   .run-review-page.is-desktop .run-review-columns > .ai-task-card {
     min-height: 0;
   }
-  .desktop-task-run-panel {
+  .desktop-task-run .desktop-task-run-panel,
+  .desktop-task-run[data-task-run-mode='success'] .desktop-task-run-panel {
     padding: 24px;
     min-height: 0;
   }

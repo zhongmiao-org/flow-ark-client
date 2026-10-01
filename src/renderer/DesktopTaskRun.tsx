@@ -71,21 +71,24 @@ export default function DesktopTaskRun({
               ? '结果待核对'
               : (runDisplayLabels[run.state as keyof typeof runDisplayLabels] ?? run.state)}
           </span>
-          <span>
-            运行记录：{runDisplayLabels[run.state as keyof typeof runDisplayLabels] ?? run.state} ·
-            已记录耗时：{model.view.elapsed.label}
-          </span>
         </div>
-        <h2>{verified ? '修改了已核对的原选区' : desktop.title}</h2>
-        <div className="task-run-file">
-          <h3>{model.terminal ? '记录中的对象' : '当前对象'}</h3>
-          <p>
-            {desktop.windowTitle
-              ? `文本编辑 / ${desktop.windowTitle} / 原选区`
-              : '本次记录没有提供窗口名称，请核对原应用窗口。'}
-          </p>
-          <p>这里显示本次运行的固定目标，不代表当前窗口或选区仍然一致。</p>
-        </div>
+        <h2>
+          {verified
+            ? desktop.windowTitle
+              ? `修改了 ${desktop.windowTitle} 的选中段落`
+              : '修改了已核对的原选区'
+            : desktop.title}
+        </h2>
+        {!verified && (
+          <div className="task-run-file desktop-task-object">
+            <h3>{model.terminal ? '记录中的对象' : '当前对象'}</h3>
+            <p>
+              {desktop.windowTitle
+                ? `文本编辑 / ${desktop.windowTitle} / 原选区`
+                : '本次记录没有提供窗口名称，请核对原应用窗口。'}
+            </p>
+          </div>
+        )}
         {model.view.statusNote && <p role="status">{model.view.statusNote}</p>}
         {detail.fault && (
           <p role="alert" className="field-error">
@@ -97,7 +100,7 @@ export default function DesktopTaskRun({
             {run.error}
           </p>
         )}
-        <p role={desktop.needsReview ? 'alert' : 'status'}>{desktop.effect}</p>
+        {!verified && <p role={desktop.needsReview ? 'alert' : 'status'}>{desktop.effect}</p>}
         {verified && (
           <>
             <div className="desktop-task-readback">
@@ -106,7 +109,10 @@ export default function DesktopTaskRun({
                 {desktop.receipt!.readback}
               </pre>
             </div>
-            <p>结果仍在原文档中，请在文本编辑中查看并按需要保存。此处不会自动刷新后续编辑。</p>
+            <div className="desktop-task-effect">
+              <p role="status">{desktop.effect}</p>
+              <p>结果仍在原文档中，请在文本编辑中查看并按需要保存。此处不会自动刷新后续编辑。</p>
+            </div>
             {!model.success && (
               <p>文字回读与运行整体状态分别记录；请同时核对上方取消、中断、收尾或异常提示。</p>
             )}
@@ -136,26 +142,11 @@ export default function DesktopTaskRun({
             )}
           </div>
         )}
-        {page === 'details' ? (
-          <>
-            <DesktopRunReceipt
-              runId={run.id}
-              receipts={detail.desktopReceipts}
-              snapshot={detail.snapshot}
-            />
-            <p className="task-run-path">固定版本：{run.versionId}</p>
-            <TaskExecutionSteps model={model} view={stepsView} change={setStepsView} />
-            <RunEventLog runId={run.id} events={detail.events} snapshot={detail.snapshot} />
-            <button onClick={() => setPage('overview')}>返回应用结果</button>
-          </>
-        ) : (
-          <button className="desktop-task-details" onClick={() => setPage('details')}>
-            查看修改回执与执行记录
-          </button>
-        )}
         {model.terminal && (
           <>
-            <p>再次执行需回到任务，重新选择窗口与原文并确认单次修改。未知结果应先人工核对。</p>
+            {!verified && (
+              <p>再次执行需回到任务，重新选择窗口与原文并确认单次修改。未知结果应先人工核对。</p>
+            )}
             <div className="ai-task-actions">
               <button onClick={() => navigate('desktop-target')}>重新查看应用窗口</button>
               <button onClick={() => navigate('plan')}>返回任务方案</button>
@@ -164,6 +155,37 @@ export default function DesktopTaskRun({
               </button>
             </div>
           </>
+        )}
+        {page === 'details' ? (
+          <>
+            <DesktopRunReceipt
+              runId={run.id}
+              receipts={detail.desktopReceipts}
+              snapshot={detail.snapshot}
+            />
+            <div className="desktop-task-record">
+              <p>
+                记录中的对象：
+                {desktop.windowTitle
+                  ? `文本编辑 / ${desktop.windowTitle} / 原选区`
+                  : '本次记录未提供窗口名称'}
+              </p>
+              <p>固定版本：{run.versionId}</p>
+              <p>
+                运行记录：
+                {runDisplayLabels[run.state as keyof typeof runDisplayLabels] ?? run.state} ·
+                已记录耗时：{model.view.elapsed.label}
+              </p>
+              <p>记录只代表本次执行时的目标和回读，不代表当前窗口或文档仍然一致。</p>
+            </div>
+            <TaskExecutionSteps model={model} view={stepsView} change={setStepsView} />
+            <RunEventLog runId={run.id} events={detail.events} snapshot={detail.snapshot} />
+            <button onClick={() => setPage('overview')}>返回应用结果</button>
+          </>
+        ) : (
+          <button className="desktop-task-details" onClick={() => setPage('details')}>
+            查看修改回执与执行记录
+          </button>
         )}
       </section>
       <div className="ai-task-actions">
