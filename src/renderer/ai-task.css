@@ -444,6 +444,22 @@
 .run-review-page {
   container-type: inline-size;
 }
+.run-review-page.is-embedded-review {
+  padding: 0;
+}
+.task-run-page .run-review-page.is-embedded-review > .page-heading {
+  margin-bottom: 24px;
+}
+.run-review-rerun-origin {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.run-review-page .run-review-rerun-note {
+  color: var(--fa-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+}
 .run-review-columns {
   display: grid;
   grid-template-columns: minmax(0, 680fr) minmax(0, 448fr);

@@ -16,6 +16,8 @@ type Props = {
   edit: () => void;
   openDetail: (detail: any) => void;
   bound?: (detail: TaskDetail) => void;
+  embedded?: boolean;
+  repair?: { taskId: string; revision: number; runId: string };
 };
 const access: Record<string, string> = {
   read: '读取',
@@ -34,7 +36,15 @@ function Resource({ resource }: { resource: ReviewResource }) {
     </li>
   );
 }
-function Contents({ preview, compact }: { preview: RunReviewPreview; compact: boolean }) {
+function Contents({
+  preview,
+  compact,
+  repairRevision,
+}: {
+  preview: RunReviewPreview;
+  compact: boolean;
+  repairRevision?: number;
+}) {
   if (preview.desktop) return <DesktopRunConfirmation preview={preview} />;
   const tools = preview.toolCalls ?? [];
   const objects = preview.resources.filter((r) => !['file', 'directory'].includes(r.kind));
@@ -51,7 +61,7 @@ function Contents({ preview, compact }: { preview: RunReviewPreview; compact: bo
   );
   return (
     <>
-      {preview.rerun && (
+      {preview.rerun && !compact && (
         <section className="run-review-card">
           <h2>关联原运行，从头执行</h2>
           <p>
@@ -149,9 +159,13 @@ function Contents({ preview, compact }: { preview: RunReviewPreview; compact: bo
         <h2>执行版本</h2>
         {!compact && versionSummary}
         <p>
-          {preview.ready
-            ? '采用已检查的固定方案，运行中修改草稿不影响此次执行。'
-            : '当前显示已保存方案；检查尚未通过，还没有创建运行或固定执行版本。'}
+          {repairRevision !== undefined
+            ? preview.ready
+              ? `采用已检查的目标修复方案 · 任务修订 ${repairRevision}，运行中修改草稿不影响此次执行。`
+              : `目标修复方案 · 任务修订 ${repairRevision}；检查未通过，尚未固定执行版本。`
+            : preview.ready
+              ? '采用已检查的固定方案，运行中修改草稿不影响此次执行。'
+              : '当前显示已保存方案；检查尚未通过，还没有创建运行或固定执行版本。'}
         </p>
         <details>
           <summary>查看版本与参数</summary>
@@ -159,6 +173,13 @@ function Contents({ preview, compact }: { preview: RunReviewPreview; compact: bo
           <p className="run-review-version">{preview.flow.versionId || '检查通过后固定版本'}</p>
           <p>参数：{preview.flow.parameterNames.join('、') || '无'}</p>
           <p>声明能力：{preview.flow.capabilities.join('、') || '无'}</p>
+          {compact && preview.rerun && (
+            <div className="run-review-rerun-origin">
+              <p>关联原运行：{preview.rerun.name}</p>
+              <p className="run-review-version">{preview.rerun.runId}</p>
+              <p>已核对原输出与外部结果；新运行从第 1 步开始，不恢复旧脚本内部现场。</p>
+            </div>
+          )}
         </details>
       </section>
     </>
@@ -221,6 +242,13 @@ export default function RunReviewPage(props: Props) {
                 ? '检查通过'
                 : '需要处理';
   const compactReview = !!props.selection?.task && !preview?.desktop;
+  const repairRevision =
+    props.repair &&
+    preview?.task?.id === props.repair.taskId &&
+    preview.task.revision === props.repair.revision &&
+    preview.rerun?.runId === props.repair.runId
+      ? props.repair.revision
+      : undefined;
   const debugToggle = !attempt ? (
     <label className="run-review-toggle">
       <input
@@ -254,6 +282,7 @@ export default function RunReviewPage(props: Props) {
       className={
         'page run-review-page' +
         (preview?.desktop ? ' is-desktop' : '') +
+        (props.embedded ? ' is-embedded-review' : '') +
         (compactReview ? ' is-task-review' : '')
       }
       hidden={!props.active}
@@ -283,7 +312,7 @@ export default function RunReviewPage(props: Props) {
               }}
             />
           ) : preview ? (
-            <Contents preview={preview} compact={compactReview} />
+            <Contents preview={preview} compact={compactReview} repairRevision={repairRevision} />
           ) : (
             <div role="status">
               <h2>{state.loading ? '正在核对保存的流程与资源' : '尚未取得检查结果'}</h2>
@@ -304,6 +333,11 @@ export default function RunReviewPage(props: Props) {
                 />
               ))}
               {!compactReview && debugToggle}
+              {compactReview && preview?.rerun && (
+                <p className="run-review-rerun-note">
+                  从第 1 步创建新运行；已完成或结果未知的外部操作，可能再次发生。
+                </p>
+              )}
               <label className="run-review-toggle">
                 <input
                   type="checkbox"

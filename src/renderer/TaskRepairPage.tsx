@@ -593,6 +593,10 @@ export default function TaskRepairPage({
         )}
       </div>
       <RunReviewPage
+        embedded
+        repair={
+          applied && task ? { taskId, revision: task.task.revision, runId: run.id } : undefined
+        }
         active={active && phase === 'check'}
         selection={
           task?.flow
