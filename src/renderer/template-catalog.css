@@ -114,6 +114,30 @@
   color: var(--fa-status-warning);
   background: var(--fa-status-warning-bg);
 }
+.template-catalog-status.error {
+  color: var(--fa-status-error);
+  background: var(--fa-status-error-bg);
+}
+.template-install-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+.template-install-state .template-catalog-status::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: middle;
+}
+.template-catalog-side .template-install-state h3 {
+  font-size: 18px;
+  line-height: 28px;
+}
 .template-catalog-muted {
   font-size: 12px;
   color: var(--fa-text-secondary);

@@ -51,6 +51,7 @@ export default function TemplateLibrary({
   const [detail, setDetail] = useState<TemplateDetail>();
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
+  const [failedOperation, setFailedOperation] = useState('');
   const [notice, setNotice] = useState('');
   const [reviewed, setReviewed] = useState(false);
   const [query, setQuery] = useState('');
@@ -63,6 +64,10 @@ export default function TemplateLibrary({
   const [removeReviewed, setRemoveReviewed] = useState(false);
   const locked = useRef(false),
     heading = useRef<HTMLHeadingElement>(null);
+  const errorHeading = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (active && error && !detail) errorHeading.current?.focus();
+  }, [active, error, detail]);
   const locations = useRef(
     new Map<View, { scroll: number; focus: HTMLElement | null; key?: string }>(),
   );
@@ -132,10 +137,12 @@ export default function TemplateLibrary({
     locked.current = true;
     setBusy(name);
     setError('');
+    setFailedOperation('');
     setNotice('');
     try {
       return await operation();
     } catch (reason) {
+      setFailedOperation(name);
       setError(message(reason));
     } finally {
       locked.current = false;
@@ -178,21 +185,35 @@ export default function TemplateLibrary({
   };
   const selectZip = () =>
     work('inspect', async () => {
-      const next: Preview | null = await api('template.inspect');
-      if (!next) return;
       const old = previewRef.current;
-      if (old) {
-        try {
-          await api('template.cancelImport', { token: old.token });
-        } catch (reason) {
-          await api('template.cancelImport', { token: next.token }).catch(() => {});
-          throw reason;
-        }
-      }
-      remember();
-      setPreview(next);
       setReviewed(false);
-      setView('inspect');
+      try {
+        const next: Preview | null = await api('template.inspect');
+        if (!next) {
+          if (old)
+            setNotice(
+              `已取消选择。仍保留此前检查的“${old.manifest.name} · v${old.manifest.version}”，安装前请重新核对来源。`,
+            );
+          return;
+        }
+        if (old) {
+          try {
+            await api('template.cancelImport', { token: old.token });
+          } catch (reason) {
+            await api('template.cancelImport', { token: next.token }).catch(() => {});
+            throw reason;
+          }
+        }
+        remember();
+        setPreview(next);
+        setView('inspect');
+      } catch (reason) {
+        if (old)
+          setNotice(
+            `未切换到新的检查结果。当前仍是此前检查的“${old.manifest.name} · v${old.manifest.version}”，安装前请重新核对来源。`,
+          );
+        throw reason;
+      }
     });
   const openInstance = (id: string) =>
     work('detail', async () => {
@@ -325,8 +346,19 @@ export default function TemplateLibrary({
         </header>
         {error && (
           <div className="template-catalog-banner error" role="alert">
-            <strong>操作未完成</strong>
+            <strong ref={errorHeading} tabIndex={-1}>
+              {failedOperation === 'inspect'
+                ? '模板检查未完成'
+                : failedOperation === 'install'
+                  ? '安装未完成'
+                  : '操作未完成'}
+            </strong>
             <p>{error}</p>
+            {failedOperation === 'inspect' && (
+              <button disabled={!!busy} onClick={() => void selectZip()}>
+                重新选择 ZIP
+              </button>
+            )}
           </div>
         )}
         {notice && (
@@ -469,13 +501,24 @@ export default function TemplateLibrary({
             <aside className="template-catalog-card template-catalog-side">
               <h2>安装前确认</h2>
               {conflict && (
-                <div className="template-catalog-banner error">
-                  同 ID / 版本的内容摘要与已安装包不同，不能覆盖。请核对来源或使用独立版本。
+                <div className="template-catalog-banner error template-install-state" role="alert">
+                  <span className="template-catalog-status error">拒绝安装</span>
+                  <h3>同版本内容不同</h3>
+                  <p>同 ID / 版本的内容摘要与已安装包不同，不能覆盖。请核对来源或使用独立版本。</p>
                 </div>
               )}
               {same && !conflict && (
-                <div className="template-catalog-banner">
-                  相同版本与摘要已安装，确认后保留现有包定义。
+                <div className="template-catalog-banner template-install-state" role="status">
+                  <span className="template-catalog-status success">无需重复安装</span>
+                  <h3>该版本已安装</h3>
+                  <p>相同 ID、版本与摘要已存在，保留当前包定义。</p>
+                </div>
+              )}
+              {!same && data.templates.some((item) => item.manifest.id === preview.manifest.id) && (
+                <div className="template-catalog-banner template-install-state" role="status">
+                  <span className="template-catalog-status">可并存安装</span>
+                  <h3>发现新版本</h3>
+                  <p>新版本不会覆盖原实例、计划或运行；采用新版需创建独立实例。</p>
                 </div>
               )}
               {preview.consumed && busy !== 'install' && (
@@ -489,39 +532,56 @@ export default function TemplateLibrary({
                   : '请核对包定义和来源。'}
                 安装不会执行模板代码。
               </p>
-              <label className="template-catalog-check">
-                <input
-                  type="checkbox"
-                  checked={reviewed}
-                  disabled={!!busy || preview.consumed || !!conflict}
-                  onChange={(e) => setReviewed(e.target.checked)}
-                />
-                我已核对模板来源
-              </label>
+              {(!same || conflict) && (
+                <label className="template-catalog-check">
+                  <input
+                    type="checkbox"
+                    checked={reviewed}
+                    disabled={!!busy || preview.consumed || !!conflict}
+                    onChange={(e) => setReviewed(e.target.checked)}
+                  />
+                  我已核对模板来源
+                </label>
+              )}
               <p>创建实例后再按入口配置资源；新实例动作权限默认为禁止。</p>
-              <button
-                className="primary"
-                disabled={!!busy || !reviewed || preview.consumed || !!conflict}
-                onClick={() =>
-                  void work('install', async () => {
-                    const token = preview.token;
-                    setPreview({ ...preview, consumed: true });
-                    const result = await api('template.install', { token });
-                    setInstalled(result);
-                    setSelectedKey(result.key);
-                    setPreview(undefined);
-                    setView('installed');
-                    await refresh();
-                  })
-                }
-              >
-                {busy === 'install' ? '正在安装…' : '确认安装'}
-              </button>
+              {same && !conflict ? (
+                <button
+                  className="primary"
+                  disabled={!!busy}
+                  onClick={() =>
+                    void work('open-installed', async () => {
+                      await cancelPreview();
+                      openPackage(same);
+                    })
+                  }
+                >
+                  打开已安装模板
+                </button>
+              ) : (
+                <button
+                  className="primary"
+                  disabled={!!busy || !reviewed || preview.consumed || !!conflict}
+                  onClick={() =>
+                    void work('install', async () => {
+                      const token = preview.token;
+                      setPreview({ ...preview, consumed: true });
+                      const result = await api('template.install', { token });
+                      setInstalled(result);
+                      setSelectedKey(result.key);
+                      setPreview(undefined);
+                      setView('installed');
+                      await refresh();
+                    })
+                  }
+                >
+                  {busy === 'install' ? '正在安装…' : '确认安装'}
+                </button>
+              )}
               <button disabled={!!busy} onClick={() => void selectZip()}>
                 重新选择 ZIP
               </button>
               <button disabled={!!busy} onClick={back}>
-                取消安装
+                {same && !conflict ? '返回模板库' : '取消安装'}
               </button>
             </aside>
           </div>
