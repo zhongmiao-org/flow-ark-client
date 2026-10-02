@@ -1578,3 +1578,14 @@
 .task-step-search-location {
   margin-bottom: 8px;
 }
+
+.task-understanding-directory > .task-output-feedback {
+  margin: 0;
+  color: var(--fa-text-secondary);
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.task-understanding-directory > .task-output-feedback.is-error {
+  color: var(--fa-status-error);
+}

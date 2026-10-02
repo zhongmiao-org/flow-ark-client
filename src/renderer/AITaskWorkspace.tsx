@@ -30,7 +30,10 @@ import { scopedDescription, type PlanningScope } from '../shared/planning-scope'
 import { stepTitle } from './flow-outline';
 import TaskWebTargetPage from './TaskWebTargetPage';
 import FirstTaskGuide from './FirstTaskGuide';
-import TaskUnderstandingPage, { type OutputOptions } from './TaskUnderstandingPage';
+import TaskUnderstandingPage, {
+  type OutputOptions,
+  type OutputFeedback,
+} from './TaskUnderstandingPage';
 import PlanningQuestions from './PlanningQuestions';
 import { toolsExecutionNotice, toolContexts } from '../shared/task-mcp-targets';
 import PlanningChanges from './PlanningChanges';
@@ -243,6 +246,7 @@ export default function AITaskWorkspace(props: Props) {
   const [selected, setSelected] = useState('');
   const planStepList = useRef<TaskStepListHandle>(null);
   const [hiddenListStep, setHiddenListStep] = useState('');
+  const [outputFeedback, setOutputFeedback] = useState<OutputFeedback & { taskId: string }>();
   const [editingProposal, setEditingProposal] = useState(false);
   const [modification, setModification] = useState<{
     taskId: string;
@@ -1009,24 +1013,59 @@ export default function AITaskWorkspace(props: Props) {
       focusTaskHeading();
     });
   }
-  async function chooseOutput() {
+  async function changeOutput(action: 'choose' | 'clear') {
+    if (!detail) return;
+    const taskId = detail.task.id;
+    const feedback = (kind: OutputFeedback['kind'], message: string) =>
+      setOutputFeedback({ taskId, kind, message });
     await run(async () => {
-      if (!detail || stale) throw new Error('请重新读取任务后选择');
-      if (outputNameError) throw new Error(outputNameError);
-      let next = detail;
-      if (contentDirty) {
-        next = await api('task.save', { id: detail.task.id, revision, ...draft });
-        accept(next, true);
-      }
-      props.showBrowser(false);
-      const chosen: TaskDetail = await api('task.output.choose', {
-        id: next.task.id,
-        revision: next.task.revision,
-        ...outputOptions,
-      });
-      if (chosen.task.outputTarget?.selectionId !== next.task.outputTarget?.selectionId) {
-        accept(chosen);
-        setReviewed(false);
+      feedback(
+        action === 'choose' ? 'choosing' : 'clearing',
+        action === 'choose'
+          ? '正在准备目录选择，请在系统窗口中选择或取消。'
+          : '正在移除当前任务的输出目录…',
+      );
+      try {
+        if (stale) throw new Error('请重新读取任务后再修改输出目录');
+        if (action === 'clear') {
+          const next: TaskDetail = await api('task.output.clear', { id: taskId, revision });
+          // Keep unsaved answers while adopting the new output revision.
+          const currentDraft = draft;
+          accept(next);
+          setDraft(currentDraft);
+          setReviewed(false);
+          feedback('cleared', '已移除当前任务的输出目录；已保存流程、运行和文件不会随之更改。');
+          return;
+        }
+        if (outputNameError) throw new Error(outputNameError);
+        let next = detail;
+        if (contentDirty) {
+          next = await api('task.save', { id: taskId, revision, ...draft });
+          accept(next, true);
+        }
+        props.showBrowser(false);
+        const chosen: TaskDetail = await api('task.output.choose', {
+          id: next.task.id,
+          revision: next.task.revision,
+          ...outputOptions,
+        });
+        if (chosen.task.outputTarget?.selectionId !== next.task.outputTarget?.selectionId) {
+          accept(chosen);
+          setReviewed(false);
+          feedback('chosen', '输出目录、文件名和同名规则已保存。目录路径留在本机。');
+        } else {
+          feedback(
+            'cancelled',
+            next.task.outputTarget
+              ? '已取消目录选择，原输出位置保持不变。'
+              : '已取消目录选择，尚未设置输出目录。',
+          );
+        }
+      } catch (error) {
+        feedback(
+          'error',
+          (error instanceof Error && error.message) || '输出目录操作未完成，请重新核对后再试。',
+        );
       }
     });
   }
@@ -2056,7 +2095,11 @@ export default function AITaskWorkspace(props: Props) {
               />
             ) : page === 'understand' ? (
               <TaskUnderstandingPage
+                key={detail.task.id}
                 task={detail.task}
+                outputFeedback={
+                  outputFeedback?.taskId === detail.task.id ? outputFeedback : undefined
+                }
                 description={draft.description}
                 context={draft.context}
                 outputDirty={outputDirty}
@@ -2068,27 +2111,15 @@ export default function AITaskWorkspace(props: Props) {
                 requiredOutput={learning?.taskId === detail.task.id}
                 changed={(options) => {
                   setOutputOptions(options);
+                  setOutputFeedback(undefined);
                   setReviewed(false);
                   setMessage('');
                 }}
                 answer={(id, value) =>
                   edit({ ...draft, answers: { ...draft.answers, [id]: value } })
                 }
-                choose={() => void chooseOutput()}
-                clear={() =>
-                  void run(async () => {
-                    if (!detail || stale) return;
-                    const next: TaskDetail = await api('task.output.clear', {
-                      id: detail.task.id,
-                      revision,
-                    });
-                    // Keep unsaved answers while adopting the new output revision.
-                    const currentDraft = draft;
-                    accept(next);
-                    setDraft(currentDraft);
-                    setReviewed(false);
-                  })
-                }
+                choose={() => void changeOutput('choose')}
+                clear={() => void changeOutput('clear')}
                 describe={() =>
                   void run(async () => {
                     await save();

@@ -1,9 +1,13 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { PlanningTask, PlanningResult, PlanningContext } from '../shared/planning';
 import { learningPrompt } from '../shared/learning';
 import PlanningQuestions from './PlanningQuestions';
 import type { TaskOutputTarget } from '../shared/task-output';
 
+export type OutputFeedback = {
+  kind: 'choosing' | 'clearing' | 'chosen' | 'cancelled' | 'cleared' | 'error';
+  message: string;
+};
 export type OutputOptions = Pick<TaskOutputTarget, 'name' | 'onConflict'>;
 export default function TaskUnderstandingPage({
   task,
@@ -11,6 +15,7 @@ export default function TaskUnderstandingPage({
   context,
   outputDirty,
   outputNameError,
+  outputFeedback,
   result,
   answers,
   options,
@@ -29,6 +34,7 @@ export default function TaskUnderstandingPage({
   context: PlanningContext[];
   outputDirty: boolean;
   outputNameError?: string;
+  outputFeedback?: OutputFeedback;
   result?: PlanningResult;
   answers: Record<string, string>;
   options: OutputOptions;
@@ -43,6 +49,18 @@ export default function TaskUnderstandingPage({
   controls: ReactNode;
 }) {
   const outputErrorId = useId();
+  const outputFeedbackId = useId();
+  const directoryButton = useRef<HTMLButtonElement>(null);
+  const feedbackElement = useRef<HTMLParagraphElement>(null);
+  const handledFeedback = useRef<OutputFeedback | undefined>(outputFeedback);
+  const outputPending = outputFeedback?.kind === 'choosing' || outputFeedback?.kind === 'clearing';
+  useLayoutEffect(() => {
+    if (busy || !outputFeedback || outputPending || handledFeedback.current === outputFeedback)
+      return;
+    handledFeedback.current = outputFeedback;
+    if (outputFeedback.kind === 'error') feedbackElement.current?.focus();
+    else directoryButton.current?.focus();
+  }, [busy, outputFeedback, outputPending]);
   const outputInput = useRef<HTMLInputElement>(null);
   const [optionsOpen, setOptionsOpen] = useState(false);
   useEffect(() => {
@@ -73,16 +91,37 @@ export default function TaskUnderstandingPage({
           />
         )}
         <h2>{requiredOutput && !output ? '还差一个信息' : '确认输出信息'}</h2>
-        <div className="task-understanding-directory">
+        <div className="task-understanding-directory" aria-busy={outputPending}>
           <label htmlFor="task-output-directory">结果保存到哪里？</label>
           <button
             id="task-output-directory"
+            ref={directoryButton}
+            aria-describedby={outputFeedback ? outputFeedbackId : undefined}
             disabled={busy || !!outputNameError}
             onClick={choose}
             title={output?.directory}
           >
-            {output ? '任务输出（本机目录）· 更换' : '选择本机输出目录'}
+            {outputFeedback?.kind === 'choosing'
+              ? '等待目录选择…'
+              : output
+                ? '任务输出（本机目录）· 更换'
+                : '选择本机输出目录'}
           </button>
+          {outputFeedback && (
+            <p
+              id={outputFeedbackId}
+              ref={feedbackElement}
+              tabIndex={-1}
+              role={outputFeedback.kind === 'error' ? 'alert' : 'status'}
+              className={
+                outputFeedback.kind === 'error'
+                  ? 'task-output-feedback is-error'
+                  : 'task-output-feedback'
+              }
+            >
+              {outputFeedback.message}
+            </p>
+          )}
           {!requiredOutput && !output && (
             <small>需要保存文本时选择目录；其他需求可先生成方案。</small>
           )}
@@ -226,7 +265,7 @@ export default function TaskUnderstandingPage({
             </label>
             {output && (
               <button disabled={busy} onClick={clear}>
-                移除输出目录
+                {outputFeedback?.kind === 'clearing' ? '正在移除…' : '移除输出目录'}
               </button>
             )}
           </details>
