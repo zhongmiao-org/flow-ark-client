@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import {
   historyTimeRange,
@@ -61,6 +61,8 @@ export default function RunHistory({
     applied: boolean;
   } | null>(null);
   const restore = useRef<{ id: string; scroll: number } | null>(null);
+  const pageArrival = useRef(false);
+  const pageSummaryId = useId();
   shown.current = visible;
   const cursor = cursors[cursors.length - 1];
   useEffect(() => setPage(cursors.length), [cursors.length, setPage]);
@@ -71,6 +73,7 @@ export default function RunHistory({
     setOpenError(null);
   };
   const latest = () => {
+    pageArrival.current = true;
     resetView();
     setCursors([undefined]);
     setRevision((r) => r + 1);
@@ -165,6 +168,12 @@ export default function RunHistory({
   useEffect(() => {
     if (visible && !filterOpen && (error || openError)) errorPanel.current?.focus();
   }, [visible, filterOpen, error, openError]);
+  useEffect(() => {
+    if (!pageArrival.current || !visible || filterOpen || loading || error || !data) return;
+    pageArrival.current = false;
+    heading.current?.focus({ preventScroll: true });
+    root.current?.closest('main')?.scrollTo({ top: 0 });
+  }, [visible, filterOpen, loading, error, data]);
   const inspect = async (id: string) => {
     const current = generation.current;
     setOpening(id);
@@ -207,7 +216,7 @@ export default function RunHistory({
       style={visible ? undefined : { display: 'none' }}
     >
       <div className="runs-heading">
-        <h1 ref={heading} tabIndex={-1}>
+        <h1 ref={heading} tabIndex={-1} aria-describedby={filterOpen ? undefined : pageSummaryId}>
           {filterOpen ? '筛选运行记录' : '运行记录'}
         </h1>
         <p>
@@ -402,7 +411,9 @@ export default function RunHistory({
                     <tr key={r.id} aria-label={`${r.name} · ${r.id}`}>
                       <td>
                         <b>{r.name}</b>
-                        <small title={r.id}>{r.id.slice(0, 8)}</small>
+                        <small className="history-run-id" title={r.id}>
+                          {r.id}
+                        </small>
                         {scope && (
                           <small className="history-version" title={r.versionId}>
                             运行版本 {r.versionId.slice(0, 12)}
@@ -414,24 +425,16 @@ export default function RunHistory({
                       </td>
                       <td>{runSourceLabels[runSource(r)] ?? r.source}</td>
                       <td>
-                        {elapsed?.startedAt
-                          ? new Date(elapsed.startedAt).toLocaleString('zh-CN', {
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              second: '2-digit',
-                            })
-                          : r.state === 'QUEUED'
-                            ? '尚未开始'
-                            : '待核对'}
+                        <RunStartTime value={elapsed?.startedAt} queued={r.state === 'QUEUED'} />
                       </td>
                       <td>
                         {elapsed?.milliseconds == null ? (
                           '待核对'
                         ) : (
                           <>
-                            <span>{formatRunDuration(elapsed.milliseconds)}</span>
+                            <span title={formatRunDuration(elapsed.milliseconds)}>
+                              {compactDuration(elapsed.milliseconds)}
+                            </span>
                             {elapsed.kind === 'recorded' && <small>已记录</small>}
                           </>
                         )}
@@ -460,14 +463,16 @@ export default function RunHistory({
             )}
             {data && !data.runs.length && (
               <p className="history-empty">
-                {data.totalCount
-                  ? '没有符合筛选条件的运行记录。'
-                  : '还没有运行记录。运行一个流程后，可在这里查看。'}
+                {cursors.length > 1
+                  ? '当前页已没有记录，请返回上一页或查看最新。'
+                  : data.totalCount
+                    ? '没有符合筛选条件的运行记录。'
+                    : '还没有运行记录。运行一个流程后，可在这里查看。'}
               </p>
             )}
           </div>
           <div className="history-pagination">
-            <span aria-live="polite">
+            <span id={pageSummaryId} aria-live="polite">
               {data
                 ? `显示 ${data.runs.length ? (cursors.length - 1) * (query.limit ?? 6) + 1 : 0}–${data.runs.length ? (cursors.length - 1) * (query.limit ?? 6) + data.runs.length : 0} 条，共 ${data.matchedCount} 条`
                 : loading
@@ -479,6 +484,7 @@ export default function RunHistory({
               <button
                 disabled={loading || cursors.length < 2}
                 onClick={() => {
+                  pageArrival.current = true;
                   resetView();
                   setCursors((c) => c.slice(0, -1));
                 }}
@@ -489,6 +495,7 @@ export default function RunHistory({
                 disabled={loading || !!error || !data?.nextCursor}
                 onClick={() => {
                   if (data?.nextCursor) {
+                    pageArrival.current = true;
                     resetView();
                     setCursors((c) => [...c, data.nextCursor!]);
                   }
@@ -508,5 +515,45 @@ export default function RunHistory({
         </>
       )}
     </div>
+  );
+}
+
+function compactDuration(milliseconds: number) {
+  if (!Number.isFinite(milliseconds) || milliseconds < 0) return formatRunDuration(milliseconds);
+  const seconds = Math.floor(milliseconds / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return minutes < 60
+    ? `${pad(minutes)}:${pad(seconds % 60)}`
+    : `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}:${pad(seconds % 60)}`;
+}
+
+function RunStartTime({ value, queued }: { value?: string | null; queued: boolean }) {
+  if (!value) return queued ? '尚未开始' : '待核对';
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return '待核对';
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const day =
+    date.toDateString() === now.toDateString()
+      ? '今天'
+      : date.toDateString() === yesterday.toDateString()
+        ? '昨天'
+        : date.toLocaleDateString('zh-CN', {
+            ...(date.getFullYear() !== now.getFullYear() ? { year: 'numeric' as const } : {}),
+            month: '2-digit',
+            day: '2-digit',
+          });
+  return (
+    <time dateTime={date.toISOString()} title={date.toLocaleString('zh-CN')}>
+      {day}{' '}
+      {date.toLocaleTimeString('zh-CN', {
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      })}
+    </time>
   );
 }
