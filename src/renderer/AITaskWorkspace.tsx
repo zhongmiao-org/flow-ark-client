@@ -2036,6 +2036,7 @@ export default function AITaskWorkspace(props: Props) {
             )}
             {page === 'brief' && !scope ? (
               <TaskBriefPage
+                key={detail.task.id}
                 task={detail.task}
                 description={draft.description}
                 context={draft.context}

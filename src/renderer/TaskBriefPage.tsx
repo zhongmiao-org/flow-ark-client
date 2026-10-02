@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { PlanningContext, PlanningTask } from '../shared/planning';
 import { IMAGE_TOTAL_BYTES } from '../shared/task-attachments';
 
@@ -31,6 +31,38 @@ export default function TaskBriefPage({
   understand: () => void;
   controls: ReactNode;
 }) {
+  const [expandedContext, setExpandedContext] = useState<string[]>([]);
+  const contextNames = useRef(new Map<string, HTMLInputElement>());
+  const contextSummaries = useRef(new Map<string, HTMLElement>());
+  const addTextButton = useRef<HTMLButtonElement>(null);
+  const pendingFocus = useRef<{ id?: string; target: 'name' | 'summary' | 'add' } | null>(null);
+  useLayoutEffect(() => {
+    const pending = pendingFocus.current;
+    if (!pending) return;
+    const element =
+      pending.target === 'add'
+        ? addTextButton.current
+        : pending.target === 'name'
+          ? contextNames.current.get(pending.id!)
+          : contextSummaries.current.get(pending.id!);
+    if (!element) return;
+    pendingFocus.current = null;
+    element.focus();
+    if (pending.target === 'name') (element as HTMLInputElement).select();
+  }, [context]);
+  function addText() {
+    const id = crypto.randomUUID();
+    setExpandedContext((current) => [...current, id]);
+    pendingFocus.current = { id, target: 'name' };
+    changeContext([...context, { id, kind: 'text', label: '补充资料', text: '' }]);
+  }
+  function removeText(id: string, index: number) {
+    const remaining = context.filter((entry) => entry.id !== id);
+    const next = remaining[Math.min(index, remaining.length - 1)];
+    pendingFocus.current = next ? { id: next.id, target: 'summary' } : { target: 'add' };
+    setExpandedContext((current) => current.filter((entry) => entry !== id));
+    changeContext(remaining);
+  }
   const count =
     context.length +
     (task.attachments?.length ?? 0) +
@@ -119,61 +151,91 @@ export default function TaskBriefPage({
             </div>
           )}
           {context.map((c, index) => (
-            <fieldset className="ai-task-context" disabled={busy} key={c.id}>
-              <label>
-                资料名称
-                <input
-                  aria-label={`资料 ${index + 1} 名称`}
-                  value={c.label}
-                  maxLength={200}
-                  onChange={(e) =>
-                    changeContext(
-                      context.map((entry) =>
-                        entry.id === c.id ? { ...entry, label: e.target.value } : entry,
-                      ),
-                    )
-                  }
-                />
-              </label>
-              <label>
-                资料内容
-                <textarea
-                  aria-label={`资料 ${index + 1} 内容`}
-                  value={c.text}
-                  maxLength={50000}
-                  onChange={(e) =>
-                    changeContext(
-                      context.map((entry) =>
-                        entry.id === c.id ? { ...entry, text: e.target.value } : entry,
-                      ),
-                    )
-                  }
-                />
-              </label>
-              <button onClick={() => changeContext(context.filter((entry) => entry.id !== c.id))}>
-                移除资料 {index + 1}
-              </button>
-            </fieldset>
+            <details
+              className="task-brief-text-context"
+              key={c.id}
+              open={expandedContext.includes(c.id)}
+              onToggle={(e) => {
+                const open = e.currentTarget.open;
+                setExpandedContext((current) =>
+                  current.includes(c.id) === open
+                    ? current
+                    : open
+                      ? [...current, c.id]
+                      : current.filter((id) => id !== c.id),
+                );
+              }}
+            >
+              <summary
+                ref={(element) => {
+                  if (element) contextSummaries.current.set(c.id, element);
+                  else contextSummaries.current.delete(c.id);
+                }}
+              >
+                <span>{c.label.trim() || `未命名资料 ${index + 1}`}</span>
+                <small>
+                  {c.text.length.toLocaleString('zh-CN')} 字符 ·{' '}
+                  {expandedContext.includes(c.id) ? '收起编辑' : '展开编辑'}
+                </small>
+                {!expandedContext.includes(c.id) && (
+                  <span className="task-brief-text-summary">
+                    {c.text.trim().slice(0, 120) || '尚未填写内容'}
+                  </span>
+                )}
+              </summary>
+              <fieldset className="ai-task-context" disabled={busy}>
+                <label>
+                  资料名称
+                  <input
+                    ref={(element) => {
+                      if (element) contextNames.current.set(c.id, element);
+                      else contextNames.current.delete(c.id);
+                    }}
+                    aria-label={`资料 ${index + 1} 名称`}
+                    value={c.label}
+                    maxLength={200}
+                    onChange={(e) =>
+                      changeContext(
+                        context.map((entry) =>
+                          entry.id === c.id ? { ...entry, label: e.target.value } : entry,
+                        ),
+                      )
+                    }
+                  />
+                </label>
+                <label>
+                  资料内容
+                  <textarea
+                    aria-label={`资料 ${index + 1} 内容`}
+                    value={c.text}
+                    maxLength={50000}
+                    onChange={(e) =>
+                      changeContext(
+                        context.map((entry) =>
+                          entry.id === c.id ? { ...entry, text: e.target.value } : entry,
+                        ),
+                      )
+                    }
+                  />
+                </label>
+                <button onClick={() => removeText(c.id, index)}>移除资料 {index + 1}</button>
+              </fieldset>
+            </details>
           ))}
-          <button
-            disabled={busy || count >= 20}
-            onClick={() =>
-              changeContext([
-                ...context,
-                { id: crypto.randomUUID(), kind: 'text', label: '补充资料', text: '' },
-              ])
-            }
-          >
+          <button ref={addTextButton} disabled={busy || count >= 20} onClick={addText}>
             附加文本资料
           </button>
         </section>
         <p className="task-brief-disclosure">
           本次只发送你核对的描述、资料、图片和相关能力说明。未选择的窗口与文件不会加入。
         </p>
-        <p className="task-brief-disclosure">
-          文本支持 UTF-8，单项最多 200 KiB / 50000 字符；PNG / JPEG 单张最多 4 MiB。
-          截图入口选择已有图片，不会自动截取屏幕。副本保存在任务中，原文件变化后需移除重选。
-        </p>
+        <details className="task-brief-format">
+          <summary>资料格式与副本说明</summary>
+          <p>
+            文本支持 UTF-8，单项最多 200 KiB / 50000 字符；PNG / JPEG 单张最多 4 MiB。
+            截图入口选择已有图片，不会自动截取屏幕。副本保存在任务中，原文件变化后需移除重选。
+          </p>
+        </details>
         {controls}
         <div className="ai-task-actions">
           <button disabled={busy} onClick={understand}>
