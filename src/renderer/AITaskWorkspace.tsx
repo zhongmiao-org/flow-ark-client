@@ -1,4 +1,3 @@
-import { usePageBack } from './use-page-back';
 import TaskMissingAI from './TaskMissingAI';
 import TaskStepList from './TaskStepList';
 import TaskStepInspector from './TaskStepInspector';
@@ -387,7 +386,7 @@ export default function AITaskWorkspace(props: Props) {
                         ? '我理解你要……'
                         : result?.kind === 'unsupported'
                           ? '这项任务还需要支持'
-                          : result?.kind === 'plan' && detail?.proposal?.baseFlow
+                          : changesView
                             ? '检查 AI 提议的修改'
                             : '先看看任务步骤';
 
@@ -415,9 +414,13 @@ export default function AITaskWorkspace(props: Props) {
                         ? () => {
                             void back();
                           }
-                        : undefined,
+                        : page === 'review'
+                          ? () => void returnFromReview()
+                          : undefined,
         standaloneGraph
-          ? '确认方案'
+          ? detail?.proposal
+            ? '待采纳方案'
+            : '采纳后的方案'
           : page === 'modify'
             ? '当前方案'
             : page === 'generation'
@@ -426,19 +429,31 @@ export default function AITaskWorkspace(props: Props) {
                 : '任务草稿'
               : page === 'missing-ai'
                 ? '任务草稿'
-                : page === 'understand'
-                  ? '选择操作对象'
-                  : page === 'target'
-                    ? targetFromRun
-                      ? '任务方案'
-                      : '描述与附件'
-                    : page === 'guide' || page === 'brief'
-                      ? '开始任务'
-                      : undefined,
+                : page === 'check'
+                  ? '确认任务方案'
+                  : page === 'understand'
+                    ? '选择操作对象'
+                    : page === 'target'
+                      ? targetFromRun
+                        ? '任务方案'
+                        : '描述与附件'
+                      : page === 'guide' || page === 'brief'
+                        ? '开始任务'
+                        : page === 'review'
+                          ? changesView
+                            ? '确认任务方案'
+                            : flow && !scope
+                              ? '理解与补问'
+                              : '开始任务'
+                          : undefined,
       );
   }, [
     props.active,
     standaloneGraph,
+    changesView,
+    detail?.proposal?.id,
+    scope,
+    flow,
     returnToConversation,
     title,
     page,
@@ -894,7 +909,33 @@ export default function AITaskWorkspace(props: Props) {
       setPage('home');
     });
   }
-  usePageBack(() => void back(), props.active && page === 'review' && !standaloneGraph);
+  async function returnFromReview() {
+    if (lock.current) return;
+    if (changesView && detail?.proposal) {
+      setProposalView({ id: detail.proposal.id, mode: 'flow' });
+      setView('list');
+      focusTaskHeading();
+    } else if (flow && !scope) {
+      await understand();
+    } else {
+      await back();
+    }
+  }
+  function focusTaskHeading() {
+    requestAnimationFrame(() => {
+      if (!location.current.active) return;
+      document.querySelector('main')?.scrollTo({ top: 0 });
+      document
+        .querySelector<HTMLHeadingElement>('.ai-task-page:not([hidden]) .ai-task-heading h1')
+        ?.focus({ preventScroll: true });
+    });
+  }
+  function returnToExistingPlan() {
+    if (lock.current || dirty || stale) return;
+    setEditingProposal(false);
+    setPage('review');
+    focusTaskHeading();
+  }
   async function openTarget() {
     await run(async () => {
       await save();
@@ -909,6 +950,7 @@ export default function AITaskWorkspace(props: Props) {
       props.showBrowser(false);
       setPage('understand');
       setReviewed(false);
+      focusTaskHeading();
     });
   }
   async function chooseOutput() {
@@ -1307,6 +1349,15 @@ export default function AITaskWorkspace(props: Props) {
         我已核对本次内容，将发送给 {providerName}
       </label>
       <div className="ai-task-actions">
+        {page === 'understand' && flow && (
+          <button
+            disabled={busy || stale || dirty}
+            title={dirty ? '请先保存任务草稿，再核对仍可用的方案' : undefined}
+            onClick={returnToExistingPlan}
+          >
+            {detail.proposal?.result.kind === 'plan' ? '返回待采纳方案' : '返回当前方案'}
+          </button>
+        )}
         {generating ? (
           <button
             disabled={busy}
