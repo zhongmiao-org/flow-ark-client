@@ -2365,6 +2365,10 @@ function Editor({
   };
   const append = (node: Step, target: Destination) => {
     const added = structure(() => insertStep(r.flow.steps, node, target), node.id);
+    if (added && compact && panel === 'actions') {
+      keyboardStep.current = node.id;
+      pendingStepFocus.current = 'inspector';
+    }
     if (added && target.side === 'after') setDestination(node.id + ':after');
     return added;
   };
