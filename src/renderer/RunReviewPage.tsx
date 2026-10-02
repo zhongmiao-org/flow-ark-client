@@ -6,7 +6,7 @@ import './desktop-run.css';
 import type { RunReviewInput, RunReviewPreview, ReviewResource } from '../shared/run-review';
 import { RunReviewSession } from './run-review-session';
 import RunReviewTools from './RunReviewTools';
-import RunReviewCheck, { reviewResourceIssue } from './RunReviewCheck';
+import RunReviewCheck, { reviewRecoveryIssue } from './RunReviewCheck';
 
 type Props = {
   active: boolean;
@@ -250,6 +250,15 @@ export default function RunReviewPage(props: Props) {
     preview.rerun?.runId === props.repair.runId
       ? props.repair.revision
       : undefined;
+  const recoveryChecks =
+    attempt?.phase === 'rejected'
+      ? [{ name: '确认时核对', passed: false, detail: attempt.message ?? '' }]
+      : !attempt
+        ? (preview?.checks ?? [])
+        : [];
+  const hasInlineRefresh = recoveryChecks.some(
+    (check) => reviewRecoveryIssue(check)?.recovery === 'refresh',
+  );
   const debugToggle = !attempt ? (
     <label className="run-review-toggle">
       <input
@@ -261,7 +270,7 @@ export default function RunReviewPage(props: Props) {
       逐步调试，在每个步骤前暂停
     </label>
   ) : null;
-  const refreshButton = !locked && (
+  const refreshButton = !locked && !hasInlineRefresh && (
     <button
       onClick={() => void session.refresh()}
       disabled={state.loading || state.opening || binding}
@@ -269,7 +278,9 @@ export default function RunReviewPage(props: Props) {
       {attempt?.run ? '检查新的试运行' : '重新检查'}
     </button>
   );
-  const hasResourceIssue = preview?.checks.some((check) => !!reviewResourceIssue(check));
+  const hasResourceIssue = recoveryChecks.some(
+    (check) => reviewRecoveryIssue(check)?.recovery === 'configure',
+  );
   const configureButton = !locked && !attempt?.run && !hasResourceIssue && (
     <button onClick={props.edit}>配置流程与资源</button>
   );
@@ -355,6 +366,7 @@ export default function RunReviewPage(props: Props) {
                     check={check}
                     compact={compactReview}
                     configure={props.edit}
+                    refresh={() => void session.refresh()}
                     disabled={state.loading || state.opening || binding || locked}
                   />
                 ))}
@@ -403,7 +415,16 @@ export default function RunReviewPage(props: Props) {
               </button>
             </>
           )}
-          {attempt?.phase === 'rejected' && <p role="alert">{attempt.message}</p>}
+          {attempt?.phase === 'rejected' && (
+            <div role="alert">
+              <RunReviewCheck
+                check={{ name: '确认时核对', passed: false, detail: attempt.message ?? '' }}
+                configure={props.edit}
+                refresh={() => void session.refresh()}
+                disabled={state.loading || state.opening || binding}
+              />
+            </div>
+          )}
           {attempt?.run && (
             <div className="run-review-receipt" role="status">
               <p>运行已创建</p>

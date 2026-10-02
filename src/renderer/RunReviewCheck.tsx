@@ -2,6 +2,78 @@ import type { RunReviewPreview } from '../shared/run-review';
 
 type Check = RunReviewPreview['checks'][number];
 
+/** Recognize only messages authored by the existing review/binding code. */
+export function reviewRecoveryIssue(check: Check) {
+  const resource = reviewResourceIssue(check);
+  if (resource) return { ...resource, recovery: 'configure' as const, status: '启动已阻止' };
+  if (check.passed) return undefined;
+  if (
+    check.detail === '请先选择本机浏览器' ||
+    /^(浏览器未绑定：|浏览器绑定不存在：)/.test(check.detail)
+  )
+    return {
+      title: '浏览器绑定未完成',
+      status: '资源未绑定',
+      action: '检查浏览器绑定',
+      next: '打开流程的参数与资源，明确选择本次使用的浏览器并保存，再回来重新检查。不会自动切换执行方式。',
+      warning: true,
+      recovery: 'configure' as const,
+    };
+  if (
+    [
+      '浏览器安装已变化，请重新选择',
+      '浏览器可执行文件与产品标识不匹配',
+      '所选程序不是支持验证的浏览器',
+      'Chrome 版本过低，请自行更新后重新选择',
+      '缺少用户指定的本机 geckodriver；不会自动下载',
+      '当前运行环境不支持内置浏览器',
+    ].includes(check.detail)
+  )
+    return {
+      title: '所选浏览器不可用',
+      status: '启动已阻止',
+      action: '检查浏览器绑定',
+      next: '核对本机设置中的安装与驱动，再检查流程绑定。不会自动更换浏览器或下载依赖。',
+      warning: false,
+      recovery: 'configure' as const,
+    };
+  if (
+    [
+      '检查期间流程或任务已改变，请重新检查',
+      '检查期间流程、授权或资源已改变，请重新检查',
+      '任务或关联流程已改变，请重新检查',
+      '试运行检查已过期，请重新检查并核对',
+      '试运行检查已过期，请重新检查',
+      '试运行授权已失效，请重新检查',
+      '试运行资源或网页已改变，请重新检查',
+    ].includes(check.detail)
+  )
+    return {
+      title: '方案或授权需要重新核对',
+      status: '需重新核对',
+      action: '重新检查',
+      next: '本次检查已失效，尚未创建运行。重新检查后仍需核对当前内容并明确确认，不会直接执行。',
+      warning: true,
+      recovery: 'refresh' as const,
+    };
+  if (
+    [
+      '未取得内置网页身份，请重新检查',
+      '内置网页正在加载，请稍后重新检查',
+      '内置网页资源身份不完整',
+    ].includes(check.detail)
+  )
+    return {
+      title: '内置网页尚未就绪',
+      status: '需要核对',
+      action: '重新检查',
+      next: '等待网页就绪后重新读取身份。检查不会导航网页或重放已有操作。',
+      warning: true,
+      recovery: 'refresh' as const,
+    };
+  return undefined;
+}
+
 /** Match only host-authored resource messages; arbitrary filesystem errors remain generic. */
 export function reviewResourceIssue(check: Check) {
   if (check.passed) return undefined;
@@ -69,25 +141,28 @@ export default function RunReviewCheck({
   check,
   compact = false,
   configure,
+  refresh,
   disabled = false,
 }: {
   check: Check;
   compact?: boolean;
   configure?: () => void;
+  refresh?: () => void;
   disabled?: boolean;
 }) {
-  const resourceIssue = reviewResourceIssue(check);
+  const resourceIssue = reviewRecoveryIssue(check);
+  const recover = resourceIssue?.recovery === 'refresh' ? refresh : configure;
   if (resourceIssue)
     return (
       <section className="run-review-resource-issue" aria-label={resourceIssue.title}>
         <span className={`badge ${resourceIssue.warning ? 'state-INTERRUPTED' : 'state-FAILED'}`}>
-          启动已阻止
+          {resourceIssue.status}
         </span>
         <h3>{resourceIssue.title}</h3>
         <p className="run-review-resource-reason">{check.detail}</p>
         <p>{resourceIssue.next}</p>
-        {configure && (
-          <button className="primary" disabled={disabled} onClick={configure}>
+        {recover && (
+          <button className="primary" disabled={disabled} onClick={recover}>
             {resourceIssue.action}
           </button>
         )}
