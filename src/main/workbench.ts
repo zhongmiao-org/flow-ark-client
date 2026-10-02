@@ -33,6 +33,7 @@ import { imageInfo } from '../host/attachment-file';
 import { IMAGE_MAX_BYTES, TEXT_EXTENSIONS } from '../shared/task-attachments';
 import { redactArtifactText, redactedErrorText } from '../shared/utils';
 import type { EmbeddedCleanupFailure, EmbeddedLostNotice } from '../shared/embedded-lifecycle';
+import type { Bootstrap } from '../shared/types';
 let win: BrowserWindow;
 let tray: Tray;
 let quitting = false;
@@ -71,21 +72,54 @@ async function quit() {
   if (quitting || quitPending) return;
   quitPending = true;
   try {
+    let data: Bootstrap | undefined;
     try {
-      const data = await rpc.call('bootstrap');
-      const activeCount = data.runOverview.queued + (data.runOverview.active ? 1 : 0);
-      if (activeCount) {
+      data = await rpc.call('bootstrap');
+    } catch {
+      // A failed read cannot establish that it is safe to exit without confirmation.
+    }
+    const execution = data?.execution;
+    const activeCount = execution?.active ? 1 : 0;
+    const queuedCount = data?.runOverview.queued ?? 0;
+    const planCount = data?.schedules.filter((schedule) => schedule.enabled).length ?? 0;
+    if (!execution || data?.fault || activeCount || queuedCount || planCount) {
+      const summary = data
+        ? [
+            execution
+              ? `${activeCount} 个活动任务${execution.active?.phase === 'closing' ? '（正在停止）' : ''}`
+              : '当前活动任务状态未知',
+            `${queuedCount} 个排队任务`,
+            `${planCount} 个启用计划`,
+          ].join('；') + '。'
+        : '暂时无法读取任务与计划状态，不能确认当前是否仍有任务。';
+      try {
         const { response } = await dialog.showMessageBox(win, {
           type: 'question',
-          buttons: ['继续运行', '停止任务并退出'],
+          buttons: [execution ? '继续运行' : '返回工作台', '停止任务并退出'],
           defaultId: 0,
           cancelId: 0,
-          message: `退出会停止 ${activeCount} 个运行及驻留计划`,
-          detail: '外部操作结果未知时不会自动重试，重新打开后可查看历史。',
+          message: '退出 FlowArk？',
+          detail: [
+            summary,
+            data?.fault ? '存储不可写，排队与计划数量来自最后保存的记录。' : '',
+            '退出将停止调度并取消任务；休眠和退出期间的计划不会补跑。',
+            '外部操作结果未知时不会自动重试，重新打开后可查看历史并核对结果。',
+          ]
+            .filter(Boolean)
+            .join('\n\n'),
         });
-        if (response !== 1) return;
+        if (response !== 1) {
+          if (!execution) {
+            win.show();
+            win.focus();
+          }
+          return;
+        }
+      } catch {
+        // A dialog failure is not the user's confirmation to stop their work.
+        return;
       }
-    } catch {}
+    }
     quitting = true;
     try {
       await rpc.call('shutdown', {}, 15000);
