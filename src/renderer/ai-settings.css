@@ -190,9 +190,6 @@ button.ai-remove-button {
   color: var(--fa-status-error);
   border-color: transparent;
 }
-.ai-settings-dialog {
-  width: min(640px, calc(100vw - 48px));
-}
 .ai-summary-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -302,4 +299,33 @@ button.ai-remove-button {
 .ai-settings-leave .editor-leave-discard {
   border-color: transparent;
   background: var(--fa-status-error-bg);
+}
+
+.ai-settings-page .ai-remove-confirmation {
+  width: min(728px, 100%);
+  min-height: 440px;
+  padding: 32px;
+  gap: 16px;
+}
+.ai-remove-confirmation h2 {
+  font-size: 28px;
+  line-height: 40px;
+  font-weight: 600;
+}
+.ai-remove-confirmation .ai-task-actions {
+  gap: 12px;
+  margin-top: 8px;
+}
+.ai-remove-confirmation .ai-task-actions > button {
+  width: 172px;
+  min-height: 40px;
+}
+@container (max-width: 600px) {
+  .ai-settings-page .ai-remove-confirmation {
+    padding: 24px;
+  }
+  .ai-remove-confirmation .ai-task-actions > button {
+    width: 100%;
+    min-width: 0;
+  }
 }
