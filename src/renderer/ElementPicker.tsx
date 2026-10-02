@@ -16,6 +16,7 @@ export default function ElementPicker({
   allowInspect = true,
   disabled = false,
   active = true,
+  pickLabel,
 }: {
   selector: string;
   framePath: string[];
@@ -29,6 +30,7 @@ export default function ElementPicker({
   allowInspect?: boolean;
   disabled?: boolean;
   active?: boolean;
+  pickLabel?: string;
 }) {
   const [picking, setPicking] = useState(false),
     [validating, setValidating] = useState(false);
@@ -314,7 +316,7 @@ export default function ElementPicker({
           onClick={() => void pick()}
         >
           <Crosshair size={15} />
-          {candidate || error || message ? '重新拾取' : '从网页选取'}
+          {pickLabel ?? (candidate || error || message ? '重新拾取' : '从网页选取')}
         </button>
         {picking ? (
           <button onClick={() => void cancel()}>

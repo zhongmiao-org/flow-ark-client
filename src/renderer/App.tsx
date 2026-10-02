@@ -82,6 +82,7 @@ import BrowserSidebar from './BrowserSidebar';
 import StorageFaultNotice from './StorageFaultNotice';
 import Schedules from './Schedules';
 import BrowserNodeConfiguration from './BrowserNodeConfiguration';
+import ReadStepInspector from './ReadStepInspector';
 import { browserActions } from './browser-actions';
 import LogicNodeConfiguration from './LogicNodeConfiguration';
 import ResourceNodeConfiguration from './ResourceNodeConfiguration';
@@ -2322,6 +2323,7 @@ function Editor({
   const pendingStepFocus = useRef<'inspector' | 'canvas' | null>(null);
   const selectedNode = flatten(r.flow.steps).find((n: Step) => n.id === selected);
   const compactBrowser = compact && browserOpen && selectedNode?.type === 'browser';
+  const readInspector = selectedNode?.type === 'browser' && selectedNode.operation === 'read';
   useEffect(() => {
     if (!active || !compact || outlineOpen || !pendingStepFocus.current) return;
     if (pendingStepFocus.current === 'inspector' && panel === 'node') {
@@ -2910,7 +2912,7 @@ function Editor({
               <p>当前步骤保持可见；动作库与配置使用互斥抽屉。</p>
             </section>
             <aside
-              className={compactBrowser ? 'inspector compact-browser-inspector' : 'inspector'}
+              className={`inspector${compactBrowser ? ' compact-browser-inspector' : ''}${readInspector ? ' has-read-inspector' : ''}`}
               onFocusCapture={(event) => {
                 if ((event.target as HTMLElement).closest('.value-source-button')) setPanel('node');
               }}
@@ -2965,7 +2967,90 @@ function Editor({
                   </section>
                 )}
                 {tab === 'node' &&
-                  (selectedNode ? (
+                  (readInspector && selectedNode?.type === 'browser' ? (
+                    <>
+                      <fieldset
+                        disabled={!!invalid}
+                        style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
+                      >
+                        <ReadStepInspector
+                          key={selectedNode.id + ':' + revision}
+                          record={r}
+                          node={selectedNode}
+                          heading={inspectorHeading}
+                          active={
+                            active &&
+                            (!compact || panel === 'node') &&
+                            !positionOpen &&
+                            !browserActionOpen &&
+                            !outlineOpen
+                          }
+                          blockingRunId={blockingRunId}
+                          onViewRun={showRun}
+                          change={updateNode}
+                          changeTiming={(next) => {
+                            if (invalid) {
+                              guardNodeInput();
+                              return;
+                            }
+                            patch(() => next);
+                            setRaw(JSON.stringify(next, null, 2));
+                          }}
+                          guard={() => {
+                            if (!guardNodeInput()) return false;
+                            clearError();
+                            return true;
+                          }}
+                          position={() => {
+                            if (!guardNodeInput()) return;
+                            setStructureError('');
+                            setPanel('node');
+                            setPositionOpen(true);
+                          }}
+                          view={(mode) => {
+                            if (!guardNodeInput()) return;
+                            setViewRequest((previous) => ({ key: (previous?.key ?? 0) + 1, mode }));
+                            if (compact) {
+                              keyboardStep.current = selected;
+                              pendingStepFocus.current = 'canvas';
+                              setPanel('graph');
+                            }
+                          }}
+                          select={(id) => {
+                            if (!guardNodeInput()) return;
+                            setSelected(id);
+                            setPanel('node');
+                            requestAnimationFrame(() => inspectorHeading.current?.focus());
+                          }}
+                        />
+                      </fieldset>
+                      {structureError && (
+                        <p className="field-error" role="alert">
+                          {structureError}
+                        </p>
+                      )}
+                      <details className="read-step-more">
+                        <summary>更多步骤设置</summary>
+                        <button
+                          onClick={() => {
+                            if (!guardNodeInput()) return;
+                            setPanel('node');
+                            setBrowserActionOpen(true);
+                          }}
+                        >
+                          网页动作配置
+                        </button>
+                        <button
+                          data-ai-edit-step
+                          disabled={!draftSaved}
+                          onClick={() => openStepAI(selectedNode.id)}
+                        >
+                          用 AI 修改此步
+                        </button>
+                        {advancedInput}
+                      </details>
+                    </>
+                  ) : selectedNode ? (
                     <>
                       <fieldset
                         disabled={!!invalid}

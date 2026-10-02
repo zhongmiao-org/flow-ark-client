@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import type { FramePath } from '../shared/contracts.generated';
 import type { Step } from '../shared/types';
 import ElementPicker from './ElementPicker';
@@ -19,7 +19,9 @@ export default function BrowserNodeConfiguration({
   active = true,
   blockingRunId,
   onViewRun,
+  readInspector,
 }: {
+  readInspector?: { output: ReactNode; timing: ReactNode };
   fieldsOnly?: boolean;
   compact?: boolean;
   active?: boolean;
@@ -57,7 +59,7 @@ export default function BrowserNodeConfiguration({
   const topLevel = ['navigate', 'screenshot'].includes(node.operation);
   return (
     <section className="node-configuration" aria-label="浏览器节点配置">
-      {!fieldsOnly && !compact && (
+      {!fieldsOnly && !compact && !readInspector && (
         <>
           <header>
             <h4>网页动作</h4>
@@ -117,12 +119,17 @@ export default function BrowserNodeConfiguration({
       {!fieldsOnly && !topLevel && (
         <>
           <label>目标元素</label>
-          {compact && (
-            <p className="compact-target-selector">{node.selector || '尚未选择目标元素'}</p>
+          {(compact || readInspector) && (
+            <p className="compact-target-selector" title={node.selector}>
+              {readInspector && node.selector === 'title'
+                ? '页面标题 · title'
+                : node.selector || '尚未选择目标元素'}
+            </p>
           )}
           <ElementPicker
             key={`${node.id}:${node.operation}`}
             confirmBeforeApply
+            pickLabel={readInspector ? (node.selector ? '重新拾取目标' : '拾取目标') : undefined}
             active={active}
             blockingRunId={blockingRunId}
             onViewRun={onViewRun}
@@ -180,8 +187,9 @@ export default function BrowserNodeConfiguration({
               {target.structural && <p>使用结构定位，页面布局变化后请重新验证。</p>}
             </div>
           )}
+          {readInspector?.output}
           <details ref={locator} className="locator-details" open={!node.selector}>
-            <summary>定位信息 · 高级编辑</summary>
+            <summary>{readInspector ? '高级定位与超时' : '定位信息 · 高级编辑'}</summary>
             <label htmlFor={fieldId + 'browser-selector'}>目标元素选择器</label>
             <input
               ref={selectorInput}
@@ -213,6 +221,7 @@ export default function BrowserNodeConfiguration({
                 ? '打开网页和页面截图作用于顶层页面。'
                 : '留空表示顶层页面。每行一个 CSS 选择器，从外到内，最多 8 层；每层必须唯一匹配。'}
             </p>
+            {readInspector?.timing}
           </details>
         </>
       )}
