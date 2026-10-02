@@ -131,25 +131,28 @@ export default function TaskUnderstandingPage({
           <p>
             {web ? '你确认的网页及明确提供的资料；不读取其他标签' : '你填写的需求及明确提供的资料'}
           </p>
-          {!!context.length && (
-            <ul className="task-understanding-input-list" aria-label="当前资料">
-              {context.map((entry) => (
-                <li key={entry.id}>
-                  {entry.label || '未命名资料'} · {entry.text.length} 字符
-                </li>
-              ))}
-            </ul>
-          )}
-          {!!task.attachments?.length && (
-            <ul className="task-understanding-input-list" aria-label="已选附件">
-              {task.attachments.map((attachment) => (
-                <li key={attachment.id}>
-                  {attachment.name} · {attachment.kind === 'image' ? '图片副本' : '文本副本'}
-                </li>
-              ))}
-            </ul>
-          )}
-          <p>可展开“查看本次发送给…的内容”核对完整范围。</p>
+          <details className="task-understanding-extra">
+            <summary>资料与发送范围</summary>
+            {!!context.length && (
+              <ul className="task-understanding-input-list" aria-label="当前资料">
+                {context.map((entry) => (
+                  <li key={entry.id}>
+                    {entry.label || '未命名资料'} · {entry.text.length} 字符
+                  </li>
+                ))}
+              </ul>
+            )}
+            {!!task.attachments?.length && (
+              <ul className="task-understanding-input-list" aria-label="已选附件">
+                {task.attachments.map((attachment) => (
+                  <li key={attachment.id}>
+                    {attachment.name} · {attachment.kind === 'image' ? '图片副本' : '文本副本'}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p>可展开“查看本次发送给…的内容”核对完整范围。</p>
+          </details>
         </div>
         <div className="task-understanding-fact" aria-label="已选操作对象">
           <div className="task-understanding-fact-heading">
@@ -165,22 +168,22 @@ export default function TaskUnderstandingPage({
                 ? '已选择工具对象；可先核对内容并生成方案。'
                 : '尚未选择操作对象，按需求核对后再执行。'}
           </p>
+          {!!task.toolTargets?.length && (
+            <details className="task-understanding-tools">
+              <summary>核对已选工具 · {task.toolTargets.length} 个对象</summary>
+              <ul>
+                {task.toolTargets.map((target) => (
+                  <li key={target.selectionId}>
+                    {target.displayName} · {target.tools.length} 项工具
+                  </li>
+                ))}
+              </ul>
+              <p>账号、工作区和读写影响尚未核对，所选定义将在你核对并生成时发送给模型。</p>
+            </details>
+          )}
         </div>
-        {!!task.toolTargets?.length && (
-          <div className="task-understanding-fact">
-            <h3>已选工具</h3>
-            <ul>
-              {task.toolTargets.map((target) => (
-                <li key={target.selectionId}>
-                  {target.displayName} · {target.tools.length} 项工具
-                </li>
-              ))}
-            </ul>
-            <p>账号、工作区和读写影响尚未核对，所选定义将在你核对并生成时发送给模型。</p>
-          </div>
-        )}
         <div className="task-understanding-fact">
-          <h3>输出规则与修改范围</h3>
+          <h3>修改内容</h3>
           <p>
             {output
               ? options.onConflict === 'number'
@@ -189,7 +192,10 @@ export default function TaskUnderstandingPage({
               : '生成方案后核对实际修改范围与所需资源。'}
             {web ? ' 不改变网页内容。' : ''}
           </p>
-          <p>以上是你选定的范围；方案生成后还需核对全部读写步骤。</p>
+          <details className="task-understanding-extra">
+            <summary>核对修改范围</summary>
+            <p>以上是你选定的范围；方案生成后还需核对全部读写步骤。</p>
+          </details>
         </div>
         <div className="task-understanding-fact" aria-label="输出结果">
           <h3>输出结果</h3>

@@ -1117,29 +1117,54 @@
   line-height: 20px;
 }
 
-.task-understanding-fact {
-  position: relative;
-}
 .task-understanding-fact-heading {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 8px;
 }
-.task-understanding-output-options:not([open]) {
-  position: absolute;
-  top: 18px;
-  right: 16px;
+.task-understanding-fact:has(> .task-understanding-extra),
+.task-understanding-fact:has(> .task-understanding-output-options) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: start;
 }
+.task-understanding-fact > h3 {
+  grid-column: 1;
+  grid-row: 1;
+}
+.task-understanding-fact > p,
+.task-understanding-output-state {
+  grid-column: 1 / -1;
+}
+.task-understanding-extra:not([open]),
+.task-understanding-output-options:not([open]) {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+}
+.task-understanding-extra[open],
+.task-understanding-output-options[open] {
+  grid-column: 1 / -1;
+}
+.task-understanding-extra > p,
+.task-understanding-extra > ul,
+.task-understanding-tools > p,
+.task-understanding-tools > ul,
 .task-understanding-output-options[open] .task-understanding-path {
-  margin: 12px 0;
+  margin: 12px 0 0;
+}
+.task-understanding-fact summary {
+  overflow-wrap: anywhere;
 }
 @container (max-width: 550px) {
   .task-understanding-fact-heading {
     flex-wrap: wrap;
   }
+  .task-understanding-extra:not([open]),
   .task-understanding-output-options:not([open]) {
-    position: static;
+    grid-column: 1 / -1;
+    grid-row: auto;
   }
 }
 
