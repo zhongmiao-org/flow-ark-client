@@ -8,15 +8,20 @@ export default function LogicNodeConfiguration({
   node,
   choices,
   change,
+  compact = false,
+  guard = () => true,
 }: {
   node: Step;
   choices: ReferenceChoice[];
   change: (node: Step) => void;
+  compact?: boolean;
+  guard?: () => boolean;
 }) {
   const id = useId();
   const field = (key: string, label: string, value: Json, defaultValue: Json = '') => (
     <ValueField
       key={key}
+      compactReference={compact}
       label={label}
       value={value}
       choices={choices}
@@ -45,7 +50,9 @@ export default function LogicNodeConfiguration({
         <select
           id={id + '-operator'}
           value={node.operator}
-          onChange={(e) => change({ ...node, operator: e.target.value } as Step)}
+          onChange={(e) => {
+            if (guard()) change({ ...node, operator: e.target.value } as Step);
+          }}
         >
           <option value="equals">等于</option>
           <option value="notEquals">不等于</option>

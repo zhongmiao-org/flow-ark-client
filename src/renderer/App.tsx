@@ -4,6 +4,7 @@ import StepPositionPage from './StepPositionPage';
 import ControlWorkspace from './ControlWorkspace';
 import BrowserActionWorkspace from './BrowserActionWorkspace';
 import ResourceWorkspace from './ResourceWorkspace';
+import LogicConfigurationWorkspace from './LogicConfigurationWorkspace';
 import { stepTitle } from './flow-outline';
 import EditorLeaveDialog from './EditorLeaveDialog';
 import EditorMorePage from './EditorMorePage';
@@ -434,7 +435,7 @@ export default function App() {
     const invalid = document.querySelector<HTMLElement>(
       includeValues
         ? '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid], .browser-action-workspace [data-value-invalid], .resource-workspace [data-value-invalid]'
-        : '.editor-page .node-advanced[data-value-invalid], .editor-page .node-timing[data-value-invalid]',
+        : '.editor-page .node-advanced[data-value-invalid], .editor-page .node-timing[data-value-invalid], .logic-configuration-workspace .node-advanced[data-value-invalid], .logic-configuration-workspace .node-timing[data-value-invalid]',
     );
     if (!invalid) return true;
     focusInvalidInput(invalid);
@@ -2225,6 +2226,7 @@ function Editor({
   const [controlOpen, setControlOpen] = useState(false);
   const [browserActionOpen, setBrowserActionOpen] = useState(false);
   const [resourceOpen, setResourceOpen] = useState(false);
+  const [logicConfigurationOpen, setLogicConfigurationOpen] = useState(false);
   const [viewRequest, setViewRequest] = useState<{ key: number; mode: 'all' | 'selected' }>();
   const [tab, setTab] = useState('node');
   const [destination, setDestination] = useState('main');
@@ -2346,8 +2348,90 @@ function Editor({
       setPanel(value);
     }
   };
+  const advancedInput = selectedNode ? (
+    <details
+      className="node-advanced"
+      data-value-invalid={invalid || undefined}
+      key={selectedNode.id + ':advanced'}
+    >
+      <summary>高级配置 JSON</summary>
+      <label>节点配置 JSON</label>
+      <textarea
+        aria-label="节点配置 JSON"
+        aria-invalid={!!invalid}
+        className="code-input"
+        value={raw}
+        onChange={(e) => {
+          setRaw(e.target.value);
+          try {
+            const value = JSON.parse(e.target.value);
+            if (value?.id !== selectedNode.id || value?.type !== selectedNode.type)
+              throw new Error('ID 和类型不可在此修改');
+            patch(() => value);
+            setInvalid('');
+          } catch (e: any) {
+            setInvalid(e.message);
+          }
+        }}
+      />
+      {invalid && <p className="field-error">{invalid}</p>}
+      {invalid && (
+        <button
+          type="button"
+          onClick={() => {
+            setRaw(JSON.stringify(selectedNode, null, 2));
+            setInvalid('');
+          }}
+        >
+          恢复节点配置
+        </button>
+      )}
+      <p className="note">
+        显式设置容器 timeoutMs 时，超时包含内部等待和暂停；人工节点未配置时不设节点超时。
+      </p>
+      <p className="note">
+        引用示例：<code>{'{"$ref":"steps.greeting.message"}'}</code>
+        。循环体可引用 item 和 index。
+      </p>
+    </details>
+  ) : null;
   return (
     <>
+      {logicConfigurationOpen && (
+        <LogicConfigurationWorkspace
+          record={r}
+          selected={selected}
+          select={setSelected}
+          change={updateNode}
+          changeTiming={(next) => {
+            if (invalid) {
+              guardNodeInput();
+              return;
+            }
+            patch(() => next);
+            setRaw(JSON.stringify(next, null, 2));
+          }}
+          add={(node) => append(node, {})}
+          guard={guardNodeInput}
+          close={() => setLogicConfigurationOpen(false)}
+          showBrowser={() => {
+            setLogicConfigurationOpen(false);
+            setPanel('node');
+            showBrowser();
+          }}
+          openControl={() => {
+            setLogicConfigurationOpen(false);
+            setControlOpen(true);
+          }}
+          advanced={advancedInput}
+          advancedInvalid={!!invalid}
+          error={saveError || structureError}
+          clearError={() => {
+            clearError();
+            setStructureError('');
+          }}
+        />
+      )}
       {resourceOpen && (
         <ResourceWorkspace
           record={r}
@@ -2551,7 +2635,8 @@ function Editor({
                   !positionOpen &&
                   !controlOpen &&
                   !browserActionOpen &&
-                  !resourceOpen
+                  !resourceOpen &&
+                  !logicConfigurationOpen
                 }
                 viewRequest={viewRequest}
                 nodes={nodes}
@@ -2715,6 +2800,19 @@ function Editor({
                           />
                         </>
                       )}
+                      {['value', 'condition', 'assert', 'loop', 'human'].includes(
+                        selectedNode.type,
+                      ) && (
+                        <button
+                          onClick={() => {
+                            if (!guardNodeInput()) return;
+                            setPanel('node');
+                            setLogicConfigurationOpen(true);
+                          }}
+                        >
+                          流程控制配置
+                        </button>
+                      )}
                       {['http', 'file', 'excel'].includes(selectedNode.type) && (
                         <button
                           onClick={() => {
@@ -2748,20 +2846,24 @@ function Editor({
                           条件与串行循环
                         </button>
                       )}
-                      <NodeTiming
-                        key={selectedNode.id + ':timing:' + revision}
-                        node={selectedNode}
-                        change={(next) => {
-                          patch(() => next);
-                          setRaw(JSON.stringify(next, null, 2));
-                        }}
-                      />
-                      <LogicNodeConfiguration
-                        key={selectedNode.id + ':logic:' + revision}
-                        node={selectedNode}
-                        choices={choices}
-                        change={updateNode}
-                      />
+                      {!logicConfigurationOpen && (
+                        <>
+                          <NodeTiming
+                            key={selectedNode.id + ':timing:' + revision}
+                            node={selectedNode}
+                            change={(next) => {
+                              patch(() => next);
+                              setRaw(JSON.stringify(next, null, 2));
+                            }}
+                          />
+                          <LogicNodeConfiguration
+                            key={selectedNode.id + ':logic:' + revision}
+                            node={selectedNode}
+                            choices={choices}
+                            change={updateNode}
+                          />
+                        </>
+                      )}
                       {selectedNode.type === 'browser' && (
                         <BrowserNodeConfiguration
                           key={selectedNode.id + ':' + revision}
@@ -2901,52 +3003,7 @@ function Editor({
                         </>
                       )}
                     </fieldset>
-                    <details
-                      className="node-advanced"
-                      data-value-invalid={invalid || undefined}
-                      key={selectedNode.id}
-                    >
-                      <summary>高级配置 JSON</summary>
-                      <label>节点配置 JSON</label>
-                      <textarea
-                        aria-label="节点配置 JSON"
-                        aria-invalid={!!invalid}
-                        className="code-input"
-                        value={raw}
-                        onChange={(e) => {
-                          setRaw(e.target.value);
-                          try {
-                            const value = JSON.parse(e.target.value);
-                            if (value.id !== selectedNode.id || value.type !== selectedNode.type)
-                              throw new Error('ID 和类型不可在此修改');
-                            patch(() => value);
-                            setInvalid('');
-                          } catch (e: any) {
-                            setInvalid(e.message);
-                          }
-                        }}
-                      />
-                      {invalid && <p className="field-error">{invalid}</p>}
-                      {invalid && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setRaw(JSON.stringify(selectedNode, null, 2));
-                            setInvalid('');
-                          }}
-                        >
-                          恢复节点配置
-                        </button>
-                      )}
-                      <p className="note">
-                        显式设置容器 timeoutMs
-                        时，超时包含内部等待和暂停；人工节点未配置时不设节点超时。
-                      </p>
-                      <p className="note">
-                        引用示例：<code>{'{"$ref":"steps.greeting.message"}'}</code>
-                        。循环体可引用 item 和 index。
-                      </p>
-                    </details>
+                    {!logicConfigurationOpen && advancedInput}
                   </>
                 ) : (
                   <Empty text="选择画布节点，编辑参数或脚本。" />
