@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { PlanningTask, TaskDetail } from '../shared/planning';
 import { sameWebPage, type TaskWebPreview } from '../shared/task-web-target';
 import DesktopTaskPlan from './DesktopTaskPlan';
@@ -67,13 +67,51 @@ export default function TaskWebTargetPage({
   const [url, setUrl] = useState(task.webTarget?.page.url ?? initialUrl ?? '');
   const [busy, setBusy] = useState(false),
     [error, setError] = useState('');
+  const [webAction, setWebAction] = useState<'open' | 'refresh' | 'select' | 'clear'>();
+  const [checkingWeb, setCheckingWeb] = useState(true);
+  const [invalidUrl, setInvalidUrl] = useState(false);
+  const urlInput = useRef<HTMLInputElement>(null);
+  const webHeading = useRef<HTMLHeadingElement>(null);
+  const previewReason = useRef<HTMLParagraphElement>(null);
+  const operationError = useRef<HTMLDivElement>(null);
+  const focusPreview = useRef(false);
+  const connectionsButton = useRef<HTMLButtonElement>(null);
+  const returningConnections = useRef(false);
+  useLayoutEffect(() => {
+    if (active && returningConnections.current) {
+      returningConnections.current = false;
+      connectionsButton.current?.scrollIntoView({ block: 'nearest' });
+      connectionsButton.current?.focus({ preventScroll: true });
+    }
+  }, [active]);
+  useLayoutEffect(() => {
+    if (!active || tab !== 'web' || busy) return;
+    if (error) (invalidUrl ? urlInput : operationError).current?.focus();
+  }, [active, tab, busy, error, invalidUrl]);
+  useLayoutEffect(() => {
+    if (!active || tab !== 'web' || busy || error) return;
+    if (focusPreview.current && !checkingWeb) {
+      focusPreview.current = false;
+      const target = preview.ready ? webHeading.current : previewReason.current;
+      target?.scrollIntoView({ block: 'nearest' });
+      target?.focus({ preventScroll: true });
+    }
+  }, [active, tab, busy, error, invalidUrl, checkingWeb, preview]);
   const epoch = useRef(0),
     locked = useRef(false);
   const identity = { id: task.id, revision: task.revision };
   const refresh = async () => {
     const ticket = ++epoch.current;
-    const next = await api('task.web.preview', identity);
-    if (ticket === epoch.current) setPreview(next);
+    let next: TaskWebPreview;
+    try {
+      next = await api('task.web.preview', identity);
+    } catch (e) {
+      next = { ready: false, reason: (e as Error).message };
+    }
+    if (ticket === epoch.current) {
+      setPreview(next);
+      setCheckingWeb(false);
+    }
   };
   useEffect(() => {
     if (!active || tab !== 'web') return;
@@ -84,13 +122,12 @@ export default function TaskWebTargetPage({
       pending = true;
       try {
         await refresh();
-      } catch (e) {
-        if (live) setPreview({ ready: false, reason: (e as Error).message });
       } finally {
         pending = false;
       }
     };
     setPreview({ ready: false });
+    setCheckingWeb(true);
     void poll();
     const timer = setInterval(() => void poll(), 1000);
     return () => {
@@ -99,35 +136,60 @@ export default function TaskWebTargetPage({
       clearInterval(timer);
     };
   }, [active, task.id, task.revision, tab]);
-  const act = async (operation: () => Promise<void>) => {
+  const act = async (
+    operation: () => Promise<void>,
+    action: 'open' | 'refresh' | 'select' | 'clear',
+  ) => {
     if (locked.current) return;
     locked.current = true;
     epoch.current++;
     setBusy(true);
+    setWebAction(action);
     setError('');
+    setInvalidUrl(false);
     try {
       await operation();
     } catch (e) {
       setError((e as Error).message);
+      if (action === 'open') setCheckingWeb(false);
     } finally {
       locked.current = false;
+      if (action === 'refresh') focusPreview.current = true;
+      setWebAction(undefined);
       setBusy(false);
     }
   };
   const current = preview.page;
   const savedCurrent = current && task.webTarget && sameWebPage(current, task.webTarget.page);
-  const openUrl = () =>
+  const webReady = preview.ready && !!preview.page && !!preview.token;
+  const openUrl = () => {
+    if (locked.current) return;
+    let parsed: URL;
+    try {
+      parsed = new URL(url.trim());
+      if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error();
+    } catch {
+      setInvalidUrl(true);
+      setError('请输入完整的 HTTP(S) 网页地址，例如 https://example.com');
+      urlInput.current?.focus();
+      return;
+    }
     void act(async () => {
-      const parsed = new URL(url.trim());
-      if (!['http:', 'https:'].includes(parsed.protocol))
-        throw new Error('请输入 HTTP(S) 网页地址');
       setPreview({ ready: false });
+      setCheckingWeb(true);
       await api('browser.embedded.enable');
       await api('browser.embedded.navigate', { url: parsed.href });
       await changed();
       showBrowser();
       await refresh();
-    });
+    }, 'open');
+  };
+  const recheckWeb = () =>
+    void act(async () => {
+      setPreview((current) => ({ ...current, ready: false, token: undefined }));
+      setCheckingWeb(true);
+      await refresh();
+    }, 'refresh');
   if (desktopPlan && desktop.selected && desktop.preview?.status === 'ready')
     return (
       <DesktopTaskPlan
@@ -143,9 +205,19 @@ export default function TaskWebTargetPage({
       />
     );
   return (
-    <section className="task-web-target" aria-label="选择任务对象">
+    <section
+      className="task-web-target"
+      aria-label="选择任务对象"
+      aria-busy={busy || (tab === 'web' && checkingWeb)}
+    >
       {error && (
-        <div className="alert error" role="alert">
+        <div
+          className="alert error"
+          role="alert"
+          id="task-web-error"
+          ref={operationError}
+          tabIndex={-1}
+        >
           {error}
         </div>
       )}
@@ -218,6 +290,7 @@ export default function TaskWebTargetPage({
             </div>
             <form
               className="task-target-address-form"
+              noValidate
               onSubmit={(event) => {
                 event.preventDefault();
                 if (!busy && url.trim()) openUrl();
@@ -226,19 +299,28 @@ export default function TaskWebTargetPage({
               <label htmlFor="task-target-url">网页地址</label>
               <input
                 id="task-target-url"
+                ref={urlInput}
+                aria-invalid={invalidUrl}
+                aria-describedby={invalidUrl ? 'task-web-error' : undefined}
                 type="url"
                 value={url}
                 maxLength={8192}
                 placeholder="https://example.com"
                 disabled={busy}
-                onChange={(e) => setUrl(e.target.value)}
+                onChange={(e) => {
+                  setUrl(e.target.value);
+                  if (invalidUrl) {
+                    setInvalidUrl(false);
+                    setError('');
+                  }
+                }}
               />
               <div className="ai-task-actions">
                 <button disabled={busy || !url.trim()} type="submit">
-                  {busy ? '正在处理…' : '打开此网页'}
+                  {webAction === 'open' ? '正在打开网页…' : '打开此网页'}
                 </button>
-                <button type="button" disabled={busy} onClick={() => void act(refresh)}>
-                  重新检查网页
+                <button type="button" disabled={busy} onClick={recheckWeb}>
+                  {webAction === 'refresh' ? '正在重新检查…' : '重新检查网页'}
                 </button>
               </div>
             </form>
@@ -288,16 +370,18 @@ export default function TaskWebTargetPage({
             </>
           ) : (
             <>
-              <h2>{tab === 'web' ? '当前将操作的对象' : '已保留的网页选择'}</h2>
+              <h2 ref={webHeading} tabIndex={-1}>
+                当前将操作的对象
+              </h2>
               <div className="task-web-object">
                 <h2>{current?.title || '等待选择网页'}</h2>
                 <p>本机内置浏览器 / 同一受控会话</p>
                 <p className="task-web-url">{current?.url}</p>
               </div>
-              <h2>{tab === 'web' ? '本次可用能力' : '已选网页的能力'}</h2>
+              <h2>{webReady ? '本次可用能力' : '网页就绪后可用'}</h2>
               {['读取页面文字', '定位页面元素', '新建本地输出文件'].map((label) => (
                 <label className="ai-task-checkbox" key={label}>
-                  <input type="checkbox" checked disabled />
+                  <input type="checkbox" checked={webReady} disabled />
                   {label}
                 </label>
               ))}
@@ -310,16 +394,23 @@ export default function TaskWebTargetPage({
                 或整页内容。确认后仅将显示的网页标题、地址和能力范围加入本次 AI
                 上下文；发送前仍可完整核对。
               </p>
-              {!preview.ready && (
-                <p className="ai-task-note ai-task-failure" role="status">
-                  {preview.reason || '正在检查当前网页…'}
+              {!webReady && (
+                <p
+                  className="ai-task-note ai-task-failure"
+                  role="status"
+                  ref={previewReason}
+                  tabIndex={-1}
+                >
+                  {checkingWeb
+                    ? '正在检查当前网页…'
+                    : preview.reason || '尚未取得可确认的网页，请重新检查。'}
                 </p>
               )}
-              <div className="ai-task-actions">
+              <div className="ai-task-actions task-web-selection-actions">
                 {tab === 'web' ? (
                   <button
                     className="primary"
-                    disabled={busy || !preview.ready || !preview.token}
+                    disabled={busy || !webReady}
                     onClick={() =>
                       void act(async () => {
                         const next = await api('task.web.select', {
@@ -327,18 +418,25 @@ export default function TaskWebTargetPage({
                           token: preview.token,
                         });
                         selected(next);
-                      })
+                      }, 'select')
                     }
                   >
-                    {busy ? '正在确认…' : '使用这个目标'}
+                    {webAction === 'select' ? '正在确认…' : '使用这个目标'}
                   </button>
                 ) : (
                   <button className="primary" disabled={busy} onClick={() => setTab('web')}>
                     返回网页选择
                   </button>
                 )}
-                <button disabled={busy} onClick={back}>
-                  {backLabel}
+                <button
+                  ref={connectionsButton}
+                  disabled={busy}
+                  onClick={() => {
+                    returningConnections.current = true;
+                    openTools();
+                  }}
+                >
+                  连接其他应用
                 </button>
               </div>
               {tab !== 'web' && (
@@ -350,10 +448,10 @@ export default function TaskWebTargetPage({
                 <button
                   disabled={busy}
                   onClick={() =>
-                    void act(async () => selected(await api('task.web.clear', identity)))
+                    void act(async () => selected(await api('task.web.clear', identity)), 'clear')
                   }
                 >
-                  移除网页目标
+                  {webAction === 'clear' ? '正在移除…' : '移除网页目标'}
                 </button>
               )}
             </>

@@ -694,6 +694,9 @@
 .task-target-tab-panel[hidden] {
   display: none;
 }
+.task-target-address-form input[aria-invalid='true'] {
+  border-color: var(--fa-status-error);
+}
 .task-target-address-form input,
 .task-target-search input {
   width: 100%;
@@ -808,6 +811,12 @@
 }
 .task-web-columns > .ai-task-card > input {
   width: 100%;
+}
+.task-web-selection-actions > .primary {
+  min-width: 184px;
+}
+.task-web-selection-actions > button:not(.primary) {
+  min-width: 144px;
 }
 .task-web-columns .ai-task-checkbox {
   margin: 4px 0;
