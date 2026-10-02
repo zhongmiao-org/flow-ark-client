@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { composeReference, type ReferenceChoice } from './value-references';
 import './variable-picker.css';
+import './editor-workspace-dialog.css';
 
 export default function VariablePicker({
   label,
@@ -72,7 +73,7 @@ export default function VariablePicker({
   return createPortal(
     <dialog
       ref={dialog}
-      className="variable-picker-dialog"
+      className="editor-workspace-dialog variable-picker-dialog"
       aria-labelledby={titleId}
       onCancel={(event) => {
         event.preventDefault();

@@ -15,6 +15,7 @@ import { diagramGeometry, diagramViewport, nodeBounds } from './diagram-viewport
 type Props = {
   active?: boolean;
   focusRequest?: number;
+  viewRequest?: { key: number; mode: 'all' | 'selected' };
   taskPresentation?: boolean;
   nodes: DiagramNode[];
   edges: DiagramEdge[];
@@ -29,6 +30,7 @@ function Canvas({
   select,
   active = true,
   focusRequest,
+  viewRequest,
   taskPresentation = false,
 }: Props) {
   const { setViewport, viewportInitialized: ready } = useReactFlow();
@@ -51,13 +53,16 @@ function Canvas({
   );
   const previous = useRef<{ layoutKey: string; width: number; height: number } | null>(null);
   const focusedRequest = useRef<number | undefined>(undefined);
+  const viewedRequest = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     if (!active || !ready || !fullViewport) return;
+    const requestedView = viewRequest && viewRequest.key !== viewedRequest.current;
     const requested = focusRequest !== undefined && focusRequest !== focusedRequest.current;
     const before = previous.current;
     if (
       !requested &&
+      !requestedView &&
       before?.layoutKey === layoutKey &&
       before.width === width &&
       before.height === height
@@ -66,18 +71,26 @@ function Canvas({
     const frame = requestAnimationFrame(() => {
       previous.current = { layoutKey, width, height };
       focusedRequest.current = focusRequest;
+      viewedRequest.current = viewRequest?.key;
       // Resize keeps the edited step readable. Structural changes show the
       // complete new projection; selection and parameter edits keep manual pan/zoom.
       void setViewport(
-        (requested || before?.layoutKey === layoutKey) && selectedNode && focusedViewport
-          ? focusedViewport
-          : fullViewport,
+        requestedView
+          ? viewRequest.mode === 'selected' && focusedViewport
+            ? focusedViewport
+            : fullViewport
+          : (requested || (before?.layoutKey === layoutKey && viewRequest?.mode !== 'all')) &&
+              selectedNode &&
+              focusedViewport
+            ? focusedViewport
+            : fullViewport,
       );
     });
     return () => cancelAnimationFrame(frame);
   }, [
     active,
     focusRequest,
+    viewRequest,
     ready,
     layoutKey,
     width,

@@ -1,5 +1,7 @@
 import { usePageBack } from './use-page-back';
 import DesktopStepDetails from './DesktopStepDetails';
+import StepPositionPage from './StepPositionPage';
+import { stepTitle } from './flow-outline';
 import EditorLeaveDialog from './EditorLeaveDialog';
 import EditorMorePage from './EditorMorePage';
 import NavigationIcon from './NavigationIcon';
@@ -1701,6 +1703,12 @@ export default function App() {
                 activeRunId={active?.flowId === edit.id ? active.id : undefined}
                 draftSaved={draftSaved}
                 save={save}
+                saveBusy={busy}
+                saveError={error}
+                undo={undo}
+                redo={redo}
+                canUndo={!!history.past.length}
+                canRedo={!!history.future.length}
                 openStepAI={(nodeId: string) => {
                   if (!guardNodeInput()) return;
                   if (!draftSaved) {
@@ -2192,7 +2200,15 @@ function Editor({
   draftSaved,
   save,
   showRun,
+  saveBusy,
+  saveError,
+  undo,
+  redo,
+  canUndo,
+  canRedo,
 }: any) {
+  const [positionOpen, setPositionOpen] = useState(false);
+  const [viewRequest, setViewRequest] = useState<{ key: number; mode: 'all' | 'selected' }>();
   const [tab, setTab] = useState('node');
   const [destination, setDestination] = useState('main');
   const [moveTo, setMoveTo] = useState('');
@@ -2315,6 +2331,64 @@ function Editor({
   };
   return (
     <>
+      {positionOpen && (
+        <StepPositionPage
+          title={
+            selectedNode
+              ? `${flatten(r.flow.steps).findIndex((node) => node.id === selected) + 1} ${stepTitle(selectedNode)}`
+              : undefined
+          }
+          targets={targets}
+          destination={
+            targets.some((target) => target.value === destination) ? destination : 'main'
+          }
+          setDestination={setDestination}
+          moveTo={moveTo}
+          setMoveTo={setMoveTo}
+          add={() => {
+            setPositionOpen(false);
+            setPanel('actions');
+            requestAnimationFrame(() =>
+              document.querySelector<HTMLInputElement>('[aria-label="搜索动作"]')?.focus(),
+            );
+          }}
+          insert={(side) => {
+            setPositionOpen(false);
+            insertAt(side);
+          }}
+          duplicate={duplicate}
+          move={() => {
+            const target = targets.find((target) => target.value === moveTo);
+            if (target) structure(() => moveStep(r.flow.steps, selected, target));
+          }}
+          remove={() => {
+            if (structure(() => changeSteps(r.flow.steps, selected, () => null), ''))
+              setDestination('main');
+          }}
+          undo={undo}
+          redo={redo}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          saved={draftSaved}
+          save={save}
+          busy={saveBusy}
+          structureError={structureError}
+          saveError={saveError}
+          close={() => setPositionOpen(false)}
+          view={(mode) => {
+            setPositionOpen(false);
+            setPanel('graph');
+            setViewRequest((previous) => ({ key: (previous?.key ?? 0) + 1, mode }));
+            requestAnimationFrame(() =>
+              canvasElement.current
+                ?.querySelector<HTMLButtonElement>(
+                  mode === 'all' ? '[aria-label="显示完整流程"]' : '[aria-label="聚焦所选步骤"]',
+                )
+                ?.focus({ preventScroll: true }),
+            );
+          }}
+        />
+      )}
       {(outlineOpen || outlineMemory.current.has(r.id)) && (
         <FlowOutlineWorkspace
           visible={outlineOpen && active}
@@ -2374,7 +2448,8 @@ function Editor({
             <div className="canvas" ref={canvasElement}>
               <DiagramCanvas
                 key={r.id}
-                active={active && !outlineOpen}
+                active={active && !outlineOpen && !positionOpen}
+                viewRequest={viewRequest}
                 nodes={nodes}
                 edges={edges}
                 selected={selected}
@@ -2501,33 +2576,16 @@ function Editor({
                           <Trash2 size={16} />
                         </button>
                       </div>
-                      <div className="node-insert-actions" aria-label="步骤插入位置">
-                        <button onClick={() => insertAt('before')}>在前面插入</button>
-                        <button onClick={() => insertAt('after')}>在后面插入</button>
-                      </div>
-                      <div className="node-move-actions">
-                        <select
-                          aria-label="步骤移动位置"
-                          value={moveTo}
-                          onChange={(event) => setMoveTo(event.target.value)}
-                        >
-                          <option value="">移动到…</option>
-                          {targets.map((target) => (
-                            <option key={target.value} value={target.value}>
-                              {target.label}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          disabled={!moveTo}
-                          onClick={() => {
-                            const target = targets.find((target) => target.value === moveTo);
-                            if (target) structure(() => moveStep(r.flow.steps, selected, target));
-                          }}
-                        >
-                          移动
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => {
+                          if (!guardNodeInput()) return;
+                          setStructureError('');
+                          setPanel('node');
+                          setPositionOpen(true);
+                        }}
+                      >
+                        步骤编辑与位置
+                      </button>
                       {structureError && (
                         <p className="field-error" role="alert">
                           {structureError}

@@ -1,0 +1,46 @@
+.editor-workspace-dialog {
+  position: fixed;
+  inset: 40px 0 0 224px;
+  margin: 0;
+  width: calc(100vw - 224px);
+  max-width: none;
+  height: calc(100dvh - 40px);
+  max-height: none;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--fa-bg-canvas);
+  color: var(--fa-text-primary);
+  overflow: auto;
+}
+.editor-workspace-dialog::backdrop {
+  background: transparent;
+}
+@media (max-width: 1439px) {
+  .editor-workspace-dialog {
+    left: 72px;
+    width: calc(100vw - 72px);
+  }
+}
+@media (min-width: 1440px) {
+  body:has(.editor-workspace-dialog[open]) .app .sidebar {
+    width: 224px;
+    flex-basis: 224px;
+    padding: 24px;
+  }
+  body:has(.editor-workspace-dialog[open]) .app .brand-name,
+  body:has(.editor-workspace-dialog[open]) .app .nav-label {
+    display: inline;
+  }
+  body:has(.editor-workspace-dialog[open]) .app .workspace-label,
+  body:has(.editor-workspace-dialog[open]) .app .sidebar-bottom {
+    display: flex;
+  }
+  body:has(.editor-workspace-dialog[open]) .app .sidebar nav button {
+    width: 100%;
+    padding: 10px;
+  }
+  body:has(.editor-workspace-dialog[open]) .app .sidebar nav button b {
+    position: static;
+  }
+}
