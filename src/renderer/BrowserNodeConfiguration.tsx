@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { FramePath } from '../shared/contracts.generated';
 import type { Step } from '../shared/types';
 import ElementPicker from './ElementPicker';
@@ -22,7 +22,10 @@ export default function BrowserNodeConfiguration({
   change: (node: BrowserNode) => void;
 }) {
   const instanceId = useId();
+  const locator = useRef<HTMLDetailsElement>(null);
+  const selectorInput = useRef<HTMLInputElement>(null);
   const fieldId = fieldsOnly ? instanceId + '-' : '';
+  const [inspected, setInspected] = useState(false);
   const [target, setTarget] = useState<ElementTarget | null>(null);
   const path: FramePath =
     node.version >= 2 ? (node as Extract<BrowserNode, { version: 2 | 3 }>).framePath : [];
@@ -110,8 +113,17 @@ export default function BrowserNodeConfiguration({
             key={node.operation}
             selector={node.selector}
             framePath={path}
-            onInspect={setTarget}
+            onStart={() => setTarget(null)}
+            onInspect={(picked) => {
+              setTarget(picked);
+              setInspected(true);
+            }}
+            onAdjust={() => {
+              if (locator.current) locator.current.open = true;
+              selectorInput.current?.focus();
+            }}
             onSelect={(picked) => {
+              setInspected(false);
               setTarget(picked);
               change({
                 ...node,
@@ -142,7 +154,7 @@ export default function BrowserNodeConfiguration({
               } as BrowserNode);
             }}
           />
-          {target && (
+          {target && !inspected && (
             <div className="picked-target">
               <strong>{target.label}</strong>
               <span>
@@ -153,10 +165,11 @@ export default function BrowserNodeConfiguration({
               {target.structural && <p>使用结构定位，页面布局变化后请重新验证。</p>}
             </div>
           )}
-          <details className="locator-details" open={!node.selector}>
+          <details ref={locator} className="locator-details" open={!node.selector}>
             <summary>定位信息 · 高级编辑</summary>
             <label htmlFor={fieldId + 'browser-selector'}>目标元素选择器</label>
             <input
+              ref={selectorInput}
               id={fieldId + 'browser-selector'}
               disabled={topLevel}
               value={node.selector}
