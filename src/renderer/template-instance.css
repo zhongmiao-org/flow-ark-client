@@ -49,6 +49,55 @@
   height: 16px;
   align-self: flex-start;
 }
+.template-shared-configuration > .template-entry-fields,
+.template-shared-configuration .template-fieldset {
+  gap: 32px;
+}
+.template-shared-configuration .template-field {
+  font-size: 13px;
+  line-height: 20px;
+}
+.template-shared-configuration .template-field > input:not([type='checkbox']) {
+  line-height: 20px;
+}
+.template-entry-fields .template-boolean-field {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+.template-entry-fields .template-boolean-field > input[type='checkbox'] {
+  grid-column: 1;
+  grid-row: 1;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  align-self: center;
+}
+.template-entry-fields .template-boolean-field > span,
+.template-entry-fields .template-boolean-field > small {
+  grid-column: 2;
+}
+.template-shared-configuration > .ai-task-note {
+  padding: 18px 16px;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+}
+.template-configuration-error {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--fa-status-error-bg);
+  color: var(--fa-status-error);
+  font-size: 13px;
+  line-height: 22px;
+}
+.template-configuration-error p {
+  color: inherit;
+}
 .template-source-error {
   margin-bottom: 24px;
 }

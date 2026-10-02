@@ -73,6 +73,8 @@ export default function TemplateInstancePage({
   const [reload, setReload] = useState(0),
     [generation, setGeneration] = useState(0);
   const [configurationGeneration, setConfigurationGeneration] = useState(0);
+  const configurationError = useRef<HTMLDivElement>(null);
+  const focusConfigurationError = useRef(false);
   const [others, setOthers] = useState(false),
     [version, setVersion] = useState('');
   const [createdVersion, setCreatedVersion] = useState<{ id: string; version: string }>();
@@ -89,6 +91,17 @@ export default function TemplateInstancePage({
   const aiReturn = useRef<{ trigger: HTMLButtonElement; scroll: number } | null>(null);
   const loadingSource = useRef(false);
   const instance = draft.instance;
+  const nameError = !instance.name.trim()
+    ? '请填写实例名称。'
+    : instance.name.length > 100
+      ? '实例名称最多 100 个字符。'
+      : '';
+  useLayoutEffect(() => {
+    if (!busy && error && !leaving && tab === 'configuration' && focusConfigurationError.current) {
+      configurationError.current?.focus();
+      focusConfigurationError.current = false;
+    }
+  }, [busy, error, leaving, tab]);
   const rawInvalid = (scope: TemplateSaveScope = 'all', inputId?: string) => {
     const containers =
       scope === 'input'
@@ -178,6 +191,7 @@ export default function TemplateInstancePage({
     }
     const submitted = structuredClone(draft),
       request = templateSaveRequest(submitted, saved, scope, inputId);
+    focusConfigurationError.current = scope === 'configuration';
     const next: TemplateDetail | undefined = await work(
       () =>
         api('template.save', request).catch((error) => {
@@ -188,6 +202,7 @@ export default function TemplateInstancePage({
       scope === 'input' ? '入口参数已保存' : '实例配置已保存',
     );
     if (!next) return false;
+    focusConfigurationError.current = false;
     setSaved(structuredClone(next));
     setDraft((current) => acceptTemplateSave(current, submitted, next, request, scope));
     return true;
@@ -374,14 +389,17 @@ export default function TemplateInstancePage({
             </div>
           </div>
         )}
-        {error && !leaving && (
+        {error && !leaving && tab !== 'configuration' && (
           <p className="ai-task-error" role="alert">
             {error}
           </p>
         )}
         <div data-instance-tab="configuration" hidden={tab !== 'configuration'}>
           <div className="template-instance-columns">
-            <section className="ai-task-card template-instance-form">
+            <section
+              className="ai-task-card template-instance-form template-shared-configuration"
+              aria-busy={busy}
+            >
               <h2>共享配置</h2>
               <fieldset
                 disabled={busy}
@@ -393,10 +411,20 @@ export default function TemplateInstancePage({
                   <input
                     value={instance.name}
                     maxLength={100}
+                    aria-label="实例名称"
+                    aria-required="true"
+                    aria-invalid={!!nameError}
+                    aria-describedby={nameError ? 'template-instance-name-error' : undefined}
+                    data-value-invalid={!!nameError || undefined}
                     onChange={(event) =>
                       setDraft({ ...draft, instance: { ...instance, name: event.target.value } })
                     }
                   />
+                  {nameError && (
+                    <small className="template-field-error" id="template-instance-name-error">
+                      {nameError}
+                    </small>
+                  )}
                 </label>
                 <Field
                   schema={draft.configurationSchema}
@@ -407,13 +435,25 @@ export default function TemplateInstancePage({
                 />
               </fieldset>
               <p className="ai-task-note">字段由模板提供；打开表单不会执行模板代码。</p>
+              {error && !leaving && (
+                <div
+                  className="template-configuration-error"
+                  role="alert"
+                  tabIndex={-1}
+                  ref={configurationError}
+                >
+                  <strong>配置保存未完成</strong>
+                  <p>{error}</p>
+                  <p>当前输入仍保留，请核对后重试；不会自动开始或重放运行。</p>
+                </div>
+              )}
               <div className="ai-task-actions">
                 <button
                   className="primary"
                   disabled={blocked}
                   onClick={() => void save('configuration')}
                 >
-                  保存配置
+                  {busy ? '正在保存…' : error ? '重试保存配置' : '保存配置'}
                 </button>
                 <button disabled={busy} onClick={() => reset('configuration')}>
                   取消更改

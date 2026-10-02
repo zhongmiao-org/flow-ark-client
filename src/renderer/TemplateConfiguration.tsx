@@ -105,7 +105,9 @@ export function Field({ schema: s, value, change, label, required = false }: any
       .filter(Boolean)
       .join(' ') || undefined;
   return (
-    <label className="template-field">
+    <label
+      className={`template-field${s.type === 'boolean' && !options ? ' template-boolean-field' : ''}`}
+    >
       <span id={id}>
         {title}
         {required && <small className="template-required">（必需）</small>}
