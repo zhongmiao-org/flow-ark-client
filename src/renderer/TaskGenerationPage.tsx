@@ -30,6 +30,7 @@ export default function TaskGenerationPage({
 }) {
   const generating = task.status === 'generating';
   const unsupported = task.status === 'unsupported';
+  const capabilitySummary = unsupported ? result?.summary.trim() : undefined;
   const updatedAt = Date.parse(task.updatedAt);
   const [retry, setRetry] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -58,13 +59,13 @@ export default function TaskGenerationPage({
         {generating && <img src={runningIndicator} alt="" />}
         {generating ? '正在生成' : unsupported ? '缺少可用能力' : '生成未完成'}
       </span>
-      <h2 id="generation-heading" tabIndex={-1} ref={heading}>
+      <h2 id="generation-heading" tabIndex={unsupported ? 0 : -1} ref={heading}>
         {generating
           ? task.webTarget && task.outputTarget && !task.scope
             ? '已确认目标与输出，正在检查步骤'
             : '正在理解需求并检查可用步骤'
           : unsupported
-            ? '这项操作还缺少可用能力'
+            ? capabilitySummary || '这项操作还缺少可用能力'
             : '可以重试，也可以先修改需求'}
       </h2>
       {generating ? (
@@ -84,18 +85,6 @@ export default function TaskGenerationPage({
         </>
       ) : unsupported ? (
         <>
-          {result?.summary && (
-            <p className="task-generation-reason" tabIndex={0} aria-label="能力说明">
-              {result.summary}
-            </p>
-          )}
-          {!!result?.limitations.length && (
-            <ul aria-label="当前能力限制" tabIndex={0}>
-              {result.limitations.map((item, index) => (
-                <li key={index}>{item}</li>
-              ))}
-            </ul>
-          )}
           <p>
             你可以连接具备所需能力的工具，或调整任务要求。
             <br />
@@ -164,6 +153,19 @@ export default function TaskGenerationPage({
           </button>
         )}
       </div>
+      {unsupported && !!result?.limitations.length && (
+        <details
+          className="task-generation-limitations"
+          key={`${task.id}:${task.requestId ?? ''}:${task.status}`}
+        >
+          <summary>查看能力限制 · {result.limitations.length} 项</summary>
+          <ul aria-label="当前能力限制" tabIndex={0}>
+            {result.limitations.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+        </details>
+      )}
       {retry && !generating && !unsupported && (
         <div
           className="task-generation-review"

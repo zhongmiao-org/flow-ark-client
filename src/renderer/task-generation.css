@@ -1,13 +1,14 @@
 /* Figma 23:10659 / 23:10802 / 23:10940; AI request feedback 2:4629. */
 .ai-task-card.task-generation {
   min-height: 500px;
-  padding: 32px;
+  padding: 31px;
   gap: 16px;
   align-items: flex-start;
 }
 .task-generation h2 {
   font-size: 28px;
   line-height: 40px;
+  font-weight: 700;
 }
 .task-generation h3 {
   margin: 0;
@@ -18,14 +19,6 @@
 .ai-task-card.task-generation[data-generation-state='generating'] {
   min-height: 550px;
 }
-.ai-task-card.task-generation[data-generation-state='generating'],
-.ai-task-card.task-generation[data-generation-state='failed'] {
-  padding: 31px;
-}
-.task-generation[data-generation-state='generating'] h2,
-.task-generation[data-generation-state='failed'] h2 {
-  font-weight: 700;
-}
 .task-generation .task-generation-status::before {
   content: none;
 }
@@ -34,6 +27,20 @@
 }
 .ai-task-card.task-generation[data-generation-state='unsupported'] {
   min-height: 520px;
+}
+.task-generation[data-generation-state='unsupported'] h2 {
+  max-height: 160px;
+  overflow: auto;
+  width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.task-generation .task-generation-limitations ul {
+  margin-top: 16px;
+  white-space: pre-wrap;
+}
+.task-generation-limitations li + li {
+  margin-top: 8px;
 }
 .task-generation-current,
 .task-generation-review {
@@ -100,6 +107,7 @@
 .task-generation-failure h3 {
   color: var(--fa-status-error);
 }
+.task-generation-limitations,
 .task-generation-record {
   width: 100%;
   min-width: 0;
@@ -107,6 +115,7 @@
   border-radius: var(--fa-radius-12);
   padding: 16px 24px;
 }
+.task-generation-limitations summary,
 .task-generation-record summary {
   cursor: pointer;
   color: var(--fa-text-primary);
@@ -142,6 +151,7 @@
   .task-generation-current,
   .task-generation-review,
   .task-generation-failure,
+  .task-generation-limitations,
   .task-generation-record {
     padding: 16px;
   }

@@ -276,6 +276,8 @@ export default function AITaskWorkspace(props: Props) {
   const generating = detail?.task.status === 'generating';
   const stale = !!detail && detail.task.revision !== revision;
   const result = detail?.proposal?.result;
+  const hasPlanProposal = result?.kind === 'plan';
+  const viewingPreserved = page === 'review' && !!detail?.flow && !!result && !hasPlanProposal;
   const flow = result?.kind === 'plan' ? result.flow : detail?.flow?.flow;
   const selectedStep = flow && flatten(flow.steps).find((step) => step.id === selected);
   const scope = draft.scope;
@@ -318,7 +320,10 @@ export default function AITaskWorkspace(props: Props) {
   const moreUnavailable = moreOperationReason();
   function moreOperationReason() {
     if (busy || generating) return '请等当前操作结束后再打开更多操作。';
-    if (detail?.proposal) return '请先核对并采纳当前方案，再导出、复制或编辑这份流程。';
+    if (detail?.proposal)
+      return hasPlanProposal
+        ? '请先核对并采纳当前方案，再导出、复制或编辑这份流程。'
+        : '本次回复没有可采纳的方案。请先调整任务要求并重新生成，再继续修改。';
     if (dirty) return '请先保存或放弃未保存的任务修改，再打开更多操作。';
     if (stale) return '任务已变化，请重新读取后再打开更多操作。';
     if (scope) return '请先结束当前步骤的修改，再打开整个任务的更多操作。';
@@ -379,45 +384,47 @@ export default function AITaskWorkspace(props: Props) {
       });
     });
   }
-  const title = standaloneGraph
-    ? '同一个任务，两种视图'
-    : page === 'modify'
-      ? '接着修改当前任务'
-      : page === 'generation'
-        ? generating
-          ? '正在准备任务步骤'
-          : detail?.task.status === 'unsupported'
-            ? '当前工具还不能完成这项操作'
-            : '方案没有生成完成'
-        : page === 'understand'
-          ? '我理解你要……'
-          : page === 'guide'
-            ? '第一次，让我们一起完成'
-            : page === 'target'
-              ? desktopPhase === 'plan'
-                ? '整理所选段落的方案'
-                : desktopPhase === 'changes'
-                  ? '核对这次应用改动'
-                  : desktopPhase === 'window-ready'
-                    ? '选择应用、窗口与能力'
-                    : '这次要操作哪里？'
-              : page === 'missing-ai'
-                ? '先连接 AI，需求会为你保留'
-                : page === 'check'
-                  ? detail?.flow?.desktopTarget
-                    ? '确认这次应用修改'
-                    : '试运行前，最后确认一次'
-                  : page === 'home'
-                    ? '开始任务'
-                    : page === 'brief'
-                      ? '描述需求，带上必要资料'
-                      : result?.kind === 'clarify'
-                        ? '我理解你要……'
-                        : result?.kind === 'unsupported'
-                          ? '这项任务还需要支持'
-                          : changesView
-                            ? '检查 AI 提议的修改'
-                            : '先看看任务步骤';
+  const title = viewingPreserved
+    ? '查看保留的草稿'
+    : standaloneGraph
+      ? '同一个任务，两种视图'
+      : page === 'modify'
+        ? '接着修改当前任务'
+        : page === 'generation'
+          ? generating
+            ? '正在准备任务步骤'
+            : detail?.task.status === 'unsupported'
+              ? '当前工具还不能完成这项操作'
+              : '方案没有生成完成'
+          : page === 'understand'
+            ? '我理解你要……'
+            : page === 'guide'
+              ? '第一次，让我们一起完成'
+              : page === 'target'
+                ? desktopPhase === 'plan'
+                  ? '整理所选段落的方案'
+                  : desktopPhase === 'changes'
+                    ? '核对这次应用改动'
+                    : desktopPhase === 'window-ready'
+                      ? '选择应用、窗口与能力'
+                      : '这次要操作哪里？'
+                : page === 'missing-ai'
+                  ? '先连接 AI，需求会为你保留'
+                  : page === 'check'
+                    ? detail?.flow?.desktopTarget
+                      ? '确认这次应用修改'
+                      : '试运行前，最后确认一次'
+                    : page === 'home'
+                      ? '开始任务'
+                      : page === 'brief'
+                        ? '描述需求，带上必要资料'
+                        : result?.kind === 'clarify'
+                          ? '我理解你要……'
+                          : result?.kind === 'unsupported'
+                            ? '这项任务还需要支持'
+                            : changesView
+                              ? '检查 AI 提议的修改'
+                              : '先看看任务步骤';
 
   useEffect(() => {
     if (props.active)
@@ -447,7 +454,7 @@ export default function AITaskWorkspace(props: Props) {
                           ? () => void returnFromReview()
                           : undefined,
         standaloneGraph
-          ? detail?.proposal
+          ? hasPlanProposal
             ? '待采纳方案'
             : '采纳后的方案'
           : page === 'modify'
@@ -1546,27 +1553,28 @@ export default function AITaskWorkspace(props: Props) {
       </button>
     ) : null;
 
-  const proposalControls = detail?.proposal ? (
-    <>
-      {detail.conflict && (
-        <p className="ai-task-note ai-task-failure" role="alert">
-          原流程或绑定已变化，请重新生成方案后再采纳。
-        </p>
-      )}
-      <div className="ai-task-actions">
-        <button
-          className="primary"
-          disabled={busy || dirty || stale || detail.conflict}
-          onClick={() => void proposalAction('adopt')}
-        >
-          {fullModification ? '采纳修改' : '采纳方案'}
-        </button>
-        <button disabled={busy || dirty || stale} onClick={() => void proposalAction('reject')}>
-          不采纳
-        </button>
-      </div>
-    </>
-  ) : null;
+  const proposalControls =
+    detail?.proposal && hasPlanProposal ? (
+      <>
+        {detail.conflict && (
+          <p className="ai-task-note ai-task-failure" role="alert">
+            原流程或绑定已变化，请重新生成方案后再采纳。
+          </p>
+        )}
+        <div className="ai-task-actions">
+          <button
+            className="primary"
+            disabled={busy || dirty || stale || detail.conflict}
+            onClick={() => void proposalAction('adopt')}
+          >
+            {fullModification ? '采纳修改' : '采纳方案'}
+          </button>
+          <button disabled={busy || dirty || stale} onClick={() => void proposalAction('reject')}>
+            不采纳
+          </button>
+        </div>
+      </>
+    ) : null;
 
   const proposalNavigation =
     fullModification && detail.proposal ? (
@@ -1626,10 +1634,12 @@ export default function AITaskWorkspace(props: Props) {
                                 : fullModification
                                   ? `完整流程修改 · 任务基线修订 ${detail?.proposal?.baseRevision} · 尚未采纳`
                                   : standaloneGraph
-                                    ? `${flow?.name} · 修订 ${revision} · ${stale ? '草稿已变化，请重新读取' : dirty ? '有未保存修改' : detail?.proposal ? '待采纳方案' : '清单和流程图使用同一份流程草稿'}`
-                                    : planListView
-                                      ? '第 4 步 / 确认方案 · 确认后进入试运行前检查'
-                                      : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
+                                    ? `${flow?.name} · 修订 ${revision} · ${stale ? '草稿已变化，请重新读取' : dirty ? '有未保存修改' : hasPlanProposal ? '待采纳方案' : '清单和流程图使用同一份流程草稿'}`
+                                    : viewingPreserved
+                                      ? '本次回复没有替换草稿；这里显示此前保存的步骤，尚未开始新的运行。'
+                                      : planListView
+                                        ? '第 4 步 / 确认方案 · 确认后进入试运行前检查'
+                                        : '描述、补问与方案保存在本机；采纳方案后再检查执行。'}
           </p>
         </div>
         {page !== 'home' &&
@@ -2161,7 +2171,7 @@ export default function AITaskWorkspace(props: Props) {
                             `已生成 ${flatten(flow.steps).length} 个步骤，请先检查方案。`
                           : `当前流程草稿包含 ${flatten(flow.steps).length} 个步骤（含分支和循环内步骤）。你可以继续修改要求，或查看同一方案的流程图。`
                       }
-                      pending={!!detail.proposal}
+                      pending={hasPlanProposal}
                       dirty={dirty}
                       busy={inputDisabled}
                       stale={stale}
@@ -2560,6 +2570,19 @@ export default function AITaskWorkspace(props: Props) {
                     </>
                   ) : flow ? (
                     <>
+                      {viewingPreserved && (
+                        <div className="ai-task-note" role="status">
+                          <p>这是此前保存的草稿。本次回复没有可采纳的方案，也没有修改这些步骤。</p>
+                          <button disabled={busy} onClick={recoverDescription}>
+                            调整任务要求
+                          </button>
+                          {detail.task.status === 'unsupported' && (
+                            <button disabled={busy} onClick={() => setPage('generation')}>
+                              返回能力说明
+                            </button>
+                          )}
+                        </div>
+                      )}
                       {!changesView && proposalNavigation}
                       {!changesView && (
                         <>
@@ -2567,7 +2590,7 @@ export default function AITaskWorkspace(props: Props) {
                             <TaskPlanIdentity
                               name={flow.name}
                               revision={revision}
-                              pending={!!detail.proposal}
+                              pending={hasPlanProposal}
                               dirty={dirty}
                               stale={stale}
                             />
@@ -2577,7 +2600,7 @@ export default function AITaskWorkspace(props: Props) {
                                 {flow.name}
                               </h2>
                               <span className="badge">
-                                {detail.proposal ? '待采纳方案' : '已保存草稿'}
+                                {hasPlanProposal ? '待采纳方案' : '已保存草稿'}
                               </span>
                             </div>
                           ) : null}
@@ -2607,7 +2630,7 @@ export default function AITaskWorkspace(props: Props) {
                               更多 ···
                             </button>
                           </div>
-                          {moreUnavailable && (
+                          {moreUnavailable && !viewingPreserved && (
                             <p id="task-more-reason" className="ai-task-note">
                               {moreUnavailable}
                             </p>
@@ -2637,13 +2660,13 @@ export default function AITaskWorkspace(props: Props) {
                                 }}
                                 context={{
                                   bindings: detail.flow?.bindings,
-                                  webTarget: detail.proposal
+                                  webTarget: hasPlanProposal
                                     ? detail.task.webTarget
                                     : detail.flow?.webTarget,
-                                  outputTarget: detail.proposal
+                                  outputTarget: hasPlanProposal
                                     ? detail.task.outputTarget
                                     : detail.flow?.outputTarget,
-                                  toolTargets: detail.proposal
+                                  toolTargets: hasPlanProposal
                                     ? detail.task.toolTargets
                                     : detail.flow?.toolTargets,
                                 }}
@@ -2701,13 +2724,13 @@ export default function AITaskWorkspace(props: Props) {
                                 }}
                                 context={{
                                   bindings: detail.flow?.bindings,
-                                  webTarget: detail.proposal
+                                  webTarget: hasPlanProposal
                                     ? detail.task.webTarget
                                     : detail.flow?.webTarget,
-                                  outputTarget: detail.proposal
+                                  outputTarget: hasPlanProposal
                                     ? detail.task.outputTarget
                                     : detail.flow?.outputTarget,
-                                  toolTargets: detail.proposal
+                                  toolTargets: hasPlanProposal
                                     ? detail.task.toolTargets
                                     : detail.flow?.toolTargets,
                                 }}
@@ -2741,7 +2764,9 @@ export default function AITaskWorkspace(props: Props) {
                                       (dirty || stale || !!detail.proposal) && (
                                         <p className="task-step-position">
                                           {detail.proposal
-                                            ? '采纳当前方案后，才能单独修改这一步。'
+                                            ? hasPlanProposal
+                                              ? '采纳当前方案后，才能单独修改这一步。'
+                                              : '本次没有可采纳方案，请先调整任务要求并重新生成。'
                                             : dirty
                                               ? '先保存或放弃当前任务输入，再修改所选步骤。'
                                               : '任务已变化，请重新读取后继续。'}
@@ -2760,13 +2785,13 @@ export default function AITaskWorkspace(props: Props) {
                             compact={planListView}
                             context={{
                               bindings: detail.flow?.bindings,
-                              webTarget: detail.proposal
+                              webTarget: hasPlanProposal
                                 ? detail.task.webTarget
                                 : detail.flow?.webTarget,
-                              outputTarget: detail.proposal
+                              outputTarget: hasPlanProposal
                                 ? detail.task.outputTarget
                                 : detail.flow?.outputTarget,
-                              toolTargets: detail.proposal
+                              toolTargets: hasPlanProposal
                                 ? detail.task.toolTargets
                                 : detail.flow?.toolTargets,
                             }}
@@ -2795,7 +2820,7 @@ export default function AITaskWorkspace(props: Props) {
                           )}
                         </>
                       )}
-                      {detail.proposal && (
+                      {detail.proposal && hasPlanProposal && (
                         <>
                           {fullModification ? (
                             <div hidden={!changesView}>
@@ -2859,7 +2884,7 @@ export default function AITaskWorkspace(props: Props) {
                           )}
                         </div>
                       )}
-                      {!planListView && !fullModification && (
+                      {!planListView && !fullModification && !viewingPreserved && (
                         <p className="ai-task-note">
                           采纳只更新草稿。当前运行和已建立的计划继续使用原快照。
                         </p>
