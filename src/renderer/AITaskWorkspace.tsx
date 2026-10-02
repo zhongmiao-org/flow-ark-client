@@ -107,6 +107,10 @@ type Props = {
 export default function AITaskWorkspace(props: Props) {
   const [connectionOrigin, setConnectionOrigin] = useState<ConnectionTaskSource>();
   const [tasks, setTasks] = useState<PlanningTask[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
+  const [tasksLoaded, setTasksLoaded] = useState(false);
+  const [tasksError, setTasksError] = useState('');
+  const [tasksRefresh, setTasksRefresh] = useState(0);
   const [detail, setDetail] = useState<TaskDetail | null>(null);
   const [draft, setDraft] = useState<Draft>({ description: '', context: [], answers: {} });
   const [saved, setSaved] = useState('');
@@ -470,17 +474,26 @@ export default function AITaskWorkspace(props: Props) {
   useEffect(() => {
     if (!props.active) return;
     let live = true;
+    setTasksLoading(true);
+    setTasksError('');
     void api('task.list')
       .then((next) => {
-        if (live) setTasks(next);
+        if (live) {
+          setTasks(next);
+          setTasksLoaded(true);
+        }
       })
       .catch((e) => {
-        if (live) setError(e.message);
+        if (live)
+          setTasksError(e instanceof Error && e.message ? e.message : '暂时无法读取任务列表');
+      })
+      .finally(() => {
+        if (live) setTasksLoading(false);
       });
     return () => {
       live = false;
     };
-  }, [props.active, page]);
+  }, [props.active, page, tasksRefresh]);
   useEffect(() => {
     if (!props.active || !detail) return;
     const id = detail.task.id;
@@ -1808,11 +1821,43 @@ export default function AITaskWorkspace(props: Props) {
               手动创建流程
             </button>
           </div>
-          <section className="ai-task-card">
-            <h2>继续你的任务</h2>
-            {!tasks.length ? (
+          <section className="ai-task-card" aria-labelledby="task-home-recents-title">
+            <div className="task-home-recents-heading">
+              <h2 id="task-home-recents-title">继续你的任务</h2>
+              <button
+                disabled={busy}
+                aria-disabled={tasksLoading || undefined}
+                onClick={() => {
+                  if (!tasksLoading) setTasksRefresh((current) => current + 1);
+                }}
+              >
+                {tasksLoading ? '正在读取…' : tasksError ? '重新读取' : '刷新列表'}
+              </button>
+            </div>
+            <div
+              role="status"
+              aria-atomic="true"
+              className={!tasksLoading && !tasksError ? 'sr-only' : undefined}
+            >
+              {tasksLoading ? (
+                <p>
+                  {tasksLoaded ? '正在更新任务列表，已显示的任务仍保留。' : '正在读取任务列表…'}
+                </p>
+              ) : tasksError ? (
+                <p className="task-home-recents-error">
+                  任务列表暂时无法读取：{tasksError}。
+                  {tasks.length
+                    ? '下方保留上次读取的列表，可以重新读取。'
+                    : '请重新读取，当前无法确认是否有任务草稿。'}
+                </p>
+              ) : (
+                <span>任务列表已更新，共 {tasks.length} 个任务。</span>
+              )}
+            </div>
+            {tasksLoaded && !tasksLoading && !tasksError && !tasks.length && (
               <p>还没有任务草稿。从上面描述一个目标开始。</p>
-            ) : (
+            )}
+            {tasks.length > 0 && (
               <div className="ai-task-recents">
                 {tasks.map((task) => (
                   <button key={task.id} disabled={busy} onClick={() => void open(task.id)}>

@@ -101,6 +101,20 @@
 .ai-task-recents small {
   color: var(--fa-text-secondary);
 }
+.task-home-recents-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.task-home-recents-error {
+  color: var(--fa-status-error);
+}
+.task-home-recents-heading button[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: default;
+}
 .ai-task-state {
   display: flex;
   justify-content: space-between;
