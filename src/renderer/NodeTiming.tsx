@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import type { Step } from '../shared/types';
 import './node-configuration.css';
 
@@ -8,7 +8,26 @@ function timeoutError(value: number | undefined) {
     : '';
 }
 
-export default function NodeTiming({ node, change }: { node: Step; change: (next: Step) => void }) {
+function TimingHelp({ compact, children }: { compact: boolean; children: ReactNode }) {
+  return compact ? (
+    <details>
+      <summary>期限规则</summary>
+      {children}
+    </details>
+  ) : (
+    children
+  );
+}
+
+export default function NodeTiming({
+  node,
+  change,
+  compact = false,
+}: {
+  node: Step;
+  change: (next: Step) => void;
+  compact?: boolean;
+}) {
   const id = useId();
   const [text, setText] = useState(String(node.timeoutMs ?? 60000));
   const [error, setError] = useState(timeoutError(node.timeoutMs));
@@ -20,10 +39,12 @@ export default function NodeTiming({ node, change }: { node: Step; change: (next
   }, [node.id, node.timeoutMs]);
   return (
     <section className="node-timing" aria-label="节点期限" data-value-invalid={error || undefined}>
-      <header>
-        <h4>执行期限</h4>
-        <span>{enabled ? '自定义' : '默认规则'}</span>
-      </header>
+      {!compact && (
+        <header>
+          <h4>执行期限</h4>
+          <span>{enabled ? '自定义' : '默认规则'}</span>
+        </header>
+      )}
       <label className="node-timing-toggle" htmlFor={id + '-enabled'}>
         <input
           id={id + '-enabled'}
@@ -64,16 +85,20 @@ export default function NodeTiming({ node, change }: { node: Step; change: (next
               change({ ...node, timeoutMs: amount });
             }}
           />
-          <p id={id + '-help'}>
-            100–3600000 毫秒。{!error && `${Number(text) / 1000} 秒。`}从此节点开始执行时计时。
-          </p>
+          <TimingHelp compact={compact}>
+            <p id={id + '-help'}>
+              100–3600000 毫秒。{!error && `${Number(text) / 1000} 秒。`}从此节点开始执行时计时。
+            </p>
+          </TimingHelp>
         </>
       ) : (
-        <p>
-          {noDefault
-            ? '此类节点未配置时没有自身默认期限；仍受父容器期限和运行取消约束。'
-            : '未配置时使用 60000 毫秒（60 秒）；父容器可以更早到期。'}
-        </p>
+        <TimingHelp compact={compact}>
+          <p>
+            {noDefault
+              ? '此类节点未配置时没有自身默认期限；仍受父容器期限和运行取消约束。'
+              : '未配置时使用 60000 毫秒（60 秒）；父容器可以更早到期。'}
+          </p>
+        </TimingHelp>
       )}
       {['condition', 'loop'].includes(node.type) && (
         <p>容器期限覆盖子步骤及内部等待、暂停，不会在每个子步骤开始时重新计时。</p>

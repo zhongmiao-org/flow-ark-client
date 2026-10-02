@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import type { FramePath } from '../shared/contracts.generated';
 import type { Step } from '../shared/types';
 import ElementPicker from './ElementPicker';
@@ -14,11 +14,15 @@ export default function BrowserNodeConfiguration({
   node,
   change,
   choices,
+  fieldsOnly = false,
 }: {
+  fieldsOnly?: boolean;
   node: BrowserNode;
   choices: ReferenceChoice[];
   change: (node: BrowserNode) => void;
 }) {
+  const instanceId = useId();
+  const fieldId = fieldsOnly ? instanceId + '-' : '';
   const [target, setTarget] = useState<ElementTarget | null>(null);
   const path: FramePath =
     node.version >= 2 ? (node as Extract<BrowserNode, { version: 2 | 3 }>).framePath : [];
@@ -42,36 +46,43 @@ export default function BrowserNodeConfiguration({
   const topLevel = ['navigate', 'screenshot'].includes(node.operation);
   return (
     <section className="node-configuration" aria-label="浏览器节点配置">
-      <header>
-        <h4>网页动作</h4>
-      </header>
-      <label htmlFor="browser-operation">操作</label>
-      <select
-        id="browser-operation"
-        value={node.operation}
-        onChange={(e) => {
-          const operation = e.target.value as BrowserNode['operation'];
-          const nextPath: FramePath = ['navigate', 'screenshot'].includes(operation) ? [] : path;
-          const value = structuredClone(browserActions[operation].value);
-          const version =
-            node.version === 3 || ['select', 'check', 'inputValue', 'press'].includes(operation)
-              ? 3
-              : 2;
-          change({ ...node, version, operation, value, framePath: nextPath } as BrowserNode);
-        }}
-      >
-        {Object.entries(browserActions).map(([value, { label }]) => (
-          <option key={value} value={value}>
-            {label}
-          </option>
-        ))}
-      </select>
-      <p className="node-operation-description">
-        {browserActions[node.operation].detail}
-        。切换动作会恢复该动作的默认输入，可通过草稿撤销恢复。
-      </p>
+      {!fieldsOnly && (
+        <>
+          <header>
+            <h4>网页动作</h4>
+          </header>
+          <label htmlFor={fieldId + 'browser-operation'}>操作</label>
+          <select
+            id={fieldId + 'browser-operation'}
+            value={node.operation}
+            onChange={(e) => {
+              const operation = e.target.value as BrowserNode['operation'];
+              const nextPath: FramePath = ['navigate', 'screenshot'].includes(operation)
+                ? []
+                : path;
+              const value = structuredClone(browserActions[operation].value);
+              const version =
+                node.version === 3 || ['select', 'check', 'inputValue', 'press'].includes(operation)
+                  ? 3
+                  : 2;
+              change({ ...node, version, operation, value, framePath: nextPath } as BrowserNode);
+            }}
+          >
+            {Object.entries(browserActions).map(([value, { label }]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <p className="node-operation-description">
+            {browserActions[node.operation].detail}
+            。切换动作会恢复该动作的默认输入，可通过草稿撤销恢复。
+          </p>
+        </>
+      )}
       {node.operation === 'navigate' && (
         <ValueField
+          compactReference={fieldsOnly}
           label="网页地址"
           value={node.value}
           change={(value) => change({ ...node, value })}
@@ -80,9 +91,9 @@ export default function BrowserNodeConfiguration({
         >
           {typeof node.value === 'string' ? (
             <>
-              <label htmlFor="browser-url">网页地址</label>
+              <label htmlFor={fieldId + 'browser-url'}>网页地址</label>
               <input
-                id="browser-url"
+                id={fieldId + 'browser-url'}
                 type="url"
                 value={typeof node.value === 'string' ? node.value : ''}
                 placeholder="http://127.0.0.1:4178"
@@ -92,7 +103,7 @@ export default function BrowserNodeConfiguration({
           ) : undefined}
         </ValueField>
       )}
-      {!topLevel && (
+      {!fieldsOnly && !topLevel && (
         <>
           <label>目标元素</label>
           <ElementPicker
@@ -144,21 +155,21 @@ export default function BrowserNodeConfiguration({
           )}
           <details className="locator-details" open={!node.selector}>
             <summary>定位信息 · 高级编辑</summary>
-            <label htmlFor="browser-selector">目标元素选择器</label>
+            <label htmlFor={fieldId + 'browser-selector'}>目标元素选择器</label>
             <input
-              id="browser-selector"
+              id={fieldId + 'browser-selector'}
               disabled={topLevel}
               value={node.selector}
               placeholder="#submit"
               onChange={(e) => change({ ...node, selector: e.target.value })}
             />
-            <label htmlFor="browser-frame-path">iframe 路径</label>
+            <label htmlFor={fieldId + 'browser-frame-path'}>iframe 路径</label>
             <textarea
-              id="browser-frame-path"
+              id={fieldId + 'browser-frame-path'}
               value={frames}
               disabled={topLevel}
               rows={3}
-              aria-describedby="browser-frame-help"
+              aria-describedby={fieldId + 'browser-frame-help'}
               placeholder={'iframe#outer\niframe[name="content"]'}
               onChange={(e) => {
                 setFrames(e.target.value);
@@ -169,7 +180,7 @@ export default function BrowserNodeConfiguration({
                 } as BrowserNode);
               }}
             />
-            <p id="browser-frame-help" className="note">
+            <p id={fieldId + 'browser-frame-help'} className="note">
               {topLevel
                 ? '打开网页和页面截图作用于顶层页面。'
                 : '留空表示顶层页面。每行一个 CSS 选择器，从外到内，最多 8 层；每层必须唯一匹配。'}
@@ -179,6 +190,7 @@ export default function BrowserNodeConfiguration({
       )}
       {node.operation === 'fill' && (
         <ValueField
+          compactReference={fieldsOnly}
           label="填写内容"
           value={node.value}
           change={(value) => change({ ...node, value })}
@@ -187,9 +199,9 @@ export default function BrowserNodeConfiguration({
         >
           {typeof node.value === 'string' ? (
             <>
-              <label htmlFor="browser-content">填写内容</label>
+              <label htmlFor={fieldId + 'browser-content'}>填写内容</label>
               <textarea
-                id="browser-content"
+                id={fieldId + 'browser-content'}
                 value={typeof node.value === 'string' ? node.value : ''}
                 placeholder="输入要填写的内容"
                 onChange={(e) => change({ ...node, value: e.target.value })}
@@ -200,6 +212,7 @@ export default function BrowserNodeConfiguration({
       )}
       {node.operation === 'check' && (
         <ValueField
+          compactReference={fieldsOnly}
           label="目标状态"
           value={node.value}
           change={(value) => change({ ...node, value })}
@@ -208,9 +221,9 @@ export default function BrowserNodeConfiguration({
         >
           {typeof node.value === 'boolean' ? (
             <>
-              <label htmlFor="browser-checked">目标状态</label>
+              <label htmlFor={fieldId + 'browser-checked'}>目标状态</label>
               <select
-                id="browser-checked"
+                id={fieldId + 'browser-checked'}
                 value={String(node.value)}
                 onChange={(e) => change({ ...node, value: e.target.value === 'true' })}
               >
@@ -223,6 +236,7 @@ export default function BrowserNodeConfiguration({
       )}
       {node.operation === 'select' && (
         <ValueField
+          compactReference={fieldsOnly}
           label="选项值"
           value={node.value}
           change={(value) => change({ ...node, value })}
@@ -234,9 +248,9 @@ export default function BrowserNodeConfiguration({
             <>
               {target?.options.length ? (
                 <>
-                  <label htmlFor="browser-known-options">网页中的选项</label>
+                  <label htmlFor={fieldId + 'browser-known-options'}>网页中的选项</label>
                   <select
-                    id="browser-known-options"
+                    id={fieldId + 'browser-known-options'}
                     multiple={target.multiple}
                     size={target.multiple ? Math.min(5, target.options.length) : undefined}
                     value={
@@ -272,9 +286,9 @@ export default function BrowserNodeConfiguration({
                   </select>
                 </>
               ) : null}
-              <label htmlFor="browser-select-mode">选择方式</label>
+              <label htmlFor={fieldId + 'browser-select-mode'}>选择方式</label>
               <select
-                id="browser-select-mode"
+                id={fieldId + 'browser-select-mode'}
                 value={Array.isArray(node.value) ? 'multiple' : 'single'}
                 onChange={(e) =>
                   change({ ...node, value: e.target.value === 'multiple' ? [] : '' })
@@ -283,10 +297,10 @@ export default function BrowserNodeConfiguration({
                 <option value="single">单个选项值</option>
                 <option value="multiple">多个选项值</option>
               </select>
-              <label htmlFor="browser-options">选项值</label>
+              <label htmlFor={fieldId + 'browser-options'}>选项值</label>
               {Array.isArray(node.value) ? (
                 <textarea
-                  id="browser-options"
+                  id={fieldId + 'browser-options'}
                   value={node.value.join('\n')}
                   placeholder="每行一个值；留空清空多选"
                   onChange={(e) =>
@@ -295,7 +309,7 @@ export default function BrowserNodeConfiguration({
                 />
               ) : (
                 <input
-                  id="browser-options"
+                  id={fieldId + 'browser-options'}
                   value={typeof node.value === 'string' ? node.value : ''}
                   onChange={(e) => change({ ...node, value: e.target.value })}
                 />
@@ -306,6 +320,7 @@ export default function BrowserNodeConfiguration({
       )}
       {node.operation === 'press' && (
         <ValueField
+          compactReference={fieldsOnly}
           label="按键"
           value={node.value}
           change={(value) => change({ ...node, value })}
@@ -314,9 +329,9 @@ export default function BrowserNodeConfiguration({
         >
           {typeof node.value === 'string' ? (
             <>
-              <label htmlFor="browser-key">按键</label>
+              <label htmlFor={fieldId + 'browser-key'}>按键</label>
               <select
-                id="browser-key"
+                id={fieldId + 'browser-key'}
                 value={String(node.value)}
                 onChange={(e) => change({ ...node, value: e.target.value })}
               >
@@ -332,6 +347,7 @@ export default function BrowserNodeConfiguration({
       )}
       {node.operation === 'upload' && (
         <ValueField
+          compactReference={fieldsOnly}
           label="上传文件"
           value={node.value}
           change={(value) => change({ ...node, value })}
@@ -346,9 +362,9 @@ export default function BrowserNodeConfiguration({
           typeof node.value.binding === 'string' &&
           typeof node.value.name === 'string' ? (
             <>
-              <label htmlFor="browser-file-binding">文件目录绑定</label>
+              <label htmlFor={fieldId + 'browser-file-binding'}>文件目录绑定</label>
               <input
-                id="browser-file-binding"
+                id={fieldId + 'browser-file-binding'}
                 value={
                   typeof node.value === 'object' && node.value && 'binding' in node.value
                     ? String(node.value.binding)
@@ -367,9 +383,9 @@ export default function BrowserNodeConfiguration({
                   })
                 }
               />
-              <label htmlFor="browser-file-name">目录内文件名</label>
+              <label htmlFor={fieldId + 'browser-file-name'}>目录内文件名</label>
               <input
-                id="browser-file-name"
+                id={fieldId + 'browser-file-name'}
                 placeholder="sample.txt"
                 value={
                   typeof node.value === 'object' && node.value && 'name' in node.value
@@ -396,6 +412,7 @@ export default function BrowserNodeConfiguration({
       )}
       {node.operation === 'download' && (
         <ValueField
+          compactReference={fieldsOnly}
           label="下载产物文件名"
           value={node.value}
           change={(value) => change({ ...node, value })}
@@ -404,9 +421,9 @@ export default function BrowserNodeConfiguration({
         >
           {typeof node.value === 'string' ? (
             <>
-              <label htmlFor="browser-download-name">下载产物文件名</label>
+              <label htmlFor={fieldId + 'browser-download-name'}>下载产物文件名</label>
               <input
-                id="browser-download-name"
+                id={fieldId + 'browser-download-name'}
                 value={typeof node.value === 'string' ? node.value : ''}
                 onChange={(e) => change({ ...node, value: e.target.value })}
               />

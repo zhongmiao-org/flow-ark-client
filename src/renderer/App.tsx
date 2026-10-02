@@ -2,6 +2,7 @@ import { usePageBack } from './use-page-back';
 import DesktopStepDetails from './DesktopStepDetails';
 import StepPositionPage from './StepPositionPage';
 import ControlWorkspace from './ControlWorkspace';
+import BrowserActionWorkspace from './BrowserActionWorkspace';
 import { stepTitle } from './flow-outline';
 import EditorLeaveDialog from './EditorLeaveDialog';
 import EditorMorePage from './EditorMorePage';
@@ -431,7 +432,7 @@ export default function App() {
     // changes must protect every unfinished field before replacing its component.
     const invalid = document.querySelector<HTMLElement>(
       includeValues
-        ? '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid]'
+        ? '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid], .browser-action-workspace [data-value-invalid]'
         : '.editor-page .node-advanced[data-value-invalid], .editor-page .node-timing[data-value-invalid]',
     );
     if (!invalid) return true;
@@ -448,7 +449,7 @@ export default function App() {
   function checkEditorInput(operation = '保存或运行') {
     if (section !== 'editor') return;
     const invalid = document.querySelector<HTMLElement>(
-      '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid]',
+      '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid], .browser-action-workspace [data-value-invalid]',
     );
     if (invalid) {
       focusInvalidInput(invalid);
@@ -525,7 +526,7 @@ export default function App() {
       edit &&
       (!draftSaved ||
         document.querySelector(
-          '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid]',
+          '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid], .browser-action-workspace [data-value-invalid]',
         ))
     ) {
       editorLeaveLocked.current = true;
@@ -553,7 +554,7 @@ export default function App() {
     }
     requestAnimationFrame(() => {
       const invalid = document.querySelector<HTMLElement>(
-        '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid]',
+        '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid], .browser-action-workspace [data-value-invalid]',
       );
       if (invalid) focusInvalidInput(invalid);
       else if (editorFocus.current?.isConnected) editorFocus.current.focus({ preventScroll: true });
@@ -1785,6 +1786,7 @@ export default function App() {
                 compact={compactEditor}
                 panel={editorPanel}
                 setPanel={setEditorPanel}
+                showBrowser={() => setBrowserOpen(true)}
                 browserOpen={browserOpen}
                 browserPanel={
                   browserOpen ? (
@@ -2195,6 +2197,7 @@ function Editor({
   panel,
   setPanel,
   browserOpen,
+  showBrowser,
   browserPanel,
   choose,
   openParameters,
@@ -2219,6 +2222,7 @@ function Editor({
 }: any) {
   const [positionOpen, setPositionOpen] = useState(false);
   const [controlOpen, setControlOpen] = useState(false);
+  const [browserActionOpen, setBrowserActionOpen] = useState(false);
   const [viewRequest, setViewRequest] = useState<{ key: number; mode: 'all' | 'selected' }>();
   const [tab, setTab] = useState('node');
   const [destination, setDestination] = useState('main');
@@ -2342,6 +2346,22 @@ function Editor({
   };
   return (
     <>
+      {browserActionOpen && selectedNode?.type === 'browser' && (
+        <BrowserActionWorkspace
+          record={r}
+          node={selectedNode}
+          change={updateNode}
+          guard={guardNodeInput}
+          close={() => setBrowserActionOpen(false)}
+          showBrowser={() => {
+            setBrowserActionOpen(false);
+            setPanel('node');
+            showBrowser();
+          }}
+          error={saveError}
+          clearError={clearError}
+        />
+      )}
       {controlOpen && (
         <ControlWorkspace
           record={r}
@@ -2497,7 +2517,9 @@ function Editor({
             <div className="canvas" ref={canvasElement}>
               <DiagramCanvas
                 key={r.id}
-                active={active && !outlineOpen && !positionOpen && !controlOpen}
+                active={
+                  active && !outlineOpen && !positionOpen && !controlOpen && !browserActionOpen
+                }
                 viewRequest={viewRequest}
                 nodes={nodes}
                 edges={edges}
@@ -2659,6 +2681,17 @@ function Editor({
                             onChange={(e) => updateNode({ ...selectedNode, name: e.target.value })}
                           />
                         </>
+                      )}
+                      {selectedNode.type === 'browser' && (
+                        <button
+                          onClick={() => {
+                            if (!guardNodeInput()) return;
+                            setPanel('node');
+                            setBrowserActionOpen(true);
+                          }}
+                        >
+                          网页动作配置
+                        </button>
                       )}
                       {['loop', 'condition'].includes(selectedNode.type) && (
                         <button
