@@ -11,6 +11,7 @@ import './template-entry.css';
 export type { TemplateDetail } from './template-draft';
 const api = (method: string, args: unknown): Promise<any> => window.flowark.request(method, args);
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+const grantLabels = { deny: '禁止', confirm: '每次确认', auto: '配置范围内自动' };
 const providerName = (provider: AIProviderId) => (provider === 'deepseek' ? 'DeepSeek' : 'OpenAI');
 const defaultModel = (provider: AIProviderId) =>
   provider === 'deepseek' ? 'deepseek-flash' : 'gpt-5.3-codex';
@@ -319,7 +320,7 @@ export default function TemplateEntry({
         ? '正在核对入口资源'
         : requirements.length
           ? '当前入口尚未就绪'
-          : '当前入口已填写 · 运行前复核';
+          : '当前入口资源与授权已就绪';
 
   const entrySelector = (
     <label className="ai-settings-field">
@@ -412,7 +413,9 @@ export default function TemplateEntry({
                   'ai-config-status ' +
                   (sourceError || readError || (!reading && requirements.length)
                     ? 'warning'
-                    : 'neutral')
+                    : reading
+                      ? 'neutral'
+                      : 'success')
                 }
               >
                 {readiness}
@@ -503,14 +506,22 @@ export default function TemplateEntry({
               </div>
               <div>
                 <span>动作</span>
-                <p>
-                  {entry.actions
-                    .map(
-                      (id) =>
-                        `${detail.manifest.actions.find((a) => a.id === id)?.name ?? id} · ${{ deny: '禁止', confirm: '每次确认', auto: '配置范围内自动' }[instance.grants[id] ?? 'deny']}`,
-                    )
-                    .join('、') || '未声明写入动作'}
-                </p>
+                {entry.actions.length ? (
+                  entry.actions.map((id) => {
+                    const mode = instance.grants[id] ?? 'deny';
+                    const savedMode = saved.instance.grants[id] ?? 'deny';
+                    return (
+                      <p key={id}>
+                        {detail.manifest.actions.find((action) => action.id === id)?.name ?? id}
+                        {' · '}
+                        {grantLabels[mode]}
+                        {mode !== savedMode && `（未保存；已保存：${grantLabels[savedMode]}）`}
+                      </p>
+                    );
+                  })
+                ) : (
+                  <p>未声明写入动作</p>
+                )}
               </div>
               <p>本次输入、共享配置、绑定和包版本在启动时固定。</p>
               {!entry.schedulable && <small>此入口不支持本机计划。</small>}
@@ -620,8 +631,11 @@ export default function TemplateEntry({
                 保存实例配置
               </button>
             )}
-            {(missing.some((id) => !aiResources.some((r) => r.id === id)) || denied.length > 0) && (
-              <button onClick={configure}>配置资源与动作授权</button>
+            {(missing.some((id) => !aiResources.some((r) => r.id === id)) ||
+              entry.actions.length > 0) && (
+              <button disabled={busy} onClick={configure}>
+                {missing.length || denied.length ? '配置资源与动作授权' : '查看资源与动作授权'}
+              </button>
             )}
             {!inspection && (
               <div className="template-entry-detail-links">
