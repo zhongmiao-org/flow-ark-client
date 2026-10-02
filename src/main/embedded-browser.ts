@@ -727,6 +727,18 @@ export class EmbeddedBrowser {
           if (resource.operation === operation) resource.operation = undefined;
         }
       }
+      case 'browser.embedded.pick.confirm': {
+        this.assertAvailable();
+        const resource = this.resource;
+        if (resource?.operation) throw new Error('网页正在执行操作，请稍后选取');
+        const selected = resource?.page?.picker.status(args.requestId);
+        if (!resource || selected?.phase !== 'selected' || !selected.target)
+          throw new Error('没有此请求的已选网页目标，请重新选取');
+        const confirmed = await this.captureSelection(args.requestId);
+        if (this.resource !== resource || resource.page!.picker.status(args.requestId) !== selected)
+          throw new Error('选取已取消或改变，请重新选取');
+        return { ...selected.target, ...confirmed.target };
+      }
       case 'browser.embedded.pick.status':
         this.layout();
         return (

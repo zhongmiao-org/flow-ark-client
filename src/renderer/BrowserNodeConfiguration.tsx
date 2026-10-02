@@ -110,7 +110,8 @@ export default function BrowserNodeConfiguration({
         <>
           <label>目标元素</label>
           <ElementPicker
-            key={node.operation}
+            key={`${node.id}:${node.operation}`}
+            confirmBeforeApply
             selector={node.selector}
             framePath={path}
             onStart={() => setTarget(null)}

@@ -1588,6 +1588,7 @@ export class Runtime {
         if (args.visible && this.executionBlock()) throw new Error(this.executionBlock());
         return this.sessions.embeddedVisibility(args.visible);
       case 'browser.embedded.pick.start':
+      case 'browser.embedded.pick.confirm':
       case 'browser.embedded.pick.validate': {
         if (this.executionBlock()) throw new Error(this.executionBlock());
         if (this.active) {

@@ -67,6 +67,7 @@ const allowed = new Set([
   'browser.embedded.status',
   'browser.embedded.pick.start',
   'browser.embedded.pick.status',
+  'browser.embedded.pick.confirm',
   'browser.embedded.pick.cancel',
   'browser.embedded.pick.validate',
   'browser.embedded.navigate',

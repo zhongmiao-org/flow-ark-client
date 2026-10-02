@@ -99,6 +99,7 @@ export const methods = {
   'browser.embedded.enable': empty,
   'browser.embedded.status': empty,
   'browser.embedded.pick.start': z.object({ requestId: id }).strict(),
+  'browser.embedded.pick.confirm': z.object({ requestId: id }).strict(),
   'browser.embedded.pick.status': z.object({ requestId: id }).strict(),
   'browser.embedded.pick.cancel': z.object({ requestId: id }).strict(),
   'browser.embedded.pick.validate': z

@@ -10,6 +10,7 @@ export default function ElementPicker({
   onInspect,
   onStart,
   onAdjust,
+  confirmBeforeApply = false,
   allowInspect = true,
   disabled = false,
   active = true,
@@ -20,6 +21,7 @@ export default function ElementPicker({
   onInspect: (target: ElementTarget) => void;
   onStart?: () => void;
   onAdjust?: () => void;
+  confirmBeforeApply?: boolean;
   allowInspect?: boolean;
   disabled?: boolean;
   active?: boolean;
@@ -29,6 +31,22 @@ export default function ElementPicker({
   const [message, setMessage] = useState(''),
     [error, setError] = useState('');
   const [verified, setVerified] = useState<ElementTarget>();
+  type Candidate = { target: ElementTarget; requestId: string };
+  const [candidate, setCandidate] = useState<Candidate>();
+  const pending = useRef<Candidate | undefined>(undefined);
+  const [applying, setApplying] = useState(false);
+  const applyButton = useRef<HTMLButtonElement>(null);
+  const pickButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (candidate) applyButton.current?.focus();
+  }, [candidate]);
+  const clearCandidate = () => {
+    const previous = pending.current;
+    pending.current = undefined;
+    setCandidate(undefined);
+    if (previous)
+      void api('browser.embedded.pick.cancel', { requestId: previous.requestId }).catch(() => {});
+  };
   const request = useRef(''),
     version = useRef(0),
     alive = useRef(true);
@@ -41,6 +59,10 @@ export default function ElementPicker({
     return () => {
       alive.current = false;
       version.current++;
+      const candidateId = pending.current?.requestId;
+      pending.current = undefined;
+      if (candidateId)
+        void api('browser.embedded.pick.cancel', { requestId: candidateId }).catch(() => {});
       const id = request.current;
       request.current = '';
       if (id) void api('browser.embedded.pick.cancel', { requestId: id }).catch(() => {});
@@ -51,6 +73,8 @@ export default function ElementPicker({
     setError('');
     setVerified(undefined);
     setValidating(false);
+    setApplying(false);
+    clearCandidate();
     version.current++;
     const id = request.current;
     if (id) {
@@ -72,7 +96,8 @@ export default function ElementPicker({
     if (requestId) await api('browser.embedded.pick.cancel', { requestId }).catch(() => {});
   };
   const pick = async () => {
-    if (disabled || !active || picking || validating) return;
+    if (disabled || !active || picking || validating || applying) return;
+    clearCandidate();
     onStart?.();
     const requestId = crypto.randomUUID();
     request.current = requestId;
@@ -94,8 +119,15 @@ export default function ElementPicker({
         if (state.phase === 'selected' && state.target) {
           request.current = '';
           setPicking(false);
-          select.current(state.target, requestId);
-          setMessage('已选取 · ' + state.target.label);
+          if (confirmBeforeApply) {
+            const next = { target: state.target, requestId };
+            pending.current = next;
+            setCandidate(next);
+            setMessage('');
+          } else {
+            select.current(state.target, requestId);
+            setMessage('已选取 · ' + state.target.label);
+          }
           return;
         }
         if (state.phase === 'error') throw new Error(state.error || '选取失败');
@@ -116,7 +148,8 @@ export default function ElementPicker({
     }
   };
   const validate = async () => {
-    if (disabled || !active || !selector || picking || validating) return;
+    if (disabled || !active || !selector || picking || validating || applying) return;
+    clearCandidate();
     onStart?.();
     const current = ++version.current;
     setValidating(true);
@@ -140,6 +173,38 @@ export default function ElementPicker({
       if (alive.current && version.current === current) setValidating(false);
     }
   };
+  const discard = () => {
+    version.current++;
+    clearCandidate();
+    setApplying(false);
+    setError('');
+    setMessage('已放弃待应用目标，原步骤保持不变');
+    pickButton.current?.focus();
+  };
+  const apply = async () => {
+    const selected = pending.current;
+    if (!selected || applying || disabled || !active) return;
+    const current = ++version.current;
+    setApplying(true);
+    setError('');
+    try {
+      const target: ElementTarget = await api('browser.embedded.pick.confirm', {
+        requestId: selected.requestId,
+      });
+      if (!alive.current || version.current !== current || pending.current !== selected) return;
+      clearCandidate();
+      select.current(target, selected.requestId);
+      setMessage('已应用目标 · ' + (target.label || target.tag));
+    } catch (e) {
+      if (alive.current && version.current === current && pending.current === selected) {
+        clearCandidate();
+        setError(e instanceof Error ? e.message : String(e));
+      }
+    } finally {
+      if (alive.current && version.current === current) setApplying(false);
+    }
+  };
+  const shownTarget = candidate?.target ?? verified;
   // Only classify reasons emitted by the existing host and embedded browser.
   const reason = error.replace(/^Error: /, '').split('\n')[0];
   const busy = ['请先暂停当前任务，再选取或验证元素', '网页正在执行操作，请稍后选取'].includes(
@@ -151,6 +216,13 @@ export default function ElementPicker({
     '目标在选取期间已被替换，请重新选取',
     '目标元素已离开页面',
     '选取已取消',
+    '选取后的网页已变化，请重新选取',
+    '没有此请求的已选网页目标，请重新选取',
+    '选取已取消或改变，请重新选取',
+    '网页已变化，请重新选取目标',
+    '网页已变化，请重新选取',
+    '所选元素内容或结构已变化，请重新选取',
+    '目标引用已取消或改变',
   ].includes(reason);
   const multiple = reason === '选择器匹配多个元素';
   const feedback = error
@@ -179,24 +251,32 @@ export default function ElementPicker({
             title: '核对当前定位',
             detail: '正在核对选择器与框架路径，请等待验证结果。',
           }
-        : verified
+        : candidate
           ? {
               tone: 'success',
-              badge: '唯一匹配',
-              title: '定位验证完成',
-              detail: '当前定位唯一匹配。验证不修改步骤的填写值；网页变化后需要重新核对。',
+              badge: applying ? '正在复核' : '待确认',
+              title: '确认选取的目标',
+              detail: '尚未修改步骤。应用时会重新核对网页与目标，原操作和填写值保持不变。',
             }
-          : undefined;
+          : verified
+            ? {
+                tone: 'success',
+                badge: '唯一匹配',
+                title: '定位验证完成',
+                detail: '当前定位唯一匹配。验证不修改步骤的填写值；网页变化后需要重新核对。',
+              }
+            : undefined;
   return (
     <div className="element-picker">
       <div className="element-picker-actions">
         <button
+          ref={pickButton}
           className="primary"
-          disabled={!active || disabled || picking || validating}
+          disabled={!active || disabled || picking || validating || applying}
           onClick={() => void pick()}
         >
           <Crosshair size={15} />
-          {error || message ? '重新拾取' : '从网页选取'}
+          {candidate || error || message ? '重新拾取' : '从网页选取'}
         </button>
         {picking ? (
           <button onClick={() => void cancel()}>
@@ -205,7 +285,7 @@ export default function ElementPicker({
           </button>
         ) : allowInspect ? (
           <button
-            disabled={!active || disabled || !selector || validating}
+            disabled={!active || disabled || !selector || validating || applying}
             onClick={() => void validate()}
           >
             <Check size={14} />
@@ -223,15 +303,28 @@ export default function ElementPicker({
           <h3>{feedback.title}</h3>
           <p>{feedback.detail}</p>
           {'next' in feedback && <p>{feedback.next}</p>}
-          {verified && !error && !picking && !validating && (
+          {shownTarget && !error && !picking && !validating && (
             <div className="element-picker-target">
               <span>目标</span>
-              <strong>{verified.label || verified.tag}</strong>
+              <strong>{shownTarget.label || shownTarget.tag}</strong>
               <span>
-                {verified.tag} ·{' '}
-                {verified.framePath.length ? `${verified.framePath.length} 层框架` : '主页面'}
+                {shownTarget.tag} ·{' '}
+                {shownTarget.framePath.length ? `${shownTarget.framePath.length} 层框架` : '主页面'}
               </span>
-              {verified.structural && <span>使用结构定位，页面布局变化后请重新验证。</span>}
+              {shownTarget.structural && <span>使用结构定位，页面布局变化后请重新验证。</span>}
+            </div>
+          )}
+          {candidate && (
+            <div className="element-picker-apply-actions">
+              <button
+                ref={applyButton}
+                className="primary"
+                disabled={!active || disabled || applying}
+                onClick={() => void apply()}
+              >
+                {applying ? '正在核对目标…' : '应用目标'}
+              </button>
+              <button onClick={discard}>放弃此目标</button>
             </div>
           )}
           {error && onAdjust && (

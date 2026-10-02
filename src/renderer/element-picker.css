@@ -81,3 +81,10 @@
     padding: 16px;
   }
 }
+
+.element-picker-apply-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+}
