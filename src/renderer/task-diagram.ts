@@ -4,8 +4,13 @@ import { flowOutline } from './flow-outline';
 import { taskStepTitle, taskStepSummary, type TaskStepContext } from './task-step-presentation';
 
 /** The same executable steps, projected with the task-board dimensions and labels. */
-export function buildTaskDiagram(flow: Flow, selected: string, context: TaskStepContext) {
-  const diagram = buildDiagram(flow.steps, selected, 'task');
+export function buildTaskDiagram(
+  flow: Flow,
+  selected: string,
+  context: TaskStepContext,
+  presentation: 'task' | 'control' = 'task',
+) {
+  const diagram = buildDiagram(flow.steps, selected, presentation);
   const outline = flowOutline(flow.steps);
   return {
     ...diagram,

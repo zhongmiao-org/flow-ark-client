@@ -21,7 +21,7 @@ export type DiagramData = {
   step?: Step;
   label?: string;
   task?: { ordinal: number; title: string; summary: string };
-  presentation?: 'editor' | 'task';
+  presentation?: 'editor' | 'task' | 'control';
 };
 export type DiagramNode = Node<DiagramData, 'semantic'>;
 export type DiagramEdge = Edge<{
@@ -54,8 +54,15 @@ export function shapeOf(step: Step): FlowShape {
       return 'process';
   }
 }
-export function dimensions(shape: FlowShape, presentation: 'editor' | 'task' = 'editor') {
-  if (presentation === 'task') {
+export function dimensions(
+  shape: FlowShape,
+  presentation: 'editor' | 'task' | 'control' = 'editor',
+) {
+  if (presentation === 'control') {
+    if (shape === 'data' || shape === 'subprocess') return { width: 260, height: 64 };
+    if (shape === 'loop' || shape === 'manual') return { width: 260, height: 72 };
+  }
+  if (presentation !== 'editor') {
     if (shape === 'decision') return { width: 220, height: 100 };
     if (shape === 'terminal' || shape === 'empty') return { width: 88, height: 30 };
     if (shape === 'join') return { width: 8, height: 8 };
@@ -73,9 +80,9 @@ export function dimensions(shape: FlowShape, presentation: 'editor' | 'task' = '
 export function buildDiagram(
   steps: Step[],
   selected = '',
-  presentation: 'editor' | 'task' = 'editor',
+  presentation: 'editor' | 'task' | 'control' = 'editor',
 ) {
-  const task = presentation === 'task';
+  const task = presentation !== 'editor';
   // Figma 23:7158 uses compact task geometry; editor projection stays unchanged.
   const gap = task ? 26 : GAP;
   const laneGap = task ? 20 : LANE_GAP;
@@ -144,11 +151,19 @@ export function buildDiagram(
             color: route?.returning ? 'var(--fa-status-warning)' : 'var(--fa-border-default)',
           },
       style: {
-        stroke: route?.returning ? 'var(--fa-status-warning)' : 'var(--fa-border-default)',
+        stroke:
+          route?.returning && presentation !== 'control'
+            ? 'var(--fa-status-warning)'
+            : 'var(--fa-border-default)',
         strokeWidth: 1.5,
       },
       labelStyle: {
-        fill: label === '成立' ? 'var(--fa-status-success)' : 'var(--fa-text-secondary)',
+        fill:
+          label === '成立'
+            ? 'var(--fa-status-success)'
+            : presentation === 'control' && route?.returning
+              ? 'var(--fa-action-primary)'
+              : 'var(--fa-text-secondary)',
         fontSize: task ? 12 : 11,
         fontWeight: task ? 400 : 500,
       },

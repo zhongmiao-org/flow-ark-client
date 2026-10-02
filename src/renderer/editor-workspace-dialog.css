@@ -23,24 +23,29 @@
   }
 }
 @media (min-width: 1440px) {
-  body:has(.editor-workspace-dialog[open]) .app .sidebar {
+  body:has(.editor-workspace-dialog[open]:not([data-compact-navigation])) .app .sidebar {
     width: 224px;
     flex-basis: 224px;
     padding: 24px;
   }
-  body:has(.editor-workspace-dialog[open]) .app .brand-name,
-  body:has(.editor-workspace-dialog[open]) .app .nav-label {
+  body:has(.editor-workspace-dialog[open]:not([data-compact-navigation])) .app .brand-name,
+  body:has(.editor-workspace-dialog[open]:not([data-compact-navigation])) .app .nav-label {
     display: inline;
   }
-  body:has(.editor-workspace-dialog[open]) .app .workspace-label,
-  body:has(.editor-workspace-dialog[open]) .app .sidebar-bottom {
+  body:has(.editor-workspace-dialog[open]:not([data-compact-navigation])) .app .workspace-label,
+  body:has(.editor-workspace-dialog[open]:not([data-compact-navigation])) .app .sidebar-bottom {
     display: flex;
   }
-  body:has(.editor-workspace-dialog[open]) .app .sidebar nav button {
+  body:has(.editor-workspace-dialog[open]:not([data-compact-navigation])) .app .sidebar nav button {
     width: 100%;
     padding: 10px;
   }
-  body:has(.editor-workspace-dialog[open]) .app .sidebar nav button b {
+  body:has(.editor-workspace-dialog[open]:not([data-compact-navigation]))
+    .app
+    .sidebar
+    nav
+    button
+    b {
     position: static;
   }
 }

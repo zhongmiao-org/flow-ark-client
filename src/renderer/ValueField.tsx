@@ -9,6 +9,7 @@ type Props = {
   change: (value: Json) => void;
   choices?: ReferenceChoice[];
   defaultValue?: Json;
+  compactReference?: boolean;
   children?: ReactNode;
 };
 export default function ValueField({
@@ -17,6 +18,7 @@ export default function ValueField({
   change,
   choices,
   defaultValue = '',
+  compactReference = false,
   children,
 }: Props) {
   const current = referenceOf(value);
@@ -29,7 +31,22 @@ export default function ValueField({
       .sort((a, b) => b.path.length - a.path.length)[0];
   return (
     <section className="value-field" aria-label={label + '配置'}>
-      {current !== undefined ? (
+      {current !== undefined && compactReference ? (
+        <div className="reference-value-compact">
+          <span className="value-field-label">{label}</span>
+          <button
+            type="button"
+            className="value-source-button"
+            aria-label={'选择变量 · ' + label}
+            aria-expanded={open}
+            onClick={() => setOpen(true)}
+            title={current}
+          >
+            {source ? `${source.group} → ${source.label}` : current}
+          </button>
+          {!source && <p className="field-error">来源已缺失或不在当前作用域，请重新选择。</p>}
+        </div>
+      ) : current !== undefined ? (
         <div className="reference-value">
           <span className="value-field-label">{label}</span>
           <span className="eyebrow">{source?.group ?? '已有引用'}</span>
@@ -50,7 +67,7 @@ export default function ValueField({
       ) : (
         (children ?? <LiteralValue label={label} value={value} change={change} />)
       )}
-      {choices && (
+      {choices && !(compactReference && current !== undefined) && (
         <button
           className="value-source-button"
           type="button"

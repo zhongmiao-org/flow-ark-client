@@ -1,6 +1,7 @@
 import { usePageBack } from './use-page-back';
 import DesktopStepDetails from './DesktopStepDetails';
 import StepPositionPage from './StepPositionPage';
+import ControlWorkspace from './ControlWorkspace';
 import { stepTitle } from './flow-outline';
 import EditorLeaveDialog from './EditorLeaveDialog';
 import EditorMorePage from './EditorMorePage';
@@ -430,7 +431,7 @@ export default function App() {
     // changes must protect every unfinished field before replacing its component.
     const invalid = document.querySelector<HTMLElement>(
       includeValues
-        ? '.editor-page [data-value-invalid]'
+        ? '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid]'
         : '.editor-page .node-advanced[data-value-invalid], .editor-page .node-timing[data-value-invalid]',
     );
     if (!invalid) return true;
@@ -446,7 +447,9 @@ export default function App() {
   }
   function checkEditorInput(operation = '保存或运行') {
     if (section !== 'editor') return;
-    const invalid = document.querySelector<HTMLElement>('.editor-page [data-value-invalid]');
+    const invalid = document.querySelector<HTMLElement>(
+      '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid]',
+    );
     if (invalid) {
       focusInvalidInput(invalid);
       throw new Error('请先修正未完成的值配置，再' + operation);
@@ -520,7 +523,10 @@ export default function App() {
     if (
       section === 'editor' &&
       edit &&
-      (!draftSaved || document.querySelector('.editor-page [data-value-invalid]'))
+      (!draftSaved ||
+        document.querySelector(
+          '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid]',
+        ))
     ) {
       editorLeaveLocked.current = true;
       if (moreOpen || !editorFocus.current?.isConnected)
@@ -546,7 +552,9 @@ export default function App() {
       return;
     }
     requestAnimationFrame(() => {
-      const invalid = document.querySelector<HTMLElement>('.editor-page [data-value-invalid]');
+      const invalid = document.querySelector<HTMLElement>(
+        '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid]',
+      );
       if (invalid) focusInvalidInput(invalid);
       else if (editorFocus.current?.isConnected) editorFocus.current.focus({ preventScroll: true });
     });
@@ -1705,6 +1713,7 @@ export default function App() {
                 save={save}
                 saveBusy={busy}
                 saveError={error}
+                clearError={() => setError('')}
                 undo={undo}
                 redo={redo}
                 canUndo={!!history.past.length}
@@ -2202,12 +2211,14 @@ function Editor({
   showRun,
   saveBusy,
   saveError,
+  clearError,
   undo,
   redo,
   canUndo,
   canRedo,
 }: any) {
   const [positionOpen, setPositionOpen] = useState(false);
+  const [controlOpen, setControlOpen] = useState(false);
   const [viewRequest, setViewRequest] = useState<{ key: number; mode: 'all' | 'selected' }>();
   const [tab, setTab] = useState('node');
   const [destination, setDestination] = useState('main');
@@ -2331,6 +2342,44 @@ function Editor({
   };
   return (
     <>
+      {controlOpen && (
+        <ControlWorkspace
+          record={r}
+          selected={selected}
+          select={(id) => {
+            if (guardNodeInput()) setSelected(id);
+          }}
+          change={updateNode}
+          destination={destination}
+          setDestination={setDestination}
+          targets={targets}
+          add={() => {
+            if (!guardNodeInput()) return;
+            setControlOpen(false);
+            setPanel('actions');
+            requestAnimationFrame(() =>
+              document.querySelector<HTMLInputElement>('[aria-label="搜索动作"]')?.focus(),
+            );
+          }}
+          edit={() => {
+            if (guardNodeInput()) {
+              setControlOpen(false);
+              setPanel('node');
+              requestAnimationFrame(() =>
+                document.querySelector<HTMLInputElement>('#step-name')?.focus(),
+              );
+            }
+          }}
+          close={() => {
+            if (guardNodeInput()) setControlOpen(false);
+          }}
+          save={save}
+          busy={saveBusy}
+          saved={draftSaved}
+          error={saveError}
+          clearError={clearError}
+        />
+      )}
       {positionOpen && (
         <StepPositionPage
           title={
@@ -2448,7 +2497,7 @@ function Editor({
             <div className="canvas" ref={canvasElement}>
               <DiagramCanvas
                 key={r.id}
-                active={active && !outlineOpen && !positionOpen}
+                active={active && !outlineOpen && !positionOpen && !controlOpen}
                 viewRequest={viewRequest}
                 nodes={nodes}
                 edges={edges}
@@ -2610,6 +2659,17 @@ function Editor({
                             onChange={(e) => updateNode({ ...selectedNode, name: e.target.value })}
                           />
                         </>
+                      )}
+                      {['loop', 'condition'].includes(selectedNode.type) && (
+                        <button
+                          onClick={() => {
+                            if (!guardNodeInput()) return;
+                            setPanel('node');
+                            setControlOpen(true);
+                          }}
+                        >
+                          条件与串行循环
+                        </button>
                       )}
                       <NodeTiming
                         key={selectedNode.id + ':timing:' + revision}

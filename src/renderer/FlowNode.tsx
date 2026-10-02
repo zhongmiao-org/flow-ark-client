@@ -15,10 +15,12 @@ function Shape({
   shape,
   width: w,
   height: h,
+  control = false,
 }: {
   shape: FlowShape;
   width: number;
   height: number;
+  control?: boolean;
 }) {
   const box = (
     <rect
@@ -32,6 +34,8 @@ function Shape({
   if (shape === 'decision')
     return <path d={`M ${w / 2} 2 L ${w - 2} ${h / 2} L ${w / 2} ${h - 2} L 2 ${h / 2} Z`} />;
   if (shape === 'data') return <path d={`M 28 2 H ${w - 2} L ${w - 28} ${h - 2} H 2 Z`} />;
+  if (shape === 'manual' && control)
+    return <path d={`M 22 2 H ${w - 22} L ${w - 2} ${h - 2} H 2 Z`} />;
   if (shape === 'manual') return <path d={`M 2 2 H ${w - 2} L ${w - 28} ${h - 2} H 28 Z`} />;
   if (shape === 'loop')
     return (
@@ -78,7 +82,12 @@ const FlowNode = memo(function FlowNode({ data, selected }: NodeProps<DiagramNod
       style={
         id === 'out' && (shape === 'document' || shape === 'workbook')
           ? {
-              bottom: data.presentation === 'task' && shape === 'document' ? 0 : 16,
+              bottom:
+                data.presentation !== 'editor' &&
+                data.presentation !== undefined &&
+                shape === 'document'
+                  ? 0
+                  : 16,
               left: (width - (shape === 'workbook' ? 12 : 0)) / 2,
             }
           : undefined
@@ -87,16 +96,23 @@ const FlowNode = memo(function FlowNode({ data, selected }: NodeProps<DiagramNod
   );
   return (
     <div
-      className={`flow-shape flow-shape--${shape}${selected ? ' is-selected' : ''}${data.presentation === 'task' ? ' flow-task-node' : ''}`}
+      className={`flow-shape flow-shape--${shape}${selected ? ' is-selected' : ''}${data.presentation !== 'editor' && data.presentation !== undefined ? ' flow-task-node' : ''}`}
       style={{ width, height }}
       data-shape={shape}
       data-step-id={step?.id}
     >
-      {data.presentation === 'task' && hasTaskArtwork(shape) ? (
+      {data.presentation !== 'editor' &&
+      data.presentation !== undefined &&
+      hasTaskArtwork(shape) ? (
         <TaskDiagramShape shape={shape} />
       ) : (
         <svg className="flow-shape-outline" viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
-          <Shape shape={shape} width={width} height={height} />
+          <Shape
+            shape={shape}
+            width={width}
+            height={height}
+            control={data.presentation === 'control'}
+          />
         </svg>
       )}
       {data.task ? (

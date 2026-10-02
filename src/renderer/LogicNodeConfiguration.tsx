@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { Json, Step } from '../shared/types';
 import ValueField from './ValueField';
 import type { ReferenceChoice } from './value-references';
@@ -12,6 +13,7 @@ export default function LogicNodeConfiguration({
   choices: ReferenceChoice[];
   change: (node: Step) => void;
 }) {
+  const id = useId();
   const field = (key: string, label: string, value: Json, defaultValue: Json = '') => (
     <ValueField
       key={key}
@@ -39,9 +41,9 @@ export default function LogicNodeConfiguration({
           <h4>{node.type === 'assert' ? '结果断言' : '条件分支'}</h4>
         </header>
         {field('actual', '判断值', node.actual)}
-        <label htmlFor="comparison-operator">判断方式</label>
+        <label htmlFor={id + '-operator'}>判断方式</label>
         <select
-          id="comparison-operator"
+          id={id + '-operator'}
           value={node.operator}
           onChange={(e) => change({ ...node, operator: e.target.value } as Step)}
         >
@@ -99,13 +101,13 @@ export default function LogicNodeConfiguration({
         <header>
           <h4>等待人工</h4>
         </header>
-        <label htmlFor="human-message">人工提示</label>
+        <label htmlFor={id + '-message'}>人工提示</label>
         <textarea
-          id="human-message"
+          id={id + '-message'}
           value={node.message}
           onChange={(e) => change({ ...node, message: e.target.value })}
         />
-        <p>执行到此步骤时等待用户回应，不自动继续。期限使用上方节点规则。</p>
+        <p>执行到此步骤时等待用户回应，不自动继续。执行期限使用节点配置。</p>
       </section>
     );
   return null;
