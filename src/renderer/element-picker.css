@@ -44,13 +44,13 @@
   border-radius: 50%;
   background: currentColor;
 }
-.element-picker-feedback h3 {
+.element-picker .element-picker-feedback h3 {
   margin: 0;
   color: var(--fa-text-primary);
   font-size: 16px;
   line-height: 26px;
 }
-.element-picker-feedback p {
+.element-picker .element-picker-feedback p {
   margin: 0;
   color: var(--fa-text-secondary);
   font-size: 13px;
@@ -87,4 +87,8 @@
   flex-wrap: wrap;
   gap: 12px;
   width: 100%;
+}
+
+.element-picker .element-picker-feedback p.field-error {
+  color: var(--fa-status-error);
 }

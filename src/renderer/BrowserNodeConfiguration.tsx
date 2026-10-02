@@ -15,8 +15,14 @@ export default function BrowserNodeConfiguration({
   change,
   choices,
   fieldsOnly = false,
+  active = true,
+  blockingRunId,
+  onViewRun,
 }: {
   fieldsOnly?: boolean;
+  active?: boolean;
+  blockingRunId?: string;
+  onViewRun?: (detail: any, trigger?: HTMLElement) => void;
   node: BrowserNode;
   choices: ReferenceChoice[];
   change: (node: BrowserNode) => void;
@@ -112,6 +118,9 @@ export default function BrowserNodeConfiguration({
           <ElementPicker
             key={`${node.id}:${node.operation}`}
             confirmBeforeApply
+            active={active}
+            blockingRunId={blockingRunId}
+            onViewRun={onViewRun}
             selector={node.selector}
             framePath={path}
             onStart={() => setTarget(null)}

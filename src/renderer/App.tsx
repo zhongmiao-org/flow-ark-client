@@ -1716,6 +1716,7 @@ export default function App() {
                 closeOutline={closeOutline}
                 openMore={openMore}
                 activeRunId={active?.flowId === edit.id ? active.id : undefined}
+                blockingRunId={observedActive?.runId}
                 draftSaved={draftSaved}
                 save={save}
                 saveBusy={busy}
@@ -1744,15 +1745,16 @@ export default function App() {
                   setBrowserOpen(false);
                   document.querySelector('main')?.scrollTo(0, 0);
                 }}
-                showRun={(next: any) =>
+                showRun={(next: any, trigger?: HTMLElement) => {
+                  if (trigger) editorFocus.current = trigger;
                   requestEditorLeave(() => {
                     setDetail(next);
                     setRunOrigin('editor');
                     setRunTab('current');
                     setRunFilter(false);
                     setSection('runs');
-                  }, '运行详情')
-                }
+                  }, '运行详情');
+                }}
                 revision={history.revision}
                 record={edit}
                 setRecord={setEdit}
@@ -2224,6 +2226,7 @@ function Editor({
   closeOutline,
   openMore,
   activeRunId,
+  blockingRunId,
   draftSaved,
   save,
   showRun,
@@ -2923,6 +2926,19 @@ function Editor({
                       {selectedNode.type === 'browser' && (
                         <BrowserNodeConfiguration
                           key={selectedNode.id + ':' + revision}
+                          active={
+                            active &&
+                            (!compact || panel === 'node') &&
+                            !outlineOpen &&
+                            !browserActionOpen &&
+                            !controlOpen &&
+                            !resourceOpen &&
+                            !logicConfigurationOpen &&
+                            !scriptConfigurationOpen &&
+                            !positionOpen
+                          }
+                          blockingRunId={blockingRunId}
+                          onViewRun={showRun}
                           node={selectedNode}
                           choices={choices}
                           change={(next) => {

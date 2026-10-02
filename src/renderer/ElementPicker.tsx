@@ -10,6 +10,8 @@ export default function ElementPicker({
   onInspect,
   onStart,
   onAdjust,
+  blockingRunId,
+  onViewRun,
   confirmBeforeApply = false,
   allowInspect = true,
   disabled = false,
@@ -21,6 +23,8 @@ export default function ElementPicker({
   onInspect: (target: ElementTarget) => void;
   onStart?: () => void;
   onAdjust?: () => void;
+  blockingRunId?: string;
+  onViewRun?: (detail: any, trigger?: HTMLElement) => void;
   confirmBeforeApply?: boolean;
   allowInspect?: boolean;
   disabled?: boolean;
@@ -34,6 +38,20 @@ export default function ElementPicker({
   type Candidate = { target: ElementTarget; requestId: string };
   const [candidate, setCandidate] = useState<Candidate>();
   const pending = useRef<Candidate | undefined>(undefined);
+  const [viewingRun, setViewingRun] = useState(false);
+  const [runError, setRunError] = useState('');
+  const runRequest = useRef(0);
+  const viewRunButton = useRef<HTMLButtonElement>(null);
+  const viewRun = useRef(onViewRun);
+  viewRun.current = onViewRun;
+  useEffect(() => {
+    runRequest.current++;
+    setViewingRun(false);
+    setRunError('');
+    return () => {
+      runRequest.current++;
+    };
+  }, [blockingRunId, active, selector, JSON.stringify(framePath)]);
   const [applying, setApplying] = useState(false);
   const applyButton = useRef<HTMLButtonElement>(null);
   const pickButton = useRef<HTMLButtonElement>(null);
@@ -96,8 +114,9 @@ export default function ElementPicker({
     if (requestId) await api('browser.embedded.pick.cancel', { requestId }).catch(() => {});
   };
   const pick = async () => {
-    if (disabled || !active || picking || validating || applying) return;
+    if (disabled || !active || picking || validating || applying || viewingRun) return;
     clearCandidate();
+    setRunError('');
     onStart?.();
     const requestId = crypto.randomUUID();
     request.current = requestId;
@@ -148,8 +167,9 @@ export default function ElementPicker({
     }
   };
   const validate = async () => {
-    if (disabled || !active || !selector || picking || validating || applying) return;
+    if (disabled || !active || !selector || picking || validating || applying || viewingRun) return;
     clearCandidate();
+    setRunError('');
     onStart?.();
     const current = ++version.current;
     setValidating(true);
@@ -202,6 +222,24 @@ export default function ElementPicker({
       }
     } finally {
       if (alive.current && version.current === current) setApplying(false);
+    }
+  };
+  const openRun = async () => {
+    if (!blockingRunId || !viewRun.current || viewingRun || !active || disabled) return;
+    const current = ++runRequest.current;
+    setViewingRun(true);
+    setRunError('');
+    try {
+      const detail = await api('run.detail', { id: blockingRunId });
+      if (!alive.current || current !== runRequest.current) return;
+      if (detail?.run?.id !== blockingRunId)
+        throw new Error('运行详情与当前记录不一致，请重新查看');
+      viewRun.current?.(detail, viewRunButton.current ?? undefined);
+    } catch (reason) {
+      if (alive.current && current === runRequest.current)
+        setRunError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      if (alive.current && current === runRequest.current) setViewingRun(false);
     }
   };
   const shownTarget = candidate?.target ?? verified;
@@ -272,7 +310,7 @@ export default function ElementPicker({
         <button
           ref={pickButton}
           className="primary"
-          disabled={!active || disabled || picking || validating || applying}
+          disabled={!active || disabled || picking || validating || applying || viewingRun}
           onClick={() => void pick()}
         >
           <Crosshair size={15} />
@@ -285,7 +323,7 @@ export default function ElementPicker({
           </button>
         ) : allowInspect ? (
           <button
-            disabled={!active || disabled || !selector || validating || applying}
+            disabled={!active || disabled || !selector || validating || applying || viewingRun}
             onClick={() => void validate()}
           >
             <Check size={14} />
@@ -326,6 +364,20 @@ export default function ElementPicker({
               </button>
               <button onClick={discard}>放弃此目标</button>
             </div>
+          )}
+          {busy && blockingRunId && onViewRun && (
+            <button
+              ref={viewRunButton}
+              disabled={!active || disabled || viewingRun}
+              onClick={() => void openRun()}
+            >
+              {viewingRun ? '正在读取运行…' : '查看运行'}
+            </button>
+          )}
+          {runError && (
+            <p className="field-error" role="alert">
+              {runError}
+            </p>
           )}
           {error && onAdjust && (
             <button disabled={!active || disabled} onClick={onAdjust}>
