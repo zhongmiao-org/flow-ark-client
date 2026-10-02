@@ -3,6 +3,7 @@ import type { Attention, Bootstrap, Json } from '../shared/types';
 import { schemaDefaults, validateConfigurationSchema } from '../shared/template-config';
 import { Field } from './TemplateConfiguration';
 import './attention-workspace.css';
+import AttentionDetails from './AttentionDetails';
 
 export type AttentionNavigation = { title: string; back?: () => void };
 const api = (method: string, args: unknown = {}): Promise<any> =>
@@ -35,42 +36,6 @@ function description(item: Attention) {
     return '操作结果尚未确认。请查看来源和证据，核对后再决定下一步。';
   if (item.kind === 'contact') return '已保存模板提供的联系信息，可查看来源并复制。';
   return '打开详情查看完整信息与处理入口。';
-}
-const detailLabels: Record<string, string> = {
-  description: '请求内容',
-  reason: '原因',
-  message: '说明',
-  error: '错误信息',
-  runId: '来源运行',
-  runIds: '相关运行',
-  effectId: '操作记录',
-  value: '内容',
-  name: '名称',
-  contact: '联系人',
-  source: '来源',
-  url: '网页地址',
-};
-function ReadableDetails({ item }: { item: Attention }) {
-  const entries = Object.entries(item.detail ?? {}).filter(
-    ([key]) => !['schema', 'answered'].includes(key),
-  );
-  return (
-    <>
-      <dl className="attention-facts">
-        {entries.map(([key, value]) => (
-          <div key={key}>
-            <dt>{detailLabels[key] ?? key}</dt>
-            <dd>{typeof value === 'string' ? value : JSON.stringify(value, null, 2)}</dd>
-          </div>
-        ))}
-      </dl>
-      {!entries.length && <p className="attention-muted">该提醒没有附加说明。</p>}
-      <details className="attention-raw">
-        <summary>查看原始详情</summary>
-        <pre>{JSON.stringify(item.detail, null, 2)}</pre>
-      </details>
-    </>
-  );
 }
 type AnswerDraft = { value: Json; text: string };
 function AnswerForm({
@@ -582,7 +547,7 @@ export default function AttentionWorkspace({
                 <div>{description(selected)}</div>
               </div>
             ) : (
-              <ReadableDetails item={selected} />
+              <AttentionDetails item={selected} />
             )}
             {human(selected) && state !== 'answered' && (
               <AnswerForm
@@ -687,7 +652,7 @@ export default function AttentionWorkspace({
             {human(selected) && (
               <details className="attention-request-technical">
                 <summary>查看请求详情与格式</summary>
-                <ReadableDetails item={selected} />
+                <AttentionDetails item={selected} />
               </details>
             )}
           </article>

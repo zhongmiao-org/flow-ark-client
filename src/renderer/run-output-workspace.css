@@ -136,6 +136,45 @@
 .run-output-result > .badge {
   align-self: flex-start;
 }
+.run-result-review > button {
+  min-height: 40px;
+  width: min(260px, 100%);
+}
+.run-result-review > section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+.run-result-review article {
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 8px;
+  background: var(--fa-bg-canvas);
+  min-width: 0;
+}
+.run-result-review h3,
+.run-result-review h4,
+.run-result-review p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.run-result-review p {
+  color: var(--fa-text-secondary);
+  font-size: 13px;
+  line-height: 22px;
+}
+.run-result-review .field-error {
+  color: var(--fa-status-error);
+}
+.run-result-review article > p {
+  margin: 8px 0 16px;
+}
+.run-result-review h3:focus-visible,
+.run-result-review .field-error:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 4px;
+}
 .run-output-result .run-output {
   margin: 0;
   padding: 0;
