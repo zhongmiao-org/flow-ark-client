@@ -26,12 +26,14 @@ export function MappingValues({
   change,
   choices,
   kind,
+  protectDraft = false,
 }: {
   label: string;
   value: Json;
   change: (value: Json) => void;
   choices: ReferenceChoice[];
   kind: 'headers' | 'cells';
+  protectDraft?: boolean;
 }) {
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
@@ -104,7 +106,15 @@ export function MappingValues({
   return (
     <ValueField label={label} value={value} change={change} choices={choices} defaultValue={{}}>
       {object ? (
-        <div className="mapping-values" ref={root}>
+        <div
+          className="mapping-values"
+          ref={root}
+          data-value-invalid={
+            protectDraft && (name || rename !== active || error)
+              ? '请完成条目名称编辑，或放弃未应用的名称。'
+              : undefined
+          }
+        >
           <header className="structured-values-heading">
             <strong>{label}</strong>
             <span>{keys.length} 个条目</span>
@@ -152,6 +162,7 @@ export function MappingValues({
                 <input
                   id={`${id}-new`}
                   className="mapping-new-input"
+                  aria-invalid={protectDraft && !!name}
                   placeholder={kind === 'cells' ? 'A1' : 'Content-Type'}
                   value={name}
                   onChange={(event) => {
@@ -178,6 +189,7 @@ export function MappingValues({
                   <input
                     id={`${id}-rename`}
                     className="mapping-rename-input"
+                    aria-invalid={protectDraft && rename !== active}
                     value={rename}
                     onChange={(event) => {
                       setRename(event.target.value);
@@ -214,6 +226,18 @@ export function MappingValues({
               </div>
             )}
           </div>
+          {protectDraft && (name || rename !== active || error) && (
+            <button
+              type="button"
+              onClick={() => {
+                setName('');
+                setRename(active);
+                setError('');
+              }}
+            >
+              放弃未应用的名称
+            </button>
+          )}
           {error && (
             <p className="field-error" role="alert">
               {error}

@@ -3,6 +3,7 @@ import DesktopStepDetails from './DesktopStepDetails';
 import StepPositionPage from './StepPositionPage';
 import ControlWorkspace from './ControlWorkspace';
 import BrowserActionWorkspace from './BrowserActionWorkspace';
+import ResourceWorkspace from './ResourceWorkspace';
 import { stepTitle } from './flow-outline';
 import EditorLeaveDialog from './EditorLeaveDialog';
 import EditorMorePage from './EditorMorePage';
@@ -432,7 +433,7 @@ export default function App() {
     // changes must protect every unfinished field before replacing its component.
     const invalid = document.querySelector<HTMLElement>(
       includeValues
-        ? '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid], .browser-action-workspace [data-value-invalid]'
+        ? '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid], .browser-action-workspace [data-value-invalid], .resource-workspace [data-value-invalid]'
         : '.editor-page .node-advanced[data-value-invalid], .editor-page .node-timing[data-value-invalid]',
     );
     if (!invalid) return true;
@@ -449,7 +450,7 @@ export default function App() {
   function checkEditorInput(operation = '保存或运行') {
     if (section !== 'editor') return;
     const invalid = document.querySelector<HTMLElement>(
-      '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid], .browser-action-workspace [data-value-invalid]',
+      '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid], .browser-action-workspace [data-value-invalid], .resource-workspace [data-value-invalid]',
     );
     if (invalid) {
       focusInvalidInput(invalid);
@@ -526,7 +527,7 @@ export default function App() {
       edit &&
       (!draftSaved ||
         document.querySelector(
-          '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid], .browser-action-workspace [data-value-invalid]',
+          '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid], .browser-action-workspace [data-value-invalid], .resource-workspace [data-value-invalid]',
         ))
     ) {
       editorLeaveLocked.current = true;
@@ -554,7 +555,7 @@ export default function App() {
     }
     requestAnimationFrame(() => {
       const invalid = document.querySelector<HTMLElement>(
-        '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid], .browser-action-workspace [data-value-invalid]',
+        '.editor-page [data-value-invalid], .control-workspace-dialog [data-value-invalid], .browser-action-workspace [data-value-invalid], .resource-workspace [data-value-invalid]',
       );
       if (invalid) focusInvalidInput(invalid);
       else if (editorFocus.current?.isConnected) editorFocus.current.focus({ preventScroll: true });
@@ -2223,6 +2224,7 @@ function Editor({
   const [positionOpen, setPositionOpen] = useState(false);
   const [controlOpen, setControlOpen] = useState(false);
   const [browserActionOpen, setBrowserActionOpen] = useState(false);
+  const [resourceOpen, setResourceOpen] = useState(false);
   const [viewRequest, setViewRequest] = useState<{ key: number; mode: 'all' | 'selected' }>();
   const [tab, setTab] = useState('node');
   const [destination, setDestination] = useState('main');
@@ -2346,6 +2348,32 @@ function Editor({
   };
   return (
     <>
+      {resourceOpen && (
+        <ResourceWorkspace
+          record={r}
+          selected={selected}
+          select={setSelected}
+          change={updateNode}
+          choose={choose}
+          add={(node) => append(node, {})}
+          guard={guardNodeInput}
+          close={() => setResourceOpen(false)}
+          showBrowser={() => {
+            setResourceOpen(false);
+            setPanel('node');
+            showBrowser();
+          }}
+          openExcel={(id) => {
+            setResourceOpen(false);
+            openExcel(id);
+          }}
+          error={saveError || structureError}
+          clearError={() => {
+            clearError();
+            setStructureError('');
+          }}
+        />
+      )}
       {browserActionOpen && selectedNode?.type === 'browser' && (
         <BrowserActionWorkspace
           record={r}
@@ -2518,7 +2546,12 @@ function Editor({
               <DiagramCanvas
                 key={r.id}
                 active={
-                  active && !outlineOpen && !positionOpen && !controlOpen && !browserActionOpen
+                  active &&
+                  !outlineOpen &&
+                  !positionOpen &&
+                  !controlOpen &&
+                  !browserActionOpen &&
+                  !resourceOpen
                 }
                 viewRequest={viewRequest}
                 nodes={nodes}
@@ -2681,6 +2714,17 @@ function Editor({
                             onChange={(e) => updateNode({ ...selectedNode, name: e.target.value })}
                           />
                         </>
+                      )}
+                      {['http', 'file', 'excel'].includes(selectedNode.type) && (
+                        <button
+                          onClick={() => {
+                            if (!guardNodeInput()) return;
+                            setPanel('node');
+                            setResourceOpen(true);
+                          }}
+                        >
+                          HTTP文件与表格配置
+                        </button>
                       )}
                       {selectedNode.type === 'browser' && (
                         <button

@@ -1,3 +1,4 @@
+import { useId, type ReactNode } from 'react';
 import ArchiveFileList from './ArchiveFileList';
 import type { Bindings, Json, Step } from '../shared/types';
 import ValueField from './ValueField';
@@ -5,19 +6,43 @@ import { MappingValues, MatrixValues } from './StructuredValues';
 import { resourceOperation, fileConflictPolicy } from './resource-form-model';
 import { type ReferenceChoice } from './value-references';
 import './node-configuration.css';
+function ResourceDetails({
+  compact,
+  title,
+  children,
+}: {
+  compact: boolean;
+  title: string;
+  children: ReactNode;
+}) {
+  return compact ? (
+    <details>
+      <summary>{title}</summary>
+      {children}
+    </details>
+  ) : (
+    children
+  );
+}
 export default function ResourceNodeConfiguration({
   node,
   choices,
   change,
   bindings,
   choose,
+  compact = false,
+  guard = () => true,
 }: {
+  compact?: boolean;
+  guard?: () => boolean;
   node: Step;
   choices: ReferenceChoice[];
   change: (node: Step) => void;
   bindings: Bindings;
   choose: (binding: string) => void;
 }) {
+  const instanceId = useId();
+  const prefix = compact ? instanceId + '-' : '';
   const field = (
     key: string,
     label: string,
@@ -26,6 +51,7 @@ export default function ResourceNodeConfiguration({
     text = false,
   ) => (
     <ValueField
+      compactReference={compact}
       key={key}
       label={label}
       value={value}
@@ -35,9 +61,9 @@ export default function ResourceNodeConfiguration({
     >
       {text && typeof value === 'string' ? (
         <>
-          <label htmlFor={'resource-' + key}>{label}</label>
+          <label htmlFor={prefix + 'resource-' + key}>{label}</label>
           <input
-            id={'resource-' + key}
+            id={prefix + 'resource-' + key}
             value={value}
             onChange={(e) => change({ ...node, [key]: e.target.value } as Step)}
           />
@@ -47,29 +73,37 @@ export default function ResourceNodeConfiguration({
   );
   if (node.type === 'http')
     return (
-      <section className="node-configuration" aria-label="HTTP 请求配置">
+      <section
+        className={'node-configuration' + (compact ? ' resource-compact' : '')}
+        aria-label="HTTP 请求配置"
+      >
         <header>
           <h4>HTTP 请求</h4>
         </header>
         <p>配置方法、地址、请求头和请求体；运行时才会发出请求。</p>
-        <label htmlFor="http-method">请求方法</label>
+        <label htmlFor={prefix + 'http-method'}>请求方法</label>
         <select
-          id="http-method"
+          id={prefix + 'http-method'}
           value={node.method}
-          onChange={(e) => change({ ...node, method: e.target.value } as Step)}
+          onChange={(e) => {
+            if (guard()) change({ ...node, method: e.target.value } as Step);
+          }}
         >
           {['GET', 'POST', 'PUT', 'DELETE'].map((method) => (
             <option key={method}>{method}</option>
           ))}
         </select>
         {field('url', '请求地址', node.url, '', true)}
-        <MappingValues
-          label="请求头"
-          kind="headers"
-          value={node.headers}
-          choices={choices}
-          change={(headers) => change({ ...node, headers })}
-        />
+        <ResourceDetails compact={compact} title="请求头">
+          <MappingValues
+            protectDraft={compact}
+            label="请求头"
+            kind="headers"
+            value={node.headers}
+            choices={choices}
+            change={(headers) => change({ ...node, headers })}
+          />
+        </ResourceDetails>
         {node.method !== 'GET' ? (
           field('body', '请求体', node.body, null)
         ) : (
@@ -82,15 +116,20 @@ export default function ResourceNodeConfiguration({
   const validBinding =
     !!node.binding.trim() && !['__proto__', 'constructor', 'prototype'].includes(node.binding);
   return (
-    <section className="node-configuration" aria-label={isExcel ? 'Excel 配置' : '文件配置'}>
+    <section
+      className={'node-configuration' + (compact ? ' resource-compact' : '')}
+      aria-label={isExcel ? 'Excel 配置' : '文件配置'}
+    >
       <header>
         <h4>{isExcel ? '工作簿与数据' : '文件与目录'}</h4>
       </header>
-      <label htmlFor="file-operation">操作</label>
+      <label htmlFor={prefix + 'file-operation'}>操作</label>
       <select
-        id="file-operation"
+        id={prefix + 'file-operation'}
         value={node.operation}
-        onChange={(e) => change(resourceOperation(node, e.target.value))}
+        onChange={(e) => {
+          if (guard()) change(resourceOperation(node, e.target.value));
+        }}
       >
         <option value="read">读取</option>
         <option value="write">写入（可能覆盖）</option>
@@ -108,15 +147,15 @@ export default function ResourceNodeConfiguration({
         )}
       </select>
       <p className="note">切换操作使用默认配置，可撤销恢复。</p>
-      <label htmlFor="resource-binding">文件目录绑定</label>
+      <label htmlFor={prefix + 'resource-binding'}>文件目录绑定</label>
       <input
-        id="resource-binding"
-        list="resource-binding-names"
+        id={prefix + 'resource-binding'}
+        list={prefix + 'resource-binding-names'}
         value={node.binding}
         placeholder="workspace"
         onChange={(e) => change({ ...node, binding: e.target.value })}
       />
-      <datalist id="resource-binding-names">
+      <datalist id={prefix + 'resource-binding-names'}>
         {Object.keys(bindings.files).map((name) => (
           <option key={name} value={name} />
         ))}
@@ -149,9 +188,9 @@ export default function ResourceNodeConfiguration({
         field('content', '写入内容', node.content)}
       {node.type === 'file' && node.operation === 'create' && (
         <>
-          <label htmlFor="file-conflict">已有同名文件时</label>
+          <label htmlFor={prefix + 'file-conflict'}>已有同名文件时</label>
           <select
-            id="file-conflict"
+            id={prefix + 'file-conflict'}
             value={node.version === 4 ? 'number' : 'error'}
             onChange={(e) => change(fileConflictPolicy(node, e.target.value))}
           >
@@ -170,21 +209,25 @@ export default function ResourceNodeConfiguration({
         node.operation === 'copy' &&
         field('content', '源文件名', node.content, '', true)}
       {node.type === 'file' && node.operation === 'archive' && (
-        <ArchiveFileList
-          value={node.files}
-          choices={choices}
-          change={(files) => change({ ...node, files })}
-        />
+        <ResourceDetails compact={compact} title="编辑归档文件清单">
+          <ArchiveFileList
+            value={node.files}
+            choices={choices}
+            change={(files) => change({ ...node, files })}
+          />
+        </ResourceDetails>
       )}
       {node.type === 'excel' && node.operation === 'read' && (
         <p className="note">读取首个工作表，保留空行和原始行列位置；行内空单元格输出为 null。</p>
       )}
       {node.type === 'excel' && node.operation === 'write' && (
-        <MatrixValues
-          value={node.rows}
-          choices={choices}
-          change={(rows) => change({ ...node, rows })}
-        />
+        <ResourceDetails compact={compact} title="编辑行列数据">
+          <MatrixValues
+            value={node.rows}
+            choices={choices}
+            change={(rows) => change({ ...node, rows })}
+          />
+        </ResourceDetails>
       )}
       {node.type === 'excel' && node.operation === 'map' && (
         <p className="note">字段映射在完整编辑页配置；输出只新建，不覆盖同名文件。</p>
@@ -192,20 +235,23 @@ export default function ResourceNodeConfiguration({
       {node.type === 'excel' && node.operation === 'fill' && (
         <>
           {field('templateName', '模板文件名', node.templateName, '', true)}
-          <label htmlFor="excel-sheet">工作表名称</label>
+          <label htmlFor={prefix + 'excel-sheet'}>工作表名称</label>
           <input
-            id="excel-sheet"
+            id={prefix + 'excel-sheet'}
             value={node.sheet}
             placeholder="留空使用首个工作表"
             onChange={(e) => change({ ...node, sheet: e.target.value })}
           />
-          <MappingValues
-            label="单元格映射"
-            kind="cells"
-            value={node.cells}
-            choices={choices}
-            change={(cells) => change({ ...node, cells })}
-          />
+          <ResourceDetails compact={compact} title="单元格映射">
+            <MappingValues
+              protectDraft={compact}
+              label="单元格映射"
+              kind="cells"
+              value={node.cells}
+              choices={choices}
+              change={(cells) => change({ ...node, cells })}
+            />
+          </ResourceDetails>
           <p className="note">输出必须另存。未填写的单元格、样式和其他工作表沿用模板。</p>
         </>
       )}

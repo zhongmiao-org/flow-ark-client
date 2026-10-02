@@ -1,0 +1,196 @@
+.resource-workspace-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-height: 56px;
+  padding: 8px 32px;
+  background: var(--fa-bg-surface);
+  font-size: 13px;
+}
+.resource-workspace-toolbar nav {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.resource-workspace-toolbar button {
+  min-height: 40px;
+  flex-shrink: 0;
+}
+.resource-workspace-page {
+  container-type: inline-size;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.resource-workspace-page h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  line-height: 40px;
+}
+.resource-workspace-page p {
+  margin: 0;
+  color: var(--fa-text-secondary);
+  font-size: 13px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+.resource-workspace-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px 16px;
+  align-items: start;
+}
+.resource-workspace-card {
+  min-width: 0;
+  min-height: 362px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-surface);
+}
+.resource-workspace-card h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.resource-workspace-card h2 span {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--fa-action-primary);
+}
+.resource-workspace-card dl {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.resource-workspace-card dt,
+.resource-workspace-card label {
+  margin: 0 0 6px;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.resource-workspace-card dd {
+  margin: 0;
+  min-height: 32px;
+  padding: 6px;
+  background: var(--fa-bg-canvas);
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.resource-workspace-card input:not([type='checkbox']),
+.resource-workspace-card select,
+.resource-workspace-card textarea {
+  margin: 0;
+  min-width: 0;
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 6px;
+  font-size: 13px;
+  line-height: 20px;
+  background: var(--fa-bg-canvas);
+}
+.resource-workspace-card button {
+  min-height: 40px;
+}
+.resource-workspace-card .node-configuration {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.resource-workspace-card .node-configuration > header {
+  display: none;
+}
+.resource-workspace-card .value-field {
+  padding: 0;
+  border: 0;
+}
+.resource-workspace-card .reference-value-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.resource-workspace-card .reference-value-compact .value-field-label {
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+}
+.resource-workspace-card .reference-value-compact button {
+  min-height: 32px;
+  padding: 4px 6px;
+  background: var(--fa-bg-canvas);
+  justify-content: flex-start;
+  text-align: left;
+}
+.resource-workspace-card .mapping-workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+.resource-workspace-card .resource-inline {
+  flex-wrap: wrap;
+}
+.resource-workspace-card .resource-inline input {
+  flex: 1;
+  min-width: 120px;
+}
+.resource-workspace-card .field-error {
+  color: var(--fa-status-error);
+}
+.resource-workspace-empty {
+  min-height: 132px;
+  display: flex;
+  align-items: center;
+}
+.resource-workspace-error {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--fa-status-error-bg);
+}
+.resource-workspace-error p {
+  color: var(--fa-status-error);
+}
+.resource-workspace-error button {
+  flex-shrink: 0;
+}
+@container (max-width:1050px) {
+  .resource-workspace-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container (max-width:720px) {
+  .resource-workspace-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .resource-workspace-card {
+    min-height: 0;
+  }
+}
+@media (max-width: 900px) {
+  .resource-workspace-toolbar {
+    gap: 12px;
+    padding: 8px 16px;
+    flex-wrap: wrap;
+  }
+  .resource-workspace-toolbar nav {
+    order: 3;
+    flex-basis: 100%;
+  }
+  .resource-workspace-toolbar button:last-child {
+    margin-left: auto;
+  }
+}
