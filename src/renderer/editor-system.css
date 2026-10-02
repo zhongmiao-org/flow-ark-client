@@ -367,3 +367,60 @@
 .app .editor-toolbar .draft-history {
   width: 80px;
 }
+
+/* Figma 2:5253 keeps the current target ahead of general step settings. */
+.step-settings-expanded,
+.inspector-content {
+  display: contents;
+}
+.editor-region.is-compact[data-panel='node'] .compact-browser-inspector,
+.editor-region.is-compact[data-panel='params'] .compact-browser-inspector {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+.compact-browser-inspector .inspector-content {
+  display: block;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  scroll-padding-block: 12px;
+  padding: 20px;
+}
+.editor-region .compact-browser-inspector .tabs {
+  margin: -20px -20px 16px;
+}
+.editor-region .compact-config-heading {
+  margin: 0 0 16px;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+.compact-browser-inspector .node-configuration {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+.compact-browser-inspector .compact-target-selector {
+  margin: 0 0 12px;
+  padding: 6px;
+  border-radius: 6px;
+  background: var(--fa-bg-canvas);
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.compact-step-settings {
+  margin-top: 16px;
+}
+.compact-step-settings > summary {
+  cursor: pointer;
+  color: var(--fa-text-secondary);
+}
+.editor-region .compact-browser-inspector .drawer-footer {
+  position: static;
+  flex: 0 0 auto;
+  margin-top: 0;
+  padding: 12px 20px 20px;
+}

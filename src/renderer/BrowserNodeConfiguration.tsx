@@ -15,11 +15,13 @@ export default function BrowserNodeConfiguration({
   change,
   choices,
   fieldsOnly = false,
+  compact = false,
   active = true,
   blockingRunId,
   onViewRun,
 }: {
   fieldsOnly?: boolean;
+  compact?: boolean;
   active?: boolean;
   blockingRunId?: string;
   onViewRun?: (detail: any, trigger?: HTMLElement) => void;
@@ -55,7 +57,7 @@ export default function BrowserNodeConfiguration({
   const topLevel = ['navigate', 'screenshot'].includes(node.operation);
   return (
     <section className="node-configuration" aria-label="浏览器节点配置">
-      {!fieldsOnly && (
+      {!fieldsOnly && !compact && (
         <>
           <header>
             <h4>网页动作</h4>
@@ -115,6 +117,9 @@ export default function BrowserNodeConfiguration({
       {!fieldsOnly && !topLevel && (
         <>
           <label>目标元素</label>
+          {compact && (
+            <p className="compact-target-selector">{node.selector || '尚未选择目标元素'}</p>
+          )}
           <ElementPicker
             key={`${node.id}:${node.operation}`}
             confirmBeforeApply
