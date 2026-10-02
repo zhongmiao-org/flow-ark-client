@@ -17,17 +17,34 @@ export function DesktopWindowList({
   const ready = compactSelected && !!selected && !state.expired;
   const title = useRef<HTMLHeadingElement>(null);
   const list = useRef<HTMLDivElement>(null);
+  const listHeading = useRef<HTMLHeadingElement>(null);
+  const resultHeading = useRef<HTMLHeadingElement>(null);
+  const failure = useRef<HTMLParagraphElement>(null);
+  const windowButtons = useRef(new Map<string, HTMLButtonElement>());
+  const handledRefresh = useRef(state.refreshRequest);
   const previous = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (selected) title.current?.focus();
-    else if (previous.current) list.current?.querySelector('button')?.focus();
+    else if (previous.current && !loading)
+      (windowButtons.current.get(previous.current) ?? listHeading.current)?.focus();
     previous.current = selected?.id;
-  }, [selected?.id]);
+  }, [selected?.id, loading]);
+  useEffect(() => {
+    if (handledRefresh.current === state.refreshRequest || loading || state.settingsPending) return;
+    handledRefresh.current = state.refreshRequest;
+    const firstWindow = list.current?.querySelector<HTMLButtonElement>('button:not(:disabled)');
+    (error
+      ? failure.current
+      : (firstWindow ?? resultHeading.current ?? listHeading.current)
+    )?.focus();
+  }, [state.refreshRequest, loading, state.settingsPending, snapshot, error]);
   return (
-    <div className={`task-desktop-list${ready ? ' is-selected' : ''}`}>
+    <div className={`task-desktop-list${ready ? ' is-selected' : ''}`} aria-busy={loading}>
       {!ready && (
         <div className="task-target-section-heading">
-          <h2>文本编辑的窗口</h2>
+          <h2 ref={listHeading} tabIndex={-1}>
+            文本编辑的窗口
+          </h2>
           <button onClick={() => void state.refresh()} disabled={loading || state.settingsPending}>
             {loading ? '正在检查…' : '重新检查'}
           </button>
@@ -38,7 +55,7 @@ export function DesktopWindowList({
       )}
       {loading && <p role="status">正在检查系统权限与窗口…</p>}
       {error && (
-        <p className="ai-task-note ai-task-failure" role="alert">
+        <p className="ai-task-note ai-task-failure" role="alert" ref={failure} tabIndex={-1}>
           {error}
         </p>
       )}
@@ -88,6 +105,10 @@ export function DesktopWindowList({
                 <button
                   className="task-target-connection"
                   key={window.id}
+                  ref={(element) => {
+                    if (element) windowButtons.current.set(window.id, element);
+                    else windowButtons.current.delete(window.id);
+                  }}
                   disabled={state.expired}
                   onClick={() => state.select(window.id)}
                 >
@@ -100,7 +121,9 @@ export function DesktopWindowList({
             </div>
           ) : (
             <div className="task-target-empty" role="status">
-              <h3>没有发现可显示的窗口</h3>
+              <h3 ref={resultHeading} tabIndex={-1}>
+                没有发现可显示的窗口
+              </h3>
               <p>请在文本编辑中打开文档，然后重新检查。</p>
             </div>
           )}
@@ -111,14 +134,17 @@ export function DesktopWindowList({
           )}
           {!ready && (
             <p className="task-desktop-observed">
-              检查时间：{new Date(snapshot.observedAt).toLocaleTimeString('zh-CN')} · 本次观察
+              发现 {snapshot.windows.length} 个窗口 · 检查时间：
+              {new Date(snapshot.observedAt).toLocaleTimeString('zh-CN')} · 本次观察
             </p>
           )}
         </>
       )}
       {snapshot?.availability === 'permission-required' && (
         <div className="task-target-empty">
-          <h3>尚需辅助功能权限</h3>
+          <h3 ref={resultHeading} tabIndex={-1}>
+            尚需辅助功能权限
+          </h3>
           <p>
             系统尚未允许本机助手识别应用窗口。先查看右侧授权说明，再由你决定是否在系统设置中开启。
           </p>
@@ -126,13 +152,17 @@ export function DesktopWindowList({
       )}
       {snapshot?.availability === 'unsupported' && (
         <div className="task-target-empty">
-          <h3>当前系统暂不支持应用窗口</h3>
+          <h3 ref={resultHeading} tabIndex={-1}>
+            当前系统暂不支持应用窗口
+          </h3>
           <p>应用窗口发现当前仅接入 macOS 的文本编辑。你可以继续使用网页或已连接工具。</p>
         </div>
       )}
       {snapshot?.availability === 'unavailable' && (
         <div className="task-target-empty" role="status">
-          <h3>暂时无法取得窗口</h3>
+          <h3 ref={resultHeading} tabIndex={-1}>
+            暂时无法取得窗口
+          </h3>
           <p>{snapshot.reason || '请检查文本编辑是否可以正常响应，再重新检查。'}</p>
         </div>
       )}

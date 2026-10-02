@@ -32,6 +32,7 @@ export default function useDesktopWindows(active: boolean, identity: string, aut
   };
   const [reading, setReading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [refreshRequest, setRefreshRequest] = useState(0);
   const [settingsPending, setSettingsPending] = useState(false);
   const [expired, setExpired] = useState(false);
   const [error, setError] = useState('');
@@ -49,7 +50,8 @@ export default function useDesktopWindows(active: boolean, identity: string, aut
     release(observation.current);
     observation.current = undefined;
   };
-  const refresh = async () => {
+  const refresh = async (manual = true) => {
+    if (manual) setRefreshRequest((value) => value + 1);
     const ticket = ++epoch.current,
       requestId = crypto.randomUUID();
     releaseCurrent();
@@ -86,7 +88,7 @@ export default function useDesktopWindows(active: boolean, identity: string, aut
     setSettingsPending(false);
     setLoading(false);
     clearPreview();
-    if (active && autoRefresh) void refresh();
+    if (active && autoRefresh) void refresh(false);
     return () => {
       epoch.current++;
       previewEpoch.current++;
@@ -188,6 +190,7 @@ export default function useDesktopWindows(active: boolean, identity: string, aut
   return {
     snapshot,
     loading,
+    refreshRequest,
     settingsPending,
     error,
     notice,
