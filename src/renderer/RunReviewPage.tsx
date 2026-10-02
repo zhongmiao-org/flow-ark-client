@@ -6,7 +6,7 @@ import './desktop-run.css';
 import type { RunReviewInput, RunReviewPreview, ReviewResource } from '../shared/run-review';
 import { RunReviewSession } from './run-review-session';
 import RunReviewTools from './RunReviewTools';
-import RunReviewCheck from './RunReviewCheck';
+import RunReviewCheck, { reviewResourceIssue } from './RunReviewCheck';
 
 type Props = {
   active: boolean;
@@ -269,7 +269,8 @@ export default function RunReviewPage(props: Props) {
       {attempt?.run ? '检查新的试运行' : '重新检查'}
     </button>
   );
-  const configureButton = !locked && !attempt?.run && (
+  const hasResourceIssue = preview?.checks.some((check) => !!reviewResourceIssue(check));
+  const configureButton = !locked && !attempt?.run && !hasResourceIssue && (
     <button onClick={props.edit}>配置流程与资源</button>
   );
   const rebindButton =
@@ -353,6 +354,8 @@ export default function RunReviewPage(props: Props) {
                     key={`${i}:${check.detail}`}
                     check={check}
                     compact={compactReview}
+                    configure={props.edit}
+                    disabled={state.loading || state.opening || binding || locked}
                   />
                 ))}
               {!compactReview && !desktopReview && debugToggle}

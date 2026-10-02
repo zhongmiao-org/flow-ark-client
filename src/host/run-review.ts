@@ -260,16 +260,27 @@ export class RunReview {
     }
     const identities: PathIdentity[] = [];
     for (const requirement of [...paths.values()].sort((a, b) => a.id.localeCompare(b.id))) {
-      const real = await realpath(requirement.path),
+      let real: string;
+      let info: Awaited<ReturnType<typeof stat>>;
+      try {
+        real = await realpath(requirement.path);
         info = await stat(real);
-      if (requirement.kind === 'file' ? !info.isFile() : !info.isDirectory())
-        throw new Error('资源类型不符：' + requirement.name);
-      await access(
-        real,
-        (requirement.read ? constants.R_OK : 0) |
-          (requirement.write ? constants.W_OK : 0) |
-          (requirement.kind === 'directory' ? constants.X_OK : 0),
-      );
+        if (requirement.kind === 'file' ? !info.isFile() : !info.isDirectory())
+          throw new Error('资源类型不符：' + requirement.name);
+        await access(
+          real,
+          (requirement.read ? constants.R_OK : 0) |
+            (requirement.write ? constants.W_OK : 0) |
+            (requirement.kind === 'directory' ? constants.X_OK : 0),
+        );
+      } catch (reason) {
+        throw new Error(
+          '本机资源不可用：' +
+            requirement.name +
+            '\n' +
+            (this.deps.error ?? redactedErrorText)(reason),
+        );
+      }
       identities.push({
         ...requirement,
         real,
