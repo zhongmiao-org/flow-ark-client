@@ -2423,7 +2423,12 @@ function Editor({
               </button>
               <p>当前步骤保持可见；动作库与配置使用互斥抽屉。</p>
             </section>
-            <aside className="inspector">
+            <aside
+              className="inspector"
+              onFocusCapture={(event) => {
+                if ((event.target as HTMLElement).closest('.value-source-button')) setPanel('node');
+              }}
+            >
               <div className="tabs" role="group" aria-label="检查器内容">
                 {[
                   ['node', '节点'],

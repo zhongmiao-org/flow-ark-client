@@ -1,33 +1,48 @@
 .variable-picker-dialog {
-  width: min(1152px, calc(100vw - 64px));
-  max-width: 1152px;
-  height: min(820px, calc(100dvh - 64px));
-  max-height: calc(100dvh - 64px);
-  padding: 28px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: 16px;
+  position: fixed;
+  inset: 40px 0 0 224px;
+  margin: 0;
+  width: calc(100vw - 224px);
+  max-width: none;
+  height: calc(100dvh - 40px);
+  max-height: none;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
   background: var(--fa-bg-canvas);
   color: var(--fa-text-primary);
-  overflow: hidden;
+  overflow: auto;
 }
 .variable-picker-dialog::backdrop {
-  background: rgb(17 24 39 / 32%);
+  background: transparent;
 }
-.variable-picker-dialog[open] {
+.variable-picker-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-height: 56px;
+  padding: 8px;
+  background: var(--fa-bg-surface);
+  font-size: 13px;
+}
+.variable-picker-toolbar button {
+  min-width: 168px;
+  min-height: 40px;
+}
+.variable-picker-toolbar nav {
+  overflow-wrap: anywhere;
+}
+.variable-picker-page {
+  container-type: inline-size;
+  padding: 32px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-}
-.variable-picker-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 24px;
+  gap: 32px;
 }
 .variable-picker-heading h2 {
   margin: 0 0 8px;
-  font-size: 24px;
-  line-height: 32px;
+  font-size: 28px;
+  line-height: 40px;
 }
 .variable-picker-heading p {
   margin: 0;
@@ -35,12 +50,7 @@
   line-height: 22px;
   color: var(--fa-text-secondary);
 }
-.variable-picker-heading button {
-  flex-shrink: 0;
-}
 .variable-picker-columns {
-  flex: 1;
-  min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 400fr) minmax(0, 728fr);
   gap: 24px;
@@ -55,36 +65,49 @@
   flex-direction: column;
   gap: 16px;
   min-width: 0;
-  min-height: 0;
-  overflow: auto;
+  min-height: 670px;
 }
-.variable-picker-sources > *,
-.variable-picker-detail > * {
-  flex-shrink: 0;
+.variable-picker-detail {
+  padding: 28px;
+}
+.variable-picker-sources {
+  gap: 18px;
 }
 .variable-picker-dialog label,
-.variable-picker-dialog dt,
-.variable-picker-source-kind {
+.variable-picker-dialog dt {
   color: var(--fa-text-secondary);
   font-size: 12px;
   line-height: 18px;
+  margin: 0;
 }
 .variable-picker-dialog input {
   width: 100%;
   min-width: 0;
-  background: var(--fa-bg-subtle);
+  margin: 0;
+  height: 32px;
+  padding: 4px 6px;
+  border-color: transparent;
+  background: var(--fa-bg-canvas);
+  font-size: 13px;
+  line-height: 20px;
 }
-.variable-picker-source-list {
-  max-height: min(400px, max(160px, calc(100dvh - 520px)));
-  overflow-y: auto;
+.variable-picker-dialog input[aria-invalid='true'] {
+  border-color: var(--fa-status-error);
+}
+.variable-picker-search,
+.variable-picker-path {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 4px;
 }
+.variable-picker-search {
+  gap: 6px;
+}
+.variable-picker-source-list,
 .variable-picker-source-list section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16px;
 }
 .variable-picker-dialog h3 {
   margin: 0;
@@ -92,44 +115,30 @@
   line-height: 28px;
   overflow-wrap: anywhere;
 }
-.variable-picker-source-list h3 {
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--fa-text-secondary);
-}
 .variable-picker-source-list button {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  gap: 6px;
-  padding: 12px;
+  min-height: 40px;
+  padding: 8px 12px;
   width: 100%;
+  overflow-wrap: anywhere;
 }
 .variable-picker-source-list button[aria-pressed='true'] {
   background: var(--fa-action-subtle);
   border-color: var(--fa-action-primary);
 }
-.variable-picker-source-list strong {
-  font-size: 13px;
-}
-.variable-picker-dialog code,
-.variable-picker-dialog strong {
+.variable-picker-dialog code {
   overflow-wrap: anywhere;
   white-space: pre-wrap;
-}
-.variable-picker-dialog code {
   font-size: 12px;
   line-height: 20px;
 }
 .variable-picker-dialog dl {
-  margin: 0;
+  margin: 0 0 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 .variable-picker-dialog dd {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 13px;
   line-height: 22px;
   overflow-wrap: anywhere;
@@ -147,47 +156,74 @@
   align-items: flex-start;
   gap: 16px;
 }
-.variable-picker-path {
-  background: var(--fa-action-subtle);
-  border-radius: 8px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.variable-picker-path span {
-  font-size: 12px;
-  color: var(--fa-text-secondary);
-}
 .variable-picker-actions {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  justify-content: flex-end;
-  margin-top: 0;
-  padding-top: 0;
+  margin: 0;
+  padding: 0;
 }
 .variable-picker-actions button {
+  min-width: 180px;
+  min-height: 40px;
+}
+.variable-picker-actions button:last-child {
   min-width: 120px;
 }
-@media (max-width: 800px) {
-  .variable-picker-dialog {
-    width: calc(100vw - 32px);
-    max-height: calc(100vh - 32px);
-    padding: 20px;
-  }
+.variable-picker-advanced {
+  font-size: 13px;
+  line-height: 22px;
+}
+.variable-picker-advanced summary {
+  cursor: pointer;
+}
+.variable-picker-advanced label {
+  display: block;
+  margin: 16px 0 4px;
+}
+.variable-picker-advanced p {
+  margin-top: 8px;
+}
+@container (max-width: 1000px) {
   .variable-picker-columns {
     grid-template-columns: minmax(0, 1fr);
-    overflow: auto;
   }
   .variable-picker-sources,
   .variable-picker-detail {
-    overflow: visible;
+    min-height: 0;
   }
   .variable-picker-source-list {
-    max-height: 220px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 4px;
+    margin: -4px;
   }
-  .variable-picker-heading {
-    gap: 12px;
+}
+@media (max-width: 1439px) {
+  .variable-picker-dialog {
+    left: 72px;
+    width: calc(100vw - 72px);
+  }
+}
+@media (min-width: 1440px) {
+  body:has(.variable-picker-dialog[open]) .app .sidebar {
+    width: 224px;
+    flex-basis: 224px;
+    padding: 24px;
+  }
+  body:has(.variable-picker-dialog[open]) .app .brand-name,
+  body:has(.variable-picker-dialog[open]) .app .nav-label {
+    display: inline;
+  }
+  body:has(.variable-picker-dialog[open]) .app .workspace-label,
+  body:has(.variable-picker-dialog[open]) .app .sidebar-bottom {
+    display: flex;
+  }
+  body:has(.variable-picker-dialog[open]) .app .sidebar nav button {
+    width: 100%;
+    padding: 10px;
+  }
+  body:has(.variable-picker-dialog[open]) .app .sidebar nav button b {
+    position: static;
   }
 }
