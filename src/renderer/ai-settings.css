@@ -52,6 +52,9 @@
 .ai-settings-columns > .ai-task-card {
   min-height: 688px;
 }
+.ai-settings-columns.is-general-settings > .ai-task-card {
+  min-height: 656px;
+}
 .ai-settings-columns .ai-provider-card {
   padding: 28px;
   gap: 16px;
@@ -145,6 +148,38 @@
   min-width: 0;
   width: 100%;
   height: 40px;
+}
+.ai-settings-page .ai-provider-selection {
+  min-height: 82px;
+  gap: 8px;
+  line-height: 20px;
+}
+.ai-provider-selection select {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+}
+.ai-settings-page .ai-provider-card > .ai-provider-scope {
+  margin: 0;
+  color: var(--fa-action-primary);
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+}
+.ai-provider-description {
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--fa-text-secondary);
+}
+.ai-provider-description summary {
+  cursor: pointer;
+}
+.ai-provider-description p {
+  overflow-wrap: anywhere;
+}
+.ai-settings-page .ai-provider-card.is-general-provider .ai-task-actions button,
+.ai-settings-page .ai-provider-card.is-general-provider.is-editing .ai-task-actions button {
+  min-width: 180px;
 }
 .ai-saved-key {
   display: flex;
@@ -256,7 +291,8 @@ button.ai-remove-button {
   .ai-settings-columns {
     grid-template-columns: minmax(0, 1fr);
   }
-  .ai-settings-columns > .ai-task-card {
+  .ai-settings-columns > .ai-task-card,
+  .ai-settings-columns.is-general-settings > .ai-task-card {
     min-height: 0;
   }
   .ai-source-title {

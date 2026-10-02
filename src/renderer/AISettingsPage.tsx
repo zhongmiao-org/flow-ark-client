@@ -45,6 +45,7 @@ export default function AISettingsPage({
   changed,
   onSaved,
   home,
+  selectProvider,
 }: {
   active: boolean;
   entry: AISettingsEntry;
@@ -53,6 +54,7 @@ export default function AISettingsPage({
   changed: () => Promise<void>;
   onSaved: (state: AIConfigurationState) => void;
   home: (tab?: SettingsDestination) => void;
+  selectProvider: (provider: AIProviderId) => void;
 }) {
   const [storedState, setState] = useState<AIConfigurationState>();
   const [loadedEntry, setLoadedEntry] = useState<string>();
@@ -513,22 +515,44 @@ export default function AISettingsPage({
             </button>
           </section>
         ) : (
-          <div className="ai-settings-columns">
-            <section className={`ai-task-card ai-provider-card${editing ? ' is-editing' : ''}`}>
-              <div className="ai-provider-heading">
-                <h2>{name}</h2>
-                <span className="ai-config-status neutral">
-                  {provider === 'deepseek' ? '首版接入' : 'Responses API'}
-                </span>
-              </div>
-              <div className="ai-settings-field">
-                <span>服务地址</span>
-                <p>
-                  {provider === 'deepseek'
-                    ? 'https://api.deepseek.com'
-                    : 'https://api.openai.com/v1/responses'}
-                </p>
-              </div>
+          <div className={`ai-settings-columns${!entry.source ? ' is-general-settings' : ''}`}>
+            <section
+              className={`ai-task-card ai-provider-card${editing ? ' is-editing' : ''}${!entry.source ? ' is-general-provider' : ''}`}
+            >
+              {!entry.source ? (
+                <label className="ai-settings-field ai-provider-selection">
+                  服务商
+                  <select
+                    value={provider}
+                    disabled={!!busy || testing}
+                    onChange={(event) => {
+                      const next = event.target.value as AIProviderId;
+                      if (next !== provider)
+                        go(() => selectProvider(next), `${providerName(next)} 配置`);
+                    }}
+                  >
+                    <option value="openai-codex">Codex / OpenAI API</option>
+                    <option value="deepseek">DeepSeek</option>
+                  </select>
+                </label>
+              ) : (
+                <>
+                  <div className="ai-provider-heading">
+                    <h2>{name}</h2>
+                    <span className="ai-config-status neutral">
+                      {provider === 'deepseek' ? '首版接入' : 'Responses API'}
+                    </span>
+                  </div>
+                  <div className="ai-settings-field">
+                    <span>服务地址</span>
+                    <p>
+                      {provider === 'deepseek'
+                        ? 'https://api.deepseek.com'
+                        : 'https://api.openai.com/v1/responses'}
+                    </p>
+                  </div>
+                </>
+              )}
               {editing ? (
                 <>
                   <label className="ai-settings-field">
@@ -656,7 +680,28 @@ export default function AISettingsPage({
                   <p>重新打开设置仍显示脱敏标识；完整 Key 不提供回显或复制。</p>
                 </>
               )}
-              <small>模型按当前账号可用项填写。修改模型或替换 Key 后，需要重新测试连接。</small>
+              {!entry.source ? (
+                <>
+                  <p className="ai-task-note ai-provider-scope">
+                    这里配置通用接口。业务提示词和输出规则由模板提供。
+                  </p>
+                  <details className="ai-provider-description">
+                    <summary>服务地址与模型说明</summary>
+                    <p>
+                      {provider === 'deepseek'
+                        ? 'https://api.deepseek.com'
+                        : 'https://api.openai.com/v1/responses'}
+                    </p>
+                    <p>
+                      两家服务分别保存模型与受保护的
+                      Key，不会自动替换。模型按当前账号可用项填写，修改模型或替换 Key
+                      后需要重新测试连接。
+                    </p>
+                  </details>
+                </>
+              ) : (
+                <small>模型按当前账号可用项填写。修改模型或替换 Key 后，需要重新测试连接。</small>
+              )}
               {state.inUse && (
                 <p className="ai-task-note">
                   该资源正在被运行或方案生成使用，结束后才能更改或移除配置。

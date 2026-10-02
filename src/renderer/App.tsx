@@ -24,7 +24,7 @@ import FlowLibrary from './FlowLibrary';
 import AITaskWorkspace, { type TaskOpener } from './AITaskWorkspace';
 import ToolConnectionsPage, { type ToolNavigation } from './ToolConnectionsPage';
 import AISettingsPage, { type AISettingsEntry, type AISettingsNavigation } from './AISettingsPage';
-import type { AIProviderId } from '../shared/ai-settings';
+import { defaultAIModel, type AIProviderId } from '../shared/ai-settings';
 import { buildDiagram } from './flow-diagram';
 import DiagramCanvas from './DiagramCanvas';
 import { kinds } from './node-kinds';
@@ -2121,6 +2121,14 @@ export default function App() {
           <AISettingsPage
             active={section === 'ai-settings'}
             entry={taskAISettings}
+            selectProvider={(provider) => {
+              if (taskAISettings.source) return;
+              setTaskAISettings({
+                key: crypto.randomUUID(),
+                provider,
+                model: defaultAIModel(provider),
+              });
+            }}
             home={(tab) =>
               leaveAIContext(
                 () => {
