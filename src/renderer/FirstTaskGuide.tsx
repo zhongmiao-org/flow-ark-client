@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import type { LearningStatus } from '../shared/learning';
 
 export default function FirstTaskGuide({
@@ -5,12 +6,37 @@ export default function FirstTaskGuide({
   busy,
   start,
   skip,
+  readError,
+  action,
+  refresh,
 }: {
+  readError?: string;
+  action?: 'continue' | 'restart' | 'skip' | 'refresh';
+  refresh: () => void;
   progress?: LearningStatus;
   busy: boolean;
   start: (mode: 'continue' | 'restart') => void;
   skip: () => void;
 }) {
+  const feedback = useRef<HTMLDivElement>(null);
+  const actionButton = useRef<HTMLButtonElement>(null);
+  const retrying = useRef(false);
+  useEffect(() => {
+    if (readError) feedback.current?.focus();
+  }, [readError]);
+  useEffect(() => {
+    if (retrying.current && !busy) {
+      retrying.current = false;
+      if (!readError) {
+        actionButton.current?.parentElement
+          ?.querySelector<HTMLButtonElement>('button:not(:disabled)')
+          ?.focus();
+      }
+    }
+  }, [busy, readError]);
+  const milestones = ['target', 'plan', 'trial', 'result'] as const;
+  const completed = milestones.filter((key) => !!progress?.achieved[key]).length;
+  const unavailable = busy || !progress || !!readError;
   return (
     <div className="learning-columns">
       <section className="ai-task-card learning-intro">
@@ -21,9 +47,14 @@ export default function FirstTaskGuide({
           ['2 看方案', '确认读取内容和输出位置'],
           ['3 试一次', '每一步都能看见进度'],
           ['4 找结果', '打开文件并继续修改'],
-        ].map(([heading, text]) => (
+        ].map(([heading, text], index) => (
           <div className="learning-topic" key={heading}>
-            <h3>{heading}</h3>
+            <div className="learning-topic-heading">
+              <h3>{heading}</h3>
+              {progress?.achieved[milestones[index]] && (
+                <span>{readError ? '上次记录已完成' : '已完成'}</span>
+              )}
+            </div>
             <p>{text}</p>
           </div>
         ))}
@@ -51,30 +82,56 @@ export default function FirstTaskGuide({
           <p className="learning-resume-note" role="status">
             {progress.status === 'completed'
               ? '上次学习已完成。'
-              : `已完成 ${Object.keys(progress.achieved).length} / 4 项学习。`}{' '}
+              : `已完成 ${completed} / 4 项学习。`}{' '}
             继续会保留原任务；重新学习会创建新草稿，旧任务和结果保留。
           </p>
         )}
-        <div className="ai-task-actions">
+        {readError ? (
+          <div
+            className="learning-read-error ai-task-note"
+            role="alert"
+            tabIndex={-1}
+            ref={feedback}
+          >
+            <strong>暂时无法读取学习记录</strong>
+            <p>{readError}</p>
+            <p>上次记录保留，恢复读取后再继续或跳过。重新读取不会创建教学任务。</p>
+            <button
+              disabled={busy}
+              onClick={() => {
+                retrying.current = true;
+                refresh();
+              }}
+            >
+              {action === 'refresh' ? '正在重新读取…' : '重新读取学习记录'}
+            </button>
+          </div>
+        ) : !progress ? (
+          <p role="status">正在读取学习记录…</p>
+        ) : null}
+        <div className="ai-task-actions" aria-busy={busy}>
           <button
+            ref={actionButton}
             className="primary"
-            disabled={busy || !progress || (!!progress.taskId && !progress.taskExists)}
+            disabled={unavailable || (!!progress?.taskId && !progress.taskExists)}
             onClick={() => start('continue')}
           >
-            {progress?.status === 'completed'
-              ? '查看上次结果'
-              : progress?.taskId
-                ? '继续教学'
-                : '跟着做一次'}
+            {action === 'continue'
+              ? '正在打开教学任务…'
+              : progress?.status === 'completed'
+                ? '查看上次结果'
+                : progress?.taskId
+                  ? '继续教学'
+                  : '跟着做一次'}
           </button>
           {progress?.taskId && (
-            <button disabled={busy} onClick={() => start('restart')}>
-              重新开始学习
+            <button disabled={unavailable} onClick={() => start('restart')}>
+              {action === 'restart' ? '正在创建新教学草稿…' : '重新开始学习'}
             </button>
           )}
           {progress?.status !== 'completed' && (
-            <button disabled={busy || !progress} onClick={skip}>
-              先跳过
+            <button disabled={unavailable} onClick={skip}>
+              {action === 'skip' ? '正在保存跳过状态…' : '先跳过'}
             </button>
           )}
         </div>

@@ -132,6 +132,10 @@ export default function AITaskWorkspace(props: Props) {
   const [revision, setRevision] = useState(0);
   const [homeText, setHomeText] = useState('');
   const [learning, setLearning] = useState<LearningStatus>();
+  const [learningError, setLearningError] = useState('');
+  const [learningAction, setLearningAction] = useState<
+    'continue' | 'restart' | 'skip' | 'refresh'
+  >();
   const handledGuide = useRef(0);
   const [page, setPage] = useState<
     | 'home'
@@ -503,12 +507,15 @@ export default function AITaskWorkspace(props: Props) {
     const refresh = async () => {
       if (pending) return;
       pending = true;
+      const ticket = epoch.current;
       try {
-        const ticket = epoch.current;
         const next = await api('learning.status');
-        if (live && ticket === epoch.current) setLearning(next);
+        if (live && ticket === epoch.current) {
+          setLearning(next);
+          setLearningError('');
+        }
       } catch (e) {
-        if (live) setError((e as Error).message);
+        if (live && ticket === epoch.current) setLearningError((e as Error).message);
       } finally {
         pending = false;
       }
@@ -983,48 +990,76 @@ export default function AITaskWorkspace(props: Props) {
   async function showGuide() {
     await run(async () => {
       if (detail && dirty) await save();
-      setLearning(await api('learning.status'));
       props.showBrowser(false);
       setPage('guide');
+      await refreshLearning();
     });
+  }
+  async function refreshLearning() {
+    setLearningAction('refresh');
+    try {
+      setLearning(await api('learning.status'));
+      setLearningError('');
+    } catch (reason) {
+      setLearningError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setLearningAction(undefined);
+    }
   }
   async function startLearning(mode: 'continue' | 'restart') {
     await run(async () => {
-      if (!learning) return;
-      if (detail && dirty) await save();
-      const next = await api('learning.start', { revision: learning.revision, mode });
-      setLearning(next.learning);
-      accept(next.detail);
-      setReviewed(false);
-      setProvider(next.detail.task.provider ?? 'deepseek');
-      setModel(next.detail.task.model ?? 'deepseek-flash');
-      setPage(
-        ['generating', 'failed', 'unsupported'].includes(next.detail.task.status)
-          ? 'generation'
-          : next.detail.proposal?.result.kind === 'clarify'
-            ? 'understand'
-            : next.detail.proposal || next.detail.flow
-              ? 'review'
-              : next.detail.task.webTarget ||
-                  next.detail.task.outputTarget ||
-                  next.detail.task.toolTargets?.length
-                ? 'understand'
-                : 'brief',
-      );
-      if (next.learning.latestRunId) {
-        const result = await api('run.detail', { id: next.learning.latestRunId });
-        if (result.run)
+      if (!learning || learningError) return;
+      setLearningAction(mode);
+      try {
+        if (detail && dirty) await save();
+        const next = await api('learning.start', { revision: learning.revision, mode });
+        setLearning(next.learning);
+        accept(next.detail);
+        setReviewed(false);
+        setProvider(next.detail.task.provider ?? 'deepseek');
+        setModel(next.detail.task.model ?? 'deepseek-flash');
+        setPage(
+          ['generating', 'failed', 'unsupported'].includes(next.detail.task.status)
+            ? 'generation'
+            : next.detail.proposal?.result.kind === 'clarify'
+              ? 'understand'
+              : next.detail.proposal || next.detail.flow
+                ? 'review'
+                : next.detail.task.webTarget ||
+                    next.detail.task.outputTarget ||
+                    next.detail.task.toolTargets?.length
+                  ? 'understand'
+                  : 'brief',
+        );
+        if (next.learning.latestRunId) {
+          const result = await api('run.detail', { id: next.learning.latestRunId });
+          if (
+            !result?.run ||
+            result.run.id !== next.learning.latestRunId ||
+            (result.run.task && result.run.task.id !== next.detail.task.id)
+          )
+            throw new Error(
+              '教学任务已恢复，但上次运行记录与当前教学不一致。请从当前任务核对运行记录。',
+            );
           props.openRun(result, (intent = 'plan') =>
             returnToTask.current(next.detail.task.id, intent),
           );
+        }
+      } finally {
+        setLearningAction(undefined);
       }
     });
   }
   async function skipLearning() {
     await run(async () => {
-      if (!learning) return;
-      setLearning(await api('learning.skip', { revision: learning.revision }));
-      setPage('home');
+      if (!learning || learningError) return;
+      setLearningAction('skip');
+      try {
+        setLearning(await api('learning.skip', { revision: learning.revision }));
+        setPage('home');
+      } finally {
+        setLearningAction(undefined);
+      }
     });
   }
   const providerName = provider === 'deepseek' ? 'DeepSeek' : 'OpenAI';
@@ -1511,6 +1546,9 @@ export default function AITaskWorkspace(props: Props) {
       {page === 'guide' ? (
         <FirstTaskGuide
           progress={learning}
+          readError={learningError}
+          action={learningAction}
+          refresh={() => void run(refreshLearning)}
           busy={busy}
           start={(mode) => void startLearning(mode)}
           skip={() => void skipLearning()}
@@ -1615,15 +1653,18 @@ export default function AITaskWorkspace(props: Props) {
                   {learning.status === 'skipped' ? '已跳过 · ' : ''}已完成{' '}
                   {Object.keys(learning.achieved).length} / 4 项学习。运行状态和结果在原任务中查看。
                 </p>
+                {learningError && (
+                  <p role="alert">学习记录暂时未取得。打开学习说明后重新读取，原任务保留。</p>
+                )}
                 <div className="ai-task-actions">
                   <button
-                    disabled={busy || !learning.taskExists}
+                    disabled={busy || !!learningError || !learning.taskExists}
                     onClick={() => void startLearning('continue')}
                   >
                     {learning.status === 'completed' ? '查看教学结果' : '继续教学'}
                   </button>
                   <button disabled={busy} onClick={() => void showGuide()}>
-                    重新学习
+                    {learningError ? '查看学习说明' : '重新学习'}
                   </button>
                 </div>
               </section>
