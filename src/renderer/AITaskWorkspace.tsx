@@ -754,11 +754,32 @@ export default function AITaskWorkspace(props: Props) {
     return next.task.scope ? 'review' : 'understand';
   }
   function recoverDescription() {
+    if (lock.current) return;
     setReviewed(false);
-    setPage(scope ? 'review' : 'brief');
+    const resumeModification = !scope && !!detail?.flow && !detail.proposal;
+    if (resumeModification && detail) {
+      setModification((previous) =>
+        previous?.taskId === detail.task.id && previous.description === draft.description
+          ? previous
+          : {
+              taskId: detail.task.id,
+              baseHash: detail.flowHash,
+              description: draft.description,
+              instruction: draft.description,
+            },
+      );
+      setPage('modify');
+    } else {
+      setPage(scope ? 'review' : 'brief');
+    }
     requestAnimationFrame(() => {
+      if (!location.current.active) return;
       document.querySelector('main')?.scrollTo(0, 0);
-      document.querySelector<HTMLTextAreaElement>('#task-description')?.focus();
+      document
+        .querySelector<HTMLTextAreaElement>(
+          resumeModification ? '#task-modification-instruction' : '#task-description',
+        )
+        ?.focus({ preventScroll: true });
     });
   }
   async function cancelGeneration() {
