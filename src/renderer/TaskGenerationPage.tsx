@@ -115,45 +115,6 @@ export default function TaskGenerationPage({
             <br />
             没有自动重试或切换服务。重试只重新生成提案，不会重复运行任务。
           </p>
-          <details
-            className="task-generation-record"
-            key={`${task.id}:${task.requestId ?? ''}:${task.status}`}
-          >
-            <summary>查看本次请求记录</summary>
-            <dl>
-              <div>
-                <dt>AI 服务</dt>
-                <dd>
-                  {task.provider === 'deepseek'
-                    ? 'DeepSeek'
-                    : task.provider === 'openai-codex'
-                      ? 'OpenAI · Codex'
-                      : '未记录'}
-                </dd>
-              </div>
-              <div>
-                <dt>模型</dt>
-                <dd>{task.model || '未记录'}</dd>
-              </div>
-              <div>
-                <dt>本地请求标识</dt>
-                <dd>{task.requestId || '未记录'}</dd>
-              </div>
-              <div>
-                <dt>状态更新时间</dt>
-                <dd>
-                  {Number.isFinite(updatedAt) ? (
-                    <time dateTime={task.updatedAt}>
-                      {new Date(updatedAt).toLocaleString('zh-CN')}
-                    </time>
-                  ) : (
-                    '时间待核对'
-                  )}
-                </dd>
-              </div>
-            </dl>
-            <p>这里显示本次生成留下的记录；重新生成前，可在核对区检查要使用的服务与模型。</p>
-          </details>
         </>
       )}
       {savedFlow && (
@@ -224,6 +185,47 @@ export default function TaskGenerationPage({
             取消重试
           </button>
         </div>
+      )}
+      {!generating && !unsupported && (
+        <details
+          className="task-generation-record"
+          key={`${task.id}:${task.requestId ?? ''}:${task.status}`}
+        >
+          <summary>查看本次请求记录</summary>
+          <dl>
+            <div>
+              <dt>AI 服务</dt>
+              <dd>
+                {task.provider === 'deepseek'
+                  ? 'DeepSeek'
+                  : task.provider === 'openai-codex'
+                    ? 'OpenAI · Codex'
+                    : '未记录'}
+              </dd>
+            </div>
+            <div>
+              <dt>模型</dt>
+              <dd>{task.model || '未记录'}</dd>
+            </div>
+            <div>
+              <dt>本地请求标识</dt>
+              <dd>{task.requestId || '未记录'}</dd>
+            </div>
+            <div>
+              <dt>状态更新时间</dt>
+              <dd>
+                {Number.isFinite(updatedAt) ? (
+                  <time dateTime={task.updatedAt}>
+                    {new Date(updatedAt).toLocaleString('zh-CN')}
+                  </time>
+                ) : (
+                  '时间待核对'
+                )}
+              </dd>
+            </div>
+          </dl>
+          <p>这里显示本次生成留下的记录；重新生成前，可在核对区检查要使用的服务与模型。</p>
+        </details>
       )}
     </section>
   );

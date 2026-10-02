@@ -17,9 +17,13 @@
 }
 .ai-task-card.task-generation[data-generation-state='generating'] {
   min-height: 550px;
+}
+.ai-task-card.task-generation[data-generation-state='generating'],
+.ai-task-card.task-generation[data-generation-state='failed'] {
   padding: 31px;
 }
-.task-generation[data-generation-state='generating'] h2 {
+.task-generation[data-generation-state='generating'] h2,
+.task-generation[data-generation-state='failed'] h2 {
   font-weight: 700;
 }
 .task-generation .task-generation-status::before {
@@ -79,10 +83,14 @@
 .task-generation-preserved {
   font-size: 13px;
 }
+.task-generation-failure .task-generation-reason {
+  max-height: 88px;
+  white-space: pre-wrap;
+}
 .task-generation-failure {
   width: 100%;
   min-width: 0;
-  padding: 24px;
+  padding: 16px;
   border-radius: var(--fa-radius-12);
   background: var(--fa-status-error-bg);
   display: flex;
