@@ -1400,6 +1400,46 @@ export default function AITaskWorkspace(props: Props) {
       </button>
     ) : null;
 
+  const proposalControls = detail?.proposal ? (
+    <>
+      {detail.conflict && (
+        <p className="ai-task-note ai-task-failure" role="alert">
+          原流程或绑定已变化，请重新生成方案后再采纳。
+        </p>
+      )}
+      <div className="ai-task-actions">
+        <button
+          className="primary"
+          disabled={busy || dirty || stale || detail.conflict}
+          onClick={() => void proposalAction('adopt')}
+        >
+          {fullModification ? '采纳修改' : '采纳方案'}
+        </button>
+        <button disabled={busy || dirty || stale} onClick={() => void proposalAction('reject')}>
+          不采纳
+        </button>
+      </div>
+    </>
+  ) : null;
+
+  const proposalNavigation =
+    fullModification && detail.proposal ? (
+      <div className="ai-task-actions task-proposal-tabs" aria-label="提案核对视图">
+        <button
+          aria-pressed={changesView}
+          onClick={() => setProposalView({ id: detail.proposal!.id, mode: 'changes' })}
+        >
+          修改差异
+        </button>
+        <button
+          aria-pressed={!changesView}
+          onClick={() => setProposalView({ id: detail.proposal!.id, mode: 'flow' })}
+        >
+          完整新方案
+        </button>
+      </div>
+    ) : null;
+
   const workspace = (
     <div
       className={`page ai-task-page${page === 'target' ? ' ai-task-web-target' : ''}${scope ? ' ai-task-scoped' : ''}${scopeDiffView ? ' ai-task-scoped-diff' : ''}`}
@@ -1829,6 +1869,7 @@ export default function AITaskWorkspace(props: Props) {
               </div>
             )}
             {!scopeDiffView &&
+              !(changesView && !editingProposal && !dirty && !stale) &&
               !planListView &&
               !standaloneGraph &&
               page !== 'understand' &&
@@ -1932,6 +1973,13 @@ export default function AITaskWorkspace(props: Props) {
                   !editingProposal &&
                   (!detail.proposal || result?.kind === 'plan') ? (
                     <TaskPlanConversation
+                      notice={
+                        fullModification ? (
+                          <p className="ai-task-note">
+                            采纳只更新草稿，当前运行和已建立计划仍使用原快照。
+                          </p>
+                        ) : undefined
+                      }
                       request={detail.task.description || flow.name}
                       reply={
                         detail.proposal
@@ -1982,7 +2030,7 @@ export default function AITaskWorkspace(props: Props) {
                               const heading = document.querySelector<HTMLHeadingElement>(
                                 '[data-proposal-diff-heading]',
                               );
-                              heading?.scrollIntoView({ block: 'nearest' });
+                              heading?.scrollIntoView({ block: 'start' });
                               heading?.focus({ preventScroll: true });
                             });
                           }}
@@ -2338,29 +2386,7 @@ export default function AITaskWorkspace(props: Props) {
                     </>
                   ) : flow ? (
                     <>
-                      {fullModification && detail.proposal && (
-                        <div
-                          className="ai-task-actions task-proposal-tabs"
-                          aria-label="提案核对视图"
-                        >
-                          <button
-                            aria-pressed={changesView}
-                            onClick={() =>
-                              setProposalView({ id: detail.proposal!.id, mode: 'changes' })
-                            }
-                          >
-                            修改差异
-                          </button>
-                          <button
-                            aria-pressed={!changesView}
-                            onClick={() =>
-                              setProposalView({ id: detail.proposal!.id, mode: 'flow' })
-                            }
-                          >
-                            完整新方案
-                          </button>
-                        </div>
-                      )}
+                      {!changesView && proposalNavigation}
                       {!changesView && (
                         <>
                           {planListView ? (
@@ -2548,7 +2574,11 @@ export default function AITaskWorkspace(props: Props) {
                         <>
                           {fullModification ? (
                             <div hidden={!changesView}>
-                              <TaskProposalReview key={detail.proposal.id} detail={detail} />
+                              <TaskProposalReview
+                                key={detail.proposal.id}
+                                detail={detail}
+                                actions={proposalControls}
+                              />
                             </div>
                           ) : (
                             <>
@@ -2576,26 +2606,8 @@ export default function AITaskWorkspace(props: Props) {
                               </details>
                             </>
                           )}
-                          {detail.conflict && (
-                            <p className="ai-task-note ai-task-failure" role="alert">
-                              原流程或绑定已变化，请重新生成方案后再采纳。
-                            </p>
-                          )}
-                          <div className="ai-task-actions">
-                            <button
-                              className="primary"
-                              disabled={busy || dirty || stale || detail.conflict}
-                              onClick={() => void proposalAction('adopt')}
-                            >
-                              {fullModification ? '采纳修改' : '采纳方案'}
-                            </button>
-                            <button
-                              disabled={busy || dirty || stale}
-                              onClick={() => void proposalAction('reject')}
-                            >
-                              不采纳
-                            </button>
-                          </div>
+                          {changesView && proposalNavigation}
+                          {(!fullModification || !changesView) && proposalControls}
                         </>
                       )}
                       {!detail.proposal && detail.flow && (
@@ -2622,7 +2634,7 @@ export default function AITaskWorkspace(props: Props) {
                           )}
                         </div>
                       )}
-                      {!planListView && (
+                      {!planListView && !fullModification && (
                         <p className="ai-task-note">
                           采纳只更新草稿。当前运行和已建立的计划继续使用原快照。
                         </p>

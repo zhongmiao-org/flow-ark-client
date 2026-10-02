@@ -2,7 +2,7 @@
 .ai-task-columns.ai-task-plan-review.ai-task-proposal-columns {
   grid-template-columns: minmax(0, 400fr) minmax(0, 728fr);
 }
-.ai-task-columns.ai-task-proposal-columns > .ai-task-card {
+.ai-task-columns.ai-task-plan-review.ai-task-proposal-columns > .ai-task-card {
   min-height: 700px;
 }
 .task-proposal-review {
@@ -60,11 +60,52 @@
   border-color: var(--fa-action-primary);
   background: var(--fa-action-subtle);
 }
-@container (max-width: 900px) {
+@container (max-width: 950px) {
   .ai-task-columns.ai-task-plan-review.ai-task-proposal-columns {
     grid-template-columns: minmax(0, 1fr);
   }
-  .ai-task-columns.ai-task-proposal-columns > .ai-task-card {
+  .ai-task-columns.ai-task-plan-review.ai-task-proposal-columns > .ai-task-card {
     min-height: auto;
   }
+}
+
+.task-condition-comparison {
+  display: grid;
+  gap: 16px;
+}
+.task-condition-comparison > section {
+  min-height: 108px;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.task-condition-comparison h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 28px;
+}
+.task-condition-comparison p,
+.is-condition-review > p {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--fa-text-secondary);
+}
+.task-proposal-condition-details > .planning-changes {
+  margin-top: 16px;
+}
+.task-proposal-capability-details > .task-proposal-permissions {
+  margin-top: 12px;
+}
+.is-condition-review > .ai-task-actions > .primary {
+  min-width: 168px;
+}
+.is-condition-review > .ai-task-actions > button:not(.primary) {
+  min-width: 144px;
+}
+
+.task-proposal-review [data-proposal-diff-heading] {
+  scroll-margin-top: 24px;
 }

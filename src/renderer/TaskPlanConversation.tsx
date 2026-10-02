@@ -12,6 +12,7 @@ export default function TaskPlanConversation({
   toggleView,
   discard,
   children,
+  notice,
 }: {
   request: string;
   reply: string;
@@ -24,6 +25,7 @@ export default function TaskPlanConversation({
   toggleView: () => void;
   discard: () => void;
   children?: ReactNode;
+  notice?: ReactNode;
 }) {
   return (
     <div className="task-plan-conversation" aria-label="任务与方案说明">
@@ -35,6 +37,7 @@ export default function TaskPlanConversation({
         <h2>FlowArk</h2>
         <p>{reply}</p>
       </article>
+      {notice}
       {dirty && (
         <div className="ai-task-note" role="status">
           <p>
