@@ -67,6 +67,11 @@ export default function TemplateEntry({
   const inputFields = useRef<HTMLFieldSetElement>(null);
   const [invalidInput, setInvalidInput] = useState(false);
   const [inputSaved, setInputSaved] = useState(0);
+  const [createdRun, setCreatedRun] = useState<{ id: string; origin: TemplateEntryOrigin }>();
+  const createdRunNotice = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (active && createdRun && !busy) createdRunNotice.current?.focus();
+  }, [active, createdRun, busy]);
   const hasInvalidInput = () => !!inputFields.current?.querySelector('[data-value-invalid]');
   useLayoutEffect(() => {
     const fields = inputFields.current;
@@ -250,20 +255,26 @@ export default function TemplateEntry({
         throw new Error('这条入口运行已不存在，请重新读取。');
       return detail;
     });
-    if (next) showRun(next, from, output);
+    if (next) {
+      setCreatedRun((current) => (current?.id === id ? undefined : current));
+      showRun(next, from, output);
+    }
   };
   const start = async (debug: boolean) => {
-    if (hasInvalidInput()) return;
+    if (createdRun || hasInvalidInput()) return;
     const from = origin();
-    const run = await work(
-      () => api('flow.run', { id: flowId, debug, templateSource: from.source }),
-      '已创建入口运行',
-    );
+    const run = await work(async () => {
+      const run = await api('flow.run', { id: flowId, debug, templateSource: from.source });
+      // Keep the creation receipt even if the outer bootstrap refresh fails.
+      setCreatedRun({ id: run.id, origin: from });
+      return run;
+    }, '已创建入口运行');
     if (run) await inspectRun(run.id, from);
   };
   const blocked = busy || checking || sourceChecking || !!sourceError;
   const cannotStart =
     blocked ||
+    !!createdRun ||
     !flowId ||
     !!readError ||
     dirtyInput ||
@@ -378,6 +389,17 @@ export default function TemplateEntry({
                 <p>启动时仍会检查资源与权限；保存或返回本页不会自动运行。</p>
               )}
             </div>
+            {createdRun && (
+              <div
+                className="template-entry-created"
+                role="status"
+                tabIndex={-1}
+                ref={createdRunNotice}
+              >
+                <strong>入口运行已创建 · {createdRun.id.slice(0, 8)}</strong>
+                <p>详情尚未打开。继续查看会读取同一条运行，不会再次执行入口。</p>
+              </div>
+            )}
             <div className="ai-task-actions">
               {dirtyInput && (
                 <button disabled={blocked} onClick={() => void saveInput()}>
@@ -386,10 +408,12 @@ export default function TemplateEntry({
               )}
               <button
                 className="primary template-entry-run"
-                disabled={cannotStart}
-                onClick={() => void start(false)}
+                disabled={createdRun ? busy : cannotStart}
+                onClick={() =>
+                  void (createdRun ? inspectRun(createdRun.id, createdRun.origin) : start(false))
+                }
               >
-                运行此入口
+                {createdRun ? '查看已创建运行' : '运行此入口'}
               </button>
               <button
                 className="template-entry-debug"
@@ -413,28 +437,35 @@ export default function TemplateEntry({
           <section className="ai-task-card template-entry-resources">
             <h2>{aiResources.length ? 'AI 资源' : '本次执行'}</h2>
             <div className="template-execution-summary">
-              <span>资源</span>
-              <p>
-                {entry.resources
-                  .map((id) => detail.manifest.resources.find((r) => r.id === id)?.name ?? id)
-                  .join('、') || '无需本机资源'}
-              </p>
-              <span>动作</span>
-              <p>
-                {entry.actions
-                  .map(
-                    (id) =>
-                      `${detail.manifest.actions.find((a) => a.id === id)?.name ?? id} · ${{ deny: '禁止', confirm: '每次确认', auto: '配置范围内自动' }[instance.grants[id] ?? 'deny']}`,
-                  )
-                  .join('、') || '未声明写入动作'}
-              </p>
+              <div>
+                <span>资源</span>
+                <p>
+                  {entry.resources
+                    .map((id) => detail.manifest.resources.find((r) => r.id === id)?.name ?? id)
+                    .join('、') || '无需本机资源'}
+                </p>
+              </div>
+              <div>
+                <span>动作</span>
+                <p>
+                  {entry.actions
+                    .map(
+                      (id) =>
+                        `${detail.manifest.actions.find((a) => a.id === id)?.name ?? id} · ${{ deny: '禁止', confirm: '每次确认', auto: '配置范围内自动' }[instance.grants[id] ?? 'deny']}`,
+                    )
+                    .join('、') || '未声明写入动作'}
+                </p>
+              </div>
               <p>本次输入、共享配置、绑定和包版本在启动时固定。</p>
               {!entry.schedulable && <small>此入口不支持本机计划。</small>}
             </div>
             {!aiResources.length && (
               <>
                 <span className="ai-config-status neutral">此入口不需要 AI</span>
-                <p>只核对当前入口声明的资源，其他入口的 AI 配置不会阻止本次操作。</p>
+                <details className="template-entry-resource-help">
+                  <summary>资源检查范围</summary>
+                  <p>只核对当前入口声明的资源，其他入口的 AI 配置不会阻止本次操作。</p>
+                </details>
               </>
             )}
             {aiResources.map((resource) => {
