@@ -10,6 +10,7 @@ import { editScriptPackage, type ScriptNode } from './script-editor';
 import { stepTitle } from './flow-outline';
 import EditorLeaveDialog from './EditorLeaveDialog';
 import './editor-feedback.css';
+import { parseNodeDraft } from './node-json';
 import EditorMorePage from './EditorMorePage';
 import NavigationIcon from './NavigationIcon';
 import ExportReviewDialog, { captureDraftExport, type ExportSource } from './ExportReviewDialog';
@@ -2433,9 +2434,7 @@ function Editor({
         onChange={(e) => {
           setRaw(e.target.value);
           try {
-            const value = JSON.parse(e.target.value);
-            if (value?.id !== selectedNode.id || value?.type !== selectedNode.type)
-              throw new Error('ID 和类型不可在此修改');
+            const value = parseNodeDraft(e.target.value, selectedNode, r.flow);
             patch(() => value);
             setInvalid('');
           } catch (e: any) {

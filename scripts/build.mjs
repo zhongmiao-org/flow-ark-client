@@ -1,3 +1,4 @@
+import './generate-node-validator.mjs';
 import { build } from 'esbuild';
 import { build as viteBuild } from 'vite';
 import { rm, mkdir, copyFile } from 'node:fs/promises';

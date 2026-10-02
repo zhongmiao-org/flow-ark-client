@@ -1,0 +1,21 @@
+/* Generated from contracts/p1.schema.json (d9773871e83dcd2a136f00186d9574fa11f326941ef04e4c9e0414f325d66db1). Do not edit. */
+import type { ValidateFunction } from 'ajv';
+export const node_value_1: ValidateFunction;
+export const node_assert_1: ValidateFunction;
+export const node_http_1: ValidateFunction;
+export const node_script_1: ValidateFunction;
+export const node_file_1: ValidateFunction;
+export const node_excel_1: ValidateFunction;
+export const node_excel_2: ValidateFunction;
+export const node_file_2: ValidateFunction;
+export const node_browser_1: ValidateFunction;
+export const node_browser_2: ValidateFunction;
+export const node_browser_3: ValidateFunction;
+export const node_human_1: ValidateFunction;
+export const node_condition_1: ValidateFunction;
+export const node_loop_1: ValidateFunction;
+export const node_excel_3: ValidateFunction;
+export const node_file_3: ValidateFunction;
+export const node_file_4: ValidateFunction;
+export const node_mcp_1: ValidateFunction;
+export const node_desktop_1: ValidateFunction;

@@ -1,3 +1,4 @@
+import './generate-node-validator.mjs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { compile } from 'json-schema-to-typescript';
 const schema = JSON.parse(await readFile('contracts/p1.schema.json', 'utf8'));
