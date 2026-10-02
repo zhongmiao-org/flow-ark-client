@@ -83,11 +83,13 @@ export function LiteralValue({
   value,
   change,
   compact = false,
+  displayLabels,
 }: {
   label: string;
   value: Json;
   change: (value: Json) => void;
   compact?: boolean;
+  displayLabels?: { type: string; value: string };
 }) {
   const id = useId(),
     type = valueType(value);
@@ -109,9 +111,10 @@ export function LiteralValue({
   };
   return (
     <div className="literal-value" data-value-invalid={error || undefined}>
-      <label htmlFor={id + '-type'}>{label}类型</label>
+      <label htmlFor={id + '-type'}>{displayLabels?.type ?? `${label}类型`}</label>
       <select
         id={id + '-type'}
+        aria-label={displayLabels ? `${label}类型` : undefined}
         value={type}
         onChange={(e) => {
           try {
@@ -128,9 +131,14 @@ export function LiteralValue({
         <option value="null">空值</option>
         <option value="json">数组 / 对象</option>
       </select>
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id}>{displayLabels?.value ?? label}</label>
       {type === 'boolean' ? (
-        <select id={id} value={String(value)} onChange={(e) => change(e.target.value === 'true')}>
+        <select
+          id={id}
+          aria-label={displayLabels ? label : undefined}
+          value={String(value)}
+          onChange={(e) => change(e.target.value === 'true')}
+        >
           <option value="true">true</option>
           <option value="false">false</option>
         </select>
@@ -140,6 +148,7 @@ export function LiteralValue({
         <textarea
           ref={input}
           id={id}
+          aria-label={displayLabels ? label : undefined}
           rows={compact ? 1 : type === 'json' ? 5 : 2}
           className={type === 'json' ? 'code-input small' : ''}
           value={text}

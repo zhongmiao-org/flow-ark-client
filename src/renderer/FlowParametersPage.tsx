@@ -48,7 +48,15 @@ export default function FlowParametersPage({
   const [draft, setDraft] = useState(() => structuredClone(record));
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
+  const pageError = useRef<HTMLDivElement>(null);
+  const focusPageError = useRef(false);
   const [pending, setPending] = useState<{ next?: () => void; destination: string }>();
+  useLayoutEffect(() => {
+    if (error && !busy && !pending && focusPageError.current) {
+      pageError.current?.focus();
+      focusPageError.current = false;
+    }
+  }, [error, busy, pending]);
   const root = useRef<HTMLElement>(null),
     dialog = useRef<HTMLDialogElement>(null),
     dialogHeading = useRef<HTMLHeadingElement>(null),
@@ -130,7 +138,10 @@ export default function FlowParametersPage({
       await save(draft);
       if (alive.current) close(next);
     } catch (reason) {
-      if (alive.current) setError(reason instanceof Error ? reason.message : '保存未完成，请重试');
+      if (alive.current) {
+        focusPageError.current = true;
+        setError(reason instanceof Error ? reason.message : '保存未完成，请重试');
+      }
     } finally {
       locked.current = false;
       if (alive.current) setBusy('');
@@ -160,6 +171,21 @@ export default function FlowParametersPage({
   const managedValues =
     values && typeof values === 'object' && !Array.isArray(values) ? values : undefined;
   const ids = [...new Set([...credentials, ...draft.bindings.credentials])];
+  const actions = (
+    <>
+      <button
+        className="primary"
+        disabled={!!busy}
+        title={`保存参数、资源及当前流程草稿，并返回${returnLabel}`}
+        onClick={() => void persist()}
+      >
+        {busy === 'save' ? '正在保存…' : error ? '重试保存参数' : '保存参数'}
+      </button>
+      <button disabled={!!busy} onClick={() => leave()}>
+        返回{returnLabel}
+      </button>
+    </>
+  );
   return (
     <section
       className="page flow-parameters-page"
@@ -179,14 +205,13 @@ export default function FlowParametersPage({
         <span className="flow-parameters-dirty">{dirty ? '有未保存的更改' : '与打开时一致'}</span>
       </header>
       {error && !pending && (
-        <div className="flow-parameters-error" role="alert">
+        <div className="flow-parameters-error" role="alert" tabIndex={-1} ref={pageError}>
           {error}
         </div>
       )}
       <fieldset disabled={!!busy} className="flow-parameters-columns">
-        <section className="flow-parameters-card" aria-label="运行参数">
+        <section className="flow-parameters-card flow-parameters-input" aria-label="运行参数">
           <h2>运行参数</h2>
-          <p>普通流程自由编辑参数；删除被引用的参数会被阻止，并标出引用步骤。</p>
           {managed ? (
             managedValues ? (
               <TemplateParameters
@@ -208,55 +233,62 @@ export default function FlowParametersPage({
                   还没有运行参数。添加后可在步骤中选择变量引用。
                 </p>
               )}
-              <ParameterConfiguration value={draft.flow.parameters} change={parameters} />
+              <ParameterConfiguration
+                columns
+                actions={actions}
+                value={draft.flow.parameters}
+                change={parameters}
+              />
             </>
           )}
+          {managed && <div className="parameter-actions">{actions}</div>}
         </section>
         <section className="flow-parameters-card" aria-label="本机资源">
           <h2>本机资源</h2>
-          <p>绑定只在本机保存，不随流程导出。</p>
-          <label htmlFor="parameters-browser">浏览器</label>
-          <select
-            id="parameters-browser"
-            value={draft.bindings.browserId ?? ''}
-            onChange={(event) =>
-              setDraft({
-                ...draft,
-                bindings: { ...draft.bindings, browserId: event.target.value || undefined },
-              })
-            }
-          >
-            <option value="">尚未绑定</option>
-            {draft.bindings.browserId &&
-              !browsers.some((browser) => browser.id === draft.bindings.browserId) && (
-                <option value={draft.bindings.browserId}>
-                  原浏览器绑定不可用 · {draft.bindings.browserId}
+          <div className="flow-parameters-binding">
+            <label htmlFor="parameters-browser">浏览器</label>
+            <select
+              id="parameters-browser"
+              value={draft.bindings.browserId ?? ''}
+              onChange={(event) =>
+                setDraft({
+                  ...draft,
+                  bindings: { ...draft.bindings, browserId: event.target.value || undefined },
+                })
+              }
+            >
+              <option value="">尚未绑定</option>
+              {draft.bindings.browserId &&
+                !browsers.some((browser) => browser.id === draft.bindings.browserId) && (
+                  <option value={draft.bindings.browserId}>
+                    原浏览器绑定不可用 · {draft.bindings.browserId}
+                  </option>
+                )}
+              {browsers.map((browser) => (
+                <option key={browser.id} value={browser.id}>
+                  {browser.product === 'embedded' ? 'FlowArk 内置浏览器' : browser.product}{' '}
+                  {browser.version}
                 </option>
-              )}
-            {browsers.map((browser) => (
-              <option key={browser.id} value={browser.id}>
-                {browser.product === 'embedded' ? 'FlowArk 内置浏览器' : browser.product}{' '}
-                {browser.version}
-              </option>
-            ))}
-          </select>
+              ))}
+            </select>
+          </div>
           {!browsers.length && <p>尚未发现可用绑定，请先在本地设置中配置浏览器。</p>}
           {fileBindingNames(draft.flow.steps, draft.bindings.files, draft.flow.parameters).map(
             (binding) => (
               <div className="flow-parameters-resource" key={binding}>
                 <strong>{binding} 目录</strong>
-                <p>{draft.bindings.files[binding] ?? '尚未选择'}</p>
                 <button
                   type="button"
                   onClick={() => void choose(binding)}
                   aria-label={'选择 ' + binding + ' 目录'}
+                  title={draft.bindings.files[binding] ?? '尚未选择'}
                 >
-                  {busy === binding ? '正在选择…' : '选择目录'}
+                  {busy === binding ? '正在选择…' : (draft.bindings.files[binding] ?? '选择目录')}
                 </button>
               </div>
             ),
           )}
-          <h3>允许脚本读取的凭据</h3>
+          <h3>凭据引用 · 允许脚本读取</h3>
           {!ids.length && <p>未使用凭据。可在本地设置的凭据、AI 服务或应用与工具中管理。</p>}
           {credentialError && <p role="status">{credentialError}</p>}
           {ids.map((id) => (
@@ -282,17 +314,15 @@ export default function FlowParametersPage({
               </span>
             </label>
           ))}
-          <p>这里只显示凭据引用，不显示密钥。资源可用性在运行前重新核对。</p>
+          <details className="flow-parameters-help">
+            <summary>本机绑定与凭据范围</summary>
+            <p>
+              绑定只在本机保存，不随流程导出。勾选凭据后允许脚本读取对应凭据；这里只显示引用，不显示密钥。资源可用性在运行前重新核对。
+            </p>
+          </details>
+          <p className="flow-parameters-note">删除被引用的参数会被阻止，并标出引用步骤。</p>
         </section>
       </fieldset>
-      <footer className="flow-parameters-actions">
-        <button className="primary" disabled={!!busy} onClick={() => void persist()}>
-          {busy === 'save' ? '正在保存…' : `保存并返回${returnLabel}`}
-        </button>
-        <button disabled={!!busy} onClick={() => leave()}>
-          返回{returnLabel}
-        </button>
-      </footer>
       {pending && (
         <dialog
           className="editor-leave-dialog flow-parameters-leave"
