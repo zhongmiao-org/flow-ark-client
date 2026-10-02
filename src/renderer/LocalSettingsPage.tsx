@@ -19,6 +19,8 @@ const tabs = [
   ['scripts', '脚本包'],
 ] as const;
 type Tab = (typeof tabs)[number][0];
+export type SettingsDestination = Exclude<Tab, 'ai'>;
+export type SettingsTabRequest = { key: string; tab: SettingsDestination };
 type Session = { started: boolean; visible: boolean; url: string; blocked?: string };
 export type SettingsNavigation = { title: string; back?: () => void; busy?: boolean };
 
@@ -32,7 +34,7 @@ export default function LocalSettingsPage({
   openRuns,
   showBrowser,
   navigation,
-  browserRequest = 0,
+  tabRequest,
 }: {
   data: Bootstrap;
   active: boolean;
@@ -43,7 +45,7 @@ export default function LocalSettingsPage({
   openRuns: () => void;
   showBrowser: () => void;
   navigation: (value: SettingsNavigation | undefined) => void;
-  browserRequest?: number;
+  tabRequest?: SettingsTabRequest;
 }) {
   const [tab, setTab] = useState<Tab>('browser');
   const [local, setLocal] = useState(false);
@@ -51,10 +53,20 @@ export default function LocalSettingsPage({
   const resourceEntry = useRef('settings-tab-resources');
   const returningResources = useRef(false);
   useEffect(() => {
-    if (!browserRequest) return;
-    setTab('browser');
+    if (!tabRequest) return;
+    setTab(tabRequest.tab);
     setLocal(false);
-  }, [browserRequest]);
+    setQuery('');
+    setError('');
+    setNotice('');
+    const frame = requestAnimationFrame(() => {
+      if (!visible.current) return;
+      if (tabRequest.tab === 'resources') heading.current?.focus({ preventScroll: true });
+      else
+        document.getElementById(`settings-tab-${tabRequest.tab}`)?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [tabRequest]);
   const [candidates, setCandidates] = useState<BrowserBinding[]>([]);
   const [discovered, setDiscovered] = useState(false);
   const [path, setPath] = useState('');

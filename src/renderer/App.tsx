@@ -4,7 +4,10 @@ import EditorLeaveDialog from './EditorLeaveDialog';
 import EditorMorePage from './EditorMorePage';
 import NavigationIcon from './NavigationIcon';
 import ExportReviewDialog, { captureDraftExport, type ExportSource } from './ExportReviewDialog';
-import LocalSettingsPage, { type SettingsNavigation } from './LocalSettingsPage';
+import LocalSettingsPage, {
+  type SettingsTabRequest,
+  type SettingsNavigation,
+} from './LocalSettingsPage';
 import AttentionWorkspace, { type AttentionNavigation } from './AttentionWorkspace';
 import TemplateSchedulePage from './TemplateSchedulePage';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
@@ -142,7 +145,7 @@ export default function App() {
     scroll: number;
   }>();
   const nodeNavigation = useRef<ScriptNavigation | undefined>(undefined);
-  const [settingsBrowserRequest, setSettingsBrowserRequest] = useState(0);
+  const [settingsTabRequest, setSettingsTabRequest] = useState<SettingsTabRequest>();
   const [editorPanel, setEditorPanel] = useState('canvas');
   const [runPage, setRunPage] = useState(1);
   const [runFilter, setRunFilter] = useState(false);
@@ -2061,7 +2064,7 @@ export default function App() {
             }}
           />
           <LocalSettingsPage
-            browserRequest={settingsBrowserRequest}
+            tabRequest={settingsTabRequest}
             data={data}
             active={section === 'settings'}
             refresh={reloadSettingsData}
@@ -2095,10 +2098,16 @@ export default function App() {
             home={(tab) =>
               leaveAIContext(
                 () => {
-                  if (tab === 'browser') setSettingsBrowserRequest((value) => value + 1);
+                  if (tab) setSettingsTabRequest({ key: crypto.randomUUID(), tab });
                   setSection('settings');
                 },
-                tab === 'browser' ? '浏览器设置' : '本地设置',
+                tab === 'browser'
+                  ? '浏览器设置'
+                  : tab === 'resources'
+                    ? '凭据与本机资源'
+                    : tab === 'scripts'
+                      ? '脚本包配置'
+                      : '本地设置',
               )
             }
             navigation={aiSettingsNavigation}

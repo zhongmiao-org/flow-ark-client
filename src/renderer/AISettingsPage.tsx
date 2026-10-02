@@ -1,4 +1,5 @@
 import { usePageBack } from './use-page-back';
+import type { SettingsDestination } from './LocalSettingsPage';
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import {
   aiErrorMessage,
@@ -51,7 +52,7 @@ export default function AISettingsPage({
   back: () => void;
   changed: () => Promise<void>;
   onSaved: (state: AIConfigurationState) => void;
-  home: (tab?: 'browser') => void;
+  home: (tab?: SettingsDestination) => void;
 }) {
   const [storedState, setState] = useState<AIConfigurationState>();
   const [loadedEntry, setLoadedEntry] = useState<string>();
@@ -446,8 +447,10 @@ export default function AISettingsPage({
           <nav className="ai-settings-tabs" aria-label="设置分类">
             <button onClick={() => go(() => home('browser'), '浏览器设置')}>浏览器</button>
             <span aria-current="page">AI 服务</span>
-            <span aria-disabled="true">凭据与文件</span>
-            <span aria-disabled="true">脚本</span>
+            <button onClick={() => go(() => home('resources'), '凭据与本机资源')}>
+              凭据与文件
+            </button>
+            <button onClick={() => go(() => home('scripts'), '脚本包配置')}>脚本</button>
           </nav>
         )}
         {error && !removing && !editing && (
