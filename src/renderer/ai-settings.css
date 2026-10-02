@@ -413,3 +413,22 @@ button.ai-remove-button {
   background: var(--fa-status-error-bg);
   color: var(--fa-status-error);
 }
+
+.ai-test-details dl {
+  margin: 12px 0;
+  display: grid;
+  gap: 12px;
+}
+.ai-test-details dl > div {
+  display: grid;
+  gap: 4px;
+}
+.ai-test-details dd {
+  margin: 0;
+  color: var(--fa-text-primary);
+  overflow-wrap: anywhere;
+}
+.ai-settings-page .ai-connection-card > .ai-connection-next {
+  border-left: 2px solid var(--fa-border-default);
+  padding-left: 12px;
+}

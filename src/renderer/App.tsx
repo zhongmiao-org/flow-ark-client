@@ -2172,7 +2172,6 @@ export default function App() {
             }}
           />
           <AISettingsPage
-            attention={() => leaveAIContext(() => setSection('inbox'), '待办与提醒')}
             templateLibrary={() =>
               leaveAIContext(() => {
                 setTemplateHomeRequest(crypto.randomUUID());

@@ -1,4 +1,3 @@
-import AIStateGuide from './AIStateGuide';
 import { usePageBack } from './use-page-back';
 import type { SettingsDestination } from './LocalSettingsPage';
 import type { TemplateDetail } from './template-draft';
@@ -8,6 +7,7 @@ import {
   aiModel,
   aiKey,
   type AIConfigurationState,
+  type AIErrorCode,
   type AIProviderId,
 } from '../shared/ai-settings';
 import './ai-settings.css';
@@ -40,6 +40,37 @@ export type AISettingsNavigation = (next: () => void, destination?: string) => v
 const providerName = (id: AIProviderId) => (id === 'deepseek' ? 'DeepSeek' : 'OpenAI');
 const mask = (state: AIConfigurationState) => `••••••••${state.tail ? ' ' + state.tail : ''}`;
 
+const connectionFailures: Record<AIErrorCode, { title: string; next: string }> = {
+  authentication: {
+    title: '密钥验证未通过',
+    next: '核对当前服务的 Key 与账号权限后替换 Key，再主动测试。',
+  },
+  quota: {
+    title: '配额不足或请求受限',
+    next: '在当前服务商处核对余额、额度及请求限制，处理后再主动测试。',
+  },
+  request: {
+    title: '模型或请求不可用',
+    next: '核对当前账号可用的模型 ID，修改并保存后再测试。',
+  },
+  network: {
+    title: '暂时无法连接服务',
+    next: '核对本机网络与服务地址是否可达，恢复后再主动测试。',
+  },
+  timeout: {
+    title: '连接测试超时',
+    next: '尚未取得完整验证结果。可稍后主动重新测试，不会自动重试。',
+  },
+  output: {
+    title: '测试输出格式不符合要求',
+    next: '本次固定测试没有通过格式校验。核对模型后再测试；任务输出需在对应任务中单独核对。',
+  },
+  storage: {
+    title: '本机配置状态不可用',
+    next: '恢复系统凭据保护或本地存储后再测试，不会降级为明文保存。',
+  },
+};
+
 export default function AISettingsPage({
   active,
   entry,
@@ -50,7 +81,6 @@ export default function AISettingsPage({
   home,
   selectProvider,
   templateLibrary,
-  attention,
 }: {
   active: boolean;
   entry: AISettingsEntry;
@@ -61,12 +91,7 @@ export default function AISettingsPage({
   home: (tab?: SettingsDestination) => void;
   selectProvider: (provider: AIProviderId) => void;
   templateLibrary: () => void;
-  attention: () => void;
 }) {
-  const [guideOpen, setGuideOpen] = useState(false);
-  const guideButton = useRef<HTMLButtonElement>(null);
-  const guideScroll = useRef(0);
-  useEffect(() => setGuideOpen(false), [active, entry.key]);
   const [storedState, setState] = useState<AIConfigurationState>();
   const [loadedEntry, setLoadedEntry] = useState<string>();
   const state = loadedEntry === entry.key ? storedState : undefined;
@@ -288,35 +313,8 @@ export default function AISettingsPage({
       else if (lastInput.current?.isConnected) lastInput.current.focus({ preventScroll: true });
     });
   };
-  const closeGuide = (field?: 'model' | 'key' | 'status') => {
-    setGuideOpen(false);
-    setModel(state?.model ?? entry.model);
-    setKey('');
-    setDirty(false);
-    setInvalid(undefined);
-    setError('');
-    setEditing(!state?.configured);
-    if (field === 'model' || field === 'key') beginEdit(field);
-    requestAnimationFrame(() => {
-      if (field === 'model' || field === 'key') return;
-      if (field === 'status') {
-        resultHeading.current?.scrollIntoView({ block: 'start' });
-        resultHeading.current?.focus({ preventScroll: true });
-      } else {
-        document.querySelector('main')?.scrollTo({ top: guideScroll.current });
-        guideButton.current?.focus({ preventScroll: true });
-      }
-    });
-  };
   usePageBack(
-    () =>
-      guideOpen
-        ? closeGuide()
-        : sourceFailure
-          ? stayInSettings()
-          : removing
-            ? stay()
-            : returnToSource(),
+    () => (sourceFailure ? stayInSettings() : removing ? stay() : returnToSource()),
     active,
   );
   useEffect(
@@ -456,12 +454,7 @@ export default function AISettingsPage({
   const failedCode = state?.test?.status === 'failed' ? state.test.code : undefined;
   const repairField =
     failedCode === 'authentication' ? 'key' : failedCode === 'request' ? 'model' : undefined;
-  const failureTitle =
-    failedCode === 'authentication'
-      ? '密钥验证未通过'
-      : failedCode === 'request'
-        ? '模型或请求不可用'
-        : '连接测试未通过';
+  const failure = failedCode ? connectionFailures[failedCode] : undefined;
   const summary = !state
     ? '正在读取配置'
     : testing
@@ -488,17 +481,6 @@ export default function AISettingsPage({
         : state.test?.status === 'failed'
           ? 'error'
           : 'warning';
-  if (guideOpen && active)
-    return (
-      <AIStateGuide
-        provider={name}
-        back={() => closeGuide()}
-        settings={() => home()}
-        configuration={closeGuide}
-        attention={attention}
-        editable={!!state && !busy && !testing && !state.inUse}
-      />
-    );
   if (sourceFailure)
     return (
       <div className="ai-settings-host" hidden={!active}>
@@ -621,19 +603,6 @@ export default function AISettingsPage({
                 : '配置这台 Mac 的模型服务，供已授权的流程和模板使用。'}
             </p>
           </div>
-          {!removing && (
-            <button
-              className="ai-state-guide-entry"
-              ref={guideButton}
-              disabled={checkingSource}
-              onClick={() => {
-                guideScroll.current = document.querySelector('main')?.scrollTop ?? 0;
-                go(() => setGuideOpen(true), 'AI 连接与输出状态');
-              }}
-            >
-              查看连接与输出状态说明
-            </button>
-          )}
         </div>
         {(!entry.source || fromTemplate) && (
           <nav className="ai-settings-tabs" aria-label="设置分类">
@@ -915,8 +884,12 @@ export default function AISettingsPage({
                       : state.test?.status === 'passed'
                         ? `${name} 可正常响应`
                         : state.test?.status === 'failed'
-                          ? failureTitle
-                          : '配置已安全保存'}
+                          ? (failure?.title ?? '连接测试未通过')
+                          : state.test?.status === 'cancelled'
+                            ? '测试已取消'
+                            : state.test?.status === 'interrupted'
+                              ? '上次测试未完成'
+                              : '配置已安全保存'}
               </h3>
               <p>
                 {testing
@@ -926,7 +899,7 @@ export default function AISettingsPage({
                     : !state.configured
                       ? '仅需要 AI 的入口受影响，其他流程仍可使用。'
                       : state.test?.status === 'passed'
-                        ? `最近测试：${new Date(state.test.at).toLocaleString('zh-CN')}\n模型：${state.test.model}\n此结果对应当前配置。`
+                        ? '此结果对应当前已保存配置；任务输出仍需按其要求单独核对。'
                         : state.test?.status === 'failed' && state.test.code
                           ? aiErrorMessage[state.test.code]
                           : state.test?.status === 'cancelled' ||
@@ -934,6 +907,38 @@ export default function AISettingsPage({
                             ? '配置仍然保留，尚未取得本次完整验证结果。没有自动重试。'
                             : '尚未发起连接测试。保存成功不代表密钥或模型可用。'}
               </p>
+              {!testing && !dirty && state.configured && failure && (
+                <p className="ai-connection-next">{failure.next}</p>
+              )}
+              {state.test && !testing && (
+                <details className="ai-provider-description ai-test-details">
+                  <summary>查看本次连接详情</summary>
+                  {dirty && <p>以下记录对应已保存配置，不包含尚未保存的输入。</p>}
+                  <dl>
+                    <div>
+                      <dt>服务</dt>
+                      <dd>{name}</dd>
+                    </div>
+                    <div>
+                      <dt>测试模型</dt>
+                      <dd>{state.test.model ?? '未记录'}</dd>
+                    </div>
+                    <div>
+                      <dt>更新时间</dt>
+                      <dd>
+                        {Number.isFinite(Date.parse(state.test.at))
+                          ? new Date(state.test.at).toLocaleString('zh-CN')
+                          : '未取得有效时间'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>本地请求标识</dt>
+                      <dd>{state.test.requestId}</dd>
+                    </div>
+                  </dl>
+                  <p>标识仅用于区分本地测试记录，不是服务商的请求回执。</p>
+                </details>
+              )}
               {state.configured && !editing && (
                 <>
                   <button
