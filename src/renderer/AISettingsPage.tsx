@@ -1,3 +1,4 @@
+import AIStateGuide from './AIStateGuide';
 import { usePageBack } from './use-page-back';
 import type { SettingsDestination } from './LocalSettingsPage';
 import type { TemplateDetail } from './template-draft';
@@ -49,6 +50,7 @@ export default function AISettingsPage({
   home,
   selectProvider,
   templateLibrary,
+  attention,
 }: {
   active: boolean;
   entry: AISettingsEntry;
@@ -59,7 +61,12 @@ export default function AISettingsPage({
   home: (tab?: SettingsDestination) => void;
   selectProvider: (provider: AIProviderId) => void;
   templateLibrary: () => void;
+  attention: () => void;
 }) {
+  const [guideOpen, setGuideOpen] = useState(false);
+  const guideButton = useRef<HTMLButtonElement>(null);
+  const guideScroll = useRef(0);
+  useEffect(() => setGuideOpen(false), [active, entry.key]);
   const [storedState, setState] = useState<AIConfigurationState>();
   const [loadedEntry, setLoadedEntry] = useState<string>();
   const state = loadedEntry === entry.key ? storedState : undefined;
@@ -281,8 +288,35 @@ export default function AISettingsPage({
       else if (lastInput.current?.isConnected) lastInput.current.focus({ preventScroll: true });
     });
   };
+  const closeGuide = (field?: 'model' | 'key' | 'status') => {
+    setGuideOpen(false);
+    setModel(state?.model ?? entry.model);
+    setKey('');
+    setDirty(false);
+    setInvalid(undefined);
+    setError('');
+    setEditing(!state?.configured);
+    if (field === 'model' || field === 'key') beginEdit(field);
+    requestAnimationFrame(() => {
+      if (field === 'model' || field === 'key') return;
+      if (field === 'status') {
+        resultHeading.current?.scrollIntoView({ block: 'start' });
+        resultHeading.current?.focus({ preventScroll: true });
+      } else {
+        document.querySelector('main')?.scrollTo({ top: guideScroll.current });
+        guideButton.current?.focus({ preventScroll: true });
+      }
+    });
+  };
   usePageBack(
-    () => (sourceFailure ? stayInSettings() : removing ? stay() : returnToSource()),
+    () =>
+      guideOpen
+        ? closeGuide()
+        : sourceFailure
+          ? stayInSettings()
+          : removing
+            ? stay()
+            : returnToSource(),
     active,
   );
   useEffect(
@@ -454,6 +488,17 @@ export default function AISettingsPage({
         : state.test?.status === 'failed'
           ? 'error'
           : 'warning';
+  if (guideOpen && active)
+    return (
+      <AIStateGuide
+        provider={name}
+        back={() => closeGuide()}
+        settings={() => home()}
+        configuration={closeGuide}
+        attention={attention}
+        editable={!!state && !busy && !testing && !state.inUse}
+      />
+    );
   if (sourceFailure)
     return (
       <div className="ai-settings-host" hidden={!active}>
@@ -576,6 +621,19 @@ export default function AISettingsPage({
                 : '配置这台 Mac 的模型服务，供已授权的流程和模板使用。'}
             </p>
           </div>
+          {!removing && (
+            <button
+              className="ai-state-guide-entry"
+              ref={guideButton}
+              disabled={checkingSource}
+              onClick={() => {
+                guideScroll.current = document.querySelector('main')?.scrollTop ?? 0;
+                go(() => setGuideOpen(true), 'AI 连接与输出状态');
+              }}
+            >
+              查看连接与输出状态说明
+            </button>
+          )}
         </div>
         {(!entry.source || fromTemplate) && (
           <nav className="ai-settings-tabs" aria-label="设置分类">
