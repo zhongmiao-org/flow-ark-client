@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Clock, ListChecks, Terminal } from 'lucide-react';
 import { formatRunDuration, presentRun } from '../shared/run-presentation';
-import RunStepDetails from './RunStepDetails';
+import RunStepDetails, { RunFileOperation, fileOperationTitle } from './RunStepDetails';
 import { kinds } from './node-kinds';
 import { flatten } from './flow-editing';
 import { browserActions } from './browser-actions';
@@ -14,6 +14,7 @@ export function RunObservation({ detail, compact = false }: { detail: any; compa
   }, []);
   const view = presentRun({ ...detail, output: undefined }, Date.now());
   const node = flatten(detail.snapshot?.steps ?? []).find((item) => item.id === view.step.nodeId);
+  const fileNode = node?.type === 'file' || node?.type === 'excel' ? node : undefined;
   const defaultName =
     node?.type === 'browser'
       ? browserActions[node.operation]?.label
@@ -47,37 +48,44 @@ export function RunObservation({ detail, compact = false }: { detail: any; compa
           </span>
         )}
         <strong data-testid="run-current-step">
-          {view.step.name === view.step.nodeId && view.step.type
-            ? (defaultName ?? view.step.name)
-            : (view.step.name ?? view.step.label)}
+          {fileNode
+            ? fileOperationTitle(fileNode)
+            : view.step.name === view.step.nodeId && view.step.type
+              ? (defaultName ?? view.step.name)
+              : (view.step.name ?? view.step.label)}
         </strong>
         {view.step.instance && !compact && <code>{view.step.instance}</code>}
       </div>
-      <div className="run-observation-metrics">
-        {!compact && (
-          <div>
-            <span className="run-observation-label">
-              <Clock size={14} />
-              {elapsedLabel}
-            </span>
-            <strong
-              data-testid="run-elapsed"
-              data-duration-ms={view.elapsed.milliseconds ?? ''}
-              data-elapsed-kind={view.elapsed.kind}
-            >
-              {view.elapsed.milliseconds === null
-                ? '待核对'
-                : formatRunDuration(view.elapsed.milliseconds)}
-            </strong>
-            <small>{view.elapsed.note}</small>
-          </div>
-        )}
-        <div>
-          <span className="run-observation-label">脚本报告的进度</span>
-          <strong data-testid="run-progress">{view.progress.label}</strong>
-          <small>仅显示该步骤报告的数量</small>
+      {(!compact || !fileNode) && (
+        <div className="run-observation-metrics">
+          {!compact && (
+            <div>
+              <span className="run-observation-label">
+                <Clock size={14} />
+                {elapsedLabel}
+              </span>
+              <strong
+                data-testid="run-elapsed"
+                data-duration-ms={view.elapsed.milliseconds ?? ''}
+                data-elapsed-kind={view.elapsed.kind}
+              >
+                {view.elapsed.milliseconds === null
+                  ? '待核对'
+                  : formatRunDuration(view.elapsed.milliseconds)}
+              </strong>
+              <small>{view.elapsed.note}</small>
+            </div>
+          )}
+          {!fileNode && (
+            <div>
+              <span className="run-observation-label">脚本报告的进度</span>
+              <strong data-testid="run-progress">{view.progress.label}</strong>
+              <small>仅显示该步骤报告的数量</small>
+            </div>
+          )}
         </div>
-      </div>
+      )}
+      {fileNode && <RunFileOperation detail={detail} step={view.step} node={fileNode} />}
       {view.statusNote && !compact && <p className="run-observation-note">{view.statusNote}</p>}
       <RunStepDetails detail={detail} step={view.step} compact={compact} />
     </section>

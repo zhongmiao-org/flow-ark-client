@@ -106,6 +106,60 @@ function fields(node: Step): [string, string][] {
   }
 }
 
+export function RunFileOperation({
+  detail,
+  step,
+  node,
+}: {
+  detail: RunPresentationInput;
+  step: RunStepPresentation;
+  node: Extract<Step, { type: 'file' | 'excel' }>;
+}) {
+  const last = detail.events
+    .filter(
+      (event) =>
+        event.runId === detail.run.id &&
+        event.nodeInstance === step.instance &&
+        ['node-start', 'node-end'].includes(event.type),
+    )
+    .sort((a, b) => a.sequence - b.sequence)
+    .at(-1);
+  const operation = operations[node.operation] ?? node.operation;
+  const complete = last?.type === 'node-end' && last.data?.completed === true;
+  const status = complete
+    ? '此步骤已记录完成'
+    : step.kind === 'paused'
+      ? '尚未开始，暂停在步骤之前'
+      : step.kind === 'current'
+        ? detail.run.state === 'CANCELLING'
+          ? '正在取消，文件结果待核对'
+          : `正在${operation}`
+        : '未取得完成记录，文件结果待核对';
+  return (
+    <section className="run-file-operation" aria-label="文件操作状态">
+      <dl>
+        <div>
+          <dt>{operation}状态</dt>
+          <dd>{status}</dd>
+        </div>
+        <div>
+          <dt>目标文件 · 启动时配置</dt>
+          <dd>{configured(node.name)}</dd>
+        </div>
+      </dl>
+      <p>
+        {complete
+          ? '步骤完成记录与文件副本、外部业务结果分别核对；已保存内容可在“输出与产物”查看。'
+          : '目标来自固定配置；变量保留引用路径。总量未知时不估算完成百分比。'}
+      </p>
+    </section>
+  );
+}
+
+export function fileOperationTitle(node: Extract<Step, { type: 'file' | 'excel' }>) {
+  return `${operations[node.operation] ?? node.operation}${node.type === 'excel' ? '表格' : '文件'}`;
+}
+
 export default function RunStepDetails({
   detail,
   step,
