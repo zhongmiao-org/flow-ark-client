@@ -28,7 +28,7 @@ import AITaskWorkspace, { type TaskOpener } from './AITaskWorkspace';
 import ToolConnectionsPage, { type ToolNavigation } from './ToolConnectionsPage';
 import AISettingsPage, { type AISettingsEntry, type AISettingsNavigation } from './AISettingsPage';
 import { defaultAIModel, type AIProviderId } from '../shared/ai-settings';
-import { buildDiagram } from './flow-diagram';
+import { buildTaskDiagram } from './task-diagram';
 import DiagramCanvas from './DiagramCanvas';
 import { kinds } from './node-kinds';
 import ActionLibrary, { destinationChoices } from './ActionLibrary';
@@ -2403,7 +2403,9 @@ function Editor({
     setRaw(JSON.stringify(next, null, 2));
     setInvalid('');
   };
-  const { nodes, edges, stepCount } = buildDiagram(r.flow.steps, selected);
+  const { nodes, edges, stepCount } = buildTaskDiagram(r.flow, selected, {
+    bindings: r.bindings,
+  });
   const changePanel = (value: string) => {
     if (value === 'params') {
       openParameters();
@@ -2819,6 +2821,7 @@ function Editor({
             <div className="canvas" ref={canvasElement}>
               <DiagramCanvas
                 key={r.id}
+                taskPresentation
                 active={
                   active &&
                   !outlineOpen &&
@@ -2842,14 +2845,6 @@ function Editor({
                   if (compact) setPanel('node');
                 }}
               />
-              <div className="canvas-legend" aria-label="流程图图例">
-                <span className="legend-decision" />
-                条件
-                <span className="legend-data" />
-                数据
-                <span className="legend-manual" />
-                人工
-              </div>
               <span className="canvas-label">执行流程 · {stepCount} 个步骤</span>
             </div>
             <section className="selected-step-summary" aria-label="当前步骤">
