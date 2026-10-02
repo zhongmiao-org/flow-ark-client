@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { Crosshair, Check, X } from 'lucide-react';
 import type { ElementTarget, PickerState } from '../shared/element-picker';
 import './element-picker.css';
 const api = (method: string, args: any = {}) => window.flowark.request(method, args);
+export type ElementPickerControls = { pick: () => void; focus: () => void };
 export default function ElementPicker({
   selector,
   framePath,
@@ -17,6 +18,7 @@ export default function ElementPicker({
   disabled = false,
   active = true,
   pickLabel,
+  controls,
 }: {
   selector: string;
   framePath: string[];
@@ -31,7 +33,9 @@ export default function ElementPicker({
   disabled?: boolean;
   active?: boolean;
   pickLabel?: string;
+  controls?: Ref<ElementPickerControls>;
 }) {
+  const region = useRef<HTMLDivElement>(null);
   const [picking, setPicking] = useState(false),
     [validating, setValidating] = useState(false);
   const [message, setMessage] = useState(''),
@@ -217,6 +221,10 @@ export default function ElementPicker({
       clearCandidate();
       select.current(target, selected.requestId);
       setMessage('已应用目标 · ' + (target.label || target.tag));
+      requestAnimationFrame(() => {
+        if (alive.current && pickButton.current?.getClientRects().length)
+          pickButton.current.focus();
+      });
     } catch (e) {
       if (alive.current && version.current === current && pending.current === selected) {
         clearCandidate();
@@ -306,8 +314,18 @@ export default function ElementPicker({
                 detail: '当前定位唯一匹配。验证不修改步骤的填写值；网页变化后需要重新核对。',
               }
             : undefined;
+  useImperativeHandle(controls, () => ({
+    pick: () => void pick(),
+    focus: () => {
+      const target =
+        region.current?.querySelector<HTMLElement>('.element-picker-feedback') ??
+        pickButton.current;
+      target?.scrollIntoView({ block: 'nearest' });
+      target?.focus({ preventScroll: true });
+    },
+  }));
   return (
-    <div className="element-picker">
+    <div className="element-picker" ref={region}>
       <div className="element-picker-actions">
         <button
           ref={pickButton}
@@ -338,6 +356,7 @@ export default function ElementPicker({
           className={`element-picker-feedback is-${feedback.tone}`}
           role={error ? 'alert' : 'status'}
           aria-label={feedback.title}
+          tabIndex={-1}
         >
           <span className="element-picker-badge">{feedback.badge}</span>
           <h3>{feedback.title}</h3>

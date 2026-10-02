@@ -83,6 +83,7 @@ import StorageFaultNotice from './StorageFaultNotice';
 import Schedules from './Schedules';
 import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 import ReadStepInspector from './ReadStepInspector';
+import type { ElementPickerControls } from './ElementPicker';
 import { browserActions } from './browser-actions';
 import LogicNodeConfiguration from './LogicNodeConfiguration';
 import ResourceNodeConfiguration from './ResourceNodeConfiguration';
@@ -1727,7 +1728,7 @@ export default function App() {
                     <button onClick={() => run(edit, true)} disabled={busy || draftHasTools}>
                       逐步调试
                     </button>
-                    <button onClick={() => setBrowserOpen(!browserOpen)}>
+                    <button data-browser-toggle onClick={() => setBrowserOpen(!browserOpen)}>
                       {browserOpen ? '收起网页' : '显示网页'}
                     </button>
                     <button
@@ -1843,9 +1844,12 @@ export default function App() {
                 setPanel={setEditorPanel}
                 showBrowser={() => setBrowserOpen(true)}
                 browserOpen={browserOpen}
-                browserPanel={
+                browserPanel={(picker: { pick?: () => void; focus?: () => void }) =>
                   browserOpen ? (
                     <BrowserSidebar
+                      editing
+                      onPick={picker.pick}
+                      onLocate={picker.focus}
                       close={() => setBrowserOpen(false)}
                       running={!!active && !['PAUSED', 'WAITING_INPUT'].includes(active.state)}
                       obscured={configOpen || !!exportSource}
@@ -2294,6 +2298,7 @@ function Editor({
   canUndo,
   canRedo,
 }: any) {
+  const pickerControls = useRef<ElementPickerControls>(null);
   const [positionOpen, setPositionOpen] = useState(false);
   const [controlOpen, setControlOpen] = useState(false);
   const [browserActionOpen, setBrowserActionOpen] = useState(false);
@@ -2319,6 +2324,7 @@ function Editor({
   }, [copiedStep, active, positionOpen]);
   const inspectorHeading = useRef<HTMLHeadingElement>(null);
   const canvasElement = useRef<HTMLDivElement>(null);
+  const summaryEditButton = useRef<HTMLButtonElement>(null);
   const keyboardStep = useRef<string | null>(null);
   const pendingStepFocus = useRef<'inspector' | 'canvas' | null>(null);
   const selectedNode = flatten(r.flow.steps).find((n: Step) => n.id === selected);
@@ -2330,13 +2336,17 @@ function Editor({
       inspectorHeading.current?.focus({ preventScroll: true });
       pendingStepFocus.current = null;
     } else if (pendingStepFocus.current === 'canvas' && ['canvas', 'graph'].includes(panel)) {
-      canvasElement.current
-        ?.querySelector<HTMLElement>(`[data-id="${CSS.escape(keyboardStep.current ?? '')}"]`)
-        ?.focus({ preventScroll: true });
+      if (browserOpen && panel === 'canvas' && selectedNode) {
+        summaryEditButton.current?.focus({ preventScroll: true });
+      } else {
+        canvasElement.current
+          ?.querySelector<HTMLElement>(`[data-id="${CSS.escape(keyboardStep.current ?? '')}"]`)
+          ?.focus({ preventScroll: true });
+      }
       pendingStepFocus.current = null;
       keyboardStep.current = null;
     }
-  }, [active, compact, outlineOpen, panel, selected]);
+  }, [active, compact, outlineOpen, panel, selected, browserOpen]);
   useEffect(() => {
     if (panel === 'params' || panel === 'node') setTab(panel);
   }, [panel]);
@@ -2446,7 +2456,10 @@ function Editor({
       return;
     }
     if (guardNodeInput()) {
-      if (['canvas', 'graph'].includes(value) && keyboardStep.current)
+      if (compact && browserOpen && value === 'canvas' && selected) {
+        keyboardStep.current = selected;
+        pendingStepFocus.current = 'canvas';
+      } else if (['canvas', 'graph'].includes(value) && keyboardStep.current)
         pendingStepFocus.current = 'canvas';
       setPanel(value);
     }
@@ -2535,6 +2548,7 @@ function Editor({
   const browserConfiguration =
     selectedNode?.type === 'browser' ? (
       <BrowserNodeConfiguration
+        pickerControls={pickerControls}
         compact={compactBrowser}
         key={selectedNode.id + ':' + revision}
         active={
@@ -2903,6 +2917,7 @@ function Editor({
                 </p>
               </div>
               <button
+                ref={summaryEditButton}
                 className="primary"
                 disabled={!selectedNode}
                 onClick={() => changePanel('node')}
@@ -2975,6 +2990,7 @@ function Editor({
                       >
                         <ReadStepInspector
                           key={selectedNode.id + ':' + revision}
+                          pickerControls={pickerControls}
                           record={r}
                           node={selectedNode}
                           heading={inspectorHeading}
@@ -3397,7 +3413,25 @@ function Editor({
               )}
             </aside>
           </div>
-          {browserPanel}
+          {browserPanel({
+            ...(selectedNode?.type === 'browser' &&
+            !['navigate', 'screenshot'].includes(selectedNode.operation)
+              ? {
+                  pick: () => {
+                    if (!guardNodeInput()) return;
+                    setTab('node');
+                    setPanel('node');
+                    requestAnimationFrame(() => pickerControls.current?.pick());
+                  },
+                  focus: () => {
+                    if (!guardNodeInput()) return;
+                    setTab('node');
+                    setPanel('node');
+                    requestAnimationFrame(() => pickerControls.current?.focus());
+                  },
+                }
+              : {}),
+          })}
         </div>
       </div>
     </VariableNavigationContext.Provider>

@@ -225,6 +225,46 @@
 .editor-region.has-browser:not(.is-compact) .editor-layout {
   gap: 0;
 }
+.editor-region.has-browser:not(.is-compact) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) calc(50% - 12px);
+  grid-template-rows: 57px minmax(0, 1fr);
+  gap: 0 16px;
+}
+.editor-region.has-browser:not(.is-compact) .editor-workspace {
+  display: contents;
+}
+.editor-region.has-browser:not(.is-compact) .editor-views {
+  grid-area: 1 / 1;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid var(--fa-border-default);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  background: var(--fa-bg-surface);
+}
+.editor-region.has-browser:not(.is-compact) .editor-views button {
+  padding: 6px 0;
+  min-height: 32px;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+}
+.editor-region.has-browser:not(.is-compact) .editor-layout {
+  grid-area: 2 / 1;
+  border: 1px solid var(--fa-border-default);
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+}
+.editor-region.has-browser:not(.is-compact) .inspector {
+  padding: 20px;
+}
+.editor-region.has-browser:not(.is-compact) .browser-sidebar:not(.browser-observation-expanded) {
+  grid-area: 1 / 2 / 3;
+  width: 100%;
+  min-width: 0;
+}
 .editor-region.has-browser:not(.is-compact) .node-library {
   display: none;
 }

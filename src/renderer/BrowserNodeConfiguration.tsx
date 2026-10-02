@@ -1,7 +1,7 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode, type Ref } from 'react';
 import type { FramePath } from '../shared/contracts.generated';
 import type { Step } from '../shared/types';
-import ElementPicker from './ElementPicker';
+import ElementPicker, { type ElementPickerControls } from './ElementPicker';
 import type { ElementTarget } from '../shared/element-picker';
 import { formKeys } from '../core/browser-command';
 import { browserActions } from './browser-actions';
@@ -20,7 +20,9 @@ export default function BrowserNodeConfiguration({
   blockingRunId,
   onViewRun,
   readInspector,
+  pickerControls,
 }: {
+  pickerControls?: Ref<ElementPickerControls>;
   readInspector?: { output: ReactNode; timing: ReactNode };
   fieldsOnly?: boolean;
   compact?: boolean;
@@ -128,6 +130,7 @@ export default function BrowserNodeConfiguration({
           )}
           <ElementPicker
             key={`${node.id}:${node.operation}`}
+            controls={pickerControls}
             confirmBeforeApply
             pickLabel={readInspector ? (node.selector ? '重新拾取目标' : '拾取目标') : undefined}
             active={active}

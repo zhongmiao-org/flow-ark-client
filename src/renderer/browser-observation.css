@@ -155,3 +155,109 @@
 .editor-region .browser-observation-workspace {
   gap: 16px;
 }
+
+.editor-region .browser-editor-panel:not(.browser-observation-expanded) > header {
+  padding: 0;
+  min-height: 40px;
+}
+.browser-editor-panel:not(.browser-observation-expanded) > header strong {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+.browser-editor-panel .browser-pick-current {
+  min-width: 128px;
+  height: 40px;
+}
+.browser-editor-panel .browser-address {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px 32px;
+  gap: 6px;
+}
+.browser-editor-panel .browser-address > label {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--fa-text-secondary);
+}
+.editor-region .browser-editor-panel:not(.browser-observation-expanded) .browser-address input {
+  height: 32px;
+  padding: 6px;
+  border: 0;
+  font-size: 13px;
+}
+.browser-editor-panel .browser-address button {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 6px;
+}
+.browser-pick-guidance {
+  flex-shrink: 0;
+  min-height: 72px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-action-subtle);
+  color: var(--fa-action-primary);
+  font-size: 14px;
+  line-height: 22px;
+}
+.browser-editor-panel .browser-viewport {
+  border-radius: 12px;
+  min-height: 1px;
+}
+.browser-editor-scale {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.browser-session-disclosure > button {
+  width: 100%;
+  min-height: 40px;
+}
+.browser-session-disclosure {
+  flex-shrink: 0;
+}
+.browser-session-details {
+  max-height: 200px;
+  overflow: auto;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.browser-session-details dl {
+  margin: 0 0 12px;
+}
+.browser-session-details dl > div {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.browser-session-details dt {
+  color: var(--fa-text-secondary);
+}
+.browser-session-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 1100px) {
+  .editor-region .browser-editor-panel:not(.browser-observation-expanded) > header {
+    gap: 8px;
+  }
+  .browser-editor-panel .browser-pick-guidance {
+    display: none;
+  }
+  .editor-region .browser-editor-panel .browser-observation-workspace {
+    gap: 8px;
+  }
+  .browser-session-details {
+    max-height: 140px;
+  }
+}

@@ -1,10 +1,11 @@
-import { useEffect, useState, type RefObject } from 'react';
+import { useEffect, useState, type RefObject, type Ref } from 'react';
 import type { FlowRecord, Step } from '../shared/types';
 import { nodeReferenceValues } from '../shared/flow-references';
 import { flatten } from './flow-editing';
 import { taskStepTitle } from './task-step-presentation';
 import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 import NodeTiming from './NodeTiming';
+import type { ElementPickerControls } from './ElementPicker';
 import './read-step-inspector.css';
 
 type BrowserNode = Extract<Step, { type: 'browser' }>;
@@ -31,7 +32,9 @@ export default function ReadStepInspector({
   position,
   view,
   select,
+  pickerControls,
 }: {
+  pickerControls?: Ref<ElementPickerControls>;
   record: FlowRecord;
   node: BrowserNode;
   heading: RefObject<HTMLHeadingElement | null>;
@@ -67,6 +70,7 @@ export default function ReadStepInspector({
         onChange={(event) => change({ ...node, name: event.target.value })}
       />
       <BrowserNodeConfiguration
+        pickerControls={pickerControls}
         node={node}
         choices={[]}
         change={change}
