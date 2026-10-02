@@ -1,4 +1,5 @@
 import McpRunReceipts from './McpRunReceipts';
+import DebugRunWorkspace from './DebugRunWorkspace';
 import { useEffect, useRef, useState } from 'react';
 import type { Event, Run } from '../shared/types';
 import { formatRunDuration, presentRun } from '../shared/run-presentation';
@@ -79,7 +80,8 @@ export default function RunDetail({
       previousTab.current === 'logs' ||
       previousTab.current === 'output'
     ) {
-      document.getElementById('run-tab-' + tab)?.focus({ preventScroll: true });
+      if (d.run.debug) pageHeading.current?.focus({ preventScroll: true });
+      else document.getElementById('run-tab-' + tab)?.focus({ preventScroll: true });
     }
     previousTab.current = tab;
   }, [tab]);
@@ -160,6 +162,59 @@ export default function RunDetail({
           cancel: '取消请求已接收，等待停止与资源回收；尚未确认结束。',
         }[command.action]
       : '正在发送控制请求…');
+  const runControls = (
+    <div className="run-controls">
+      {controllable && !observed.fault && r.state === 'RUNNING' && (
+        <button disabled={controlPending} onClick={() => void sendControl('pause')}>
+          {command?.action === 'pause' ? '暂停请求中' : '请求暂停'}
+        </button>
+      )}
+      {controllable && !observed.fault && r.state === 'PAUSED' && (
+        <button
+          className={r.debug ? 'primary' : undefined}
+          disabled={controlPending}
+          onClick={() => void sendControl('step')}
+        >
+          执行下一步
+        </button>
+      )}
+      {controllable && !observed.fault && ['PAUSED', 'WAITING_INPUT'].includes(r.state) && (
+        <button disabled={controlPending} onClick={() => void sendControl('resume')}>
+          继续运行
+        </button>
+      )}
+      {!terminal && (controllable || (r.state === 'QUEUED' && !observed.fault)) && (
+        <button
+          className="danger"
+          disabled={controlBusy || (!!command && command.action === 'cancel')}
+          onClick={() => void sendControl('cancel')}
+        >
+          取消运行
+        </button>
+      )}
+    </div>
+  );
+  const controlFeedbackContent = (controlError || controlPending) && (
+    <div
+      ref={controlFeedback}
+      tabIndex={-1}
+      className="run-control-feedback"
+      role={controlError ? 'alert' : undefined}
+    >
+      {controlError && <p>{controlError}</p>}
+      <button
+        disabled={controlBusy}
+        onClick={() =>
+          void reload().then(
+            () => setControlError(''),
+            (error) => setControlError(error instanceof Error ? error.message : '状态读取失败'),
+          )
+        }
+      >
+        刷新状态
+      </button>
+    </div>
+  );
   return (
     <div
       className={
@@ -167,259 +222,258 @@ export default function RunDetail({
       }
     >
       <div className="run-detail-content" hidden={tab === 'rerun'}>
-        <div className="runs-heading run-detail-heading">
-          <div>
-            <h1 ref={pageHeading} tabIndex={-1}>
-              {tab === 'logs' ? '日志与步骤输出' : tab === 'output' ? '运行结果与产物' : r.name}
-            </h1>
-            <p>
-              {tab !== 'current' && `${r.name} · `}
-              <span title={r.id}>{r.id}</span> · {runSourceLabels[runSource(r)] ?? r.source} ·{' '}
-              {time(r.createdAt)}
-            </p>
-          </div>
-          <button className="primary" onClick={showBrowser}>
-            查看网页
-          </button>
-        </div>
-        <section className="run-runtime-summary" aria-label="运行状态" hidden={tab !== 'current'}>
-          <div className="run-runtime-line">
-            <span role="status" className={'badge state-' + (lastSaved ? 'INTERRUPTED' : r.state)}>
-              {command?.action === 'pause' && command.accepted && !lastSaved
-                ? '暂停请求中'
-                : `${lastSaved ? '最后保存：' : ''}${runStateLabels[r.state]}`}
-            </span>
-            <strong>
-              {r.state === 'QUEUED'
-                ? '正在等待执行'
-                : view.closing
-                  ? '正在收尾'
-                  : command?.action === 'pause' && command.accepted
-                    ? '将在步骤边界暂停'
-                    : view.step.label}
-            </strong>
-            <div className="run-controls">
-              {controllable && !observed.fault && r.state === 'RUNNING' && (
-                <button disabled={controlPending} onClick={() => void sendControl('pause')}>
-                  {command?.action === 'pause' ? '暂停请求中' : '请求暂停'}
-                </button>
-              )}
-              {controllable && !observed.fault && ['PAUSED', 'WAITING_INPUT'].includes(r.state) && (
-                <button disabled={controlPending} onClick={() => void sendControl('resume')}>
-                  继续运行
-                </button>
-              )}
-              {controllable && !observed.fault && r.state === 'PAUSED' && (
-                <button disabled={controlPending} onClick={() => void sendControl('step')}>
-                  执行下一步
-                </button>
-              )}
-              {!terminal && (controllable || (r.state === 'QUEUED' && !observed.fault)) && (
-                <button
-                  className="danger"
-                  disabled={controlBusy || (!!command && command.action === 'cancel')}
-                  onClick={() => void sendControl('cancel')}
-                >
-                  取消运行
-                </button>
-              )}
-            </div>
-          </div>
-          <p>
-            {view.elapsed.kind === 'recorded' ? '已记录时长' : terminal ? '总耗时' : '已运行'}{' '}
-            {view.elapsed.milliseconds === null
-              ? '待核对'
-              : formatRunDuration(view.elapsed.milliseconds)}{' '}
-            · 使用启动时的固定版本 <code title={r.versionId}>{r.versionId.slice(0, 12)}</code>
-          </p>
-          {controlNote && <p role="status">{controlNote}</p>}
-          {view.statusNote && <p role="status">{view.statusNote}</p>}
-          {(controlError || controlPending) && (
-            <div
-              ref={controlFeedback}
-              tabIndex={-1}
-              className="run-control-feedback"
-              role={controlError ? 'alert' : undefined}
-            >
-              {controlError && <p>{controlError}</p>}
-              <button
-                disabled={controlBusy}
-                onClick={() =>
-                  void reload().then(
-                    () => setControlError(''),
-                    (error) =>
-                      setControlError(error instanceof Error ? error.message : '状态读取失败'),
-                  )
-                }
-              >
-                刷新状态
+        {r.debug && tab === 'current' ? (
+          <DebugRunWorkspace
+            key={r.id}
+            detail={observed}
+            view={view}
+            timeline={timeline}
+            results={results}
+            controls={runControls}
+            feedback={controlFeedbackContent}
+            controlNote={controlNote}
+            lastSaved={lastSaved}
+            heading={pageHeading}
+            showBrowser={showBrowser}
+            logs={() => setTab('logs')}
+            output={() => setTab('output')}
+            rerun={() => setTab('rerun')}
+            receipts={
+              <>
+                <McpRunReceipts
+                  runId={r.id}
+                  receipts={d.mcpReceipts}
+                  snapshot={d.snapshot}
+                  running={!terminal && view.activity === 'active'}
+                />
+                <DesktopRunReceipt
+                  runId={r.id}
+                  receipts={d.desktopReceipts}
+                  snapshot={d.snapshot}
+                />
+              </>
+            }
+          />
+        ) : (
+          <>
+            <div className="runs-heading run-detail-heading">
+              <div>
+                <h1 ref={pageHeading} tabIndex={-1}>
+                  {tab === 'logs' ? '日志与步骤输出' : tab === 'output' ? '运行结果与产物' : r.name}
+                </h1>
+                <p>
+                  {tab !== 'current' && `${r.name} · `}
+                  <span title={r.id}>{r.id}</span> · {runSourceLabels[runSource(r)] ?? r.source} ·{' '}
+                  {time(r.createdAt)}
+                </p>
+              </div>
+              <button className="primary" onClick={showBrowser}>
+                查看网页
               </button>
             </div>
-          )}
-          {r.error && (
-            <p className="field-error" role="alert">
-              {r.error}
-            </p>
-          )}
-        </section>
-        <McpRunReceipts
-          runId={r.id}
-          receipts={d.mcpReceipts}
-          snapshot={d.snapshot}
-          running={!terminal && view.activity === 'active'}
-        />
-        <DesktopRunReceipt runId={r.id} receipts={d.desktopReceipts} snapshot={d.snapshot} />
-        <div className={'run-observation-layout' + (tab !== 'current' ? ' is-output' : '')}>
-          <aside className="run-timeline" aria-label="执行步骤" hidden={tab !== 'current'}>
-            <h2>执行步骤</h2>
-            {timeline.length ? (
-              <ol>
-                {timeline.map((step, index) => (
-                  <li key={step.instance} aria-current={step.current ? 'step' : undefined}>
-                    <div>
-                      <span className="timeline-index">{String(index + 1).padStart(2, '0')}</span>
-                      <span>
-                        {step.name === step.nodeId && step.type
-                          ? (kinds[step.type]?.label ?? step.name)
-                          : step.name}
-                      </span>
-                    </div>
-                    {step.instance !== step.nodeId && <code>{step.instance}</code>}
-                    <span className={'run-status run-tone-' + step.tone}>{step.label}</span>
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <p>尚无已保存的步骤记录或执行快照。</p>
-            )}
-          </aside>
-          <section className="run-observation-content">
-            <div
-              className="run-detail-tabs"
-              role="tablist"
-              aria-label="运行详情内容"
-              hidden={tab === 'logs'}
-            >
-              {tabs.map(([id, label], index) => (
-                <button
-                  key={id}
-                  id={'run-tab-' + id}
-                  role="tab"
-                  aria-selected={tab === id}
-                  aria-controls={'run-panel-' + id}
-                  tabIndex={tab === id ? 0 : -1}
-                  onClick={() => setTab(id)}
-                  onKeyDown={(event) => {
-                    const target =
-                      event.key === 'Home'
-                        ? 0
-                        : event.key === 'End'
-                          ? tabs.length - 1
-                          : event.key === 'ArrowRight'
-                            ? (index + 1) % tabs.length
-                            : event.key === 'ArrowLeft'
-                              ? (index + tabs.length - 1) % tabs.length
-                              : null;
-                    if (target === null) return;
-                    event.preventDefault();
-                    setTab(tabs[target][0]);
-                    event.currentTarget.parentElement
-                      ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
-                      [target]?.focus();
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div
-              id="run-panel-current"
-              role="tabpanel"
-              aria-labelledby="run-tab-current"
+            <section
+              className="run-runtime-summary"
+              aria-label="运行状态"
               hidden={tab !== 'current'}
             >
-              <RunObservation detail={observed} compact />
-              {r.business && <p className="run-business-note">{r.business}</p>}
-              {r.debug && (
-                <p className="note">
-                  逐步调试 · 执行下一步会实际操作页面；继续将连续运行剩余流程。
+              <div className="run-runtime-line">
+                <span
+                  role="status"
+                  className={'badge state-' + (lastSaved ? 'INTERRUPTED' : r.state)}
+                >
+                  {command?.action === 'pause' && command.accepted && !lastSaved
+                    ? '暂停请求中'
+                    : `${lastSaved ? '最后保存：' : ''}${runStateLabels[r.state]}`}
+                </span>
+                <strong>
+                  {r.state === 'QUEUED'
+                    ? '正在等待执行'
+                    : view.closing
+                      ? '正在收尾'
+                      : command?.action === 'pause' && command.accepted
+                        ? '将在步骤边界暂停'
+                        : view.step.label}
+                </strong>
+                {runControls}
+              </div>
+              <p>
+                {view.elapsed.kind === 'recorded' ? '已记录时长' : terminal ? '总耗时' : '已运行'}{' '}
+                {view.elapsed.milliseconds === null
+                  ? '待核对'
+                  : formatRunDuration(view.elapsed.milliseconds)}{' '}
+                · 使用启动时的固定版本 <code title={r.versionId}>{r.versionId.slice(0, 12)}</code>
+              </p>
+              {controlNote && <p role="status">{controlNote}</p>}
+              {view.statusNote && <p role="status">{view.statusNote}</p>}
+              {controlFeedbackContent}
+              {r.error && (
+                <p className="field-error" role="alert">
+                  {r.error}
                 </p>
               )}
-              {controllable && r.state === 'PAUSED' && pause && (
-                <section aria-label="调试位置">
-                  <h3>下一步：{pause.data.nodeName}</h3>
-                  <code>{pause.nodeInstance}</code>
-                </section>
-              )}
-              {results.length > 0 && (
-                <section aria-label="步骤输出">
-                  <h3>步骤输出</h3>
-                  <p className="note">已保存的脱敏预览；已执行步骤不会因暂停或失败自动重放。</p>
-                  {results.map((event: Event) => (
-                    <details key={event.sequence} open={event === results.at(-1)}>
-                      <summary>{event.nodeInstance}</summary>
-                      <pre>{event.data.outputPreview}</pre>
+            </section>
+            <McpRunReceipts
+              runId={r.id}
+              receipts={d.mcpReceipts}
+              snapshot={d.snapshot}
+              running={!terminal && view.activity === 'active'}
+            />
+            <DesktopRunReceipt runId={r.id} receipts={d.desktopReceipts} snapshot={d.snapshot} />
+            <div className={'run-observation-layout' + (tab !== 'current' ? ' is-output' : '')}>
+              <aside className="run-timeline" aria-label="执行步骤" hidden={tab !== 'current'}>
+                <h2>执行步骤</h2>
+                {timeline.length ? (
+                  <ol>
+                    {timeline.map((step, index) => (
+                      <li key={step.instance} aria-current={step.current ? 'step' : undefined}>
+                        <div>
+                          <span className="timeline-index">
+                            {String(index + 1).padStart(2, '0')}
+                          </span>
+                          <span>
+                            {step.name === step.nodeId && step.type
+                              ? (kinds[step.type]?.label ?? step.name)
+                              : step.name}
+                          </span>
+                        </div>
+                        {step.instance !== step.nodeId && <code>{step.instance}</code>}
+                        <span className={'run-status run-tone-' + step.tone}>{step.label}</span>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p>尚无已保存的步骤记录或执行快照。</p>
+                )}
+              </aside>
+              <section className="run-observation-content">
+                <div
+                  className="run-detail-tabs"
+                  role="tablist"
+                  aria-label="运行详情内容"
+                  hidden={tab === 'logs'}
+                >
+                  {tabs.map(([id, label], index) => (
+                    <button
+                      key={id}
+                      id={'run-tab-' + id}
+                      role="tab"
+                      aria-selected={tab === id}
+                      aria-controls={'run-panel-' + id}
+                      tabIndex={tab === id ? 0 : -1}
+                      onClick={() => setTab(id)}
+                      onKeyDown={(event) => {
+                        const target =
+                          event.key === 'Home'
+                            ? 0
+                            : event.key === 'End'
+                              ? tabs.length - 1
+                              : event.key === 'ArrowRight'
+                                ? (index + 1) % tabs.length
+                                : event.key === 'ArrowLeft'
+                                  ? (index + tabs.length - 1) % tabs.length
+                                  : null;
+                        if (target === null) return;
+                        event.preventDefault();
+                        setTab(tabs[target][0]);
+                        event.currentTarget.parentElement
+                          ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+                          [target]?.focus();
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div
+                  id="run-panel-current"
+                  role="tabpanel"
+                  aria-labelledby="run-tab-current"
+                  hidden={tab !== 'current'}
+                >
+                  <RunObservation detail={observed} compact />
+                  {r.business && <p className="run-business-note">{r.business}</p>}
+                  {r.debug && (
+                    <p className="note">
+                      逐步调试 · 执行下一步会实际操作页面；继续将连续运行剩余流程。
+                    </p>
+                  )}
+                  {controllable && r.state === 'PAUSED' && pause && (
+                    <section aria-label="调试位置">
+                      <h3>下一步：{pause.data.nodeName}</h3>
+                      <code>{pause.nodeInstance}</code>
+                    </section>
+                  )}
+                  {results.length > 0 && (
+                    <section aria-label="步骤输出">
+                      <h3>步骤输出</h3>
+                      <p className="note">已保存的脱敏预览；已执行步骤不会因暂停或失败自动重放。</p>
+                      {results.map((event: Event) => (
+                        <details key={event.sequence} open={event === results.at(-1)}>
+                          <summary>{event.nodeInstance}</summary>
+                          <pre>{event.data.outputPreview}</pre>
+                        </details>
+                      ))}
+                    </section>
+                  )}
+                </div>
+                <div
+                  id="run-panel-output"
+                  role="tabpanel"
+                  aria-labelledby="run-tab-output"
+                  hidden={tab !== 'output'}
+                >
+                  <RunOutputWorkspace
+                    detail={observed}
+                    reveal={reveal}
+                    reload={reload}
+                    rerun={() => setTab('rerun')}
+                  />
+                </div>
+                <div
+                  id="run-panel-logs"
+                  role="tabpanel"
+                  aria-labelledby="run-tab-logs"
+                  hidden={tab !== 'logs'}
+                >
+                  <RunEventLog
+                    key={r.id}
+                    runId={r.id}
+                    run={r}
+                    events={d.events}
+                    snapshot={d.snapshot}
+                  />
+                  {d.scriptBundles?.length > 0 && (
+                    <details className="script-bundles">
+                      <summary>已固定的脚本与依赖 · {d.scriptBundles.length} 个节点</summary>
+                      {d.scriptBundles.map((bundle: any) => (
+                        <div key={bundle.nodeId}>
+                          <p>
+                            <b>{bundle.nodeId}</b> ·{' '}
+                            {bundle.dependencies.length
+                              ? bundle.dependencies
+                                  .map((dep: any) => dep.name + '@' + dep.version)
+                                  .join('，')
+                              : '仅使用脚本及 Node 内置能力'}
+                          </p>
+                          <code className="path-text">SHA-256 {bundle.sha256}</code>
+                        </div>
+                      ))}
                     </details>
-                  ))}
-                </section>
-              )}
+                  )}
+                </div>
+              </section>
             </div>
-            <div
-              id="run-panel-output"
-              role="tabpanel"
-              aria-labelledby="run-tab-output"
-              hidden={tab !== 'output'}
-            >
-              <RunOutputWorkspace
-                detail={observed}
-                reveal={reveal}
-                reload={reload}
-                rerun={() => setTab('rerun')}
-              />
+            <div className="run-rerun-entry" hidden={tab === 'output'}>
+              <div>
+                <h2>重新运行与关联记录</h2>
+                <p>先核对已保存输出和外部结果，再选择执行内容。查看不会创建运行。</p>
+              </div>
+              <button type="button" onClick={() => setTab('rerun')}>
+                核对后重新运行
+              </button>
             </div>
-            <div
-              id="run-panel-logs"
-              role="tabpanel"
-              aria-labelledby="run-tab-logs"
-              hidden={tab !== 'logs'}
-            >
-              <RunEventLog
-                key={r.id}
-                runId={r.id}
-                run={r}
-                events={d.events}
-                snapshot={d.snapshot}
-              />
-              {d.scriptBundles?.length > 0 && (
-                <details className="script-bundles">
-                  <summary>已固定的脚本与依赖 · {d.scriptBundles.length} 个节点</summary>
-                  {d.scriptBundles.map((bundle: any) => (
-                    <div key={bundle.nodeId}>
-                      <p>
-                        <b>{bundle.nodeId}</b> ·{' '}
-                        {bundle.dependencies.length
-                          ? bundle.dependencies
-                              .map((dep: any) => dep.name + '@' + dep.version)
-                              .join('，')
-                          : '仅使用脚本及 Node 内置能力'}
-                      </p>
-                      <code className="path-text">SHA-256 {bundle.sha256}</code>
-                    </div>
-                  ))}
-                </details>
-              )}
-            </div>
-          </section>
-        </div>
-        <div className="run-rerun-entry" hidden={tab === 'output'}>
-          <div>
-            <h2>重新运行与关联记录</h2>
-            <p>先核对已保存输出和外部结果，再选择执行内容。查看不会创建运行。</p>
-          </div>
-          <button type="button" onClick={() => setTab('rerun')}>
-            核对后重新运行
-          </button>
-        </div>
+          </>
+        )}
       </div>
       {(tab === 'rerun' || rerunOpened) && (
         <div className="run-rerun-page" hidden={tab !== 'rerun'}>

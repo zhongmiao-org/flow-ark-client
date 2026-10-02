@@ -1,0 +1,117 @@
+.debug-run-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  container-type: inline-size;
+}
+.run-detail .debug-run-workspace > .runs-heading {
+  margin-bottom: 0;
+}
+.debug-run-banner {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background: var(--fa-action-subtle);
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  color: var(--fa-action-primary);
+  font-size: 14px;
+  line-height: 22px;
+}
+.debug-run-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 400fr) minmax(0, 728fr);
+  gap: 24px;
+  align-items: start;
+}
+.debug-run-steps,
+.debug-run-current {
+  min-height: 592px;
+  min-width: 0;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-surface);
+}
+.debug-run-steps {
+  padding: 24px;
+}
+.debug-run-steps ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.debug-run-steps h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.debug-run-steps code {
+  display: block;
+  margin-bottom: 8px;
+  overflow-wrap: anywhere;
+}
+.debug-run-current {
+  padding: 28px;
+}
+.debug-run-current > h2 {
+  margin: 16px 0;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+.debug-run-current p {
+  margin: 0 0 16px;
+  color: var(--fa-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+.debug-run-current .run-controls {
+  margin: 0 0 16px;
+  gap: 12px;
+}
+.debug-run-current .run-controls button {
+  width: 180px;
+  min-height: 40px;
+}
+.debug-run-current .run-controls button.danger {
+  width: 120px;
+}
+.debug-run-detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+}
+.debug-run-detail-actions button {
+  width: min(250px, 100%);
+  min-height: 40px;
+}
+.debug-run-current > section:not([hidden]) {
+  margin-top: 24px;
+}
+.debug-run-current dl {
+  font-size: 12px;
+}
+.debug-run-current dd {
+  margin: 4px 0 12px;
+  overflow-wrap: anywhere;
+}
+.debug-run-current .field-error {
+  color: var(--fa-status-error);
+}
+@container (max-width: 880px) {
+  .debug-run-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .debug-run-steps,
+  .debug-run-current {
+    min-height: 0;
+  }
+}
