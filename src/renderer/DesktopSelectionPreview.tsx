@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type useDesktopWindows from './useDesktopWindows';
 
 export default function DesktopSelectionPreview({
@@ -16,14 +16,28 @@ export default function DesktopSelectionPreview({
 }) {
   const titleId = useId(),
     heading = useRef<HTMLHeadingElement>(null),
-    readButton = useRef<HTMLButtonElement>(null);
+    readButton = useRef<HTMLButtonElement>(null),
+    failure = useRef<HTMLParagraphElement>(null),
+    cleared = useRef<HTMLParagraphElement>(null),
+    restoreReadFocus = useRef(false);
+  const [clearNotice, setClearNotice] = useState('');
   const { preview, reading, expired, selected } = state;
   useEffect(() => {
-    if (preview) heading.current?.focus();
+    if (preview) (preview.status === 'ready' ? heading.current : failure.current)?.focus();
   }, [preview]);
+  useEffect(() => {
+    setClearNotice('');
+    restoreReadFocus.current = false;
+  }, [selected?.id]);
+  useLayoutEffect(() => {
+    if (!restoreReadFocus.current || reading || preview) return;
+    restoreReadFocus.current = false;
+    if (readButton.current && !readButton.current.disabled) readButton.current.focus();
+    else cleared.current?.focus();
+  }, [reading, preview, clearNotice, expired]);
   if (!selected) return null;
   return (
-    <section className="task-desktop-selection" aria-labelledby={titleId}>
+    <section className="task-desktop-selection" aria-labelledby={titleId} aria-busy={reading}>
       <h3 id={titleId} ref={heading} tabIndex={-1}>
         核对选中的段落
       </h3>
@@ -33,22 +47,35 @@ export default function DesktopSelectionPreview({
           ref={readButton}
           className="primary"
           disabled={reading || expired || state.loading || state.settingsPending}
-          onClick={() => void state.readSelection()}
+          onClick={() => {
+            setClearNotice('');
+            void state.readSelection();
+          }}
         >
           {reading ? '正在读取选区…' : preview ? '重新读取选中段落' : '读取选中段落'}
         </button>
         {(preview || reading) && (
           <button
             onClick={() => {
+              restoreReadFocus.current = true;
+              setClearNotice(
+                reading
+                  ? '已停止等待，本次迟到结果不会加入预览。可重新读取选区。'
+                  : '已清除本地预览，可重新选择并读取段落。',
+              );
               state.clearPreview();
-              readButton.current?.focus();
             }}
           >
-            清除预览
+            {reading ? '停止等待' : '清除预览'}
           </button>
         )}
       </div>
       {reading && <p role="status">正在核对窗口与当前选区…</p>}
+      {clearNotice && !reading && !preview && !expired && (
+        <p role="status" ref={cleared} tabIndex={-1}>
+          {clearNotice}
+        </p>
+      )}
       {preview?.status === 'ready' && (
         <>
           <pre tabIndex={0} aria-label="选中段落内容">
@@ -70,17 +97,24 @@ export default function DesktopSelectionPreview({
         </>
       )}
       {preview && preview.status !== 'ready' && (
-        <p className="ai-task-note ai-task-failure" role="alert">
+        <p className="ai-task-note ai-task-failure" role="alert" ref={failure} tabIndex={-1}>
           {preview.reason}
         </p>
       )}
       {expired && (
-        <button
-          onClick={() => void state.refresh()}
-          disabled={state.loading || state.settingsPending}
-        >
-          重新检查窗口
-        </button>
+        <>
+          {!preview && (
+            <p className="ai-task-note" role="status" ref={cleared} tabIndex={-1}>
+              当前窗口检查已失效。请重新检查、选择窗口，再读取段落。
+            </p>
+          )}
+          <button
+            onClick={() => void state.refresh()}
+            disabled={state.loading || state.settingsPending}
+          >
+            重新检查窗口
+          </button>
+        </>
       )}
       {preview?.status === 'ready' && (
         <button

@@ -106,6 +106,9 @@
   line-height: 21px;
   color: var(--fa-text-secondary);
 }
+.task-desktop-selection p.ai-task-failure {
+  color: var(--fa-status-error);
+}
 .task-web-columns .task-desktop-selection pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
