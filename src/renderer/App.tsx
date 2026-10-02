@@ -5,6 +5,8 @@ import ControlWorkspace from './ControlWorkspace';
 import BrowserActionWorkspace from './BrowserActionWorkspace';
 import ResourceWorkspace from './ResourceWorkspace';
 import LogicConfigurationWorkspace from './LogicConfigurationWorkspace';
+import ScriptConfigurationWorkspace from './ScriptConfigurationWorkspace';
+import { editScriptPackage, type ScriptNode } from './script-editor';
 import { stepTitle } from './flow-outline';
 import EditorLeaveDialog from './EditorLeaveDialog';
 import EditorMorePage from './EditorMorePage';
@@ -144,6 +146,7 @@ export default function App() {
   const outlineMemory = useRef(new Map<string, OutlineLocation>());
   const [nodeSession, setNodeSession] = useState<{
     kind: 'script' | 'excel' | 'parameters';
+    preview?: boolean;
     panel?: string;
     record: FlowRecord;
     nodeId: string;
@@ -738,7 +741,7 @@ export default function App() {
         ?.focus({ preventScroll: true });
     });
   };
-  const openScript = (nodeId: string) => {
+  const openScript = (nodeId: string, preview = false) => {
     if (!edit) return;
     try {
       checkEditorInput('打开脚本编辑器');
@@ -748,6 +751,7 @@ export default function App() {
     }
     setNodeSession({
       kind: 'script',
+      preview,
       record: structuredClone(edit),
       nodeId,
       browserOpen,
@@ -1921,6 +1925,7 @@ export default function App() {
               key={nodeSession.record.id + ':' + nodeSession.nodeId}
               record={nodeSession.record}
               nodeId={nodeSession.nodeId}
+              initialPreview={nodeSession.preview}
               navigation={nodeNavigation}
               close={closeNodeEditor}
               save={async (record) => {
@@ -2227,6 +2232,7 @@ function Editor({
   const [browserActionOpen, setBrowserActionOpen] = useState(false);
   const [resourceOpen, setResourceOpen] = useState(false);
   const [logicConfigurationOpen, setLogicConfigurationOpen] = useState(false);
+  const [scriptConfigurationOpen, setScriptConfigurationOpen] = useState(false);
   const [viewRequest, setViewRequest] = useState<{ key: number; mode: 'all' | 'selected' }>();
   const [tab, setTab] = useState('node');
   const [destination, setDestination] = useState('main');
@@ -2348,6 +2354,23 @@ function Editor({
       setPanel(value);
     }
   };
+  const updateScriptPackage = (
+    name: string,
+    info?: { name: string; version: string; path: string },
+  ) => {
+    if (!guardNodeInput() || selectedNode?.type !== 'script') return false;
+    const next = editScriptPackage(r, selectedNode, name, info);
+    setRecord(next);
+    setRaw(
+      JSON.stringify(
+        flatten(next.flow.steps).find((node) => node.id === selected),
+        null,
+        2,
+      ),
+    );
+    setInvalid('');
+    return true;
+  };
   const advancedInput = selectedNode ? (
     <details
       className="node-advanced"
@@ -2397,6 +2420,30 @@ function Editor({
   ) : null;
   return (
     <>
+      {scriptConfigurationOpen && active && selectedNode?.type === 'script' && (
+        <ScriptConfigurationWorkspace
+          record={r}
+          node={selectedNode as ScriptNode}
+          change={updateNode}
+          guard={guardNodeInput}
+          bind={(info) => updateScriptPackage(info.name, info)}
+          remove={(name) => updateScriptPackage(name)}
+          close={() => setScriptConfigurationOpen(false)}
+          openEditor={(preview) => {
+            openScript(selectedNode.id, preview);
+          }}
+          openParameters={() => {
+            openParameters();
+          }}
+          showBrowser={() => {
+            setScriptConfigurationOpen(false);
+            setPanel('node');
+            showBrowser();
+          }}
+          error={saveError}
+          clearError={clearError}
+        />
+      )}
       {logicConfigurationOpen && (
         <LogicConfigurationWorkspace
           record={r}
@@ -2636,7 +2683,8 @@ function Editor({
                   !controlOpen &&
                   !browserActionOpen &&
                   !resourceOpen &&
-                  !logicConfigurationOpen
+                  !logicConfigurationOpen &&
+                  !scriptConfigurationOpen
                 }
                 viewRequest={viewRequest}
                 nodes={nodes}
@@ -2846,7 +2894,7 @@ function Editor({
                           条件与串行循环
                         </button>
                       )}
-                      {!logicConfigurationOpen && (
+                      {!logicConfigurationOpen && !scriptConfigurationOpen && (
                         <>
                           <NodeTiming
                             key={selectedNode.id + ':timing:' + revision}
@@ -2906,102 +2954,117 @@ function Editor({
                         bindings={r.bindings}
                         choose={choose}
                       />
-                      {selectedNode.type === 'script' && active && !outlineOpen && (
-                        <>
-                          <button
-                            className="primary"
-                            aria-label="打开完整脚本编辑器"
-                            onClick={() => openScript(selectedNode.id)}
-                          >
-                            打开脚本编辑器
-                          </button>
-                          <label>可信脚本 · 独立进程执行</label>
-                          <Suspense fallback={<p>加载编辑器…</p>}>
-                            <CodeEditor
-                              value={selectedNode.code}
-                              language={
-                                selectedNode.language === 'ts' ? 'typescript' : 'javascript'
-                              }
-                              onChange={(code) => {
-                                if (!guardNodeInput(false)) return;
-                                patch((n) => ({ ...n, code }) as Step);
-                                setRaw(JSON.stringify({ ...selectedNode, code }, null, 2));
-                              }}
-                              height="280px"
-                            />
-                          </Suspense>
-                          <ScriptPackages
-                            flowId={r.id}
-                            node={selectedNode}
-                            bindings={r.bindings}
-                            bind={(info) => {
-                              if (!guardNodeInput(false)) return false;
-                              const conflict = flatten(r.flow.steps).some(
-                                (n: Step) =>
-                                  n.id !== selectedNode.id &&
-                                  n.type === 'script' &&
-                                  n.dependencies.some(
-                                    (d) => d.name === info.name && d.version !== info.version,
-                                  ),
-                              );
-                              if (conflict)
-                                throw new Error(
-                                  '其他节点声明了不同版本，请先统一依赖版本：' + info.name,
-                                );
-                              const next = {
-                                ...selectedNode,
-                                dependencies: [
-                                  ...selectedNode.dependencies.filter(
-                                    (d: any) => d.name !== info.name,
-                                  ),
-                                  { name: info.name, version: info.version },
-                                ],
-                              };
-                              setRecord({
-                                ...r,
-                                flow: {
-                                  ...r.flow,
-                                  steps: changeSteps(r.flow.steps, selected, () => next),
-                                },
-                                bindings: {
-                                  ...r.bindings,
-                                  scriptPackages: {
-                                    ...r.bindings.scriptPackages,
-                                    [info.name]: { path: info.path, version: info.version },
-                                  },
-                                },
-                              });
-                              setRaw(JSON.stringify(next, null, 2));
-                              setInvalid('');
-                            }}
-                            remove={(name) => {
-                              if (!guardNodeInput(false)) return false;
-                              const next = {
-                                ...selectedNode,
-                                dependencies: selectedNode.dependencies.filter(
-                                  (d: any) => d.name !== name,
-                                ),
-                              };
-                              const steps = changeSteps(r.flow.steps, selected, () => next);
-                              const packages = { ...r.bindings.scriptPackages };
-                              if (
-                                !flatten(steps).some(
-                                  (n: Step) =>
-                                    n.type === 'script' &&
-                                    n.dependencies.some((d) => d.name === name),
-                                )
-                              )
-                                delete packages[name];
-                              setRecord({
-                                ...r,
-                                flow: { ...r.flow, steps },
-                                bindings: { ...r.bindings, scriptPackages: packages },
-                              });
-                              setRaw(JSON.stringify(next, null, 2));
-                            }}
-                          />
-                        </>
+                      {selectedNode.type === 'script' && (
+                        <button
+                          onClick={() => {
+                            if (guardNodeInput()) {
+                              setPanel('node');
+                              setScriptConfigurationOpen(true);
+                            }
+                          }}
+                        >
+                          脚本与依赖配置
+                        </button>
                       )}
+                      {selectedNode.type === 'script' &&
+                        active &&
+                        !outlineOpen &&
+                        !scriptConfigurationOpen && (
+                          <>
+                            <button
+                              className="primary"
+                              aria-label="打开完整脚本编辑器"
+                              onClick={() => openScript(selectedNode.id)}
+                            >
+                              打开脚本编辑器
+                            </button>
+                            <label>可信脚本 · 独立进程执行</label>
+                            <Suspense fallback={<p>加载编辑器…</p>}>
+                              <CodeEditor
+                                value={selectedNode.code}
+                                language={
+                                  selectedNode.language === 'ts' ? 'typescript' : 'javascript'
+                                }
+                                onChange={(code) => {
+                                  if (!guardNodeInput(false)) return;
+                                  patch((n) => ({ ...n, code }) as Step);
+                                  setRaw(JSON.stringify({ ...selectedNode, code }, null, 2));
+                                }}
+                                height="280px"
+                              />
+                            </Suspense>
+                            <ScriptPackages
+                              flowId={r.id}
+                              node={selectedNode}
+                              bindings={r.bindings}
+                              bind={(info) => {
+                                if (!guardNodeInput(false)) return false;
+                                const conflict = flatten(r.flow.steps).some(
+                                  (n: Step) =>
+                                    n.id !== selectedNode.id &&
+                                    n.type === 'script' &&
+                                    n.dependencies.some(
+                                      (d) => d.name === info.name && d.version !== info.version,
+                                    ),
+                                );
+                                if (conflict)
+                                  throw new Error(
+                                    '其他节点声明了不同版本，请先统一依赖版本：' + info.name,
+                                  );
+                                const next = {
+                                  ...selectedNode,
+                                  dependencies: [
+                                    ...selectedNode.dependencies.filter(
+                                      (d: any) => d.name !== info.name,
+                                    ),
+                                    { name: info.name, version: info.version },
+                                  ],
+                                };
+                                setRecord({
+                                  ...r,
+                                  flow: {
+                                    ...r.flow,
+                                    steps: changeSteps(r.flow.steps, selected, () => next),
+                                  },
+                                  bindings: {
+                                    ...r.bindings,
+                                    scriptPackages: {
+                                      ...r.bindings.scriptPackages,
+                                      [info.name]: { path: info.path, version: info.version },
+                                    },
+                                  },
+                                });
+                                setRaw(JSON.stringify(next, null, 2));
+                                setInvalid('');
+                              }}
+                              remove={(name) => {
+                                if (!guardNodeInput(false)) return false;
+                                const next = {
+                                  ...selectedNode,
+                                  dependencies: selectedNode.dependencies.filter(
+                                    (d: any) => d.name !== name,
+                                  ),
+                                };
+                                const steps = changeSteps(r.flow.steps, selected, () => next);
+                                const packages = { ...r.bindings.scriptPackages };
+                                if (
+                                  !flatten(steps).some(
+                                    (n: Step) =>
+                                      n.type === 'script' &&
+                                      n.dependencies.some((d) => d.name === name),
+                                  )
+                                )
+                                  delete packages[name];
+                                setRecord({
+                                  ...r,
+                                  flow: { ...r.flow, steps },
+                                  bindings: { ...r.bindings, scriptPackages: packages },
+                                });
+                                setRaw(JSON.stringify(next, null, 2));
+                              }}
+                            />
+                          </>
+                        )}
                     </fieldset>
                     {!logicConfigurationOpen && advancedInput}
                   </>

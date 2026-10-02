@@ -33,9 +33,11 @@ export default function ScriptEditorPage({
   save,
   close,
   navigation,
+  initialPreview = false,
 }: {
   record: FlowRecord;
   nodeId: string;
+  initialPreview?: boolean;
   save: (record: FlowRecord) => Promise<void>;
   close: (next?: () => void) => void;
   navigation: MutableRefObject<ScriptNavigation | undefined>;
@@ -53,7 +55,7 @@ export default function ScriptEditorPage({
     issues?: Diagnostic[];
     error?: string;
   }>({});
-  const [preview, setPreview] = useState(false),
+  const [preview, setPreview] = useState(initialPreview),
     [runs, setRuns] = useState<Run[]>([]);
   const [previewRevision, setPreviewRevision] = useState(0);
   const [runId, setRunId] = useState(''),
@@ -80,7 +82,9 @@ export default function ScriptEditorPage({
     }));
   useEffect(() => {
     alive.current = true;
-    root.current?.querySelector<HTMLElement>('h1')?.focus();
+    root.current
+      ?.querySelector<HTMLElement>(initialPreview ? '[aria-label="输入与输出预览"]' : 'h1')
+      ?.focus();
     return () => {
       alive.current = false;
       generation.current++;
@@ -297,7 +301,7 @@ export default function ScriptEditorPage({
               ))}
           </div>
           <p className="note">入口为 default export 的函数，参数为 ctx；返回值成为步骤输出。</p>
-          <section className="script-preview" aria-label="输入与输出预览">
+          <section className="script-preview" aria-label="输入与输出预览" tabIndex={-1}>
             <h2>输入与输出预览</h2>
             {preview ? (
               <>

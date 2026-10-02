@@ -9,6 +9,7 @@ type Props = {
   bindings: Bindings;
   bind: (info: Package) => void | boolean;
   remove: (name: string) => void | boolean;
+  guard?: () => boolean;
 };
 type Check = { signature: string; error?: string };
 const identity = (props: Props) => `${props.flowId}:${props.node.id}`;
@@ -84,7 +85,7 @@ export default function ScriptPackages(props: Props) {
         element.focus();
     });
   const choose = async (name?: string) => {
-    if (locked.current) return;
+    if (locked.current || props.guard?.() === false) return;
     const source = identity(props);
     const start = name
       ? signature(props, name)
@@ -128,7 +129,7 @@ export default function ScriptPackages(props: Props) {
     }
   };
   const inspect = async (name: string) => {
-    if (locked.current) return;
+    if (locked.current || props.guard?.() === false) return;
     const trigger = document.activeElement as HTMLElement | null;
     const source = identity(props);
     const before = signature(props, name);
@@ -184,7 +185,7 @@ export default function ScriptPackages(props: Props) {
     }
   };
   const remove = (name: string) => {
-    if (locked.current) return;
+    if (locked.current || props.guard?.() === false) return;
     setError('');
     setNotice('');
     const buttons = Array.from(

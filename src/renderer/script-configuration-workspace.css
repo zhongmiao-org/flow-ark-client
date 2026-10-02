@@ -1,0 +1,63 @@
+.script-configuration-workspace .resource-workspace-card {
+  padding-bottom: 50px;
+}
+.script-configuration-workspace .resource-workspace-card > dl {
+  gap: 15px;
+}
+.script-configuration-workspace .resource-workspace-card > button:last-child,
+.script-configuration-packages,
+.script-configuration-source,
+.script-configuration-footnote {
+  margin-top: auto;
+}
+.script-configuration-field {
+  display: flex;
+  flex-direction: column;
+}
+.script-configuration-packages > summary,
+.script-configuration-source > summary {
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 22px;
+}
+.script-configuration-packages > summary {
+  min-height: 40px;
+  padding: 9px 12px;
+  background: var(--fa-action-primary);
+  color: var(--fa-text-inverse);
+  border-radius: 8px;
+}
+.script-configuration-workspace .script-packages {
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+}
+.script-configuration-workspace .script-package-actions {
+  flex-direction: column;
+}
+.script-configuration-workspace .script-package-state {
+  font-size: 12px;
+  margin: 8px 0;
+}
+.script-configuration-workspace .script-configuration-source dd {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.script-configuration-workspace .script-package-dialog dd {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+@container (max-width: 720px) {
+  .script-configuration-workspace .resource-workspace-card {
+    padding-bottom: 20px;
+  }
+}
+.script-configuration-workspace .value-field {
+  margin: 0;
+}
+.script-configuration-workspace .reference-value-compact .value-field-label {
+  line-height: 18px;
+}
+.script-configuration-workspace .reference-value-compact button {
+  margin-top: 0;
+}
