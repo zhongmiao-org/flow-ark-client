@@ -70,6 +70,28 @@
   color: var(--fa-text-secondary);
   overflow-wrap: anywhere;
 }
+.template-entry-verification {
+  border: 1px solid var(--fa-border-default);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--fa-text-secondary);
+  font-size: 13px;
+  line-height: 22px;
+}
+.template-entry-verification summary {
+  cursor: pointer;
+  color: var(--fa-text-primary);
+}
+.template-entry-verification[open] summary {
+  margin-bottom: 12px;
+}
+.template-entry-verification p + p {
+  margin-top: 8px;
+}
+.template-entry-verification summary:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 4px;
+}
 .template-entry-readiness ul {
   margin: 0;
   padding-left: 20px;

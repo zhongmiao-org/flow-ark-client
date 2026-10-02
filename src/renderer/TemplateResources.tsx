@@ -102,8 +102,8 @@ export default function TemplateResources({
                           resource.id,
                           event.target.value
                             ? {
-                                ...binding,
                                 provider: event.target.value as 'deepseek' | 'openai-codex',
+                                model: '',
                               }
                             : undefined,
                         )
@@ -145,6 +145,7 @@ export default function TemplateResources({
                         }
                       />
                     </label>
+                    <p>切换供应商后，请重新填写该供应商的模型 ID；保存后才更新实例绑定。</p>
                     <button onClick={(event) => openAI(resource.id, event.currentTarget)}>
                       管理 AI 配置
                     </button>

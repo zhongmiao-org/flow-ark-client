@@ -108,7 +108,16 @@ export default function TemplateEntry({
   const selectedProvider = (id: string): AIProviderId =>
     choices[id] ??
     (instance.resources[id]?.provider === 'openai-codex' ? 'openai-codex' : 'deepseek');
-  const providers = [...new Set(aiResources.map((r) => selectedProvider(r.id)))].sort().join(',');
+  const providers = [
+    ...new Set(
+      aiResources.flatMap((resource) => {
+        const bound = instance.resources[resource.id]?.provider;
+        return bound ? [selectedProvider(resource.id), bound] : [selectedProvider(resource.id)];
+      }),
+    ),
+  ]
+    .sort()
+    .join(',');
   // Keep the local draft intact. Only current source identity and public AI state
   // are reread after navigation; returning never saves configuration or input.
   useLayoutEffect(() => {
@@ -540,13 +549,23 @@ export default function TemplateEntry({
                 state = configurations[provider];
               const binding = instance.resources[resource.id];
               const bound = binding?.provider === provider && !!binding.model;
-              const test = state?.model === binding?.model ? state?.test : undefined;
-              const tested = test?.status === 'passed';
+              const test =
+                state?.configured &&
+                state.provider === provider &&
+                state.revision &&
+                state.test?.revision === state.revision &&
+                state.test.model === state.model
+                  ? state.test
+                  : undefined;
+              const bindingTest = bound && state?.model === binding.model ? test : undefined;
+              const tested = bindingTest?.status === 'passed';
+              const savedBinding = saved.instance.resources[resource.id];
+              const bindingDirty = !equal(binding, savedBinding);
               return (
                 <div className="template-entry-ai-resource" key={resource.id}>
                   {aiResources.length > 1 && <h3>{resource.name}</h3>}
                   <span
-                    className={`ai-config-status ${!state?.configured ? 'neutral' : tested ? 'success' : 'warning'}`}
+                    className={`ai-config-status ${checking ? 'neutral' : readError || !state?.configured || !tested || bindingDirty ? 'warning' : 'success'}`}
                   >
                     {checking
                       ? '正在读取'
@@ -556,15 +575,19 @@ export default function TemplateEntry({
                           ? '未配置'
                           : !bound
                             ? '已配置 · 尚未绑定'
-                            : tested
-                              ? '已配置 · 已验证'
-                              : test?.status === 'failed'
-                                ? '已配置 · 验证失败'
-                                : test?.status === 'cancelled'
-                                  ? '已配置 · 测试已取消'
-                                  : test?.status === 'interrupted'
-                                    ? '已配置 · 上次测试中断'
-                                    : '已配置 · 待验证'}
+                            : bindingDirty
+                              ? '绑定尚未保存'
+                              : tested
+                                ? '已配置 · 已验证'
+                                : bindingTest?.status === 'testing'
+                                  ? '已配置 · 正在测试'
+                                  : bindingTest?.status === 'failed'
+                                    ? '已配置 · 验证失败'
+                                    : bindingTest?.status === 'cancelled'
+                                      ? '已配置 · 测试已取消'
+                                      : bindingTest?.status === 'interrupted'
+                                        ? '已配置 · 上次测试中断'
+                                        : '已配置 · 待验证'}
                   </span>
                   <label className="ai-settings-field">
                     <span>供应商</span>
@@ -586,24 +609,67 @@ export default function TemplateEntry({
                       <p>已配置 · ••••••••{state.tail ? ` ${state.tail}` : ''}</p>
                     </div>
                   )}
-                  {bound && (
+                  {binding?.provider && (
                     <div className="ai-settings-field">
-                      <span>入口模型</span>
-                      <p>{binding.model}</p>
+                      <span>当前入口绑定{bindingDirty ? ' · 未保存' : ' · 已保存'}</span>
+                      <p>
+                        {providerName(binding.provider as AIProviderId)} /{' '}
+                        {binding.model || '模型尚未填写'}
+                      </p>
+                      {!bound && <p>上方供应商用于查看配置；点击使用并保存后才会更换入口绑定。</p>}
                     </div>
                   )}
                   <p>
-                    {state?.configured
-                      ? '配置已保存在本机。绑定模型并保存实例配置后，仍由你明确启动入口。'
-                      : '当前入口声明需要 AI。到本地设置完成配置后，再回到这里。'}
+                    {checking
+                      ? '正在读取本机 AI 配置，入口绑定保持不变。'
+                      : readError
+                        ? '配置状态尚未取得，请先重新读取 AI 状态；不会改动已保存的入口绑定。'
+                        : state?.configured
+                          ? '配置已保存在本机。绑定模型并保存实例配置后，仍由你明确启动入口。'
+                          : '当前入口声明需要 AI。到本地设置完成配置后，再回到这里。'}
                   </p>
                   <button
                     className="primary"
                     disabled={busy || checking || !!readError}
                     onClick={(event) => openSettings(resource.id, event.currentTarget)}
                   >
-                    {state?.configured ? '管理 AI 配置' : `去配置 ${providerName(provider)}`}
+                    {checking || readError || state?.configured
+                      ? '管理 AI 配置'
+                      : `去配置 ${providerName(provider)}`}
                   </button>
+                  {state?.configured && !checking && !readError && (
+                    <details className="template-entry-verification">
+                      <summary>查看连接验证状态</summary>
+                      <p>
+                        {providerName(provider)} / {state.model}
+                      </p>
+                      <p>
+                        {test
+                          ? (
+                              {
+                                testing: '连接测试进行中',
+                                passed: '当前配置连接已验证',
+                                failed: '当前配置连接失败',
+                                cancelled: '本次测试已取消',
+                                interrupted: '上次测试已中断',
+                              } as const
+                            )[test.status]
+                          : '当前配置尚无有效验证记录。'}
+                      </p>
+                      {test && (
+                        <p>
+                          记录时间：
+                          {Number.isFinite(Date.parse(test.at))
+                            ? new Date(test.at).toLocaleString('zh-CN')
+                            : '未记录'}
+                        </p>
+                      )}
+                      <p>
+                        仅显示当前供应商与模型的连接记录，不代表本入口已经执行。可进入管理 AI
+                        配置发起测试。
+                      </p>
+                    </details>
+                  )}
                   {state?.configured && (!bound || binding.model !== state.model) && (
                     <button
                       disabled={blocked}
