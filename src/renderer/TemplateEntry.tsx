@@ -17,6 +17,9 @@ const defaultModel = (provider: AIProviderId) =>
 
 export default function TemplateEntry({
   active,
+  inspection,
+  openDetail,
+  closeDetail,
   detail,
   saved,
   browsers,
@@ -35,6 +38,9 @@ export default function TemplateEntry({
   settings,
 }: {
   active: boolean;
+  inspection: boolean;
+  openDetail: (entryId: string) => void;
+  closeDetail: () => void;
   detail: TemplateDetail;
   saved: TemplateDetail;
   browsers: Bootstrap['browsers'];
@@ -331,6 +337,7 @@ export default function TemplateEntry({
       </select>
     </label>
   );
+  const ResourceContainer = inspection ? 'details' : 'section';
   return (
     <>
       <div className="template-entry-pane">
@@ -342,10 +349,42 @@ export default function TemplateEntry({
             </button>
           </div>
         )}
-        <div className={'template-entry-columns' + (aiResources.length ? '' : ' no-ai')}>
+        <div
+          className={
+            'template-entry-columns' +
+            (aiResources.length ? '' : ' no-ai') +
+            (inspection ? ' template-entry-inspection' : '')
+          }
+        >
           <section className="ai-task-card template-entry-input">
-            <h2>{aiResources.length ? '本次输入' : '选择操作入口'}</h2>
-            {!aiResources.length && entrySelector}
+            {!inspection && <h2>{aiResources.length ? '本次输入' : '选择操作入口'}</h2>}
+            {!inspection && !aiResources.length && entrySelector}
+            {inspection && (
+              <div
+                className="template-entry-saved-configuration"
+                role="group"
+                aria-label="已保存共享配置"
+              >
+                {Object.entries((detail.configurationSchema as any).properties ?? {}).map(
+                  ([key, schema]: [string, any]) => {
+                    const value = (saved.instance.configuration as any)?.[key];
+                    if (value === undefined) return null;
+                    return (
+                      <label className="template-field" key={key}>
+                        <span>{schema.title ?? key}</span>
+                        <input
+                          readOnly
+                          value={typeof value === 'string' ? value : JSON.stringify(value)}
+                        />
+                      </label>
+                    );
+                  },
+                )}
+                {dirtyConfiguration && (
+                  <p>实例中仍有未保存更改；此处显示已保存内容，运行前须先保存。</p>
+                )}
+              </div>
+            )}
             <fieldset
               ref={inputFields}
               disabled={busy || !!sourceError}
@@ -362,7 +401,7 @@ export default function TemplateEntry({
                 }
               />
             </fieldset>
-            {!!aiResources.length && entrySelector}
+            {!inspection && !!aiResources.length && entrySelector}
             {!!aiResources.length && (
               <p className="ai-task-note">进入设置不会运行此入口；返回后保留本页输入与所选入口。</p>
             )}
@@ -385,10 +424,15 @@ export default function TemplateEntry({
                 </ul>
               )}
               {(sourceError || readError) && <p>请先处理上方的读取问题，再核对并启动。</p>}
-              {!reading && !sourceError && !readError && !requirements.length && (
+              {!inspection && !reading && !sourceError && !readError && !requirements.length && (
                 <p>启动时仍会检查资源与权限；保存或返回本页不会自动运行。</p>
               )}
             </div>
+            {inspection && (
+              <p className="template-entry-inspection-note">
+                显示当前已保存的共享配置；启动时仍会检查资源与权限。
+              </p>
+            )}
             {createdRun && (
               <div
                 className="template-entry-created"
@@ -417,6 +461,7 @@ export default function TemplateEntry({
               </button>
               <button
                 className="template-entry-debug"
+                hidden={inspection}
                 disabled={cannotStart}
                 onClick={() => void start(true)}
               >
@@ -424,6 +469,7 @@ export default function TemplateEntry({
               </button>
               <button
                 className="template-entry-schedule"
+                hidden={inspection}
                 disabled={cannotStart || !entry.schedulable}
                 title={!entry.schedulable ? '此入口不支持本机计划' : undefined}
                 onClick={() => {
@@ -432,10 +478,19 @@ export default function TemplateEntry({
               >
                 创建本机计划
               </button>
+              {inspection && (
+                <button className="template-entry-return" disabled={busy} onClick={closeDetail}>
+                  返回实例
+                </button>
+              )}
             </div>
           </section>
-          <section className="ai-task-card template-entry-resources">
-            <h2>{aiResources.length ? 'AI 资源' : '本次执行'}</h2>
+          <ResourceContainer className="ai-task-card template-entry-resources">
+            {inspection ? (
+              <summary>资源、动作与最近运行</summary>
+            ) : (
+              <h2>{aiResources.length ? 'AI 资源' : '本次执行'}</h2>
+            )}
             <div className="template-execution-summary">
               <div>
                 <span>资源</span>
@@ -567,6 +622,24 @@ export default function TemplateEntry({
             {(missing.some((id) => !aiResources.some((r) => r.id === id)) || denied.length > 0) && (
               <button onClick={configure}>配置资源与动作授权</button>
             )}
+            {!inspection && (
+              <div className="template-entry-detail-links">
+                <button
+                  className="template-entry-open"
+                  disabled={busy}
+                  onClick={() => openDetail(entryId)}
+                >
+                  查看入口详情
+                </button>
+                {detail.entries
+                  .filter((other) => other.id !== entryId)
+                  .map((other) => (
+                    <button key={other.id} disabled={busy} onClick={() => openDetail(other.id)}>
+                      查看 {other.name}
+                    </button>
+                  ))}
+              </div>
+            )}
             <div className="template-recent-run" aria-label="最近入口运行">
               {latestLoading ? (
                 <small>正在读取最近运行…</small>
@@ -600,7 +673,7 @@ export default function TemplateEntry({
                 <small>此入口还没有运行记录。</small>
               )}
             </div>
-          </section>
+          </ResourceContainer>
         </div>
       </div>
     </>

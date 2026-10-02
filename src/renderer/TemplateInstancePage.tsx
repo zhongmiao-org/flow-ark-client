@@ -66,6 +66,14 @@ export default function TemplateInstancePage({
     [saved, setSaved] = useState(structuredClone(initial));
   const [tab, setTab] = useState<Tab>('configuration');
   const [entryId, setEntryId] = useState(initial.entries[0]?.id ?? '');
+  const [entryDetail, setEntryDetail] = useState(false);
+  const entryHeading = useRef<HTMLHeadingElement>(null);
+  useLayoutEffect(() => {
+    if (entryDetail) {
+      document.querySelector('main')?.scrollTo({ top: 0 });
+      entryHeading.current?.focus({ preventScroll: true });
+    }
+  }, [entryDetail]);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState('');
   const [checking, setChecking] = useState(true),
@@ -237,9 +245,23 @@ export default function TemplateInstancePage({
   useEffect(() => {
     if (leaving && (error || sourceError)) dialogHeading.current?.focus();
   }, [leaving, error, sourceError]);
-  usePageBack(() => go(close), active);
+  const back = () => {
+    if (lock.current) return;
+    if (entryDetail) {
+      setEntryDetail(false);
+      requestAnimationFrame(() => {
+        root.current
+          ?.querySelector<HTMLElement>(
+            `[data-entry-id="${CSS.escape(entryId)}"] .template-entry-open`,
+          )
+          ?.focus();
+      });
+    } else go(close);
+  };
+  usePageBack(back, active);
   const switchTab = (next: Tab) => {
     if (lock.current) return;
+    setEntryDetail(false);
     scrolls.current.set(tab, document.querySelector('main')?.scrollTop ?? 0);
     setTab(next);
     setError('');
@@ -318,8 +340,8 @@ export default function TemplateInstancePage({
       }}
     >
       <header className="topbar">
-        <button className="context-back" disabled={busy} onClick={() => go(close)}>
-          ← 返回{returnLabel}
+        <button className="context-back" disabled={busy} onClick={back}>
+          ← 返回{entryDetail ? '实例' : returnLabel}
         </button>
         <nav className="breadcrumbs" aria-label="当前位置">
           <a
@@ -336,20 +358,28 @@ export default function TemplateInstancePage({
             {instance.name} · {instance.id.slice(0, 8)}
           </span>
           <span aria-hidden="true">/</span>
-          <span aria-current="page">{tabs.find(([id]) => id === tab)![1]}</span>
+          <span aria-current="page">
+            {entryDetail
+              ? draft.entries.find((entry) => entry.id === entryId)?.name
+              : tabs.find(([id]) => id === tab)![1]}
+          </span>
         </nav>
       </header>
       <section className="page ai-task-page template-instance-page template-entry-page">
         <div className="page-heading">
           <div>
-            <h1>{instance.name}</h1>
+            <h1 ref={entryHeading} tabIndex={-1}>
+              {entryDetail
+                ? draft.entries.find((entry) => entry.id === entryId)?.name
+                : instance.name}
+            </h1>
             <p>
               实例 {instance.id.slice(0, 8)} · 固定包 v{draft.manifest.version} ·
               共享配置修改不影响已开始的运行
             </p>
           </div>
         </div>
-        <nav className="ai-settings-tabs" aria-label="实例分类">
+        <nav className="ai-settings-tabs" aria-label="实例分类" hidden={entryDetail}>
           {tabs.map(([id, label]) => (
             <button
               key={id}
@@ -514,6 +544,12 @@ export default function TemplateInstancePage({
               hidden={entryId !== entry.id}
             >
               <TemplateEntry
+                inspection={entryDetail}
+                openDetail={(id) => {
+                  setEntryId(id);
+                  setEntryDetail(true);
+                }}
+                closeDetail={back}
                 active={active && tab === 'entry' && entryId === entry.id}
                 detail={draft}
                 saved={saved}
