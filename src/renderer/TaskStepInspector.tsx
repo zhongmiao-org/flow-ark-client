@@ -20,6 +20,7 @@ export default function TaskStepInspector({
   context,
   actions,
   presentation = 'full',
+  focusInGraph,
 }: {
   flow: Flow;
   selected: string;
@@ -27,11 +28,13 @@ export default function TaskStepInspector({
   context: TaskStepContext;
   actions: ReactNode;
   presentation?: 'full' | 'graph';
+  focusInGraph?: () => void;
 }) {
   const entries = useMemo(() => flowOutline(flow.steps).entries, [flow.steps]);
   const index = entries.findIndex((entry) => entry.step.id === selected);
   const entry = entries[index];
   const step = entry?.step;
+  const longGraph = presentation === 'graph' && entries.length > 12;
   const value = (input: unknown) => taskStepValue(input, flow, selected);
   const facts: [string, ReactNode][] = [];
   if (step) {
@@ -190,6 +193,18 @@ export default function TaskStepInspector({
   if (presentation === 'graph')
     return (
       <aside className="task-step-inspector task-step-graph" aria-label="当前方案步骤">
+        {longGraph && (
+          <div className="task-step-graph-navigation">
+            {picker}
+            <p className="task-step-position" role="status">
+              {step
+                ? `当前第 ${entry.ordinal} / ${entries.length} 步`
+                : `共 ${entries.length} 步，选择后聚焦图中位置。`}
+            </p>
+            {browse}
+            {step && focusInGraph && <button onClick={focusInGraph}>回到图中此步</button>}
+          </div>
+        )}
         {step ? (
           <>
             <h2 tabIndex={-1} data-task-step-heading>
@@ -209,10 +224,11 @@ export default function TaskStepInspector({
             <div className="task-step-actions">{actions}</div>
             <details className="task-step-graph-details">
               <summary>完整参数与步骤导航</summary>
-              {picker}
+              {!longGraph && picker}
               {location}
               {stepDetails}
-              {browse}
+              {!longGraph && browse}
+              {!longGraph && focusInGraph && <button onClick={focusInGraph}>回到图中此步</button>}
               <p className="task-step-position">编号按流程定义排列，实际执行取决于条件与循环。</p>
               <details className="task-step-original">
                 <summary>查看步骤原始配置</summary>
@@ -230,7 +246,7 @@ export default function TaskStepInspector({
                   : '这份方案还没有步骤。'}
               </p>
             </div>
-            {picker}
+            {!longGraph && picker}
             <div className="task-step-actions">{actions}</div>
           </>
         )}

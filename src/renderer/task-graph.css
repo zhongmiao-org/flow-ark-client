@@ -254,3 +254,20 @@
     min-height: 0;
   }
 }
+
+.task-step-graph-navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--fa-border-default);
+  min-width: 0;
+}
+.task-step-graph-navigation > label,
+.task-step-graph-navigation select {
+  min-width: 0;
+  max-width: 100%;
+}
+.task-step-graph-navigation > p {
+  margin: 0;
+}

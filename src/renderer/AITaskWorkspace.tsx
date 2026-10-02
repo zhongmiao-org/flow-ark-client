@@ -2625,7 +2625,17 @@ export default function AITaskWorkspace(props: Props) {
                                   focusRequest={graphFocus}
                                   active={props.active && page === 'review'}
                                   selected={selected}
-                                  select={setSelected}
+                                  select={(id, source) => {
+                                    setSelected(id);
+                                    if (source === 'keyboard')
+                                      requestAnimationFrame(() => {
+                                        const heading = document.querySelector<HTMLHeadingElement>(
+                                          '[data-task-step-heading]',
+                                        );
+                                        heading?.scrollIntoView({ block: 'center' });
+                                        heading?.focus({ preventScroll: true });
+                                      });
+                                  }}
                                 />
                               </div>
                             )}
@@ -2633,6 +2643,25 @@ export default function AITaskWorkspace(props: Props) {
                               (selectedStep && hiddenListStep !== selected)) && (
                               <TaskStepInspector
                                 presentation={standaloneGraph ? 'graph' : 'full'}
+                                focusInGraph={
+                                  standaloneGraph
+                                    ? () => {
+                                        setGraphFocus((value) => (value ?? 0) + 1);
+                                        requestAnimationFrame(() => {
+                                          const canvas = document.querySelector<HTMLElement>(
+                                            '.task-graph-workspace > .ai-task-graph',
+                                          );
+                                          canvas?.scrollIntoView({ block: 'nearest' });
+                                          const node = [
+                                            ...(canvas?.querySelectorAll<HTMLElement>(
+                                              '.react-flow__node',
+                                            ) ?? []),
+                                          ].find((item) => item.dataset.id === selected);
+                                          node?.focus({ preventScroll: true });
+                                        });
+                                      }
+                                    : undefined
+                                }
                                 flow={flow}
                                 selected={selected}
                                 select={(id) => {
