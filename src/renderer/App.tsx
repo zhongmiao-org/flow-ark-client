@@ -9,6 +9,7 @@ import ScriptConfigurationWorkspace from './ScriptConfigurationWorkspace';
 import { editScriptPackage, type ScriptNode } from './script-editor';
 import { stepTitle } from './flow-outline';
 import EditorLeaveDialog from './EditorLeaveDialog';
+import './editor-feedback.css';
 import EditorMorePage from './EditorMorePage';
 import NavigationIcon from './NavigationIcon';
 import ExportReviewDialog, { captureDraftExport, type ExportSource } from './ExportReviewDialog';
@@ -157,6 +158,7 @@ export default function App() {
   const nodeNavigation = useRef<ScriptNavigation | undefined>(undefined);
   const [settingsTabRequest, setSettingsTabRequest] = useState<SettingsTabRequest>();
   const [editorPanel, setEditorPanel] = useState('canvas');
+  const [advancedInputPending, setAdvancedInputPending] = useState(false);
   const [runPage, setRunPage] = useState(1);
   const [runFilter, setRunFilter] = useState(false);
   const [runTab, setRunTab] = useState<RunTab>('current');
@@ -520,6 +522,7 @@ export default function App() {
     : null;
   const savedEdit = edit && data.flows.find((record) => record.id === edit.id);
   const draftSaved =
+    !advancedInputPending &&
     !!savedEdit &&
     JSON.stringify(edit.flow) === JSON.stringify(savedEdit.flow) &&
     JSON.stringify(edit.bindings) === JSON.stringify(savedEdit.bindings);
@@ -1658,8 +1661,12 @@ export default function App() {
                         }
                       />
                       <span className="muted">
-                        {draftSaved ? '草稿已保存' : '有未保存修改'} ·{' '}
-                        {flatten(edit.flow.steps).length} 个步骤 ·{' '}
+                        {advancedInputPending
+                          ? '有未完成输入'
+                          : draftSaved
+                            ? '草稿已保存'
+                            : '有未保存修改'}{' '}
+                        · {flatten(edit.flow.steps).length} 个步骤 ·{' '}
                         {edit.flow.sourceTemplate ? '模板流程' : '本地流程'}
                       </span>
                     </div>
@@ -1719,6 +1726,7 @@ export default function App() {
                 activeRunId={active?.flowId === edit.id ? active.id : undefined}
                 blockingRunId={observedActive?.runId}
                 draftSaved={draftSaved}
+                onInvalidAdvancedInput={setAdvancedInputPending}
                 save={save}
                 saveBusy={busy}
                 saveError={error}
@@ -2229,6 +2237,7 @@ function Editor({
   activeRunId,
   blockingRunId,
   draftSaved,
+  onInvalidAdvancedInput,
   save,
   showRun,
   saveBusy,
@@ -2252,6 +2261,16 @@ function Editor({
   const [structureError, setStructureError] = useState('');
   const [raw, setRaw] = useState('');
   const [invalid, setInvalid] = useState('');
+  const [copiedStep, setCopiedStep] = useState<{ id: string; flowId: string; count: number }>();
+  const advancedField = useRef<HTMLTextAreaElement>(null);
+  const copyFeedback = useRef<HTMLElement>(null);
+  useEffect(() => {
+    onInvalidAdvancedInput(!!invalid);
+    return () => onInvalidAdvancedInput(false);
+  }, [invalid, onInvalidAdvancedInput]);
+  useEffect(() => {
+    if (copiedStep && active && !positionOpen) copyFeedback.current?.focus();
+  }, [copiedStep, active, positionOpen]);
   const inspectorHeading = useRef<HTMLHeadingElement>(null);
   const canvasElement = useRef<HTMLDivElement>(null);
   const keyboardStep = useRef<string | null>(null);
@@ -2280,7 +2299,12 @@ function Editor({
     setMoveTo('');
     setStructureError('');
   }, [selected, revision]);
+  useEffect(() => {
+    if (draftSaved || (copiedStep && (copiedStep.id !== selected || copiedStep.flowId !== r.id)))
+      setCopiedStep(undefined);
+  }, [draftSaved, selected, copiedStep, r.id]);
   const patch = (fn: (n: Step) => Step | null) => {
+    setCopiedStep(undefined);
     const steps = changeSteps(r.flow.steps, selected, fn);
     const mapped = flatten(steps).some((node) => node.type === 'excel' && node.operation === 'map');
     const createsText = flatten(steps).some(
@@ -2319,6 +2343,7 @@ function Editor({
       setTab('node');
       if (compact) setPanel('node');
       setStructureError('');
+      setCopiedStep(undefined);
       return true;
     } catch (error: any) {
       setStructureError(error.message);
@@ -2333,7 +2358,13 @@ function Editor({
   const duplicate = () => {
     try {
       const result = duplicateStep(r.flow.steps, selected);
-      structure(() => result.steps, result.id);
+      if (structure(() => result.steps, result.id)) {
+        setCopiedStep({
+          id: result.id,
+          flowId: r.id,
+          count: selectedNode ? flatten([selectedNode]).length : 1,
+        });
+      }
     } catch (error: any) {
       setStructureError(error.message);
     }
@@ -2393,8 +2424,10 @@ function Editor({
       <summary>高级配置 JSON</summary>
       <label>节点配置 JSON</label>
       <textarea
+        ref={advancedField}
         aria-label="节点配置 JSON"
         aria-invalid={!!invalid}
+        aria-describedby={invalid ? 'node-json-feedback' : undefined}
         className="code-input"
         value={raw}
         onChange={(e) => {
@@ -2410,17 +2443,34 @@ function Editor({
           }
         }}
       />
-      {invalid && <p className="field-error">{invalid}</p>}
       {invalid && (
-        <button
-          type="button"
-          onClick={() => {
-            setRaw(JSON.stringify(selectedNode, null, 2));
-            setInvalid('');
-          }}
-        >
-          恢复节点配置
-        </button>
+        <section className="editor-feedback is-error" id="node-json-feedback" role="alert">
+          <span className="editor-feedback-badge">无法提交</span>
+          <h3>高级输入尚未完成</h3>
+          <p>这段 JSON 尚未应用。请修正输入，或恢复上次有效的节点配置后继续。</p>
+          <pre tabIndex={0} aria-label="节点配置错误详情">
+            {invalid}
+          </pre>
+          <div className="editor-feedback-actions">
+            <button
+              type="button"
+              className="primary"
+              onClick={() => advancedField.current?.focus()}
+            >
+              修正输入
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setRaw(JSON.stringify(selectedNode, null, 2));
+                setInvalid('');
+                advancedField.current?.focus();
+              }}
+            >
+              恢复节点配置
+            </button>
+          </div>
+        </section>
       )}
       <p className="note">
         显式设置容器 timeoutMs 时，超时包含内部等待和暂停；人工节点未配置时不设节点超时。
@@ -2807,6 +2857,30 @@ function Editor({
                     </button>
                   ))}
                 </div>
+                {copiedStep && copiedStep.id === selected && !draftSaved && (
+                  <section
+                    className="editor-feedback"
+                    role="status"
+                    ref={copyFeedback}
+                    tabIndex={-1}
+                    aria-label="复制完成"
+                  >
+                    <span className="editor-feedback-badge">草稿已更改</span>
+                    <h3>复制完成</h3>
+                    <p>已复制 {copiedStep.count} 个步骤并重建内部引用；尚未保存，没有启动运行。</p>
+                    <button
+                      className="primary"
+                      onClick={() => {
+                        setCopiedStep(undefined);
+                        setTab('node');
+                        setPanel('node');
+                        requestAnimationFrame(() => inspectorHeading.current?.focus());
+                      }}
+                    >
+                      查看草稿
+                    </button>
+                  </section>
+                )}
                 {tab === 'node' &&
                   (selectedNode ? (
                     <>

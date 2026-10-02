@@ -64,3 +64,30 @@
 .editor-leave-dialog h2:focus {
   outline: none;
 }
+
+/* Main editor uses the same 640 × 320 navigation guard as the saved design. */
+.editor-draft-leave {
+  min-height: 320px;
+}
+.editor-draft-leave h2 {
+  font-size: 28px;
+  line-height: 40px;
+}
+.editor-draft-leave .editor-leave-status::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: middle;
+}
+.editor-draft-leave .editor-leave-discard {
+  border-color: transparent;
+  background: var(--fa-status-error-bg);
+}
+.editor-draft-leave .editor-leave-error {
+  max-height: 180px;
+  overflow: auto;
+}

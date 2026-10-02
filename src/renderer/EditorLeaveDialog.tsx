@@ -57,17 +57,18 @@ export default function EditorLeaveDialog({
   };
   return (
     <dialog
-      className="editor-leave-dialog"
+      className="editor-leave-dialog editor-draft-leave"
       ref={dialog}
       aria-labelledby={`${id}-title`}
       aria-describedby={`${id}-description`}
+      aria-busy={busy}
       onCancel={(event) => {
         event.preventDefault();
         if (!locked.current) stay();
       }}
     >
       <span className={`editor-leave-status${error ? ' is-error' : ''}`}>
-        {error ? '未保存 · 留在当前页' : '存在未保存更改'}
+        {busy ? '正在保存' : error ? '未保存 · 留在当前页' : '存在未保存更改'}
       </span>
       <h2 id={`${id}-title`} ref={heading} tabIndex={-1}>
         {error ? '保存未完成，尚未离开' : '离开前保存更改？'}
@@ -77,7 +78,7 @@ export default function EditorLeaveDialog({
       </p>
       <p className="editor-leave-note">已开始的运行和固定计划保持原版本。</p>
       {error && (
-        <p className="editor-leave-error" role="alert">
+        <p className="editor-leave-error" role="alert" tabIndex={0} aria-label="保存错误详情">
           {error}
         </p>
       )}
