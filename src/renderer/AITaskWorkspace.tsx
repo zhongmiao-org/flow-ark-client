@@ -1,5 +1,5 @@
 import TaskMissingAI from './TaskMissingAI';
-import TaskStepList from './TaskStepList';
+import TaskStepList, { type TaskStepListHandle } from './TaskStepList';
 import TaskStepInspector from './TaskStepInspector';
 import TaskPlanConversation from './TaskPlanConversation';
 import TaskPlanIdentity from './TaskPlanIdentity';
@@ -241,6 +241,8 @@ export default function AITaskWorkspace(props: Props) {
   const [view, setView] = useState<'list' | 'graph'>('list');
   const [graphFocus, setGraphFocus] = useState<number>();
   const [selected, setSelected] = useState('');
+  const planStepList = useRef<TaskStepListHandle>(null);
+  const [hiddenListStep, setHiddenListStep] = useState('');
   const [editingProposal, setEditingProposal] = useState(false);
   const [modification, setModification] = useState<{
     taskId: string;
@@ -616,6 +618,7 @@ export default function AITaskWorkspace(props: Props) {
   }, [props.active, props.entry?.key, busy]);
 
   function accept(next: TaskDetail, preserveOutput = false) {
+    if (selectedTask.current !== next.task.id) setHiddenListStep('');
     selectedTask.current = next.task.id;
     setDetail(next);
     const nextDraft = draftOf(next);
@@ -2585,11 +2588,21 @@ export default function AITaskWorkspace(props: Props) {
                           >
                             {view === 'list' ? (
                               <TaskStepList
+                                key={detail.task.id}
+                                ref={planStepList}
                                 flow={flow}
                                 selected={selected}
                                 select={(id) => {
                                   setSelected(id);
+                                  setHiddenListStep('');
                                   setGraphFocus((value) => (value ?? 0) + 1);
+                                  requestAnimationFrame(() => {
+                                    const heading = document.querySelector<HTMLHeadingElement>(
+                                      '[data-task-step-heading]',
+                                    );
+                                    heading?.scrollIntoView({ block: 'nearest' });
+                                    heading?.focus({ preventScroll: true });
+                                  });
                                 }}
                                 context={{
                                   bindings: detail.flow?.bindings,
@@ -2616,7 +2629,8 @@ export default function AITaskWorkspace(props: Props) {
                                 />
                               </div>
                             )}
-                            {(view === 'graph' || selectedStep) && (
+                            {(view === 'graph' ||
+                              (selectedStep && hiddenListStep !== selected)) && (
                               <TaskStepInspector
                                 presentation={standaloneGraph ? 'graph' : 'full'}
                                 flow={flow}
@@ -2639,6 +2653,16 @@ export default function AITaskWorkspace(props: Props) {
                                 }}
                                 actions={
                                   <>
+                                    {view === 'list' && selectedStep && (
+                                      <button
+                                        onClick={() => {
+                                          planStepList.current?.reveal(selectedStep.id);
+                                          setHiddenListStep(selectedStep.id);
+                                        }}
+                                      >
+                                        返回步骤清单
+                                      </button>
+                                    )}
                                     {selectedStep && !scope && (
                                       <button
                                         className="primary"
@@ -2688,6 +2712,7 @@ export default function AITaskWorkspace(props: Props) {
                             }}
                             select={(id) => {
                               setSelected(id);
+                              setHiddenListStep('');
                               setGraphFocus((value) => (value ?? 0) + 1);
                               requestAnimationFrame(() => {
                                 const heading = document.querySelector<HTMLHeadingElement>(
