@@ -367,6 +367,39 @@
 .app .editor-toolbar .draft-history {
   width: 80px;
 }
+.editor-toolbar .editor-history-label {
+  display: none;
+}
+@media (min-width: 1740px) {
+  .editor-toolbar .editor-flow-name {
+    flex: 0 0 390px;
+  }
+  .app .editor-toolbar > button,
+  .app .editor-toolbar .draft-history {
+    width: 136px;
+  }
+  .app .editor-toolbar > .primary {
+    width: 100px;
+  }
+  .app .editor-toolbar > .editor-more-trigger {
+    width: 40px;
+    min-width: 40px;
+  }
+  .editor-toolbar .editor-more-label,
+  .editor-toolbar .draft-history svg {
+    display: none;
+  }
+  .editor-toolbar .editor-history-label {
+    display: inline;
+  }
+  .editor-toolbar .draft-history button:first-child {
+    border-radius: 8px 0 0 8px;
+  }
+  .editor-toolbar .draft-history button:last-child {
+    border-radius: 0 8px 8px 0;
+    border-left: 0;
+  }
+}
 
 /* Figma 2:5253 keeps the current target ahead of general step settings. */
 .step-settings-expanded,

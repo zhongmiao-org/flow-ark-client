@@ -153,6 +153,7 @@ export default function App() {
     kind: 'script' | 'excel' | 'parameters';
     preview?: boolean;
     panel?: string;
+    trigger?: HTMLElement;
     record: FlowRecord;
     nodeId: string;
     browserOpen: boolean;
@@ -675,15 +676,23 @@ export default function App() {
       requestAnimationFrame(() =>
         requestAnimationFrame(() => {
           document.querySelector('main')?.scrollTo({ top: source?.scroll ?? 0 });
+          if (source?.kind === 'parameters') {
+            const trigger =
+              source.trigger?.isConnected && source.trigger.getClientRects().length
+                ? source.trigger
+                : Array.from(
+                    document.querySelectorAll<HTMLElement>('[aria-label="打开流程参数与资源"]'),
+                  ).find((element) => element.getClientRects().length);
+            trigger?.focus({ preventScroll: true });
+            return;
+          }
           document
             .querySelector<HTMLElement>(
               moreOpen
                 ? '.editor-more-page h1'
-                : source?.kind === 'parameters'
-                  ? '[aria-label="打开流程参数与资源"]'
-                  : source?.kind === 'excel'
-                    ? '[aria-label="打开 Excel 映射编辑器"]'
-                    : '[aria-label="打开完整脚本编辑器"]',
+                : source?.kind === 'excel'
+                  ? '[aria-label="打开 Excel 映射编辑器"]'
+                  : '[aria-label="打开完整脚本编辑器"]',
             )
             ?.focus({ preventScroll: true });
         }),
@@ -704,6 +713,7 @@ export default function App() {
       nodeId: selected,
       browserOpen,
       panel: editorPanel,
+      trigger: document.activeElement instanceof HTMLElement ? document.activeElement : undefined,
       scroll: document.querySelector('main')?.scrollTop ?? 0,
     });
     setBrowserOpen(false);
@@ -1677,9 +1687,6 @@ export default function App() {
                     <button onClick={save} disabled={busy}>
                       保存
                     </button>
-                    <button onClick={openMore} aria-label="打开更多操作" disabled={busy}>
-                      更多 ···
-                    </button>
                     <div className="draft-history" aria-label="草稿编辑历史">
                       <button
                         className="icon-button"
@@ -1689,6 +1696,7 @@ export default function App() {
                         onClick={undo}
                       >
                         <Undo2 size={16} />
+                        <span className="editor-history-label">撤销</span>
                       </button>
                       <button
                         className="icon-button"
@@ -1698,8 +1706,23 @@ export default function App() {
                         onClick={redo}
                       >
                         <Redo2 size={16} />
+                        <span className="editor-history-label">重做</span>
                       </button>
                     </div>
+                    {!compactEditor && (
+                      <>
+                        <button onClick={exportDraft} disabled={busy}>
+                          导出 ZIP
+                        </button>
+                        <button
+                          onClick={openParameters}
+                          aria-label="打开流程参数与资源"
+                          disabled={busy}
+                        >
+                          参数与绑定
+                        </button>
+                      </>
+                    )}
                     <button onClick={() => run(edit, true)} disabled={busy || draftHasTools}>
                       逐步调试
                     </button>
@@ -1712,6 +1735,15 @@ export default function App() {
                       disabled={busy || draftHasTools}
                     >
                       运行
+                    </button>
+                    <button
+                      className="editor-more-trigger"
+                      onClick={openMore}
+                      aria-label="打开更多操作"
+                      title="更多操作"
+                      disabled={busy}
+                    >
+                      <span className="editor-more-label">更多 </span>···
                     </button>
                   </div>
                 ))}
@@ -2802,7 +2834,11 @@ function Editor({
           <button aria-pressed={panel === 'node'} onClick={() => changePanel('node')}>
             当前步骤配置
           </button>
-          <button aria-pressed={panel === 'params'} onClick={() => changePanel('params')}>
+          <button
+            aria-label="打开流程参数与资源"
+            aria-pressed={panel === 'params'}
+            onClick={() => changePanel('params')}
+          >
             参数
           </button>
           {compact && !browserOpen && ['actions', 'node', 'params'].includes(panel) && (
