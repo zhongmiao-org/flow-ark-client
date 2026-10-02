@@ -29,6 +29,7 @@ export default function TaskGenerationPage({
 }) {
   const generating = task.status === 'generating';
   const unsupported = task.status === 'unsupported';
+  const updatedAt = Date.parse(task.updatedAt);
   const [retry, setRetry] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const review = useRef<HTMLDivElement>(null);
@@ -66,7 +67,9 @@ export default function TaskGenerationPage({
         <>
           <article className="task-generation-current">
             <h3>{task.scope ? '当前修改要求' : '当前任务'}</h3>
-            <p>{task.scope?.instruction || task.description}</p>
+            <p tabIndex={0} aria-label="本次生成要求">
+              {task.scope?.instruction || task.description}
+            </p>
             {task.scope && <small>仅修改所选步骤 · {task.scope.nodeId}</small>}
           </article>
           <p>
@@ -77,9 +80,13 @@ export default function TaskGenerationPage({
         </>
       ) : unsupported ? (
         <>
-          {result?.summary && <p className="task-generation-reason">{result.summary}</p>}
+          {result?.summary && (
+            <p className="task-generation-reason" tabIndex={0} aria-label="能力说明">
+              {result.summary}
+            </p>
+          )}
           {!!result?.limitations.length && (
-            <ul aria-label="当前能力限制">
+            <ul aria-label="当前能力限制" tabIndex={0}>
               {result.limitations.map((item, index) => (
                 <li key={index}>{item}</li>
               ))}
@@ -93,14 +100,56 @@ export default function TaskGenerationPage({
         </>
       ) : (
         <>
-          <p className="task-generation-reason" role="alert">
-            {task.error || '没有取得完整方案，请重新核对需求后生成。'}
-          </p>
+          <article className="task-generation-failure" aria-labelledby="generation-failure-title">
+            <h3 id="generation-failure-title">请求未完成</h3>
+            <p className="task-generation-reason" role="alert" tabIndex={0} aria-label="失败原因">
+              {task.error || '没有取得完整方案，请重新核对需求后生成。'}
+            </p>
+          </article>
           <p>
             本次不完整的结果不会替换已采纳的草稿。
             <br />
-            重试只重新生成提案，不会重复运行任务。
+            没有自动重试或切换服务。重试只重新生成提案，不会重复运行任务。
           </p>
+          <details
+            className="task-generation-record"
+            key={`${task.id}:${task.requestId ?? ''}:${task.status}`}
+          >
+            <summary>查看本次请求记录</summary>
+            <dl>
+              <div>
+                <dt>AI 服务</dt>
+                <dd>
+                  {task.provider === 'deepseek'
+                    ? 'DeepSeek'
+                    : task.provider === 'openai-codex'
+                      ? 'OpenAI · Codex'
+                      : '未记录'}
+                </dd>
+              </div>
+              <div>
+                <dt>模型</dt>
+                <dd>{task.model || '未记录'}</dd>
+              </div>
+              <div>
+                <dt>本地请求标识</dt>
+                <dd>{task.requestId || '未记录'}</dd>
+              </div>
+              <div>
+                <dt>状态更新时间</dt>
+                <dd>
+                  {Number.isFinite(updatedAt) ? (
+                    <time dateTime={task.updatedAt}>
+                      {new Date(updatedAt).toLocaleString('zh-CN')}
+                    </time>
+                  ) : (
+                    '时间待核对'
+                  )}
+                </dd>
+              </div>
+            </dl>
+            <p>这里显示本次生成留下的记录；重新生成前，可在核对区检查要使用的服务与模型。</p>
+          </details>
         </>
       )}
       {savedFlow && (
