@@ -83,6 +83,7 @@ type Props = {
   openAttention: () => void;
   guideEntry?: number;
   showBrowser: (visible: boolean) => void;
+  inspectBrowser: () => void;
   entry?: { key: string; record: FlowRecord; nodeId: string };
   entryHandled: () => void;
   sourceFlowId?: string;
@@ -1911,6 +1912,7 @@ export default function AITaskWorkspace(props: Props) {
           backLabel={targetFromRun ? '返回任务方案' : undefined}
           changed={props.changed}
           showBrowser={() => props.showBrowser(true)}
+          inspectBrowser={props.inspectBrowser}
           selected={(next) => {
             epoch.current++;
             accept(next);

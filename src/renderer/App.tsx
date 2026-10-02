@@ -146,6 +146,35 @@ export default function App() {
     kind: 'web' | 'file' | 'window';
   }>();
   const [browserOpen, setBrowserOpen] = useState(false);
+  const [browserObservationRequest, setBrowserObservationRequest] = useState<string>();
+  const browserObservationOrigin = useRef<
+    | {
+        trigger: HTMLElement | null;
+        browserOpen: boolean;
+        scroll: number;
+      }
+    | undefined
+  >(undefined);
+  const inspectTaskBrowser = () => {
+    browserObservationOrigin.current = {
+      trigger: document.activeElement instanceof HTMLElement ? document.activeElement : null,
+      browserOpen,
+      scroll: document.querySelector('main')?.scrollTop ?? 0,
+    };
+    setBrowserObservationRequest(crypto.randomUUID());
+    setBrowserOpen(true);
+  };
+  const returnFromBrowserObservation = () => {
+    const origin = browserObservationOrigin.current;
+    setBrowserObservationRequest(undefined);
+    setBrowserOpen(origin?.browserOpen ?? false);
+    requestAnimationFrame(() => {
+      document.querySelector('main')?.scrollTo({ top: origin?.scroll ?? 0 });
+      if (origin?.trigger?.isConnected) origin.trigger.focus({ preventScroll: true });
+    });
+    browserObservationOrigin.current = undefined;
+  };
+
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const moreOrigin = useRef({ browserOpen: false, scroll: 0, outline: false, task: false });
@@ -281,6 +310,9 @@ export default function App() {
   }, [section, detail?.run.id, runFilter, runTab]);
   const edit = history.present?.record ?? null,
     selected = history.present?.selected ?? '';
+  useEffect(() => {
+    if (!browserOpen || section !== 'tasks') setBrowserObservationRequest(undefined);
+  }, [browserOpen, section]);
   const editorBrowser = section === 'editor' && browserOpen;
   const draftHasTools =
     !!edit && flatten(edit.flow.steps).some((step) => ['mcp', 'desktop'].includes(step.type));
@@ -1410,6 +1442,7 @@ export default function App() {
                 setBrowserOpen(false);
               }}
               showBrowser={setBrowserOpen}
+              inspectBrowser={inspectTaskBrowser}
               entry={taskEntry}
               entryHandled={() => setTaskEntry(undefined)}
               sourceFlowId={taskSource?.record.id}
@@ -2232,6 +2265,8 @@ export default function App() {
         </main>
         {browserOpen && section !== 'editor' && (
           <BrowserSidebar
+            observationRequest={browserObservationRequest}
+            returnFromObservation={returnFromBrowserObservation}
             close={() => setBrowserOpen(false)}
             running={!!active && !['PAUSED', 'WAITING_INPUT'].includes(active.state)}
             obscured={!!exportSource || (section === 'editor' && configOpen)}

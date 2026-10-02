@@ -22,6 +22,7 @@ export default function TaskWebTargetPage({
   back,
   backLabel = '返回描述与资料',
   showBrowser,
+  inspectBrowser,
   changed,
   openTools,
 }: {
@@ -36,6 +37,7 @@ export default function TaskWebTargetPage({
   back: () => void;
   backLabel?: string;
   showBrowser: () => void;
+  inspectBrowser: () => void;
   changed: () => Promise<void>;
   openTools: () => void;
 }) {
@@ -199,7 +201,7 @@ export default function TaskWebTargetPage({
               <p>内置浏览器 · 当前标签</p>
               <p>账号：未核对 · 工作区：本机内置浏览器</p>
               <p className="task-web-url">{current?.url}</p>
-              <button disabled={busy} onClick={showBrowser}>
+              <button disabled={busy} onClick={inspectBrowser}>
                 扩大查看
               </button>
             </div>

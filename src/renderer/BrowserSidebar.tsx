@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { Globe, X, ArrowRight, RefreshCw } from 'lucide-react';
 import './browser-observation.css';
 import { desktopViewportWidth } from '../shared/browser-viewport';
@@ -10,7 +10,11 @@ export default function BrowserSidebar({
   editing = false,
   onPick,
   onLocate,
+  observationRequest,
+  returnFromObservation,
 }: {
+  observationRequest?: string;
+  returnFromObservation?: () => void;
   editing?: boolean;
   onPick?: () => void;
   onLocate?: () => void;
@@ -26,7 +30,10 @@ export default function BrowserSidebar({
   const panel = useRef<HTMLElement>(null);
   const expandButton = useRef<HTMLButtonElement>(null);
   const returnButton = useRef<HTMLButtonElement>(null);
-  const [expanded, setExpanded] = useState(false);
+  const [panelExpanded, setExpanded] = useState(false);
+  const expanded = !!observationRequest || panelExpanded;
+  const observationTitle = observationRequest ? '网页总览' : '扩大查看网页';
+
   const [scale, setScale] = useState<number>();
   const restoreFocus = useRef(false);
   const [dialogOpen, setDialogOpen] = useState(() => !!document.querySelector('dialog[open]'));
@@ -43,7 +50,7 @@ export default function BrowserSidebar({
     sync();
     return () => observer.disconnect();
   }, []);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!expanded || hidden || !panel.current) return;
     const saved: { element: HTMLElement; inert: boolean }[] = [];
     let branch: HTMLElement = panel.current;
@@ -70,6 +77,10 @@ export default function BrowserSidebar({
     }
   }, [expanded]);
   const restorePanel = () => {
+    if (observationRequest && returnFromObservation) {
+      returnFromObservation();
+      return;
+    }
     restoreFocus.current = true;
     setExpanded(false);
   };
@@ -165,6 +176,10 @@ export default function BrowserSidebar({
       }).catch(() => {});
   }, [error]);
   const closePanel = () => {
+    if (observationRequest && returnFromObservation) {
+      returnFromObservation();
+      return;
+    }
     close();
     requestAnimationFrame(() => {
       const toggle = Array.from(
@@ -234,7 +249,7 @@ export default function BrowserSidebar({
         {expanded ? (
           <>
             <button ref={returnButton} onClick={restorePanel}>
-              ← 返回右侧面板
+              {observationRequest ? '← 返回选择对象' : '← 返回右侧面板'}
             </button>
             <nav className="breadcrumbs" aria-label="当前位置">
               <a
@@ -244,10 +259,10 @@ export default function BrowserSidebar({
                   restorePanel();
                 }}
               >
-                内置网页
+                {observationRequest ? '选择操作对象' : '内置网页'}
               </a>
               <span aria-hidden="true">/</span>
-              <span aria-current="page">扩大查看网页</span>
+              <span aria-current="page">{observationTitle}</span>
             </nav>
           </>
         ) : (
@@ -282,7 +297,11 @@ export default function BrowserSidebar({
               扩大查看
             </button>
           )}
-          <button title="关闭网页面板" aria-label="关闭网页面板" onClick={closePanel}>
+          <button
+            title={observationRequest ? '退出网页总览' : '关闭网页面板'}
+            aria-label={observationRequest ? '退出网页总览' : '关闭网页面板'}
+            onClick={closePanel}
+          >
             <X size={17} />
           </button>
         </div>
@@ -290,7 +309,7 @@ export default function BrowserSidebar({
       <div className="browser-observation-workspace">
         {expanded && (
           <div className="browser-observation-heading">
-            <h1>扩大查看网页</h1>
+            <h1>{observationTitle}</h1>
             <p>网页布局宽度保持 {desktopViewportWidth} CSS px · 当前按可见区域适应宽度</p>
           </div>
         )}
