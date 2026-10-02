@@ -135,6 +135,7 @@ export default function AITaskWorkspace(props: Props) {
   const [savedOutput, setSavedOutput] = useState('');
   const [revision, setRevision] = useState(0);
   const [homeText, setHomeText] = useState('');
+  const homeInput = useRef<HTMLTextAreaElement>(null);
   const [learning, setLearning] = useState<LearningStatus>();
   const [learningError, setLearningError] = useState('');
   const [learningAction, setLearningAction] = useState<
@@ -153,6 +154,23 @@ export default function AITaskWorkspace(props: Props) {
     | 'generation'
     | 'modify'
   >('home');
+  useLayoutEffect(() => {
+    const input = homeInput.current;
+    if (!props.active || page !== 'home' || !input) return;
+    const resize = () => {
+      input.style.height = '36px';
+      input.style.height = `${Math.min(226, Math.max(36, input.scrollHeight + 2))}px`;
+    };
+    resize();
+    let width = input.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (input.clientWidth === width) return;
+      width = input.clientWidth;
+      resize();
+    });
+    observer.observe(input);
+    return () => observer.disconnect();
+  }, [homeText, page, props.active]);
   const [proposalView, setProposalView] = useState<{ id: string; mode: 'changes' | 'flow' }>();
   const missingOrigin = useRef<'brief' | 'understand' | 'review' | 'generation' | 'modify'>(
     'brief',
@@ -1706,6 +1724,8 @@ export default function AITaskWorkspace(props: Props) {
             </label>
             <textarea
               id="new-task-description"
+              ref={homeInput}
+              rows={1}
               value={homeText}
               disabled={busy}
               maxLength={20000}
@@ -1767,7 +1787,6 @@ export default function AITaskWorkspace(props: Props) {
               >
                 <h2>{heading}</h2>
                 <p>{description}</p>
-                <small>用这个需求开始</small>
               </button>
             ))}
           </div>
@@ -1777,10 +1796,11 @@ export default function AITaskWorkspace(props: Props) {
                 <h2>{learning.status === 'completed' ? '已完成第一次学习' : '继续上次学习'}</h2>
                 <p>
                   {learning.status === 'skipped' ? '已跳过 · ' : ''}已完成{' '}
-                  {Object.keys(learning.achieved).length} / 4 项学习。运行状态和结果在原任务中查看。
+                  {Object.keys(learning.achieved).length} / 4 项学习。
                 </p>
-                {learningError && (
-                  <p role="alert">学习记录暂时未取得。打开学习说明后重新读取，原任务保留。</p>
+                {learningError && <p role="alert">学习记录暂时未取得，请打开学习说明重新读取。</p>}
+                {!learningError && !learning.taskExists && (
+                  <p role="status">原教学任务已不存在，可以重新学习。已记录的学习进度仍保留。</p>
                 )}
                 <div className="ai-task-actions">
                   <button
@@ -1814,11 +1834,11 @@ export default function AITaskWorkspace(props: Props) {
             <button disabled={busy} onClick={props.flows}>
               使用已有流程
             </button>
-            <button disabled={busy} onClick={props.openTools}>
-              应用与工具
-            </button>
             <button disabled={busy} onClick={props.createFlow}>
               手动创建流程
+            </button>
+            <button disabled={busy} onClick={props.openTools}>
+              应用与工具
             </button>
           </div>
           <section className="ai-task-card" aria-labelledby="task-home-recents-title">

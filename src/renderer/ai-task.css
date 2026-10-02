@@ -35,13 +35,19 @@
   gap: 12px;
 }
 .ai-task-page .ai-task-composer textarea {
-  min-height: 48px;
+  min-height: 36px;
+  height: 36px;
   padding: 0;
   border-color: transparent;
   background: transparent;
   font-size: 18px;
+  font-weight: 500;
   line-height: 28px;
   resize: vertical;
+}
+.ai-task-composer > .ai-task-actions:last-child {
+  margin-top: 4px;
+  gap: 16px;
 }
 .ai-task-actions {
   display: flex;
@@ -67,13 +73,13 @@
   align-items: flex-start;
   justify-content: flex-start;
   text-align: left;
-  padding: 20px;
+  padding: 16px;
   min-height: 132px;
   gap: 8px;
   border-radius: var(--fa-radius-12);
 }
-.ai-task-examples small {
-  color: var(--fa-action-primary);
+.ai-task-examples > button p {
+  font-weight: 400;
 }
 .ai-task-page > .ai-task-actions {
   margin-top: 24px;
@@ -946,6 +952,14 @@
 }
 .task-home-status .learning-home {
   margin-bottom: 0;
+}
+.task-home-status > .ai-task-card {
+  min-height: 160px;
+  padding: 16px;
+  gap: 8px;
+}
+.task-home-status .ai-task-actions button {
+  min-width: 144px;
 }
 @container (max-width: 760px) {
   .task-home-status {
