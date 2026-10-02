@@ -17,6 +17,16 @@
 }
 .ai-task-card.task-generation[data-generation-state='generating'] {
   min-height: 550px;
+  padding: 31px;
+}
+.task-generation[data-generation-state='generating'] h2 {
+  font-weight: 700;
+}
+.task-generation .task-generation-status::before {
+  content: none;
+}
+.task-generation-status img {
+  flex: 0 0 auto;
 }
 .ai-task-card.task-generation[data-generation-state='unsupported'] {
   min-height: 520px;
@@ -34,7 +44,7 @@
 }
 .task-generation-current {
   min-height: 116px;
-  padding: 16px;
+  padding: 15px;
   gap: 8px;
 }
 .task-generation-current p,

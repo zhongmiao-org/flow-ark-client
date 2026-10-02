@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { PlanningTask, PlanningResult } from '../shared/planning';
 import './task-generation.css';
+const runningIndicator = new URL('./assets/status/running.svg?no-inline', import.meta.url).href;
 
 export default function TaskGenerationPage({
   task,
@@ -51,14 +52,17 @@ export default function TaskGenerationPage({
       aria-labelledby="generation-heading"
     >
       <span
-        className={`badge state-${generating ? 'RUNNING' : unsupported ? 'WAITING_INPUT' : 'FAILED'}`}
+        className={`badge${generating ? ' task-generation-status' : ''} state-${generating ? 'RUNNING' : unsupported ? 'WAITING_INPUT' : 'FAILED'}`}
         role="status"
       >
+        {generating && <img src={runningIndicator} alt="" />}
         {generating ? '正在生成' : unsupported ? '缺少可用能力' : '生成未完成'}
       </span>
       <h2 id="generation-heading" tabIndex={-1} ref={heading}>
         {generating
-          ? '正在理解需求并检查可用步骤'
+          ? task.webTarget && task.outputTarget && !task.scope
+            ? '已确认目标与输出，正在检查步骤'
+            : '正在理解需求并检查可用步骤'
           : unsupported
             ? '这项操作还缺少可用能力'
             : '可以重试，也可以先修改需求'}
