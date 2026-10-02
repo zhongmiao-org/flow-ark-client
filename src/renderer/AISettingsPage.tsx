@@ -1,5 +1,6 @@
 import { usePageBack } from './use-page-back';
 import type { SettingsDestination } from './LocalSettingsPage';
+import type { TemplateDetail } from './template-draft';
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import {
   aiErrorMessage,
@@ -30,6 +31,7 @@ export type AISettingsEntry = {
         instanceId: string;
         entryId: string;
         packageKey: string;
+        entryFlowId?: string;
         view?: 'resources' | 'entry';
       };
 };
@@ -46,6 +48,7 @@ export default function AISettingsPage({
   onSaved,
   home,
   selectProvider,
+  templateLibrary,
 }: {
   active: boolean;
   entry: AISettingsEntry;
@@ -55,6 +58,7 @@ export default function AISettingsPage({
   onSaved: (state: AIConfigurationState) => void;
   home: (tab?: SettingsDestination) => void;
   selectProvider: (provider: AIProviderId) => void;
+  templateLibrary: () => void;
 }) {
   const [storedState, setState] = useState<AIConfigurationState>();
   const [loadedEntry, setLoadedEntry] = useState<string>();
@@ -65,6 +69,27 @@ export default function AISettingsPage({
     [dirty, setDirty] = useState(false),
     [error, setError] = useState('');
   const [invalid, setInvalid] = useState<'model' | 'key'>();
+  const [checkingSource, setCheckingSource] = useState(false);
+  const [sourceFailure, setSourceFailure] = useState<'changed' | 'unavailable'>();
+  const sourceCheck = useRef(0),
+    sourcePending = useRef(false),
+    sourceHeading = useRef<HTMLHeadingElement>(null),
+    sourceReturn = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    sourceCheck.current++;
+    sourcePending.current = false;
+    setCheckingSource(false);
+    setSourceFailure(undefined);
+    return () => {
+      sourceCheck.current++;
+    };
+  }, [active, entry.key]);
+  useLayoutEffect(() => {
+    if (active && sourceFailure) {
+      document.querySelector('main')?.scrollTo({ top: 0 });
+      sourceHeading.current?.focus({ preventScroll: true });
+    }
+  }, [active, sourceFailure]);
   const modelInput = useRef<HTMLInputElement>(null),
     keyInput = useRef<HTMLInputElement>(null),
     resultHeading = useRef<HTMLHeadingElement>(null),
@@ -203,7 +228,50 @@ export default function AISettingsPage({
     }
   };
   navigation.current = go;
-  const returnToSource = () => go(back);
+  const checkSource = async () => {
+    if (sourcePending.current) return;
+    if (entry.source?.kind !== 'template') {
+      back();
+      return;
+    }
+    const source = entry.source;
+    const check = ++sourceCheck.current;
+    sourcePending.current = true;
+    setCheckingSource(true);
+    try {
+      const fresh: TemplateDetail = await window.flowark.request('template.detail', {
+        id: source.instanceId,
+      });
+      if (check !== sourceCheck.current) return;
+      if (
+        fresh?.instance.id !== source.instanceId ||
+        fresh.instance.packageKey !== source.packageKey ||
+        (source.entryFlowId !== undefined &&
+          fresh.instance.entryFlows[source.entryId] !== source.entryFlowId) ||
+        !fresh.entries.some((item) => item.id === source.entryId)
+      )
+        setSourceFailure('changed');
+      else {
+        setSourceFailure(undefined);
+        back();
+      }
+    } catch {
+      if (check === sourceCheck.current) setSourceFailure('unavailable');
+    } finally {
+      if (check === sourceCheck.current) {
+        sourcePending.current = false;
+        setCheckingSource(false);
+      }
+    }
+  };
+  const returnToSource = () => go(() => void checkSource());
+  const stayInSettings = () => {
+    sourceCheck.current++;
+    sourcePending.current = false;
+    setCheckingSource(false);
+    setSourceFailure(undefined);
+    requestAnimationFrame(() => sourceReturn.current?.focus({ preventScroll: true }));
+  };
   const stay = () => {
     if (busy === 'save' || busy === 'remove') return;
     setLeaving(undefined);
@@ -213,7 +281,10 @@ export default function AISettingsPage({
       else if (lastInput.current?.isConnected) lastInput.current.focus({ preventScroll: true });
     });
   };
-  usePageBack(() => (removing ? stay() : returnToSource()), active);
+  usePageBack(
+    () => (sourceFailure ? stayInSettings() : removing ? stay() : returnToSource()),
+    active,
+  );
   useEffect(
     () => () => {
       epoch.current++;
@@ -383,6 +454,60 @@ export default function AISettingsPage({
         : state.test?.status === 'failed'
           ? 'error'
           : 'warning';
+  if (sourceFailure)
+    return (
+      <div className="ai-settings-host" hidden={!active}>
+        <header className="topbar">
+          <button className="context-back" onClick={stayInSettings}>
+            ← 返回 AI 设置
+          </button>
+          <nav className="breadcrumbs" aria-label="当前位置">
+            <a
+              href="#ai-settings"
+              onClick={(event) => {
+                event.preventDefault();
+                stayInSettings();
+              }}
+            >
+              AI 服务
+            </a>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">无法返回原来源</span>
+          </nav>
+        </header>
+        <section className="page ai-task-page ai-settings-page ai-source-unavailable">
+          <div className="page-heading">
+            <div>
+              <h1 ref={sourceHeading} tabIndex={-1}>
+                {sourceFailure === 'changed' ? '原页面已不可用' : '暂时无法返回原页面'}
+              </h1>
+              <p>
+                {sourceFailure === 'changed'
+                  ? '原实例或入口已变化。请选择明确的去向，再选择要继续操作的实例。'
+                  : '暂时无法核对原实例或入口。可以重新读取，当前模板输入仍保留。'}
+              </p>
+            </div>
+          </div>
+          <article className="ai-task-card ai-source-unavailable-card">
+            <span className="ai-config-status warning">无法返回原来源</span>
+            <h2>{name} 设置仍保留</h2>
+            <p>此次返回未修改已保存的 AI 配置，也不会自动打开另一个实例。</p>
+            <p className="ai-source-unavailable-origin">原来源：{entry.source?.title}</p>
+            <div className="ai-task-actions">
+              <button className="primary" onClick={templateLibrary}>
+                返回模板库
+              </button>
+              <button onClick={stayInSettings}>留在 AI 设置</button>
+              {sourceFailure === 'unavailable' && (
+                <button disabled={checkingSource} onClick={() => void checkSource()}>
+                  {checkingSource ? '正在核对来源…' : '重新核对来源'}
+                </button>
+              )}
+            </div>
+          </article>
+        </section>
+      </div>
+    );
   return (
     <div
       className="ai-settings-host"
@@ -395,17 +520,20 @@ export default function AISettingsPage({
     >
       <header className="topbar">
         <button
+          ref={sourceReturn}
+          disabled={checkingSource}
           className={`context-back${entry.source ? ' from-task' : ''}`}
           onClick={() => (removing ? stay() : returnToSource())}
         >
-          ← 返回
-          {removing
-            ? 'AI 服务'
-            : fromTemplate
-              ? templateLabel
-              : entry.source
-                ? '原任务'
-                : '本地设置'}
+          {checkingSource ? '正在核对来源…' : '← 返回'}
+          {!checkingSource &&
+            (removing
+              ? 'AI 服务'
+              : fromTemplate
+                ? templateLabel
+                : entry.source
+                  ? '原任务'
+                  : '本地设置')}
         </button>
         <nav className="breadcrumbs" aria-label="当前位置">
           <a
@@ -430,7 +558,11 @@ export default function AISettingsPage({
           <span aria-current="page">AI 服务</span>
         </nav>
       </header>
-      <section className="page ai-task-page ai-settings-page">
+      <section
+        className="page ai-task-page ai-settings-page"
+        inert={checkingSource}
+        aria-busy={checkingSource}
+      >
         <div className="page-heading">
           <div>
             <h1 ref={title} tabIndex={-1}>
@@ -769,12 +901,14 @@ export default function AISettingsPage({
                   </small>
                 </>
               )}
-              <button onClick={returnToSource}>
-                {fromTemplate
-                  ? '返回' + templateLabel
-                  : entry.source
-                    ? '继续原任务'
-                    : '返回本地设置'}
+              <button disabled={checkingSource} onClick={returnToSource}>
+                {checkingSource
+                  ? '正在核对来源…'
+                  : fromTemplate
+                    ? '返回' + templateLabel
+                    : entry.source
+                      ? '继续原任务'
+                      : '返回本地设置'}
               </button>
               <small>本页配置仅用于已授权的任务。</small>
             </section>

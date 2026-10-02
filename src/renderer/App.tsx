@@ -129,6 +129,7 @@ export default function App() {
   const [settingsNavigation, setSettingsNavigation] = useState<SettingsNavigation>();
   const [attentionNavigation, setAttentionNavigation] = useState<AttentionNavigation>();
   const templateNavigation = useRef<TemplateNavigation | undefined>(undefined);
+  const [templateHomeRequest, setTemplateHomeRequest] = useState<string>();
   const toolNavigation = useRef<ToolNavigation | undefined>(undefined);
   const toolDetails = useRef<((id: string) => void) | undefined>(undefined);
   const aiSettingsNavigation = useRef<AISettingsNavigation | undefined>(undefined);
@@ -1530,6 +1531,7 @@ export default function App() {
           />
           <div hidden={section !== 'templates'}>
             <TemplateLibrary
+              homeRequest={templateHomeRequest}
               refresh={refresh}
               navigation={templateNavigation}
               exportTemplate={(pkg, returnLabel) =>
@@ -2131,6 +2133,13 @@ export default function App() {
             }}
           />
           <AISettingsPage
+            templateLibrary={() =>
+              leaveAIContext(() => {
+                setTemplateHomeRequest(crypto.randomUUID());
+                setSection('templates');
+                setTaskReturn(false);
+              }, '模板库')
+            }
             active={section === 'ai-settings'}
             entry={taskAISettings}
             selectProvider={(provider) => {

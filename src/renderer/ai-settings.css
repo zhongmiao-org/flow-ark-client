@@ -106,6 +106,32 @@
   color: var(--fa-action-primary);
   background: var(--fa-action-subtle);
 }
+/* Figma 8:19310: an unavailable return source must offer an explicit destination. */
+.ai-settings-page .ai-task-card.ai-source-unavailable-card {
+  min-height: 350px;
+  padding: 28px;
+  gap: 16px;
+  align-items: flex-start;
+}
+.ai-source-unavailable-card h2 {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 500;
+}
+.ai-source-unavailable-card p {
+  color: var(--fa-text-secondary);
+}
+.ai-source-unavailable-origin {
+  font-size: 13px;
+}
+.ai-settings-page .ai-task-card.ai-source-unavailable-card .ai-task-actions button {
+  min-width: 180px;
+}
+@container (max-width: 760px) {
+  .ai-settings-page .ai-task-card.ai-source-unavailable-card {
+    padding: 24px;
+  }
+}
 .ai-settings-field {
   display: flex;
   flex-direction: column;

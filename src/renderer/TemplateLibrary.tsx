@@ -29,6 +29,7 @@ export default function TemplateLibrary({
   showRun,
   schedule,
   exportTemplate,
+  homeRequest,
 }: {
   navigation: MutableRefObject<TemplateNavigation | undefined>;
   showRun: (detail: any, origin: TemplateEntryOrigin, output?: boolean) => void;
@@ -41,6 +42,7 @@ export default function TemplateLibrary({
   consumePreview?: () => void;
   active: boolean;
   settings: (entry: AISettingsEntry) => void;
+  homeRequest?: string;
 }) {
   const [view, setView] = useState<View>('library');
   const [preview, setPreview] = useState<Preview>();
@@ -162,6 +164,11 @@ export default function TemplateLibrary({
     setNotice('');
     setRemoveReviewed(false);
   };
+  useEffect(() => {
+    if (!homeRequest) return;
+    setDetail(undefined);
+    home();
+  }, [homeRequest]);
   const openPackage = (p: InstalledPackage) => {
     remember();
     setSelectedKey(p.key);

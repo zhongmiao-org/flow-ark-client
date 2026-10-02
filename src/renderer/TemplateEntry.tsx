@@ -198,6 +198,7 @@ export default function TemplateEntry({
         instanceId: instance.id,
         entryId,
         packageKey: instance.packageKey,
+        entryFlowId: instance.entryFlows[entryId],
       },
     });
   };

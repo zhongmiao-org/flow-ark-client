@@ -293,6 +293,7 @@ export default function TemplateInstancePage({
         instanceId: instance.id,
         entryId,
         packageKey: instance.packageKey,
+        entryFlowId: instance.entryFlows[entryId],
         view: 'resources',
         title: `${instance.name} · ${instance.id.slice(0, 8)} / 资源与动作授权`,
       },
