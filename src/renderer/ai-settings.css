@@ -329,3 +329,25 @@ button.ai-remove-button {
     min-width: 0;
   }
 }
+
+.ai-provider-card.is-editing > label.ai-settings-field {
+  line-height: 20px;
+}
+.ai-settings-page .ai-provider-card > p,
+.ai-settings-page .ai-connection-card > p {
+  color: var(--fa-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+}
+.ai-settings-page .ai-connection-card > h2,
+.ai-settings-page .ai-connection-card > h3 {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+.ai-settings-page .ai-provider-card > .ai-config-form-error {
+  padding: 12px 16px;
+  border-radius: var(--fa-radius-6);
+  background: var(--fa-status-error-bg);
+  color: var(--fa-status-error);
+}

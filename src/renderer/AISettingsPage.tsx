@@ -64,9 +64,11 @@ export default function AISettingsPage({
   const [invalid, setInvalid] = useState<'model' | 'key'>();
   const modelInput = useRef<HTMLInputElement>(null),
     keyInput = useRef<HTMLInputElement>(null),
-    resultHeading = useRef<HTMLHeadingElement>(null);
+    resultHeading = useRef<HTMLHeadingElement>(null),
+    formError = useRef<HTMLParagraphElement>(null);
   const focusField = useRef<'model' | 'key' | undefined>(undefined),
-    focusResult = useRef(false);
+    focusResult = useRef(false),
+    focusSaveError = useRef(false);
   const [busy, setBusy] = useState<'save' | 'remove' | 'test' | null>(null);
   const [leaving, setLeaving] = useState<{ next: () => void; destination: string }>(),
     [removing, setRemoving] = useState(false);
@@ -98,6 +100,10 @@ export default function AISettingsPage({
       (focusField.current === 'model' ? modelInput : keyInput).current?.focus();
       focusField.current = undefined;
     }
+    if (editing && !busy && focusSaveError.current) {
+      formError.current?.focus();
+      focusSaveError.current = false;
+    }
     if (!editing && !busy && focusResult.current) {
       resultHeading.current?.focus({ preventScroll: true });
       focusResult.current = false;
@@ -119,6 +125,7 @@ export default function AISettingsPage({
     setInvalid(undefined);
     focusField.current = undefined;
     focusResult.current = false;
+    focusSaveError.current = false;
     lastInput.current = null;
     setEditing(false);
     setLeaving(undefined);
@@ -247,12 +254,24 @@ export default function AISettingsPage({
       await changed().catch(() => setError('配置已保存，本地概览暂未刷新，请稍后重新打开设置。'));
       return true;
     } catch (error) {
+      focusSaveError.current = true;
       setError(message(error));
       return false;
     } finally {
       lock.current = false;
       setBusy(null);
     }
+  };
+  const beginEdit = (field: 'model' | 'key') => {
+    if (!state || busy || testing || state.inUse) return;
+    focusField.current = field;
+    focusSaveError.current = false;
+    setEditing(true);
+    setModel(state.model);
+    setKey('');
+    setDirty(false);
+    setInvalid(undefined);
+    setError('');
   };
   const cancelEdit = () =>
     go(() => {
@@ -326,6 +345,15 @@ export default function AISettingsPage({
       setBusy(null);
     }
   };
+  const failedCode = state?.test?.status === 'failed' ? state.test.code : undefined;
+  const repairField =
+    failedCode === 'authentication' ? 'key' : failedCode === 'request' ? 'model' : undefined;
+  const failureTitle =
+    failedCode === 'authentication'
+      ? '密钥验证未通过'
+      : failedCode === 'request'
+        ? '模型或请求不可用'
+        : '连接测试未通过';
   const summary = !state
     ? '正在读取配置'
     : testing
@@ -422,7 +450,7 @@ export default function AISettingsPage({
             <span aria-disabled="true">脚本</span>
           </nav>
         )}
-        {error && !removing && (
+        {error && !removing && !editing && (
           <div className="ai-task-error" role="alert" id="ai-settings-error">
             {error}
           </div>
@@ -507,7 +535,8 @@ export default function AISettingsPage({
                       aria-invalid={invalid === 'model'}
                       aria-describedby={invalid === 'model' ? 'ai-settings-error' : undefined}
                       value={model}
-                      disabled={!!busy || state.inUse}
+                      placeholder="填写账号可用的模型 ID"
+                      disabled={!!busy || testing || state.inUse}
                       onChange={(e) => {
                         setModel(e.target.value);
                         setDirty(true);
@@ -537,7 +566,7 @@ export default function AISettingsPage({
                       placeholder={
                         state.configured ? '输入新 Key，留空则保留原 Key' : `输入 ${name} API Key`
                       }
-                      disabled={!!busy || state.inUse}
+                      disabled={!!busy || testing || state.inUse}
                       onChange={(e) => {
                         setKey(e.target.value);
                         setDirty(true);
@@ -555,10 +584,21 @@ export default function AISettingsPage({
                         ? '已输入，尚未保存。粘贴内容不会在其他页面回显。'
                         : '尚未保存密钥。配置完成后，这里会显示掩码和尾四位。'}
                   </p>
+                  {error && (
+                    <p
+                      className="ai-config-form-error"
+                      id="ai-settings-error"
+                      role="alert"
+                      ref={formError}
+                      tabIndex={-1}
+                    >
+                      {error}
+                    </p>
+                  )}
                   <div className="ai-task-actions">
                     <button
                       className="primary"
-                      disabled={!!busy || state.inUse || (!dirty && state.configured)}
+                      disabled={!!busy || testing || state.inUse || (!dirty && state.configured)}
                       onClick={() => void save()}
                     >
                       {busy === 'save' ? '正在保存…' : '保存配置'}
@@ -574,12 +614,9 @@ export default function AISettingsPage({
                     <span>模型 ID</span>
                     <button
                       className="ai-model-value"
-                      disabled={!!busy || state.inUse}
-                      onClick={() => {
-                        focusField.current = 'model';
-                        setEditing(true);
-                        setKey('');
-                      }}
+                      disabled={!!busy || testing || state.inUse}
+                      aria-label="修改模型 ID"
+                      onClick={() => beginEdit('model')}
                     >
                       <span className="ai-model-name">{state.model}</span>
                       <span>修改</span>
@@ -594,12 +631,8 @@ export default function AISettingsPage({
                   </div>
                   <div className="ai-task-actions">
                     <button
-                      disabled={!!busy || state.inUse}
-                      onClick={() => {
-                        focusField.current = 'key';
-                        setEditing(true);
-                        setKey('');
-                      }}
+                      disabled={!!busy || testing || state.inUse}
+                      onClick={() => beginEdit('key')}
                     >
                       替换 Key
                     </button>
@@ -607,7 +640,7 @@ export default function AISettingsPage({
                       <button
                         ref={removeButton}
                         className="ai-remove-button"
-                        disabled={!!busy || state.inUse}
+                        disabled={!!busy || testing || state.inUse}
                         onClick={() => {
                           setError('');
                           setRemoving(true);
@@ -644,7 +677,7 @@ export default function AISettingsPage({
                       : state.test?.status === 'passed'
                         ? `${name} 可正常响应`
                         : state.test?.status === 'failed'
-                          ? '连接测试未通过'
+                          ? failureTitle
                           : '配置已安全保存'}
               </h3>
               <p>
@@ -678,6 +711,11 @@ export default function AISettingsPage({
                         ? '重新测试'
                         : '测试连接'}
                   </button>
+                  {!testing && repairField && (
+                    <button disabled={!!busy || state.inUse} onClick={() => beginEdit(repairField)}>
+                      {repairField === 'key' ? '替换 Key' : '修改模型 ID'}
+                    </button>
+                  )}
                   <small>
                     测试只发送固定测试文本，可能产生少量 API 费用。不会发送任务或模板业务数据。
                   </small>
