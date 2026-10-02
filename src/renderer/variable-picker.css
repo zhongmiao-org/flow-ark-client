@@ -6,13 +6,39 @@
   padding: 8px;
   background: var(--fa-bg-surface);
   font-size: 13px;
+  flex-wrap: wrap;
 }
-.variable-picker-toolbar button {
+.variable-picker-toolbar > button {
   min-width: 168px;
   min-height: 40px;
 }
 .variable-picker-toolbar nav {
   overflow-wrap: anywhere;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+body:has(.variable-picker-dialog[open])
+  .editor-workspace-dialog[open]:not(.variable-picker-dialog) {
+  visibility: hidden;
+}
+.variable-picker-toolbar nav button {
+  padding: 4px 0;
+  min-width: 0;
+  min-height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--fa-action-primary);
+  font-size: inherit;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+.variable-picker-toolbar > .variable-picker-browser {
+  margin-left: auto;
+  min-width: 136px;
 }
 .variable-picker-page {
   container-type: inline-size;

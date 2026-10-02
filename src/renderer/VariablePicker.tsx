@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useContext, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { composeReference, type ReferenceChoice } from './value-references';
+import { VariableNavigationContext } from './variable-navigation';
 import './variable-picker.css';
 import './editor-workspace-dialog.css';
 
@@ -19,6 +20,14 @@ export default function VariablePicker({
   fixed: () => void;
   close: () => void;
 }) {
+  const navigationContext = useContext(VariableNavigationContext);
+  // Keep the opening location when a responsive layout changes underneath the picker.
+  const [navigation] = useState(navigationContext);
+  const returnLabel = navigation?.source ?? '字段';
+  const navigate = (next: () => void) => {
+    close();
+    requestAnimationFrame(next);
+  };
   const source =
     choices.find((choice) => choice.path === current) ??
     choices
@@ -77,6 +86,7 @@ export default function VariablePicker({
       aria-labelledby={titleId}
       onCancel={(event) => {
         event.preventDefault();
+        event.stopPropagation();
         closeRef.current();
       }}
       onKeyDown={(event) => {
@@ -90,10 +100,42 @@ export default function VariablePicker({
       }}
     >
       <div className="variable-picker-toolbar">
-        <button type="button" onClick={close} aria-label={'返回字段 · ' + label}>
-          ← 返回字段
+        <button type="button" onClick={close} aria-label={`返回${returnLabel} · ${label}`}>
+          ← 返回{returnLabel}
         </button>
-        <nav aria-label="当前位置">{label} / 变量选择</nav>
+        <nav aria-label="当前位置">
+          {navigation ? (
+            <>
+              <button type="button" onClick={() => navigate(navigation.openLibrary)}>
+                我的流程
+              </button>
+              <span aria-hidden="true">/</span>
+              <button type="button" onClick={() => navigate(navigation.openFlow)}>
+                {navigation.flowName}
+              </button>
+              <span aria-hidden="true">/</span>
+              <button type="button" onClick={close}>
+                {navigation.source}
+              </button>
+              <span aria-hidden="true">/</span>
+            </>
+          ) : (
+            <>
+              <span>{label}</span>
+              <span aria-hidden="true">/</span>
+            </>
+          )}
+          <span aria-current="page">选择变量</span>
+        </nav>
+        {navigation && (
+          <button
+            type="button"
+            className="variable-picker-browser"
+            onClick={() => navigate(navigation.showBrowser)}
+          >
+            显示网页
+          </button>
+        )}
       </div>
       <div className="variable-picker-page">
         <header className="variable-picker-heading">

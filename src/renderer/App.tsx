@@ -1,3 +1,4 @@
+import { VariableNavigationContext } from './variable-navigation';
 import { usePageBack } from './use-page-back';
 import DesktopStepDetails from './DesktopStepDetails';
 import StepPositionPage from './StepPositionPage';
@@ -1722,6 +1723,7 @@ export default function App() {
               <Editor
                 key={edit.id}
                 active={!nodeSession && !moreOpen}
+                openLibrary={returnHome}
                 outlineOpen={outlineOpen}
                 outlineMemory={outlineMemory}
                 closeOutline={closeOutline}
@@ -2223,6 +2225,7 @@ function Empty({ text }: { text: string }) {
 }
 function Editor({
   active,
+  openLibrary,
   record: r,
   setRecord,
   selected,
@@ -2517,8 +2520,45 @@ function Editor({
         }}
       />
     ) : null;
+  const returnToFlow = () => {
+    if (!guardNodeInput()) return false;
+    setScriptConfigurationOpen(false);
+    setLogicConfigurationOpen(false);
+    setResourceOpen(false);
+    setBrowserActionOpen(false);
+    setControlOpen(false);
+    setPanel('node');
+    requestAnimationFrame(() => inspectorHeading.current?.focus({ preventScroll: true }));
+    return true;
+  };
   return (
-    <>
+    <VariableNavigationContext.Provider
+      value={{
+        flowName: r.flow.name,
+        source: scriptConfigurationOpen
+          ? '脚本配置'
+          : logicConfigurationOpen
+            ? '数据与逻辑配置'
+            : resourceOpen
+              ? '文件与表格配置'
+              : browserActionOpen
+                ? '网页动作配置'
+                : controlOpen
+                  ? '条件与串行循环'
+                  : compact && browserOpen
+                    ? '紧凑配置抽屉'
+                    : browserOpen
+                      ? '网页操作与拾取'
+                      : '步骤配置',
+        openFlow: returnToFlow,
+        showBrowser: () => {
+          if (returnToFlow()) showBrowser();
+        },
+        openLibrary: () => {
+          if (returnToFlow()) requestAnimationFrame(openLibrary);
+        },
+      }}
+    >
       {scriptConfigurationOpen && active && selectedNode?.type === 'script' && (
         <ScriptConfigurationWorkspace
           record={r}
@@ -3240,6 +3280,6 @@ function Editor({
           {browserPanel}
         </div>
       </div>
-    </>
+    </VariableNavigationContext.Provider>
   );
 }
