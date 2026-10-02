@@ -4,6 +4,7 @@ import type { BrowserBinding, FlowRecord, Json } from '../shared/types';
 import { referenceIssues } from '../shared/flow-references';
 import { fileBindingNames } from './file-bindings';
 import ParameterConfiguration from './ParameterConfiguration';
+import { renameParameter } from './parameter-rename';
 import TemplateParameters from './TemplateParameters';
 import type { ScriptNavigation } from './ScriptEditorPage';
 import './flow-parameters.css';
@@ -48,6 +49,7 @@ export default function FlowParametersPage({
   const [draft, setDraft] = useState(() => structuredClone(record));
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
+  const [pendingName, setPendingName] = useState(false);
   const pageError = useRef<HTMLDivElement>(null);
   const focusPageError = useRef(false);
   const [pending, setPending] = useState<{ next?: () => void; destination: string }>();
@@ -120,7 +122,7 @@ export default function FlowParametersPage({
   const persist = async (next?: () => void) => {
     if (locked.current) return;
     if (incomplete()) {
-      setError('请先修正未完成的参数值，再保存。');
+      setError('请先确认参数名称并修正未完成的参数值，再保存。');
       setPending(undefined);
       requestAnimationFrame(() => {
         const invalid = root.current?.querySelector<HTMLElement>('[data-value-invalid]');
@@ -202,7 +204,9 @@ export default function FlowParametersPage({
           <h1 tabIndex={-1}>流程参数与资源</h1>
           <p>{draft.flow.name} · 保存会包含当前流程草稿，不改变已开始的运行或固定计划。</p>
         </div>
-        <span className="flow-parameters-dirty">{dirty ? '有未保存的更改' : '与打开时一致'}</span>
+        <span className="flow-parameters-dirty">
+          {pendingName ? '有未确认的参数名' : dirty ? '有未保存的更改' : '与打开时一致'}
+        </span>
       </header>
       {error && !pending && (
         <div className="flow-parameters-error" role="alert" tabIndex={-1} ref={pageError}>
@@ -238,6 +242,27 @@ export default function FlowParametersPage({
                 actions={actions}
                 value={draft.flow.parameters}
                 change={parameters}
+                onPendingNameChange={setPendingName}
+                rename={(from, to) => {
+                  if (
+                    root.current?.querySelector('[data-value-invalid]:not([data-parameter-name])')
+                  )
+                    throw new Error('请先完成参数值和新参数输入，再确认改名。');
+                  const next = renameParameter(draft.flow, from, to);
+                  const before = new Set(
+                    referenceIssues(draft.flow.steps, draft.flow.parameters).map((issue) =>
+                      JSON.stringify(issue),
+                    ),
+                  );
+                  const added = referenceIssues(next.flow.steps, next.flow.parameters).find(
+                    (issue) => !before.has(JSON.stringify(issue)),
+                  );
+                  if (added)
+                    throw new Error(`${added.nodeId} 的 ${added.reference} 需要先修正，尚未改名。`);
+                  setDraft({ ...draft, flow: next.flow });
+                  setError('');
+                  return next.references;
+                }}
               />
             </>
           )}

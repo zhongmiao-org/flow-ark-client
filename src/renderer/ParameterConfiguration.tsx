@@ -1,4 +1,12 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import type { Json } from '../shared/types';
 import { LiteralValue } from './ValueField';
 import { referenceKey } from './value-references';
@@ -6,11 +14,15 @@ import { referenceKey } from './value-references';
 export default function ParameterConfiguration({
   value,
   change,
+  rename,
+  onPendingNameChange,
   columns = false,
   actions,
 }: {
   value: Record<string, Json>;
   change: (next: Record<string, Json>) => void;
+  rename: (from: string, to: string) => number;
+  onPendingNameChange: (pending: boolean) => void;
   columns?: boolean;
   actions?: ReactNode;
 }) {
@@ -19,23 +31,53 @@ export default function ParameterConfiguration({
   const [adding, setAdding] = useState(!columns);
   const nameInput = useRef<HTMLInputElement>(null);
   const addButton = useRef<HTMLButtonElement>(null);
+  const root = useRef<HTMLElement>(null);
+  const focusName = useRef<string | undefined>(undefined);
+  const [notice, setNotice] = useState('');
+  const pendingNames = useRef(new Set<string>());
+  const markPendingName = useCallback(
+    (key: string, pending: boolean) => {
+      if (pending) pendingNames.current.add(key);
+      else pendingNames.current.delete(key);
+      onPendingNameChange(pendingNames.current.size > 0);
+    },
+    [onPendingNameChange],
+  );
+  useLayoutEffect(() => {
+    if (focusName.current === undefined) return;
+    root.current
+      ?.querySelector<HTMLInputElement>(
+        `input[data-parameter-name="${CSS.escape(focusName.current)}"]`,
+      )
+      ?.focus({ preventScroll: true });
+    focusName.current = undefined;
+  }, [value]);
   useEffect(() => {
     if (columns && adding) nameInput.current?.focus();
   }, [columns, adding]);
   const apply = (next: Record<string, Json>) => {
     change(next);
     setError('');
+    setNotice('');
   };
   return (
-    <section aria-label="运行参数配置" className="parameter-fields">
+    <section ref={root} aria-label="运行参数配置" className="parameter-fields">
       {Object.entries(value).map(([key, val]) => (
         <div className="parameter-field" key={key}>
           <header>
             {columns ? (
-              <label className="parameter-name-field">
-                名称
-                <input readOnly value={key} aria-label={'参数 ' + key + ' 名称'} />
-              </label>
+              <ParameterName
+                name={key}
+                pending={markPendingName}
+                rename={(next) => {
+                  const references = rename(key, next);
+                  focusName.current = next;
+                  setError('');
+                  setNotice(
+                    `已将 ${key} 改为 ${next}，同步更新 ${references} 处变量引用。保存后生效。`,
+                  );
+                }}
+              />
             ) : (
               <strong>{key}</strong>
             )}
@@ -112,6 +154,11 @@ export default function ParameterConfiguration({
           {error}
         </p>
       )}
+      {notice && (
+        <p className="parameter-rename-notice" role="status">
+          {notice}
+        </p>
+      )}
       {columns && (
         <div className="parameter-actions">
           <button ref={addButton} type="button" disabled={adding} onClick={() => setAdding(true)}>
@@ -121,5 +168,90 @@ export default function ParameterConfiguration({
         </div>
       )}
     </section>
+  );
+}
+
+function ParameterName({
+  name,
+  rename,
+  pending,
+}: {
+  name: string;
+  rename: (next: string) => void;
+  pending: (name: string, pending: boolean) => void;
+}) {
+  const [next, setNext] = useState(name);
+  const [error, setError] = useState('');
+  const id = useId();
+  const input = useRef<HTMLInputElement>(null);
+  const changed = next !== name;
+  useEffect(() => {
+    pending(name, changed);
+    return () => pending(name, false);
+  }, [name, changed, pending]);
+  const cancel = () => {
+    setNext(name);
+    setError('');
+    input.current?.focus();
+  };
+  const apply = () => {
+    try {
+      rename(next);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : '改名未完成，请重新核对。');
+      input.current?.focus();
+    }
+  };
+  return (
+    <div>
+      <label className="parameter-name-field" htmlFor={id}>
+        名称
+        <input
+          id={id}
+          ref={input}
+          value={next}
+          data-parameter-name={name}
+          data-value-invalid={changed ? '参数名称尚未确认，请确认改名或取消' : undefined}
+          aria-label={'参数 ' + name + ' 名称'}
+          aria-invalid={!!error}
+          aria-describedby={changed ? id + '-feedback' : undefined}
+          onChange={(event) => {
+            setNext(event.target.value);
+            setError('');
+          }}
+          onKeyDown={(event) => {
+            if (event.nativeEvent.isComposing || !changed) return;
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              apply();
+            }
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              event.stopPropagation();
+              cancel();
+            }
+          }}
+        />
+      </label>
+      {changed && (
+        <div className="parameter-rename-controls">
+          <p
+            id={id + '-feedback'}
+            className={error ? 'field-error' : 'note'}
+            role={error ? 'alert' : undefined}
+          >
+            {error || '同步更新变量引用；代码和普通文本请自行核对。'}
+          </p>
+          <div>
+            <button type="button" onClick={apply}>
+              确认改名
+            </button>
+            <button type="button" onClick={cancel}>
+              取消改名
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
