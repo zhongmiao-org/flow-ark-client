@@ -1971,14 +1971,10 @@ export default function AITaskWorkspace(props: Props) {
           }}
           back={returnFromModification}
           controls={planningControls}
-          steps={
-            <TaskStepList
-              flow={detail.flow.flow}
-              context={detail.flow}
-              selected={selected}
-              select={setSelected}
-            />
-          }
+          flow={detail.flow.flow}
+          context={detail.flow}
+          selected={selected}
+          select={setSelected}
         />
       ) : page === 'generation' && detail ? (
         <TaskGenerationPage

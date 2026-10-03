@@ -1,4 +1,8 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import type { Flow } from '../shared/types';
+import type { TaskStepContext } from './task-step-presentation';
+import TaskStepList, { type TaskStepListHandle } from './TaskStepList';
+import TaskStepInspector from './TaskStepInspector';
 import './task-modification.css';
 
 export default function TaskModificationPage({
@@ -14,7 +18,10 @@ export default function TaskModificationPage({
   rebase,
   back,
   controls,
-  steps,
+  flow,
+  context,
+  selected,
+  select,
 }: {
   taskId: string;
   baseHash: string;
@@ -28,14 +35,33 @@ export default function TaskModificationPage({
   rebase: () => void;
   back: () => void;
   controls: ReactNode;
-  steps: ReactNode;
+  flow: Flow;
+  context: TaskStepContext;
+  selected: string;
+  select: (id: string) => void;
 }) {
   const [review, setReview] = useState(false);
   const input = useRef<HTMLTextAreaElement>(null);
   const reviewButton = useRef<HTMLButtonElement>(null);
   const disclosure = useRef<HTMLDivElement>(null);
+  const stepList = useRef<TaskStepListHandle>(null);
+  const inspector = useRef<HTMLDivElement>(null);
+  const [inspecting, setInspecting] = useState(false);
+  const [inspectFocus, setInspectFocus] = useState(0);
+  const inspectStep = (id: string) => {
+    select(id);
+    setInspecting(true);
+    setInspectFocus((value) => value + 1);
+  };
+  useLayoutEffect(() => {
+    if (!inspecting) return;
+    const heading = inspector.current?.querySelector<HTMLElement>('[data-task-step-heading]');
+    heading?.scrollIntoView({ block: 'nearest' });
+    heading?.focus({ preventScroll: true });
+  }, [inspectFocus, inspecting]);
   useEffect(() => {
     setReview(false);
+    setInspecting(false);
     input.current?.focus({ preventScroll: true });
     document.querySelector('main')?.scrollTo(0, 0);
   }, [taskId, baseHash]);
@@ -120,7 +146,34 @@ export default function TaskModificationPage({
       </section>
       <section className="ai-task-card">
         <h2>当前方案 · {name}</h2>
-        {steps}
+        <TaskStepList
+          key={`${taskId}:${baseHash}`}
+          ref={stepList}
+          flow={flow}
+          context={context}
+          selected={selected}
+          select={inspectStep}
+        />
+        {inspecting && (
+          <div ref={inspector}>
+            <TaskStepInspector
+              flow={flow}
+              context={context}
+              selected={selected}
+              select={inspectStep}
+              actions={
+                <button
+                  onClick={() => {
+                    setInspecting(false);
+                    stepList.current?.reveal(selected);
+                  }}
+                >
+                  返回当前方案步骤
+                </button>
+              }
+            />
+          </div>
+        )}
         <p className="ai-task-note">新提议仍需检查修改范围并采纳；运行记录与原快照保持不变。</p>
       </section>
     </div>
