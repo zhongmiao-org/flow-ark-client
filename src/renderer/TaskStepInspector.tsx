@@ -103,7 +103,16 @@ export default function TaskStepInspector({
         if (step.operation === 'map')
           facts.push([
             '字段映射',
-            `${step.mappings.length} 列；${step.includeHeaders ? '写入表头' : '不写表头'}`,
+            <details key={step.id}>
+              <summary>
+                {step.mappings.length} 列；{step.includeHeaders ? '写入表头' : '不写表头'}
+              </summary>
+              {step.mappings.map((mapping, index) => (
+                <p key={index}>
+                  {`来源「${mapping.source}」 → ${mapping.column} 列\n类型：${{ text: '文本', number: '数字', boolean: '布尔' }[mapping.type]}\n${step.includeHeaders ? '表头' : '已设表头（不写入）'}：${mapping.header ? `「${mapping.header}」` : '空白'}`}
+                </p>
+              ))}
+            </details>,
           ]);
       }
     }
