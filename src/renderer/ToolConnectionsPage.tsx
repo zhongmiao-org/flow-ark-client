@@ -660,7 +660,7 @@ export default function ToolConnectionsPage({
                       ? '连接向导 · 1 核对来源 → 2 系统权限 → 3 只读检查'
                       : '本机桌面 · TextEdit（文本编辑） · 系统权限与任务授权分别核对'
                     : content
-                      ? `${content.config.transport.type === 'http' ? '远程 / 本机 HTTP' : '本地程序'} · ${address(content.config)}`
+                      ? `${content.config.transport.type === 'http' ? (content.config.transport.url.startsWith('https:') ? 'HTTPS 服务' : '本机 HTTP') : '本地程序'} · ${address(content.config)} · ${content.config.source}`
                       : '来源、系统权限和能力必须逐项核对'}
             </p>
           </div>
