@@ -354,7 +354,12 @@ export default function AttentionWorkspace({
       } catch (reason) {
         if (visit.current === origin) {
           runReturn.current = null;
-          setError(reason instanceof Error ? reason.message : '来源运行暂不可用，请重试');
+          setError(
+            (reason instanceof Error ? reason.message : '来源运行暂不可用，请重试').replace(
+              /^Error invoking remote method 'flowark:request': (?:Error: )?/,
+              '',
+            ),
+          );
         }
       } finally {
         locked.current = false;
