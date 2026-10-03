@@ -184,6 +184,7 @@ export default function App() {
   const [nodeSession, setNodeSession] = useState<{
     kind: 'script' | 'excel' | 'parameters';
     preview?: boolean;
+    fromSettings?: boolean;
     panel?: string;
     trigger?: HTMLElement;
     record: FlowRecord;
@@ -759,7 +760,11 @@ export default function App() {
     const source = nodeSession;
     setNodeSession(undefined);
     if (next) next();
-    else {
+    else if (source?.fromSettings) {
+      setSection('settings');
+      setSettingsFlowId(undefined);
+      setBrowserOpen(false);
+    } else {
       setBrowserOpen(source?.browserOpen ?? false);
       setEditorPanel(source?.kind === 'parameters' ? (source.panel ?? 'canvas') : 'node');
       requestAnimationFrame(() =>
@@ -1021,7 +1026,11 @@ export default function App() {
           {nodeSession && (
             <header className="topbar">
               <button className="context-back" onClick={() => nodeNavigation.current?.()}>
-                {moreOpen ? '← 返回更多操作' : '← 返回流程编排'}
+                {nodeSession.fromSettings
+                  ? '← 返回凭据与本机资源'
+                  : moreOpen
+                    ? '← 返回更多操作'
+                    : '← 返回流程编排'}
               </button>
               <nav className="breadcrumbs" aria-label="当前位置">
                 <a
@@ -1041,7 +1050,19 @@ export default function App() {
                   href="#editor"
                   onClick={(event) => {
                     event.preventDefault();
-                    nodeNavigation.current?.();
+                    nodeNavigation.current?.(
+                      nodeSession.fromSettings
+                        ? () => {
+                            setEditorPanel('canvas');
+                            requestAnimationFrame(() =>
+                              document
+                                .querySelector<HTMLElement>('[aria-label="流程名称"]')
+                                ?.focus(),
+                            );
+                          }
+                        : undefined,
+                      nodeSession.fromSettings ? '流程编排' : undefined,
+                    );
                   }}
                 >
                   {nodeSession.record.flow.name}
@@ -2057,7 +2078,9 @@ export default function App() {
           )}
           {section === 'editor' && nodeSession?.kind === 'parameters' && (
             <FlowParametersPage
-              returnLabel={moreOpen ? '更多操作' : '流程编排'}
+              returnLabel={
+                nodeSession.fromSettings ? '凭据与本机资源' : moreOpen ? '更多操作' : '流程编排'
+              }
               key={nodeSession.record.id}
               record={nodeSession.record}
               browsers={data.browsers}
@@ -2292,8 +2315,19 @@ export default function App() {
               setSection('tools');
               setBrowserOpen(false);
             }}
-            openFlow={async (record) => {
-              await openFlow(record, true);
+            openFlow={async (record, resources) => {
+              if (!(await openFlow(record, true)) || !resources) return;
+              setNodeSession({
+                kind: 'parameters',
+                fromSettings: true,
+                record: structuredClone(record),
+                nodeId: '',
+                browserOpen: false,
+                panel: 'canvas',
+                scroll: 0,
+              });
+              setBrowserOpen(false);
+              document.querySelector('main')?.scrollTo(0, 0);
             }}
             openAI={(provider, model) => {
               setTaskAISettings({ key: crypto.randomUUID(), provider, model });

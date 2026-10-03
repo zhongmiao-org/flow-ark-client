@@ -40,7 +40,7 @@ export default function LocalSettingsPage({
   active: boolean;
   refresh: () => Promise<void>;
   openAI: (provider: AIProviderId, model: string) => void;
-  openFlow: (flow: FlowRecord) => Promise<void>;
+  openFlow: (flow: FlowRecord, resources?: boolean) => Promise<void>;
   openTools: () => void;
   openRuns: () => void;
   showBrowser: () => void;
@@ -58,8 +58,12 @@ export default function LocalSettingsPage({
     scroll: number;
   }>({ tab: 'browser', local: false, query: '', scroll: 0 });
   const returningResources = useRef(false);
+  const resourceFlowOrigin = useRef<{ trigger: HTMLElement | null; scroll: number } | undefined>(
+    undefined,
+  );
   useEffect(() => {
     if (!tabRequest) return;
+    resourceFlowOrigin.current = undefined;
     if (tabRequest.tab === 'resources') {
       resourceOrigin.current = { tab: 'browser', local: false, query: '', scroll: 0 };
       resourceEntry.current = 'settings-tab-resources';
@@ -183,7 +187,14 @@ export default function LocalSettingsPage({
   }, [active, tab, statusRevision]);
   useEffect(() => {
     if (!active) return;
-    if (returningResources.current && !resourcesPage) {
+    if (resourceFlowOrigin.current) {
+      const origin = resourceFlowOrigin.current;
+      resourceFlowOrigin.current = undefined;
+      document.querySelector('main')?.scrollTo({ top: origin.scroll });
+      if (origin.trigger?.isConnected && !origin.trigger.closest('[hidden]'))
+        origin.trigger.focus({ preventScroll: true });
+      else heading.current?.focus({ preventScroll: true });
+    } else if (returningResources.current && !resourcesPage) {
       returningResources.current = false;
       document.querySelector('main')?.scrollTo({ top: resourceOrigin.current.scroll });
       const origin = document.getElementById(resourceEntry.current);
@@ -301,6 +312,18 @@ export default function LocalSettingsPage({
     setQuery('');
     if (focusTab && next !== 'resources')
       requestAnimationFrame(() => document.getElementById(`settings-tab-${next}`)?.focus());
+  };
+  const openResourceFlow = async (flow: FlowRecord) => {
+    resourceFlowOrigin.current = {
+      trigger: document.activeElement instanceof HTMLElement ? document.activeElement : null,
+      scroll: document.querySelector('main')?.scrollTop ?? 0,
+    };
+    try {
+      await openFlow(flow, true);
+    } catch (reason) {
+      resourceFlowOrigin.current = undefined;
+      throw reason;
+    }
   };
   const flowLink = (flow: FlowRecord) => (
     <button disabled={!!busy} onClick={() => void act('flow', () => openFlow(flow))}>
@@ -699,21 +722,22 @@ export default function LocalSettingsPage({
             </section>
           ))}
         {tab === 'ai' && active && <AISettingsSummary open={openAI} />}
-        {resourcesPage && active && (
+        {resourcesPage && (
           <div className="local-resources-layout">
             <LocalCredentialsPanel
+              active={active}
               compact
               data={data}
               refresh={refresh}
               openAI={() => changeTab('ai', true)}
               openTools={openTools}
-              openFlow={openFlow}
+              openFlow={openResourceFlow}
             />
             <LocalStoragePanel
               compact
               data={data}
               busy={!!busy}
-              openFlow={(flow) => void act('flow', () => openFlow(flow))}
+              openFlow={(flow) => void act('flow', () => openResourceFlow(flow))}
               openRuns={openRuns}
               showData={() =>
                 void act('data', async () => {

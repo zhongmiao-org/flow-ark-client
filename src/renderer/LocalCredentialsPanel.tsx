@@ -248,6 +248,7 @@ function CredentialDialog({
 }
 
 export default function LocalCredentialsPanel({
+  active = true,
   compact = false,
   data,
   refresh,
@@ -255,6 +256,7 @@ export default function LocalCredentialsPanel({
   openTools,
   openFlow,
 }: {
+  active?: boolean;
   compact?: boolean;
   data: Bootstrap;
   refresh: () => Promise<void>;
@@ -274,6 +276,8 @@ export default function LocalCredentialsPanel({
   const [editor, setEditor] = useState<Editor>();
   const [opening, setOpening] = useState('');
   const createButton = useRef<HTMLButtonElement>(null);
+  const listRoot = useRef<HTMLElement>(null);
+  const refreshedFocus = useRef<HTMLElement | null>(null);
   const restoreAfterRemove = useRef(false);
   const generation = useRef(0),
     alive = useRef(true),
@@ -285,7 +289,14 @@ export default function LocalCredentialsPanel({
     setListError('');
     try {
       const result: LocalCredentialState[] = await api('credential.local.list');
-      if (alive.current && token === generation.current) setEntries(result);
+      if (alive.current && token === generation.current) {
+        refreshedFocus.current =
+          document.activeElement instanceof HTMLElement &&
+          listRoot.current?.contains(document.activeElement)
+            ? document.activeElement
+            : null;
+        setEntries(result);
+      }
     } catch (reason) {
       if (alive.current && token === generation.current) setListError(failure(reason));
     } finally {
@@ -293,14 +304,17 @@ export default function LocalCredentialsPanel({
     }
   };
   useEffect(() => {
-    alive.current = true;
-    void read();
+    alive.current = active;
+    if (active) void read();
     return () => {
       alive.current = false;
       generation.current++;
     };
-  }, []);
+  }, [active]);
   useEffect(() => {
+    const previous = refreshedFocus.current;
+    refreshedFocus.current = null;
+    if (previous && !previous.isConnected) createButton.current?.focus({ preventScroll: true });
     if (restoreAfterRemove.current) {
       restoreAfterRemove.current = false;
       createButton.current?.focus({ preventScroll: true });
@@ -337,12 +351,17 @@ export default function LocalCredentialsPanel({
     } catch (reason) {
       if (alive.current) setError(failure(reason));
     } finally {
-      if (alive.current) setOpening('');
+      setOpening('');
     }
   };
   return (
     <div className={`local-credentials-layout${compact ? ' is-compact' : ''}`}>
-      <section className="local-settings-card" aria-label="通用本机凭据" aria-busy={loading}>
+      <section
+        ref={listRoot}
+        className="local-settings-card"
+        aria-label="通用本机凭据"
+        aria-busy={loading}
+      >
         <div className="local-settings-row">
           <h2>{compact ? '凭据' : '通用本机凭据'}</h2>
           <button
