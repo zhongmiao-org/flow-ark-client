@@ -59,6 +59,7 @@
   border: 1px solid var(--fa-border-default);
   border-radius: var(--fa-radius-12);
   background: var(--fa-action-subtle);
+  color: var(--fa-action-primary);
 }
 .desktop-confirm-authorization {
   color: var(--fa-text-secondary);
@@ -88,6 +89,10 @@
   overflow: auto;
   max-height: 280px;
   margin: 12px 0 0;
+}
+.desktop-run-confirmation pre {
+  margin-top: 8px;
+  color: var(--fa-text-secondary);
 }
 .desktop-task-run .desktop-task-run-panel {
   min-height: 560px;
