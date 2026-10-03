@@ -241,6 +241,7 @@
 }
 .ai-connection-card > p {
   white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 .ai-connection-card h3 {
   margin: 0;

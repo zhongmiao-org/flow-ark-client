@@ -892,6 +892,21 @@ export default function AISettingsPage({
                               : '配置已安全保存'}
               </h3>
               <p>
+                {!testing && !dirty && state.configured && state.test?.status === 'passed' && (
+                  <>
+                    最近测试：
+                    {Number.isFinite(Date.parse(state.test.at)) ? (
+                      <time dateTime={state.test.at}>
+                        {new Date(state.test.at).toLocaleString('zh-CN')}
+                      </time>
+                    ) : (
+                      '未取得有效时间'
+                    )}
+                    <br />
+                    模型：{state.test.model ?? '未记录'}
+                    <br />
+                  </>
+                )}
                 {testing
                   ? '正在测试当前已保存的模型和 Key。'
                   : dirty
