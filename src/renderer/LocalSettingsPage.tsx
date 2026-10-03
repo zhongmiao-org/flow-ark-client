@@ -51,9 +51,19 @@ export default function LocalSettingsPage({
   const [local, setLocal] = useState(false);
   const resourcesPage = tab === 'resources';
   const resourceEntry = useRef('settings-tab-resources');
+  const resourceOrigin = useRef<{
+    tab: Exclude<Tab, 'resources'>;
+    local: boolean;
+    query: string;
+    scroll: number;
+  }>({ tab: 'browser', local: false, query: '', scroll: 0 });
   const returningResources = useRef(false);
   useEffect(() => {
     if (!tabRequest) return;
+    if (tabRequest.tab === 'resources') {
+      resourceOrigin.current = { tab: 'browser', local: false, query: '', scroll: 0 };
+      resourceEntry.current = 'settings-tab-resources';
+    }
     setTab(tabRequest.tab);
     setLocal(false);
     setQuery('');
@@ -119,9 +129,13 @@ export default function LocalSettingsPage({
     if (locked.current) return;
     if (resourcesPage) {
       returningResources.current = true;
-      setTab('browser');
-    } else restoreEntry.current = true;
-    setLocal(false);
+      setTab(resourceOrigin.current.tab);
+      setLocal(resourceOrigin.current.local);
+      setQuery(resourceOrigin.current.query);
+    } else {
+      restoreEntry.current = true;
+      setLocal(false);
+    }
     setError('');
     setNotice('');
   };
@@ -171,9 +185,13 @@ export default function LocalSettingsPage({
     if (!active) return;
     if (returningResources.current && !resourcesPage) {
       returningResources.current = false;
+      document.querySelector('main')?.scrollTo({ top: resourceOrigin.current.scroll });
       const origin = document.getElementById(resourceEntry.current);
       if (origin?.isConnected && !origin.closest('[hidden]')) origin.focus({ preventScroll: true });
-      else document.getElementById('settings-tab-resources')?.focus();
+      else
+        document
+          .getElementById(`settings-tab-${resourceOrigin.current.tab}`)
+          ?.focus({ preventScroll: true });
     } else if (restoreEntry.current && !local) {
       restoreEntry.current = false;
       bindingEntry.current?.focus({ preventScroll: true });
@@ -268,8 +286,15 @@ export default function LocalSettingsPage({
   };
   const changeTab = (next: Tab, focusTab = false) => {
     if (locked.current) return;
-    if (next === 'resources')
+    if (next === 'resources' && tab !== 'resources') {
       resourceEntry.current = document.activeElement?.id || 'settings-tab-resources';
+      resourceOrigin.current = {
+        tab,
+        local,
+        query,
+        scroll: document.querySelector('main')?.scrollTop ?? 0,
+      };
+    }
     setTab(next);
     setError('');
     setNotice('');
