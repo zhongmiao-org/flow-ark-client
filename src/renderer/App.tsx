@@ -953,16 +953,8 @@ export default function App() {
                 aria-label={label}
                 className={selectedNavigation === id ? 'selected' : ''}
                 aria-current={selectedNavigation === id ? 'page' : undefined}
-                onClick={() => {
-                  if (nodeSession) {
-                    leaveNodeEditor(() => {
-                      setTaskReturn(false);
-                      setSection(id);
-                      setDetail(null);
-                      setRunFilter(false);
-                    }, label);
-                    return;
-                  }
+                onClick={(event) => {
+                  const destination = event.currentTarget;
                   const navigate = () => {
                     if (id === 'tools')
                       setToolsOrigin(section === 'settings' ? 'settings' : 'tasks');
@@ -970,6 +962,9 @@ export default function App() {
                     setSection(id);
                     setDetail(null);
                     setRunFilter(false);
+                    requestAnimationFrame(() => {
+                      if (destination.isConnected) destination.focus({ preventScroll: true });
+                    });
                   };
                   requestWorkspaceLeave(navigate, label, id);
                 }}
