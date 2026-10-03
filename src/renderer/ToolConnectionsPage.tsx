@@ -116,6 +116,7 @@ export default function ToolConnectionsPage({
   choose,
   openTask,
   openDetails,
+  openAssistant,
 }: {
   active: boolean;
   navigation: MutableRefObject<ToolNavigation | undefined>;
@@ -124,6 +125,7 @@ export default function ToolConnectionsPage({
   choose: (kind: 'web' | 'file' | 'window') => void;
   openTask: (task: ConnectionTaskReference, connection: ToolConnection) => Promise<void>;
   openDetails: MutableRefObject<((id: string) => void) | undefined>;
+  openAssistant?: MutableRefObject<(() => void) | undefined>;
 }) {
   const [view, setView] = useState<'catalog' | 'config' | 'review' | 'saved' | 'assistant'>(
     'catalog',
@@ -304,6 +306,7 @@ export default function ToolConnectionsPage({
       setSelectedId(id);
       move('saved');
     });
+  if (openAssistant) openAssistant.current = () => go(() => move('assistant'));
   const edit = (connection?: ToolConnection) =>
     go(() => {
       setSelectedId(connection?.id);

@@ -24,6 +24,7 @@ export default function TaskRunPage({
   setPage,
   navigate,
   history,
+  connections,
   control,
   reveal,
   showBrowser,
@@ -36,6 +37,7 @@ export default function TaskRunPage({
   setPage: (page: TaskRunView) => void;
   navigate: (intent: TaskRunIntent) => void;
   history: () => void;
+  connections: () => void;
   control: (id: string, action: string) => Promise<any>;
   reveal: (id: string) => Promise<any>;
   showBrowser: () => void;
@@ -316,6 +318,7 @@ export default function TaskRunPage({
         setPage={setPage}
         navigate={navigate}
         history={history}
+        connections={connections}
         busy={busy}
         error={error}
         control={(action) => void act(() => control(run.id, action))}

@@ -128,7 +128,8 @@ function format(t: string) {
 export default function App() {
   const [exportSource, setExportSource] = useState<ExportSource>();
   const [settingsFlowId, setSettingsFlowId] = useState<string>();
-  const [toolsOrigin, setToolsOrigin] = useState<'tasks' | 'settings'>('tasks');
+  const [toolsOrigin, setToolsOrigin] = useState<'tasks' | 'settings' | 'runs'>('tasks');
+  const desktopAssistantOpener = useRef<(() => void) | undefined>(undefined);
   const [settingsNavigation, setSettingsNavigation] = useState<SettingsNavigation>();
   const [attentionNavigation, setAttentionNavigation] = useState<AttentionNavigation>();
   const templateNavigation = useRef<TemplateNavigation | undefined>(undefined);
@@ -1528,7 +1529,14 @@ export default function App() {
             active={section === 'tools'}
             navigation={toolNavigation}
             openDetails={toolDetails}
-            parentTitle={toolsOrigin === 'settings' ? '本地设置' : '开始任务'}
+            openAssistant={desktopAssistantOpener}
+            parentTitle={
+              toolsOrigin === 'runs'
+                ? '应用任务'
+                : toolsOrigin === 'settings'
+                  ? '本地设置'
+                  : '开始任务'
+            }
             openTask={async (task, connection) => {
               if (!taskOpener.current) throw new Error('任务工作区尚未就绪，请稍后重试。');
               await taskOpener.current({
@@ -2083,6 +2091,12 @@ export default function App() {
                     setDetail(null);
                     setRunOrigin('history');
                     setRunFilter(false);
+                  }}
+                  connections={() => {
+                    setToolsOrigin('runs');
+                    setSection('tools');
+                    setBrowserOpen(false);
+                    desktopAssistantOpener.current?.();
                   }}
                   control={(id, action) => api('run.control', { id, action })}
                   reveal={(id) => api('artifact.reveal', { id })}

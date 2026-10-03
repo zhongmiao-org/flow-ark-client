@@ -13,6 +13,7 @@ export default function DesktopTaskRun({
   setPage,
   navigate,
   history,
+  connections,
   control,
   busy,
   error,
@@ -23,6 +24,7 @@ export default function DesktopTaskRun({
   setPage: (page: TaskRunView) => void;
   navigate: (intent: TaskRunIntent) => void;
   history: () => void;
+  connections: () => void;
   control: (action: string) => void;
   busy: boolean;
   error: string;
@@ -42,7 +44,9 @@ export default function DesktopTaskRun({
       ? '应用修改详细信息'
       : model.view.closing
         ? '正在完成应用试运行收尾'
-        : desktop.title;
+        : model.terminal && !model.success
+          ? model.title
+          : desktop.title;
   return (
     <div
       className="task-run-page desktop-task-run"
@@ -140,6 +144,7 @@ export default function DesktopTaskRun({
                 取消运行
               </button>
             )}
+            <button onClick={connections}>查看连接状态</button>
           </div>
         )}
         {model.terminal && (

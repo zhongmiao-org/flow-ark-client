@@ -96,7 +96,7 @@
 }
 .desktop-task-run .desktop-task-run-panel {
   min-height: 560px;
-  padding: 32px;
+  padding: 31px;
 }
 .desktop-task-run[data-task-run-mode='success'] .desktop-task-run-panel {
   min-height: 600px;
@@ -104,6 +104,7 @@
 .desktop-task-run .desktop-task-run-panel > h2 {
   font-size: 28px;
   line-height: 40px;
+  font-weight: 700;
 }
 .desktop-task-run-status {
   display: flex;
