@@ -195,6 +195,12 @@ export default function AITaskWorkspace(props: Props) {
   }, [page, detail?.task.id, detail?.task.revision, props.active]);
   const location = useRef({ active: props.active, page });
   location.current = { active: props.active, page };
+  const learningVisit = useRef(0);
+  useLayoutEffect(() => {
+    return () => {
+      learningVisit.current++;
+    };
+  }, [props.active, page]);
   const previousPage = useRef(page);
   useEffect(() => {
     if (props.active && previousPage.current === 'generation' && page !== 'generation') {
@@ -565,7 +571,7 @@ export default function AITaskWorkspace(props: Props) {
     let live = true,
       pending = false;
     const refresh = async () => {
-      if (pending) return;
+      if (pending || lock.current) return;
       pending = true;
       const ticket = epoch.current;
       try {
@@ -1164,8 +1170,10 @@ export default function AITaskWorkspace(props: Props) {
     });
   }
   async function showGuide() {
+    const visit = learningVisit.current;
     await run(async () => {
       if (detail && dirty) await save();
+      if (!location.current.active || learningVisit.current !== visit) return;
       props.showBrowser(false);
       setPage('guide');
       await refreshLearning();
@@ -1183,56 +1191,61 @@ export default function AITaskWorkspace(props: Props) {
     }
   }
   async function startLearning(mode: 'continue' | 'restart') {
+    const visit = learningVisit.current;
+    const stillHere = () => location.current.active && learningVisit.current === visit;
     await run(async () => {
       if (!learning || learningError) return;
       setLearningAction(mode);
       try {
         if (detail && dirty) await save();
+        if (!stillHere()) return;
         const next = await api('learning.start', { revision: learning.revision, mode });
+        if (!stillHere()) return;
         setLearning(next.learning);
-        accept(next.detail);
-        setReviewed(false);
-        setProvider(next.detail.task.provider ?? 'deepseek');
-        setModel(next.detail.task.model ?? 'deepseek-flash');
-        setPage(
-          ['generating', 'failed', 'unsupported'].includes(next.detail.task.status)
-            ? 'generation'
-            : next.detail.proposal?.result.kind === 'clarify'
-              ? 'understand'
-              : next.detail.proposal || next.detail.flow
-                ? 'review'
-                : next.detail.task.webTarget ||
-                    next.detail.task.outputTarget ||
-                    next.detail.task.toolTargets?.length
-                  ? 'understand'
-                  : 'brief',
-        );
+        let result;
         if (next.learning.latestRunId) {
-          const result = await api('run.detail', { id: next.learning.latestRunId });
-          if (
-            !result?.run ||
-            result.run.id !== next.learning.latestRunId ||
-            (result.run.task && result.run.task.id !== next.detail.task.id)
-          )
-            throw new Error(
-              '教学任务已恢复，但上次运行记录与当前教学不一致。请从当前任务核对运行记录。',
-            );
+          try {
+            result = await api('run.detail', { id: next.learning.latestRunId });
+            if (
+              !result?.run ||
+              result.run.id !== next.learning.latestRunId ||
+              (result.run.task && result.run.task.id !== next.detail.task.id)
+            )
+              throw new Error(
+                '教学任务已恢复，但上次运行记录与当前教学不一致。请从当前任务核对运行记录。',
+              );
+          } catch (reason) {
+            if (!stillHere()) return;
+            showTask(next.detail);
+            throw reason;
+          }
+        }
+        if (!stillHere()) return;
+        showTask(next.detail);
+        if (result)
           props.openRun(result, (intent = 'plan') =>
             returnToTask.current(next.detail.task.id, intent),
           );
-        }
+      } catch (reason) {
+        if (stillHere()) throw reason;
       } finally {
         setLearningAction(undefined);
       }
     });
   }
   async function skipLearning() {
+    const visit = learningVisit.current;
     await run(async () => {
       if (!learning || learningError) return;
       setLearningAction('skip');
       try {
-        setLearning(await api('learning.skip', { revision: learning.revision }));
-        setPage('home');
+        const next = await api('learning.skip', { revision: learning.revision });
+        if (location.current.active && learningVisit.current === visit) {
+          setLearning(next);
+          setPage('home');
+        }
+      } catch (reason) {
+        if (location.current.active && learningVisit.current === visit) throw reason;
       } finally {
         setLearningAction(undefined);
       }
