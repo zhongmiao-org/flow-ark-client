@@ -1,7 +1,9 @@
 import { usePageBack } from './use-page-back';
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import type { BrowserBinding, FlowRecord, Json } from '../shared/types';
-import { referenceIssues } from '../shared/flow-references';
+import { referenceIssues, type ReferenceIssue } from '../shared/flow-references';
+import { flowOutline } from './flow-outline';
+import { taskStepTitle } from './task-step-presentation';
 import { fileBindingNames } from './file-bindings';
 import ParameterConfiguration from './ParameterConfiguration';
 import { renameParameter } from './parameter-rename';
@@ -134,12 +136,27 @@ export default function FlowParametersPage({
         JSON.stringify(issue),
       ),
     );
-    const added = referenceIssues(draft.flow.steps, next).find(
+    const added = referenceIssues(draft.flow.steps, next).filter(
       (issue) => !before.has(JSON.stringify(issue)),
     );
-    if (added) throw new Error(`${added.nodeId} 仍引用 ${added.reference}，请先调整引用`);
+    if (added.length) throw new Error(referenceFeedback(added));
     setDraft({ ...draft, flow: { ...draft.flow, parameters: next } });
     setError('');
+  };
+  const referenceFeedback = (issues: ReferenceIssue[]) => {
+    const entries = flowOutline(draft.flow.steps).byId;
+    const references = [
+      ...new Set(
+        issues.map(({ nodeId, reference }) => {
+          const entry = entries.get(nodeId);
+          const name = entry
+            ? `第 ${entry.ordinal} 步「${taskStepTitle(entry.step)}」`
+            : `步骤 ${nodeId}`;
+          return `${name} → ${reference}`;
+        }),
+      ),
+    ];
+    return `参数尚未修改，以下步骤仍使用这些引用：\n${references.join('\n')}\n请先在对应步骤中调整引用，再修改参数。`;
   };
   const persist = async (next?: () => void) => {
     if (locked.current) return;
@@ -303,11 +320,10 @@ export default function FlowParametersPage({
                       JSON.stringify(issue),
                     ),
                   );
-                  const added = referenceIssues(next.flow.steps, next.flow.parameters).find(
+                  const added = referenceIssues(next.flow.steps, next.flow.parameters).filter(
                     (issue) => !before.has(JSON.stringify(issue)),
                   );
-                  if (added)
-                    throw new Error(`${added.nodeId} 的 ${added.reference} 需要先修正，尚未改名。`);
+                  if (added.length) throw new Error(referenceFeedback(added));
                   setDraft({ ...draft, flow: next.flow });
                   setError('');
                   return next.references;
