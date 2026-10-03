@@ -18,6 +18,7 @@ export default function FlowParametersPage({
   close,
   save,
   configuration,
+  onDirtyChange,
   returnLabel = '流程编排',
 }: {
   record: FlowRecord;
@@ -27,6 +28,7 @@ export default function FlowParametersPage({
   close: (next?: () => void) => void;
   save: (record: FlowRecord) => Promise<void>;
   configuration: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
   returnLabel?: string;
 }) {
   const [credentialNames, setCredentialNames] = useState<Record<string, string>>({});
@@ -64,7 +66,7 @@ export default function FlowParametersPage({
     else selectionTrigger.current?.focus({ preventScroll: true });
   }, [busy, selection]);
   const [error, setError] = useState('');
-  const [pendingName, setPendingName] = useState(false);
+  const [incompleteInput, setIncompleteInput] = useState(false);
   const pageError = useRef<HTMLDivElement>(null);
   const focusPageError = useRef(false);
   const [pending, setPending] = useState<{ next?: () => void; destination: string }>();
@@ -82,6 +84,11 @@ export default function FlowParametersPage({
     alive = useRef(true),
     lastFocus = useRef<HTMLElement | null>(null);
   const dirty = JSON.stringify(record) !== JSON.stringify(draft);
+  const unsaved = dirty || incompleteInput;
+  useLayoutEffect(() => {
+    onDirtyChange?.(unsaved);
+  }, [unsaved, onDirtyChange]);
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
   const incomplete = () => !!root.current?.querySelector('[data-value-invalid]');
   const leave: ScriptNavigation = (next, destination = returnLabel) => {
     if (locked.current || pending) return;
@@ -246,12 +253,9 @@ export default function FlowParametersPage({
     >
       <header className="flow-parameters-heading">
         <div>
-          <h1 tabIndex={-1}>流程参数与资源</h1>
-          <p>{draft.flow.name} · 保存会包含当前流程草稿，不改变已开始的运行或固定计划。</p>
+          <h1 tabIndex={-1}>流程参数与资源{unsaved ? ' · 未保存' : ''}</h1>
+          <p>普通流程自由编辑参数；模板实例使用独立共享配置与入口输入。</p>
         </div>
-        <span className="flow-parameters-dirty">
-          {pendingName ? '有未确认的参数名' : dirty ? '有未保存的更改' : '与打开时一致'}
-        </span>
       </header>
       {error && !pending && (
         <div className="flow-parameters-error" role="alert" tabIndex={-1} ref={pageError}>
@@ -287,7 +291,7 @@ export default function FlowParametersPage({
                 actions={actions}
                 value={draft.flow.parameters}
                 change={parameters}
-                onPendingNameChange={setPendingName}
+                onIncompleteChange={setIncompleteInput}
                 rename={(from, to) => {
                   if (
                     root.current?.querySelector('[data-value-invalid]:not([data-parameter-name])')

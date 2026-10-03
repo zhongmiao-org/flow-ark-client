@@ -193,6 +193,7 @@ export default function App() {
     scroll: number;
   }>();
   const nodeNavigation = useRef<ScriptNavigation | undefined>(undefined);
+  const [parametersDirty, setParametersDirty] = useState(false);
   const [settingsTabRequest, setSettingsTabRequest] = useState<SettingsTabRequest>();
   const [editorPanel, setEditorPanel] = useState('canvas');
   const [advancedInputPending, setAdvancedInputPending] = useState(false);
@@ -1070,7 +1071,7 @@ export default function App() {
                 <span aria-hidden="true">/</span>
                 <span aria-current="page">
                   {nodeSession.kind === 'parameters'
-                    ? '流程参数与资源'
+                    ? `参数与资源${parametersDirty ? ' · 未保存' : ''}`
                     : nodeSession.kind === 'excel'
                       ? 'Excel 字段映射'
                       : '脚本配置'}
@@ -2093,6 +2094,7 @@ export default function App() {
               record={nodeSession.record}
               browsers={data.browsers}
               credentials={data.credentials}
+              onDirtyChange={setParametersDirty}
               navigation={nodeNavigation}
               close={closeNodeEditor}
               configuration={() => {

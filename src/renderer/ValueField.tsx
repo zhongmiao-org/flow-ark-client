@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { Json } from '../shared/types';
 import { referenceOf, type ReferenceChoice } from './value-references';
 import VariablePicker from './VariablePicker';
@@ -101,12 +101,14 @@ export function LiteralValue({
   change,
   compact = false,
   displayLabels,
+  onIncompleteChange,
 }: {
   label: string;
   value: Json;
   change: (value: Json) => void;
   compact?: boolean;
   displayLabels?: { type: string; value: string };
+  onIncompleteChange?: (label: string, incomplete: boolean) => void;
 }) {
   const id = useId(),
     type = valueType(value);
@@ -115,6 +117,10 @@ export function LiteralValue({
   const [text, setText] = useState(format),
     [error, setError] = useState('');
   const input = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    onIncompleteChange?.(label, !!error);
+    return () => onIncompleteChange?.(label, false);
+  }, [label, error, onIncompleteChange]);
   useEffect(() => {
     setText(format());
     setError('');

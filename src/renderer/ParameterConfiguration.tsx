@@ -16,13 +16,15 @@ export default function ParameterConfiguration({
   change,
   rename,
   onPendingNameChange,
+  onIncompleteChange,
   columns = false,
   actions,
 }: {
   value: Record<string, Json>;
   change: (next: Record<string, Json>) => void;
   rename: (from: string, to: string) => number;
-  onPendingNameChange: (pending: boolean) => void;
+  onPendingNameChange?: (pending: boolean) => void;
+  onIncompleteChange?: (incomplete: boolean) => void;
   columns?: boolean;
   actions?: ReactNode;
 }) {
@@ -34,14 +36,28 @@ export default function ParameterConfiguration({
   const root = useRef<HTMLElement>(null);
   const focusName = useRef<string | undefined>(undefined);
   const [notice, setNotice] = useState('');
+  const [incompleteFields, setIncompleteFields] = useState(new Set<string>());
+  const markIncomplete = useCallback((key: string, incomplete: boolean) => {
+    setIncompleteFields((current) => {
+      if (current.has(key) === incomplete) return current;
+      const next = new Set(current);
+      if (incomplete) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  }, []);
+  useLayoutEffect(() => {
+    onIncompleteChange?.(!!name || incompleteFields.size > 0);
+  }, [name, incompleteFields, onIncompleteChange]);
   const pendingNames = useRef(new Set<string>());
   const markPendingName = useCallback(
     (key: string, pending: boolean) => {
       if (pending) pendingNames.current.add(key);
       else pendingNames.current.delete(key);
-      onPendingNameChange(pendingNames.current.size > 0);
+      onPendingNameChange?.(pendingNames.current.size > 0);
+      markIncomplete('name:' + key, pending);
     },
-    [onPendingNameChange],
+    [onPendingNameChange, markIncomplete],
   );
   useLayoutEffect(() => {
     if (focusName.current === undefined) return;
@@ -102,6 +118,7 @@ export default function ParameterConfiguration({
             displayLabels={columns ? { type: '类型', value: '值' } : undefined}
             label={'参数 ' + key}
             value={val}
+            onIncompleteChange={markIncomplete}
             change={(next) => apply({ ...value, [key]: next })}
           />
           {!referenceKey(key) && <p className="note">此名称无法用点路径引用；已有参数保持不变。</p>}
@@ -185,7 +202,7 @@ function ParameterName({
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const changed = next !== name;
-  useEffect(() => {
+  useLayoutEffect(() => {
     pending(name, changed);
     return () => pending(name, false);
   }, [name, changed, pending]);

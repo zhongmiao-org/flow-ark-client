@@ -22,12 +22,6 @@
   line-height: 22px;
   overflow-wrap: anywhere;
 }
-.flow-parameters-dirty {
-  flex-shrink: 0;
-  color: var(--fa-text-secondary);
-  font-size: 12px;
-  padding-top: 8px;
-}
 .flow-parameters-columns {
   display: grid;
   grid-template-columns: minmax(0, 728fr) minmax(0, 400fr);
