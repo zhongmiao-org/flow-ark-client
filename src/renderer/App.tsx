@@ -1603,14 +1603,22 @@ export default function App() {
                 setTaskReturn(false);
                 setSection('flows');
               }}
-              createFlow={() => {
-                setTaskReturn(false);
-                void create();
+              createFlow={async () => {
+                if (!guardNodeInput()) throw new Error('请先处理当前编排中的未完成输入');
+                const record: FlowRecord = await api('flow.create', {});
+                await refresh();
+                return record;
               }}
-              openFlow={(record) => {
-                taskEditorReturn.current = undefined;
-                setTaskReturn(true);
-                void openFlow(record);
+              openFlow={(record, returnToTask = true, back) => {
+                taskEditorReturn.current =
+                  returnToTask && back ? { flowId: record.id, back, browserOpen } : undefined;
+                setTaskReturn(returnToTask);
+                void openFlow(record).then((opened) => {
+                  if (opened)
+                    requestAnimationFrame(() =>
+                      document.querySelector<HTMLElement>('[aria-label="流程名称"]')?.focus(),
+                    );
+                });
               }}
               openMore={async (record, back) => {
                 if (!(await openFlow(record))) throw new Error('请先处理当前编排中的未完成输入');

@@ -101,8 +101,8 @@ type Props = {
     source?: { title: string; taskId?: string },
   ) => void;
   flows: () => void;
-  createFlow: () => void;
-  openFlow: (flow: FlowRecord) => void;
+  createFlow: () => Promise<FlowRecord>;
+  openFlow: (flow: FlowRecord, returnToTask?: boolean, back?: () => void) => void;
   openMore: (flow: FlowRecord, back: () => void) => Promise<void>;
   changed: () => Promise<void>;
 };
@@ -665,6 +665,38 @@ export default function AITaskWorkspace(props: Props) {
       lock.current = false;
       setBusy(false);
     }
+  }
+  const manualFlows = useRef(new Map<string, string>());
+  async function openManual(returnToTask: boolean) {
+    const origin = {
+      ...location.current,
+      taskId: selectedTask.current,
+      scroll: document.querySelector('main')?.scrollTop ?? 0,
+      trigger: document.activeElement instanceof HTMLElement ? document.activeElement : null,
+    };
+    await run(async () => {
+      const previousId =
+        returnToTask && origin.taskId ? manualFlows.current.get(origin.taskId) : undefined;
+      let record = returnToTask ? detail?.flow : undefined;
+      if (!record && previousId) {
+        record = props.data.flows.find((flow) => flow.id === previousId);
+        if (!record) throw new Error('先前手动创建的流程已不在当前列表，请到“我的流程”核对。');
+      }
+      if (!record) {
+        record = await props.createFlow();
+        if (returnToTask && origin.taskId) manualFlows.current.set(origin.taskId, record.id);
+      }
+      if (
+        location.current.active &&
+        location.current.page === origin.page &&
+        selectedTask.current === origin.taskId
+      )
+        props.openFlow(record, returnToTask, () => {
+          document.querySelector('main')?.scrollTo({ top: origin.scroll });
+          if (origin.trigger?.isConnected) origin.trigger.focus({ preventScroll: true });
+        });
+      else setMessage('手动流程已准备好，可从“我的流程”打开。任务草稿已保留。');
+    });
   }
   async function save(content: Draft = draft): Promise<TaskDetail> {
     if (!detail) throw new Error('请先创建任务');
@@ -1763,10 +1795,7 @@ export default function AITaskWorkspace(props: Props) {
               taskId: detail?.task.id,
             });
           }}
-          manual={() => {
-            if (detail?.flow) props.openFlow(detail.flow);
-            else props.createFlow();
-          }}
+          manual={() => void openManual(true)}
         />
       ) : page === 'home' ? (
         <>
@@ -1886,7 +1915,7 @@ export default function AITaskWorkspace(props: Props) {
             <button disabled={busy} onClick={props.flows}>
               使用已有流程
             </button>
-            <button disabled={busy} onClick={props.createFlow}>
+            <button disabled={busy} onClick={() => void openManual(false)}>
               手动创建流程
             </button>
             <button disabled={busy} onClick={props.openTools}>

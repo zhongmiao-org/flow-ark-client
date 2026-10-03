@@ -27,7 +27,11 @@ export default function TaskMissingAI({
   manual: () => void;
 }) {
   return (
-    <section className="ai-task-card ai-missing-card" aria-label="配置 AI 后继续任务">
+    <section
+      className="ai-task-card ai-missing-card"
+      aria-label="配置 AI 后继续任务"
+      aria-busy={busy}
+    >
       <span className={`ai-config-status ${configured ? 'neutral' : 'warning'}`}>
         {providerName} · {configured ? '已配置 · 使用前核对' : '未配置'}
       </span>
@@ -58,7 +62,7 @@ export default function TaskMissingAI({
           去配置 AI 服务
         </button>
         <button disabled={busy} onClick={manual}>
-          先手动搭建
+          {busy ? '正在准备…' : '先手动搭建'}
         </button>
       </div>
     </section>
