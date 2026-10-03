@@ -63,7 +63,7 @@ export default function RunHistory({
   const restore = useRef<{ id: string; scroll: number } | null>(null);
   const pageArrival = useRef(false);
   const pageSummaryId = useId();
-  shown.current = visible;
+  shown.current = visible && !filterOpen;
   const cursor = cursors[cursors.length - 1];
   useEffect(() => setPage(cursors.length), [cursors.length, setPage]);
   const resetView = () => {
@@ -118,7 +118,7 @@ export default function RunHistory({
   }, [visible, filterOpen]);
   useEffect(() => {
     const id = ++generation.current;
-    if (!visible) return;
+    if (!visible || filterOpen) return;
     let live = true,
       pending = false;
     setError('');
@@ -151,7 +151,7 @@ export default function RunHistory({
       if (generation.current === id) generation.current++;
       clearInterval(timer);
     };
-  }, [query, cursor, revision, visible, scope?.id]);
+  }, [query, cursor, revision, visible, filterOpen, scope?.id]);
   useEffect(() => {
     if (!visible || filterOpen || loading || !data || !restore.current) return;
     const saved = restore.current;
@@ -159,7 +159,7 @@ export default function RunHistory({
       const button = [
         ...(root.current?.querySelectorAll<HTMLButtonElement>('[data-run-id]') ?? []),
       ].find((e) => e.dataset.runId === saved.id);
-      button?.focus({ preventScroll: true });
+      (button ?? heading.current)?.focus({ preventScroll: true });
       root.current?.closest('main')?.scrollTo({ top: saved.scroll });
       restore.current = null;
     });
@@ -182,6 +182,8 @@ export default function RunHistory({
       const detail = await api('run.detail', { id });
       if (shown.current && current === generation.current) {
         if (!detail?.run) throw new Error('这条运行记录已不存在，请返回列表。');
+        if (detail.run.id !== id)
+          throw new Error('返回的运行记录与所选记录不一致，请重新打开详情。');
         restore.current = { id, scroll: root.current?.closest('main')?.scrollTop ?? 0 };
         open(detail);
       }
