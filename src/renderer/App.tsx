@@ -92,7 +92,7 @@ import FlowParametersPage from './FlowParametersPage';
 import NodeTiming from './NodeTiming';
 import RunHistory from './RunHistory';
 import RunDetail, { type RunTab } from './RunDetail';
-import TaskRunPage from './TaskRunPage';
+import TaskRunPage, { type TaskRunReturnContext } from './TaskRunPage';
 import { taskRunPresentation, type TaskRunIntent, type TaskRunView } from './task-run-presentation';
 import { runStateLabels } from '../shared/run-history';
 import { referenceChoices } from './value-references';
@@ -236,6 +236,14 @@ export default function App() {
   const scheduleRunBack = useRef<(() => void) | undefined>(undefined);
   const taskRunBack = useRef<((intent?: TaskRunIntent) => void) | undefined>(undefined);
   const [taskRunView, setTaskRunView] = useState<TaskRunView>('overview');
+  const [taskRunTrail, setTaskRunTrail] = useState<
+    { targetId: string; context: TaskRunReturnContext }[]
+  >([]);
+  const [taskRunRestored, setTaskRunRestored] = useState<TaskRunReturnContext>();
+  const taskRunTrailRef = useRef(taskRunTrail);
+  taskRunTrailRef.current = taskRunTrail;
+  const [taskRunReturning, setTaskRunReturning] = useState(false);
+  const taskRunReturnLock = useRef(false);
   const [compactEditor, setCompactEditor] = useState(() => window.innerWidth < 1440);
   useEffect(() => {
     const query = window.matchMedia('(max-width: 1439px)');
@@ -305,8 +313,56 @@ export default function App() {
   const editorLeaveRequest = useRef<
     (next: () => void, destination: string, resume?: () => void) => void
   >(() => {});
+  const runLocation = useRef({ section, id: detail?.run.id });
+  runLocation.current = { section, id: detail?.run.id };
+  const linkedRunSource =
+    runOrigin === 'task' && taskRunTrail.at(-1)?.targetId === detail?.run.id
+      ? taskRunTrail.at(-1)
+      : undefined;
   useEffect(() => {
-    if (section === 'runs' && (detail || runFilter))
+    if ((section !== 'runs' && section !== 'tools') || runOrigin !== 'task') {
+      setTaskRunTrail([]);
+      setTaskRunRestored(undefined);
+    }
+  }, [section, runOrigin]);
+  async function returnLinkedRun() {
+    if (!linkedRunSource || taskRunReturnLock.current) return;
+    const source = linkedRunSource;
+    taskRunReturnLock.current = true;
+    setTaskRunReturning(true);
+    setError('');
+    try {
+      const next = await api('run.detail', { id: source.context.runId });
+      if (
+        runLocation.current.section !== 'runs' ||
+        runLocation.current.id !== source.targetId ||
+        taskRunTrailRef.current.at(-1) !== source
+      )
+        return;
+      if (next?.run?.id !== source.context.runId)
+        throw new Error('返回的记录与来源运行不一致，请重新读取');
+      setTaskRunTrail((trail) => trail.slice(0, -1));
+      setTaskRunRestored(source.context);
+      setTaskRunView(source.context.page);
+      setDetail(next);
+    } catch (reason) {
+      if (
+        runLocation.current.section === 'runs' &&
+        runLocation.current.id === source.targetId &&
+        taskRunTrailRef.current.at(-1) === source
+      )
+        setError(reason instanceof Error ? reason.message : '无法返回来源运行，请稍后重试');
+    } finally {
+      taskRunReturnLock.current = false;
+      setTaskRunReturning(false);
+    }
+  }
+  useEffect(() => {
+    if (
+      section === 'runs' &&
+      (detail || runFilter) &&
+      !(runOrigin === 'task' && taskRunRestored?.runId === detail?.run.id)
+    )
       document.querySelector('main')?.scrollTo({ top: 0 });
   }, [section, detail?.run.id, runFilter, runTab]);
   const edit = history.present?.record ?? null,
@@ -400,6 +456,7 @@ export default function App() {
   }
   const returnRun = () => {
     if (detail && runOrigin === 'task' && taskRunView !== 'overview') setTaskRunView('overview');
+    else if (linkedRunSource) void returnLinkedRun();
     else if (detail && runTab !== 'current') returnRunSubview();
     else if (detail) {
       setDetail(null);
@@ -1063,32 +1120,38 @@ export default function App() {
               )}
             {section === 'runs' && (detail || runFilter) && (
               <button
-                disabled={runOrigin !== 'task' && runTab === 'rerun' && runRerunBusy}
+                disabled={
+                  taskRunReturning || (runOrigin !== 'task' && runTab === 'rerun' && runRerunBusy)
+                }
                 className="context-back"
                 onClick={returnRun}
               >
                 {detail
                   ? runOrigin === 'task' && taskRunView !== 'overview'
                     ? '← 返回结果摘要'
-                    : runTab === 'rerun'
-                      ? `← 返回${runRerunReturn.current?.tab === 'output' ? '输出与产物' : runRerunReturn.current?.tab === 'logs' ? '运行日志' : '运行详情'}`
-                      : runTab !== 'current'
-                        ? '← 返回运行详情'
-                        : runOrigin === 'inbox'
-                          ? '← 返回待办与提醒'
-                          : runOrigin === 'schedule'
-                            ? '← 返回本机计划'
-                            : runOrigin === 'template'
-                              ? '← 返回模板入口'
-                              : runOrigin === 'task'
-                                ? '← 返回 AI 任务'
-                                : runOrigin === 'editor' && edit
-                                  ? moreOpen
-                                    ? '← 返回更多操作'
-                                    : outlineOpen
-                                      ? '← 返回长流程大纲'
-                                      : '← 返回流程编排'
-                                  : `← 返回记录第 ${runPage} 页`
+                    : linkedRunSource
+                      ? taskRunReturning
+                        ? '正在读取来源…'
+                        : '← 返回来源结果'
+                      : runTab === 'rerun'
+                        ? `← 返回${runRerunReturn.current?.tab === 'output' ? '输出与产物' : runRerunReturn.current?.tab === 'logs' ? '运行日志' : '运行详情'}`
+                        : runTab !== 'current'
+                          ? '← 返回运行详情'
+                          : runOrigin === 'inbox'
+                            ? '← 返回待办与提醒'
+                            : runOrigin === 'schedule'
+                              ? '← 返回本机计划'
+                              : runOrigin === 'template'
+                                ? '← 返回模板入口'
+                                : runOrigin === 'task'
+                                  ? '← 返回 AI 任务'
+                                  : runOrigin === 'editor' && edit
+                                    ? moreOpen
+                                      ? '← 返回更多操作'
+                                      : outlineOpen
+                                        ? '← 返回长流程大纲'
+                                        : '← 返回流程编排'
+                                    : `← 返回记录第 ${runPage} 页`
                   : '← 返回运行记录'}
               </button>
             )}
@@ -1167,6 +1230,21 @@ export default function App() {
                     确认任务方案
                   </a>
                   <span aria-hidden="true">/</span>
+                  {linkedRunSource && (
+                    <>
+                      <a
+                        href="#source-result"
+                        aria-disabled={taskRunReturning}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          void returnLinkedRun();
+                        }}
+                      >
+                        来源结果
+                      </a>
+                      <span aria-hidden="true">/</span>
+                    </>
+                  )}
                   {taskRunView !== 'overview' && (
                     <>
                       <a
@@ -1481,6 +1559,8 @@ export default function App() {
               onNavigation={updateTaskNavigation}
               openRun={(next, back) => {
                 taskRunBack.current = back;
+                setTaskRunTrail([]);
+                setTaskRunRestored(undefined);
                 setTaskRunView('overview');
                 setDetail(next);
                 setRunOrigin('task');
@@ -2081,6 +2161,7 @@ export default function App() {
                   detail={detail}
                   fault={data.fault}
                   page={taskRunView}
+                  restored={taskRunRestored}
                   setPage={setTaskRunView}
                   navigate={(intent) => {
                     setDetail(null);
@@ -2102,7 +2183,12 @@ export default function App() {
                   reveal={(id) => api('artifact.reveal', { id })}
                   showBrowser={() => setBrowserOpen(true)}
                   hideBrowser={() => setBrowserOpen(false)}
-                  open={(next) => {
+                  open={(next, context) => {
+                    if (next.run.id === detail.run.id) return;
+                    setTaskRunTrail((trail) =>
+                      context ? [...trail, { targetId: next.run.id, context }] : [],
+                    );
+                    setTaskRunRestored(undefined);
                     setTaskRunView('overview');
                     setDetail((current: any) =>
                       current?.run.id === detail.run.id ? next : current,

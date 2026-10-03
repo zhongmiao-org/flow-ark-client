@@ -17,6 +17,14 @@ import DesktopRunReceipt from './DesktopRunReceipt';
 import DesktopTaskRun from './DesktopTaskRun';
 import TaskRunSource from './TaskRunSource';
 
+export type TaskRunReturnContext = {
+  runId: string;
+  page: TaskRunView;
+  selected?: string;
+  scroll: number;
+  stepsView?: TaskExecutionView & { runId: string };
+};
+
 export default function TaskRunPage({
   detail,
   fault,
@@ -30,6 +38,7 @@ export default function TaskRunPage({
   showBrowser,
   hideBrowser,
   open,
+  restored,
 }: {
   detail: any;
   fault?: string;
@@ -42,18 +51,24 @@ export default function TaskRunPage({
   reveal: (id: string) => Promise<any>;
   showBrowser: () => void;
   hideBrowser: () => void;
-  open: (detail: any) => void;
+  open: (detail: any, context?: TaskRunReturnContext) => void;
+  restored?: TaskRunReturnContext;
 }) {
   const [, tick] = useState(0);
   const [learning, setLearning] = useState<LearningStatus>();
-  const [selected, setSelected] = useState<string>();
+  const initial =
+    restored && restored.runId === detail.run.id && restored.page === page ? restored : undefined;
+  const [selected, setSelected] = useState<string | undefined>(initial?.selected);
   const [preview, setPreview] = useState<ArtifactPreview>();
   const [loading, setLoading] = useState(false);
   const [previewError, setPreviewError] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [retry, setRetry] = useState(0);
-  const [stepsView, setStepsView] = useState<TaskExecutionView & { runId: string }>();
+  const [stepsView, setStepsView] = useState<(TaskExecutionView & { runId: string }) | undefined>(
+    initial?.stepsView,
+  );
+  const restoredPosition = useRef(initial);
   const lock = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const detailScroll = useRef(0);
@@ -82,6 +97,14 @@ export default function TaskRunPage({
     previousMode.current = model.mode;
   }, [model.mode, page]);
   const run = detail.run;
+  const openSource = (next: any) =>
+    open(next, {
+      runId: run.id,
+      page,
+      selected,
+      scroll: document.querySelector('main')?.scrollTop ?? 0,
+      stepsView,
+    });
   const versionLabel =
     run.rerun?.mode === 'saved'
       ? '已保存方案快照'
@@ -121,6 +144,15 @@ export default function TaskRunPage({
     return () => clearInterval(timer);
   }, []);
   useLayoutEffect(() => {
+    if (restoredPosition.current) {
+      const position = restoredPosition.current;
+      restoredPosition.current = undefined;
+      document.querySelector('main')?.scrollTo(0, position.scroll);
+      document
+        .querySelector<HTMLButtonElement>('.task-run-source button')
+        ?.focus({ preventScroll: true });
+      return;
+    }
     const returning = page === 'overview' && previousPage.current !== 'overview';
     document.querySelector('main')?.scrollTo(0, returning ? detailScroll.current : 0);
     if (returning) {
@@ -344,7 +376,7 @@ export default function TaskRunPage({
                   {run.rerun && page === 'overview' && (
                     <>
                       {' '}
-                      · <TaskRunSource key={run.id} run={run} open={open} />
+                      · <TaskRunSource key={run.id} run={run} open={openSource} />
                     </>
                   )}
                 </>
@@ -468,7 +500,7 @@ export default function TaskRunPage({
                     {run.rerun && (
                       <>
                         {' · '}
-                        <TaskRunSource key={run.id} run={run} open={open} />
+                        <TaskRunSource key={run.id} run={run} open={openSource} />
                       </>
                     )}
                   </dd>
