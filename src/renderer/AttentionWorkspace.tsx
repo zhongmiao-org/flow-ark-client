@@ -1,5 +1,13 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
 import type { Attention, Bootstrap, Json } from '../shared/types';
+import { runStateLabels } from '../shared/run-history';
 import { schemaDefaults, validateConfigurationSchema } from '../shared/template-config';
 import { Field } from './TemplateConfiguration';
 import './attention-workspace.css';
@@ -12,6 +20,10 @@ const date = (value: string) => new Date(value).toLocaleString('zh-CN');
 const human = (item: Attention) => item.kind === 'template-input';
 const sourceId = (item: Attention) =>
   typeof item.detail?.runId === 'string' ? item.detail.runId : undefined;
+const relatedRunIds = (item: Attention): string[] =>
+  [
+    ...new Set([sourceId(item), ...(Array.isArray(item.detail?.runIds) ? item.detail.runIds : [])]),
+  ].filter((id): id is string => typeof id === 'string' && !!id.trim());
 const ended = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED']);
 function requestState(item: Attention, data: Bootstrap, now: number) {
   if (item.detail?.answered) return 'answered';
@@ -192,7 +204,7 @@ export default function AttentionWorkspace({
   data: Bootstrap;
   active: boolean;
   refresh: () => Promise<void>;
-  openRun: (id: string) => Promise<void>;
+  openRun: (detail: any) => void;
   showBrowser: () => void;
   navigation: Dispatch<SetStateAction<AttentionNavigation | undefined>>;
 }) {
@@ -201,6 +213,7 @@ export default function AttentionWorkspace({
   const [kind, setKind] = useState('all');
   const [selectedId, setSelectedId] = useState('');
   const [busy, setBusy] = useState(false);
+  const [openingRunId, setOpeningRunId] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [acknowledged, setAcknowledged] = useState<Set<string>>(() => new Set());
@@ -214,7 +227,16 @@ export default function AttentionWorkspace({
   const listScroll = useRef(0);
   const listFocus = useRef('');
   const runReturn = useRef<{ focus: HTMLElement; scroll: number } | null>(null);
+  const visit = useRef(0);
+  useLayoutEffect(
+    () => () => {
+      visit.current++;
+    },
+    [active, selectedId, tab, query, kind],
+  );
   const selected = data.attention.find((item) => item.id === selectedId);
+  const runIds = selected ? relatedRunIds(selected) : [];
+  const runRecords = new Map(data.runs.map((run) => [run.id, run]));
   const currentState = (item: Attention) =>
     acknowledged.has(item.id) ? 'answered' : requestState(item, data, now);
   const state = selected && human(selected) ? currentState(selected) : undefined;
@@ -311,15 +333,35 @@ export default function AttentionWorkspace({
     }
   };
   const viewRun = (id: string, trigger: HTMLButtonElement) => {
+    if (locked.current) return;
+    locked.current = true;
+    const origin = visit.current;
+    setBusy(true);
+    setOpeningRunId(id);
+    setError('');
+    setNotice('');
     runReturn.current = { focus: trigger, scroll: document.querySelector('main')?.scrollTop ?? 0 };
-    void act(async () => {
+    void (async () => {
       try {
-        await openRun(id);
-      } catch (error) {
-        runReturn.current = null;
-        throw error;
+        const next = await api('run.detail', { id });
+        if (visit.current !== origin) {
+          runReturn.current = null;
+          return;
+        }
+        if (!next?.run || next.run.id !== id)
+          throw new Error('未取得对应的来源运行记录，请重新核对；未打开其他运行。');
+        openRun(next);
+      } catch (reason) {
+        if (visit.current === origin) {
+          runReturn.current = null;
+          setError(reason instanceof Error ? reason.message : '来源运行暂不可用，请重试');
+        }
+      } finally {
+        locked.current = false;
+        setBusy(false);
+        setOpeningRunId('');
       }
-    });
+    })();
   };
   const open = (item: Attention) => {
     listFocus.current = item.id;
@@ -547,7 +589,7 @@ export default function AttentionWorkspace({
                 <div>{description(selected)}</div>
               </div>
             ) : (
-              <AttentionDetails item={selected} />
+              <AttentionDetails item={selected} omitRunReferences={runIds.length > 0} />
             )}
             {human(selected) && state !== 'answered' && (
               <AnswerForm
@@ -666,36 +708,37 @@ export default function AttentionWorkspace({
             <p className="attention-muted">
               超时、取消或宿主退出后，人工请求失效。结果未知的操作不会自动重放。
             </p>
-            {sourceId(selected) && (
-              <dl className="attention-source-facts">
-                <div>
-                  <dt>来源运行</dt>
-                  <dd>{sourceId(selected)}</dd>
-                </div>
-              </dl>
-            )}
-            {sourceId(selected) ? (
-              <button
-                disabled={busy}
-                onClick={(event) => viewRun(sourceId(selected)!, event.currentTarget)}
-              >
-                查看来源运行
-              </button>
+            {runIds.length ? (
+              <section className="attention-related-runs" aria-label="关联运行">
+                <h3>关联运行 · {runIds.length}</h3>
+                <ul>
+                  {runIds.map((id, index) => {
+                    const run = runRecords.get(id);
+                    return (
+                      <li key={id}>
+                        <strong>{run?.name || `运行记录 ${index + 1}`}</strong>
+                        <p className="attention-muted">
+                          {run
+                            ? `保存状态：${runStateLabels[run.state]} · ${date(run.updatedAt)}`
+                            : '当前摘要未包含此记录，可打开详情核对。'}
+                        </p>
+                        <code>{id}</code>
+                        <button
+                          disabled={busy}
+                          aria-label={`查看第 ${index + 1} 个关联运行：${run?.name || id}`}
+                          onClick={(event) => viewRun(id, event.currentTarget)}
+                        >
+                          {openingRunId === id ? '正在读取运行…' : '查看运行详情'}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="attention-muted">查看记录和标为已读都不会重新执行任务。</p>
+              </section>
             ) : (
               <p className="attention-muted">这条提醒未提供可直接打开的运行记录。</p>
             )}
-            {Array.isArray(selected.detail?.runIds) &&
-              selected.detail.runIds
-                .filter((id: unknown) => typeof id === 'string')
-                .map((id: string) => (
-                  <button
-                    key={id}
-                    disabled={busy}
-                    onClick={(event) => viewRun(id, event.currentTarget)}
-                  >
-                    查看运行 {id}
-                  </button>
-                ))}
             <button disabled={busy} onClick={showBrowser}>
               查看当前网页
             </button>

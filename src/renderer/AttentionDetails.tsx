@@ -15,21 +15,37 @@ const detailLabels: Record<string, string> = {
   source: '来源',
   url: '网页地址',
 };
-export default function AttentionDetails({ item }: { item: Attention }) {
+export default function AttentionDetails({
+  item,
+  omitRunReferences = false,
+}: {
+  item: Attention;
+  omitRunReferences?: boolean;
+}) {
   const entries = Object.entries(item.detail ?? {}).filter(
-    ([key]) => !['schema', 'answered'].includes(key),
+    ([key]) =>
+      !['schema', 'answered'].includes(key) &&
+      !(omitRunReferences && ['runId', 'runIds'].includes(key)),
   );
   return (
     <>
-      <dl className="attention-facts">
-        {entries.map(([key, value]) => (
-          <div key={key}>
-            <dt>{detailLabels[key] ?? key}</dt>
-            <dd>{typeof value === 'string' ? value : JSON.stringify(value, null, 2)}</dd>
-          </div>
-        ))}
-      </dl>
-      {!entries.length && <p className="attention-muted">该提醒没有附加说明。</p>}
+      {!!entries.length && (
+        <dl className="attention-facts">
+          {entries.map(([key, value]) => (
+            <div key={key}>
+              <dt>{detailLabels[key] ?? key}</dt>
+              <dd>{typeof value === 'string' ? value : JSON.stringify(value, null, 2)}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {!entries.length && (
+        <p className="attention-muted">
+          {omitRunReferences
+            ? '请逐项查看关联运行，核对已保存的结果与外部操作。'
+            : '该提醒没有附加说明。'}
+        </p>
+      )}
       <details className="attention-raw">
         <summary>查看原始详情</summary>
         <pre>{JSON.stringify(item.detail, null, 2)}</pre>

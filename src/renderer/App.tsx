@@ -2296,9 +2296,7 @@ export default function App() {
             refresh={reloadSettingsData}
             navigation={setAttentionNavigation}
             showBrowser={() => setBrowserOpen(true)}
-            openRun={async (id) => {
-              const next = await api('run.detail', { id });
-              if (!next?.run) throw new Error('来源运行暂不可用');
+            openRun={(next) => {
               setRunOrigin('inbox');
               setRunTab('current');
               setRunFilter(false);

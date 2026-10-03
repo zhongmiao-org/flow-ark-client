@@ -164,6 +164,43 @@
   width: 100%;
   overflow-wrap: anywhere;
 }
+.attention-related-runs h3 {
+  margin: 8px 0 12px;
+  font-size: 14px;
+  line-height: 24px;
+}
+.attention-related-runs ul {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  max-height: 480px;
+  overflow-y: auto;
+  scroll-padding: 12px;
+}
+.attention-related-runs li {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  overflow-wrap: anywhere;
+}
+.attention-related-runs strong {
+  font-size: 14px;
+  line-height: 24px;
+}
+.attention-related-runs code {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 20px;
+}
+.attention-related-runs button {
+  width: 100%;
+  white-space: normal;
+}
 .attention-facts {
   display: grid;
   gap: 16px;
