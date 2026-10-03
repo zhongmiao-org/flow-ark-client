@@ -43,6 +43,7 @@ export default function DesktopTaskPlan({
   const request = useRef<string | undefined>(undefined),
     epoch = useRef(0);
   const heading = useRef<HTMLHeadingElement>(null);
+  const hasDescription = Boolean(task.description.trim());
   const name = provider === 'deepseek' ? 'DeepSeek' : 'OpenAI';
   const cancel = () => {
     epoch.current++;
@@ -114,7 +115,7 @@ export default function DesktopTaskPlan({
     configuration.revision &&
     !configuration.operation &&
     !selection.redacted &&
-    task.description.trim() &&
+    hasDescription &&
     selection.expiresAt > Date.now();
   const generate = async () => {
     if (!ready || !reviewed || request.current) return;
@@ -201,7 +202,10 @@ export default function DesktopTaskPlan({
             <>
               <div className="desktop-plan-description">
                 <h2>你</h2>
-                <p>{task.description || '尚未填写需求'}</p>
+                <p>{hasDescription ? task.description : '先说明你想怎样整理这段文字。'}</p>
+                <button onClick={editDescription}>
+                  {hasDescription ? '修改需求' : '填写需求'}
+                </button>
               </div>
               <div className="desktop-plan-scope">
                 <h2>当前对象</h2>
@@ -213,9 +217,8 @@ export default function DesktopTaskPlan({
                 {new Date(selection.expiresAt).toLocaleTimeString('zh-CN')}。
               </p>
               <details className="desktop-plan-source" open={!proposal}>
-                <summary>需求与本次发送的原段落</summary>
+                <summary>本次发送的原段落</summary>
                 {plainText('本次发送的原段落', selection.text)}
-                <button onClick={editDescription}>返回修改需求</button>
               </details>
             </>
           )}
@@ -343,6 +346,11 @@ export default function DesktopTaskPlan({
                 )}
                 {selection.redacted && (
                   <p className="ai-task-note">原段落包含已遮盖的信息，请返回缩小选区后重新读取。</p>
+                )}
+                {!hasDescription && (
+                  <p className="ai-task-note" role="status">
+                    尚未填写需求。请先点击“填写需求”，再核对文字与 AI 服务。
+                  </p>
                 )}
                 <p className="desktop-plan-send-note">
                   只发送左侧需求和原段落给 {name}

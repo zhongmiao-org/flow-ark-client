@@ -27,6 +27,9 @@
   font-size: 14px;
   line-height: 22px;
 }
+.desktop-plan-description > button {
+  margin-top: 12px;
+}
 .desktop-plan-columns:not(.is-changes) .desktop-plan-scope {
   min-height: 130px;
   background: var(--fa-bg-surface);
