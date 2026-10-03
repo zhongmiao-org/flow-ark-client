@@ -48,6 +48,21 @@ export default function FlowParametersPage({
   }, []);
   const [draft, setDraft] = useState(() => structuredClone(record));
   const [busy, setBusy] = useState('');
+  const [choosing, setChoosing] = useState('');
+  const [selection, setSelection] = useState<{
+    binding: string;
+    message: string;
+    failed: boolean;
+  }>();
+  const selectionMessage = useRef<HTMLParagraphElement>(null);
+  const selectionTrigger = useRef<HTMLElement | null>(null);
+  const selectionFocus = useRef(false);
+  useLayoutEffect(() => {
+    if (busy || !selectionFocus.current) return;
+    selectionFocus.current = false;
+    if (selection?.failed) selectionMessage.current?.focus();
+    else selectionTrigger.current?.focus({ preventScroll: true });
+  }, [busy, selection]);
   const [error, setError] = useState('');
   const [pendingName, setPendingName] = useState(false);
   const pageError = useRef<HTMLDivElement>(null);
@@ -152,20 +167,50 @@ export default function FlowParametersPage({
   const choose = async (binding: string) => {
     if (locked.current) return;
     locked.current = true;
-    setBusy(binding);
-    setError('');
+    selectionTrigger.current = document.activeElement as HTMLElement;
+    lastFocus.current = selectionTrigger.current;
+    setBusy('choose');
+    setChoosing(binding);
+    setSelection(undefined);
     try {
       const path = await window.flowark.request('file.choose', { kind: 'directory' });
-      if (alive.current && typeof path === 'string' && path)
+      if (!alive.current) return;
+      if (typeof path === 'string' && path) {
         setDraft((current) => ({
           ...current,
           bindings: { ...current.bindings, files: { ...current.bindings.files, [binding]: path } },
         }));
+        setSelection({
+          binding,
+          failed: false,
+          message:
+            path === draft.bindings.files[binding]
+              ? '选择位置未改变。其他未保存更改仍需保存。'
+              : '已选择目录，尚未保存。点击“保存参数”后应用到流程。',
+        });
+      } else {
+        setSelection({
+          binding,
+          failed: false,
+          message: draft.bindings.files[binding]
+            ? '已取消选择，保留原目录和其他未保存更改。'
+            : '已取消选择，尚未设置目录。其他未保存更改已保留。',
+        });
+      }
     } catch (reason) {
-      if (alive.current) setError(reason instanceof Error ? reason.message : '目录未选择，请重试');
+      if (alive.current)
+        setSelection({
+          binding,
+          failed: true,
+          message: `${reason instanceof Error ? reason.message : '目录未选择'}。原目录和其他输入已保留，可重新选择。`,
+        });
     } finally {
       locked.current = false;
-      if (alive.current) setBusy('');
+      if (alive.current) {
+        selectionFocus.current = true;
+        setBusy('');
+        setChoosing('');
+      }
     }
   };
   const managed = draft.bindings.configuration?.adapter === 'flow-parameters-v1';
@@ -300,7 +345,11 @@ export default function FlowParametersPage({
           {!browsers.length && <p>尚未发现可用绑定，请先在本地设置中配置浏览器。</p>}
           {fileBindingNames(draft.flow.steps, draft.bindings.files, draft.flow.parameters).map(
             (binding) => (
-              <div className="flow-parameters-resource" key={binding}>
+              <div
+                className="flow-parameters-resource"
+                key={binding}
+                aria-busy={busy === 'choose' && choosing === binding}
+              >
                 <strong>{binding} 目录</strong>
                 <button
                   type="button"
@@ -308,8 +357,20 @@ export default function FlowParametersPage({
                   aria-label={'选择 ' + binding + ' 目录'}
                   title={draft.bindings.files[binding] ?? '尚未选择'}
                 >
-                  {busy === binding ? '正在选择…' : (draft.bindings.files[binding] ?? '选择目录')}
+                  {busy === 'choose' && choosing === binding
+                    ? '正在选择…'
+                    : (draft.bindings.files[binding] ?? '选择目录')}
                 </button>
+                {selection?.binding === binding && (
+                  <p
+                    ref={selectionMessage}
+                    tabIndex={-1}
+                    role={selection.failed ? 'alert' : 'status'}
+                    className={selection.failed ? 'field-error' : undefined}
+                  >
+                    {selection.message}
+                  </p>
+                )}
               </div>
             ),
           )}
