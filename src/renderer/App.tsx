@@ -673,10 +673,7 @@ export default function App() {
     if (section === 'editor') requestEditorLeave(navigate, label);
     else if (section === 'tools') toolNavigation.current?.(navigate);
     else if (section === 'ai-settings')
-      aiSettingsNavigation.current?.(
-        () => (id === 'templates' ? navigate() : leaveAIContext(navigate, label)),
-        label,
-      );
+      aiSettingsNavigation.current?.(() => leaveAIContext(navigate, label), label);
     else if (section === 'templates') templateNavigation.current?.(navigate, label);
     else if (section === 'schedules') plansNavigation.current?.(navigate, label);
     else if (section === 'template-schedule')
@@ -956,6 +953,12 @@ export default function App() {
                 onClick={(event) => {
                   const destination = event.currentTarget;
                   const navigate = () => {
+                    if (
+                      id === 'templates' &&
+                      section === 'ai-settings' &&
+                      taskAISettings.source?.kind === 'template'
+                    )
+                      setTemplateHomeRequest(crypto.randomUUID());
                     if (id === 'tools')
                       setToolsOrigin(section === 'settings' ? 'settings' : 'tasks');
                     setTaskReturn(false);
