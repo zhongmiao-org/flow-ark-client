@@ -247,7 +247,7 @@ export default function BrowserSidebar({
   const confirmed =
     statusKnown && !adjusting && !observation?.error && observation?.percentage !== undefined;
   const scaleLabel = adjusting
-    ? '正在调整显示比例…'
+    ? '正在调整网页显示…'
     : !confirmed
       ? '显示比例尚未确认'
       : `${observation.mode === 'readable' ? '清晰查看' : '适应全部'} ${Math.round(observation.percentage!)}%`;
@@ -556,7 +556,7 @@ export default function BrowserSidebar({
           {!status.blocked && (
             <span>
               {expanded
-                ? '这里只改变查看区域，不重排网页。使用触控板或鼠标滚动查看其他区域，切换比例后请重新核对目标。'
+                ? '这里只改变查看区域，不重排网页。macOS 清晰查看时，点入网页后按 ⌥⌘ 和方向键平移；滚轮上下查看。切换比例后请重新核对目标。'
                 : '收起面板后任务继续'}
             </span>
           )}

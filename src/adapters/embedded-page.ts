@@ -7,6 +7,7 @@ import { EmbeddedPicker } from './embedded-picker';
 import { describeElement } from './element-description';
 import type { PointIdentity } from './embedded-point-target';
 import type { ElementTarget } from '../shared/element-picker';
+import type { ObservationPan } from '../shared/browser-observation';
 type Scope = {
   context: number;
   session?: string;
@@ -75,6 +76,27 @@ export class EmbeddedPage {
     if (!cssVisualViewport || Math.abs(cssVisualViewport.scale - scale) > 0.01)
       throw new Error('网页显示比例尚未确认，请重新选择查看模式');
     return this.contents.getZoomFactor() * cssVisualViewport.scale * 100;
+  }
+  async panObservation(direction: ObservationPan['direction']) {
+    const { cssVisualViewport: before } = await this.send('Page.getLayoutMetrics');
+    if (!before || before.scale <= 1) throw new Error('请先切换为原字号查看');
+    const horizontal = direction === 'left' || direction === 'right';
+    const distance = Math.min(300, (horizontal ? before.clientWidth : before.clientHeight) / 2);
+    // Gesture coordinates are visible CSS points, without the visual offset.
+    // A short touch scroll moves the visual viewport without replaying clicks.
+    await this.send('Input.synthesizeScrollGesture', {
+      x: before.clientWidth / 2,
+      y: Math.min(24, before.clientHeight / 2),
+      xDistance: horizontal ? distance * (direction === 'left' ? 1 : -1) : 0,
+      yDistance: horizontal ? 0 : distance * (direction === 'up' ? 1 : -1),
+      gestureSourceType: 'touch',
+      preventFling: true,
+      speed: 1200,
+    });
+    const { cssVisualViewport: after } = await this.send('Page.getLayoutMetrics');
+    if (!after || Math.abs(after.scale - before.scale) > 0.01)
+      throw new Error('网页显示比例已改变，请重新选择查看模式');
+    return this.contents.getZoomFactor() * after.scale * 100;
   }
   private async evaluate(scope: Scope, expression: string, byValue = true) {
     const result = await this.send(

@@ -22,6 +22,7 @@ import type { RepairSelection } from '../shared/task-repair';
 import { confirmWebContentsClosed } from './native-webcontents-close';
 import type { EmbeddedReview } from '../shared/run-review';
 import { pageIdentity, sameWebPage, type WebPageIdentity } from '../shared/task-web-target';
+import { observationPan, type ObservationPan } from '../shared/browser-observation';
 
 type Bounds = { x: number; y: number; width: number; height: number };
 type Operation = { stop: (reason?: Error) => void; pickRequestId?: string };
@@ -56,6 +57,9 @@ type Resource = {
   observationRevision?: number;
   observationPercentage?: number;
   observationError?: string;
+  observationFeedback?: string;
+  panning?: boolean;
+  panRequest?: { args: ObservationPan; observationRevision?: number };
   presented?: boolean;
   lostNotified?: boolean;
 };
@@ -75,6 +79,7 @@ export class EmbeddedBrowser {
     private window: BrowserWindow,
     private lost: (notice: EmbeddedLostNotice) => void,
     private cleanupFailed?: (report: EmbeddedCleanupFailure) => void,
+    private requestPan?: (request: ObservationPan) => Promise<unknown>,
   ) {
     this.websiteSession = session.fromPartition('persist:flowark-web-panel');
     this.websiteSession.setPermissionRequestHandler((_wc, _permission, callback) =>
@@ -214,6 +219,45 @@ export class EmbeddedBrowser {
       // exact generation's object for destruction evidence and late cleanup.
       const wc = view.webContents;
       resource.contents = wc;
+      wc.on('before-input-event', (event, input) => {
+        if (
+          process.platform !== 'darwin' ||
+          !this.requestPan ||
+          this.resource !== resource ||
+          resource.observationMode !== 'readable' ||
+          !input.alt ||
+          !input.meta ||
+          input.control ||
+          input.shift ||
+          !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(input.key)
+        )
+          return;
+        event.preventDefault();
+        if (input.type !== 'keyDown' || input.isAutoRepeat || resource.panRequest) return;
+        const request = {
+          args: {
+            resourceId: resource.id,
+            documentRevision: resource.documentRevision,
+            direction: input.key.slice(5).toLowerCase() as ObservationPan['direction'],
+          },
+          observationRevision: resource.observationRevision,
+        };
+        resource.observationFeedback = undefined;
+        resource.panRequest = request;
+        void this.requestPan(request.args)
+          .catch((error) => {
+            if (
+              this.resource === resource &&
+              resource.phase === 'ready' &&
+              resource.documentRevision === request.args.documentRevision &&
+              resource.observationRevision === request.observationRevision
+            )
+              resource.observationFeedback = errorText(error);
+          })
+          .finally(() => {
+            if (resource.panRequest === request) resource.panRequest = undefined;
+          });
+      });
       view.setBackgroundColor('#ffffff');
       view.setBounds({ x: 0, y: 0, width: 1000, height: 800 });
       view.setVisible(false);
@@ -285,7 +329,7 @@ export class EmbeddedBrowser {
   }
   private layoutViewport(resource: Resource, bounds: Bounds) {
     // Keep the input geometry stable until the current browser action ends.
-    if (resource.operation) {
+    if (resource.operation || resource.panning) {
       resource.pendingViewport = bounds;
       return;
     }
@@ -305,6 +349,7 @@ export class EmbeddedBrowser {
     resource.observationMode = mode;
     resource.observationPercentage = undefined;
     resource.observationError = undefined;
+    resource.observationFeedback = undefined;
     resource.confirmedTarget = undefined;
     resource.pickDocument = undefined;
     const pending = (async () => {
@@ -343,6 +388,66 @@ export class EmbeddedBrowser {
       throw new Error('请先展开并等待网页加载完成');
     if (!this.permitted(resource.contents!.getURL())) throw new Error('请先打开网页');
     await this.updateObservation(resource, mode);
+    return this.status();
+  }
+  private async pan(raw: unknown) {
+    const args = observationPan.parse(raw);
+    this.assertAvailable();
+    const resource = this.resource;
+    if (!resource) throw new Error('请先打开网页');
+    this.assertResource(resource);
+    const request = resource.panRequest;
+    if (
+      !request ||
+      canonical(request.args) !== canonical(args) ||
+      resource.id !== args.resourceId ||
+      resource.documentRevision !== args.documentRevision ||
+      resource.observationRevision !== request.observationRevision
+    )
+      throw new Error('网页查看已改变，请重新操作');
+    if (
+      resource.operation ||
+      resource.capture ||
+      resource.observation ||
+      !resource.presented ||
+      resource.contents!.isLoading() ||
+      !this.permitted(resource.contents!.getURL()) ||
+      resource.observationMode !== 'readable'
+    )
+      throw new Error('网页正在执行操作或调整显示，请稍后重试');
+    if (resource.observationError) throw new Error('请先重新选择查看模式');
+    const revision = (resource.observationRevision ?? 0) + 1;
+    resource.observationRevision = revision;
+    resource.panning = true;
+    resource.confirmedTarget = undefined;
+    resource.pickDocument = undefined;
+    const pending = (async () => {
+      await resource.page!.picker.cancel();
+      this.assertResource(resource);
+      if (
+        resource.observationRevision !== revision ||
+        !resource.presented ||
+        resource.documentRevision !== args.documentRevision ||
+        resource.contents!.isLoading()
+      )
+        throw new Error('网页查看已改变，请重新操作');
+      const percentage = await resource.page!.panObservation(args.direction);
+      this.assertResource(resource);
+      if (resource.documentRevision !== args.documentRevision)
+        throw new Error('网页已变化，请重新选择查看模式');
+      if (resource.observationRevision === revision) resource.observationPercentage = percentage;
+    })()
+      .catch((error) => {
+        if (resource.observationRevision === revision) resource.observationError = errorText(error);
+        throw error;
+      })
+      .finally(() => {
+        if (resource.observation === pending) resource.observation = undefined;
+        resource.panning = false;
+        if (resource.phase === 'ready' && resource.pendingViewport) this.layout();
+      });
+    resource.observation = pending;
+    await pending;
     return this.status();
   }
   private finishOperation(resource: Resource, operation: Operation) {
@@ -419,7 +524,7 @@ export class EmbeddedBrowser {
         mode: resource?.observationMode ?? 'overview',
         busy: !!resource?.observation,
         percentage: resource?.observationPercentage,
-        error: resource?.observationError,
+        error: resource?.observationError ?? resource?.observationFeedback,
       },
       ...(this.blocked ? { blocked: this.blocked } : {}),
     };
@@ -876,6 +981,8 @@ export class EmbeddedBrowser {
         return this.status();
       case 'browser.embedded.observation':
         return this.observation(args.mode);
+      case 'browser.embedded.pan':
+        return this.pan(args);
       case 'browser.embedded.navigate':
         return this.navigate(args.url);
       default:

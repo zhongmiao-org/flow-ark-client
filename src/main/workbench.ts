@@ -177,6 +177,11 @@ app
       win,
       (notice) => notifyBrowserLifecycle('system.browserLost', notice),
       (notice) => notifyBrowserLifecycle('system.browserCleanupFailed', notice),
+      async (request) => {
+        await ready;
+        if (quitting || hostStopped || startupError) throw new Error('网页查看暂不可用');
+        return rpc.call('browser.embedded.pan', request);
+      },
     );
     win.on('close', (e) => {
       if (!quitting) {

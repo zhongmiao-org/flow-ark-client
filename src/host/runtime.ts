@@ -1590,6 +1590,7 @@ export class Runtime {
       case 'browser.embedded.pick.start':
       case 'browser.embedded.pick.confirm':
       case 'browser.embedded.observation':
+      case 'browser.embedded.pan':
       case 'browser.embedded.pick.validate': {
         if (this.executionBlock()) throw new Error(this.executionBlock());
         if (this.active) {
@@ -1600,7 +1601,7 @@ export class Runtime {
             this.active.controlPending
           )
             throw new Error(
-              method === 'browser.embedded.observation'
+              method === 'browser.embedded.observation' || method === 'browser.embedded.pan'
                 ? '请先暂停当前任务，再调整网页查看'
                 : '请先暂停当前任务，再选取或验证元素',
             );
