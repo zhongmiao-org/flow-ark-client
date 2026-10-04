@@ -485,6 +485,75 @@ export class EmbeddedPage {
       );
     }
   }
+  private async revealTarget(scope: Scope, element: string) {
+    const root = scope.ancestors[0]?.scope ?? scope;
+    const viewport = await this.evaluate(
+      root,
+      '({width:visualViewport.width,height:visualViewport.height})',
+    );
+    const region = await this.call(
+      scope,
+      element,
+      `function(width, height) {
+        const box=this.getBoundingClientRect();
+        let content=box;
+        if(this.matches('h1,h2,h3,h4,h5,h6,[role="heading"]')) {
+          const range=document.createRange(); range.selectNodeContents(this);
+          const text=range.getBoundingClientRect();
+          if(text.width && text.height) content=text;
+        }
+        return {
+          x:Math.max(0,content.x-box.x), y:Math.max(0,content.y-box.y),
+          width:Math.max(1,Math.min(content.width,width-4,innerWidth-4)),
+          height:Math.max(1,Math.min(content.height,height-4,innerHeight-4))
+        };
+      }`,
+      viewport.width,
+      viewport.height,
+    );
+    // A wide block's center can be blank at native text size. Ask Chromium to
+    // reveal the content region, including its visual viewport and frame chain.
+    await this.send(
+      'DOM.scrollIntoViewIfNeeded',
+      { objectId: element, rect: region },
+      scope.session,
+    );
+    const box = await this.call(
+      scope,
+      element,
+      `function(region) {
+        if(!this.isConnected) throw new Error('目标元素已离开页面');
+        const r=this.getBoundingClientRect();
+        return {x:r.x+region.x,y:r.y+region.y,width:region.width,height:region.height};
+      }`,
+      region,
+    );
+    const fits = (bounds: { x: number; y: number; width: number; height: number }) =>
+      box.x >= bounds.x - 2 &&
+      box.y >= bounds.y - 2 &&
+      box.x + box.width <= bounds.x + bounds.width + 2 &&
+      box.y + box.height <= bounds.y + bounds.height + 2;
+    for (const ancestor of [...scope.ancestors].reverse()) {
+      const frame = await this.evaluate(
+        ancestor.scope,
+        `(() => {
+          const el=(${query})(${JSON.stringify(ancestor.selector)});
+          if(!el) throw new Error('框架已离开页面');
+          const r=el.getBoundingClientRect();
+          return {x:r.x+el.clientLeft,y:r.y+el.clientTop,width:el.clientWidth,height:el.clientHeight};
+        })()`,
+      );
+      if (!fits({ x: 0, y: 0, width: frame.width, height: frame.height }))
+        throw new Error('目标尚未完整进入框架可见区域，请重新聚焦');
+      box.x += frame.x;
+      box.y += frame.y;
+    }
+    const visible = await this.evaluate(
+      root,
+      '({x:visualViewport.offsetLeft,y:visualViewport.offsetTop,width:visualViewport.width,height:visualViewport.height})',
+    );
+    if (!fits(visible)) throw new Error('目标尚未进入原字号可见区域，请重新聚焦');
+  }
   async inspectTarget(
     selector: string,
     path: string[],
@@ -492,7 +561,7 @@ export class EmbeddedPage {
     expected?: PointIdentity,
     reveal = false,
   ): Promise<ElementTarget> {
-    const scope = await this.scope(path, commandBudget(3000), !expected || reveal);
+    const scope = await this.scope(path, commandBudget(3000), !expected);
     const element = await this.element(scope, selector, commandBudget(3000));
     try {
       if (expected) {
@@ -500,7 +569,8 @@ export class EmbeddedPage {
         if (node.backendNodeId !== expected.backendNodeId || scope.session !== expected.session)
           throw new Error('目标在选取期间已被替换，请重新选取');
       }
-      await this.visible(scope, element, commandBudget(3000), false, !expected || reveal);
+      await this.visible(scope, element, commandBudget(3000), false, !expected);
+      if (reveal) await this.revealTarget(scope, element);
       const target = await this.call(scope, element, describeElement.toString(), false);
       if (highlight) {
         await this.send('DOM.enable', {}, scope.session);

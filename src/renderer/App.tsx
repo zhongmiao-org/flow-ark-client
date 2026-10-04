@@ -79,7 +79,7 @@ import ScriptEditorPage, { type ScriptNavigation } from './ScriptEditorPage';
 import ExcelMappingPage from './ExcelMappingPage';
 import FlowOutlineWorkspace, { type OutlineLocation } from './FlowOutlineWorkspace';
 import BrowserSidebar from './BrowserSidebar';
-import { BrowserFocusProvider } from './BrowserFocusContext';
+import { BrowserFocusProvider, useBrowserFocus } from './BrowserFocusContext';
 import StorageFaultNotice from './StorageFaultNotice';
 import Schedules from './Schedules';
 import BrowserNodeConfiguration from './BrowserNodeConfiguration';
@@ -2482,6 +2482,11 @@ function Editor({
   canRedo,
 }: any) {
   const pickerControls = useRef<ElementPickerControls>(null);
+  const focusedRequest = useBrowserFocus()?.entry?.requestId;
+  useEffect(() => {
+    // Keep the owning inspector available across the compact-layout breakpoint.
+    if (active && focusedRequest) setPanel('node');
+  }, [active, focusedRequest, setPanel]);
   const [positionOpen, setPositionOpen] = useState(false);
   const [controlOpen, setControlOpen] = useState(false);
   const [browserActionOpen, setBrowserActionOpen] = useState(false);
