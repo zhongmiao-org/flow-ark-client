@@ -11,11 +11,25 @@ function failureReason(model: Model, error: string) {
     };
   if (
     model.node?.type === 'browser' &&
-    ['所选网页已变化，请重新选择目标', '所选元素内容或结构已变化，请重新选取'].includes(error)
+    [
+      '所选网页已变化，请重新选择目标',
+      '所选元素内容或结构已变化，请重新选取',
+      '已选元素内容或结构已变化，请回到任务重新选取',
+      '网页或聚焦目标已变化，请重新选取',
+    ].includes(error)
   )
     return {
       title: '原先选择的网页目标已变化',
       explanation: '当前网页或所选元素与记录的目标不一致。重新核对目标后，再检查修改方案。',
+    };
+  if (
+    model.node?.type === 'browser' &&
+    ['浏览器命令超时（含框架定位）', '网页操作超时'].includes(error)
+  )
+    return {
+      title: '网页操作超时',
+      explanation:
+        '未在限定时间内取得操作完成记录。请先核对当前网页、目标和可能发生的更改，再决定是否修改或重新运行。',
     };
   if (model.node?.type === 'file' && error === '输出文件已存在，请更换文件名；原文件未覆盖')
     return {
@@ -23,7 +37,7 @@ function failureReason(model: Model, error: string) {
       explanation: '本次新建步骤没有覆盖原文件。请回到任务检查文件名和同名处理方式。',
     };
   return {
-    title: '这一步没有完成',
+    title: model.current?.started && !model.current.ended ? '这一步没有完成' : '运行未能继续',
     explanation:
       error && error.length <= 240 && error.split('\n').length <= 3
         ? error
@@ -55,6 +69,9 @@ export default function TaskRunFailure({
       <span className="badge state-WAITING_INPUT">需要处理</span>
       <h2 className="task-run-current">{reason.title}</h2>
       <p role="status">{reason.explanation}</p>
+      {model.current?.ended && (
+        <p>最后记录的“{model.current.name}”已确认完成；当前记录未确认后续执行位置。</p>
+      )}
       <section className="task-run-file task-failure-completed" aria-label="失败前已完成">
         <h3>已完成</h3>
         <p>{stepNames(model.completed, '尚无已确认完成的步骤记录')}</p>

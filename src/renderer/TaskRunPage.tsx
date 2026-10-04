@@ -316,8 +316,10 @@ export default function TaskRunPage({
     !model.success &&
     !model.uncertain &&
     !model.view.closing &&
+    !!model.current?.started &&
+    !model.current.ended &&
     model.node?.type === 'browser' &&
-    model.node.version !== 1 &&
+    [2, 3].includes(model.node.version) &&
     model.node.operation !== 'navigate' &&
     !!model.node.selector;
   const actions = (

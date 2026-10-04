@@ -56,6 +56,15 @@ export function taskRunPresentation(
   const unresolved = rows.filter((row) => row.started && !row.ended);
   const unvisited = rows.filter((row) => !row.started && !row.ended);
   const current = rows.find((row) => row.instance === view.step.instance);
+  const stoppedStep = current?.started && !current.ended ? current : undefined;
+  const stoppedPosition =
+    stoppedStep &&
+    input.snapshot?.steps.length === rows.length &&
+    rows.every(
+      (row) => row.instance === row.nodeId && !['condition', 'loop'].includes(row.type ?? ''),
+    )
+      ? input.snapshot.steps.findIndex((node) => node.id === stoppedStep.nodeId) + 1
+      : 0;
   const success =
     input.run.state === 'SUCCEEDED' &&
     !uncertain &&
@@ -76,8 +85,8 @@ export function taskRunPresentation(
     success: '本次试运行已完成',
     stopped:
       input.run.state === 'FAILED'
-        ? current
-          ? `停在：${nodes.has(current.nodeId) ? taskStepTitle(nodes.get(current.nodeId)!) : current.name}`
+        ? stoppedStep
+          ? `停在${stoppedPosition ? `第 ${stoppedPosition} 步` : ''}：${stoppedStep.name}`
           : '本次试运行未完成'
         : input.run.state === 'CANCELLED'
           ? '本次试运行已取消'
