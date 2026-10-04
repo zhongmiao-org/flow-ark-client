@@ -116,6 +116,17 @@
   height: 40px;
   background: var(--fa-bg-surface);
 }
+.browser-observation .browser-error {
+  flex-shrink: 0;
+  max-height: 120px;
+  overflow: auto;
+}
+.browser-status-error p {
+  margin: 0 0 8px;
+}
+.browser-status-error button {
+  min-height: 32px;
+}
 .browser-observation-expanded .browser-viewport {
   border: 1px solid var(--fa-border-default);
   border-radius: var(--fa-radius-12);

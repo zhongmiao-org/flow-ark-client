@@ -5,7 +5,7 @@ import { desktopViewportWidth } from '../shared/browser-viewport';
 import { useBrowserFocus } from './BrowserFocusContext';
 import type { FocusedTarget } from '../shared/browser-observation';
 const api = (method: string, args?: unknown) => window.flowark.request(method, args);
-const focusErrorMessage = (reason: unknown) =>
+const browserErrorMessage = (reason: unknown) =>
   (reason instanceof Error ? reason.message : String(reason)).replace(
     /^Error invoking remote method 'flowark:request': (?:Error: )?/,
     '',
@@ -47,6 +47,16 @@ export default function BrowserSidebar({
   const [sessionOpen, setSessionOpen] = useState(false);
   const [statusKnown, setStatusKnown] = useState(false);
   const [statusError, setStatusError] = useState('');
+  const [rereading, setRereading] = useState(false);
+  const rereadStatus = useRef<(() => Promise<void>) | undefined>(undefined);
+  const statusSummary = useRef<HTMLDivElement>(null);
+  const statusFailure = useRef<HTMLDivElement>(null);
+  const operationError = useRef<HTMLDivElement>(null);
+  const addressInput = useRef<HTMLInputElement>(null);
+  const [invalidAddress, setInvalidAddress] = useState(false);
+  const feedbackFocus = useRef<
+    { origin: Element | null; target: 'status' | 'status-error' | 'error' } | undefined
+  >(undefined);
   const viewport = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLElement>(null);
   const expandButton = useRef<HTMLButtonElement>(null);
@@ -147,11 +157,29 @@ export default function BrowserSidebar({
   const [address, setAddress] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const navigating = useRef(false);
   const focused = useRef(false);
   const addressEdited = useRef(false);
   const obscuredRef = useRef(hidden);
   const enabled = useRef(false);
   obscuredRef.current = hidden;
+  useLayoutEffect(() => {
+    const feedback = feedbackFocus.current;
+    if (!feedback) return;
+    feedbackFocus.current = undefined;
+    if (
+      hidden ||
+      (document.activeElement !== feedback.origin && document.activeElement !== document.body)
+    )
+      return;
+    const target =
+      feedback.target === 'error'
+        ? operationError.current
+        : feedback.target === 'status-error'
+          ? statusFailure.current
+          : (statusSummary.current ?? returnButton.current ?? expandButton.current);
+    target?.focus({ preventScroll: true });
+  });
   useEffect(() => {
     let live = true;
     const bounds = () => {
@@ -164,10 +192,8 @@ export default function BrowserSidebar({
           height: Math.round(r.height),
         }).catch(() => {});
     };
-    let refreshing = false;
-    const refresh = async () => {
-      if (!live || refreshing || observationBusy.current) return;
-      refreshing = true;
+    let refreshing: Promise<boolean> | undefined;
+    const readStatus = async () => {
       const revision = statusRevision.current;
       try {
         const s = await api('browser.embedded.status');
@@ -178,15 +204,30 @@ export default function BrowserSidebar({
           if (!focused.current && !addressEdited.current)
             setAddress(s.url === 'about:blank' ? '' : s.url);
         }
+        return true;
       } catch (e) {
         if (live && revision === statusRevision.current) {
           setStatusKnown(false);
-          setStatusError(String(e));
+          setStatusError(browserErrorMessage(e));
         }
-      } finally {
-        refreshing = false;
+        return false;
       }
     };
+    const refresh = async (manual = false) => {
+      if (!live || observationBusy.current || navigating.current || (!manual && refreshing)) return;
+      const revision = statusRevision.current;
+      const origin = document.activeElement;
+      if (manual) setRereading(true);
+      const pending = (refreshing ??= readStatus());
+      const succeeded = await pending;
+      if (refreshing === pending) refreshing = undefined;
+      if (manual && live) {
+        if (revision === statusRevision.current)
+          feedbackFocus.current = { origin, target: succeeded ? 'status' : 'status-error' };
+        setRereading(false);
+      }
+    };
+    rereadStatus.current = () => refresh(true);
     void (async () => {
       try {
         await api('browser.embedded.enable');
@@ -197,16 +238,18 @@ export default function BrowserSidebar({
         if (!live) return;
         await refresh();
       } catch (e) {
-        if (live) setError(String(e));
+        if (live) setError(browserErrorMessage(e));
       }
     })();
     const observer = new ResizeObserver(bounds);
     if (viewport.current) observer.observe(viewport.current);
     window.addEventListener('resize', bounds);
-    const timer = setInterval(refresh, 750);
+    const timer = setInterval(() => void refresh(), 750);
     return () => {
       live = false;
       statusRevision.current++;
+      rereadStatus.current = undefined;
+      feedbackFocus.current = undefined;
       enabled.current = false;
       clearInterval(timer);
       observer.disconnect();
@@ -217,7 +260,7 @@ export default function BrowserSidebar({
   useEffect(() => {
     if (enabled.current)
       void api('browser.embedded.visibility', { visible: !hidden }).catch((error) =>
-        setError(String(error)),
+        setError(browserErrorMessage(error)),
       );
   }, [hidden]);
   useLayoutEffect(() => {
@@ -260,39 +303,83 @@ export default function BrowserSidebar({
     });
   };
   const navigate = async (url = address) => {
+    if (navigating.current || observationBusy.current || hidden || running) return;
+    let destination: string;
+    try {
+      const input = url.trim();
+      if (!input) throw new Error();
+      const parsed = new URL(/^[a-z][a-z\d+.-]*:/i.test(input) ? input : 'https://' + input);
+      if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error();
+      destination = parsed.href;
+    } catch {
+      setInvalidAddress(true);
+      setError('请输入有效的 HTTP(S) 网页地址');
+      addressInput.current?.focus();
+      return;
+    }
+    navigating.current = true;
+    const revision = ++statusRevision.current;
+    const origin = document.activeElement;
     setLoading(true);
+    setInvalidAddress(false);
     setError('');
     try {
-      await api('browser.embedded.navigate', {
-        url: /^https?:\/\//.test(url) ? url : 'https://' + url,
-      });
+      await api('browser.embedded.navigate', { url: destination });
+      if (revision !== statusRevision.current) return;
       addressEdited.current = false;
+      setAddress(destination);
+      try {
+        const next = await api('browser.embedded.status');
+        if (revision !== statusRevision.current) return;
+        setStatus(next);
+        setStatusKnown(true);
+        setStatusError('');
+        feedbackFocus.current = { origin, target: 'status' };
+      } catch (reason) {
+        if (revision !== statusRevision.current) return;
+        setStatusKnown(false);
+        setStatusError(browserErrorMessage(reason));
+        feedbackFocus.current = { origin, target: 'status-error' };
+      }
     } catch (e) {
-      setError(String(e));
+      if (revision === statusRevision.current) {
+        setError(browserErrorMessage(e));
+        feedbackFocus.current = { origin, target: 'error' };
+      }
     } finally {
-      setLoading(false);
+      navigating.current = false;
+      if (revision === statusRevision.current) setLoading(false);
     }
   };
   const changeObservation = async (mode: 'overview' | 'readable') => {
     if (observationBusy.current) return;
     observationBusy.current = true;
     const revision = ++statusRevision.current;
+    const origin = document.activeElement;
     setObserving(true);
     setError('');
+    setInvalidAddress(false);
     try {
       const next = await api('browser.embedded.observation', { mode });
       if (revision === statusRevision.current) {
         setStatus(next);
         setStatusKnown(true);
         setStatusError('');
+        feedbackFocus.current = { origin, target: 'status' };
       }
     } catch (error) {
       if (revision === statusRevision.current) {
-        setError(String(error));
+        setError(browserErrorMessage(error));
+        feedbackFocus.current = { origin, target: 'error' };
         setStatus((previous) => ({
           ...previous,
           observation: previous.observation
-            ? { ...previous.observation, busy: false, percentage: undefined, error: String(error) }
+            ? {
+                ...previous.observation,
+                busy: false,
+                percentage: undefined,
+                error: browserErrorMessage(error),
+              }
             : undefined,
         }));
       }
@@ -353,7 +440,7 @@ export default function BrowserSidebar({
               throw new Error('目标查看比例尚未确认，请返回后重新聚焦');
             setFocusReady(true);
           } catch (reason) {
-            if (live) setFocusError(focusErrorMessage(reason));
+            if (live) setFocusError(browserErrorMessage(reason));
           } finally {
             if (live) setFocusPending(false);
             if (revision === statusRevision.current) observationBusy.current = false;
@@ -384,7 +471,7 @@ export default function BrowserSidebar({
     } catch (reason) {
       if (focusCurrent.current === selected) {
         setFocusReady(false);
-        setFocusError(focusErrorMessage(reason));
+        setFocusError(browserErrorMessage(reason));
       }
     } finally {
       if (focusCurrent.current === selected) setFocusPending(false);
@@ -562,7 +649,12 @@ export default function BrowserSidebar({
           )
         )}
         {!targetView && (!editing || expanded) && (
-          <div className="browser-observation-summary" role="status">
+          <div
+            className="browser-observation-summary"
+            role="status"
+            ref={statusSummary}
+            tabIndex={-1}
+          >
             <span>{scaleLabel}</span>
             <span>网页布局保持 {desktopViewportWidth} CSS px</span>
           </div>
@@ -578,7 +670,10 @@ export default function BrowserSidebar({
             {editing && <label htmlFor={addressId}>网址</label>}
             <input
               id={addressId}
+              ref={addressInput}
               aria-label="网页地址"
+              aria-invalid={invalidAddress}
+              aria-describedby={invalidAddress ? `${addressId}-error` : undefined}
               placeholder="输入网址，打开网页"
               value={address}
               disabled={running || loading || adjusting || !statusKnown || !!status.blocked}
@@ -590,6 +685,10 @@ export default function BrowserSidebar({
               }}
               onChange={(e) => {
                 addressEdited.current = true;
+                if (invalidAddress) {
+                  setInvalidAddress(false);
+                  setError('');
+                }
                 setAddress(e.target.value);
               }}
             />
@@ -626,8 +725,19 @@ export default function BrowserSidebar({
           <p className="browser-pick-guidance">拾取只定位目标，不触发网页点击或提交。</p>
         )}
         {statusError && (
-          <div className="browser-error" role="alert">
-            网页会话状态未取得：{statusError}。恢复读取后更新。
+          <div
+            className="browser-error browser-status-error"
+            role="alert"
+            ref={statusFailure}
+            tabIndex={-1}
+          >
+            <p>网页会话状态未取得：{statusError}</p>
+            <button
+              disabled={rereading || loading || adjusting}
+              onClick={() => void rereadStatus.current?.()}
+            >
+              {rereading ? '正在读取…' : '重新读取会话'}
+            </button>
           </div>
         )}
         {statusKnown && status.blocked && (
@@ -641,9 +751,23 @@ export default function BrowserSidebar({
           </div>
         )}
         {error && (
-          <div className="browser-error" role="alert">
+          <div
+            className="browser-error"
+            role="alert"
+            id={`${addressId}-error`}
+            ref={operationError}
+            tabIndex={-1}
+          >
             {error}
-            <button onClick={() => setError('')}>关闭</button>
+            <button
+              onClick={() => {
+                setError('');
+                setInvalidAddress(false);
+                (addressInput.current ?? returnButton.current)?.focus({ preventScroll: true });
+              }}
+            >
+              关闭
+            </button>
           </div>
         )}
         {targetView && focusError && (
