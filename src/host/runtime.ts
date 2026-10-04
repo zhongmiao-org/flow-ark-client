@@ -1589,6 +1589,7 @@ export class Runtime {
         return this.sessions.embeddedVisibility(args.visible);
       case 'browser.embedded.pick.start':
       case 'browser.embedded.pick.confirm':
+      case 'browser.embedded.observation':
       case 'browser.embedded.pick.validate': {
         if (this.executionBlock()) throw new Error(this.executionBlock());
         if (this.active) {
@@ -1598,7 +1599,7 @@ export class Runtime {
             !['PAUSED', 'WAITING_INPUT'].includes(run.state) ||
             this.active.controlPending
           )
-            throw new Error('请先暂停当前任务，再选取或验证元素');
+            throw new Error('请先暂停当前任务，再调整网页查看或核对元素');
         }
         return this.system(method, args);
       }

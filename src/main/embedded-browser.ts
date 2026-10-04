@@ -50,6 +50,12 @@ type Resource = {
   capture?: Capture;
   download?: Download;
   viewportSize?: { width: number; height: number };
+  pendingViewport?: Bounds;
+  observationMode?: 'overview' | 'readable';
+  observation?: Promise<void>;
+  observationRevision?: number;
+  observationPercentage?: number;
+  observationError?: string;
   presented?: boolean;
   lostNotified?: boolean;
 };
@@ -233,6 +239,7 @@ export class EmbeddedBrowser {
           !wc.isDestroyed()
         ) {
           resource.viewportSize = undefined;
+          resource.observationMode = 'overview';
           this.layoutViewport(resource, view.getBounds());
         }
       });
@@ -277,12 +284,71 @@ export class EmbeddedBrowser {
     }
   }
   private layoutViewport(resource: Resource, bounds: Bounds) {
+    // Keep the input geometry stable until the current browser action ends.
+    if (resource.operation) {
+      resource.pendingViewport = bounds;
+      return;
+    }
+    resource.pendingViewport = undefined;
     const view = resource.view!;
     view.setBounds(bounds);
     const previous = resource.viewportSize;
     if (previous?.width === bounds.width && previous.height === bounds.height) return;
     resource.contents!.setZoomFactor(bounds.width / desktopViewportWidth);
     resource.viewportSize = { width: bounds.width, height: bounds.height };
+    void this.updateObservation(resource, resource.observationMode ?? 'overview').catch(() => {});
+  }
+  private updateObservation(resource: Resource, mode: 'overview' | 'readable') {
+    const previous = resource.observation;
+    const revision = (resource.observationRevision ?? 0) + 1;
+    resource.observationRevision = revision;
+    resource.observationMode = mode;
+    resource.observationPercentage = undefined;
+    resource.observationError = undefined;
+    resource.confirmedTarget = undefined;
+    resource.pickDocument = undefined;
+    const pending = (async () => {
+      // A new explicit choice can recover from a prior scale failure. Cleanup
+      // for this choice still has to succeed before changing the native view.
+      await previous?.catch(() => {});
+      this.assertResource(resource);
+      if (resource.observationRevision !== revision) return;
+      await resource.page!.picker.cancel();
+      this.assertResource(resource);
+      if (resource.observationRevision !== revision) return;
+      const scale = mode === 'readable' ? 1 / resource.contents!.getZoomFactor() : 1;
+      const percentage = await resource.page!.observationScale(scale);
+      this.assertResource(resource);
+      if (resource.observationRevision === revision) resource.observationPercentage = percentage;
+    })()
+      .catch((error) => {
+        if (resource.observationRevision === revision) resource.observationError = errorText(error);
+        throw error;
+      })
+      .finally(() => {
+        if (resource.observation === pending) resource.observation = undefined;
+      });
+    resource.observation = pending;
+    return pending;
+  }
+  private async observation(mode: 'overview' | 'readable') {
+    this.assertAvailable();
+    const resource = this.resource;
+    if (!resource) throw new Error('请先打开网页');
+    this.assertResource(resource);
+    this.layout();
+    if (resource.operation || resource.capture || resource.observation)
+      throw new Error('网页正在执行操作或调整显示，请稍后重试');
+    if (!resource.presented || resource.contents!.isLoading())
+      throw new Error('请先展开并等待网页加载完成');
+    if (!this.permitted(resource.contents!.getURL())) throw new Error('请先打开网页');
+    await this.updateObservation(resource, mode);
+    return this.status();
+  }
+  private finishOperation(resource: Resource, operation: Operation) {
+    if (resource.operation !== operation) return;
+    resource.operation = undefined;
+    if (resource.phase === 'ready' && resource.pendingViewport) this.layout();
   }
   private reconcilePresentation() {
     const presented =
@@ -348,6 +414,13 @@ export class EmbeddedBrowser {
         !this.window.isMinimized(),
       url: wc && !wc.isDestroyed() ? wc.getURL() : '',
       title: wc && !wc.isDestroyed() ? wc.getTitle() : '',
+      loading: resource?.phase === 'starting' || (!!wc && !wc.isDestroyed() && wc.isLoading()),
+      observation: {
+        mode: resource?.observationMode ?? 'overview',
+        busy: !!resource?.observation,
+        percentage: resource?.observationPercentage,
+        error: resource?.observationError,
+      },
       ...(this.blocked ? { blocked: this.blocked } : {}),
     };
   }
@@ -361,7 +434,11 @@ export class EmbeddedBrowser {
         ? '内置网页正在关闭或状态未知'
         : resource?.operation
           ? '内置网页正在执行操作'
-          : undefined);
+          : resource?.observation
+            ? '内置网页正在调整显示'
+            : resource?.observationError
+              ? '网页显示比例尚未确认，请重新选择查看模式'
+              : undefined);
     return {
       ...(resource ? { resourceId: resource.id } : {}),
       documentRevision: resource?.documentRevision ?? 0,
@@ -433,6 +510,9 @@ export class EmbeddedBrowser {
     if (expected && command.operation === 'navigate')
       resource.contents!.on('did-start-navigation', navigation);
     const task = async () => {
+      await resource.observation;
+      this.assertOperation(resource, operation);
+      if (resource.observationError) throw new Error(resource.observationError);
       await page.picker.cancel();
       this.assertOperation(resource, operation);
       verifySelected();
@@ -508,7 +588,7 @@ export class EmbeddedBrowser {
         } catch {}
         resource.download = undefined;
       }
-      if (resource.operation === operation) resource.operation = undefined;
+      this.finishOperation(resource, operation);
     }
   }
   private async backgroundCapture(
@@ -695,6 +775,8 @@ export class EmbeddedBrowser {
         this.assertResource(resource);
         this.layout();
         if (resource.operation) throw new Error('网页正在执行操作，请稍后选取');
+        if (resource.observation || resource.observationError)
+          throw new Error('请先确认网页查看比例，再重新选取目标');
         if (!resource.presented) throw new Error('请先展开内置网页面板');
         if (!this.permitted(resource.contents!.getURL())) throw new Error('请先打开测试网页');
         const page = resource.page!;
@@ -724,7 +806,7 @@ export class EmbeddedBrowser {
           this.assertOperation(resource, operation);
           return result;
         } finally {
-          if (resource.operation === operation) resource.operation = undefined;
+          this.finishOperation(resource, operation);
         }
       }
       case 'browser.embedded.pick.confirm': {
@@ -773,6 +855,8 @@ export class EmbeddedBrowser {
         return this.viewport(args);
       case 'browser.embedded.status':
         return this.status();
+      case 'browser.embedded.observation':
+        return this.observation(args.mode);
       case 'browser.embedded.navigate':
         return this.navigate(args.url);
       default:

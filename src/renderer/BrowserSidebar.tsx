@@ -34,7 +34,9 @@ export default function BrowserSidebar({
   const expanded = !!observationRequest || panelExpanded;
   const observationTitle = observationRequest ? '网页总览' : '扩大查看网页';
 
-  const [scale, setScale] = useState<number>();
+  const [observing, setObserving] = useState(false);
+  const observationBusy = useRef(false);
+  const statusRevision = useRef(0);
   const restoreFocus = useRef(false);
   const [dialogOpen, setDialogOpen] = useState(() => !!document.querySelector('dialog[open]'));
   const hidden = obscured || dialogOpen;
@@ -89,6 +91,13 @@ export default function BrowserSidebar({
     url: string;
     title: string;
     blocked?: string;
+    loading?: boolean;
+    observation?: {
+      mode: 'overview' | 'readable';
+      busy: boolean;
+      percentage?: number;
+      error?: string;
+    };
   }>({ started: false, url: '', title: '' });
   const [address, setAddress] = useState('');
   const [error, setError] = useState('');
@@ -102,7 +111,6 @@ export default function BrowserSidebar({
     let live = true;
     const bounds = () => {
       const r = viewport.current?.getBoundingClientRect();
-      if (r) setScale(Math.round((r.width / desktopViewportWidth) * 100));
       if (r)
         void api('browser.embedded.viewport', {
           x: Math.max(0, Math.round(r.x)),
@@ -113,11 +121,12 @@ export default function BrowserSidebar({
     };
     let refreshing = false;
     const refresh = async () => {
-      if (!live || refreshing) return;
+      if (!live || refreshing || observationBusy.current) return;
       refreshing = true;
+      const revision = statusRevision.current;
       try {
         const s = await api('browser.embedded.status');
-        if (live) {
+        if (live && revision === statusRevision.current) {
           setStatus(s);
           setStatusKnown(true);
           setStatusError('');
@@ -125,7 +134,7 @@ export default function BrowserSidebar({
             setAddress(s.url === 'about:blank' ? '' : s.url);
         }
       } catch (e) {
-        if (live) {
+        if (live && revision === statusRevision.current) {
           setStatusKnown(false);
           setStatusError(String(e));
         }
@@ -152,6 +161,7 @@ export default function BrowserSidebar({
     const timer = setInterval(refresh, 750);
     return () => {
       live = false;
+      statusRevision.current++;
       enabled.current = false;
       clearInterval(timer);
       observer.disconnect();
@@ -204,6 +214,53 @@ export default function BrowserSidebar({
       setLoading(false);
     }
   };
+  const changeObservation = async (mode: 'overview' | 'readable') => {
+    if (observationBusy.current) return;
+    observationBusy.current = true;
+    const revision = ++statusRevision.current;
+    setObserving(true);
+    setError('');
+    try {
+      const next = await api('browser.embedded.observation', { mode });
+      if (revision === statusRevision.current) {
+        setStatus(next);
+        setStatusKnown(true);
+        setStatusError('');
+      }
+    } catch (error) {
+      if (revision === statusRevision.current) {
+        setError(String(error));
+        setStatus((previous) => ({
+          ...previous,
+          observation: previous.observation
+            ? { ...previous.observation, busy: false, percentage: undefined, error: String(error) }
+            : undefined,
+        }));
+      }
+    } finally {
+      observationBusy.current = false;
+      if (revision === statusRevision.current) setObserving(false);
+    }
+  };
+  const observation = status.observation;
+  const adjusting = observing || !!observation?.busy;
+  const confirmed =
+    statusKnown && !adjusting && !observation?.error && observation?.percentage !== undefined;
+  const scaleLabel = adjusting
+    ? '正在调整显示比例…'
+    : !confirmed
+      ? '显示比例尚未确认'
+      : `${observation.mode === 'readable' ? '清晰查看' : '适应全部'} ${Math.round(observation.percentage!)}%`;
+  const observationDisabled =
+    running ||
+    loading ||
+    hidden ||
+    adjusting ||
+    !statusKnown ||
+    !status.started ||
+    status.loading ||
+    !!status.blocked ||
+    !/^https?:\/\//.test(status.url);
   return (
     <aside
       ref={panel}
@@ -310,15 +367,35 @@ export default function BrowserSidebar({
         {expanded && (
           <div className="browser-observation-heading">
             <h1>{observationTitle}</h1>
-            <p>网页布局宽度保持 {desktopViewportWidth} CSS px · 当前按可见区域适应宽度</p>
+            <p>
+              网页布局宽度保持 {desktopViewportWidth} CSS px ·{' '}
+              {confirmed && observation.mode === 'readable'
+                ? '当前按原字号查看局部，可平移至其他区域'
+                : '适应全部查看整体，清晰查看核对文字和目标'}
+            </p>
+          </div>
+        )}
+        {expanded && (
+          <div className="browser-observation-modes" aria-label="网页查看模式">
+            <button
+              disabled={observationDisabled}
+              aria-pressed={confirmed && observation.mode === 'readable'}
+              onClick={() => void changeObservation('readable')}
+            >
+              100% · 清晰查看
+            </button>
+            <button
+              disabled={observationDisabled}
+              aria-pressed={confirmed && observation.mode === 'overview'}
+              onClick={() => void changeObservation('overview')}
+            >
+              适应全部
+            </button>
           </div>
         )}
         {(!editing || expanded) && (
           <div className="browser-observation-summary" role="status">
-            <span>
-              {expanded ? '全宽总览' : '网页总览'} ·{' '}
-              {scale === undefined ? '正在计算显示比例' : `适应宽度 ${scale}%`}
-            </span>
+            <span>{scaleLabel}</span>
             <span>网页布局保持 {desktopViewportWidth} CSS px</span>
           </div>
         )}
@@ -335,7 +412,7 @@ export default function BrowserSidebar({
             aria-label="网页地址"
             placeholder="输入网址，打开网页"
             value={address}
-            disabled={running || loading || !statusKnown || !!status.blocked}
+            disabled={running || loading || adjusting || !statusKnown || !!status.blocked}
             onFocus={() => {
               focused.current = true;
             }}
@@ -349,7 +426,9 @@ export default function BrowserSidebar({
           />
           <button
             type="submit"
-            disabled={running || loading || !statusKnown || !!status.blocked || !address}
+            disabled={
+              running || loading || adjusting || !statusKnown || !!status.blocked || !address
+            }
             title="访问网页"
             aria-label="访问网页"
           >
@@ -360,6 +439,7 @@ export default function BrowserSidebar({
             disabled={
               running ||
               loading ||
+              adjusting ||
               !statusKnown ||
               !!status.blocked ||
               !status.url ||
@@ -385,6 +465,11 @@ export default function BrowserSidebar({
             {status.blocked}
           </div>
         )}
+        {!adjusting && observation?.error && !error && (
+          <div className="browser-error" role="alert">
+            {observation.error}
+          </div>
+        )}
         {error && (
           <div className="browser-error" role="alert">
             {error}
@@ -394,8 +479,7 @@ export default function BrowserSidebar({
         <div className="browser-viewport" ref={viewport} data-testid="browser-viewport" />
         {editing && !expanded && (
           <div className="browser-editor-scale">
-            桌面布局宽度 {desktopViewportWidth} CSS px ·{' '}
-            {scale === undefined ? '正在计算显示比例' : `适应宽度 ${scale}%`}
+            桌面布局宽度 {desktopViewportWidth} CSS px · {scaleLabel}
           </div>
         )}
         {editing && (
@@ -469,7 +553,13 @@ export default function BrowserSidebar({
                       ? '在上方输入网址，或运行浏览器流程'
                       : '网页已就绪')
                   : '运行流程或输入网址打开网页'}
-          {!status.blocked && <span>收起面板后任务继续</span>}
+          {!status.blocked && (
+            <span>
+              {expanded
+                ? '这里只改变查看区域，不重排网页。使用触控板或鼠标滚动查看其他区域，切换比例后请重新核对目标。'
+                : '收起面板后任务继续'}
+            </span>
+          )}
         </footer>
       </div>
     </aside>

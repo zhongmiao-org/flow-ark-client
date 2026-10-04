@@ -1,4 +1,4 @@
-/* Figma 23:5921 full-width observation; native 100% focus is a separate pending capability. */
+/* Figma 23:5921 full-width observation; selected-target focus remains separate. */
 .browser-sidebar.browser-observation-expanded,
 .with-browser .browser-sidebar.browser-observation-expanded,
 .editor-region.is-compact.has-browser .browser-sidebar.browser-observation-expanded {
@@ -44,6 +44,22 @@
 }
 .browser-observation-expanded .browser-address {
   max-width: none;
+}
+.browser-observation-modes {
+  display: flex;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  gap: 8px;
+}
+.browser-observation-modes button {
+  min-height: 40px;
+  padding: 8px 16px;
+  white-space: nowrap;
+}
+.browser-observation-modes button[aria-pressed='true'] {
+  border-color: var(--fa-action-primary);
+  color: var(--fa-action-primary);
+  background: var(--fa-action-subtle);
 }
 .browser-observation-expanded .browser-viewport {
   min-width: 0;

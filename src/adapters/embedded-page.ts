@@ -67,6 +67,15 @@ export class EmbeddedPage {
       flatten: true,
     });
   }
+  async observationScale(scale: number) {
+    this.abort.signal.throwIfAborted();
+    await this.contents.setVisualZoomLevelLimits(scale, scale);
+    await this.send('Emulation.setPageScaleFactor', { pageScaleFactor: scale });
+    const { cssVisualViewport } = await this.send('Page.getLayoutMetrics');
+    if (!cssVisualViewport || Math.abs(cssVisualViewport.scale - scale) > 0.01)
+      throw new Error('网页显示比例尚未确认，请重新选择查看模式');
+    return this.contents.getZoomFactor() * cssVisualViewport.scale * 100;
+  }
   private async evaluate(scope: Scope, expression: string, byValue = true) {
     const result = await this.send(
       'Runtime.evaluate',

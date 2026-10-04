@@ -98,6 +98,7 @@ export const methods = {
   'browser.discover': empty,
   'browser.embedded.enable': empty,
   'browser.embedded.status': empty,
+  'browser.embedded.observation': z.object({ mode: z.enum(['overview', 'readable']) }).strict(),
   'browser.embedded.pick.start': z.object({ requestId: id }).strict(),
   'browser.embedded.pick.confirm': z.object({ requestId: id }).strict(),
   'browser.embedded.pick.status': z.object({ requestId: id }).strict(),
