@@ -220,7 +220,7 @@ export default function BrowserSidebar({
         setError(String(error)),
       );
   }, [hidden]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const r = viewport.current?.getBoundingClientRect();
     if (r)
       void api('browser.embedded.viewport', {
@@ -229,7 +229,17 @@ export default function BrowserSidebar({
         width: Math.round(r.width),
         height: Math.round(r.height),
       }).catch(() => {});
-  }, [error]);
+    // Alerts can move the fixed-height focus card without resizing its viewport.
+  }, [
+    error,
+    focusError,
+    statusError,
+    status.blocked,
+    status.observation?.error,
+    status.observation?.busy,
+    observing,
+    focusPending,
+  ]);
   const closePanel = () => {
     if (focusEntry) {
       browserFocus!.close(focusEntry.requestId);
