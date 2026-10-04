@@ -2703,38 +2703,38 @@ export default function AITaskWorkspace(props: Props) {
                               standaloneGraph ? 'task-graph-workspace' : 'task-graph-inline'
                             }
                           >
-                            {view === 'list' ? (
-                              <TaskStepList
-                                key={detail.task.id}
-                                ref={planStepList}
-                                flow={flow}
-                                selected={selected}
-                                select={(id) => {
-                                  setSelected(id);
-                                  setHiddenListStep('');
-                                  setGraphFocus((value) => (value ?? 0) + 1);
-                                  requestAnimationFrame(() => {
-                                    const heading = document.querySelector<HTMLHeadingElement>(
-                                      '[data-task-step-heading]',
-                                    );
-                                    heading?.scrollIntoView({ block: 'nearest' });
-                                    heading?.focus({ preventScroll: true });
-                                  });
-                                }}
-                                context={{
-                                  bindings: detail.flow?.bindings,
-                                  webTarget: hasPlanProposal
-                                    ? detail.task.webTarget
-                                    : detail.flow?.webTarget,
-                                  outputTarget: hasPlanProposal
-                                    ? detail.task.outputTarget
-                                    : detail.flow?.outputTarget,
-                                  toolTargets: hasPlanProposal
-                                    ? detail.task.toolTargets
-                                    : detail.flow?.toolTargets,
-                                }}
-                              />
-                            ) : (
+                            <TaskStepList
+                              key={detail.task.id}
+                              ref={planStepList}
+                              active={view === 'list'}
+                              flow={flow}
+                              selected={selected}
+                              select={(id) => {
+                                setSelected(id);
+                                setHiddenListStep('');
+                                setGraphFocus((value) => (value ?? 0) + 1);
+                                requestAnimationFrame(() => {
+                                  const heading = document.querySelector<HTMLHeadingElement>(
+                                    '[data-task-step-heading]',
+                                  );
+                                  heading?.scrollIntoView({ block: 'nearest' });
+                                  heading?.focus({ preventScroll: true });
+                                });
+                              }}
+                              context={{
+                                bindings: detail.flow?.bindings,
+                                webTarget: hasPlanProposal
+                                  ? detail.task.webTarget
+                                  : detail.flow?.webTarget,
+                                outputTarget: hasPlanProposal
+                                  ? detail.task.outputTarget
+                                  : detail.flow?.outputTarget,
+                                toolTargets: hasPlanProposal
+                                  ? detail.task.toolTargets
+                                  : detail.flow?.toolTargets,
+                              }}
+                            />
+                            {view === 'graph' && (
                               <div className="ai-task-graph" aria-label="任务流程图">
                                 <DiagramCanvas
                                   {...diagram}

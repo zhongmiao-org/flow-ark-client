@@ -1582,6 +1582,9 @@
   min-height: 40px;
 }
 
+.task-step-list[hidden] {
+  display: none;
+}
 .task-step-list,
 .ai-task-step-branch {
   display: flex;

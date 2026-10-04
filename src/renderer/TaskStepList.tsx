@@ -11,12 +11,14 @@ export default function TaskStepList({
   selected,
   select,
   context = {},
+  active = true,
   ref,
 }: {
   flow: Flow;
   selected: string;
   select: (id: string) => void;
   context?: TaskStepContext;
+  active?: boolean;
   ref?: Ref<TaskStepListHandle>;
 }) {
   const { entries, byId } = useMemo(() => flowOutline(flow.steps), [flow.steps]);
@@ -30,7 +32,7 @@ export default function TaskStepList({
   const matches = terms.length
     ? entries.filter(({ step, ordinal }) => {
         const text =
-          `${ordinal} ${taskStepTitle(step)} ${taskStepSummary(step, flow, context)}`.toLocaleLowerCase();
+          `${ordinal} ${String(ordinal).padStart(2, '0')} ${taskStepTitle(step)} ${taskStepSummary(step, flow, context)}`.toLocaleLowerCase();
         return terms.every((term) => text.includes(term));
       })
     : [];
@@ -50,14 +52,14 @@ export default function TaskStepList({
     [byId],
   );
   useLayoutEffect(() => {
-    if (!focusId) return;
+    if (!active || !focusId) return;
     const button = [
       ...(root.current?.querySelectorAll<HTMLButtonElement>('[data-step-id]') ?? []),
     ].find((item) => item.dataset.stepId === focusId);
     button?.scrollIntoView({ block: 'nearest' });
     button?.focus({ preventScroll: true });
     setFocusId('');
-  }, [focusId]);
+  }, [active, focusId]);
   function row(step: Step) {
     return (
       <button
@@ -120,7 +122,7 @@ export default function TaskStepList({
     );
   }
   return (
-    <div ref={root} className="task-step-list">
+    <div ref={root} className="task-step-list" hidden={!active}>
       {long && (
         <div className="task-step-search">
           <label>
