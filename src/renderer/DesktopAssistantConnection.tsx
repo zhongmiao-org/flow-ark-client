@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import useDesktopWindows from './useDesktopWindows';
 
 export type AssistantPhase = 'setup' | 'connected' | 'recovery';
@@ -17,6 +17,20 @@ export default function DesktopAssistantConnection({
   const state = useDesktopWindows(active, 'tools-assistant', false);
   const { snapshot, loading, settingsPending, expired, error, notice } = state;
   const [settingsChanged, setSettingsChanged] = useState(false);
+  const result = useRef<HTMLDivElement>(null);
+  const operationError = useRef<HTMLParagraphElement>(null);
+  const operationOrigin = useRef<Element | null | undefined>(undefined);
+  useEffect(() => {
+    if (!active) {
+      operationOrigin.current = undefined;
+      return;
+    }
+    if (loading || settingsPending || operationOrigin.current === undefined) return;
+    const origin = operationOrigin.current;
+    operationOrigin.current = undefined;
+    if (document.activeElement === origin || document.activeElement === document.body)
+      (operationError.current ?? result.current)?.focus();
+  }, [active, loading, settingsPending, snapshot, error]);
   const available =
     !loading && !expired && !settingsChanged && snapshot?.availability === 'available';
   const hasWindows = available && snapshot.windows.length > 0;
@@ -32,27 +46,35 @@ export default function DesktopAssistantConnection({
   const managed = phase !== 'setup';
   const failed = !!error && !snapshot;
   const permission = !expired && !loading && !settingsChanged ? snapshot?.accessibility : undefined;
-  const heading = loading
-    ? '正在检查权限与窗口'
-    : settingsChanged
-      ? '请重新检查权限与窗口'
-      : expired
-        ? '这次检查已失效'
-        : failed
-          ? '本次检查未完成'
-          : snapshot?.availability === 'permission-required'
-            ? '尚需辅助功能权限'
-            : snapshot?.availability === 'unsupported'
-              ? '当前系统暂不支持'
-              : snapshot?.availability === 'unavailable'
-                ? '本机助手暂不可用'
-                : available
-                  ? hasWindows
-                    ? '窗口检查通过'
-                    : '尚未发现应用窗口'
-                  : '等待只读检查';
+  const heading = settingsPending
+    ? '正在打开系统设置'
+    : loading
+      ? '正在检查权限与窗口'
+      : settingsChanged
+        ? '请重新检查权限与窗口'
+        : expired
+          ? '这次检查已失效'
+          : failed
+            ? '本次检查未完成'
+            : snapshot?.availability === 'permission-required'
+              ? '尚需辅助功能权限'
+              : snapshot?.availability === 'unsupported'
+                ? '当前系统暂不支持'
+                : snapshot?.availability === 'unavailable'
+                  ? '本机助手暂不可用'
+                  : available
+                    ? hasWindows
+                      ? '窗口检查通过'
+                      : snapshot.truncated
+                        ? '暂未取得可显示的窗口'
+                        : '尚未发现应用窗口'
+                    : '等待只读检查';
   const detail = settingsChanged
-    ? '系统权限需要重新核对。完成调整后回到这里重新检查，再选择应用窗口。'
+    ? settingsPending
+      ? '正在请求打开系统设置，不会替你更改辅助功能权限。'
+      : error
+        ? '系统权限仍需重新核对。请按下方提示手动打开设置，完成调整后再检查。'
+        : notice || '系统权限需要重新核对。完成调整后回到这里重新检查，再选择应用窗口。'
     : expired
       ? '窗口观察已到期。重新检查后，再选择本次任务的窗口；不会自动恢复或重放操作。'
       : snapshot?.availability === 'permission-required'
@@ -64,12 +86,14 @@ export default function DesktopAssistantConnection({
             : available
               ? snapshot.windows.length
                 ? `本次发现 ${snapshot.windows.length} 个 TextEdit 窗口。下一步选择具体窗口，再决定是否读取选中段落。`
-                : '系统权限已就绪，但没有发现 TextEdit 窗口。请在文本编辑中打开文档，然后重新检查。'
+                : snapshot.truncated
+                  ? '系统权限已就绪，但本次未取得完整窗口清单。请确认文本编辑中的文档可用后重新检查。'
+                  : '系统权限已就绪，但没有发现 TextEdit 窗口。请在文本编辑中打开文档，然后重新检查。'
               : '点击下方按钮后检查系统权限和 TextEdit 窗口信息，不读取正文，也不修改文档。';
   const stage =
     settingsChanged || snapshot?.availability === 'permission-required'
       ? 2
-      : loading || snapshot
+      : loading || snapshot || failed
         ? 3
         : 1;
   const source = (
@@ -140,9 +164,6 @@ export default function DesktopAssistantConnection({
           </dd>
         </div>
       </dl>
-      {available && snapshot.truncated && (
-        <p className="ai-task-note">部分窗口未能读取，或已达到显示上限；请在选择时核对实际窗口。</p>
-      )}
       {snapshot?.expiresAt && !expired && !loading && !settingsChanged && (
         <p className="tool-disclaimer">
           本次观察有效至 {new Date(snapshot.expiresAt).toLocaleTimeString('zh-CN')}
@@ -157,7 +178,14 @@ export default function DesktopAssistantConnection({
     </>
   );
   const status = (
-    <div className="tool-assistant-result" role="status" aria-live="polite">
+    <div
+      className="tool-assistant-result"
+      ref={result}
+      tabIndex={-1}
+      role="status"
+      aria-live="polite"
+      aria-busy={loading || settingsPending}
+    >
       <span
         className={`tool-status${hasWindows ? ' success' : expired || failed || snapshot || hadWindows ? ' warning' : ''}`}
       >
@@ -166,6 +194,11 @@ export default function DesktopAssistantConnection({
       <p>
         {loading ? '正在进行只读检查，离开页面不会创建任务或修改文档。' : failed ? error : detail}
       </p>
+      {available && snapshot.truncated && hasWindows && (
+        <p className="ai-task-note">
+          清单可能不完整：部分窗口未能读取，或已达到本次显示上限。选择时请核对实际窗口。
+        </p>
+      )}
     </div>
   );
   return (
@@ -247,7 +280,12 @@ export default function DesktopAssistantConnection({
             status
           )}
           {error && snapshot && (
-            <p className="ai-task-note ai-task-failure" role="alert">
+            <p
+              className="ai-task-note ai-task-failure"
+              role="alert"
+              ref={operationError}
+              tabIndex={-1}
+            >
               {error}
             </p>
           )}
@@ -265,6 +303,7 @@ export default function DesktopAssistantConnection({
               }
               disabled={loading || settingsPending}
               onClick={() => {
+                operationOrigin.current = document.activeElement;
                 setSettingsChanged(false);
                 void state.refresh();
               }}
@@ -284,6 +323,7 @@ export default function DesktopAssistantConnection({
                 }
                 disabled={loading || settingsPending}
                 onClick={() => {
+                  operationOrigin.current = document.activeElement;
                   setSettingsChanged(true);
                   void state.openSettings();
                 }}

@@ -207,7 +207,11 @@ export default function ToolConnectionsPage({
   }, [active]);
   const pageHeading = useRef<HTMLHeadingElement>(null);
   useLayoutEffect(() => {
-    if (active && (view === 'review' || view === 'saved') && !referenceReturn.current)
+    if (
+      active &&
+      (view === 'review' || view === 'saved' || view === 'assistant') &&
+      !referenceReturn.current
+    )
       pageHeading.current?.focus({ preventScroll: true });
   }, [active, view]);
   const locked = useRef(false),
