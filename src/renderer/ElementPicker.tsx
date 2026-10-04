@@ -134,6 +134,36 @@ export default function ElementPicker({
       void api('browser.embedded.pick.cancel', { requestId: id }).catch(() => {});
     }
   }, [selector, JSON.stringify(framePath), active, sourceKey]);
+  useEffect(() => {
+    // Hiding/minimizing the native view cancels an unconfirmed pick. A focused
+    // candidate has a separate captured identity and is rechecked by its view.
+    if (!active || !candidate || candidate.focused || applying || focusing) return;
+    let live = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const poll = async () => {
+      const current = version.current;
+      try {
+        const state: PickerState = await api('browser.embedded.pick.status', {
+          requestId: candidate.requestId,
+        });
+        if (!live || current !== version.current || pending.current !== candidate) return;
+        if (state.phase === 'cancelled' || state.phase === 'error') {
+          version.current++;
+          clearCandidate();
+          setError(state.error || '网页选取已结束，请展开网页后重新选取');
+          return;
+        }
+      } catch {
+        // A transient status failure is not evidence that the pick was cancelled.
+      }
+      if (live) timer = setTimeout(() => void poll(), 500);
+    };
+    void poll();
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [active, candidate, applying, focusing]);
   const open = async () => {
     window.dispatchEvent(new Event('flowark:open-browser'));
     await api('browser.embedded.enable');
@@ -253,6 +283,8 @@ export default function ElementPicker({
     setApplying(true);
     setError('');
     try {
+      if (selected.focused) await open();
+      if (!alive.current || version.current !== current || pending.current !== selected) return;
       const target: ElementTarget = selected.focused
         ? (
             await api('browser.embedded.pick.focus', {
@@ -286,6 +318,8 @@ export default function ElementPicker({
     setFocusing(true);
     setError('');
     try {
+      if (selected.focused) await open();
+      if (!alive.current || version.current !== current || pending.current !== selected) return;
       const receipt: FocusedTarget = await api('browser.embedded.pick.focus', {
         requestId: selected.requestId,
         action: selected.focused ? 'confirm' : 'capture',
@@ -341,7 +375,10 @@ export default function ElementPicker({
   const shownTarget = candidate?.target ?? verified;
   const taskConfirmation = purpose === 'task' && !!candidate && !error;
   // Only classify reasons emitted by the existing host and embedded browser.
-  const reason = error.replace(/^Error: /, '').split('\n')[0];
+  const reason = error
+    .replace(/^Error invoking remote method 'flowark:request': (?:Error: )?/, '')
+    .replace(/^Error: /, '')
+    .split('\n')[0];
   const busy = ['请先暂停当前任务，再选取或验证元素', '网页正在执行操作，请稍后选取'].includes(
     reason,
   );
@@ -358,6 +395,7 @@ export default function ElementPicker({
     '网页已变化，请重新选取',
     '所选元素内容或结构已变化，请重新选取',
     '目标引用已取消或改变',
+    '网页选取已结束，请展开网页后重新选取',
   ].includes(reason);
   const multiple = reason === '选择器匹配多个元素';
   const feedback = error
@@ -365,7 +403,7 @@ export default function ElementPicker({
         tone: busy || changed ? 'warning' : 'error',
         badge: busy ? '运行互斥' : changed ? '请求失效' : '拒绝应用',
         title: busy || changed ? '当前无法拾取' : multiple ? '目标不唯一' : '未能确认目标',
-        detail: error,
+        detail: reason,
         next: busy
           ? '先在运行详情暂停当前任务，等步骤停止后，再回来明确开始拾取。'
           : changed

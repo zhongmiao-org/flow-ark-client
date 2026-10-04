@@ -680,17 +680,15 @@
 }
 .task-web-tabs {
   display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--fa-border-default);
+  flex-wrap: wrap;
+  gap: 24px;
   color: var(--fa-text-secondary);
-  margin-bottom: 4px;
 }
 .task-web-tabs [role='tab'] {
-  flex: 1;
   min-width: 0;
-  padding: 8px 4px 12px;
+  padding: 0;
+  min-height: 40px;
   border: 0;
-  border-bottom: 2px solid transparent;
   border-radius: 0;
   background: transparent;
   color: var(--fa-text-secondary);
@@ -698,7 +696,6 @@
 }
 .task-web-tabs [aria-selected='true'] {
   color: var(--fa-action-primary);
-  border-bottom-color: var(--fa-action-primary);
 }
 .task-target-tab-panel:not([hidden]),
 .task-target-address-form,
@@ -825,6 +822,15 @@
 }
 .task-web-current {
   background: var(--fa-action-subtle);
+  gap: 8px;
+}
+.task-web-summary {
+  gap: 8px;
+}
+.task-web-scope {
+  color: var(--fa-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
 }
 .task-web-columns > .ai-task-card > label[for] {
   margin-bottom: -8px;
@@ -839,7 +845,7 @@
   min-width: 144px;
 }
 .task-web-columns .ai-task-checkbox {
-  margin: 4px 0;
+  margin: 0;
 }
 @container (max-width: 950px) {
   .task-web-columns {

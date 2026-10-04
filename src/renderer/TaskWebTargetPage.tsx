@@ -317,10 +317,15 @@ export default function TaskWebTargetPage({
             hidden={tab !== 'web'}
           >
             <div className="task-web-object task-web-current">
-              <h2>{current?.title || (current ? '未命名网页' : '尚未取得网页')}</h2>
-              <p>内置浏览器 · 当前标签</p>
-              <p>账号：未核对 · 工作区：本机内置浏览器</p>
-              <p className="task-web-url">{current?.url}</p>
+              <h2>
+                {webReady && <span aria-hidden="true">✓ </span>}
+                {current?.title || (current ? '未命名网页' : '尚未取得网页')}
+              </h2>
+              <p>
+                内置浏览器 · 当前标签
+                <br />
+                账号：未核对 · 工作区：本机内置浏览器
+              </p>
               <button disabled={busy} onClick={inspectBrowser}>
                 扩大查看
               </button>
@@ -423,20 +428,23 @@ export default function TaskWebTargetPage({
               <h2 ref={webHeading} tabIndex={-1}>
                 当前将操作的对象
               </h2>
-              <div className="task-web-object">
+              <div className="task-web-object task-web-summary">
                 <h2>
                   {current?.title || '等待选择网页'}
                   {elementCandidate && ` · ${elementCandidate.label || elementCandidate.tag}`}
                 </h2>
-                <p>本机内置浏览器 / 同一受控会话</p>
-                {elementCandidate && (
-                  <p>
-                    待确认 · {/^h[1-6]$/.test(elementCandidate.tag) ? '页面标题' : '网页元素'} ·{' '}
-                    {elementCandidate.framePath.length
-                      ? `${elementCandidate.framePath.length} 层框架`
-                      : '主页面'}
-                  </p>
-                )}
+                <p>
+                  本机内置浏览器 / 同一受控会话
+                  {elementCandidate && (
+                    <>
+                      {' · 待确认 · '}
+                      {/^h[1-6]$/.test(elementCandidate.tag) ? '页面标题' : '网页元素'} ·{' '}
+                      {elementCandidate.framePath.length
+                        ? `${elementCandidate.framePath.length} 层框架`
+                        : '主页面'}
+                    </>
+                  )}
+                </p>
                 <p className="task-web-url">{current?.url}</p>
               </div>
               <h2>{webReady ? '本次可用能力' : '网页就绪后可用'}</h2>
@@ -454,10 +462,12 @@ export default function TaskWebTargetPage({
                 <input type="checkbox" checked={false} disabled />
                 提交表单或发送消息 · 未授权
               </label>
-              <p className="ai-task-note">
-                只读选择不会读取账号、Cookie
-                或整页内容。确认后仅将显示的网页标题、地址和能力范围加入本次 AI
-                上下文。选取具体元素后，还会包含它的名称与定位信息，并限定只读取该元素；发送前仍可完整核对。
+              <p className="task-web-scope">
+                仅将网页标题、地址与能力范围加入任务；不读取账号或 Cookie，不收集整页内容。
+                {elementCandidate
+                  ? '同时保存所选元素的名称与定位，只允许读取此元素。'
+                  : '选择具体元素后，可将读取范围限定到该元素。'}
+                发送给 AI 前可完整核对。
               </p>
               {!webReady && (
                 <p
