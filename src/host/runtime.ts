@@ -1599,7 +1599,11 @@ export class Runtime {
             !['PAUSED', 'WAITING_INPUT'].includes(run.state) ||
             this.active.controlPending
           )
-            throw new Error('请先暂停当前任务，再调整网页查看或核对元素');
+            throw new Error(
+              method === 'browser.embedded.observation'
+                ? '请先暂停当前任务，再调整网页查看'
+                : '请先暂停当前任务，再选取或验证元素',
+            );
         }
         return this.system(method, args);
       }

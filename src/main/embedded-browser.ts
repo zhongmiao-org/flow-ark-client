@@ -24,7 +24,7 @@ import type { EmbeddedReview } from '../shared/run-review';
 import { pageIdentity, sameWebPage, type WebPageIdentity } from '../shared/task-web-target';
 
 type Bounds = { x: number; y: number; width: number; height: number };
-type Operation = { stop: () => void };
+type Operation = { stop: (reason?: Error) => void; pickRequestId?: string };
 type Capture = { host: BrowserWindow; attached: boolean };
 type Download = {
   operation: Operation;
@@ -775,28 +775,42 @@ export class EmbeddedBrowser {
         this.assertResource(resource);
         this.layout();
         if (resource.operation) throw new Error('网页正在执行操作，请稍后选取');
-        if (resource.observation || resource.observationError)
-          throw new Error('请先确认网页查看比例，再重新选取目标');
         if (!resource.presented) throw new Error('请先展开内置网页面板');
         if (!this.permitted(resource.contents!.getURL())) throw new Error('请先打开测试网页');
         const page = resource.page!;
         resource.confirmedTarget = undefined;
-        if (method.endsWith('.start')) {
-          resource.pickDocument = {
-            requestId: args.requestId,
-            revision: resource.documentRevision,
+        let stop!: (reason?: Error) => void;
+        let stoppedReason: Error | undefined;
+        const stopped = new Promise<never>((_, reject) => {
+          stop = (reason) => {
+            stoppedReason = reason ?? new Error('网页会话已关闭');
+            reject(stoppedReason);
           };
-          return page.picker.start(args.requestId);
-        }
-        let stop!: () => void;
-        const stopped = new Promise<never>(
-          (_, reject) => (stop = () => reject(new Error('网页会话已关闭'))),
-        );
-        const operation = { stop };
+        });
+        const operation: Operation = {
+          stop,
+          pickRequestId: method.endsWith('.start') ? args.requestId : undefined,
+        };
         resource.operation = operation;
         try {
           const result = await Promise.race([
             (async () => {
+              // Opening the panel may still be applying its native scale. Own
+              // the operation while waiting so another resize is deferred.
+              await resource.observation;
+              if (stoppedReason) throw stoppedReason;
+              this.assertOperation(resource, operation);
+              if (resource.observationError) throw new Error(resource.observationError);
+              if (!resource.presented || resource.contents!.isLoading())
+                throw new Error('请先展开并等待网页加载完成');
+              if (!this.permitted(resource.contents!.getURL())) throw new Error('请先打开测试网页');
+              if (method.endsWith('.start')) {
+                resource.pickDocument = {
+                  requestId: args.requestId,
+                  revision: resource.documentRevision,
+                };
+                return page.picker.start(args.requestId);
+              }
               await page.picker.cancel();
               this.assertOperation(resource, operation);
               return page.inspectTarget(args.selector, args.framePath);
@@ -830,6 +844,11 @@ export class EmbeddedBrowser {
           }
         );
       case 'browser.embedded.pick.cancel':
+        if (
+          this.resource?.operation?.pickRequestId &&
+          (!args.requestId || this.resource.operation.pickRequestId === args.requestId)
+        )
+          this.resource.operation.stop(new Error('选取已取消'));
         if (
           this.resource &&
           (!args.requestId || this.resource.confirmedTarget?.requestId === args.requestId)
@@ -956,7 +975,7 @@ export class EmbeddedBrowser {
         throw new Error('所选元素内容或结构已变化，请重新选取');
       return { ...selection, target };
     } finally {
-      if (resource.operation === operation) resource.operation = undefined;
+      this.finishOperation(resource, operation);
     }
   }
 }
