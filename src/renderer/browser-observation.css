@@ -64,6 +64,13 @@
 .browser-observation-expanded .browser-viewport {
   min-width: 0;
 }
+.browser-page-area {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
 
 .browser-observation-workspace {
   display: flex;
@@ -279,7 +286,29 @@
 }
 
 .browser-target-focus .browser-observation-heading h1 {
+  margin-bottom: 0;
   overflow-wrap: anywhere;
+}
+.browser-sidebar.browser-target-focus .browser-observation-workspace {
+  padding: 24px 32px 24px 16px;
+  gap: 8px;
+}
+.browser-sidebar.browser-target-focus > .browser-observation-header {
+  gap: 12px;
+}
+.browser-target-focus > header > button {
+  min-width: 92px;
+}
+.browser-target-focus button,
+.browser-target-focus .breadcrumbs {
+  font-size: 14px;
+  line-height: 22px;
+}
+.browser-target-focus .browser-observation-heading {
+  margin-bottom: 2px;
+}
+.browser-sidebar.browser-target-focus .browser-observation-actions[hidden] {
+  display: none;
 }
 .browser-focus-actions {
   gap: 12px;
@@ -290,19 +319,49 @@
 .browser-focus-actions button:nth-child(n + 2) {
   min-width: 180px;
 }
+.browser-focus-card {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  height: clamp(236px, calc(100dvh - 466px), 520px);
+  gap: 12px;
+  padding: 24px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-surface);
+}
+.browser-sidebar.browser-target-focus .browser-focus-card .browser-viewport {
+  min-height: 40px;
+  border: 0;
+  border-radius: 0;
+}
+.browser-focus-caption {
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--fa-text-secondary);
+}
 .browser-focus-target {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  gap: 4px;
-  padding: 12px 24px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-  background: var(--fa-bg-surface);
+  padding-top: 16px;
+  border-top: 1px solid var(--fa-border-default);
   font-size: 14px;
   line-height: 22px;
   overflow-wrap: anywhere;
+  color: var(--fa-text-primary);
 }
-.browser-focus-target span {
-  color: var(--fa-text-secondary);
+.browser-focus-page {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.browser-sidebar.browser-observation.browser-target-focus footer {
+  margin-top: 2px;
+  min-height: 72px;
+  font-size: 14px;
+  line-height: 22px;
+  align-items: flex-start;
 }

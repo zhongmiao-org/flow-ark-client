@@ -5,6 +5,11 @@ import { desktopViewportWidth } from '../shared/browser-viewport';
 import { useBrowserFocus } from './BrowserFocusContext';
 import type { FocusedTarget } from '../shared/browser-observation';
 const api = (method: string, args?: unknown) => window.flowark.request(method, args);
+const focusErrorMessage = (reason: unknown) =>
+  (reason instanceof Error ? reason.message : String(reason)).replace(
+    /^Error invoking remote method 'flowark:request': (?:Error: )?/,
+    '',
+  );
 export default function BrowserSidebar({
   close,
   running,
@@ -48,8 +53,24 @@ export default function BrowserSidebar({
   const returnButton = useRef<HTMLButtonElement>(null);
   const [panelExpanded, setExpanded] = useState(false);
   const expanded = !!focusEntry || !!observationRequest || panelExpanded;
+  const focusTag = focusEntry?.target.tag;
+  const focusKind = /^h[1-6]$/.test(focusTag ?? '')
+    ? '文字标题'
+    : (
+        {
+          input: '输入控件',
+          textarea: '多行输入框',
+          button: '按钮',
+          a: '链接',
+          select: '下拉选择框',
+          img: '图片',
+          table: '表格',
+        } as Record<string, string>
+      )[focusTag ?? ''] || '网页元素';
   const observationTitle = targetView
-    ? `聚焦${focusEntry.target.label || '选中目标'}`
+    ? focusKind === '文字标题'
+      ? '聚焦页面标题'
+      : '聚焦选中目标'
     : observationRequest || focusEntry
       ? '网页总览'
       : '扩大查看网页';
@@ -322,7 +343,7 @@ export default function BrowserSidebar({
               throw new Error('目标查看比例尚未确认，请返回后重新聚焦');
             setFocusReady(true);
           } catch (reason) {
-            if (live) setFocusError(reason instanceof Error ? reason.message : String(reason));
+            if (live) setFocusError(focusErrorMessage(reason));
           } finally {
             if (live) setFocusPending(false);
             if (revision === statusRevision.current) observationBusy.current = false;
@@ -353,7 +374,7 @@ export default function BrowserSidebar({
     } catch (reason) {
       if (focusCurrent.current === selected) {
         setFocusReady(false);
-        setFocusError(reason instanceof Error ? reason.message : String(reason));
+        setFocusError(focusErrorMessage(reason));
       }
     } finally {
       if (focusCurrent.current === selected) setFocusPending(false);
@@ -414,7 +435,7 @@ export default function BrowserSidebar({
                   restorePanel();
                 }}
               >
-                {focusEntry ? '选择网页目标' : observationRequest ? '选择操作对象' : '内置网页'}
+                {focusEntry || observationRequest ? '选择操作对象' : '内置网页'}
               </a>
               <span aria-hidden="true">/</span>
               <span aria-current="page">{observationTitle}</span>
@@ -446,7 +467,7 @@ export default function BrowserSidebar({
             )}
           </div>
         )}
-        <div className="browser-observation-actions">
+        <div className="browser-observation-actions" hidden={targetView}>
           {!expanded && (
             <button ref={expandButton} onClick={() => setExpanded(true)}>
               扩大查看
@@ -467,7 +488,9 @@ export default function BrowserSidebar({
             <h1>{observationTitle}</h1>
             <p>
               {targetView ? (
-                focusReady ? (
+                focusError || observation?.error ? (
+                  '暂时无法确认当前目标'
+                ) : focusReady ? (
                   '100% 阅读 · 只平移观察窗口，执行坐标保持不变'
                 ) : (
                   '正在核对原字号目标与网页身份'
@@ -615,23 +638,33 @@ export default function BrowserSidebar({
         )}
         {targetView && focusError && (
           <div className="browser-error" role="alert">
-            {focusError}。请返回后重新选取目标。
+            {focusError}
           </div>
         )}
-        <div className="browser-viewport" ref={viewport} data-testid="browser-viewport" />
-        {targetView && (
-          <div className="browser-focus-target">
-            <strong>{focusEntry.target.label || focusEntry.target.tag}</strong>
-            <span>
-              {focusReady && !focusError && !observation?.error ? '已核对唯一匹配 · ' : '待核对 · '}
-              {focusEntry.target.tag}
-              {focusEntry.target.framePath.length
-                ? ` · ${focusEntry.target.framePath.length} 层框架`
-                : ' · 主页面'}
-            </span>
-            <span>页面：{focusEntry.page.title || focusEntry.page.url}</span>
-          </div>
-        )}
+        <div className={`browser-page-area${targetView ? ' browser-focus-card' : ''}`}>
+          <div className="browser-viewport" ref={viewport} data-testid="browser-viewport" />
+          {targetView && (
+            <>
+              <p className="browser-focus-caption" role="status">
+                {focusPending
+                  ? '正在核对选中目标；核对成功后才能确认。'
+                  : focusReady && !focusError && !observation?.error
+                    ? '这是当前选中目标的原字号预览，已核对唯一匹配。'
+                    : '目标尚未通过核对，请返回后重新选取。'}
+              </p>
+              <div className="browser-focus-target">
+                <span>目标类型：{focusKind}</span>
+                <span
+                  className="browser-focus-page"
+                  title={focusEntry.page.title || focusEntry.page.url}
+                >
+                  页面：{focusEntry.page.title || focusEntry.page.url}
+                </span>
+                <span>滚动与缩放不改变目标的页面坐标。</span>
+              </div>
+            </>
+          )}
+        </div>
         {editing && !expanded && (
           <div className="browser-editor-scale">
             桌面布局宽度 {desktopViewportWidth} CSS px · {scaleLabel}
