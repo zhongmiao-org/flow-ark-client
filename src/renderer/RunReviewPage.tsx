@@ -56,7 +56,8 @@ function Contents({
   const versionSummary = (
     <p>
       {preview.flow.name} · {preview.flow.stepCount} 个步骤 ·{' '}
-      {preview.debug ? '逐步调试' : '正常试运行'}
+      {preview.debug ? '逐步调试，每个步骤前暂停' : '正常试运行'}
+      {preview.task ? ` · 任务修订 ${preview.task.revision}` : ''}
     </p>
   );
   return (
@@ -157,7 +158,7 @@ function Contents({
       </section>
       <section className="run-review-card">
         <h2>执行版本</h2>
-        {!compact && versionSummary}
+        {versionSummary}
         <p>
           {repairRevision !== undefined
             ? preview.ready
@@ -169,7 +170,6 @@ function Contents({
         </p>
         <details>
           <summary>查看版本与参数</summary>
-          {compact && versionSummary}
           <p className="run-review-version">{preview.flow.versionId || '检查通过后固定版本'}</p>
           <p>参数：{preview.flow.parameterNames.join('、') || '无'}</p>
           <p>声明能力：{preview.flow.capabilities.join('、') || '无'}</p>
@@ -449,11 +449,11 @@ export default function RunReviewPage(props: Props) {
           )}
           {!compactReview && !desktopReview && refreshButton}
           <button onClick={props.back}>
-            {desktopReview
-              ? attempt && attempt.phase !== 'rejected'
-                ? '返回方案（不撤销本次运行）'
-                : '取消，回到方案'
-              : '回去修改'}
+            {attempt && attempt.phase !== 'rejected'
+              ? '返回方案（不撤销本次运行）'
+              : desktopReview
+                ? '取消，回到方案'
+                : '回去修改'}
           </button>
           {desktopReview ? (
             <>

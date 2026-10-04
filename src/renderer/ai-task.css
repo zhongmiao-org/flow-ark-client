@@ -656,7 +656,7 @@
 .run-review-options > button {
   width: 100%;
 }
-@container (max-width: 900px) {
+@container (max-width: 950px) {
   .run-review-columns {
     grid-template-columns: minmax(0, 1fr);
   }
