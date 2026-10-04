@@ -38,6 +38,7 @@ type Form = {
   args: string;
   protocol: ConnectionConfig['protocolVersion'];
 };
+type ConfigField = keyof Form | 'secret';
 const empty: Form = {
   name: '',
   source: '',
@@ -130,18 +131,18 @@ export default function ToolConnectionsPage({
   const [view, setView] = useState<'catalog' | 'config' | 'review' | 'saved' | 'assistant'>(
     'catalog',
   );
-  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof Form, string>>>({});
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<ConfigField, string>>>({});
   const [protocolOpen, setProtocolOpen] = useState(false);
   const focusInvalid = useRef(false);
   useEffect(() => {
     if (!focusInvalid.current) return;
     focusInvalid.current = false;
     const first = (
-      ['name', 'type', 'url', 'auth', 'command', 'args', 'protocol', 'source'] as const
+      ['name', 'type', 'url', 'auth', 'secret', 'command', 'args', 'protocol', 'source'] as const
     ).find((field) => fieldErrors[field]);
     if (first) document.getElementById(`tool-config-${first}`)?.focus();
   }, [fieldErrors]);
-  const fieldProps = (field: keyof Form) => ({
+  const fieldProps = (field: ConfigField) => ({
     id: `tool-config-${field}`,
     'aria-label': {
       name: '显示名称',
@@ -152,11 +153,12 @@ export default function ToolConnectionsPage({
       command: '本地程序绝对路径',
       args: '程序参数（JSON 字符串数组）',
       protocol: '协议版本',
+      secret: 'Bearer Token',
     }[field],
     'aria-invalid': fieldErrors[field] ? true : undefined,
     'aria-describedby': fieldErrors[field] ? `tool-config-${field}-error` : undefined,
   });
-  const fieldError = (field: keyof Form) =>
+  const fieldError = (field: ConfigField) =>
     fieldErrors[field] && (
       <small className="tool-field-error" id={`tool-config-${field}-error`}>
         {fieldErrors[field]}
@@ -189,6 +191,19 @@ export default function ToolConnectionsPage({
   const [busy, setBusy] = useState<
     'discover' | 'authorize' | 'save' | 'manage' | 'inspect' | 'open-task' | null
   >(null);
+  const discoveryOrigin = useRef<Element | null | undefined>(undefined);
+  const operationError = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!active || view !== 'config') {
+      discoveryOrigin.current = undefined;
+      return;
+    }
+    if (busy || discoveryOrigin.current === undefined) return;
+    const origin = discoveryOrigin.current;
+    discoveryOrigin.current = undefined;
+    if (error && (document.activeElement === origin || document.activeElement === document.body))
+      operationError.current?.focus();
+  }, [active, view, busy, error]);
   const [pendingLeave, setPendingLeave] = useState<{ next: () => void }>();
   const [confirm, setConfirm] = useState<'disconnect' | 'remove'>();
   const [clock, setClock] = useState(Date.now());
@@ -207,17 +222,21 @@ export default function ToolConnectionsPage({
   }, [active]);
   const pageHeading = useRef<HTMLHeadingElement>(null);
   useLayoutEffect(() => {
-    if (
-      active &&
-      (view === 'review' || view === 'saved' || view === 'assistant') &&
-      !referenceReturn.current
-    )
+    if (active && view !== 'catalog' && !referenceReturn.current)
       pageHeading.current?.focus({ preventScroll: true });
   }, [active, view]);
   const locked = useRef(false),
     epoch = useRef(0),
     request = useRef<string | undefined>(undefined);
   const selected = connections.find((connection) => connection.id === selectedId);
+  const reusableBearer =
+    form.type === 'http' &&
+    form.auth === 'bearer' &&
+    selected?.hasCredential &&
+    selected.config.transport.type === 'http' &&
+    selected.config.transport.auth === 'bearer' &&
+    !selected.config.transport.oauth &&
+    selected.config.transport.url === form.url.trim();
   const reusableOAuth =
     form.type === 'http' &&
     form.auth === 'oauth' &&
@@ -280,6 +299,7 @@ export default function ToolConnectionsPage({
     [],
   );
   const cancel = async () => {
+    discoveryOrigin.current = undefined;
     epoch.current++;
     const requestId = request.current;
     if (requestId) await api('tool.connection.cancel', { requestId });
@@ -343,7 +363,12 @@ export default function ToolConnectionsPage({
     setError('');
     setFieldErrors((previous) =>
       Object.fromEntries(
-        Object.entries(previous).filter(([field]) => !(field in patch) && !('type' in patch)),
+        Object.entries(previous).filter(
+          ([field]) =>
+            !(field in patch) &&
+            !('type' in patch) &&
+            !(field === 'secret' && ('url' in patch || 'auth' in patch)),
+        ),
       ),
     );
     setDirty(true);
@@ -354,7 +379,13 @@ export default function ToolConnectionsPage({
     setError('');
     let config: ConnectionConfig;
     try {
-      const errors: Partial<Record<keyof Form, string>> = {};
+      const errors: Partial<Record<ConfigField, string>> = {};
+      if (form.type === 'http' && form.auth === 'bearer') {
+        if (!secret && !reusableBearer)
+          errors.secret = '请填写当前服务的 Bearer Token；此配置没有可复用的已保存凭据。';
+        else if (secret && !/^[\x21-\x7e]{1,8192}$/.test(secret))
+          errors.secret = '请填写 1–8192 个半角字母、数字或符号，不包含空格、换行或其他空白。';
+      }
       let args: unknown = [];
       if (form.type === 'stdio') {
         try {
@@ -423,6 +454,7 @@ export default function ToolConnectionsPage({
       return;
     }
     locked.current = true;
+    discoveryOrigin.current = document.activeElement;
     setBusy('discover');
     setOAuthInspection(undefined);
     setReviewBaseline(selected ? structuredClone(selected) : undefined);
@@ -472,6 +504,7 @@ export default function ToolConnectionsPage({
   const authorize = async (issuer: string, clientId: string, callbackPort: number) => {
     if (locked.current || !oauthInspection?.inspectionToken || !sourceReviewed) return;
     locked.current = true;
+    discoveryOrigin.current = document.activeElement;
     setBusy('authorize');
     setError('');
     const ticket = ++epoch.current,
@@ -637,6 +670,39 @@ export default function ToolConnectionsPage({
     view === 'catalog' ? parentTitle : view === 'review' ? '连接设置' : '应用与工具';
   const pageError =
     error || (view !== 'catalog' && listError ? `读取连接记录未完成：${listError}` : '');
+  const configActions = (className: string) => (
+    <div className={`ai-task-actions tool-config-actions ${className}`}>
+      {reusableOAuth && (
+        <button
+          type="button"
+          disabled={!!busy || !sourceReviewed}
+          onClick={() => void discover(true)}
+        >
+          使用已保存登录检查能力
+        </button>
+      )}
+      <button className="primary" type="submit" disabled={!!busy || !sourceReviewed}>
+        {form.type === 'http' && form.auth === 'oauth'
+          ? busy === 'discover'
+            ? '正在检查认证配置…'
+            : '检查认证站点与范围'
+          : busy === 'discover'
+            ? '正在发现能力…'
+            : '发现并检查能力'}
+      </button>
+      <button
+        type="button"
+        disabled={!!busy && busy !== 'discover' && busy !== 'authorize'}
+        onClick={
+          busy === 'discover' || busy === 'authorize'
+            ? () => void cancel().catch((e) => setError(connectionError(e)))
+            : catalog
+        }
+      >
+        {busy === 'authorize' ? '取消登录' : busy === 'discover' ? '取消检查' : '取消'}
+      </button>
+    </div>
+  );
   return (
     <div className="tools-host" hidden={!active}>
       <header className="topbar">
@@ -683,7 +749,7 @@ export default function ToolConnectionsPage({
           </div>
         </div>
         {pageError && (
-          <div className="alert error" role="alert">
+          <div className="alert error" role="alert" tabIndex={-1} ref={operationError}>
             {pageError}
           </div>
         )}
@@ -923,24 +989,37 @@ export default function ToolConnectionsPage({
                     <label className="tool-field">
                       Bearer Token
                       <input
+                        {...fieldProps('secret')}
+                        aria-describedby={
+                          fieldErrors.secret
+                            ? 'tool-config-secret-error tool-config-secret-help'
+                            : 'tool-config-secret-help'
+                        }
                         type="password"
-                        aria-label="Bearer Token"
                         autoComplete="off"
                         value={secret}
                         maxLength={8192}
                         disabled={!!busy}
                         placeholder={
-                          selected?.hasCredential
-                            ? '留空仅复用同一地址已保存的凭据'
-                            : '仅发送到上方明确选择的服务'
+                          reusableBearer ? '留空可复用此连接已保存的凭据' : '填写当前服务的凭据'
                         }
                         onChange={(e) => {
                           setSecret(e.target.value);
+                          setError('');
+                          setFieldErrors((previous) => ({ ...previous, secret: undefined }));
                           setDirty(true);
                           setSourceReviewed(false);
                         }}
                       />
-                      <small>不会回显已保存的凭据；发现后输入框清空。</small>
+                      {fieldError('secret')}
+                      <small id="tool-config-secret-help">
+                        {reusableBearer
+                          ? '地址和认证方式与已保存连接一致；留空可复用，填写则使用本次输入。'
+                          : selected?.hasCredential
+                            ? '当前地址或认证与已保存连接不同，请填写当前服务的凭据。'
+                            : '凭据仅发送到上方明确选择的服务。'}
+                        不会回显已保存的凭据；发现后输入框清空。
+                      </small>
                     </label>
                   )}
                 </>
@@ -1000,37 +1079,7 @@ export default function ToolConnectionsPage({
                   ? '先读取认证站点与范围，再使用服务分配的公开客户端 ID 登录。能力核对后才保存连接。'
                   : '先发现能力并测试，确认工具列表、身份和范围后再保存。'}
               </p>
-              <div className="ai-task-actions tool-config-actions">
-                {reusableOAuth && (
-                  <button
-                    type="button"
-                    disabled={!!busy || !sourceReviewed}
-                    onClick={() => void discover(true)}
-                  >
-                    使用已保存登录检查能力
-                  </button>
-                )}
-                <button className="primary" type="submit" disabled={!!busy || !sourceReviewed}>
-                  {form.type === 'http' && form.auth === 'oauth'
-                    ? busy === 'discover'
-                      ? '正在检查认证配置…'
-                      : '检查认证站点与范围'
-                    : busy === 'discover'
-                      ? '正在发现能力…'
-                      : '发现并检查能力'}
-                </button>
-                <button
-                  type="button"
-                  disabled={!!busy && busy !== 'discover' && busy !== 'authorize'}
-                  onClick={
-                    busy === 'discover' || busy === 'authorize'
-                      ? () => void cancel().catch((e) => setError(connectionError(e)))
-                      : catalog
-                  }
-                >
-                  {busy === 'authorize' ? '取消登录' : busy === 'discover' ? '取消检查' : '取消'}
-                </button>
-              </div>
+              {configActions('tool-config-actions-wide')}
             </section>
             <section className="ai-task-card">
               <h2>保存前要知道什么</h2>
@@ -1077,6 +1126,7 @@ export default function ToolConnectionsPage({
                     : '检查只读取公开的认证配置，不发送凭据、不打开登录网页、不注册客户端或调用工具。'
                   : '发现仅请求服务身份和工具清单，不调用工具。服务说明、提示词和网页内容不能替代用户授权。'}
               </p>
+              {configActions('tool-config-actions-compact')}
               {oauthInspection && (
                 <ToolOAuthInspection
                   cancel={() => void cancel().catch((e) => setError(connectionError(e)))}

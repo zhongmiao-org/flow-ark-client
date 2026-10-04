@@ -296,6 +296,9 @@
 .tool-config-actions button:not(.primary) {
   min-width: 144px;
 }
+.tool-config .tool-config-actions-compact {
+  display: none;
+}
 .tool-protocol-settings summary {
   cursor: pointer;
   color: var(--fa-text-secondary);
@@ -422,6 +425,12 @@
   margin: 0;
 }
 @container (max-width: 1000px) {
+  .tool-config .tool-config-actions-wide {
+    display: none;
+  }
+  .tool-config .tool-config-actions-compact {
+    display: flex;
+  }
   .tool-columns {
     grid-template-columns: minmax(0, 1fr);
   }
