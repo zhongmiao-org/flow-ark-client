@@ -125,10 +125,13 @@ export default function AISettingsPage({
   const modelInput = useRef<HTMLInputElement>(null),
     keyInput = useRef<HTMLInputElement>(null),
     resultHeading = useRef<HTMLHeadingElement>(null),
-    formError = useRef<HTMLParagraphElement>(null);
+    formError = useRef<HTMLParagraphElement>(null),
+    operationError = useRef<HTMLDivElement>(null);
   const focusField = useRef<'model' | 'key' | undefined>(undefined),
-    focusResult = useRef(false),
-    focusSaveError = useRef(false);
+    focusResult = useRef(false);
+  const feedbackFocus = useRef<
+    { target: 'result' | 'form-error' | 'error'; origin: Element | null } | undefined
+  >(undefined);
   const [busy, setBusy] = useState<'save' | 'remove' | 'test' | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const cancellationPending = useRef(false);
@@ -157,19 +160,32 @@ export default function AISettingsPage({
     ? `${templateLabel} · ${entry.source!.title}`
     : entry.source?.title || '本地设置';
   useLayoutEffect(() => {
-    if (!active) return;
+    if (!active) {
+      feedbackFocus.current = undefined;
+      return;
+    }
     if (editing && !busy && focusField.current) {
       (focusField.current === 'model' ? modelInput : keyInput).current?.focus();
       focusField.current = undefined;
-    }
-    if (editing && !busy && focusSaveError.current) {
-      formError.current?.focus();
-      focusSaveError.current = false;
     }
     if (!editing && !busy && focusResult.current) {
       resultHeading.current?.focus({ preventScroll: true });
       focusResult.current = false;
     }
+    const feedback = feedbackFocus.current;
+    if (!feedback || busy === 'save' || busy === 'remove' || cancelling) return;
+    feedbackFocus.current = undefined;
+    if (leaving || removing) return;
+    if (document.activeElement !== feedback.origin && document.activeElement !== document.body)
+      return;
+    const target =
+      feedback.target === 'result'
+        ? resultHeading.current
+        : feedback.target === 'form-error'
+          ? formError.current
+          : operationError.current;
+    target?.scrollIntoView({ block: 'nearest' });
+    target?.focus({ preventScroll: true });
   });
   const reload = async () => {
     const next: AIConfigurationState = await api('get', { provider });
@@ -187,7 +203,7 @@ export default function AISettingsPage({
     setInvalid(undefined);
     focusField.current = undefined;
     focusResult.current = false;
-    focusSaveError.current = false;
+    feedbackFocus.current = undefined;
     lastInput.current = null;
     setEditing(false);
     setLeaving(undefined);
@@ -346,6 +362,7 @@ export default function AISettingsPage({
       return false;
     }
     lock.current = true;
+    const origin = document.activeElement;
     setBusy('save');
     setInvalid(undefined);
     setError('');
@@ -356,7 +373,7 @@ export default function AISettingsPage({
         model,
         ...(key ? { apiKey: key } : {}),
       });
-      focusResult.current = true;
+      feedbackFocus.current = { target: 'result', origin };
       setState(saved);
       setModel(saved.model);
       setKey('');
@@ -366,7 +383,7 @@ export default function AISettingsPage({
       await changed().catch(() => setError('配置已保存，本地概览暂未刷新，请稍后重新打开设置。'));
       return true;
     } catch (error) {
-      focusSaveError.current = true;
+      feedbackFocus.current = { target: 'form-error', origin };
       setError(message(error));
       return false;
     } finally {
@@ -377,7 +394,7 @@ export default function AISettingsPage({
   const beginEdit = (field: 'model' | 'key') => {
     if (!state || busy || testing || state.inUse) return;
     focusField.current = field;
-    focusSaveError.current = false;
+    feedbackFocus.current = undefined;
     setEditing(true);
     setModel(state.model);
     setKey('');
@@ -397,6 +414,7 @@ export default function AISettingsPage({
     }, '当前 AI 配置');
   const test = async () => {
     if (!state?.configured || !state.revision || lock.current) return;
+    const origin = document.activeElement;
     const requestId = crypto.randomUUID(),
       ticket = ++epoch.current;
     request.current = requestId;
@@ -411,12 +429,15 @@ export default function AISettingsPage({
         reviewedCost: true,
       });
       if (ticket === epoch.current) {
-        focusResult.current = true;
+        feedbackFocus.current = { target: 'result', origin };
         setState(next);
         setError('');
       }
     } catch (error) {
-      if (ticket === epoch.current) setError(message(error));
+      if (ticket === epoch.current) {
+        feedbackFocus.current = { target: 'error', origin };
+        setError(message(error));
+      }
     } finally {
       if (ticket === epoch.current) {
         lock.current = false;
@@ -427,6 +448,7 @@ export default function AISettingsPage({
   };
   const cancelTest = async () => {
     if (cancellationPending.current) return false;
+    const origin = document.activeElement;
     const id = request.current;
     if (!id) throw new Error('未取得当前测试的取消标识，请等待测试状态更新');
     cancellationPending.current = true;
@@ -438,8 +460,14 @@ export default function AISettingsPage({
       if (next.operation === 'testing') throw new Error('测试仍在收尾，请稍后再次取消');
       request.current = undefined;
       lock.current = false;
+      feedbackFocus.current = { target: 'result', origin };
+      setError('');
       setBusy(null);
       return true;
+    } catch (error) {
+      feedbackFocus.current = { target: 'error', origin };
+      setError(message(error));
+      return false;
     } finally {
       cancellationPending.current = false;
       setCancelling(false);
@@ -631,7 +659,13 @@ export default function AISettingsPage({
           </nav>
         )}
         {error && !removing && !editing && (
-          <div className="ai-task-error" role="alert" id="ai-settings-error">
+          <div
+            className="ai-task-error"
+            role="alert"
+            id="ai-settings-error"
+            ref={operationError}
+            tabIndex={-1}
+          >
             {error}
           </div>
         )}
