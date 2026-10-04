@@ -148,11 +148,13 @@
 .excel-preview-scroll {
   overflow: auto;
   min-width: 0;
+  flex-shrink: 0;
 }
 .excel-preview-scroll table {
   min-width: 100%;
   border-collapse: separate;
-  border-spacing: 0 12px;
+  border-spacing: 0 16px;
+  margin-block: -16px;
 }
 .excel-preview-scroll th,
 .excel-preview-scroll td {
@@ -184,6 +186,8 @@
   border-radius: 12px;
   color: var(--fa-action-primary);
   background: var(--fa-action-subtle);
+  font-size: 14px;
+  line-height: 20px;
 }
 .excel-actions {
   display: flex;

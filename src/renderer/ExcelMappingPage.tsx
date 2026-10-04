@@ -1,4 +1,12 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from 'react';
 import type { FlowRecord } from '../shared/types';
 import {
   ExcelMappingError,
@@ -11,6 +19,8 @@ import { referenceChoices } from './value-references';
 import ValueField from './ValueField';
 import { columnName } from './resource-form-model';
 import type { ScriptNavigation } from './ScriptEditorPage';
+
+const incompleteInputMessage = '请先修正未完成的输入配置';
 
 export default function ExcelMappingPage({
   record,
@@ -28,12 +38,21 @@ export default function ExcelMappingPage({
   const [draft, setDraft] = useState(() => structuredClone(record));
   const node = flatten(draft.flow.steps).find((step) => step.id === nodeId) as MappedExcel;
   const [error, setError] = useState(''),
-    [saving, setSaving] = useState(false);
+    [saving, setSaving] = useState(false),
+    [selectingDirectory, setSelectingDirectory] = useState(false);
+  const busy = saving || selectingDirectory;
   const issueId = useId();
   const [issue, setIssue] = useState<{ field: string; mapping?: number }>();
   const focusRequest = useRef<string | undefined>(undefined);
   const [focusRevision, setFocusRevision] = useState(0);
   const [preview, setPreview] = useState<ReturnType<typeof mappingPreview>>();
+  const [incompleteSource, setIncompleteSource] = useState(false);
+  const sourceInputChanged = useCallback((_label: string, incomplete: boolean) => {
+    setIncompleteSource(incomplete);
+    if (incomplete) setPreview(undefined);
+    else if (!root.current?.querySelector('[data-value-invalid]'))
+      setError((current) => (current === incompleteInputMessage ? '' : current));
+  }, []);
   const [pending, setPending] = useState<{ next?: () => void }>();
   const root = useRef<HTMLElement>(null),
     dialog = useRef<HTMLDialogElement>(null);
@@ -88,7 +107,10 @@ export default function ExcelMappingPage({
         element.querySelector<HTMLElement>('input,select,button') ??
         element);
     target.focus({ preventScroll: true });
-    target.scrollIntoView({ block: 'nearest' });
+    const scrollTarget = element.hasAttribute('data-excel-preview')
+      ? (element.closest('.excel-data-preview') ?? target)
+      : target;
+    scrollTarget.scrollIntoView({ block: 'nearest' });
     focusRequest.current = undefined;
   }, [focusRevision, pending, draft]);
   const report = (reason: unknown) => {
@@ -128,7 +150,7 @@ export default function ExcelMappingPage({
       const details = invalid?.closest('details');
       if (details) details.open = true;
       invalid?.querySelector<HTMLElement>('textarea,input')?.focus();
-      throw new Error('请先修正未完成的输入配置');
+      throw new Error(incompleteInputMessage);
     }
     return mappingPreview(node, draft.flow.parameters);
   };
@@ -170,7 +192,9 @@ export default function ExcelMappingPage({
       return;
     }
     choosing.current = true;
-    setSaving(true);
+    setSelectingDirectory(true);
+    setError('');
+    setIssue(undefined);
     const binding = node.binding;
     try {
       const path = await window.flowark.request('file.choose', { kind: 'directory' });
@@ -183,7 +207,7 @@ export default function ExcelMappingPage({
       if (alive.current) report(error);
     } finally {
       choosing.current = false;
-      if (alive.current) setSaving(false);
+      if (alive.current) setSelectingDirectory(false);
     }
   };
   const rows = preview?.available
@@ -205,7 +229,7 @@ export default function ExcelMappingPage({
           {error}
         </p>
       )}
-      <fieldset disabled={saving}>
+      <fieldset disabled={busy}>
         <div className="excel-workbook-fields">
           <div className="excel-workbook-name" {...fieldProps('name')} tabIndex={-1}>
             <ValueField
@@ -350,6 +374,8 @@ export default function ExcelMappingPage({
                     setPreview(validate());
                     setError('');
                     setIssue(undefined);
+                    focusRequest.current = '[data-excel-preview]';
+                    setFocusRevision((revision) => revision + 1);
                   } catch (error) {
                     report(error);
                   }
@@ -368,6 +394,7 @@ export default function ExcelMappingPage({
                   choices={choices}
                   defaultValue={[]}
                   change={(rows) => change({ ...node, rows })}
+                  onIncompleteChange={sourceInputChanged}
                 />
                 {fieldError('rows')}
               </div>
@@ -384,7 +411,9 @@ export default function ExcelMappingPage({
               <p className="path-text">
                 {draft.bindings.files[node.binding] || '尚未绑定；运行前需要选择输出目录'}
               </p>
-              <button onClick={choose}>选择输出目录</button>
+              <button onClick={choose}>
+                {selectingDirectory ? '正在选择目录…' : '选择输出目录'}
+              </button>
               <label className="check-label">
                 <input
                   type="checkbox"
@@ -396,12 +425,15 @@ export default function ExcelMappingPage({
             </details>
           </section>
           <section className="ai-task-card excel-data-preview" aria-label="写入预览">
-            <h2>写入预览{preview?.available ? ` · ${rows.length} 行` : ''}</h2>
+            <h2
+              data-excel-preview
+              tabIndex={-1}
+              aria-describedby={`${issueId}-preview-description`}
+            >
+              写入预览{preview?.available ? ` · ${rows.length} 行` : ''}
+            </h2>
             {preview?.available ? (
               <>
-                <p>
-                  已核对全部 {preview.count} 条记录。以下显示前 {rows.length} 条，未写入文件。
-                </p>
                 <div
                   className="excel-preview-scroll"
                   tabIndex={0}
@@ -412,7 +444,7 @@ export default function ExcelMappingPage({
                     <thead>
                       <tr>
                         {columns.map((item) => (
-                          <th key={item.column}>
+                          <th key={item.column} scope="col">
                             {item.column}
                             {node.includeHeaders && ` · ${item.header}`}
                           </th>
@@ -437,18 +469,25 @@ export default function ExcelMappingPage({
                   </table>
                 </div>
                 {!rows.length && <p>来源记录为空；当前预览没有数据行。</p>}
-                <p className="note">未映射的列保留空白；预览仅展示选定列。</p>
               </>
             ) : (
-              <p>
-                {preview && !preview.available
-                  ? preview.reason
-                  : '点击「预览 3 行」核对来源及映射。修改配置后需要重新预览。'}
+              <p id={`${issueId}-preview-description`} role="status">
+                {incompleteSource
+                  ? '来源记录输入尚未完成。修正后重新预览。'
+                  : preview && !preview.available
+                    ? preview.reason
+                    : '点击「预览 3 行」核对来源及映射。修改配置后需要重新预览。'}
               </p>
             )}
             <div className="excel-mapping-note">
               空值策略：保留空单元格。类型冲突时阻止保存并定位字段；公式和宏不在本次能力范围。
             </div>
+            {preview?.available && (
+              <p className="note" id={`${issueId}-preview-description`}>
+                已核对全部 {preview.count} 条记录。预览显示前 {rows.length} 条，未写入文件。
+                未映射的列保留空白，预览仅展示选定列。
+              </p>
+            )}
           </section>
         </div>
         <footer className="excel-actions">
@@ -472,7 +511,7 @@ export default function ExcelMappingPage({
         <p id={`${issueId}-leave-description`}>保存后离开，或放弃本次映射编辑。</p>
         <div>
           <button className="primary" disabled={saving} onClick={() => void persist(pending?.next)}>
-            保存并离开
+            {saving ? '正在保存…' : '保存并离开'}
           </button>
           <button disabled={saving} onClick={() => close(pending?.next)}>
             放弃修改

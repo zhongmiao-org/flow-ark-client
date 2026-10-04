@@ -11,6 +11,7 @@ type Props = {
   defaultValue?: Json;
   compactReference?: boolean;
   children?: ReactNode;
+  onIncompleteChange?: (label: string, incomplete: boolean) => void;
 };
 export default function ValueField({
   label,
@@ -20,6 +21,7 @@ export default function ValueField({
   defaultValue = '',
   compactReference = false,
   children,
+  onIncompleteChange,
 }: Props) {
   const current = referenceOf(value);
   const [open, setOpen] = useState(false);
@@ -65,7 +67,14 @@ export default function ValueField({
           </button>
         </div>
       ) : (
-        (children ?? <LiteralValue label={label} value={value} change={change} />)
+        (children ?? (
+          <LiteralValue
+            label={label}
+            value={value}
+            change={change}
+            onIncompleteChange={onIncompleteChange}
+          />
+        ))
       )}
       {choices && !(compactReference && current !== undefined) && (
         <button
