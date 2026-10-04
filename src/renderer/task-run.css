@@ -528,10 +528,14 @@
   margin-top: 12px;
 }
 @container (max-width: 950px) {
-  .task-run-live {
+  .task-run-live,
+  .task-repair-columns,
+  .task-restart-columns {
     grid-template-columns: minmax(0, 1fr);
   }
-  .task-run-live > .ai-task-card {
+  .task-run-live > .ai-task-card,
+  .task-repair-columns > .ai-task-card,
+  .task-restart-columns > .ai-task-card {
     min-height: auto;
   }
 }

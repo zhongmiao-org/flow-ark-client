@@ -48,6 +48,10 @@ export default function TaskRepairPage({
   const ownPick = useRef('');
   const heading = useRef<HTMLHeadingElement>(null);
   const pickConfirm = useRef<HTMLButtonElement>(null);
+  const proposalHeading = useRef<HTMLHeadingElement>(null);
+  const proposalOrigin = useRef<HTMLButtonElement | null>(null);
+  const operationError = useRef<HTMLParagraphElement>(null);
+  const generationError = useRef<HTMLParagraphElement>(null);
   const observation = taskRunPresentation(runDetail);
   const node = observation.node;
   const stepName = typeof node?.name === 'string' ? node.name : node?.id;
@@ -69,7 +73,8 @@ export default function TaskRepairPage({
   ]);
   const priorReviewed = applied && priorReviewKey === priorKey;
   const setPriorReviewed = (checked: boolean) => setPriorReviewKey(checked ? priorKey : '');
-  const canAdopt = ours && proposal?.result.kind === 'plan' && !task?.conflict;
+  const selectionChanged = !!selection && !!task && task.task.revision !== selection.revision;
+  const canAdopt = ours && proposal?.result.kind === 'plan' && !task?.conflict && !selectionChanged;
   const current = (epoch: number) => location.current.active && location.current.epoch === epoch;
   useEffect(() => {
     const epoch = ++location.current.epoch;
@@ -138,6 +143,23 @@ export default function TaskRepairPage({
   useLayoutEffect(() => {
     if (active && phase === 'pick' && picked) pickConfirm.current?.focus({ preventScroll: true });
   }, [active, phase, picked]);
+  useLayoutEffect(() => {
+    if (!active || phase !== 'review') {
+      proposalOrigin.current = null;
+      return;
+    }
+    if (busy || generating || !proposalOrigin.current) return;
+    const followOperation =
+      document.activeElement === proposalOrigin.current || document.activeElement === document.body;
+    if (ours) {
+      if (followOperation) proposalHeading.current?.focus();
+      proposalOrigin.current = null;
+    } else if (error || task?.task.error || task?.task.status === 'cancelled') {
+      if (followOperation && (error || task?.task.error))
+        (error ? operationError.current : generationError.current)?.focus();
+      proposalOrigin.current = null;
+    }
+  }, [active, phase, busy, generating, ours, error, task?.task.error, task?.task.status]);
   async function act(fn: (epoch: number) => Promise<void>) {
     if (lock.current) return;
     lock.current = true;
@@ -183,6 +205,27 @@ export default function TaskRepairPage({
     setPriorReviewed(false);
     setPhase('restart');
   }
+  async function generateRepair(epoch: number) {
+    if (!preview || !selection || !reviewed || selectionChanged) return;
+    setReviewed(false);
+    const next = await api('task.repair.generate', {
+      ...selection,
+      token: preview.token,
+      provider,
+      model,
+      reviewed: true,
+    });
+    if (current(epoch)) setTask(next);
+  }
+  function discardSelection() {
+    const previous = ownPick.current;
+    ownPick.current = '';
+    setPicked(undefined);
+    setPreview(undefined);
+    setSelection(undefined);
+    setReviewed(false);
+    if (previous) void api('browser.embedded.pick.cancel', { requestId: previous }).catch(() => {});
+  }
   const title =
     phase === 'pick'
       ? '重新选择要修复的网页目标'
@@ -209,13 +252,19 @@ export default function TaskRepairPage({
           </div>
         </div>
         {error && (
-          <p className="alert error" role="alert">
+          <p className="alert error" role="alert" tabIndex={-1} ref={operationError}>
             {error}
           </p>
         )}
         {task?.task.error && (
-          <p className="alert error" role="alert">
+          <p className="alert error" role="alert" tabIndex={-1} ref={generationError}>
             {task.task.error}
+          </p>
+        )}
+        {phase === 'review' && selectionChanged && (
+          <p className="task-run-note" role="status">
+            任务已更新到修订 {task.task.revision}，这次目标核对基于修订 {selection.revision}。
+            请重新选择目标并核对修复，当前记录不会覆盖新方案。
           </p>
         )}
         {phase === 'pick' ? (
@@ -277,16 +326,7 @@ export default function TaskRepairPage({
                   disabled={busy || generating}
                   onStart={() => {
                     setError('');
-                    const previous = ownPick.current;
-                    ownPick.current = '';
-                    setPicked(undefined);
-                    setPreview(undefined);
-                    setSelection(undefined);
-                    setReviewed(false);
-                    if (previous)
-                      void api('browser.embedded.pick.cancel', { requestId: previous }).catch(
-                        () => {},
-                      );
+                    discardSelection();
                   }}
                   onSelect={(target, requestId) => {
                     if (!location.current.active || location.current.phase !== 'pick') {
@@ -395,20 +435,11 @@ export default function TaskRepairPage({
                   </label>
                   <button
                     className="primary"
-                    disabled={busy || !reviewed || !model.trim() || !preview}
-                    onClick={() =>
-                      void act(async (epoch) => {
-                        setReviewed(false);
-                        const next = await api('task.repair.generate', {
-                          ...selection,
-                          token: preview!.token,
-                          provider,
-                          model,
-                          reviewed: true,
-                        });
-                        if (current(epoch)) setTask(next);
-                      })
-                    }
+                    disabled={busy || !reviewed || !model.trim() || !preview || selectionChanged}
+                    onClick={(event) => {
+                      proposalOrigin.current = event.currentTarget;
+                      void act(generateRepair);
+                    }}
                   >
                     让 AI 提议修复
                   </button>
@@ -430,10 +461,10 @@ export default function TaskRepairPage({
                 </>
               )}
               <button
+                className={selectionChanged ? 'primary' : undefined}
                 disabled={busy || generating}
                 onClick={() => {
-                  setReviewed(false);
-                  setPreview(undefined);
+                  discardSelection();
                   setPhase('pick');
                   browser(true);
                 }}
@@ -442,7 +473,9 @@ export default function TaskRepairPage({
               </button>
             </section>
             <section className="ai-task-card">
-              <h2>{canAdopt ? '只改变目标引用' : '待核对的目标变化'}</h2>
+              <h2 ref={proposalHeading} tabIndex={-1}>
+                {canAdopt ? '只改变目标引用' : '待核对的目标变化'}
+              </h2>
               <TaskRepairTarget
                 title="原目标"
                 label={preview?.source.nodeName || stepName}
