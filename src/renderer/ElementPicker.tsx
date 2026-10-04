@@ -22,11 +22,15 @@ export default function ElementPicker({
   pickLabel,
   controls,
   purpose = 'step',
+  onCandidateChange,
+  sourceKey,
 }: {
   selector: string;
   framePath: string[];
   onSelect: (target: ElementTarget, requestId: string) => void | Promise<void>;
   purpose?: 'step' | 'task';
+  onCandidateChange?: (target: ElementTarget | undefined) => void;
+  sourceKey?: string;
   onInspect: (target: ElementTarget) => void;
   onStart?: () => void;
   onAdjust?: () => void;
@@ -52,6 +56,10 @@ export default function ElementPicker({
   const [verified, setVerified] = useState<ElementTarget>();
   type Candidate = { target: ElementTarget; requestId: string; focused?: boolean };
   const [candidate, setCandidate] = useState<Candidate>();
+  useEffect(() => {
+    onCandidateChange?.(candidate?.target);
+    return () => onCandidateChange?.(undefined);
+  }, [candidate?.target, onCandidateChange]);
   const pending = useRef<Candidate | undefined>(undefined);
   const [viewingRun, setViewingRun] = useState(false);
   const [runError, setRunError] = useState('');
@@ -86,6 +94,7 @@ export default function ElementPicker({
     alive = useRef(true);
   const select = useRef(onSelect),
     inspect = useRef(onInspect);
+  const previousSource = useRef(sourceKey);
   select.current = onSelect;
   inspect.current = onInspect;
   useEffect(() => {
@@ -104,7 +113,13 @@ export default function ElementPicker({
     };
   }, []);
   useEffect(() => {
-    setMessage('');
+    const sourceChanged = previousSource.current !== sourceKey;
+    previousSource.current = sourceKey;
+    setMessage(
+      sourceChanged && (pending.current || request.current)
+        ? '网页已变化，已取消待确认目标，请重新选取'
+        : '',
+    );
     setError('');
     setVerified(undefined);
     setValidating(false);
@@ -118,7 +133,7 @@ export default function ElementPicker({
       setPicking(false);
       void api('browser.embedded.pick.cancel', { requestId: id }).catch(() => {});
     }
-  }, [selector, JSON.stringify(framePath), active]);
+  }, [selector, JSON.stringify(framePath), active, sourceKey]);
   const open = async () => {
     window.dispatchEvent(new Event('flowark:open-browser'));
     await api('browser.embedded.enable');
@@ -324,6 +339,7 @@ export default function ElementPicker({
     }
   };
   const shownTarget = candidate?.target ?? verified;
+  const taskConfirmation = purpose === 'task' && !!candidate && !error;
   // Only classify reasons emitted by the existing host and embedded browser.
   const reason = error.replace(/^Error: /, '').split('\n')[0];
   const busy = ['请先暂停当前任务，再选取或验证元素', '网页正在执行操作，请稍后选取'].includes(
@@ -403,7 +419,7 @@ export default function ElementPicker({
       <div className="element-picker-actions">
         <button
           ref={pickButton}
-          className="primary"
+          className={purpose === 'task' ? undefined : 'primary'}
           disabled={
             !active || disabled || picking || validating || applying || focusing || viewingRun
           }
@@ -431,16 +447,19 @@ export default function ElementPicker({
       </div>
       {feedback && (
         <section
-          className={`element-picker-feedback is-${feedback.tone}`}
+          className={`element-picker-feedback is-${feedback.tone}${taskConfirmation ? ' is-task-confirmation' : ''}`}
           role={error ? 'alert' : 'status'}
           aria-label={feedback.title}
           tabIndex={-1}
         >
-          <span className="element-picker-badge">{feedback.badge}</span>
-          <h3>{feedback.title}</h3>
+          {!taskConfirmation && <span className="element-picker-badge">{feedback.badge}</span>}
+          {!taskConfirmation && <h3>{feedback.title}</h3>}
           <p>{feedback.detail}</p>
+          {taskConfirmation && candidate?.target.structural && (
+            <p>使用结构定位，页面布局变化后请重新选取。</p>
+          )}
           {'next' in feedback && <p>{feedback.next}</p>}
-          {shownTarget && !error && !picking && !validating && (
+          {shownTarget && !error && !picking && !validating && !taskConfirmation && (
             <div className="element-picker-target">
               <span>目标</span>
               <strong>{shownTarget.label || shownTarget.tag}</strong>

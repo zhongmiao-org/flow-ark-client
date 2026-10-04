@@ -379,7 +379,7 @@ export default function BrowserSidebar({
       });
       if (focusCurrent.current !== selected) return;
       if (result.requestId !== selected.requestId || !(await selected.apply(result.target)))
-        throw new Error('来源步骤已变化，请返回后重新选取');
+        throw new Error('来源已变化，请返回后重新选取');
       browserFocus!.close(selected.requestId);
     } catch (reason) {
       if (focusCurrent.current === selected) {

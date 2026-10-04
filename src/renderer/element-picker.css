@@ -92,3 +92,16 @@
 .element-picker .element-picker-feedback p.field-error {
   color: var(--fa-status-error);
 }
+
+.element-picker-feedback.is-task-confirmation {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.is-task-confirmation .element-picker-apply-actions button {
+  width: auto;
+  min-width: 144px;
+}
+.is-task-confirmation .element-picker-apply-actions .primary {
+  min-width: 184px;
+}

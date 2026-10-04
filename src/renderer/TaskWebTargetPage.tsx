@@ -4,6 +4,7 @@ import { sameWebPage, type TaskWebPreview } from '../shared/task-web-target';
 import DesktopTaskPlan from './DesktopTaskPlan';
 import TaskTargetConnections from './TaskTargetConnections';
 import ElementPicker from './ElementPicker';
+import type { ElementTarget } from '../shared/element-picker';
 import {
   DesktopWindowList,
   DesktopWindowCapabilities,
@@ -43,6 +44,7 @@ export default function TaskWebTargetPage({
   openTools: () => void;
 }) {
   const [preview, setPreview] = useState<TaskWebPreview>({ ready: false });
+  const [elementCandidate, setElementCandidate] = useState<ElementTarget>();
   const [tab, setTab] = useState<'web' | 'window' | 'tools'>(
     initialTab ?? (task.toolTargets?.length ? 'tools' : 'web'),
   );
@@ -182,6 +184,8 @@ export default function TaskWebTargetPage({
     }
   };
   const current = preview.page;
+  const pageSource = useRef('');
+  if (current) pageSource.current = JSON.stringify(current);
   const savedCurrent = current && task.webTarget && sameWebPage(current, task.webTarget.page);
   const webReady = preview.ready && !!preview.page && !!preview.token;
   const openUrl = () => {
@@ -420,24 +424,27 @@ export default function TaskWebTargetPage({
                 当前将操作的对象
               </h2>
               <div className="task-web-object">
-                <h2>{current?.title || '等待选择网页'}</h2>
+                <h2>
+                  {current?.title || '等待选择网页'}
+                  {elementCandidate && ` · ${elementCandidate.label || elementCandidate.tag}`}
+                </h2>
                 <p>本机内置浏览器 / 同一受控会话</p>
+                {elementCandidate && (
+                  <p>
+                    待确认 · {/^h[1-6]$/.test(elementCandidate.tag) ? '页面标题' : '网页元素'} ·{' '}
+                    {elementCandidate.framePath.length
+                      ? `${elementCandidate.framePath.length} 层框架`
+                      : '主页面'}
+                  </p>
+                )}
                 <p className="task-web-url">{current?.url}</p>
               </div>
-              <ElementPicker
-                purpose="task"
-                active={active && tab === 'web'}
-                disabled={busy || !webReady}
-                selector={task.webTarget?.element?.target.selector ?? ''}
-                framePath={task.webTarget?.element?.target.framePath ?? []}
-                pickLabel={task.webTarget?.element ? '重新选择页面元素' : '选择页面元素'}
-                confirmBeforeApply
-                allowInspect={false}
-                onInspect={() => {}}
-                onSelect={(_, requestId) => selectElement(requestId)}
-              />
               <h2>{webReady ? '本次可用能力' : '网页就绪后可用'}</h2>
-              {['读取页面文字', '定位页面元素', '新建本地输出文件'].map((label) => (
+              {[
+                elementCandidate ? '读取已选元素文字' : '读取页面文字',
+                '定位页面元素',
+                '新建本地输出文件',
+              ].map((label) => (
                 <label className="ai-task-checkbox" key={label}>
                   <input type="checkbox" checked={webReady} disabled />
                   {label}
@@ -464,8 +471,24 @@ export default function TaskWebTargetPage({
                     : preview.reason || '尚未取得可确认的网页，请重新检查。'}
                 </p>
               )}
+              <ElementPicker
+                purpose="task"
+                active={active && tab === 'web'}
+                disabled={busy || !webReady}
+                selector={task.webTarget?.element?.target.selector ?? ''}
+                framePath={task.webTarget?.element?.target.framePath ?? []}
+                pickLabel={
+                  task.webTarget?.element || elementCandidate ? '重新选择页面元素' : '选择页面元素'
+                }
+                confirmBeforeApply
+                allowInspect={false}
+                onInspect={() => {}}
+                onSelect={(_, requestId) => selectElement(requestId)}
+                onCandidateChange={setElementCandidate}
+                sourceKey={pageSource.current}
+              />
               <div className="ai-task-actions task-web-selection-actions">
-                {tab === 'web' ? (
+                {!elementCandidate && (
                   <button
                     className="primary"
                     disabled={busy || !webReady}
@@ -483,11 +506,7 @@ export default function TaskWebTargetPage({
                       ? '正在确认…'
                       : task.webTarget?.element
                         ? '改用整个网页'
-                        : '使用这个目标'}
-                  </button>
-                ) : (
-                  <button className="primary" disabled={busy} onClick={() => setTab('web')}>
-                    返回网页选择
+                        : '使用整个网页'}
                   </button>
                 )}
                 <button
