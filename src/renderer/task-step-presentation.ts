@@ -157,7 +157,19 @@ export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext
           ? ` · ${step.framePath.length} 层内嵌页面`
           : '';
       if (step.operation === 'screenshot') return `截取当前页面${frame}`;
-      const target = `${page} · ${step.selector === 'title' ? '页面标题' : '目标：' + concise(step.selector || '未设置')}${frame}`;
+      const element = context.webTarget?.element?.target;
+      const stepFrames = 'framePath' in step ? step.framePath : [];
+      const selectedElement =
+        element &&
+        step.selector === element.selector &&
+        stepFrames.length === element.framePath.length &&
+        stepFrames.every((selector, index) => selector === element.framePath[index]);
+      const targetName = selectedElement
+        ? `已选元素「${concise(element.label || element.tag)}」`
+        : step.selector === 'title'
+          ? '页面标题'
+          : '目标：' + concise(step.selector || '未设置');
+      const target = `${page} · ${targetName}${frame}`;
       if (step.operation === 'read' || step.operation === 'inputValue') return `${target} · 仅读取`;
       if (step.operation === 'wait') return `${target} · 等待元素就绪`;
       if (step.operation === 'click') return `${target} · 点击此元素`;

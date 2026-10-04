@@ -1444,7 +1444,7 @@
 .ai-task-columns.ai-task-plan-review > .ai-task-card {
   min-height: 730px;
 }
-@container (max-width: 900px) {
+@container (max-width: 950px) {
   .ai-task-columns.ai-task-plan-review {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1511,7 +1511,7 @@
 .ai-task-readable-plan .task-plan-tabs > button[aria-pressed='true'] {
   color: var(--fa-action-primary);
 }
-.ai-task-readable-plan .task-plan-tabs > button:last-child {
+.ai-task-readable-plan .task-plan-tabs > .task-plan-more {
   margin-left: auto;
 }
 .ai-task-readable-plan .task-plan-conversation article h2 {

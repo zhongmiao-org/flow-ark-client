@@ -1623,7 +1623,7 @@ export default function AITaskWorkspace(props: Props) {
             原流程或绑定已变化，请重新生成方案后再采纳。
           </p>
         )}
-        <div className="ai-task-actions">
+        <div className={`ai-task-actions${planListView ? ' task-plan-confirm' : ''}`}>
           <button
             className="primary"
             disabled={busy || dirty || stale || detail.conflict}
@@ -2680,17 +2680,20 @@ export default function AITaskWorkspace(props: Props) {
                               流程图
                             </button>
                             {!planListView && trialAction}
-                            <button
-                              ref={moreButton}
-                              aria-label="打开任务更多操作"
-                              aria-describedby={moreUnavailable ? 'task-more-reason' : undefined}
-                              disabled={!!moreUnavailable}
-                              onClick={() => void openPlanMore()}
-                            >
-                              更多 ···
-                            </button>
+                            {!detail.proposal && (
+                              <button
+                                className="task-plan-more"
+                                ref={moreButton}
+                                aria-label="打开任务更多操作"
+                                aria-describedby={moreUnavailable ? 'task-more-reason' : undefined}
+                                disabled={!!moreUnavailable}
+                                onClick={() => void openPlanMore()}
+                              >
+                                更多 ···
+                              </button>
+                            )}
                           </div>
-                          {moreUnavailable && !viewingPreserved && (
+                          {moreUnavailable && !detail.proposal && !viewingPreserved && (
                             <p id="task-more-reason" className="ai-task-note">
                               {moreUnavailable}
                             </p>
