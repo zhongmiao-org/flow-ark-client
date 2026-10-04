@@ -237,7 +237,14 @@ export class EmbeddedPage {
       x += offset.x;
       y += offset.y;
     }
-    return { x, y };
+    const viewport = await this.evaluate(
+      scope.ancestors[0]?.scope ?? scope,
+      '({x:visualViewport.offsetLeft,y:visualViewport.offsetTop})',
+    );
+    // CDP pointer input is in CSS pixels relative to the visual viewport.
+    // Rectangles above use the layout viewport; native and visual zoom do not
+    // require another multiplication, but observation panning adds this offset.
+    return { x: x - viewport.x, y: y - viewport.y };
   }
   private async click(scope: Scope, objectId: string, remaining: () => number) {
     await this.visible(scope, objectId, remaining, true);
