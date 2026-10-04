@@ -11,6 +11,18 @@ const highlight = {
 };
 export class EmbeddedPicker {
   private state?: PickerState;
+  private selectedIdentity?: { state: PickerState; point: PointIdentity };
+  identity(requestId: string) {
+    const selected = this.selectedIdentity;
+    if (
+      !selected ||
+      selected.state !== this.state ||
+      this.state.phase !== 'selected' ||
+      this.state.requestId !== requestId
+    )
+      throw new Error('没有此请求的已选网页目标，请重新选取');
+    return { ...selected.point };
+  }
   private timer?: NodeJS.Timeout;
   private queue: Promise<void> = Promise.resolve();
   private selecting?: PickerState;
@@ -116,6 +128,7 @@ export class EmbeddedPicker {
   }
   async cancel(requestId?: string) {
     if (requestId && this.state?.requestId !== requestId) return true;
+    this.selectedIdentity = undefined;
     const cancelled: PickerState = { requestId: this.state?.requestId ?? '', phase: 'cancelled' };
     this.state = cancelled;
     this.pointAbort?.();
@@ -128,6 +141,7 @@ export class EmbeddedPicker {
     return true;
   }
   async start(requestId: string) {
+    this.selectedIdentity = undefined;
     this.pointAbort?.();
     clearTimeout(this.timer);
     const state: PickerState = { requestId, phase: 'picking' };
@@ -333,12 +347,14 @@ export class EmbeddedPicker {
       if (this.state !== pending) return;
       await wait(() => this.validate(target.selector, path, { backendNodeId, session }));
       await hit.verify?.();
-      if (this.state === pending)
+      if (this.state === pending) {
         this.state = {
           requestId: state.requestId,
           phase: 'selected',
           target: { ...target, framePath: path },
         };
+        this.selectedIdentity = { state: this.state, point: { backendNodeId, session } };
+      }
     } catch (e) {
       if (this.state === pending) {
         await this.serialize(() => this.clear());
@@ -372,6 +388,7 @@ export class EmbeddedPicker {
     }
   }
   dispose() {
+    this.selectedIdentity = undefined;
     clearTimeout(this.timer);
     this.pointAbort?.();
     if (this.state) this.state = { requestId: this.state.requestId, phase: 'cancelled' };

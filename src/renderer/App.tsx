@@ -79,6 +79,7 @@ import ScriptEditorPage, { type ScriptNavigation } from './ScriptEditorPage';
 import ExcelMappingPage from './ExcelMappingPage';
 import FlowOutlineWorkspace, { type OutlineLocation } from './FlowOutlineWorkspace';
 import BrowserSidebar from './BrowserSidebar';
+import { BrowserFocusProvider } from './BrowserFocusContext';
 import StorageFaultNotice from './StorageFaultNotice';
 import Schedules from './Schedules';
 import BrowserNodeConfiguration from './BrowserNodeConfiguration';
@@ -126,6 +127,13 @@ function format(t: string) {
   });
 }
 export default function App() {
+  return (
+    <BrowserFocusProvider>
+      <WorkspaceApp />
+    </BrowserFocusProvider>
+  );
+}
+function WorkspaceApp() {
   const [exportSource, setExportSource] = useState<ExportSource>();
   const [settingsFlowId, setSettingsFlowId] = useState<string>();
   const [toolsOrigin, setToolsOrigin] = useState<'tasks' | 'settings' | 'runs'>('tasks');

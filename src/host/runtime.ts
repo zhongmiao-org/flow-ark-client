@@ -1589,6 +1589,7 @@ export class Runtime {
         return this.sessions.embeddedVisibility(args.visible);
       case 'browser.embedded.pick.start':
       case 'browser.embedded.pick.confirm':
+      case 'browser.embedded.pick.focus':
       case 'browser.embedded.observation':
       case 'browser.embedded.pan':
       case 'browser.embedded.pick.validate': {

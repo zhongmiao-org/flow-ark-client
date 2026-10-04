@@ -23,6 +23,11 @@ import { confirmWebContentsClosed } from './native-webcontents-close';
 import type { EmbeddedReview } from '../shared/run-review';
 import { pageIdentity, sameWebPage, type WebPageIdentity } from '../shared/task-web-target';
 import { observationPan, type ObservationPan } from '../shared/browser-observation';
+import type { FocusedTarget } from '../shared/browser-observation';
+import type { PointIdentity } from '../adapters/embedded-point-target';
+import type { ElementTarget } from '../shared/element-picker';
+
+type FocusCandidate = { selection: RepairSelection; target: ElementTarget; point: PointIdentity };
 
 type Bounds = { x: number; y: number; width: number; height: number };
 type Operation = { stop: (reason?: Error) => void; pickRequestId?: string };
@@ -40,6 +45,7 @@ type Resource = {
   documentRevision: number;
   pickDocument?: { requestId: string; revision: number };
   confirmedTarget?: RepairSelection;
+  focusCandidate?: FocusCandidate;
   token?: string;
   phase: 'starting' | 'ready' | 'closing' | 'unknown' | 'closed';
   view?: WebContentsView;
@@ -364,6 +370,22 @@ export class EmbeddedBrowser {
       const scale = mode === 'readable' ? 1 / resource.contents!.getZoomFactor() : 1;
       const percentage = await resource.page!.observationScale(scale);
       this.assertResource(resource);
+      if (resource.observationRevision !== revision) return;
+      const candidate = resource.focusCandidate;
+      if (mode === 'readable' && candidate) {
+        try {
+          await this.inspectFocus(resource, candidate, true);
+        } catch (error) {
+          this.assertResource(resource);
+          if (resource.observationRevision !== revision) return;
+          // A stale selection does not invalidate the native display scale or
+          // block an unrelated run. Confirmation still requires this candidate.
+          if (resource.focusCandidate === candidate) {
+            resource.focusCandidate = undefined;
+            resource.observationFeedback = errorText(error);
+          }
+        }
+      }
       if (resource.observationRevision === revision) resource.observationPercentage = percentage;
     })()
       .catch((error) => {
@@ -454,6 +476,103 @@ export class EmbeddedBrowser {
     if (resource.operation !== operation) return;
     resource.operation = undefined;
     if (resource.phase === 'ready' && resource.pendingViewport) this.layout();
+  }
+  private async inspectFocus(resource: Resource, candidate: FocusCandidate, reveal = false) {
+    const check = () => {
+      this.assertResource(resource);
+      const selection = candidate.selection;
+      if (
+        resource.focusCandidate !== candidate ||
+        resource.id !== selection.resourceId ||
+        resource.documentRevision !== selection.documentRevision ||
+        resource.contents!.isLoading() ||
+        resource.contents!.getURL() !== selection.url ||
+        resource.contents!.getTitle() !== selection.title
+      )
+        throw new Error('网页或聚焦目标已变化，请重新选取');
+    };
+    check();
+    const target = await resource.page!.inspectTarget(
+      candidate.target.selector,
+      candidate.target.framePath,
+      false,
+      candidate.point,
+      reveal,
+    );
+    check();
+    target.structural ||= candidate.target.structural;
+    if (canonical(target) !== canonical(candidate.target))
+      throw new Error('所选元素内容或结构已变化，请重新选取');
+    return target;
+  }
+  private async focus(
+    requestId: string,
+    action: 'capture' | 'show' | 'confirm',
+  ): Promise<FocusedTarget> {
+    this.assertAvailable();
+    const resource = this.resource;
+    if (!resource) throw new Error('请先打开网页');
+    this.assertResource(resource);
+    if (resource.operation || resource.capture) throw new Error('网页正在执行操作，请稍后选取');
+    if (action === 'capture') {
+      const selected = resource.page!.picker.status(requestId);
+      const point = resource.page!.picker.identity(requestId);
+      const selection = await this.captureSelection(requestId);
+      if (resource.page!.picker.status(requestId) !== selected || !selected.target)
+        throw new Error('选取已取消或改变，请重新选取');
+      resource.focusCandidate = { selection, target: selected.target, point };
+    }
+    const candidate = resource.focusCandidate;
+    if (!candidate || candidate.selection.requestId !== requestId)
+      throw new Error('聚焦引用已失效，请重新选取');
+    if (resource.operation) throw new Error('网页正在执行操作，请稍后选取');
+    let stop!: (reason?: Error) => void;
+    let stoppedReason: Error | undefined;
+    const stopped = new Promise<never>((_, reject) => {
+      stop = (reason) => {
+        stoppedReason = reason ?? new Error('聚焦已取消');
+        reject(stoppedReason);
+      };
+    });
+    const operation: Operation = { stop, pickRequestId: requestId };
+    resource.operation = operation;
+    try {
+      return await Promise.race([
+        (async () => {
+          await resource.observation;
+          if (stoppedReason) throw stoppedReason;
+          this.assertOperation(resource, operation);
+          if (!resource.presented) throw new Error('请先展开内置网页面板');
+          await this.inspectFocus(resource, candidate);
+          if (action === 'show') {
+            resource.observationMode = 'readable';
+            resource.observationPercentage = undefined;
+            resource.observationError = undefined;
+            resource.observationFeedback = undefined;
+            try {
+              resource.observationPercentage = await resource.page!.observationScale(
+                1 / resource.contents!.getZoomFactor(),
+              );
+            } catch (error) {
+              resource.observationError = errorText(error);
+              throw error;
+            }
+          }
+          this.assertOperation(resource, operation);
+          const target = await this.inspectFocus(resource, candidate, action === 'show');
+          return {
+            requestId,
+            target,
+            page: { title: candidate.selection.title, url: candidate.selection.url },
+            percentage: resource.observationPercentage,
+          };
+        })().finally(() => this.finishOperation(resource, operation)),
+        stopped,
+      ]);
+    } catch (error) {
+      if (resource.focusCandidate === candidate) resource.focusCandidate = undefined;
+      throw error;
+    }
   }
   private reconcilePresentation() {
     const presented =
@@ -884,6 +1003,7 @@ export class EmbeddedBrowser {
         if (!this.permitted(resource.contents!.getURL())) throw new Error('请先打开测试网页');
         const page = resource.page!;
         resource.confirmedTarget = undefined;
+        resource.focusCandidate = undefined;
         let stop!: (reason?: Error) => void;
         let stoppedReason: Error | undefined;
         const stopped = new Promise<never>((_, reject) => {
@@ -940,6 +1060,8 @@ export class EmbeddedBrowser {
           throw new Error('选取已取消或改变，请重新选取');
         return { ...selected.target, ...confirmed.target };
       }
+      case 'browser.embedded.pick.focus':
+        return this.focus(args.requestId, args.action);
       case 'browser.embedded.pick.status':
         this.layout();
         return (
@@ -949,6 +1071,11 @@ export class EmbeddedBrowser {
           }
         );
       case 'browser.embedded.pick.cancel':
+        if (
+          this.resource?.focusCandidate &&
+          (!args.requestId || this.resource.focusCandidate.selection.requestId === args.requestId)
+        )
+          this.resource.focusCandidate = undefined;
         if (
           this.resource?.operation?.pickRequestId &&
           (!args.requestId || this.resource.operation.pickRequestId === args.requestId)

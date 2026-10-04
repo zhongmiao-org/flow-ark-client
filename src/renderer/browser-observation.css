@@ -277,3 +277,32 @@
     max-height: 140px;
   }
 }
+
+.browser-target-focus .browser-observation-heading h1 {
+  overflow-wrap: anywhere;
+}
+.browser-focus-actions {
+  gap: 12px;
+}
+.browser-focus-actions button {
+  min-width: 144px;
+}
+.browser-focus-actions button:nth-child(n + 2) {
+  min-width: 180px;
+}
+.browser-focus-target {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 4px;
+  padding: 12px 24px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-surface);
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+.browser-focus-target span {
+  color: var(--fa-text-secondary);
+}

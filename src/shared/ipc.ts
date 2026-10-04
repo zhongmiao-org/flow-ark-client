@@ -101,6 +101,12 @@ export const methods = {
   'browser.embedded.observation': z.object({ mode: z.enum(['overview', 'readable']) }).strict(),
   'browser.embedded.pick.start': z.object({ requestId: id }).strict(),
   'browser.embedded.pick.confirm': z.object({ requestId: id }).strict(),
+  'browser.embedded.pick.focus': z
+    .object({
+      requestId: id,
+      action: z.enum(['capture', 'show', 'confirm']),
+    })
+    .strict(),
   'browser.embedded.pick.status': z.object({ requestId: id }).strict(),
   'browser.embedded.pick.cancel': z.object({ requestId: id }).strict(),
   'browser.embedded.pick.validate': z

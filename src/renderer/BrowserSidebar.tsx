@@ -2,6 +2,8 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { Globe, X, ArrowRight, RefreshCw } from 'lucide-react';
 import './browser-observation.css';
 import { desktopViewportWidth } from '../shared/browser-viewport';
+import { useBrowserFocus } from './BrowserFocusContext';
+import type { FocusedTarget } from '../shared/browser-observation';
 const api = (method: string, args?: unknown) => window.flowark.request(method, args);
 export default function BrowserSidebar({
   close,
@@ -23,6 +25,20 @@ export default function BrowserSidebar({
   obscured: boolean;
 }) {
   const addressId = useId();
+  const browserFocus = useBrowserFocus();
+  const focusEntry = browserFocus?.entry;
+  const focusCurrent = useRef(focusEntry);
+  focusCurrent.current = focusEntry;
+  const [focusView, setFocusView] = useState(true);
+  const [focusReady, setFocusReady] = useState(false);
+  const [focusError, setFocusError] = useState('');
+  const [focusPending, setFocusPending] = useState(false);
+  useEffect(() => {
+    setFocusView(true);
+    setFocusReady(false);
+    setFocusError('');
+  }, [focusEntry?.requestId]);
+  const targetView = !!focusEntry && focusView;
   const [sessionOpen, setSessionOpen] = useState(false);
   const [statusKnown, setStatusKnown] = useState(false);
   const [statusError, setStatusError] = useState('');
@@ -31,8 +47,12 @@ export default function BrowserSidebar({
   const expandButton = useRef<HTMLButtonElement>(null);
   const returnButton = useRef<HTMLButtonElement>(null);
   const [panelExpanded, setExpanded] = useState(false);
-  const expanded = !!observationRequest || panelExpanded;
-  const observationTitle = observationRequest ? '网页总览' : '扩大查看网页';
+  const expanded = !!focusEntry || !!observationRequest || panelExpanded;
+  const observationTitle = targetView
+    ? `聚焦${focusEntry.target.label || '选中目标'}`
+    : observationRequest || focusEntry
+      ? '网页总览'
+      : '扩大查看网页';
 
   const [observing, setObserving] = useState(false);
   const observationBusy = useRef(false);
@@ -79,6 +99,10 @@ export default function BrowserSidebar({
     }
   }, [expanded]);
   const restorePanel = () => {
+    if (focusEntry) {
+      browserFocus!.close(focusEntry.requestId);
+      return;
+    }
     if (observationRequest && returnFromObservation) {
       returnFromObservation();
       return;
@@ -186,6 +210,10 @@ export default function BrowserSidebar({
       }).catch(() => {});
   }, [error]);
   const closePanel = () => {
+    if (focusEntry) {
+      browserFocus!.close(focusEntry.requestId);
+      return;
+    }
     if (observationRequest && returnFromObservation) {
       returnFromObservation();
       return;
@@ -243,7 +271,7 @@ export default function BrowserSidebar({
     }
   };
   const observation = status.observation;
-  const adjusting = observing || !!observation?.busy;
+  const adjusting = observing || focusPending || !!observation?.busy;
   const confirmed =
     statusKnown && !adjusting && !observation?.error && observation?.percentage !== undefined;
   const scaleLabel = adjusting
@@ -261,13 +289,83 @@ export default function BrowserSidebar({
     status.loading ||
     !!status.blocked ||
     !/^https?:\/\//.test(status.url);
+  useEffect(() => {
+    if (!focusEntry || !targetView || hidden) return;
+    const selected = focusEntry;
+    let live = true;
+    const revision = ++statusRevision.current;
+    observationBusy.current = true;
+    setFocusPending(true);
+    setFocusReady(false);
+    setFocusError('');
+    const frame = requestAnimationFrame(
+      () =>
+        void (async () => {
+          try {
+            const r = viewport.current!.getBoundingClientRect();
+            await api('browser.embedded.viewport', {
+              x: Math.max(0, Math.round(r.x)),
+              y: Math.max(0, Math.round(r.y)),
+              width: Math.round(r.width),
+              height: Math.round(r.height),
+            });
+            if (!live || focusCurrent.current !== selected) return;
+            const result: FocusedTarget = await api('browser.embedded.pick.focus', {
+              requestId: selected.requestId,
+              action: 'show',
+            });
+            if (!live || focusCurrent.current !== selected) return;
+            if (
+              result.requestId !== selected.requestId ||
+              Math.abs((result.percentage ?? 0) - 100) > 1
+            )
+              throw new Error('目标查看比例尚未确认，请返回后重新聚焦');
+            setFocusReady(true);
+          } catch (reason) {
+            if (live) setFocusError(reason instanceof Error ? reason.message : String(reason));
+          } finally {
+            if (live) setFocusPending(false);
+            if (revision === statusRevision.current) observationBusy.current = false;
+          }
+        })(),
+    );
+    return () => {
+      live = false;
+      cancelAnimationFrame(frame);
+      observationBusy.current = false;
+      setFocusPending(false);
+    };
+  }, [focusEntry, targetView, hidden]);
+  const confirmFocus = async () => {
+    const selected = focusEntry;
+    if (!selected || !focusReady || observationDisabled || focusPending || hidden) return;
+    setFocusPending(true);
+    setFocusError('');
+    try {
+      const result: FocusedTarget = await api('browser.embedded.pick.focus', {
+        requestId: selected.requestId,
+        action: 'confirm',
+      });
+      if (focusCurrent.current !== selected) return;
+      if (result.requestId !== selected.requestId || !selected.apply(result.target))
+        throw new Error('来源步骤已变化，请返回后重新选取');
+      browserFocus!.close(selected.requestId);
+    } catch (reason) {
+      if (focusCurrent.current === selected) {
+        setFocusReady(false);
+        setFocusError(reason instanceof Error ? reason.message : String(reason));
+      }
+    } finally {
+      if (focusCurrent.current === selected) setFocusPending(false);
+    }
+  };
   return (
     <aside
       ref={panel}
-      className={`browser-sidebar browser-observation${editing ? ' browser-editor-panel' : ''}${expanded ? ' browser-observation-expanded' : ''}`}
+      className={`browser-sidebar browser-observation${editing ? ' browser-editor-panel' : ''}${expanded ? ' browser-observation-expanded' : ''}${targetView ? ' browser-target-focus' : ''}`}
       role={expanded && !hidden ? 'dialog' : undefined}
       aria-modal={expanded && !hidden ? true : undefined}
-      aria-label={expanded ? '全宽网页查看' : '内置网页面板'}
+      aria-label={targetView ? '聚焦选中目标' : expanded ? '全宽网页查看' : '内置网页面板'}
       onKeyDown={(event) => {
         if (!expanded || hidden) return;
         if (
@@ -306,7 +404,7 @@ export default function BrowserSidebar({
         {expanded ? (
           <>
             <button ref={returnButton} onClick={restorePanel}>
-              {observationRequest ? '← 返回选择对象' : '← 返回右侧面板'}
+              {focusEntry ? '← 返回' : observationRequest ? '← 返回选择对象' : '← 返回右侧面板'}
             </button>
             <nav className="breadcrumbs" aria-label="当前位置">
               <a
@@ -316,7 +414,7 @@ export default function BrowserSidebar({
                   restorePanel();
                 }}
               >
-                {observationRequest ? '选择操作对象' : '内置网页'}
+                {focusEntry ? '选择网页目标' : observationRequest ? '选择操作对象' : '内置网页'}
               </a>
               <span aria-hidden="true">/</span>
               <span aria-current="page">{observationTitle}</span>
@@ -368,90 +466,129 @@ export default function BrowserSidebar({
           <div className="browser-observation-heading">
             <h1>{observationTitle}</h1>
             <p>
-              网页布局宽度保持 {desktopViewportWidth} CSS px ·{' '}
-              {confirmed && observation.mode === 'readable'
-                ? '当前按原字号查看局部，可平移至其他区域'
-                : '适应全部查看整体，清晰查看核对文字和目标'}
+              {targetView ? (
+                focusReady ? (
+                  '100% 阅读 · 只平移观察窗口，执行坐标保持不变'
+                ) : (
+                  '正在核对原字号目标与网页身份'
+                )
+              ) : (
+                <>
+                  网页布局宽度保持 {desktopViewportWidth} CSS px ·{' '}
+                  {confirmed && observation.mode === 'readable'
+                    ? '当前按原字号查看局部，可平移至其他区域'
+                    : '适应全部查看整体，清晰查看核对文字和目标'}
+                </>
+              )}
             </p>
           </div>
         )}
-        {expanded && (
-          <div className="browser-observation-modes" aria-label="网页查看模式">
+        {targetView ? (
+          <div className="browser-observation-modes browser-focus-actions">
             <button
-              disabled={observationDisabled}
-              aria-pressed={confirmed && observation.mode === 'readable'}
-              onClick={() => void changeObservation('readable')}
+              disabled={focusPending}
+              onClick={() => {
+                setFocusView(false);
+                void changeObservation('overview');
+              }}
             >
-              100% · 清晰查看
+              返回总览
             </button>
             <button
-              disabled={observationDisabled}
-              aria-pressed={confirmed && observation.mode === 'overview'}
-              onClick={() => void changeObservation('overview')}
+              className="primary"
+              disabled={!focusReady || !!focusError || !!observation?.error || observationDisabled}
+              onClick={() => void confirmFocus()}
             >
-              适应全部
+              {focusPending ? '正在核对目标…' : '确认这个目标'}
             </button>
+            <button onClick={restorePanel}>返回目标选择</button>
           </div>
+        ) : (
+          expanded && (
+            <div className="browser-observation-modes" aria-label="网页查看模式">
+              <button
+                disabled={observationDisabled}
+                aria-pressed={confirmed && observation.mode === 'readable'}
+                onClick={() => void changeObservation('readable')}
+              >
+                100% · 清晰查看
+              </button>
+              <button
+                disabled={observationDisabled}
+                aria-pressed={confirmed && observation.mode === 'overview'}
+                onClick={() => void changeObservation('overview')}
+              >
+                适应全部
+              </button>
+              {focusEntry && (
+                <button disabled={observationDisabled} onClick={() => setFocusView(true)}>
+                  聚焦选中目标
+                </button>
+              )}
+            </div>
+          )
         )}
-        {(!editing || expanded) && (
+        {!targetView && (!editing || expanded) && (
           <div className="browser-observation-summary" role="status">
             <span>{scaleLabel}</span>
             <span>网页布局保持 {desktopViewportWidth} CSS px</span>
           </div>
         )}
-        <form
-          className="browser-address"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void navigate();
-          }}
-        >
-          {editing && <label htmlFor={addressId}>网址</label>}
-          <input
-            id={addressId}
-            aria-label="网页地址"
-            placeholder="输入网址，打开网页"
-            value={address}
-            disabled={running || loading || adjusting || !statusKnown || !!status.blocked}
-            onFocus={() => {
-              focused.current = true;
+        {!targetView && (
+          <form
+            className="browser-address"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void navigate();
             }}
-            onBlur={() => {
-              focused.current = false;
-            }}
-            onChange={(e) => {
-              addressEdited.current = true;
-              setAddress(e.target.value);
-            }}
-          />
-          <button
-            type="submit"
-            disabled={
-              running || loading || adjusting || !statusKnown || !!status.blocked || !address
-            }
-            title="访问网页"
-            aria-label="访问网页"
           >
-            <ArrowRight size={17} />
-          </button>
-          <button
-            type="button"
-            disabled={
-              running ||
-              loading ||
-              adjusting ||
-              !statusKnown ||
-              !!status.blocked ||
-              !status.url ||
-              status.url === 'about:blank'
-            }
-            onClick={() => navigate(status.url)}
-            title="重新加载"
-            aria-label="重新加载"
-          >
-            <RefreshCw size={15} />
-          </button>
-        </form>
+            {editing && <label htmlFor={addressId}>网址</label>}
+            <input
+              id={addressId}
+              aria-label="网页地址"
+              placeholder="输入网址，打开网页"
+              value={address}
+              disabled={running || loading || adjusting || !statusKnown || !!status.blocked}
+              onFocus={() => {
+                focused.current = true;
+              }}
+              onBlur={() => {
+                focused.current = false;
+              }}
+              onChange={(e) => {
+                addressEdited.current = true;
+                setAddress(e.target.value);
+              }}
+            />
+            <button
+              type="submit"
+              disabled={
+                running || loading || adjusting || !statusKnown || !!status.blocked || !address
+              }
+              title="访问网页"
+              aria-label="访问网页"
+            >
+              <ArrowRight size={17} />
+            </button>
+            <button
+              type="button"
+              disabled={
+                running ||
+                loading ||
+                adjusting ||
+                !statusKnown ||
+                !!status.blocked ||
+                !status.url ||
+                status.url === 'about:blank'
+              }
+              onClick={() => navigate(status.url)}
+              title="重新加载"
+              aria-label="重新加载"
+            >
+              <RefreshCw size={15} />
+            </button>
+          </form>
+        )}
         {editing && !expanded && (
           <p className="browser-pick-guidance">拾取只定位目标，不触发网页点击或提交。</p>
         )}
@@ -476,13 +613,31 @@ export default function BrowserSidebar({
             <button onClick={() => setError('')}>关闭</button>
           </div>
         )}
+        {targetView && focusError && (
+          <div className="browser-error" role="alert">
+            {focusError}。请返回后重新选取目标。
+          </div>
+        )}
         <div className="browser-viewport" ref={viewport} data-testid="browser-viewport" />
+        {targetView && (
+          <div className="browser-focus-target">
+            <strong>{focusEntry.target.label || focusEntry.target.tag}</strong>
+            <span>
+              {focusReady && !focusError && !observation?.error ? '已核对唯一匹配 · ' : '待核对 · '}
+              {focusEntry.target.tag}
+              {focusEntry.target.framePath.length
+                ? ` · ${focusEntry.target.framePath.length} 层框架`
+                : ' · 主页面'}
+            </span>
+            <span>页面：{focusEntry.page.title || focusEntry.page.url}</span>
+          </div>
+        )}
         {editing && !expanded && (
           <div className="browser-editor-scale">
             桌面布局宽度 {desktopViewportWidth} CSS px · {scaleLabel}
           </div>
         )}
-        {editing && (
+        {editing && !targetView && (
           <div className="browser-session-disclosure">
             <button aria-expanded={sessionOpen} onClick={() => setSessionOpen(!sessionOpen)}>
               查看定位与会话状态
@@ -540,25 +695,33 @@ export default function BrowserSidebar({
           </div>
         )}
         <footer>
-          {statusKnown && status.started && !status.blocked && <span className="local-dot" />}
-          {!statusKnown
-            ? '正在等待网页会话状态'
-            : status.blocked
-              ? '请完整退出并重开应用后核对结果'
-              : loading
-                ? '正在打开网页…'
-                : status.started
-                  ? status.title ||
-                    (status.url === 'about:blank'
-                      ? '在上方输入网址，或运行浏览器流程'
-                      : '网页已就绪')
-                  : '运行流程或输入网址打开网页'}
-          {!status.blocked && (
+          {targetView ? (
             <span>
-              {expanded
-                ? '这里只改变查看区域，不重排网页。macOS 清晰查看时，点入网页后按 ⌥⌘ 和方向键平移；滚轮上下查看。切换比例后请重新核对目标。'
-                : '收起面板后任务继续'}
+              定位来自选择的真实元素；无法唯一匹配时不允许确认。返回原步骤时保留草稿与同一网页会话。
             </span>
+          ) : (
+            <>
+              {statusKnown && status.started && !status.blocked && <span className="local-dot" />}
+              {!statusKnown
+                ? '正在等待网页会话状态'
+                : status.blocked
+                  ? '请完整退出并重开应用后核对结果'
+                  : loading
+                    ? '正在打开网页…'
+                    : status.started
+                      ? status.title ||
+                        (status.url === 'about:blank'
+                          ? '在上方输入网址，或运行浏览器流程'
+                          : '网页已就绪')
+                      : '运行流程或输入网址打开网页'}
+              {!status.blocked && (
+                <span>
+                  {expanded
+                    ? '这里只改变查看区域，不重排网页。macOS 清晰查看时，点入网页后按 ⌥⌘ 和方向键平移；滚轮上下查看。切换比例后请重新核对目标。'
+                    : '收起面板后任务继续'}
+                </span>
+              )}
+            </>
           )}
         </footer>
       </div>

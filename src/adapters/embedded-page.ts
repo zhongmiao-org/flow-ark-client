@@ -490,16 +490,17 @@ export class EmbeddedPage {
     path: string[],
     highlight = true,
     expected?: PointIdentity,
+    reveal = false,
   ): Promise<ElementTarget> {
-    const scope = await this.scope(path, commandBudget(3000), !expected);
+    const scope = await this.scope(path, commandBudget(3000), !expected || reveal);
     const element = await this.element(scope, selector, commandBudget(3000));
     try {
-      await this.visible(scope, element, commandBudget(3000), false, !expected);
       if (expected) {
         const { node } = await this.send('DOM.describeNode', { objectId: element }, scope.session);
         if (node.backendNodeId !== expected.backendNodeId || scope.session !== expected.session)
           throw new Error('目标在选取期间已被替换，请重新选取');
       }
+      await this.visible(scope, element, commandBudget(3000), false, !expected || reveal);
       const target = await this.call(scope, element, describeElement.toString(), false);
       if (highlight) {
         await this.send('DOM.enable', {}, scope.session);

@@ -65,7 +65,11 @@ export function describeElement(this: Element, generate = true) {
     .split(/\s+/)
     .map((id) => document.getElementById(id)?.textContent ?? '')
     .join(' ');
-  const text = ['button', 'a', 'label', 'option'].includes(tag) ? el.textContent : '';
+  const text =
+    ['button', 'a', 'label', 'option', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag) ||
+    el.getAttribute('role') === 'heading'
+      ? el.textContent
+      : '';
   const label = (
     el.getAttribute('aria-label') ||
     labels ||

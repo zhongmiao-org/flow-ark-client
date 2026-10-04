@@ -2,6 +2,8 @@ import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'reac
 import { Crosshair, Check, X } from 'lucide-react';
 import type { ElementTarget, PickerState } from '../shared/element-picker';
 import './element-picker.css';
+import { useBrowserFocus } from './BrowserFocusContext';
+import type { FocusedTarget } from '../shared/browser-observation';
 const api = (method: string, args: any = {}) => window.flowark.request(method, args);
 export type ElementPickerControls = { pick: () => void; focus: () => void };
 export default function ElementPicker({
@@ -36,12 +38,17 @@ export default function ElementPicker({
   controls?: Ref<ElementPickerControls>;
 }) {
   const region = useRef<HTMLDivElement>(null);
+  const browserFocus = useBrowserFocus();
+  const closeFocus = browserFocus?.close;
+  const canApply = useRef(false);
+  canApply.current = active && !disabled;
+  const [focusing, setFocusing] = useState(false);
   const [picking, setPicking] = useState(false),
     [validating, setValidating] = useState(false);
   const [message, setMessage] = useState(''),
     [error, setError] = useState('');
   const [verified, setVerified] = useState<ElementTarget>();
-  type Candidate = { target: ElementTarget; requestId: string };
+  type Candidate = { target: ElementTarget; requestId: string; focused?: boolean };
   const [candidate, setCandidate] = useState<Candidate>();
   const pending = useRef<Candidate | undefined>(undefined);
   const [viewingRun, setViewingRun] = useState(false);
@@ -68,6 +75,7 @@ export default function ElementPicker({
     const previous = pending.current;
     pending.current = undefined;
     setCandidate(undefined);
+    if (previous) closeFocus?.(previous.requestId);
     if (previous)
       void api('browser.embedded.pick.cancel', { requestId: previous.requestId }).catch(() => {});
   };
@@ -85,6 +93,7 @@ export default function ElementPicker({
       version.current++;
       const candidateId = pending.current?.requestId;
       pending.current = undefined;
+      if (candidateId) closeFocus?.(candidateId);
       if (candidateId)
         void api('browser.embedded.pick.cancel', { requestId: candidateId }).catch(() => {});
       const id = request.current;
@@ -98,6 +107,7 @@ export default function ElementPicker({
     setVerified(undefined);
     setValidating(false);
     setApplying(false);
+    setFocusing(false);
     clearCandidate();
     version.current++;
     const id = request.current;
@@ -120,7 +130,7 @@ export default function ElementPicker({
     if (requestId) await api('browser.embedded.pick.cancel', { requestId }).catch(() => {});
   };
   const pick = async () => {
-    if (disabled || !active || picking || validating || applying || viewingRun) return;
+    if (disabled || !active || picking || validating || applying || focusing || viewingRun) return;
     clearCandidate();
     setRunError('');
     onStart?.();
@@ -173,7 +183,17 @@ export default function ElementPicker({
     }
   };
   const validate = async () => {
-    if (disabled || !active || !selector || picking || validating || applying || viewingRun) return;
+    if (
+      disabled ||
+      !active ||
+      !selector ||
+      picking ||
+      validating ||
+      applying ||
+      focusing ||
+      viewingRun
+    )
+      return;
     clearCandidate();
     setRunError('');
     onStart?.();
@@ -209,14 +229,19 @@ export default function ElementPicker({
   };
   const apply = async () => {
     const selected = pending.current;
-    if (!selected || applying || disabled || !active) return;
+    if (!selected || applying || focusing || disabled || !active) return;
     const current = ++version.current;
     setApplying(true);
     setError('');
     try {
-      const target: ElementTarget = await api('browser.embedded.pick.confirm', {
-        requestId: selected.requestId,
-      });
+      const target: ElementTarget = selected.focused
+        ? (
+            await api('browser.embedded.pick.focus', {
+              requestId: selected.requestId,
+              action: 'confirm',
+            })
+          ).target
+        : await api('browser.embedded.pick.confirm', { requestId: selected.requestId });
       if (!alive.current || version.current !== current || pending.current !== selected) return;
       clearCandidate();
       select.current(target, selected.requestId);
@@ -232,6 +257,40 @@ export default function ElementPicker({
       }
     } finally {
       if (alive.current && version.current === current) setApplying(false);
+    }
+  };
+  const focusCandidate = async () => {
+    const selected = pending.current;
+    if (!selected || !browserFocus || focusing || applying || !canApply.current) return;
+    const current = ++version.current;
+    setFocusing(true);
+    setError('');
+    try {
+      const receipt: FocusedTarget = await api('browser.embedded.pick.focus', {
+        requestId: selected.requestId,
+        action: selected.focused ? 'confirm' : 'capture',
+      });
+      if (!alive.current || version.current !== current || pending.current !== selected) return;
+      const next = { ...selected, target: receipt.target, focused: true };
+      pending.current = next;
+      setCandidate(next);
+      browserFocus.open(receipt, (target) => {
+        if (
+          !alive.current ||
+          !canApply.current ||
+          pending.current?.requestId !== selected.requestId
+        )
+          return false;
+        clearCandidate();
+        select.current(target, selected.requestId);
+        setMessage('已应用目标 · ' + (target.label || target.tag));
+        return true;
+      });
+    } catch (reason) {
+      if (alive.current && version.current === current)
+        setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      if (alive.current && version.current === current) setFocusing(false);
     }
   };
   const openRun = async () => {
@@ -330,7 +389,9 @@ export default function ElementPicker({
         <button
           ref={pickButton}
           className="primary"
-          disabled={!active || disabled || picking || validating || applying || viewingRun}
+          disabled={
+            !active || disabled || picking || validating || applying || focusing || viewingRun
+          }
           onClick={() => void pick()}
         >
           <Crosshair size={15} />
@@ -343,7 +404,9 @@ export default function ElementPicker({
           </button>
         ) : allowInspect ? (
           <button
-            disabled={!active || disabled || !selector || validating || applying || viewingRun}
+            disabled={
+              !active || disabled || !selector || validating || applying || focusing || viewingRun
+            }
             onClick={() => void validate()}
           >
             <Check size={14} />
@@ -378,11 +441,19 @@ export default function ElementPicker({
               <button
                 ref={applyButton}
                 className="primary"
-                disabled={!active || disabled || applying}
+                disabled={!active || disabled || applying || focusing}
                 onClick={() => void apply()}
               >
                 {applying ? '正在核对目标…' : '应用目标'}
               </button>
+              {browserFocus && (
+                <button
+                  disabled={!active || disabled || applying || focusing}
+                  onClick={() => void focusCandidate()}
+                >
+                  {focusing ? '正在核对目标…' : '聚焦选中目标'}
+                </button>
+              )}
               <button onClick={discard}>放弃此目标</button>
             </div>
           )}

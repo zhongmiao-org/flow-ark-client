@@ -1,4 +1,12 @@
 import { z } from 'zod';
+import type { ElementTarget } from './element-picker';
+
+export type FocusedTarget = {
+  requestId: string;
+  target: ElementTarget;
+  page: { title: string; url: string };
+  percentage?: number;
+};
 
 // Main-originated keyboard requests only; this method is not exposed by preload.
 export const observationPan = z
