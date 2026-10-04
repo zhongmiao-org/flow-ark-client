@@ -1134,15 +1134,55 @@
 .task-understanding-provider .ai-task-provider {
   margin-top: 12px;
 }
-.task-understanding-input > .ai-task-checkbox {
+.task-understanding-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.task-understanding-controls > .ai-task-disclosure {
+  border: 0;
+  padding: 0;
+  font-size: 12px;
+  line-height: 20px;
+}
+.task-understanding-controls > .ai-task-note {
+  padding: 12px;
+  font-size: 12px;
+  line-height: 20px;
+}
+.task-understanding-controls > .ai-task-note p {
+  margin-top: 0;
+}
+.task-understanding-controls > .ai-task-note > button {
+  margin-top: 8px;
+  font-size: 12px;
+}
+.task-understanding-controls > .ai-task-checkbox {
   font-size: 12px;
   line-height: 18px;
 }
-.task-understanding-input > .ai-task-actions > .primary {
+.task-understanding-controls > .ai-task-actions > .primary {
   min-width: 212px;
 }
-.task-understanding-input > .ai-task-actions > button:not(.primary) {
+.task-understanding-controls > .ai-task-actions > button:not(.primary) {
   font-size: 12px;
+}
+.task-answer-review {
+  margin-top: 12px;
+  padding-left: 12px;
+  border-left: 2px solid var(--fa-border-default);
+}
+.task-answer-review > h4 {
+  margin: 0 0 4px;
+  font-size: 12px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.task-answer-review > p {
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--fa-text-secondary);
 }
 @container (max-width: 950px) {
   .task-understanding-columns {

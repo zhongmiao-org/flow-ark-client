@@ -1465,10 +1465,27 @@ export default function AITaskWorkspace(props: Props) {
             <pre>{outputContext({ ...detail.task.outputTarget, ...outputOptions }).text}</pre>
           </div>
         )}
-        {Object.keys(draft.answers).length > 0 && (
+        {(Object.keys(draft.answers).length > 0 ||
+          (result?.kind === 'clarify' && result.questions.length > 0)) && (
           <>
             <h3>补问答案</h3>
-            <pre>{text(draft.answers)}</pre>
+            {[
+              ...new Set([
+                ...(result?.kind === 'clarify'
+                  ? result.questions.map((question) => question.id)
+                  : []),
+                ...Object.keys(draft.answers),
+              ]),
+            ].map((id) => (
+              <div className="task-answer-review" key={id}>
+                <h4>
+                  {(result?.kind === 'clarify' &&
+                    result.questions.find((question) => question.id === id)?.prompt) ||
+                    `先前补充 · ${id}`}
+                </h4>
+                <p>{draft.answers[id]?.trim() ? draft.answers[id] : '尚未补充'}</p>
+              </div>
+            ))}
           </>
         )}
         {detail.flow && (

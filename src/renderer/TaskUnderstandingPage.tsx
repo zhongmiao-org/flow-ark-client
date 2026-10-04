@@ -68,6 +68,10 @@ export default function TaskUnderstandingPage({
   }, [outputNameError]);
   const web = task.webTarget;
   const output = task.outputTarget;
+  const sources = [
+    ...(context.length ? [`${context.length} 项资料`] : []),
+    ...(task.attachments?.length ? [`${task.attachments.length} 个附件`] : []),
+  ];
   const policy =
     options.onConflict === 'number' ? '同名自动加序号，保留原文件' : '覆盖所选同名文件';
   return (
@@ -161,17 +165,36 @@ export default function TaskUnderstandingPage({
             </button>
           </div>
         )}
-        {controls}
+        <div className="task-understanding-controls">{controls}</div>
       </section>
       <section className="ai-task-card task-understanding-summary">
         <h2>任务理解卡</h2>
         <div className="task-understanding-fact">
           <h3>输入来源</h3>
           <p>
-            {web ? '你确认的网页及明确提供的资料；不读取其他标签' : '你填写的需求及明确提供的资料'}
+            {web
+              ? web.element
+                ? '已选网页元素的文字；不读取其他元素或标签'
+                : '你确认的网页；不读取其他标签'
+              : task.toolTargets?.length
+                ? '你填写的需求与已选工具定义'
+                : '你填写的需求'}
+            {sources.length ? `；另有 ${sources.join('、')}` : ''}
           </p>
           <details className="task-understanding-extra">
             <summary>资料与发送范围</summary>
+            {web && (
+              <>
+                <p>网页来源：{web.page.title || '未命名网页'}</p>
+                <p className="task-understanding-url">{web.page.url}</p>
+                <p>
+                  {web.element
+                    ? `读取范围：${web.element.target.label || web.element.target.tag}（${web.element.target.framePath.length ? `${web.element.target.framePath.length} 层框架` : '主页面'}）。`
+                    : '读取范围：已确认网页中的只读操作。'}
+                  这是已保存的选择；执行前仍需核对对象是否有效。
+                </p>
+              </>
+            )}
             {!!context.length && (
               <ul className="task-understanding-input-list" aria-label="当前资料">
                 {context.map((entry) => (
