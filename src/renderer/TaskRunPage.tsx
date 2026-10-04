@@ -76,6 +76,9 @@ export default function TaskRunPage({
   const previousPage = useRef(page);
   const returnAction = useRef<string | undefined>(undefined);
   const previewButtons = useRef(new Map<string, HTMLButtonElement>());
+  const previewContent = useRef<HTMLPreElement>(null);
+  const previewStatus = useRef<HTMLDivElement>(null);
+  const previewRetryOrigin = useRef<HTMLButtonElement | undefined>(undefined);
   const rerunButton = useRef<HTMLButtonElement>(null);
   const model = taskRunPresentation({ ...detail, fault: detail.fault ?? fault });
   const target = (
@@ -144,6 +147,7 @@ export default function TaskRunPage({
     return () => clearInterval(timer);
   }, []);
   useLayoutEffect(() => {
+    previewRetryOrigin.current = undefined;
     if (restoredPosition.current) {
       const position = restoredPosition.current;
       restoredPosition.current = undefined;
@@ -164,6 +168,17 @@ export default function TaskRunPage({
     } else heading.current?.focus({ preventScroll: true });
     previousPage.current = page;
   }, [run.id, page]);
+  useLayoutEffect(() => {
+    const origin = previewRetryOrigin.current;
+    if (loading || !origin) return;
+    previewRetryOrigin.current = undefined;
+    if (document.activeElement === origin || document.activeElement === document.body)
+      (previewContent.current ?? previewStatus.current)?.focus({ preventScroll: true });
+  }, [loading, preview, previewError]);
+  function retryPreview(origin: HTMLButtonElement) {
+    previewRetryOrigin.current = origin;
+    setRetry((n) => n + 1);
+  }
   useEffect(() => {
     setPreviewError('');
     if (page !== 'details' || !selected) {
@@ -437,7 +452,10 @@ export default function TaskRunPage({
                   <select
                     id="task-artifact"
                     value={selected ?? ''}
-                    onChange={(e) => setSelected(e.target.value || undefined)}
+                    onChange={(e) => {
+                      previewRetryOrigin.current = undefined;
+                      setSelected(e.target.value || undefined);
+                    }}
                   >
                     <option value="">请选择文件</option>
                     {model.artifacts.map((a) => (
@@ -455,11 +473,10 @@ export default function TaskRunPage({
                     ? ' · 内容已截断'
                     : ''}
                 </p>
-                {loading ? (
-                  <p role="status">正在读取并核对文件副本…</p>
-                ) : visiblePreview?.status === 'text' ? (
+                {!loading && visiblePreview?.status === 'text' ? (
                   <>
                     <pre
+                      ref={previewContent}
                       className="task-file-preview"
                       tabIndex={0}
                       aria-label={`文件内容：${visiblePreview.name}`}
@@ -468,24 +485,43 @@ export default function TaskRunPage({
                       {visiblePreview.text || '（空文件）'}
                     </pre>
                   </>
-                ) : selected ? (
-                  <p
-                    role={previewError ? 'alert' : 'status'}
-                    className={previewError ? 'field-error' : undefined}
-                  >
-                    {previewError ||
-                      (preview?.status === 'unavailable'
-                        ? preview.reason
-                        : item
-                          ? artifactLabel(item)
-                          : '该产物不在本次记录中')}
-                  </p>
                 ) : (
-                  <p>
-                    {model.artifacts.length
-                      ? '选择文件后只读预览，不会执行其中的内容。'
-                      : '本次没有登记的文件产物，可查看下方已保存的结构化输出。'}
-                  </p>
+                  <div
+                    ref={previewStatus}
+                    className="task-file-preview task-file-status"
+                    tabIndex={-1}
+                    aria-label="文件预览状态"
+                    aria-busy={loading}
+                  >
+                    <p
+                      role={!loading && previewError ? 'alert' : 'status'}
+                      className={!loading && previewError ? 'field-error' : undefined}
+                    >
+                      {loading
+                        ? '正在读取并核对文件副本…'
+                        : previewError ||
+                          (selected
+                            ? visiblePreview?.status === 'unavailable'
+                              ? visiblePreview.reason
+                              : item
+                                ? artifactLabel(item)
+                                : '该产物不在本次记录中'
+                            : model.artifacts.length
+                              ? '选择文件后只读预览，不会执行其中的内容。'
+                              : '本次没有登记的文件产物，可查看下方已保存的结构化输出。')}
+                    </p>
+                    {item?.available &&
+                      item.integrity === 'verified' &&
+                      (previewError || (loading && previewRetryOrigin.current)) && (
+                        <button
+                          type="button"
+                          disabled={loading}
+                          onClick={(event) => retryPreview(event.currentTarget)}
+                        >
+                          {loading ? '正在重新读取…' : '重新读取预览'}
+                        </button>
+                      )}
+                  </div>
                 )}
               </div>
               <RunOutput detail={detail} layout="task" />
@@ -556,9 +592,14 @@ export default function TaskRunPage({
                     </>
                   )}
                   <div className="ai-task-actions">
-                    <button disabled={loading} onClick={() => setRetry((n) => n + 1)}>
-                      重新读取预览
-                    </button>
+                    {!previewError && !(loading && previewRetryOrigin.current) && (
+                      <button
+                        disabled={loading || !item?.available || item.integrity !== 'verified'}
+                        onClick={(event) => retryPreview(event.currentTarget)}
+                      >
+                        重新读取预览
+                      </button>
+                    )}
                     {item && (
                       <button
                         disabled={!item.available || busy}
