@@ -1,6 +1,7 @@
 import {
   lazy,
   Suspense,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -8,6 +9,7 @@ import {
   type MutableRefObject,
 } from 'react';
 import type { FlowRecord, Run } from '../shared/types';
+import { runDisplayLabels } from '../shared/run-history';
 import { changeSteps, flatten } from './flow-editing';
 import { referenceChoices } from './value-references';
 import ValueField from './ValueField';
@@ -22,6 +24,7 @@ import {
 const CodeEditor = lazy(() => import('./CodeEditor'));
 export type ScriptNavigation = (next?: () => void, destination?: string) => void;
 type Diagnostic = { lineNumber: number; column: number; message: string };
+const incompleteInputMessage = '请先修正未完成的输入配置';
 const json = (value: unknown) => {
   const text = JSON.stringify(value, null, 2) ?? '没有输出';
   return text.length > 65536 ? text.slice(0, 65536) + '\n…仅显示前 65536 个字符' : text;
@@ -60,10 +63,20 @@ export default function ScriptEditorPage({
   const [previewRevision, setPreviewRevision] = useState(0);
   const [runId, setRunId] = useState(''),
     [detail, setDetail] = useState<any>();
-  const [historyState, setHistoryState] = useState('');
+  const [historyLoading, setHistoryLoading] = useState(false),
+    [historyError, setHistoryError] = useState(''),
+    [detailLoading, setDetailLoading] = useState(false),
+    [detailError, setDetailError] = useState('');
+  const [inputIncomplete, setInputIncomplete] = useState(false);
   const [pendingLeave, setPendingLeave] = useState<{ next?: () => void }>();
   const root = useRef<HTMLElement>(null),
-    dialog = useRef<HTMLDialogElement>(null);
+    dialog = useRef<HTMLDialogElement>(null),
+    resultFocus = useRef<HTMLElement | null>(null);
+  const inputStateChanged = useCallback((_label: string, incomplete: boolean) => {
+    setInputIncomplete(incomplete);
+    if (!incomplete && !root.current?.querySelector('[data-value-invalid]'))
+      setError((current) => (current === incompleteInputMessage ? '' : current));
+  }, []);
   const generation = useRef(0),
     alive = useRef(true);
   const persisting = useRef(false);
@@ -118,7 +131,7 @@ export default function ScriptEditorPage({
       if (ancestor instanceof HTMLDetailsElement) ancestor.open = true;
       ancestor = ancestor.parentElement;
     }
-    const target = element.matches('input,textarea,select,button')
+    const target = element.matches('input,textarea,select,button,[data-script-preview]')
       ? element
       : (element.querySelector<HTMLElement>('textarea') ??
         element.querySelector<HTMLElement>('input,select') ??
@@ -133,7 +146,7 @@ export default function ScriptEditorPage({
     if (incomplete()) {
       setPendingLeave(undefined);
       setFocusRequest({ selector: '[data-value-invalid]' });
-      setError('请先修正未完成的输入配置');
+      setError(incompleteInputMessage);
       return;
     }
     const milliseconds = Number(timeout);
@@ -185,18 +198,22 @@ export default function ScriptEditorPage({
   useEffect(() => {
     if (!preview) return;
     let live = true;
-    setHistoryState('正在读取最近 20 次运行…');
+    setHistoryLoading(true);
+    setHistoryError('');
     window.flowark
       .request('run.list', { flowId: record.id, limit: 20 })
       .then((result) => {
         if (!live) return;
         setRuns(result.runs);
-        setHistoryState(
-          result.runs.length ? '选择历史运行查看实际输出' : '尚无运行记录；预览不会运行脚本',
+        setRunId((selected) =>
+          result.runs.some((run: Run) => run.id === selected) ? selected : '',
         );
       })
       .catch((e) => {
-        if (live) setHistoryState('读取失败：' + e.message);
+        if (live) setHistoryError(e instanceof Error ? e.message : '运行列表暂时不可用');
+      })
+      .finally(() => {
+        if (live) setHistoryLoading(false);
       });
     return () => {
       live = false;
@@ -204,29 +221,71 @@ export default function ScriptEditorPage({
   }, [preview, record.id, previewRevision]);
   useEffect(() => {
     setDetail(undefined);
-    if (!runId) return;
+    setDetailError('');
+    setDetailLoading(false);
+    if (!preview || !runId) return;
     let live = true;
-    setHistoryState('正在读取运行结果…');
+    setDetailLoading(true);
     window.flowark
       .request('run.detail', { id: runId })
       .then((result) => {
         if (!live) return;
-        if (result.run?.id !== runId || result.run?.flowId !== record.id)
+        if (
+          result.run?.id !== runId ||
+          result.run?.flowId !== record.id ||
+          result.snapshot?.id !== record.id
+        )
           throw new Error('运行来源不匹配');
         setDetail(result);
-        setHistoryState('');
       })
       .catch((e) => {
-        if (live) setHistoryState('读取失败：' + e.message);
+        if (live) setDetailError(e instanceof Error ? e.message : '运行结果暂时不可用');
+      })
+      .finally(() => {
+        if (live) setDetailLoading(false);
       });
     return () => {
       live = false;
     };
-  }, [runId, record.id, previewRevision]);
+  }, [preview, runId, record.id, previewRevision]);
   const input = scriptInputPreview(node.input, draft.flow.parameters);
-  const outputs = detail ? scriptOutputs(detail.snapshot?.steps ?? [], detail.output, nodeId) : [];
+  const currentDetail = detail?.run.id === runId ? detail : undefined;
+  const outputs = currentDetail
+    ? scriptOutputs(currentDetail.snapshot.steps, currentDetail.output, nodeId)
+    : [];
   const snapshotNode =
-    detail && flatten(detail.snapshot?.steps ?? []).find((step) => step.id === nodeId);
+    currentDetail && flatten(currentDetail.snapshot.steps).find((step) => step.id === nodeId);
+  useEffect(() => {
+    if (!runId) {
+      resultFocus.current = null;
+      return;
+    }
+    if (detailLoading || (!currentDetail && !detailError) || !resultFocus.current) return;
+    const origin = resultFocus.current;
+    resultFocus.current = null;
+    const active = document.activeElement;
+    if (
+      saving ||
+      document.querySelector('dialog[open],[role="dialog"][aria-modal="true"]') ||
+      (active !== origin &&
+        active !== document.body &&
+        active !== root.current?.querySelector('[data-script-preview]'))
+    )
+      return;
+    const target = root.current?.querySelector<HTMLElement>(
+      detailError ? '[data-script-detail-error]' : '[data-script-run]',
+    );
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: 'nearest' });
+  }, [runId, detailLoading, currentDetail, detailError, saving]);
+  const refreshPreview = () => {
+    resultFocus.current = document.activeElement as HTMLElement;
+    setDetail(undefined);
+    setDetailError('');
+    setPreview(true);
+    setPreviewRevision((revision) => revision + 1);
+    setFocusRequest({ selector: '[data-script-preview]' });
+  };
   return (
     <section className="script-editor-page page" ref={root} aria-label="脚本编辑">
       <header className="script-editor-heading">
@@ -247,13 +306,7 @@ export default function ScriptEditorPage({
             <button disabled={syntax.checking} onClick={check}>
               {syntax.checking ? '正在检查…' : '检查语法'}
             </button>
-            <button
-              aria-expanded={preview}
-              onClick={() => {
-                setPreview(true);
-                setPreviewRevision((revision) => revision + 1);
-              }}
-            >
+            <button aria-expanded={preview} onClick={refreshPreview}>
               预览输入输出
             </button>
           </div>
@@ -301,27 +354,41 @@ export default function ScriptEditorPage({
               ))}
           </div>
           <p className="note">入口为 default export 的函数，参数为 ctx；返回值成为步骤输出。</p>
-          <section className="script-preview" aria-label="输入与输出预览" tabIndex={-1}>
+          <section
+            className="script-preview"
+            aria-label="输入与输出预览"
+            data-script-preview
+            tabIndex={-1}
+          >
             <h2>输入与输出预览</h2>
             {preview ? (
               <>
                 <h3>当前草稿输入</h3>
-                <p>
-                  {input.available
-                    ? '按当前参数解析；执行前仍会固定本次输入。'
-                    : '包含运行时引用；此处显示来源配置，实际值由运行产生。'}
-                </p>
-                <pre tabIndex={0} aria-label="当前草稿输入内容">
-                  {json(input.available ? input.value : node.input)}
-                </pre>
-                {!input.available && <p className="note">{input.reason}</p>}
+                {inputIncomplete ? (
+                  <p role="status">输入尚未完成，修正后才能预览当前值。</p>
+                ) : (
+                  <>
+                    <p>
+                      {input.available
+                        ? '按当前参数解析；执行前仍会固定本次输入。'
+                        : '此输入当前无法解析；以下显示来源配置。'}
+                    </p>
+                    <pre tabIndex={0} aria-label="当前草稿输入内容">
+                      {json(input.available ? input.value : node.input)}
+                    </pre>
+                    {!input.available && <p className="note">{input.reason}</p>}
+                  </>
+                )}
                 <h3>历史运行输出</h3>
                 <label htmlFor="script-history">最近 20 次运行</label>
                 <select
                   id="script-history"
                   value={runId}
+                  disabled={historyLoading || !runs.length}
                   onChange={(e) => {
+                    resultFocus.current = e.currentTarget;
                     setDetail(undefined);
+                    setDetailError('');
                     setRunId(e.target.value);
                   }}
                 >
@@ -329,15 +396,47 @@ export default function ScriptEditorPage({
                   {runs.map((run) => (
                     <option value={run.id} key={run.id}>
                       {new Date(run.createdAt).toLocaleString('zh-CN')} · {run.id.slice(0, 8)} ·{' '}
-                      {run.state}
+                      {runDisplayLabels[run.state]}
                     </option>
                   ))}
                 </select>
-                <p role="status">{historyState}</p>
-                {detail && (
-                  <div data-script-run={detail.run.id}>
+                <p role="status">
+                  {historyLoading
+                    ? '正在读取最近 20 次运行…'
+                    : historyError
+                      ? runs.length
+                        ? '运行列表未更新，保留上次读取的选项。'
+                        : '运行列表尚未取得，请重新读取。'
+                      : !runs.length
+                        ? '尚无运行记录；预览不会运行脚本'
+                        : !runId
+                          ? '选择历史运行查看实际输出'
+                          : ''}
+                </p>
+                {historyError && (
+                  <p className="field-error" role="alert">
+                    运行列表读取失败：{historyError}
+                  </p>
+                )}
+                {runId && detailLoading && <p role="status">正在读取所选运行结果…</p>}
+                {runId && detailError && (
+                  <p className="field-error" role="alert" data-script-detail-error tabIndex={-1}>
+                    运行结果读取失败：{detailError}
+                  </p>
+                )}
+                {(historyError || detailError) && (
+                  <button disabled={historyLoading || detailLoading} onClick={refreshPreview}>
+                    重新读取历史结果
+                  </button>
+                )}
+                {currentDetail && (
+                  <div
+                    data-script-run={currentDetail.run.id}
+                    tabIndex={-1}
+                    aria-label="所选运行的历史输出"
+                  >
                     <p>
-                      固定版本 {detail.run.versionId} · 运行 {detail.run.id}
+                      固定版本 {currentDetail.run.versionId} · 运行 {currentDetail.run.id}
                     </p>
                     <p>
                       {JSON.stringify(snapshotNode) === JSON.stringify(node)
@@ -383,6 +482,7 @@ export default function ScriptEditorPage({
               choices={referenceChoices(draft.flow, nodeId)}
               defaultValue={{}}
               change={(input) => change({ ...node, input })}
+              onIncompleteChange={inputStateChanged}
             />
           </details>
           <label htmlFor="script-timeout">超时（毫秒）</label>
