@@ -166,11 +166,15 @@ export default function ToolConnectionsPage({
   const [connections, setConnections] = useState<ToolConnection[]>([]);
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState('');
+  const [connectionQuery, setConnectionQuery] = useState('');
+  const connectionSearch = useRef<HTMLInputElement>(null);
   const listRead = useRef(0);
   const savedList = useRef<HTMLUListElement>(null);
   const savedHeading = useRef<HTMLHeadingElement>(null);
   const rowButtons = useRef(new Map<string, HTMLButtonElement>());
-  const catalogReturn = useRef<{ id: string; main: number; list: number } | undefined>(undefined);
+  const catalogReturn = useRef<
+    { id: string; main: number; list: number; trigger?: Element | null } | undefined
+  >(undefined);
   const [loaded, setLoaded] = useState(false),
     [error, setError] = useState('');
   const [form, setForm] = useState<Form>({ ...empty });
@@ -217,6 +221,12 @@ export default function ToolConnectionsPage({
     selected.config.transport.auth === 'oauth' &&
     selected.config.transport.url === form.url.trim() &&
     selected.config.protocolVersion === form.protocol;
+  const query = connectionQuery.trim().toLocaleLowerCase();
+  const matchingConnections = connections.filter((connection) =>
+    `${connection.config.displayName} ${connection.config.source} ${address(connection.config)}`
+      .toLocaleLowerCase()
+      .includes(query),
+  );
   const refresh = async () => {
     const ticket = ++listRead.current;
     setListLoading(true);
@@ -243,13 +253,15 @@ export default function ToolConnectionsPage({
     };
   }, [active]);
   useLayoutEffect(() => {
-    if (!active || view !== 'catalog' || !catalogReturn.current) return;
+    if (!active || view !== 'catalog' || listLoading || !catalogReturn.current) return;
     const position = catalogReturn.current;
     catalogReturn.current = undefined;
+    if (document.activeElement !== document.body && document.activeElement !== position.trigger)
+      return;
     if (savedList.current) savedList.current.scrollTop = position.list;
     document.querySelector('main')?.scrollTo({ top: position.main });
     (rowButtons.current.get(position.id) ?? savedHeading.current)?.focus({ preventScroll: true });
-  }, [active, view]);
+  }, [active, view, listLoading, connections]);
   useEffect(() => {
     if (!candidate) return;
     const timer = setInterval(() => setClock(Date.now()), 1000);
@@ -297,6 +309,7 @@ export default function ToolConnectionsPage({
   };
   const catalog = () =>
     go(() => {
+      if (catalogReturn.current) catalogReturn.current.trigger = document.activeElement;
       setSelectedId(undefined);
       setDirty(false);
       move('catalog');
@@ -736,9 +749,47 @@ export default function ToolConnectionsPage({
                 ) : loaded && !connections.length && !listError ? (
                   <p>尚未保存自定义连接。账号和工作区需在使用前核对。</p>
                 ) : null}
-                {!!connections.length && (
+                {(connections.length > 6 || connectionQuery) && (
+                  <div className="tool-saved-search">
+                    <label className="tool-field">
+                      查找连接
+                      <input
+                        ref={connectionSearch}
+                        type="search"
+                        value={connectionQuery}
+                        placeholder="搜索名称、来源、地址或程序"
+                        onChange={(event) => {
+                          setConnectionQuery(event.target.value);
+                          if (savedList.current) savedList.current.scrollTop = 0;
+                          if (!event.target.value && connections.length <= 6)
+                            savedHeading.current?.focus({ preventScroll: true });
+                        }}
+                      />
+                    </label>
+                    <p role="status">
+                      显示 {matchingConnections.length} / {connections.length} 个连接
+                    </p>
+                  </div>
+                )}
+                {!!connections.length && !matchingConnections.length && (
+                  <div className="tool-saved-empty">
+                    <p>没有找到匹配的连接。</p>
+                    <button
+                      onClick={() => {
+                        setConnectionQuery('');
+                        (connections.length > 6
+                          ? connectionSearch.current
+                          : savedHeading.current
+                        )?.focus({ preventScroll: true });
+                      }}
+                    >
+                      清除搜索
+                    </button>
+                  </div>
+                )}
+                {!!matchingConnections.length && (
                   <ul ref={savedList} className="tool-saved-list" aria-label="已保存的工具连接">
-                    {connections.map((connection) => (
+                    {matchingConnections.map((connection) => (
                       <li key={connection.id}>
                         <button
                           className="tool-connection-row"
@@ -766,6 +817,13 @@ export default function ToolConnectionsPage({
                             {connection.config.source} ·{' '}
                             {connection.config.transport.type === 'http' ? 'HTTP' : '本地程序'} ·{' '}
                             {connection.tools.length} 项能力
+                          </span>
+                          <span
+                            className="tool-connection-address"
+                            title={address(connection.config)}
+                          >
+                            {connection.config.transport.type === 'http' ? '地址：' : '程序：'}
+                            {address(connection.config)}
                           </span>
                         </button>
                       </li>

@@ -105,6 +105,24 @@
 .tool-connection-source {
   flex-basis: 100%;
 }
+.tool-connection-address {
+  flex-basis: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tool-saved-search,
+.tool-saved-empty {
+  display: grid;
+  gap: 8px;
+}
+.tool-saved-search .tool-field {
+  margin: 0;
+}
+.tools-page .tool-saved-search > p {
+  font-size: 12px;
+}
 .tools-page .tool-list-note {
   font-size: 12px;
 }
