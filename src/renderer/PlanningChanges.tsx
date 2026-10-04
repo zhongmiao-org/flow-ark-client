@@ -1,8 +1,10 @@
 import { useId, useRef, useState } from 'react';
 import type { PlanningChange } from '../shared/planning';
-import type { Flow } from '../shared/types';
+import type { Flow, Step } from '../shared/types';
 import { flatten } from './flow-editing';
 import { kinds } from './node-kinds';
+import { taskStepTitle, taskStepValue } from './task-step-presentation';
+import { referenceOf } from './value-references';
 import './planning-changes.css';
 
 const labels: Record<string, string> = {
@@ -73,12 +75,15 @@ const fieldValue = (field: string, value: unknown) => {
   }
   return readable(value);
 };
-const fieldName = (change: PlanningChange) =>
+const fieldName = (change: PlanningChange, step?: Step) =>
   change.kind === 'moved'
     ? '步骤位置'
     : change.kind === 'added' || change.kind === 'removed'
       ? '步骤配置'
-      : (labels[change.path.split('/').at(-1)!] ?? change.path.split('/').at(-1)!);
+      : change.path.split('/').at(-1) === 'name' &&
+          (step?.type === 'file' || step?.type === 'excel')
+        ? '文件名'
+        : (labels[change.path.split('/').at(-1)!] ?? change.path.split('/').at(-1)!);
 
 export default function PlanningChanges({
   changes,
@@ -101,9 +106,11 @@ export default function PlanningChanges({
   const [selected, setSelected] = useState(0);
   const oldSteps = flatten(before?.steps ?? []),
     newSteps = flatten(after.steps);
+  const stepOnSide = (nodeId: string, side: 'before' | 'after') =>
+    (side === 'before' ? oldSteps : newSteps).find((node) => node.id === nodeId);
   const nodeName = (nodeId: string, side: 'before' | 'after') => {
-    const step = (side === 'before' ? oldSteps : newSteps).find((node) => node.id === nodeId);
-    return step ? step.name || kinds[step.type]?.label || step.id : nodeId;
+    const step = stepOnSide(nodeId, side);
+    return step ? taskStepTitle(step) : nodeId;
   };
   const position = (value: unknown, side: 'before' | 'after') => {
     if (typeof value !== 'string') return readable(value);
@@ -114,17 +121,57 @@ export default function PlanningChanges({
       ? `主流程 · 第 ${place} 步`
       : `${nodeName(match[2], side)} · ${{ then: '成立分支', else: '否则分支', body: '循环体' }[match[3]]} · 第 ${place} 步`;
   };
-  const title = (change: PlanningChange) =>
-    change.nodeId ? `${change.label} · ${fieldName(change)}` : `流程设置 · ${fieldName(change)}`;
+  const title = (change: PlanningChange) => {
+    const step = change.nodeId
+      ? (stepOnSide(change.nodeId, 'after') ?? stepOnSide(change.nodeId, 'before'))
+      : undefined;
+    return change.nodeId
+      ? `${step ? taskStepTitle(step) : change.label} · ${fieldName(change, step)}`
+      : `流程设置 · ${fieldName(change)}`;
+  };
+  const ordinals = (change: PlanningChange) => ({
+    before: oldSteps.findIndex((step) => step.id === change.nodeId) + 1,
+    after: newSteps.findIndex((step) => step.id === change.nodeId) + 1,
+  });
+  const stepPosition = (change: PlanningChange) => {
+    if (!change.nodeId) return '整个流程';
+    const position = ordinals(change);
+    const number = (value: number) => String(value).padStart(2, '0');
+    if (!position.before && !position.after) return '步骤位置待核对';
+    if (!position.before) return `新第 ${number(position.after)} 步`;
+    if (!position.after) return `原第 ${number(position.before)} 步`;
+    return position.before === position.after
+      ? `第 ${number(position.after)} 步`
+      : `原第 ${number(position.before)} 步 → 新第 ${number(position.after)} 步`;
+  };
+  const displayValue = (
+    field: string,
+    value: unknown,
+    change: PlanningChange,
+    side: 'before' | 'after',
+  ) => {
+    const flow = side === 'before' ? before : after;
+    return flow && change.nodeId && referenceOf(value) !== undefined
+      ? taskStepValue(value, flow, change.nodeId)
+      : fieldValue(field, value);
+  };
   const needle = query.trim().toLocaleLowerCase();
   const visible = changes
     .map((change, index) => ({ change, index }))
     .filter(
       ({ change }) =>
         (filter === 'all' || change.kind === filter) &&
-        [title(change), change.nodeId ?? '', change.path].some((value) =>
-          value.toLocaleLowerCase().includes(needle),
-        ),
+        [
+          title(change),
+          change.label,
+          change.nodeId ?? '',
+          change.path,
+          stepPosition(change),
+          ...Object.values(ordinals(change)).filter(Boolean).map(String),
+          ...(change.nodeId
+            ? [nodeName(change.nodeId, 'before'), nodeName(change.nodeId, 'after')]
+            : []),
+        ].some((value) => value.toLocaleLowerCase().includes(needle)),
     );
   const active = visible.find((item) => item.index === selected) ?? visible[0];
   const change = active?.change;
@@ -164,9 +211,17 @@ export default function PlanningChanges({
                   <dl>
                     {Object.entries(node).map(([field, item]) => (
                       <div key={field}>
-                        <dt>{field === 'id' ? '步骤编号' : (labels[field] ?? field)}</dt>
+                        <dt>
+                          {field === 'id'
+                            ? '步骤标识'
+                            : field === 'name' &&
+                                'type' in node &&
+                                (node.type === 'file' || node.type === 'excel')
+                              ? '文件名'
+                              : (labels[field] ?? field)}
+                        </dt>
                         <dd>
-                          <pre>{fieldValue(field, item)}</pre>
+                          <pre>{displayValue(field, item, change, side)}</pre>
                         </dd>
                       </div>
                     ))}
@@ -176,7 +231,7 @@ export default function PlanningChanges({
                 <pre>
                   {change.kind === 'moved'
                     ? position(value, side)
-                    : fieldValue(change.path.split('/').at(-1)!, value)}
+                    : displayValue(change.path.split('/').at(-1)!, value, change, side)}
                 </pre>
               )}
             </section>
@@ -262,7 +317,7 @@ export default function PlanningChanges({
               >
                 <span>
                   <strong>{title(change)}</strong>
-                  <small>{change.nodeId ? `步骤 ${change.nodeId}` : '整个流程'}</small>
+                  <small>{stepPosition(change)}</small>
                 </span>
                 <span className={`planning-change-kind ${change.kind}`}>
                   {categories[change.kind]}
