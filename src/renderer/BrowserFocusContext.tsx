@@ -3,7 +3,7 @@ import type { FocusedTarget } from '../shared/browser-observation';
 import type { ElementTarget } from '../shared/element-picker';
 
 type Entry = FocusedTarget & {
-  apply: (target: ElementTarget) => boolean;
+  apply: (target: ElementTarget) => boolean | Promise<boolean>;
   origin: HTMLElement | null;
 };
 const BrowserFocusContext = createContext<{

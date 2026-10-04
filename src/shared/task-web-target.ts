@@ -5,6 +5,7 @@ import type { Flow, Step } from './types';
 import { resolveValue } from '../core/engine';
 
 import { selectedOutputWrite, type TaskOutputTarget } from './task-output';
+import type { RepairSelection } from './task-repair';
 
 export type WebPageIdentity = {
   resourceId: string;
@@ -19,12 +20,19 @@ export type TaskWebTarget = {
   access: 'read';
   page: WebPageIdentity;
   selectedAt: string;
+  element?: TaskWebElement;
 };
+export type TaskWebElement = {
+  requestId: string;
+  target: RepairSelection['target'];
+};
+export type TaskWebElementCapture = { page: WebPageIdentity; element: TaskWebElement };
 export type TaskWebPreview = {
   ready: boolean;
   page?: WebPageIdentity;
   token?: string;
   reason?: string;
+  element?: TaskWebElement;
 };
 export const WEB_CONTEXT_ID = '_flowark_selected_web';
 const selection = {
@@ -36,8 +44,16 @@ const selection = {
     .max(Number.MAX_SAFE_INTEGER - 1),
 };
 export const webTargetMethods = {
-  'task.web.preview': z.object(selection).strict(),
-  'task.web.select': z.object({ ...selection, token: z.string().regex(/^[a-f0-9]{64}$/) }).strict(),
+  'task.web.preview': z
+    .object({ ...selection, pickRequestId: z.string().uuid().optional() })
+    .strict(),
+  'task.web.select': z
+    .object({
+      ...selection,
+      pickRequestId: z.string().uuid().optional(),
+      token: z.string().regex(/^[a-f0-9]{64}$/),
+    })
+    .strict(),
   'task.web.clear': z.object(selection).strict(),
 };
 export function pageIdentity(value: EmbeddedReview): WebPageIdentity {
@@ -81,11 +97,18 @@ export function webContext(target: TaskWebTarget, output?: TaskOutputTarget): Pl
   return {
     id: WEB_CONTEXT_ID,
     kind: 'web',
-    label: '已选网页 · 只读',
+    label: target.element ? '已选网页元素 · 只读' : '已选网页 · 只读',
     text: JSON.stringify(
       {
         url: target.page.url,
         title: target.page.title,
+        ...(target.element
+          ? {
+              element: target.element.target,
+              elementScope:
+                '只允许 browser read/wait 读取此静态 selector 和 framePath；不能 navigate 或改为其他定位。元素变化后必须重新选择。',
+            }
+          : {}),
         account: '未核对',
         workspace: '本机内置浏览器',
         access:
@@ -111,6 +134,17 @@ export function assertWebFlow(flow: Flow, target: TaskWebTarget, output?: TaskOu
   const block = (steps: Step[]) => {
     for (const n of steps) {
       if (n.type === 'browser') {
+        if (
+          target.element &&
+          (!['read', 'wait'].includes(n.operation) ||
+            n.selector !== target.element.target.selector ||
+            JSON.stringify(
+              n.version >= 2
+                ? ((n as Extract<Step, { type: 'browser'; version: 2 | 3 }>).framePath ?? [])
+                : [],
+            ) !== JSON.stringify(target.element.target.framePath))
+        )
+          throw new Error('当前任务只允许读取已选网页元素，不能更换定位、框架或重新打开网页');
         if (n.operation === 'navigate') {
           let url: unknown;
           try {

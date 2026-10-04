@@ -11,33 +11,53 @@ import {
   type TaskWebTarget,
   type TaskWebPreview,
   type WebPageIdentity,
+  type TaskWebElementCapture,
+  type TaskWebElement,
 } from '../shared/task-web-target';
 
 export class TaskWebTargets {
   private readonly session = uid();
   constructor(
     private store: Store,
-    private deps: { page: () => Promise<EmbeddedReview>; assertSelectable: () => void },
+    private deps: {
+      page: () => Promise<EmbeddedReview>;
+      captureElement?: (requestId: string) => Promise<TaskWebElementCapture>;
+      verifyElement?: (page: WebPageIdentity, element: TaskWebElement) => Promise<unknown>;
+      assertSelectable: () => void;
+    },
   ) {}
   private unchanged(task: PlanningTask) {
     this.deps.assertSelectable();
     if (digest(this.store.get('ai-task', task.id)) !== digest(task))
       throw new Error('任务已变化，请重新检查网页目标');
   }
-  async preview(task: PlanningTask): Promise<TaskWebPreview> {
+  async preview(task: PlanningTask, pickRequestId?: string): Promise<TaskWebPreview> {
     this.unchanged(task);
     try {
       const page = pageIdentity(await this.deps.page());
+      let element: TaskWebElement | undefined;
+      if (pickRequestId) {
+        if (!this.deps.captureElement) throw new Error('网页元素选择不可用');
+        const captured = await this.deps.captureElement(pickRequestId);
+        if (captured.element.requestId !== pickRequestId || !sameWebPage(captured.page, page))
+          throw new Error('元素来源与当前网页不一致，请重新选取');
+        element = captured.element;
+      }
       this.unchanged(task);
-      return { ready: true, page, token: digest({ task, page, session: this.session }) };
+      return {
+        ready: true,
+        page,
+        ...(element ? { element } : {}),
+        token: digest({ task, page, element, session: this.session }),
+      };
     } catch (error) {
       this.unchanged(task);
       return { ready: false, reason: (error as Error).message };
     }
   }
-  async select(task: PlanningTask, token: string): Promise<TaskWebTarget> {
+  async select(task: PlanningTask, token: string, pickRequestId?: string): Promise<TaskWebTarget> {
     if (task.context.length >= 20) throw new Error('已选网页需要一项上下文，请先移除至少一项资料');
-    const preview = await this.preview(task);
+    const preview = await this.preview(task, pickRequestId);
     if (!preview.ready || !preview.page || preview.token !== token)
       throw new Error(preview.reason || '网页或任务已变化，请重新检查后选择');
     if (
@@ -53,6 +73,7 @@ export class TaskWebTargets {
       access: 'read',
       page: preview.page,
       selectedAt: now(),
+      ...(preview.element ? { element: preview.element } : {}),
     };
     assertWebContext(task.context, target);
     return target;
@@ -69,6 +90,11 @@ export class TaskWebTargets {
     this.current(target);
     if (!sameWebPage(expected, actual))
       throw new Error('已选网页已刷新、切换或重新打开，请重新选择目标');
+    if (target.element) {
+      if (!this.deps.verifyElement) throw new Error('网页元素复验不可用，请重新选择目标');
+      await this.deps.verifyElement(expected, target.element);
+      this.current(target);
+    }
   }
   async record(record: FlowRecord, expected?: WebPageIdentity) {
     const target = record.webTarget;

@@ -113,6 +113,12 @@ export default function TaskBriefPage({
           {task.webTarget && (
             <div aria-label="已选网页来源">
               <p>{task.webTarget.page.title || '未命名网页'} · 只读 · 账号未核对</p>
+              {task.webTarget.element && (
+                <p>
+                  仅此元素：
+                  {task.webTarget.element.target.label || task.webTarget.element.target.tag}
+                </p>
+              )}
               <button disabled={busy} onClick={target}>
                 查看或更换网页目标
               </button>

@@ -203,6 +203,10 @@ export class Runtime {
     });
     this.webTargets = new TaskWebTargets(this.store, {
       page: () => this.system('browser.embedded.review', {}),
+      captureElement: (requestId) =>
+        this.system('browser.embedded.task-element.capture', { requestId }),
+      verifyElement: (page, element) =>
+        this.system('browser.embedded.task-element.verify', { page, element }),
       assertSelectable: () => {
         this.assertAdmitting();
         if (this.active || this.store.list<Run>('run').some((r) => r.state === 'QUEUED'))

@@ -207,6 +207,15 @@ export default function TaskUnderstandingPage({
                 ? '已选择工具对象；可先核对内容并生成方案。'
                 : '尚未选择操作对象，按需求核对后再执行。'}
           </p>
+          {web?.element && (
+            <p>
+              只读取已选元素：{web.element.target.label || web.element.target.tag} ·{' '}
+              {web.element.target.framePath.length
+                ? `${web.element.target.framePath.length} 层框架`
+                : '主页面'}
+              。页面或元素变化后需重新选择。
+            </p>
+          )}
           {!!task.toolTargets?.length && (
             <details className="task-understanding-tools">
               <summary>核对已选工具 · {task.toolTargets.length} 个对象</summary>

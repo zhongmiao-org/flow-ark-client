@@ -3,6 +3,7 @@ import type { PlanningTask, TaskDetail } from '../shared/planning';
 import { sameWebPage, type TaskWebPreview } from '../shared/task-web-target';
 import DesktopTaskPlan from './DesktopTaskPlan';
 import TaskTargetConnections from './TaskTargetConnections';
+import ElementPicker from './ElementPicker';
 import {
   DesktopWindowList,
   DesktopWindowCapabilities,
@@ -99,6 +100,16 @@ export default function TaskWebTargetPage({
   }, [active, tab, busy, error, invalidUrl, checkingWeb, preview]);
   const epoch = useRef(0),
     locked = useRef(false);
+  const mounted = useRef(true);
+  const scopeKey = `${active}:${tab}:${task.id}:${task.revision}`;
+  const scope = useRef({ key: scopeKey });
+  if (scope.current.key !== scopeKey) scope.current = { key: scopeKey };
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const identity = { id: task.id, revision: task.revision };
   const refresh = async () => {
     const ticket = ++epoch.current;
@@ -137,10 +148,16 @@ export default function TaskWebTargetPage({
     };
   }, [active, task.id, task.revision, tab]);
   const act = async (
-    operation: () => Promise<void>,
+    operation: (isCurrent: () => boolean) => Promise<void>,
     action: 'open' | 'refresh' | 'select' | 'clear',
+    propagate = false,
   ) => {
-    if (locked.current) return;
+    if (locked.current) {
+      if (propagate) throw new Error('正在确认网页，请稍后重新选择。');
+      return;
+    }
+    const owner = scope.current;
+    const isCurrent = () => mounted.current && scope.current === owner;
     locked.current = true;
     epoch.current++;
     setBusy(true);
@@ -148,15 +165,20 @@ export default function TaskWebTargetPage({
     setError('');
     setInvalidUrl(false);
     try {
-      await operation();
+      await operation(isCurrent);
     } catch (e) {
-      setError((e as Error).message);
-      if (action === 'open') setCheckingWeb(false);
+      if (propagate) throw e;
+      if (isCurrent()) {
+        setError((e as Error).message);
+        if (action === 'open') setCheckingWeb(false);
+      }
     } finally {
       locked.current = false;
-      if (action === 'refresh') focusPreview.current = true;
-      setWebAction(undefined);
-      setBusy(false);
+      if (isCurrent() && action === 'refresh') focusPreview.current = true;
+      if (mounted.current) {
+        setWebAction(undefined);
+        setBusy(false);
+      }
     }
   };
   const current = preview.page;
@@ -174,12 +196,14 @@ export default function TaskWebTargetPage({
       urlInput.current?.focus();
       return;
     }
-    void act(async () => {
+    void act(async (isCurrent) => {
       setPreview({ ready: false });
       setCheckingWeb(true);
       await api('browser.embedded.enable');
+      if (!isCurrent()) return;
       await api('browser.embedded.navigate', { url: parsed.href });
       await changed();
+      if (!isCurrent()) return;
       showBrowser();
       await refresh();
     }, 'open');
@@ -190,6 +214,26 @@ export default function TaskWebTargetPage({
       setCheckingWeb(true);
       await refresh();
     }, 'refresh');
+  const selectElement = (pickRequestId: string) =>
+    act(
+      async (isCurrent) => {
+        const picked: TaskWebPreview = await api('task.web.preview', {
+          ...identity,
+          pickRequestId,
+        });
+        if (!isCurrent()) throw new Error('已离开当前任务对象，请重新选择。');
+        if (!picked.ready || !picked.token || !picked.element)
+          throw new Error(picked.reason || '未取得可确认的网页元素，请重新选择。');
+        const next: TaskDetail = await api('task.web.select', {
+          ...identity,
+          pickRequestId,
+          token: picked.token,
+        });
+        if (isCurrent()) selected(next);
+      },
+      'select',
+      true,
+    );
   if (desktopPlan && desktop.selected && desktop.preview?.status === 'ready')
     return (
       <DesktopTaskPlan
@@ -280,7 +324,9 @@ export default function TaskWebTargetPage({
             {task.webTarget && (
               <p className="ai-task-note" role="status">
                 {savedCurrent
-                  ? '已保存此网页选择；执行前仍会再次核对。'
+                  ? task.webTarget.element
+                    ? `上次选择的元素：${task.webTarget.element.target.label || task.webTarget.element.target.tag}。可重新选取元素或改用整个网页。`
+                    : '已保存此网页选择；执行前仍会再次核对。'
                   : '上次选择的网页已变化或尚未打开，请重新检查并确认。'}
               </p>
             )}
@@ -378,6 +424,18 @@ export default function TaskWebTargetPage({
                 <p>本机内置浏览器 / 同一受控会话</p>
                 <p className="task-web-url">{current?.url}</p>
               </div>
+              <ElementPicker
+                purpose="task"
+                active={active && tab === 'web'}
+                disabled={busy || !webReady}
+                selector={task.webTarget?.element?.target.selector ?? ''}
+                framePath={task.webTarget?.element?.target.framePath ?? []}
+                pickLabel={task.webTarget?.element ? '重新选择页面元素' : '选择页面元素'}
+                confirmBeforeApply
+                allowInspect={false}
+                onInspect={() => {}}
+                onSelect={(_, requestId) => selectElement(requestId)}
+              />
               <h2>{webReady ? '本次可用能力' : '网页就绪后可用'}</h2>
               {['读取页面文字', '定位页面元素', '新建本地输出文件'].map((label) => (
                 <label className="ai-task-checkbox" key={label}>
@@ -392,7 +450,7 @@ export default function TaskWebTargetPage({
               <p className="ai-task-note">
                 只读选择不会读取账号、Cookie
                 或整页内容。确认后仅将显示的网页标题、地址和能力范围加入本次 AI
-                上下文；发送前仍可完整核对。
+                上下文。选取具体元素后，还会包含它的名称与定位信息，并限定只读取该元素；发送前仍可完整核对。
               </p>
               {!webReady && (
                 <p
@@ -412,16 +470,20 @@ export default function TaskWebTargetPage({
                     className="primary"
                     disabled={busy || !webReady}
                     onClick={() =>
-                      void act(async () => {
+                      void act(async (isCurrent) => {
                         const next = await api('task.web.select', {
                           ...identity,
                           token: preview.token,
                         });
-                        selected(next);
+                        if (isCurrent()) selected(next);
                       }, 'select')
                     }
                   >
-                    {webAction === 'select' ? '正在确认…' : '使用这个目标'}
+                    {webAction === 'select'
+                      ? '正在确认…'
+                      : task.webTarget?.element
+                        ? '改用整个网页'
+                        : '使用这个目标'}
                   </button>
                 ) : (
                   <button className="primary" disabled={busy} onClick={() => setTab('web')}>
@@ -448,7 +510,10 @@ export default function TaskWebTargetPage({
                 <button
                   disabled={busy}
                   onClick={() =>
-                    void act(async () => selected(await api('task.web.clear', identity)), 'clear')
+                    void act(async (isCurrent) => {
+                      const next = await api('task.web.clear', identity);
+                      if (isCurrent()) selected(next);
+                    }, 'clear')
                   }
                 >
                   {webAction === 'clear' ? '正在移除…' : '移除网页目标'}

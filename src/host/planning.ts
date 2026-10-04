@@ -418,9 +418,11 @@ export class Planning {
     if (method.startsWith('task.web.')) {
       if (!this.deps.web) throw new Error('网页对象选择不可用');
       if (task.scope) throw new Error('请先退出单步修改，再更换整个任务的对象');
-      if (method === 'task.web.preview') return this.deps.web.preview(task);
+      if (method === 'task.web.preview') return this.deps.web.preview(task, args.pickRequestId);
       const webTarget =
-        method === 'task.web.select' ? await this.deps.web.select(task, args.token) : undefined;
+        method === 'task.web.select'
+          ? await this.deps.web.select(task, args.token, args.pickRequestId)
+          : undefined;
       unchanged();
       taskPlanningContext(
         task.context,

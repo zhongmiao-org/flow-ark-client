@@ -21,10 +21,12 @@ export default function ElementPicker({
   active = true,
   pickLabel,
   controls,
+  purpose = 'step',
 }: {
   selector: string;
   framePath: string[];
-  onSelect: (target: ElementTarget, requestId: string) => void;
+  onSelect: (target: ElementTarget, requestId: string) => void | Promise<void>;
+  purpose?: 'step' | 'task';
   onInspect: (target: ElementTarget) => void;
   onStart?: () => void;
   onAdjust?: () => void;
@@ -224,7 +226,9 @@ export default function ElementPicker({
     clearCandidate();
     setApplying(false);
     setError('');
-    setMessage('已放弃待应用目标，原步骤保持不变');
+    setMessage(
+      purpose === 'task' ? '已放弃此目标，任务选择保持不变' : '已放弃待应用目标，原步骤保持不变',
+    );
     pickButton.current?.focus();
   };
   const apply = async () => {
@@ -243,8 +247,9 @@ export default function ElementPicker({
           ).target
         : await api('browser.embedded.pick.confirm', { requestId: selected.requestId });
       if (!alive.current || version.current !== current || pending.current !== selected) return;
+      await select.current(target, selected.requestId);
+      if (!alive.current || version.current !== current || pending.current !== selected) return;
       clearCandidate();
-      select.current(target, selected.requestId);
       setMessage('已应用目标 · ' + (target.label || target.tag));
       requestAnimationFrame(() => {
         if (alive.current && pickButton.current?.getClientRects().length)
@@ -274,16 +279,23 @@ export default function ElementPicker({
       const next = { ...selected, target: receipt.target, focused: true };
       pending.current = next;
       setCandidate(next);
-      browserFocus.open(receipt, (target) => {
+      browserFocus.open(receipt, async (target) => {
         if (
           !alive.current ||
           !canApply.current ||
           pending.current?.requestId !== selected.requestId
         )
           return false;
-        clearCandidate();
-        select.current(target, selected.requestId);
-        setMessage('已应用目标 · ' + (target.label || target.tag));
+        setApplying(true);
+        try {
+          await select.current(target, selected.requestId);
+          if (alive.current && pending.current?.requestId === selected.requestId) {
+            clearCandidate();
+            setMessage('已应用目标 · ' + (target.label || target.tag));
+          }
+        } finally {
+          if (alive.current) setApplying(false);
+        }
         return true;
       });
     } catch (reason) {
@@ -363,7 +375,10 @@ export default function ElementPicker({
               tone: 'success',
               badge: applying ? '正在复核' : '待确认',
               title: '确认选取的目标',
-              detail: '尚未修改步骤。应用时会重新核对网页与目标，原操作和填写值保持不变。',
+              detail:
+                purpose === 'task'
+                  ? '尚未更改任务对象。确认后只将此元素加入任务，继续核对理解与方案。'
+                  : '尚未修改步骤。应用时会重新核对网页与目标，原操作和填写值保持不变。',
             }
           : verified
             ? {
@@ -444,7 +459,7 @@ export default function ElementPicker({
                 disabled={!active || disabled || applying || focusing}
                 onClick={() => void apply()}
               >
-                {applying ? '正在核对目标…' : '应用目标'}
+                {applying ? '正在核对目标…' : purpose === 'task' ? '使用这个目标' : '应用目标'}
               </button>
               {browserFocus && (
                 <button

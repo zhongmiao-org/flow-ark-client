@@ -141,7 +141,7 @@ export class Sessions {
           this.system(expected ? 'browser.embedded.perform.selected' : 'browser.embedded.perform', {
             token: session.token,
             command,
-            ...(expected ? { expected } : {}),
+            ...(expected ? { expected, element: target?.element } : {}),
           }),
           [signal, session.stop.signal],
         );

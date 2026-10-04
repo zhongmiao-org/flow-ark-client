@@ -21,7 +21,13 @@ import { canonical, errorText } from '../shared/utils';
 import type { RepairSelection } from '../shared/task-repair';
 import { confirmWebContentsClosed } from './native-webcontents-close';
 import type { EmbeddedReview } from '../shared/run-review';
-import { pageIdentity, sameWebPage, type WebPageIdentity } from '../shared/task-web-target';
+import {
+  pageIdentity,
+  sameWebPage,
+  type WebPageIdentity,
+  type TaskWebElement,
+  type TaskWebElementCapture,
+} from '../shared/task-web-target';
 import { observationPan, type ObservationPan } from '../shared/browser-observation';
 import type { FocusedTarget } from '../shared/browser-observation';
 import type { PointIdentity } from '../adapters/embedded-point-target';
@@ -46,6 +52,7 @@ type Resource = {
   pickDocument?: { requestId: string; revision: number };
   confirmedTarget?: RepairSelection;
   focusCandidate?: FocusCandidate;
+  taskElements?: Map<string, { selection: RepairSelection; point: PointIdentity }>;
   token?: string;
   phase: 'starting' | 'ready' | 'closing' | 'unknown' | 'closed';
   view?: WebContentsView;
@@ -684,7 +691,12 @@ export class EmbeddedBrowser {
     this.assertResource(resource);
     return this.perform({ operation: 'navigate', value: url, timeoutMs: 20000 }, resource.token);
   }
-  async perform(command: BrowserCommand, token?: string, expected?: WebPageIdentity) {
+  async perform(
+    command: BrowserCommand,
+    token?: string,
+    expected?: WebPageIdentity,
+    element?: TaskWebElement,
+  ) {
     this.assertAvailable();
     const resource = this.resource;
     if (
@@ -701,6 +713,14 @@ export class EmbeddedBrowser {
         throw new Error('所选网页已变化，请重新选择目标');
     };
     verifySelected();
+    if (
+      element &&
+      (!expected ||
+        !['read', 'wait'].includes(command.operation) ||
+        command.selector !== element.target.selector ||
+        canonical(command.framePath ?? []) !== canonical(element.target.framePath))
+    )
+      throw new Error('操作超出已选网页元素的只读范围');
     if (
       expected &&
       (command.operation === 'navigate'
@@ -740,6 +760,7 @@ export class EmbeddedBrowser {
       await page.picker.cancel();
       this.assertOperation(resource, operation);
       verifySelected();
+      if (element) await this.inspectTaskElement(resource, expected!, element, operation);
       if (
         command.operation === 'screenshot' &&
         (!this.window.isVisible() || this.window.isMinimized() || !this.visible)
@@ -754,6 +775,7 @@ export class EmbeddedBrowser {
             idle = resolve;
             resource.contents!.once('did-stop-loading', idle);
           });
+        if (element) await this.inspectTaskElement(resource, expected!, element, operation);
         return result;
       }
       let resolve!: () => void, reject!: (error: Error) => void;
@@ -985,6 +1007,10 @@ export class EmbeddedBrowser {
   }
   async system(method: string, args: any) {
     switch (method) {
+      case 'browser.embedded.task-element.capture':
+        return this.captureTaskElement(args.requestId);
+      case 'browser.embedded.task-element.verify':
+        return this.verifyTaskElement(args.page, args.element);
       case 'browser.embedded.pick.capture':
         return this.captureSelection(args.requestId);
       case 'browser.embedded.target.verify':
@@ -1097,6 +1123,7 @@ export class EmbeddedBrowser {
           args.command,
           args.token,
           pageIdentity({ ...args.expected, started: true, loading: false }),
+          args.element,
         );
       case 'browser.embedded.close':
         return this.close(args.token, args.resourceId);
@@ -1115,6 +1142,98 @@ export class EmbeddedBrowser {
       default:
         throw new Error('未知网页方法');
     }
+  }
+
+  private async captureTaskElement(requestId: string): Promise<TaskWebElementCapture> {
+    this.assertAvailable();
+    const resource = this.resource;
+    if (!resource) throw new Error('请先打开网页并选取元素');
+    const existing = resource.taskElements?.get(requestId);
+    if (existing) {
+      const { resourceId, documentRevision, url, title, target } = existing.selection;
+      const page = { resourceId, documentRevision, url, title };
+      const element = { requestId, target };
+      await this.verifyTaskElement(page, element);
+      return { page, element };
+    }
+    await this.focus(
+      requestId,
+      resource.focusCandidate?.selection.requestId === requestId ? 'confirm' : 'capture',
+    );
+    this.assertResource(resource);
+    const candidate = resource.focusCandidate;
+    if (!candidate || candidate.selection.requestId !== requestId)
+      throw new Error('所选元素已取消，请重新选取');
+    const references = (resource.taskElements ??= new Map());
+    for (const [key, value] of references)
+      if (value.selection.documentRevision !== resource.documentRevision) references.delete(key);
+    if (references.size >= 128)
+      throw new Error('此网页保留的元素选择已达上限，请重新打开网页后选取');
+    const selection = structuredClone(candidate.selection);
+    references.set(requestId, { selection, point: { ...candidate.point } });
+    const { resourceId, documentRevision, url, title, target } = selection;
+    return { page: { resourceId, documentRevision, url, title }, element: { requestId, target } };
+  }
+
+  private async inspectTaskElement(
+    resource: Resource,
+    page: WebPageIdentity,
+    element: TaskWebElement,
+    operation: Operation,
+  ) {
+    const captured = resource.taskElements?.get(element.requestId);
+    const check = () => {
+      this.assertOperation(resource, operation);
+      const current = pageIdentity({ ...this.review(), blocked: undefined });
+      if (
+        !captured ||
+        resource.taskElements?.get(element.requestId) !== captured ||
+        !sameWebPage(page, current) ||
+        !sameWebPage(page, captured.selection) ||
+        canonical(element.target) !== canonical(captured.selection.target)
+      )
+        throw new Error('已选网页元素已失效，请回到任务重新选取');
+    };
+    check();
+    const inspected = await resource.page!.inspectTarget(
+      element.target.selector,
+      element.target.framePath,
+      false,
+      captured!.point,
+    );
+    check();
+    const { selector, framePath, label, tag, inputType } = inspected;
+    const target = {
+      selector,
+      framePath,
+      label,
+      tag,
+      inputType,
+      structural: inspected.structural || element.target.structural,
+    };
+    if (canonical(target) !== canonical(element.target))
+      throw new Error('已选元素内容或结构已变化，请回到任务重新选取');
+  }
+
+  private async verifyTaskElement(page: WebPageIdentity, element: TaskWebElement) {
+    this.assertAvailable();
+    const resource = this.resource;
+    const review = this.review();
+    if (!resource || !review.started || review.loading || review.blocked)
+      throw new Error(review.blocked || '请打开原网页并重新选取元素');
+    let stop!: () => void;
+    const stopped = new Promise<never>((_, reject) => {
+      stop = () => reject(new Error('网页会话已关闭'));
+    });
+    const operation: Operation = { stop };
+    resource.operation = operation;
+    await Promise.race([
+      this.inspectTaskElement(resource, page, element, operation).finally(() =>
+        this.finishOperation(resource, operation),
+      ),
+      stopped,
+    ]);
+    return true;
   }
 
   private async captureSelection(requestId: string): Promise<RepairSelection> {

@@ -2475,7 +2475,12 @@ export default function AITaskWorkspace(props: Props) {
                         <div className="ai-task-note" aria-label="已选网页来源">
                           <b>{detail.task.webTarget.page.title || '未命名网页'}</b>
                           <p>{detail.task.webTarget.page.url}</p>
-                          <p>只读取此网页 · 账号未核对 · 本机内置浏览器</p>
+                          <p>
+                            {detail.task.webTarget.element
+                              ? `只读取元素：${detail.task.webTarget.element.target.label || detail.task.webTarget.element.target.tag}`
+                              : '只读取此网页'}{' '}
+                            · 账号未核对 · 本机内置浏览器
+                          </p>
                           <button
                             disabled={inputDisabled || !!scope}
                             onClick={() => void openTarget()}
