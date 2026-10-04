@@ -3,7 +3,7 @@ import type { taskRunPresentation } from './task-run-presentation';
 import './task-execution-steps.css';
 import type { Flow } from '../shared/types';
 import { flatten } from './flow-editing';
-import { taskStepSummary, taskStepTitle } from './task-step-presentation';
+import { taskStepSummary } from './task-step-presentation';
 
 type Model = ReturnType<typeof taskRunPresentation>;
 type Filter = 'all' | 'completed' | 'unresolved' | 'unvisited';
@@ -53,7 +53,7 @@ export default function TaskExecutionSteps({
   const visible = model.rows
     .map((row, index) => ({ row, index }))
     .filter(
-      ({ row }) =>
+      ({ row, index }) =>
         (filter === 'all' ||
           (filter === 'completed'
             ? row.ended
@@ -64,8 +64,10 @@ export default function TaskExecutionSteps({
           row.name,
           row.nodeId,
           row.instance,
-          compact && nodes.has(row.nodeId) ? taskStepTitle(nodes.get(row.nodeId)!) : '',
-        ].some((value) => value.toLocaleLowerCase().includes(needle)),
+          String(index + 1),
+          String(index + 1).padStart(2, '0'),
+          nodes.get(row.nodeId)?.name,
+        ].some((value) => typeof value === 'string' && value.toLocaleLowerCase().includes(needle)),
     );
   const focusLabel =
     model.terminal || model.uncertain || model.view.closing
@@ -176,7 +178,7 @@ export default function TaskExecutionSteps({
               <span className="task-run-index">{String(index + 1).padStart(2, '0')}</span>
               <div>
                 <div className="task-execution-row-heading">
-                  <strong>{compact && node ? taskStepTitle(node) : row.name}</strong>
+                  <strong>{row.name}</strong>
                   {compact && (
                     <span className={'run-status run-tone-' + row.tone}>{row.label}</span>
                   )}

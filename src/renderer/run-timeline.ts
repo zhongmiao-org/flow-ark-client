@@ -49,7 +49,9 @@ export function runTimeline(detail: RunPresentationInput, now = Date.now()) {
         : live && current && view.step.kind === 'waiting'
           ? '等待人工'
           : live && row.started
-            ? '运行中'
+            ? detail.run.state === 'PAUSED'
+              ? '已暂停 · 未完成'
+              : '运行中'
             : row.started
               ? '未完成 · 待核对'
               : '尚未执行';

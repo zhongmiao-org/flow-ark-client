@@ -518,6 +518,14 @@
 .task-run-fixed-evidence > section {
   margin-top: 12px;
 }
+@container (max-width: 950px) {
+  .task-run-live {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .task-run-live > .ai-task-card {
+    min-height: auto;
+  }
+}
 @container (max-width: 850px) {
   .task-run-columns {
     grid-template-columns: minmax(0, 1fr);

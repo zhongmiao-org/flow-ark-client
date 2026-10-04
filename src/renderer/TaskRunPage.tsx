@@ -665,7 +665,7 @@ export default function TaskRunPage({
                         </div>
                         <div>
                           <dt>{model.view.step.kind === 'paused' ? '下一步' : '当前'}</dt>
-                          <dd>{model.view.step.label}</dd>
+                          <dd>{model.current?.name ?? model.view.step.label}</dd>
                         </div>
                         <div>
                           <dt>尚未执行</dt>

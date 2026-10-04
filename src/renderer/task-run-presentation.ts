@@ -3,7 +3,6 @@ import type { McpReceipt } from '../shared/mcp-run';
 import { mcpReceiptsForRun } from './mcp-run-presentation';
 import { presentRun } from '../shared/run-presentation';
 import { runTimeline } from './run-timeline';
-import { kinds } from './node-kinds';
 import { flatten } from './flow-editing';
 import { desktopRunPresentation, type DesktopRunInput } from './desktop-run-presentation';
 
@@ -48,14 +47,14 @@ export function taskRunPresentation(
         (receipt) => receipt.status === 'unknown',
       )) ||
     (!terminal && input.run.state !== 'QUEUED' && view.activity !== 'active');
-  const rows = runTimeline(detail, now).map((row) => ({
-    ...row,
-    name: row.name === row.nodeId && row.type ? (kinds[row.type]?.label ?? row.name) : row.name,
-  }));
+  const nodes = new Map(flatten(input.snapshot?.steps ?? []).map((n) => [n.id, n]));
+  const rows = runTimeline(detail, now).map((row) => {
+    const node = nodes.get(row.nodeId);
+    return { ...row, name: node ? taskStepTitle(node) : row.name };
+  });
   const completed = rows.filter((row) => row.ended);
   const unresolved = rows.filter((row) => row.started && !row.ended);
   const unvisited = rows.filter((row) => !row.started && !row.ended);
-  const nodes = new Map(flatten(input.snapshot?.steps ?? []).map((n) => [n.id, n]));
   const current = rows.find((row) => row.instance === view.step.instance);
   const success =
     input.run.state === 'SUCCEEDED' &&
