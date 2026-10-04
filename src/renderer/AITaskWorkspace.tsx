@@ -1439,7 +1439,7 @@ export default function AITaskWorkspace(props: Props) {
         ))}
         {detail.task.webTarget && (
           <div>
-            <h3>已选网页 · 只读</h3>
+            <h3>{webContext(detail.task.webTarget).label}</h3>
             <pre>
               {
                 webContext(

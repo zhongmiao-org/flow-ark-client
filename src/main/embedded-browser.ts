@@ -49,7 +49,7 @@ type Download = {
 type Resource = {
   id: string;
   documentRevision: number;
-  pickDocument?: { requestId: string; revision: number };
+  pickDocument?: { requestId: string; revision: number; returnedFocus?: boolean };
   confirmedTarget?: RepairSelection;
   focusCandidate?: FocusCandidate;
   taskElements?: Map<string, { selection: RepairSelection; point: PointIdentity }>;
@@ -1088,14 +1088,35 @@ export class EmbeddedBrowser {
       }
       case 'browser.embedded.pick.focus':
         return this.focus(args.requestId, args.action);
-      case 'browser.embedded.pick.status':
+      case 'browser.embedded.pick.status': {
         this.layout();
-        return (
-          this.resource?.page?.picker.status(args.requestId) ?? {
-            requestId: args.requestId,
-            phase: 'cancelled',
-          }
-        );
+        const resource = this.resource;
+        const state = resource?.page?.picker.status(args.requestId) ?? {
+          requestId: args.requestId,
+          phase: 'cancelled',
+        };
+        const source = resource?.pickDocument;
+        if (
+          resource &&
+          source &&
+          state.phase === 'selected' &&
+          source.requestId === args.requestId &&
+          !source.returnedFocus
+        ) {
+          source.returnedFocus = true;
+          // DOM focus alone cannot leave a focused native WebContentsView.
+          // Return focus once, without activating a background window or
+          // interrupting an input the user has already focused in the editor.
+          if (
+            resource.presented &&
+            !this.window.isDestroyed() &&
+            this.window.isFocused() &&
+            resource.contents?.isFocused()
+          )
+            this.window.webContents.focus();
+        }
+        return state;
+      }
       case 'browser.embedded.pick.cancel':
         if (
           this.resource?.focusCandidate &&

@@ -740,7 +740,7 @@ export default function BrowserSidebar({
         <footer>
           {targetView ? (
             <span>
-              定位来自选择的真实元素；无法唯一匹配时不允许确认。返回原步骤时保留草稿与同一网页会话。
+              定位来自选择的真实元素；无法唯一匹配时不允许确认。返回选择来源时保留草稿与同一网页会话。
             </span>
           ) : (
             <>

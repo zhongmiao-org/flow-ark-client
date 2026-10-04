@@ -113,8 +113,8 @@ export function webContext(target: TaskWebTarget, output?: TaskOutputTarget): Pl
         workspace: '本机内置浏览器',
         access:
           output?.onConflict === 'overwrite'
-            ? '只读取本次选择的网页；不提交表单、不发送消息。仅用户另行确认的 task_output 文件可覆盖。'
-            : '只读取本次选择的网页，可新建本地文本文件；不提交表单、不发送消息、不覆盖文件。',
+            ? `只读取本次选择的${target.element ? '网页元素' : '网页'}；不提交表单、不发送消息。仅用户另行确认的 task_output 文件可覆盖。`
+            : `只读取本次选择的${target.element ? '网页元素' : '网页'}，可新建本地文本文件；不提交表单、不发送消息、不覆盖文件。`,
       },
       null,
       2,
