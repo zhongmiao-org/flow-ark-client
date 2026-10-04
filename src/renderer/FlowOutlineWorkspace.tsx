@@ -22,10 +22,9 @@ export type OutlineLocation = {
   view: 'list' | 'graph';
   runSelected: string;
   runId?: string;
-  group: { draft: string; run: string };
   collapsed: { draft: Set<string>; run: Set<string> };
   query: string;
-  scroll: number;
+  scroll: { draft: number; run: number };
 };
 const format = (value: unknown) => {
   const text = typeof value === 'string' ? value : (JSON.stringify(value, null, 2) ?? '未设置');
@@ -41,6 +40,7 @@ export default function FlowOutlineWorkspace({
   activeRunId,
   saved,
   save,
+  saveBusy,
   showRun,
   memory,
   more,
@@ -55,6 +55,7 @@ export default function FlowOutlineWorkspace({
   saved: boolean;
   more?: () => void;
   save: () => void;
+  saveBusy: boolean;
   showRun: (detail: any) => void;
   memory: MutableRefObject<Map<string, OutlineLocation>>;
 }) {
@@ -62,14 +63,14 @@ export default function FlowOutlineWorkspace({
   const [mode, setMode] = useState<'draft' | 'run'>(origin?.mode ?? 'draft');
   const [view, setView] = useState<'list' | 'graph'>(origin?.view ?? 'list');
   const [runSelected, setRunSelected] = useState(origin?.runSelected ?? '');
-  const [group, setGroup] = useState(origin?.group ?? { draft: '', run: '' });
   const [collapsed, setCollapsed] = useState(
     origin?.collapsed ?? { draft: new Set<string>(), run: new Set<string>() },
   );
   const [query, setQuery] = useState(origin?.query ?? '');
   const [focusRequest, setFocusRequest] = useState(0);
   const root = useRef<HTMLElement>(null),
-    list = useRef<HTMLDivElement>(null);
+    list = useRef<HTMLDivElement>(null),
+    menu = useRef<HTMLDetailsElement>(null);
   const observation = useOutlineRun(visible, record.id, activeRunId);
   const detail = observation.detail;
   const runView = observation.observed ? presentRun(observation.observed, Date.now()) : undefined;
@@ -89,9 +90,7 @@ export default function FlowOutlineWorkspace({
       : selected
     : (model.entries[0]?.step.id ?? '');
   const entry = model.byId.get(selectedId);
-  const chosenGroup = model.groups.some((item) => item.id === group[mode])
-    ? group[mode]
-    : entry?.group;
+  const chosenGroup = entry?.group;
   const matches = outlineMatches(model.entries, query);
   const rows = observation.observed ? runTimeline(observation.observed) : [];
   const { nodes, edges } = useMemo(
@@ -100,37 +99,55 @@ export default function FlowOutlineWorkspace({
   );
   const pendingFocus = useRef<string | undefined>(undefined);
   const runIdentity = useRef(origin?.runId),
-    scroll = useRef(origin?.scroll ?? 0),
-    restored = useRef(false);
-  useEffect(() => {
+    scroll = useRef(origin?.scroll ?? { draft: 0, run: 0 }),
+    restored = useRef<'draft' | 'run' | undefined>(undefined),
+    lastSelection = useRef<string | undefined>(undefined);
+  useLayoutEffect(() => {
     if (!detail || runIdentity.current === detail.run.id) return;
     runIdentity.current = detail.run.id;
     setRunSelected('');
-    setGroup((old) => ({ ...old, run: '' }));
     setCollapsed((old) => ({ ...old, run: new Set() }));
+    scroll.current.run = 0;
+    if (mode === 'run') restored.current = undefined;
   }, [detail?.run.id]);
   useLayoutEffect(() => {
     memory.current.set(record.id, {
       mode,
       view,
       runSelected,
-      group,
       collapsed,
       query,
       runId: detail?.run.id ?? runIdentity.current,
       scroll: scroll.current,
     });
-  }, [record.id, memory, mode, view, runSelected, group, collapsed, query, detail?.run.id]);
+  }, [record.id, memory, mode, view, runSelected, collapsed, query, detail?.run.id]);
   useLayoutEffect(() => {
-    if (!visible) {
-      restored.current = false;
+    if (!visible || !entry) return;
+    const identity = `${mode}:${selectedId}:${entry.group}:${entry.ancestors.join('/')}`;
+    if (lastSelection.current === identity) return;
+    lastSelection.current = identity;
+    // The editor may select or move a step while this workspace is hidden.
+    // Derive its group from the current tree and reveal only its own ancestors.
+    if (entry.ancestors.some((key) => collapsed[mode].has(key)))
+      setCollapsed((old) => ({ ...old, [mode]: revealOutline(entry, old[mode]).collapsed }));
+    if (
+      document.activeElement === document.body ||
+      list.current?.contains(document.activeElement)
+    ) {
+      pendingFocus.current = selectedId;
+      setFocusRequest((n) => n + 1);
+    }
+  }, [visible, mode, selectedId, entry?.group, entry?.ancestors.join('\n')]);
+  useLayoutEffect(() => {
+    if (!visible || view !== 'list') {
+      restored.current = undefined;
       return;
     }
-    if (flow && list.current && !restored.current) {
-      list.current.scrollTop = scroll.current;
-      restored.current = true;
+    if (flow && list.current && restored.current !== mode) {
+      list.current.scrollTop = scroll.current[mode];
+      restored.current = mode;
     }
-  }, [visible, flow?.id]);
+  }, [visible, flow?.id, mode, view, mode === 'run' ? detail?.run.id : undefined]);
   useLayoutEffect(() => {
     if (!visible || !pendingFocus.current) return;
     const id = pendingFocus.current;
@@ -154,11 +171,40 @@ export default function FlowOutlineWorkspace({
     if (nextMode === 'draft') select(id);
     else setRunSelected(id);
     setMode(nextMode);
-    setGroup((old) => ({ ...old, [nextMode]: revealed.group }));
     setCollapsed((old) => ({ ...old, [nextMode]: revealed.collapsed }));
     pendingFocus.current = id;
     setFocusRequest((n) => n + 1);
   };
+  const switchSource = (nextMode: 'draft' | 'run') => {
+    if (nextMode === mode) return;
+    const nextModel = flowOutline(
+      nextMode === 'run' ? (detail?.snapshot?.steps ?? []) : record.flow.steps,
+    );
+    const remembered = nextMode === 'run' ? runSelected : selected;
+    const id = nextModel.byId.has(remembered)
+      ? remembered
+      : nextModel.byId.has(selectedId)
+        ? selectedId
+        : nextModel.entries[0]?.step.id;
+    if (id) choose(id, nextMode);
+    else setMode(nextMode);
+  };
+  const closeMenu = (restoreFocus = false) => {
+    if (!menu.current?.open) return;
+    menu.current.open = false;
+    if (restoreFocus) menu.current.querySelector('summary')?.focus();
+  };
+  useEffect(() => {
+    if (!visible) {
+      closeMenu();
+      return;
+    }
+    const outside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !menu.current?.contains(event.target)) closeMenu();
+    };
+    document.addEventListener('pointerdown', outside);
+    return () => document.removeEventListener('pointerdown', outside);
+  }, [visible]);
   const toggle = (key: string) =>
     setCollapsed((old) => {
       const next = new Set(old[mode]);
@@ -277,14 +323,32 @@ export default function FlowOutlineWorkspace({
         >
           {view === 'list' ? '展开流程图' : '返回步骤清单'}
         </button>
-        <details className="outline-more">
+        <details
+          className="outline-more"
+          ref={menu}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) closeMenu();
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape' && menu.current?.open) {
+              event.preventDefault();
+              event.stopPropagation();
+              closeMenu(true);
+            }
+          }}
+        >
           <summary>更多 ···</summary>
           <div>
-            <button onClick={() => setCollapsed((old) => ({ ...old, [mode]: new Set() }))}>
+            <button
+              onClick={() => {
+                setCollapsed((old) => ({ ...old, [mode]: new Set() }));
+                closeMenu(true);
+              }}
+            >
               展开全部分支
             </button>
             <button
-              onClick={() =>
+              onClick={() => {
                 setCollapsed((old) => ({
                   ...old,
                   [mode]: new Set(
@@ -296,14 +360,30 @@ export default function FlowOutlineWorkspace({
                           : [],
                     ),
                   ),
-                }))
-              }
+                }));
+                closeMenu(true);
+              }}
             >
               收起全部分支
             </button>
-            <button onClick={save}>保存草稿</button>
+            <button
+              disabled={saveBusy || saved}
+              onClick={() => {
+                closeMenu(true);
+                save();
+              }}
+            >
+              {saveBusy ? '正在保存…' : saved ? '草稿已保存' : '保存草稿'}
+            </button>
             {more && (
-              <button aria-label="从大纲打开更多操作" onClick={more}>
+              <button
+                aria-label="从大纲打开更多操作"
+                disabled={saveBusy}
+                onClick={() => {
+                  closeMenu();
+                  more();
+                }}
+              >
                 任务的更多操作
               </button>
             )}
@@ -344,13 +424,13 @@ export default function FlowOutlineWorkspace({
               : '选择一个步骤'}
           </h2>
           <div className="outline-source" aria-label="大纲数据来源">
-            <button aria-pressed={mode === 'draft'} onClick={() => setMode('draft')}>
+            <button aria-pressed={mode === 'draft'} onClick={() => switchSource('draft')}>
               编辑中的草稿
             </button>
             <button
               aria-pressed={mode === 'run'}
               disabled={!detail?.snapshot}
-              onClick={() => setMode('run')}
+              onClick={() => switchSource('run')}
             >
               运行快照 · 只读
             </button>
@@ -372,9 +452,10 @@ export default function FlowOutlineWorkspace({
             ref={list}
             hidden={view !== 'list'}
             onScroll={(event) => {
-              scroll.current = event.currentTarget.scrollTop;
+              if (!visible || view !== 'list' || restored.current !== mode) return;
+              scroll.current[mode] = event.currentTarget.scrollTop;
               const location = memory.current.get(record.id);
-              if (location) location.scroll = scroll.current;
+              if (location) location.scroll[mode] = scroll.current[mode];
             }}
           >
             {model.groups.map((item) => (

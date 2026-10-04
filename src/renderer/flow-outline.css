@@ -25,6 +25,7 @@
   align-items: flex-start;
   flex-wrap: wrap;
   margin-top: 8px;
+  margin-bottom: 6px;
 }
 .outline-search {
   position: relative;
@@ -276,7 +277,7 @@
 .outline-diagram:not([hidden]) {
   display: block;
   flex: 1;
-  min-height: 450px;
+  min-height: 0;
   border: 1px solid var(--fa-border-default);
   border-radius: 8px;
 }

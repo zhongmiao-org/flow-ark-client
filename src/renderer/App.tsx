@@ -3014,6 +3014,7 @@ function Editor({
           activeRunId={activeRunId}
           saved={draftSaved}
           save={save}
+          saveBusy={saveBusy}
           showRun={showRun}
           memory={outlineMemory}
           more={openMore}
