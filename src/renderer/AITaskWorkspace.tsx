@@ -142,6 +142,10 @@ export default function AITaskWorkspace(props: Props) {
   const [savedOutput, setSavedOutput] = useState('');
   const [revision, setRevision] = useState(0);
   const [homeText, setHomeText] = useState('');
+  const [initialAttachment, setInitialAttachment] = useState<{
+    taskId: string;
+    kind: 'file' | 'image';
+  }>();
   const homeInput = useRef<HTMLTextAreaElement>(null);
   const [learning, setLearning] = useState<LearningStatus>();
   const [learningError, setLearningError] = useState('');
@@ -789,6 +793,16 @@ export default function AITaskWorkspace(props: Props) {
   });
   const [targetEntry, setTargetEntry] = useState<{ key: string; tab: 'web' | 'window' }>();
   useEffect(() => {
+    if (!initialAttachment) return;
+    if (!props.active || page !== 'brief' || detail?.task.id !== initialAttachment.taskId) {
+      setInitialAttachment(undefined);
+      return;
+    }
+    if (busy || lock.current) return;
+    setInitialAttachment(undefined);
+    void chooseAttachment(initialAttachment.kind);
+  }, [initialAttachment, props.active, page, detail?.task.id, busy]);
+  useEffect(() => {
     if (page !== 'target') {
       setTargetEntry(undefined);
       setTargetFromRun(false);
@@ -798,6 +812,18 @@ export default function AITaskWorkspace(props: Props) {
     await run(async () => {
       if (detail && dirty) await save();
       const next: TaskDetail = await api('task.create');
+      accept(next);
+      setDraft({ description, context: [], answers: {} });
+      setConnectionOrigin(undefined);
+      setEditingProposal(false);
+      setReviewed(false);
+      setPage('brief');
+      setSelected('');
+      setHomeText('');
+      if (entry === 'file' || entry === 'image') {
+        setInitialAttachment({ taskId: next.task.id, kind: entry });
+        return;
+      }
       const stored: TaskDetail = await api('task.save', {
         id: next.task.id,
         revision: next.task.revision,
@@ -806,23 +832,10 @@ export default function AITaskWorkspace(props: Props) {
         answers: {},
       });
       accept(stored);
-      setEditingProposal(false);
-      setReviewed(false);
-      setPage('brief');
-      setSelected('');
-      setHomeText('');
       if (entry === 'web' || entry === 'window') {
         props.showBrowser(false);
         setTargetEntry({ key: crypto.randomUUID(), tab: entry });
         setPage('target');
-      } else if (entry) {
-        props.showBrowser(false);
-        const attached: TaskDetail = await api('task.attachment.choose', {
-          id: stored.task.id,
-          revision: stored.task.revision,
-          kind: entry,
-        });
-        accept(attached);
       }
     });
   }
