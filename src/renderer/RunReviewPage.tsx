@@ -189,6 +189,14 @@ export default function RunReviewPage(props: Props) {
   const [binding, setBinding] = useState(false);
   const bindings = useRef(new Set<string>());
   const heading = useRef<HTMLHeadingElement>(null);
+  const resultHeading = useRef<HTMLHeadingElement>(null);
+  const resultError = useRef<HTMLParagraphElement>(null);
+  const focusGeneration = useRef(0);
+  const focusOwner = useRef<HTMLElement | null>(null);
+  const [resultFocus, setResultFocus] = useState<{
+    generation: number;
+    origin: Element | null;
+  }>();
   const callbacks = useRef(props);
   callbacks.current = props;
   const controller = useRef<RunReviewSession | null>(null);
@@ -200,13 +208,40 @@ export default function RunReviewPage(props: Props) {
   const state = useSyncExternalStore(session.subscribe, session.snapshot);
   const selectionKey = JSON.stringify(props.selection);
   useLayoutEffect(() => {
+    focusGeneration.current++;
     if (props.active && props.selection) {
       session.enter(props.selection, props.source);
       document.querySelector('main')?.scrollTo({ top: 0 });
       heading.current?.focus({ preventScroll: true });
     } else session.leave();
-    return () => session.leave();
+    return () => {
+      focusGeneration.current++;
+      session.leave();
+    };
   }, [session, props.active, selectionKey, props.source]);
+  const reviewAction = async (action: () => Promise<void>) => {
+    const generation = ++focusGeneration.current;
+    const origin = document.activeElement;
+    focusOwner.current = null;
+    setResultFocus({ generation, origin });
+    await action();
+    if (generation === focusGeneration.current && callbacks.current.active)
+      setResultFocus({ generation, origin });
+  };
+  useLayoutEffect(() => {
+    if (!props.active || !resultFocus || resultFocus.generation !== focusGeneration.current) return;
+    const focused = document.activeElement;
+    if (
+      focused !== resultFocus.origin &&
+      focused !== document.body &&
+      focused !== focusOwner.current
+    )
+      return;
+    const target = resultError.current ?? resultHeading.current;
+    focusOwner.current = target;
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: 'nearest' });
+  }, [props.active, resultFocus]);
   const attempt = state.attempt;
   const preview = attempt?.preview ?? state.preview;
   if (props.active && preview?.desktop?.bindingId) bindings.current.add(preview.desktop.bindingId);
@@ -265,14 +300,17 @@ export default function RunReviewPage(props: Props) {
         type="checkbox"
         checked={!!state.selection?.debug}
         disabled={state.loading || binding}
-        onChange={(e) => void session.refresh(e.target.checked)}
+        onChange={(e) => {
+          const debug = e.target.checked;
+          void reviewAction(() => session.refresh(debug));
+        }}
       />
       逐步调试，在每个步骤前暂停
     </label>
   ) : null;
   const refreshButton = !locked && !hasInlineRefresh && (
     <button
-      onClick={() => void session.refresh()}
+      onClick={() => void reviewAction(() => session.refresh())}
       disabled={state.loading || state.opening || binding}
     >
       {attempt?.run ? '检查新的试运行' : '重新检查'}
@@ -352,7 +390,9 @@ export default function RunReviewPage(props: Props) {
           )}
         </div>
         <section className="ai-task-card run-review-confirm" aria-label="执行前检查">
-          <h2 aria-live="polite">{preview?.desktop ? '本次授权' : title}</h2>
+          <h2 ref={resultHeading} tabIndex={-1} aria-live="polite">
+            {preview?.desktop ? '本次授权' : title}
+          </h2>
           {desktopReview && (!preview?.ready || attempt || state.loading) && (
             <p aria-live="polite">{title}</p>
           )}
@@ -366,7 +406,7 @@ export default function RunReviewPage(props: Props) {
                     check={check}
                     compact={compactReview}
                     configure={props.edit}
-                    refresh={() => void session.refresh()}
+                    refresh={() => void reviewAction(() => session.refresh())}
                     disabled={state.loading || state.opening || binding || locked}
                   />
                 ))}
@@ -397,7 +437,7 @@ export default function RunReviewPage(props: Props) {
               <button
                 className="primary"
                 disabled={!preview?.ready || !state.reviewed || state.loading || binding}
-                onClick={() => void session.confirm()}
+                onClick={() => void reviewAction(() => session.confirm())}
               >
                 {preview?.desktop ? '确认修改并试运行' : '开始试运行'}
               </button>
@@ -410,7 +450,10 @@ export default function RunReviewPage(props: Props) {
             <>
               <p role="alert">{attempt.message}</p>
               <p>可能已经创建运行。查询会使用同一个请求编号，不会另建确认请求。</p>
-              <button className="primary" onClick={() => void session.confirm()}>
+              <button
+                className="primary"
+                onClick={() => void reviewAction(() => session.confirm())}
+              >
                 查询本次确认结果
               </button>
             </>
@@ -420,7 +463,7 @@ export default function RunReviewPage(props: Props) {
               <RunReviewCheck
                 check={{ name: '确认时核对', passed: false, detail: attempt.message ?? '' }}
                 configure={props.edit}
-                refresh={() => void session.refresh()}
+                refresh={() => void reviewAction(() => session.refresh())}
                 disabled={state.loading || state.opening || binding}
               />
             </div>
@@ -436,14 +479,14 @@ export default function RunReviewPage(props: Props) {
               <button
                 className="primary"
                 disabled={state.opening}
-                onClick={() => void session.open()}
+                onClick={() => void reviewAction(() => session.open())}
               >
                 {state.opening ? '正在读取详情…' : '查看本次运行'}
               </button>
             </div>
           )}
           {state.error && (
-            <p className="run-review-error" role="alert">
+            <p ref={resultError} tabIndex={-1} className="run-review-error" role="alert">
               {state.error}
             </p>
           )}
