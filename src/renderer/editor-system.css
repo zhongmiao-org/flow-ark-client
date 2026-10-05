@@ -333,6 +333,7 @@
 }
 .selected-step-summary h2 {
   margin: 0;
+  overflow-wrap: anywhere;
   font-size: 18px;
   line-height: 28px;
   font-weight: 500;

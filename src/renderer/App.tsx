@@ -11,6 +11,7 @@ import LogicConfigurationWorkspace from './LogicConfigurationWorkspace';
 import ScriptConfigurationWorkspace from './ScriptConfigurationWorkspace';
 import { editScriptPackage, type ScriptNode } from './script-editor';
 import { stepTitle } from './flow-outline';
+import { taskStepSummary, taskStepTitle } from './task-step-presentation';
 import EditorLeaveDialog from './EditorLeaveDialog';
 import './editor-feedback.css';
 import { parseNodeDraft } from './node-json';
@@ -207,6 +208,7 @@ function WorkspaceApp() {
   const [parametersDirty, setParametersDirty] = useState(false);
   const [settingsTabRequest, setSettingsTabRequest] = useState<SettingsTabRequest>();
   const [editorPanel, setEditorPanel] = useState('canvas');
+  const [editorOverviewRequest, setEditorOverviewRequest] = useState(0);
   const [advancedInputPending, setAdvancedInputPending] = useState(false);
   const [runPage, setRunPage] = useState(1);
   const [runFilter, setRunFilter] = useState(false);
@@ -1827,7 +1829,9 @@ function WorkspaceApp() {
                     </button>
                     <button
                       onClick={() => {
-                        if (guardNodeInput()) setEditorPanel('graph');
+                        if (!guardNodeInput()) return;
+                        setEditorPanel('graph');
+                        setEditorOverviewRequest((request) => request + 1);
                       }}
                     >
                       全图
@@ -1942,6 +1946,7 @@ function WorkspaceApp() {
                 openLibrary={returnHome}
                 outlineOpen={outlineOpen}
                 outlineMemory={outlineMemory}
+                overviewRequest={editorOverviewRequest}
                 closeOutline={closeOutline}
                 openMore={openMore}
                 activeRunId={active?.flowId === edit.id ? active.id : undefined}
@@ -2495,6 +2500,7 @@ function Editor({
   openStepAI,
   outlineOpen,
   outlineMemory,
+  overviewRequest,
   closeOutline,
   openMore,
   activeRunId,
@@ -2524,6 +2530,10 @@ function Editor({
   const [logicConfigurationOpen, setLogicConfigurationOpen] = useState(false);
   const [scriptConfigurationOpen, setScriptConfigurationOpen] = useState(false);
   const [viewRequest, setViewRequest] = useState<{ key: number; mode: 'all' | 'selected' }>();
+  useEffect(() => {
+    if (overviewRequest)
+      setViewRequest((previous) => ({ key: (previous?.key ?? 0) + 1, mode: 'all' }));
+  }, [overviewRequest]);
   const [tab, setTab] = useState('node');
   const [destination, setDestination] = useState('main');
   const [moveTo, setMoveTo] = useState('');
@@ -2555,7 +2565,11 @@ function Editor({
   const summaryEditButton = useRef<HTMLButtonElement>(null);
   const keyboardStep = useRef<string | null>(null);
   const pendingStepFocus = useRef<'inspector' | 'canvas' | null>(null);
-  const selectedNode = flatten(r.flow.steps).find((n: Step) => n.id === selected);
+  const editorSteps = flatten(r.flow.steps);
+  const selectedNode = editorSteps.find((n: Step) => n.id === selected);
+  const selectedBrowserTarget =
+    selectedNode?.type === 'browser' &&
+    !['navigate', 'screenshot'].includes(selectedNode.operation);
   const compactBrowser = compact && browserOpen && selectedNode?.type === 'browser';
   const readInspector = selectedNode?.type === 'browser' && selectedNode.operation === 'read';
   useEffect(() => {
@@ -2692,6 +2706,8 @@ function Editor({
       return;
     }
     if (guardNodeInput()) {
+      if (value === 'graph')
+        setViewRequest((previous) => ({ key: (previous?.key ?? 0) + 1, mode: 'all' }));
       if (compact && browserOpen && value === 'canvas' && selected) {
         keyboardStep.current = selected;
         pendingStepFocus.current = 'canvas';
@@ -3180,18 +3196,19 @@ function Editor({
             <section className="selected-step-summary" aria-label="当前步骤">
               <h2>
                 {selectedNode
-                  ? (typeof selectedNode.name === 'string' && selectedNode.name) ||
-                    kinds[selectedNode.type]?.label
+                  ? `${String(editorSteps.indexOf(selectedNode) + 1).padStart(2, '0')} ${taskStepTitle(selectedNode)}`
                   : '选择一个步骤'}
               </h2>
               <div className="selected-step-target">
-                <span>目标</span>
+                <span>{selectedBrowserTarget ? '目标' : '步骤摘要'}</span>
                 <p>
-                  {selectedNode?.type === 'browser'
+                  {selectedNode && selectedBrowserTarget
                     ? typeof selectedNode.selector === 'string'
                       ? selectedNode.selector || '尚未选择网页目标'
                       : '使用变量定位网页目标'
-                    : '在流程图中选择需要编辑的步骤。'}
+                    : selectedNode
+                      ? taskStepSummary(selectedNode, r.flow, { bindings: r.bindings })
+                      : '在流程图中选择需要编辑的步骤。'}
                 </p>
               </div>
               <button
