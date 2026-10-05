@@ -1,11 +1,14 @@
 import type { Step } from '../shared/types';
 import { presentRun, type RunPresentationInput } from '../shared/run-presentation';
+import { taskStepTitle } from './task-step-presentation';
 
 export function runTimeline(detail: RunPresentationInput, now = Date.now()) {
   const nodes = new Map<string, Step>();
+  const ordinals = new Map<string, number>();
   const collect = (steps: Step[]) => {
     for (const step of steps) {
       nodes.set(step.id, step);
+      ordinals.set(step.id, ordinals.size + 1);
       if (step.type === 'condition') collect([...step.then, ...step.else]);
       if (step.type === 'loop') collect(step.body);
     }
@@ -57,7 +60,8 @@ export function runTimeline(detail: RunPresentationInput, now = Date.now()) {
               : '尚未执行';
     return {
       ...row,
-      name: typeof node?.name === 'string' && node.name ? node.name : row.nodeId,
+      name: node ? taskStepTitle(node) : row.nodeId,
+      ordinal: ordinals.get(row.nodeId) ?? null,
       type: node?.type,
       label,
       tone: row.ended
@@ -70,4 +74,8 @@ export function runTimeline(detail: RunPresentationInput, now = Date.now()) {
       current,
     };
   });
+}
+
+export function runTimelineTitle(step: ReturnType<typeof runTimeline>[number]) {
+  return `${step.ordinal === null ? '' : String(step.ordinal).padStart(2, '0') + ' '}${step.name}`;
 }

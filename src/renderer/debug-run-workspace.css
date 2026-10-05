@@ -64,6 +64,11 @@
   font-size: 18px;
   line-height: 28px;
   font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.debug-run-current details summary,
+.debug-run-current details > code {
+  overflow-wrap: anywhere;
 }
 .debug-run-current p {
   margin: 0 0 16px;

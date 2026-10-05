@@ -3,8 +3,7 @@ import type { Event } from '../shared/types';
 import type { RunPresentation, RunPresentationInput } from '../shared/run-presentation';
 import { formatRunDuration } from '../shared/run-presentation';
 import { runDisplayLabels } from '../shared/run-history';
-import { runTimeline } from './run-timeline';
-import { kinds } from './node-kinds';
+import { runTimeline, runTimelineTitle } from './run-timeline';
 import { RunObservation } from './RunObservation';
 import './debug-run-workspace.css';
 
@@ -18,7 +17,6 @@ type Props = {
   controlNote?: string | null;
   lastSaved: boolean;
   heading: RefObject<HTMLHeadingElement | null>;
-  showBrowser: () => void;
   logs: () => void;
   output: () => void;
   rerun: () => void;
@@ -31,6 +29,19 @@ export default function DebugRunWorkspace(props: Props) {
   const { run } = props.detail;
   const terminal = ['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(run.state);
   const paused = props.view.step.kind === 'paused' && !props.lastSaved;
+  const current = props.timeline.find((step) => step.instance === props.view.step.instance);
+  const stepPrefix = {
+    current: '当前步骤',
+    paused: '下一步',
+    waiting: '等待人工',
+    last: '最后记录步骤',
+    pending: null,
+    unknown: null,
+  }[props.view.step.kind];
+  const currentLabel =
+    current && current.ordinal !== null && stepPrefix
+      ? `${stepPrefix}：${runTimelineTitle(current)}`
+      : props.view.step.label;
   const banner =
     props.controlNote ||
     props.view.statusNote ||
@@ -58,7 +69,6 @@ export default function DebugRunWorkspace(props: Props) {
           </h1>
           <p>启动时已固定快照；修改编辑器草稿不会改变当前执行。</p>
         </div>
-        <button onClick={props.showBrowser}>显示网页</button>
       </header>
       <div className="debug-run-banner" role="status">
         {banner}
@@ -67,16 +77,15 @@ export default function DebugRunWorkspace(props: Props) {
         <aside className="debug-run-steps" aria-label="调试步骤">
           {props.timeline.length ? (
             <ol>
-              {props.timeline.map((step, index) => (
+              {props.timeline.map((step) => (
                 <li key={step.instance} aria-current={step.current ? 'step' : undefined}>
-                  <h2>
-                    <span>{String(index + 1).padStart(2, '0')}</span>{' '}
-                    {step.name === step.nodeId && step.type
-                      ? (kinds[step.type]?.label ?? step.name)
-                      : step.name}
-                  </h2>
+                  <h2>{runTimelineTitle(step)}</h2>
                   {step.instance !== step.nodeId && <code>{step.instance}</code>}
-                  <span className={'run-status run-tone-' + step.tone}>
+                  <span
+                    className={
+                      'run-status run-tone-' + (step.label === '下一步' ? 'neutral' : step.tone)
+                    }
+                  >
                     {step.label === '下一步' ? '下一步 · 未执行' : step.label}
                   </span>
                 </li>
@@ -91,7 +100,7 @@ export default function DebugRunWorkspace(props: Props) {
             {props.lastSaved ? '最后保存：' : ''}
             {runDisplayLabels[run.state]}
           </span>
-          <h2>{props.view.step.label}</h2>
+          <h2>{currentLabel}</h2>
           <p>
             {props.results.length
               ? `已保存 ${props.results.length} 条脱敏步骤输出，可展开核对。`
@@ -123,12 +132,18 @@ export default function DebugRunWorkspace(props: Props) {
           <section id={id + '-outputs'} hidden={!outputsOpen} aria-label="调试步骤输出">
             <h3>已保存的步骤输出</h3>
             {props.results.length ? (
-              props.results.map((event) => (
-                <details key={event.sequence} open={event === props.results.at(-1)}>
-                  <summary>{event.nodeInstance}</summary>
-                  <pre tabIndex={0}>{event.data.outputPreview}</pre>
-                </details>
-              ))
+              props.results.map((event) => {
+                const step = props.timeline.find((row) => row.instance === event.nodeInstance);
+                return (
+                  <details key={event.sequence} open={event === props.results.at(-1)}>
+                    <summary>
+                      {step ? runTimelineTitle(step) : event.nodeInstance || '运行输出'}
+                    </summary>
+                    {step && step.instance !== step.nodeId && <code>{step.instance}</code>}
+                    <pre tabIndex={0}>{event.data.outputPreview}</pre>
+                  </details>
+                );
+              })
             ) : (
               <p>尚无已保存输出；查看不会执行步骤。</p>
             )}

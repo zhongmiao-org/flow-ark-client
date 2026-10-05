@@ -13,7 +13,6 @@ import { RunObservation } from './RunObservation';
 import RunRerunPanel from './RunRerunPanel';
 import RunOutputWorkspace from './RunOutputWorkspace';
 import { runTimeline } from './run-timeline';
-import { kinds } from './node-kinds';
 import RunEventLog from './RunEventLog';
 import DesktopRunReceipt from './DesktopRunReceipt';
 
@@ -145,7 +144,6 @@ export default function RunDetail({
             controlNote={controlNote}
             lastSaved={lastSaved}
             heading={pageHeading}
-            showBrowser={showBrowser}
             logs={() => setTab('logs')}
             output={() => setTab('output')}
             rerun={() => setTab('rerun')}
@@ -235,17 +233,16 @@ export default function RunDetail({
                 <h2>执行步骤</h2>
                 {timeline.length ? (
                   <ol>
-                    {timeline.map((step, index) => (
+                    {timeline.map((step) => (
                       <li key={step.instance} aria-current={step.current ? 'step' : undefined}>
                         <div>
-                          <span className="timeline-index">
-                            {String(index + 1).padStart(2, '0')}
+                          <span
+                            className="timeline-index"
+                            aria-label={step.ordinal === null ? '步骤编号不可确定' : undefined}
+                          >
+                            {step.ordinal === null ? '—' : String(step.ordinal).padStart(2, '0')}
                           </span>
-                          <span>
-                            {step.name === step.nodeId && step.type
-                              ? (kinds[step.type]?.label ?? step.name)
-                              : step.name}
-                          </span>
+                          <span>{step.name}</span>
                         </div>
                         {step.instance !== step.nodeId && <code>{step.instance}</code>}
                         <span className={'run-status run-tone-' + step.tone}>{step.label}</span>
