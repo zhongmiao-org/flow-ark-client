@@ -23,6 +23,7 @@ export default function TaskUnderstandingPage({
   requiredOutput,
   changed,
   answer,
+  clearAnswer,
   choose,
   clear,
   describe,
@@ -42,6 +43,7 @@ export default function TaskUnderstandingPage({
   requiredOutput: boolean;
   changed: (value: OutputOptions) => void;
   answer: (id: string, value: string) => void;
+  clearAnswer: (id: string) => void;
   choose: () => void;
   clear: () => void;
   describe: () => void;
@@ -86,14 +88,13 @@ export default function TaskUnderstandingPage({
                 : `按你提供的需求：${description}`)}
           </p>
         </div>
-        {result?.kind === 'clarify' && (
-          <PlanningQuestions
-            questions={result.questions}
-            answers={answers}
-            busy={busy}
-            answer={answer}
-          />
-        )}
+        <PlanningQuestions
+          questions={result?.kind === 'clarify' ? result.questions : []}
+          answers={answers}
+          busy={busy}
+          answer={answer}
+          clear={clearAnswer}
+        />
         <h2>{requiredOutput && !output ? '还差一个信息' : '确认输出信息'}</h2>
         <div className="task-understanding-directory" aria-busy={outputPending}>
           <label htmlFor="task-output-directory">结果保存到哪里？</label>

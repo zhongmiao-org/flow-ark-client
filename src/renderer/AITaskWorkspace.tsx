@@ -294,6 +294,9 @@ export default function AITaskWorkspace(props: Props) {
   const generating = detail?.task.status === 'generating';
   const stale = !!detail && detail.task.revision !== revision;
   const result = detail?.proposal?.result;
+  const previousAnswerIds = Object.keys(draft.answers).filter(
+    (id) => result?.kind !== 'clarify' || !result.questions.some((question) => question.id === id),
+  );
   const hasPlanProposal = result?.kind === 'plan';
   const viewingPreserved = page === 'review' && !!detail?.flow && !!result && !hasPlanProposal;
   const flow = result?.kind === 'plan' ? result.flow : detail?.flow?.flow;
@@ -667,6 +670,11 @@ export default function AITaskWorkspace(props: Props) {
     setDraft(next);
     setReviewed(false);
     setMessage('');
+  }
+  function clearAnswer(id: string) {
+    const answers = { ...draft.answers };
+    delete answers[id];
+    edit({ ...draft, answers });
   }
   async function run(operation: () => Promise<void>) {
     if (lock.current) return;
@@ -1580,7 +1588,7 @@ export default function AITaskWorkspace(props: Props) {
                 <h4>
                   {(result?.kind === 'clarify' &&
                     result.questions.find((question) => question.id === id)?.prompt) ||
-                    `先前补充 · ${id}`}
+                    `先前补充 ${previousAnswerIds.indexOf(id) + 1}`}
                 </h4>
                 <p>{draft.answers[id]?.trim() ? draft.answers[id] : '尚未补充'}</p>
               </div>
@@ -2284,6 +2292,7 @@ export default function AITaskWorkspace(props: Props) {
                 answer={(id, value) =>
                   edit({ ...draft, answers: { ...draft.answers, [id]: value } })
                 }
+                clearAnswer={clearAnswer}
                 choose={() => void changeOutput('choose')}
                 clear={() => void changeOutput('clear')}
                 describe={() =>
@@ -2631,6 +2640,7 @@ export default function AITaskWorkspace(props: Props) {
                       {result?.kind === 'clarify' && (
                         <PlanningQuestions
                           questions={result.questions}
+                          clear={clearAnswer}
                           answers={draft.answers}
                           busy={inputDisabled || stale}
                           answer={(id, value) =>
