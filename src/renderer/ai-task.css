@@ -1348,6 +1348,25 @@
   align-items: center;
   gap: 8px;
 }
+.task-attachment-feedback {
+  min-width: 0;
+  font-size: 12px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+  scroll-margin-block: 16px;
+}
+.task-attachment-feedback p {
+  margin: 0;
+  color: inherit;
+}
+.task-attachment-feedback button {
+  margin-top: 8px;
+  min-height: 28px;
+  padding: 4px 8px;
+}
+.task-brief-attachment-item > .task-attachment-feedback {
+  margin-top: 8px;
+}
 .task-brief-attachment span {
   flex: 1;
   min-width: 0;

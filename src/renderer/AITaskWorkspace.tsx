@@ -41,6 +41,7 @@ import { outputContext, taskOutputNameSchema } from '../shared/task-output';
 import { learningSteps, type LearningStatus } from '../shared/learning';
 import { webContext } from '../shared/task-web-target';
 import TaskBriefPage from './TaskBriefPage';
+import TaskAttachmentFeedback, { type AttachmentFeedback } from './TaskAttachmentFeedback';
 import type { AttachmentPreview } from '../shared/task-attachments';
 
 const api = (method: string, args: unknown = {}): Promise<any> =>
@@ -118,6 +119,8 @@ export default function AITaskWorkspace(props: Props) {
   const [draft, setDraft] = useState<Draft>({ description: '', context: [], answers: {} });
   const [saved, setSaved] = useState('');
   const [attachmentPreview, setAttachmentPreview] = useState<AttachmentPreview>();
+  const [attachmentFeedback, setAttachmentFeedback] = useState<AttachmentFeedback>();
+  const attachmentVisit = useRef(0);
   const attachmentHeading = useRef<HTMLHeadingElement>(null);
   const attachmentOpener = useRef<HTMLElement | null>(null);
   const attachmentRequest = useRef(0);
@@ -129,6 +132,7 @@ export default function AITaskWorkspace(props: Props) {
   function closeAttachmentPreview() {
     attachmentRequest.current++;
     setAttachmentPreview(undefined);
+    setAttachmentFeedback((current) => (current?.action === 'preview' ? undefined : current));
     if (attachmentOpener.current?.isConnected) attachmentOpener.current.focus();
   }
   const [outputOptions, setOutputOptions] = useState<OutputOptions>({
@@ -157,6 +161,10 @@ export default function AITaskWorkspace(props: Props) {
     | 'generation'
     | 'modify'
   >('home');
+  useLayoutEffect(() => {
+    attachmentVisit.current++;
+    setAttachmentFeedback(undefined);
+  }, [page, detail?.task.id, props.active]);
   useLayoutEffect(() => {
     const input = homeInput.current;
     if (!props.active || page !== 'home' || !input) return;
@@ -1114,59 +1122,128 @@ export default function AITaskWorkspace(props: Props) {
       }
     });
   }
-  async function chooseAttachment(kind: 'file' | 'image') {
+  async function attachmentAction(
+    action: AttachmentFeedback['action'],
+    attachmentId: string | undefined,
+    operation: (current: () => boolean) => Promise<{
+      status: 'success' | 'cancelled';
+      message: string;
+    }>,
+  ) {
+    const visit = attachmentVisit.current;
+    const taskId = detail?.task.id;
+    const origin = document.activeElement;
+    const current = () =>
+      visit === attachmentVisit.current &&
+      location.current.active &&
+      selectedTask.current === taskId;
     await run(async () => {
+      const name = detail?.task.attachments?.find((item) => item.id === attachmentId)?.name;
+      setAttachmentFeedback({
+        action,
+        attachmentId,
+        status: 'pending',
+        message:
+          action === 'preview'
+            ? `正在读取「${name || '附件'}」的任务副本…`
+            : action === 'remove'
+              ? `正在移除任务中的「${name || '附件'}」…`
+              : `正在准备${action === 'image' ? '图片' : '文件'}选择，请在系统窗口中选择或取消。`,
+      });
+      try {
+        const result = await operation(current);
+        if (current())
+          setAttachmentFeedback({
+            action,
+            attachmentId,
+            ...result,
+            focus:
+              action !== 'preview' &&
+              (document.activeElement === origin || document.activeElement === document.body),
+          });
+      } catch (error) {
+        if (current())
+          setAttachmentFeedback({
+            action,
+            attachmentId,
+            status: 'error',
+            message: error instanceof Error ? error.message : '附件操作未完成，请重新核对。',
+            focus: document.activeElement === origin || document.activeElement === document.body,
+          });
+      }
+    });
+  }
+  function retryAttachment() {
+    if (!attachmentFeedback) return;
+    const { action, attachmentId } = attachmentFeedback;
+    if (action === 'preview' && attachmentId) void previewAttachment(attachmentId);
+    else if (action === 'remove' && attachmentId) void removeAttachment(attachmentId);
+    else if (action === 'file' || action === 'image') void chooseAttachment(action);
+  }
+  async function chooseAttachment(kind: 'file' | 'image') {
+    await attachmentAction(kind, undefined, async (current) => {
       const task = await save();
+      if (!current()) return { status: 'cancelled', message: '' };
       props.showBrowser(false);
-      const next = await api('task.attachment.choose', {
+      const next: TaskDetail = await api('task.attachment.choose', {
         id: task.task.id,
         revision: task.task.revision,
         kind,
       });
+      if (!current()) return { status: 'cancelled', message: '' };
       if (next.task.revision !== task.task.revision) {
         accept(next);
         setReviewed(false);
+        const added = next.task.attachments?.find(
+          (item) => !task.task.attachments?.some((previous) => previous.id === item.id),
+        );
+        return {
+          status: 'success',
+          message: added ? `已加入「${added.name}」。可预览本次选入的副本。` : '任务资料已更新。',
+        };
       }
+      return { status: 'cancelled', message: '已取消选择，没有加入新附件，原资料保留。' };
     });
   }
   async function removeAttachment(attachmentId: string) {
-    await run(async () => {
+    await attachmentAction('remove', attachmentId, async (current) => {
       if (!detail || stale) throw new Error('请重新读取任务后操作');
-      // Removing a damaged attachment must remain possible without first saving
-      // a draft whose context validation necessarily rejects that attachment.
+      const name = detail.task.attachments?.find((item) => item.id === attachmentId)?.name;
+      // Removal must remain possible when a damaged attachment prevents saving the draft.
       const currentDraft = draft;
       const next = await api('task.attachment.remove', {
         id: detail.task.id,
         revision,
         attachmentId,
       });
-      accept(next, true);
-      setDraft(currentDraft);
-      setReviewed(false);
+      if (current()) {
+        accept(next, true);
+        setDraft(currentDraft);
+        setReviewed(false);
+      }
+      return { status: 'success', message: `已从任务移除「${name || '附件'}」，原文件未修改。` };
     });
   }
   async function previewAttachment(attachmentId: string) {
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    await run(async () => {
+    const activeElement =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const opener = activeElement?.closest('.task-attachment-feedback')
+      ? attachmentOpener.current
+      : activeElement;
+    attachmentOpener.current = opener;
+    await attachmentAction('preview', attachmentId, async (current) => {
       if (!detail || stale) throw new Error('请重新读取任务后预览');
-      const ticket = epoch.current;
-      const sourcePage = location.current.page;
       const previewTicket = ++attachmentRequest.current;
       const next = await api('task.attachment.preview', {
         id: detail.task.id,
         revision,
         attachmentId,
       });
-      if (
-        ticket === epoch.current &&
-        previewTicket === attachmentRequest.current &&
-        location.current.active &&
-        location.current.page === sourcePage &&
-        selectedTask.current === detail.task.id
-      ) {
+      if (current() && previewTicket === attachmentRequest.current) {
         attachmentOpener.current = opener;
         setAttachmentPreview(next);
       }
+      return { status: 'success', message: '附件副本已读取，可在上方预览。' };
     });
   }
   async function showGuide() {
@@ -1435,6 +1512,15 @@ export default function AITaskWorkspace(props: Props) {
             <button disabled={inputDisabled || stale} onClick={() => void previewAttachment(a.id)}>
               查看发送附件：{a.name}
             </button>
+            {(page !== 'brief' || scope) &&
+              attachmentFeedback?.attachmentId === a.id &&
+              attachmentFeedback.status !== 'success' && (
+                <TaskAttachmentFeedback
+                  feedback={attachmentFeedback}
+                  busy={inputDisabled || stale}
+                  retry={retryAttachment}
+                />
+              )}
           </div>
         ))}
         {detail.task.webTarget && (
@@ -2154,6 +2240,8 @@ export default function AITaskWorkspace(props: Props) {
                 choose={(kind) => void chooseAttachment(kind)}
                 remove={(id) => void removeAttachment(id)}
                 preview={(id) => void previewAttachment(id)}
+                attachmentFeedback={attachmentFeedback}
+                retryAttachment={retryAttachment}
                 target={() => void openTarget()}
                 understand={() => void understand()}
                 controls={planningControls}

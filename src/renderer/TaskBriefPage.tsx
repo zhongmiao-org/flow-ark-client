@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { PlanningContext, PlanningTask } from '../shared/planning';
 import { IMAGE_TOTAL_BYTES } from '../shared/task-attachments';
+import TaskAttachmentFeedback, { type AttachmentFeedback } from './TaskAttachmentFeedback';
 
 export default function TaskBriefPage({
   task,
@@ -13,6 +14,8 @@ export default function TaskBriefPage({
   choose,
   remove,
   preview,
+  attachmentFeedback,
+  retryAttachment,
   target,
   understand,
   controls,
@@ -27,6 +30,8 @@ export default function TaskBriefPage({
   choose: (kind: 'file' | 'image') => void;
   remove: (id: string) => void;
   preview: (id: string) => void;
+  attachmentFeedback?: AttachmentFeedback;
+  retryAttachment: () => void;
   target: () => void;
   understand: () => void;
   controls: ReactNode;
@@ -74,6 +79,11 @@ export default function TaskBriefPage({
   const imageSize =
     imageBytes < 0.01 * 1024 * 1024 ? '不足 0.01' : (imageBytes / (1024 * 1024)).toFixed(2);
   const imageLimit = images.length >= 4 || imageBytes >= IMAGE_TOTAL_BYTES;
+  const rowFeedback =
+    !!attachmentFeedback?.attachmentId &&
+    task.attachments?.some((item) => item.id === attachmentFeedback.attachmentId);
+  const pendingAction =
+    attachmentFeedback?.status === 'pending' ? attachmentFeedback.action : undefined;
   return (
     <div className="ai-task-columns task-brief-columns">
       <section className="ai-task-card task-brief-input">
@@ -87,15 +97,22 @@ export default function TaskBriefPage({
         />
         <div className="task-brief-add">
           <button disabled={busy || count >= 20} onClick={() => choose('file')}>
-            附加文件
+            {pendingAction === 'file' ? '正在选择…' : '附加文件'}
           </button>
           <button disabled={busy} aria-label="网页链接与对象" onClick={target}>
             网页链接
           </button>
           <button disabled={busy || count >= 20 || imageLimit} onClick={() => choose('image')}>
-            目标截图
+            {pendingAction === 'image' ? '正在选择…' : '目标截图'}
           </button>
         </div>
+        {attachmentFeedback && !rowFeedback && (
+          <TaskAttachmentFeedback
+            feedback={attachmentFeedback}
+            busy={busy}
+            retry={retryAttachment}
+          />
+        )}
         <section className="task-brief-context" aria-label="已选上下文">
           <h2>已选上下文 · {count} 项</h2>
           <p className="task-context-budget" role="status">
@@ -125,24 +142,38 @@ export default function TaskBriefPage({
             </div>
           )}
           {task.attachments?.map((a) => (
-            <div key={a.id} className="task-brief-attachment">
-              <span>
-                {a.name}
-                <small>
-                  {a.kind === 'image' ? `${a.width} × ${a.height} · 目标说明图片` : '文本副本'} ·{' '}
-                  {Math.ceil(a.size / 1024)} KiB
-                </small>
-              </span>
-              <button disabled={busy} onClick={() => preview(a.id)} aria-label={`预览 ${a.name}`}>
-                预览
-              </button>
-              <button
-                disabled={busy}
-                onClick={() => remove(a.id)}
-                aria-label={`移除附件 ${a.name}`}
-              >
-                移除
-              </button>
+            <div key={a.id} className="task-brief-attachment-item">
+              <div className="task-brief-attachment">
+                <span>
+                  {a.name}
+                  <small>
+                    {a.kind === 'image' ? `${a.width} × ${a.height} · 目标说明图片` : '文本副本'} ·{' '}
+                    {Math.ceil(a.size / 1024)} KiB
+                  </small>
+                </span>
+                <button disabled={busy} onClick={() => preview(a.id)} aria-label={`预览 ${a.name}`}>
+                  {pendingAction === 'preview' && attachmentFeedback?.attachmentId === a.id
+                    ? '读取中…'
+                    : '预览'}
+                </button>
+                <button
+                  disabled={busy}
+                  onClick={() => remove(a.id)}
+                  aria-label={`移除附件 ${a.name}`}
+                >
+                  {pendingAction === 'remove' && attachmentFeedback?.attachmentId === a.id
+                    ? '移除中…'
+                    : '移除'}
+                </button>
+              </div>
+              {attachmentFeedback?.attachmentId === a.id &&
+                attachmentFeedback.status !== 'success' && (
+                  <TaskAttachmentFeedback
+                    feedback={attachmentFeedback}
+                    busy={busy}
+                    retry={retryAttachment}
+                  />
+                )}
             </div>
           ))}
           {task.outputTarget && <p>任务输出 / {task.outputTarget.name} · 路径留在本机</p>}
