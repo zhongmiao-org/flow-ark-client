@@ -1,5 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
 import type { FlowRecord, Step } from '../shared/types';
 import { flatten } from './flow-editing';
 import { stepTitle } from './flow-outline';
@@ -146,17 +147,13 @@ export default function ResourceWorkspace(props: Props) {
         }
       }}
     >
-      <div className="resource-workspace-toolbar">
-        <button onClick={finish}>← 返回流程编排</button>
-        <nav aria-label="当前位置">{props.record.flow.name} / HTTP文件与表格配置</nav>
-        <button
-          onClick={() => {
-            if (props.guard()) props.showBrowser();
-          }}
-        >
-          显示网页
-        </button>
-      </div>
+      <EditorWorkspaceToolbar
+        current="HTTP文件与表格配置"
+        back={finish}
+        showBrowser={() => {
+          if (props.guard()) props.showBrowser();
+        }}
+      />
       <div className="resource-workspace-page">
         <header>
           <h1 id={id} ref={heading} tabIndex={-1}>

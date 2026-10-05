@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
 import './editor-workspace-dialog.css';
 import './step-position.css';
 
@@ -73,12 +74,12 @@ export default function StepPositionPage(props: Props) {
         }
       }}
     >
-      <div className="step-position-toolbar">
-        <button disabled={props.busy} onClick={props.close}>
-          ← 返回步骤配置
-        </button>
-        <nav aria-label="当前位置">步骤编辑与位置</nav>
-      </div>
+      <EditorWorkspaceToolbar
+        current="步骤编辑与位置"
+        back={props.close}
+        backLabel="返回步骤配置"
+        disabled={props.busy}
+      />
       <div className="step-position-page">
         <header>
           <h1 ref={heading} tabIndex={-1} id={titleId}>

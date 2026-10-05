@@ -2900,9 +2900,7 @@ function Editor({
         showBrowser: () => {
           if (returnToFlow()) showBrowser();
         },
-        openLibrary: () => {
-          if (returnToFlow()) requestAnimationFrame(openLibrary);
-        },
+        openLibrary,
       }}
     >
       {scriptConfigurationOpen && active && selectedNode?.type === 'script' && (

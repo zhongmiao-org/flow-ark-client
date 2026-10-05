@@ -1,5 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
 import type { FlowRecord } from '../shared/types';
 import type { FramePath } from '../shared/contracts.generated';
 import { browserActions, type BrowserNode, type BrowserOperation } from './browser-actions';
@@ -121,11 +122,7 @@ export default function BrowserActionWorkspace(props: Props) {
         }
       }}
     >
-      <div className="browser-action-toolbar">
-        <button onClick={finish}>← 返回流程编排</button>
-        <nav aria-label="当前位置">{props.record.flow.name} / 网页动作配置</nav>
-        <button onClick={showBrowser}>显示网页</button>
-      </div>
+      <EditorWorkspaceToolbar current="网页动作配置" back={finish} showBrowser={showBrowser} />
       <div className="browser-action-page">
         <header>
           <h1 ref={heading} id={id} tabIndex={-1}>

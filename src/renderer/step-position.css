@@ -1,16 +1,3 @@
-.step-position-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  min-height: 56px;
-  padding: 8px;
-  background: var(--fa-bg-surface);
-  font-size: 13px;
-}
-.step-position-toolbar button {
-  min-width: 168px;
-  min-height: 40px;
-}
 .step-position-page {
   container-type: inline-size;
   padding: 32px;
