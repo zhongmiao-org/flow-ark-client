@@ -17,6 +17,7 @@ import DesktopRunReceipt from './DesktopRunReceipt';
 import DesktopTaskRun from './DesktopTaskRun';
 import TaskRunSource from './TaskRunSource';
 import { useRunControl, RunControlFeedback } from './useRunControl';
+import TaskArtifactLocation from './TaskArtifactLocation';
 
 export type TaskRunReturnContext = {
   runId: string;
@@ -51,7 +52,7 @@ export default function TaskRunPage({
   connections: () => void;
   control: (id: string, action: string) => Promise<boolean>;
   reload: () => Promise<void>;
-  reveal: (id: string) => Promise<any>;
+  reveal: (id: string) => Promise<boolean>;
   showBrowser: () => void;
   hideBrowser: () => void;
   open: (detail: any, context?: TaskRunReturnContext) => void;
@@ -66,13 +67,11 @@ export default function TaskRunPage({
   const [loading, setLoading] = useState(false);
   const [previewError, setPreviewError] = useState('');
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
   const [retry, setRetry] = useState(0);
   const [stepsView, setStepsView] = useState<(TaskExecutionView & { runId: string }) | undefined>(
     initial?.stepsView,
   );
   const restoredPosition = useRef(initial);
-  const lock = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const detailScroll = useRef(0);
   const detailsButton = useRef<HTMLButtonElement>(null);
@@ -223,20 +222,6 @@ export default function TaskRunPage({
       live = false;
     };
   }, [page, run.id, selected, fileState, retry]);
-  async function act(operation: () => Promise<any>) {
-    if (lock.current) return;
-    lock.current = true;
-    setBusy(true);
-    setError('');
-    try {
-      await operation();
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      lock.current = false;
-      setBusy(false);
-    }
-  }
   function inspect(id?: string) {
     detailScroll.current = document.querySelector('main')?.scrollTop ?? 0;
     returnAction.current = id;
@@ -308,12 +293,11 @@ export default function TaskRunPage({
             <details>
               <summary>保存位置</summary>
               <p className="task-run-path">{a.path}</p>
-              <button
-                disabled={!a.available || busy}
-                onClick={() => void act(() => reveal(a.artifactId))}
-              >
-                定位文件
-              </button>
+              <TaskArtifactLocation
+                key={JSON.stringify([a.artifactId, a.path, a.available, a.integrity])}
+                artifact={a}
+                reveal={reveal}
+              />
             </details>
           )}
           {!singleResultFile && <div className="ai-task-actions">{previewButton(a)}</div>}
@@ -618,12 +602,16 @@ export default function TaskRunPage({
                       </button>
                     )}
                     {item && (
-                      <button
-                        disabled={!item.available || busy}
-                        onClick={() => void act(() => reveal(item.artifactId))}
-                      >
-                        定位文件
-                      </button>
+                      <TaskArtifactLocation
+                        key={JSON.stringify([
+                          item.artifactId,
+                          item.path,
+                          item.available,
+                          item.integrity,
+                        ])}
+                        artifact={item}
+                        reveal={reveal}
+                      />
                     )}
                   </div>
                 </details>
