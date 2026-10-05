@@ -480,6 +480,7 @@ export default function BrowserSidebar({
   return (
     <aside
       ref={panel}
+      tabIndex={-1}
       className={`browser-sidebar browser-observation${editing ? ' browser-editor-panel' : ''}${expanded ? ' browser-observation-expanded' : ''}${targetView ? ' browser-target-focus' : ''}`}
       role={expanded && !hidden ? 'dialog' : undefined}
       aria-modal={expanded && !hidden ? true : undefined}

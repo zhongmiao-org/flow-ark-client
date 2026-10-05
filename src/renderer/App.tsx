@@ -1088,6 +1088,28 @@ function WorkspaceApp() {
                       : '脚本配置'}
                 </span>
               </nav>
+              {nodeSession.kind === 'parameters' && (
+                <button
+                  className="embedded-show"
+                  aria-label="打开网页面板"
+                  onClick={() =>
+                    nodeNavigation.current?.(() => {
+                      setMoreOpen(false);
+                      setOutlineOpen(false);
+                      setEditorPanel('canvas');
+                      setBrowserOpen(true);
+                      requestAnimationFrame(() => {
+                        document.querySelector('main')?.scrollTo(0, 0);
+                        document
+                          .querySelector<HTMLElement>('.browser-editor-panel')
+                          ?.focus({ preventScroll: true });
+                      });
+                    }, '网页操作与拾取')
+                  }
+                >
+                  显示网页
+                </button>
+              )}
             </header>
           )}
           {section === 'editor' && outlineOpen && !nodeSession && (
