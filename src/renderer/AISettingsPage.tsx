@@ -96,6 +96,10 @@ export default function AISettingsPage({
   const [storedState, setState] = useState<AIConfigurationState>();
   const [loadedEntry, setLoadedEntry] = useState<string>();
   const state = loadedEntry === entry.key ? storedState : undefined;
+  const [reading, setReading] = useState(false),
+    [readError, setReadError] = useState('');
+  const readConfiguration = useRef<(() => void) | undefined>(undefined),
+    readFailure = useRef<HTMLParagraphElement>(null);
   const [model, setModel] = useState(entry.model),
     [key, setKey] = useState('');
   const [editing, setEditing] = useState(false),
@@ -131,7 +135,11 @@ export default function AISettingsPage({
   const focusField = useRef<'model' | 'key' | undefined>(undefined),
     focusResult = useRef(false);
   const feedbackFocus = useRef<
-    { target: 'result' | 'form-error' | 'error'; origin: Element | null } | undefined
+    | {
+        target: 'result' | 'form-error' | 'error' | 'read-error' | 'model';
+        origin: Element | null;
+      }
+    | undefined
   >(undefined);
   const [busy, setBusy] = useState<'save' | 'remove' | 'test' | null>(null);
   const [cancelling, setCancelling] = useState(false);
@@ -175,7 +183,7 @@ export default function AISettingsPage({
       focusResult.current = false;
     }
     const feedback = feedbackFocus.current;
-    if (!feedback || busy === 'save' || busy === 'remove' || cancelling) return;
+    if (!feedback || reading || busy === 'save' || busy === 'remove' || cancelling) return;
     feedbackFocus.current = undefined;
     if (leaving || removing) return;
     if (document.activeElement !== feedback.origin && document.activeElement !== document.body)
@@ -183,9 +191,13 @@ export default function AISettingsPage({
     const target =
       feedback.target === 'result'
         ? resultHeading.current
-        : feedback.target === 'form-error'
-          ? formError.current
-          : operationError.current;
+        : feedback.target === 'model'
+          ? modelInput.current
+          : feedback.target === 'read-error'
+            ? readFailure.current
+            : feedback.target === 'form-error'
+              ? formError.current
+              : operationError.current;
     target?.scrollIntoView({ block: 'nearest' });
     target?.focus({ preventScroll: true });
   });
@@ -197,7 +209,8 @@ export default function AISettingsPage({
   };
   useEffect(() => {
     if (!active) return;
-    let live = true;
+    let live = true,
+      pending = false;
     setState(undefined);
     setKey('');
     setDirty(false);
@@ -210,20 +223,41 @@ export default function AISettingsPage({
     setEditing(false);
     setLeaving(undefined);
     setRemoving(false);
-    void api('get', { provider })
-      .then((next: AIConfigurationState) => {
+    title.current?.focus();
+    const load = async (retry = false) => {
+      if (!live || pending) return;
+      pending = true;
+      const origin = document.activeElement;
+      setReading(true);
+      setReadError('');
+      try {
+        const next: AIConfigurationState = await api('get', { provider });
         if (!live) return;
+        if (next.provider !== provider)
+          throw new Error('读取的 AI 配置与当前服务商不一致，请重新读取。');
         setState(next);
         setLoadedEntry(entry.key);
         setModel(next.configured ? next.model : entry.model);
         setEditing(!next.configured);
-        title.current?.focus();
-      })
-      .catch((error) => {
-        if (live) setError(message(error));
-      });
+        if (retry) feedbackFocus.current = { target: next.configured ? 'result' : 'model', origin };
+      } catch (error) {
+        if (live) {
+          setReadError(message(error));
+          feedbackFocus.current = { target: 'read-error', origin };
+        }
+      } finally {
+        if (live) {
+          pending = false;
+          setReading(false);
+        }
+      }
+    };
+    const retry = () => void load(true);
+    readConfiguration.current = retry;
+    void load();
     return () => {
       live = false;
+      if (readConfiguration.current === retry) readConfiguration.current = undefined;
     };
   }, [active, entry.key]);
   useEffect(() => {
@@ -709,20 +743,17 @@ export default function AISettingsPage({
             </div>
           </section>
         ) : !state ? (
-          <section className="ai-task-card">
-            <p>{error ? '配置读取未完成，未将错误当作未配置。' : '正在读取本机配置…'}</p>
-            <button
-              onClick={() =>
-                void reload()
-                  .then((next) => {
-                    setModel(next.model);
-                    setEditing(!next.configured);
-                    setError('');
-                  })
-                  .catch((e) => setError(message(e)))
-              }
-            >
-              重新读取
+          <section className="ai-task-card ai-read-card" aria-busy={reading}>
+            <p role="status">
+              {reading ? `正在读取 ${name} 本机配置…` : '配置读取未完成，未将错误当作未配置。'}
+            </p>
+            {readError && (
+              <p className="ai-config-form-error" role="alert" ref={readFailure} tabIndex={-1}>
+                {readError}
+              </p>
+            )}
+            <button disabled={reading} onClick={() => readConfiguration.current?.()}>
+              {reading ? '正在读取…' : '重新读取'}
             </button>
           </section>
         ) : (

@@ -413,11 +413,13 @@ button.ai-remove-button {
   line-height: 28px;
   font-weight: 500;
 }
-.ai-settings-page .ai-provider-card > .ai-config-form-error {
+.ai-settings-page .ai-provider-card > .ai-config-form-error,
+.ai-settings-page .ai-read-card > .ai-config-form-error {
   padding: 12px 16px;
   border-radius: var(--fa-radius-6);
   background: var(--fa-status-error-bg);
   color: var(--fa-status-error);
+  overflow-wrap: anywhere;
 }
 
 .ai-test-details dl {
