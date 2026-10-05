@@ -62,6 +62,11 @@ export default function ScheduleWorkbench({
     error?: string;
   }>();
   const [reading, setReading] = useState(false);
+  const [openingRun, setOpeningRun] = useState(false);
+  const [runError, setRunError] = useState('');
+  const runToken = useRef(0);
+  const historyError = useRef<HTMLParagraphElement>(null);
+  const focusHistoryError = useRef(false);
   const historyRef = useRef<HTMLDialogElement>(null),
     leaveRef = useRef<HTMLDialogElement>(null);
   const fields = useRef<HTMLFieldSetElement>(null),
@@ -75,6 +80,13 @@ export default function ScheduleWorkbench({
   const scroll = useRef(0);
   const listFocus = useRef<HTMLElement | null>(null);
   const pageHeading = useRef<HTMLHeadingElement>(null);
+  const cancelHistoryReads = () => {
+    readToken.current++;
+    runToken.current++;
+    setReading(false);
+    setOpeningRun(false);
+    focusHistoryError.current = false;
+  };
   const dirty = !!draft && !!initial && JSON.stringify(draft) !== JSON.stringify(initial);
   const currentPlan = draft?.plan && data.schedules.find((plan) => plan.id === draft.plan!.id);
   const currentFlow = draft?.flow && data.flows.find((flow) => flow.id === draft.flow!.id);
@@ -157,6 +169,7 @@ export default function ScheduleWorkbench({
   useLayoutEffect(() => {
     if (!active) {
       historyRef.current?.close();
+      cancelHistoryReads();
       return;
     }
     if (history) historyRef.current?.showModal();
@@ -166,6 +179,11 @@ export default function ScheduleWorkbench({
       focusAfter.current = null;
     }
   }, [active, history]);
+  useLayoutEffect(() => {
+    if (reading || openingRun || !focusHistoryError.current) return;
+    focusHistoryError.current = false;
+    if (active && historyRef.current?.open) historyError.current?.focus();
+  }, [active, history, reading, openingRun, runError]);
   const go: TemplateNavigation = (next, target = '本机计划') => {
     if (lock.current || destination.current) return;
     if (!dirty) {
@@ -178,6 +196,7 @@ export default function ScheduleWorkbench({
   };
   navigation.current = (next, target) => {
     if (lock.current || destination.current) return;
+    cancelHistoryReads();
     historyRef.current?.close();
     setHistory(undefined);
     go(() => {
@@ -236,6 +255,7 @@ export default function ScheduleWorkbench({
   }
   async function readHistory(id: string, cursor?: ScheduleCursor) {
     const token = ++readToken.current;
+    setRunError('');
     setReading(true);
     setHistory((old) => ({ id, ...(old?.id === id ? { result: old.result } : {}) }));
     try {
@@ -243,6 +263,8 @@ export default function ScheduleWorkbench({
         id,
         ...(cursor ? { cursor } : {}),
       });
+      if (result.plan.id !== id || (result.nextCursor && result.nextCursor.scheduleId !== id))
+        throw new Error('计划记录来源不一致，请重新读取。');
       if (readToken.current === token)
         setHistory((old) => ({
           id,
@@ -252,39 +274,55 @@ export default function ScheduleWorkbench({
           },
         }));
     } catch (e) {
-      if (readToken.current === token)
+      if (readToken.current === token) {
+        focusHistoryError.current = true;
         setHistory((old) => ({
           ...old,
           id,
           error: e instanceof Error ? e.message : '计划记录读取失败',
         }));
+      }
     } finally {
       if (readToken.current === token) setReading(false);
     }
   }
   const closeHistory = () => {
-    readToken.current++;
-    setReading(false);
+    cancelHistoryReads();
     historyRef.current?.close();
     setHistory(undefined);
     requestAnimationFrame(() => historyFocus.current?.focus({ preventScroll: true }));
   };
   async function inspectActive() {
-    if (!history?.result?.activeRun) return;
+    if (!history?.result?.activeRun || reading || openingRun || history.error) return;
     const from = history.id,
-      id = history.result.activeRun.id;
+      id = history.result.activeRun.id,
+      token = ++runToken.current;
     const focused = document.activeElement as HTMLElement;
-    const result = await perform(async () => {
-      const next = await api('run.detail', { id });
-      if (next?.run?.scheduleId !== from) throw new Error('此计划运行已不存在，请刷新计划记录');
-      return next;
-    });
-    if (!result) return;
-    scroll.current = document.querySelector('main')?.scrollTop ?? 0;
-    historyRef.current?.close();
-    showRun(result, () => {
-      focusAfter.current = focused;
-    });
+    setOpeningRun(true);
+    setRunError('');
+    try {
+      const result = await api('run.detail', { id });
+      if (token !== runToken.current) return;
+      if (result?.run?.id !== id || result.run.scheduleId !== from)
+        throw new Error('运行与当前计划记录不一致，请刷新记录后重新查看。');
+      scroll.current = document.querySelector('main')?.scrollTop ?? 0;
+      historyRef.current?.close();
+      showRun(result, () => {
+        focusAfter.current = focused;
+      });
+    } catch (e) {
+      if (token === runToken.current) {
+        focusHistoryError.current = true;
+        setRunError(
+          (e instanceof Error ? e.message : '活动运行读取失败，请重试。').replace(
+            /^Error invoking remote method 'flowark:request': (?:Error: )?/,
+            '',
+          ),
+        );
+      }
+    } finally {
+      if (token === runToken.current) setOpeningRun(false);
+    }
   }
   const historyTitle =
     history?.result?.version?.name ??
@@ -683,7 +721,10 @@ export default function ScheduleWorkbench({
               <button disabled={busy} onClick={closeHistory}>
                 返回计划
               </button>
-              <button disabled={reading || busy} onClick={() => void readHistory(history.id)}>
+              <button
+                disabled={reading || busy || openingRun}
+                onClick={() => void readHistory(history.id)}
+              >
                 刷新记录
               </button>
             </div>
@@ -693,20 +734,21 @@ export default function ScheduleWorkbench({
                   {runDisplayLabels[history.result.activeRun.state]}
                 </span>
                 <p>{history.result.activeRun.name}</p>
-                <button disabled={busy} onClick={() => void inspectActive()}>
-                  查看活动运行
+                <button
+                  disabled={busy || reading || openingRun || !!history.error}
+                  onClick={() => void inspectActive()}
+                >
+                  {openingRun ? '正在读取活动运行…' : '查看活动运行'}
                 </button>
               </div>
             )}
-            {history.error && (
-              <p role="alert" className="ai-task-error">
-                {history.error}
+            {(history.error || runError) && (
+              <p role="alert" className="ai-task-error" ref={historyError} tabIndex={-1}>
+                {history.error || runError}
               </p>
             )}
-            {error && (
-              <p role="alert" className="ai-task-error">
-                {error}
-              </p>
+            {history.error && history.result && (
+              <p>上次读取的记录仍保留。请重新读取后再查看活动运行。</p>
             )}
             {!history.result?.records.length && !reading && !history.error && (
               <p>此计划还没有错过或跳过记录。</p>
@@ -761,7 +803,7 @@ export default function ScheduleWorkbench({
             {reading && <p role="status">正在读取计划记录…</p>}
             {history.result?.nextCursor && (
               <button
-                disabled={reading || busy}
+                disabled={reading || busy || openingRun}
                 onClick={() => void readHistory(history.id, history.result!.nextCursor!)}
               >
                 读取更早记录

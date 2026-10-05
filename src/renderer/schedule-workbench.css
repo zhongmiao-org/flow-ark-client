@@ -54,7 +54,7 @@
 .schedule-workbench-form [role='alert'] button {
   align-self: flex-start;
 }
-.schedule-history-dialog {
+.script-leave-dialog.schedule-history-dialog {
   width: min(920px, calc(100vw - 64px));
   max-width: 920px;
   max-height: calc(100vh - 80px);
@@ -66,13 +66,20 @@
   flex-direction: column;
   gap: 24px;
 }
+.schedule-history-dialog[open] > div {
+  margin-top: 0;
+  flex-wrap: nowrap;
+}
+.schedule-history-dialog[open] > .ai-task-card {
+  gap: 16px;
+}
 .schedule-history-dialog h2,
 .schedule-history-dialog h3,
 .schedule-history-dialog p {
   margin: 0;
   overflow-wrap: anywhere;
 }
-.schedule-history-records {
+.schedule-history-dialog > .schedule-history-records {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
@@ -88,7 +95,7 @@
   overflow-wrap: anywhere;
 }
 @media (max-width: 1100px) {
-  .schedule-history-records {
+  .schedule-history-dialog > .schedule-history-records {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -113,7 +120,7 @@
   color: var(--fa-text-secondary);
   font-size: 12px;
 }
-.schedule-history-summary {
+.schedule-history-dialog > .schedule-history-summary {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
