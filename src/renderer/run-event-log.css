@@ -176,6 +176,15 @@
   width: 100%;
   margin-bottom: 14px;
 }
+.run-log-context .run-log-selected-instance {
+  margin: 0 0 14px;
+  color: var(--fa-text-primary);
+}
+.run-log-selected-instance code {
+  display: block;
+  margin-top: 4px;
+  color: var(--fa-text-secondary);
+}
 .run-log-context button {
   width: 100%;
   margin: 14px 0 8px;

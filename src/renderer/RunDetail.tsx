@@ -13,7 +13,7 @@ import { RunObservation } from './RunObservation';
 import RunRerunPanel from './RunRerunPanel';
 import RunOutputWorkspace from './RunOutputWorkspace';
 import { runTimeline } from './run-timeline';
-import RunEventLog from './RunEventLog';
+import RunEventLog, { type RunLogPosition } from './RunEventLog';
 import DesktopRunReceipt from './DesktopRunReceipt';
 
 export type RunTab = 'current' | 'output' | 'logs' | 'rerun';
@@ -59,6 +59,7 @@ export default function RunDetail({
   const previousTab = useRef(tab);
   const rerunHeading = useRef<HTMLHeadingElement>(null);
   const pageHeading = useRef<HTMLHeadingElement>(null);
+  const logPosition = useRef<RunLogPosition>({ instance: '*', limit: 100, latest: null });
   useEffect(() => {
     if (tab === 'rerun') {
       setRerunOpened(true);
@@ -176,9 +177,11 @@ export default function RunDetail({
                   {time(r.createdAt)}
                 </p>
               </div>
-              <button className="primary" onClick={showBrowser}>
-                查看网页
-              </button>
+              {tab === 'current' && (
+                <button className="primary" onClick={showBrowser}>
+                  查看网页
+                </button>
+              )}
             </div>
             <section
               className="run-runtime-summary"
@@ -345,6 +348,7 @@ export default function RunDetail({
                 >
                   <RunEventLog
                     key={r.id}
+                    position={logPosition}
                     runId={r.id}
                     run={r}
                     events={d.events}

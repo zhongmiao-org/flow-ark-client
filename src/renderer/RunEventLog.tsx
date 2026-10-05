@@ -1,10 +1,11 @@
-import { useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useId, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import type { Event, Flow, Run } from '../shared/types';
-import { flatten } from './flow-editing';
-import { kinds } from './node-kinds';
+import { runInstancePresenter } from './run-instance-presentation';
 import { runEventMessage, runEventTitle } from './run-event-presentation';
 import { runSource, runSourceLabels } from '../shared/run-history';
 import './run-event-log.css';
+
+export type RunLogPosition = { instance: string; limit: number; latest: number | null };
 
 function LogText({ text, label }: { text: string; label: string }) {
   const [expanded, setExpanded] = useState(false);
@@ -103,33 +104,29 @@ export default function RunEventLog({
   events,
   snapshot,
   run,
+  position,
 }: {
   runId: string;
   events: Event[];
   snapshot?: Flow;
   run?: Run;
+  position?: RefObject<RunLogPosition>;
 }) {
-  const [limit, setLimit] = useState(100);
-  const [instance, setInstance] = useState('*');
-  const [latest, setLatest] = useState<number | null>(null);
+  const [reading, setReading] = useState<RunLogPosition>(
+    () => position?.current ?? { instance: '*', limit: 100, latest: null },
+  );
+  const { instance, limit, latest } = reading;
+  const updateReading = (next: RunLogPosition) => {
+    if (position) position.current = next;
+    setReading(next);
+  };
   const instanceId = useId();
   const readingHeading = useRef<HTMLHeadingElement>(null);
   const records = useMemo(
     () => events.filter((event) => event.runId === runId).sort((a, b) => a.sequence - b.sequence),
     [events, runId],
   );
-  const names = useMemo(
-    () =>
-      new Map(
-        flatten(snapshot?.steps ?? []).map((node) => [
-          node.id,
-          typeof node.name === 'string' && node.name
-            ? node.name
-            : kinds[node.type]?.label || node.id,
-        ]),
-      ),
-    [snapshot],
-  );
+  const instanceTitle = useMemo(() => runInstancePresenter(snapshot), [snapshot]);
   const instances = [...new Set(records.map((event) => event.nodeInstance).filter(Boolean))];
   const matching =
     instance === '*' ? records : records.filter((event) => event.nodeInstance === instance);
@@ -138,13 +135,10 @@ export default function RunEventLog({
   const shown = latest === null ? available.slice(0, limit) : available.slice(-limit);
   const newCount = matching.length - available.length;
   const changeInstance = (value: string) => {
-    setInstance(value);
-    setLimit(100);
-    setLatest(null);
+    updateReading({ instance: value, limit: 100, latest: null });
   };
   const showLatest = () => {
-    setLimit(100);
-    setLatest(matching.at(-1)?.sequence ?? null);
+    updateReading({ instance, limit: 100, latest: matching.at(-1)?.sequence ?? null });
     readingHeading.current?.focus();
   };
   return (
@@ -180,16 +174,32 @@ export default function RunEventLog({
             <select
               id={instanceId}
               value={instance}
+              title={
+                instance === '*'
+                  ? '全部步骤与运行级记录'
+                  : instance === ''
+                    ? '仅运行级记录'
+                    : (instanceTitle(instance) ?? instance)
+              }
               onChange={(event) => changeInstance(event.target.value)}
             >
               <option value="*">全部步骤与运行级记录</option>
               <option value="">仅运行级记录</option>
+              {instance && instance !== '*' && !instances.includes(instance) && (
+                <option value={instance}>原选择 · {instanceTitle(instance) ?? instance}</option>
+              )}
               {instances.map((value) => (
                 <option key={value} value={value}>
-                  {names.get(value.split('/').at(-1) ?? '') ?? '步骤'} · {value}
+                  {instanceTitle(value) ?? value}
                 </option>
               ))}
             </select>
+            {instance && instance !== '*' && (
+              <p className="run-log-selected-instance">
+                {instanceTitle(instance) ?? '无法从固定快照确认此位置'}
+                <code>{instance}</code>
+              </p>
+            )}
             <dl>
               <div>
                 <dt>已记录实例</dt>
@@ -241,7 +251,7 @@ export default function RunEventLog({
               <EventItem
                 key={event.sequence}
                 event={event}
-                name={names.get(event.nodeInstance.split('/').at(-1) ?? '')}
+                name={instanceTitle(event.nodeInstance) ?? undefined}
               />
             ))}
           </ol>
@@ -250,7 +260,7 @@ export default function RunEventLog({
               <p>
                 已显示 {shown.length} / {available.length} 条
               </p>
-              <button onClick={() => setLimit((value) => value + 100)}>
+              <button onClick={() => updateReading({ ...reading, limit: limit + 100 })}>
                 显示{latest !== null ? '较早' : '后续'}{' '}
                 {Math.min(100, available.length - shown.length)} 条记录
               </button>
