@@ -12,6 +12,21 @@
   margin: 0;
   font-size: 16px;
 }
+.task-latest-run h3 button {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--fa-action-primary);
+  min-height: 24px;
+  font: inherit;
+}
+.task-latest-run-body:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 .task-latest-run p {
   margin: 0;
   font-size: 13px;

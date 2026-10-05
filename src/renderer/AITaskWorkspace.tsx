@@ -2259,6 +2259,27 @@ export default function AITaskWorkspace(props: Props) {
                         setReviewed(false);
                         setEditingProposal(false);
                       }}
+                      stepAction={
+                        !detail.proposal && selectedStep ? (
+                          <button
+                            disabled={inputDisabled || dirty || stale}
+                            onClick={() => void run(() => chooseScope(detail, selectedStep.id))}
+                          >
+                            修改第{' '}
+                            {flatten(flow.steps).findIndex((step) => step.id === selected) + 1} 步
+                          </button>
+                        ) : undefined
+                      }
+                      undoAction={
+                        !detail.proposal && detail.canUndo ? (
+                          <button
+                            disabled={inputDisabled || dirty || stale}
+                            onClick={() => void proposalAction('undo')}
+                          >
+                            撤销最近采纳
+                          </button>
+                        ) : undefined
+                      }
                     >
                       {fullModification && detail.proposal && (
                         <button
@@ -2937,7 +2958,7 @@ export default function AITaskWorkspace(props: Props) {
                           >
                             {planListView ? '手动编辑' : '打开流程编排'}
                           </button>
-                          {detail.canUndo && (
+                          {detail.canUndo && !planListView && (
                             <button
                               disabled={busy || dirty || stale}
                               onClick={() => void proposalAction('undo')}

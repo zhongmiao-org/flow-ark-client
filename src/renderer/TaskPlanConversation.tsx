@@ -11,6 +11,8 @@ export default function TaskPlanConversation({
   edit,
   toggleView,
   discard,
+  stepAction,
+  undoAction,
   children,
   notice,
 }: {
@@ -24,6 +26,8 @@ export default function TaskPlanConversation({
   edit: () => void;
   toggleView: () => void;
   discard: () => void;
+  stepAction?: ReactNode;
+  undoAction?: ReactNode;
   children?: ReactNode;
   notice?: ReactNode;
 }) {
@@ -51,9 +55,11 @@ export default function TaskPlanConversation({
       <button data-task-modify disabled={busy || stale} onClick={edit}>
         {dirty ? '继续编辑修改要求' : '继续描述修改'}
       </button>
+      {stepAction}
       <button disabled={busy} onClick={toggleView}>
         {graph ? '查看步骤清单' : '查看完整流程图'}
       </button>
+      {undoAction}
       {pending && (
         <p className="task-plan-approval-note">先检查方案和修改范围，采纳后再决定是否试运行。</p>
       )}
