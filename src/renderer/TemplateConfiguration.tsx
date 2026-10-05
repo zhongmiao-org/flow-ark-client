@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import type { Bindings, Json } from '../shared/types';
 import { schemaDefaults } from '../shared/template-config';
@@ -40,41 +40,8 @@ export function Field({ schema: s, value, change, label, required = false }: any
         ))}
       </fieldset>
     );
-  if (s.type === 'array') {
-    const values = Array.isArray(value) ? value : [];
-    return (
-      <fieldset className="template-fieldset">
-        <legend>{title}</legend>
-        {s.description && <p className="muted">{s.description}</p>}
-        {values.map((item, index) => (
-          <div className="template-array-row" key={index}>
-            <Field
-              schema={s.items}
-              label={`${title} ${index + 1}`}
-              value={item}
-              change={(next: Json) => change(values.map((v, i) => (i === index ? next : v)))}
-            />
-            <button
-              type="button"
-              className="icon-button"
-              aria-label={`移除 ${title} ${index + 1}`}
-              onClick={() => change(values.filter((_, i) => i !== index))}
-            >
-              <Trash2 size={14} />
-            </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          disabled={values.length >= (s.maxItems ?? 1000)}
-          onClick={() => change([...values, schemaDefaults(s.items)])}
-        >
-          <Plus size={14} />
-          添加{title}
-        </button>
-      </fieldset>
-    );
-  }
+  if (s.type === 'array')
+    return <TemplateArray schema={s} value={value} change={change} title={title} />;
   const options =
     s.oneOf ??
     s.enum?.map((v: Json) => ({
@@ -175,6 +142,91 @@ export function Field({ schema: s, value, change, label, required = false }: any
       )}
       {s.description && <small id={id + '-description'}>{s.description}</small>}
     </label>
+  );
+}
+function TemplateArray({ schema, value, change, title }: any) {
+  const values: Json[] = Array.isArray(value) ? value : [];
+  const [rows, setRows] = useState(() => ({
+    keys: values.map((_, index) => index),
+    next: values.length,
+  }));
+  const rowElements = useRef(new Map<number, HTMLDivElement>());
+  const add = useRef<HTMLButtonElement>(null);
+  const focusRow = useRef<number | 'add' | null>(null);
+  // Keep a surviving row's unfinished input with that row when another is removed.
+  // Parent resets can still replace the list length without reusing deleted keys.
+  if (rows.keys.length !== values.length) {
+    const keys = rows.keys.slice(0, values.length);
+    let next = rows.next;
+    while (keys.length < values.length) keys.push(next++);
+    setRows({ keys, next });
+  }
+  useLayoutEffect(() => {
+    const key = focusRow.current;
+    if (key === null) return;
+    focusRow.current = null;
+    const target =
+      key === 'add'
+        ? add.current
+        : rowElements.current
+            .get(key)
+            ?.querySelector<HTMLElement>(
+              'input:not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled)',
+            );
+    target?.focus();
+  }, [rows]);
+  const limit = schema.maxItems ?? 1000;
+  return (
+    <fieldset className="template-fieldset template-array-field">
+      <legend>{title}</legend>
+      {schema.description && <p className="muted">{schema.description}</p>}
+      <p className="muted" role="status">
+        已添加 {values.length} / {limit} 项{values.length >= limit ? '，已达到数量上限。' : '。'}
+      </p>
+      {values.map((item, index) => (
+        <div
+          className="template-array-row"
+          key={rows.keys[index]}
+          ref={(element) => {
+            if (element) rowElements.current.set(rows.keys[index], element);
+            else rowElements.current.delete(rows.keys[index]);
+          }}
+        >
+          <Field
+            schema={schema.items}
+            label={`${title} ${index + 1}`}
+            value={item}
+            change={(next: Json) => change(values.map((v, i) => (i === index ? next : v)))}
+          />
+          <button
+            type="button"
+            className="icon-button"
+            aria-label={`移除 ${title} ${index + 1}`}
+            onClick={() => {
+              const keys = rows.keys.filter((_, i) => i !== index);
+              focusRow.current = keys[Math.min(index, keys.length - 1)] ?? 'add';
+              setRows({ ...rows, keys });
+              change(values.filter((_, i) => i !== index));
+            }}
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      ))}
+      <button
+        ref={add}
+        type="button"
+        disabled={values.length >= limit}
+        onClick={() => {
+          focusRow.current = rows.next;
+          setRows({ keys: [...rows.keys, rows.next], next: rows.next + 1 });
+          change([...values, schemaDefaults(schema.items)]);
+        }}
+      >
+        <Plus size={14} />
+        添加{title}
+      </button>
+    </fieldset>
   );
 }
 function TemplateNumber({ schema, value, change, labelId, required }: any) {
