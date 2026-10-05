@@ -3048,13 +3048,11 @@ function Editor({
         <StepPositionPage
           title={
             selectedNode
-              ? `${flatten(r.flow.steps).findIndex((node) => node.id === selected) + 1} ${stepTitle(selectedNode)}`
+              ? `${String(editorSteps.indexOf(selectedNode) + 1).padStart(2, '0')} ${taskStepTitle(selectedNode)}`
               : undefined
           }
           targets={targets}
-          destination={
-            targets.some((target) => target.value === destination) ? destination : 'main'
-          }
+          destination={destination}
           setDestination={setDestination}
           moveTo={moveTo}
           setMoveTo={setMoveTo}

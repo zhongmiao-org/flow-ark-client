@@ -2,6 +2,7 @@ import { useId, useRef, useState } from 'react';
 import { Search, Plus, X } from 'lucide-react';
 import type { Step } from '../shared/types';
 import type { Destination } from './flow-editing';
+import { taskStepTitle } from './task-step-presentation';
 import { kinds } from './node-kinds';
 import { newStep } from './node-defaults';
 import { browserActions, newBrowserStep, type BrowserOperation } from './browser-actions';
@@ -50,36 +51,39 @@ const entries = [
 ];
 export type DestinationChoice = Destination & { value: string; label: string };
 export function destinations(steps: Step[], path = ''): DestinationChoice[] {
-  return steps.flatMap((step, index) => {
-    const name = `${path}${index + 1}. ${step.name || kinds[step.type]?.label || step.id}`;
-    const branches =
-      step.type === 'condition'
-        ? (['then', 'else'] as const)
-        : step.type === 'loop'
-          ? (['body'] as const)
-          : [];
-    return [
-      {
-        value: `${step.id}:before`,
-        label: `${name} / 前面`,
-        anchor: step.id,
-        side: 'before' as const,
-      },
-      {
-        value: `${step.id}:after`,
-        label: `${name} / 后面`,
-        anchor: step.id,
-        side: 'after' as const,
-      },
-      ...branches.flatMap((branch) => {
-        const label = `${name} / ${{ then: '成立分支', else: '否则分支', body: '循环体' }[branch]}`;
-        return [
-          { value: `${step.id}:${branch}`, label, owner: step.id, branch },
-          ...destinations((step as any)[branch], `${label} / `),
-        ];
-      }),
-    ];
-  });
+  let ordinal = 0;
+  const collect = (nodes: Step[], prefix: string): DestinationChoice[] =>
+    nodes.flatMap((step) => {
+      const name = `${prefix}${String(++ordinal).padStart(2, '0')} ${taskStepTitle(step)}`;
+      const branches =
+        step.type === 'condition'
+          ? (['then', 'else'] as const)
+          : step.type === 'loop'
+            ? (['body'] as const)
+            : [];
+      return [
+        {
+          value: `${step.id}:before`,
+          label: `${name} / 前面`,
+          anchor: step.id,
+          side: 'before' as const,
+        },
+        {
+          value: `${step.id}:after`,
+          label: `${name} / 后面`,
+          anchor: step.id,
+          side: 'after' as const,
+        },
+        ...branches.flatMap((branch) => {
+          const label = `${name} / ${{ then: '成立分支', else: '否则分支', body: '循环体' }[branch]}`;
+          return [
+            { value: `${step.id}:${branch}`, label: `${label} / 末尾`, owner: step.id, branch },
+            ...collect((step as any)[branch], `${label} / `),
+          ];
+        }),
+      ];
+    });
+  return collect(steps, path);
 }
 export const destinationChoices = (steps: Step[]): DestinationChoice[] => [
   { value: 'main', label: '主流程末尾' },
@@ -146,6 +150,7 @@ export default function ActionLibrary({
           添加到
           <select
             aria-label="动作添加位置"
+            title={target?.label}
             value={target ? destination : ''}
             onChange={(e) => setDestination(e.target.value)}
           >

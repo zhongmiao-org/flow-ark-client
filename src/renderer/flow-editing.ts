@@ -167,7 +167,8 @@ export function duplicateStep(
   };
   const cloned = refs(original) as Step;
   for (const node of flatten([cloned])) node.id = ids.get(node.id)!;
-  if (original.name) cloned.name = original.name + ' 副本';
+  if (original.name && !['file', 'excel'].includes(original.type))
+    cloned.name = original.name + ' 副本';
   return { steps: insertStep(steps, cloned, { anchor: id, side: 'after' }), id: cloned.id };
 }
 // Outputs from conditions and loops contain child IDs. Moving a child can leave

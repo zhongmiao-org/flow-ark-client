@@ -34,6 +34,9 @@ export default function StepPositionPage(props: Props) {
   const errorRef = useRef<HTMLParagraphElement>(null);
   const titleId = useId();
   const [attempted, setAttempted] = useState(false);
+  const addTarget = props.targets.find((target) => target.value === props.destination);
+  const moveTarget = props.targets.find((target) => target.value === props.moveTo);
+  const targetErrorId = useId();
   const error = props.structureError || (attempted ? props.saveError : '');
   useEffect(() => {
     const trigger = document.activeElement as HTMLElement | null;
@@ -99,24 +102,38 @@ export default function StepPositionPage(props: Props) {
                   <span className="step-position-add-target">
                     <select
                       aria-label="动作添加位置"
-                      value={props.destination}
+                      title={addTarget?.label}
+                      aria-invalid={!addTarget}
+                      aria-describedby={!addTarget ? targetErrorId : undefined}
+                      value={addTarget ? props.destination : ''}
                       onChange={(event) => props.setDestination(event.target.value)}
                     >
+                      {!addTarget && (
+                        <option value="" disabled>
+                          原位置已删除，请重新选择
+                        </option>
+                      )}
                       {props.targets.map((target) => (
                         <option key={target.value} value={target.value}>
                           {target.label}
                         </option>
                       ))}
                     </select>
-                    <button type="button" onClick={props.add}>
+                    <button type="button" disabled={!addTarget} onClick={props.add}>
                       选择动作
                     </button>
                   </span>
                 </label>
+                {!addTarget && (
+                  <p id={targetErrorId} className="step-position-error" role="alert">
+                    添加位置已失效，请先重新选择位置。
+                  </p>
+                )}
                 <label>
                   移动到
                   <select
                     aria-label="步骤移动位置"
+                    title={moveTarget?.label}
                     value={props.moveTo}
                     onChange={(event) => props.setMoveTo(event.target.value)}
                   >
@@ -134,7 +151,7 @@ export default function StepPositionPage(props: Props) {
                   <button onClick={props.duplicate}>复制子树</button>
                 </div>
                 <div className="step-position-actions">
-                  <button className="primary" disabled={!props.moveTo} onClick={props.move}>
+                  <button className="primary" disabled={!moveTarget} onClick={props.move}>
                     移动步骤
                   </button>
                   <button className="step-position-delete" onClick={props.remove}>
