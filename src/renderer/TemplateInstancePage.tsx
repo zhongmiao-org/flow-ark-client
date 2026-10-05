@@ -290,6 +290,7 @@ export default function TemplateInstancePage({
       model: resource?.model || (provider === 'deepseek' ? 'deepseek-flash' : 'gpt-5.3-codex'),
       source: {
         kind: 'template',
+        returnLabel: `${instance.name} · 资源与动作授权`,
         instanceId: instance.id,
         entryId,
         packageKey: instance.packageKey,

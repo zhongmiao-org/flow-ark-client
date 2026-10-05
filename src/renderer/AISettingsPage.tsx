@@ -29,6 +29,7 @@ export type AISettingsEntry = {
     | {
         kind: 'template';
         title: string;
+        returnLabel: string;
         instanceId: string;
         entryId: string;
         packageKey: string;
@@ -156,9 +157,10 @@ export default function AISettingsPage({
         : '模板入口',
     name = providerName(provider),
     testing = busy === 'test' || state?.operation === 'testing';
-  const sourceLabel = fromTemplate
-    ? `${templateLabel} · ${entry.source!.title}`
-    : entry.source?.title || '本地设置';
+  const sourceLabel =
+    entry.source?.kind === 'template'
+      ? entry.source.returnLabel
+      : entry.source?.title || '本地设置';
   useLayoutEffect(() => {
     if (!active) {
       feedbackFocus.current = undefined;
@@ -1031,16 +1033,24 @@ export default function AISettingsPage({
                   </small>
                 </>
               )}
-              <button disabled={checkingSource} onClick={returnToSource}>
+              <button
+                className="ai-source-return"
+                disabled={checkingSource}
+                onClick={returnToSource}
+              >
                 {checkingSource
                   ? '正在核对来源…'
                   : fromTemplate
-                    ? '返回' + templateLabel
+                    ? '返回' + sourceLabel
                     : entry.source
                       ? '继续原任务'
                       : '返回本地设置'}
               </button>
-              <small>本页配置仅用于已授权的任务。</small>
+              <small>
+                {fromTemplate
+                  ? '业务提示、上下文与输出规则由模板定义。返回后保留本次输入。'
+                  : '本页配置仅用于已授权的任务。'}
+              </small>
             </section>
           </div>
         )}

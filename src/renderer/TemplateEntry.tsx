@@ -205,6 +205,7 @@ export default function TemplateEntry({
       source: {
         kind: 'template',
         title: `${detail.manifest.name} / ${instance.name} · ${instance.id.slice(0, 8)} / ${entry.name}`,
+        returnLabel: `${instance.name} · ${entry.name}`,
         instanceId: instance.id,
         entryId,
         packageKey: instance.packageKey,

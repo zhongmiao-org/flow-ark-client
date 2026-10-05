@@ -246,6 +246,11 @@
 .ai-connection-card h3 {
   margin: 0;
 }
+.ai-connection-card .ai-source-return {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
 .ai-settings-page button.ai-remove-button,
 button.ai-remove-button {
   background: var(--fa-status-error-bg);
