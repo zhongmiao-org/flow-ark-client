@@ -5,6 +5,7 @@ import { flowOutline } from './flow-outline';
 import { kinds } from './node-kinds';
 import McpNodeConfiguration from './McpNodeConfiguration';
 import DesktopStepDetails from './DesktopStepDetails';
+import { referenceOf } from './value-references';
 import {
   taskStepSummary,
   taskStepTitle,
@@ -35,7 +36,9 @@ export default function TaskStepInspector({
   const entry = entries[index];
   const step = entry?.step;
   const longGraph = presentation === 'graph' && entries.length > 12;
-  const value = (input: unknown) => taskStepValue(input, flow, selected);
+  const value = (input: unknown) => (
+    <ConfiguredValue key={selected} input={input} flow={flow} selected={selected} />
+  );
   const facts: [string, ReactNode][] = [];
   if (step) {
     if (step.type === 'condition' || step.type === 'assert') {
@@ -303,5 +306,38 @@ export default function TaskStepInspector({
       )}
       <div className="task-step-actions">{actions}</div>
     </aside>
+  );
+}
+
+function ConfiguredValue({
+  input,
+  flow,
+  selected,
+}: {
+  input: unknown;
+  flow: Flow;
+  selected: string;
+}) {
+  const summary = taskStepValue(input, flow, selected);
+  const reference = referenceOf(input);
+  const expandable =
+    (input !== null && typeof input === 'object') ||
+    (typeof input === 'string' &&
+      (input.length > 120 || input !== input.trim() || /[\r\n\t]/.test(input)));
+  if (!expandable) return <>{summary}</>;
+  return (
+    <details className="task-step-value">
+      <summary>{summary} · 查看配置</summary>
+      <p className="task-step-position">
+        {reference !== undefined
+          ? '这是引用来源，实际值由运行提供。'
+          : typeof input === 'string'
+            ? `完整文本 · ${input.length} 个字符；保留换行与空白。`
+            : '当前方案的配置内容，不是运行结果。'}
+      </p>
+      <pre tabIndex={0} aria-label={reference !== undefined ? '引用来源' : '完整配置值'}>
+        {reference ?? (typeof input === 'string' ? input : JSON.stringify(input, null, 2))}
+      </pre>
+    </details>
   );
 }

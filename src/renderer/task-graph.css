@@ -88,6 +88,21 @@
   font-size: 14px;
   line-height: 22px;
 }
+.task-step-value {
+  min-width: 0;
+}
+.task-step-value > summary {
+  cursor: pointer;
+}
+.task-step-value[open] > :not(summary) {
+  margin-top: 8px;
+}
+.task-step-inspector .task-step-value pre {
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .task-step-branch,
 .task-step-actions {
   display: flex;
