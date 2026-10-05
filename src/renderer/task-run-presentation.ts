@@ -1,3 +1,4 @@
+import type { Step } from '../shared/types';
 import { taskStepTitle } from './task-step-presentation';
 import type { McpReceipt } from '../shared/mcp-run';
 import { mcpReceiptsForRun } from './mcp-run-presentation';
@@ -26,6 +27,45 @@ export const artifactLabel = (a: RunArtifact) =>
     cleared: '副本已清理',
     unverified: '旧记录，无法核对历史内容',
   })[a.integrity] ?? '副本状态待核对';
+
+function operationLabel(node: Step) {
+  switch (node.type) {
+    case 'file':
+      return {
+        read: '读取文件',
+        write: '写入文件',
+        copy: '复制文件',
+        archive: '打包文件',
+        create: '创建文件',
+      }[node.operation];
+    case 'excel':
+      return node.operation === 'read'
+        ? '读取表格'
+        : node.operation === 'fill'
+          ? '填充表格'
+          : '写入表格';
+    case 'browser':
+      return ['read', 'inputValue'].includes(node.operation)
+        ? '读取网页'
+        : node.operation === 'wait'
+          ? '等待网页'
+          : node.operation === 'navigate'
+            ? '打开网页'
+            : node.operation === 'screenshot'
+              ? '网页截图'
+              : '操作网页';
+    case 'http':
+      return '网络请求';
+    case 'script':
+      return '执行脚本';
+    case 'desktop':
+      return '应用选区操作';
+    case 'mcp':
+      return '工具调用';
+    default:
+      return undefined;
+  }
+}
 
 export function taskRunPresentation(
   input: DesktopRunInput & { artifacts?: RunArtifact[]; mcpReceipts?: McpReceipt[] },
@@ -104,44 +144,39 @@ export function taskRunPresentation(
   const verified = artifacts.filter((a) => a.available && a.integrity === 'verified');
   const operations = rows.filter(
     (row) =>
-      row.started &&
+      (row.started || row.ended) &&
       ['browser', 'file', 'excel', 'http', 'script', 'desktop', 'mcp'].includes(row.type ?? ''),
   );
-  const labels = new Map<string, number>();
+  const labels = new Map<string, { completed: number; unresolved: number }>();
   for (const row of operations) {
     const node = nodes.get(row.nodeId);
-    const label = !node
-      ? '外部步骤'
-      : node.type === 'file' || node.type === 'excel'
-        ? node.operation === 'read'
-          ? '读取文件'
-          : '写入文件'
-        : node.type === 'http'
-          ? '网络请求'
-          : node.type === 'script'
-            ? '执行脚本'
-            : node.type === 'browser'
-              ? ['read', 'inputValue', 'wait'].includes(node.operation)
-                ? '读取网页'
-                : node.operation === 'navigate'
-                  ? '打开网页'
-                  : '操作网页'
-              : node.type === 'desktop'
-                ? '应用选区操作'
-                : node.type === 'mcp'
-                  ? '工具调用'
-                  : '外部步骤';
-    labels.set(label, (labels.get(label) ?? 0) + 1);
+    const label = (node && operationLabel(node)) || '外部步骤';
+    const counts = labels.get(label) ?? { completed: 0, unresolved: 0 };
+    if (row.ended) counts.completed++;
+    else counts.unresolved++;
+    labels.set(label, counts);
   }
+  const describe = (state: 'completed' | 'unresolved') =>
+    [...labels]
+      .filter(([, counts]) => counts[state] > 0)
+      .map(([label, counts]) => `${label} ${counts[state]} 次`)
+      .join('、');
+  const completedOperations = describe('completed');
+  const unresolvedOperations = describe('unresolved');
+  const mayOverwrite = ['写入文件', '复制文件', '打包文件', '写入表格', '填充表格'].some((label) =>
+    labels.has(label),
+  );
   const effectNote = labels.size
-    ? '已开始：' +
-      [...labels].map(([label, count]) => `${label} ${count} 次`).join('、') +
-      '。' +
-      (labels.has('写入文件') ? '文件副本不表示原位置没有覆盖。' : '') +
-      (labels.has('网络请求') || labels.has('操作网页') || labels.has('工具调用')
-        ? '外部结果需结合业务回执核对。'
-        : '') +
-      (labels.has('执行脚本') ? '脚本可能还有未报告的操作。' : '')
+    ? [
+        completedOperations && `步骤回执已完成：${completedOperations}。`,
+        unresolvedOperations && `已开始但未确认完成：${unresolvedOperations}。`,
+        mayOverwrite && '文件副本不表示原位置没有覆盖。',
+        (labels.has('网络请求') || labels.has('操作网页') || labels.has('工具调用')) &&
+          '外部结果需结合业务回执核对。',
+        labels.has('执行脚本') && '脚本可能还有未报告的操作。',
+      ]
+        .filter(Boolean)
+        .join('')
     : uncertain
       ? '当前记录不足以核对外部影响。'
       : '未记录文件、网页、网络、脚本、工具或应用步骤的执行。';
