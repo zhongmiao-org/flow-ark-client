@@ -44,6 +44,16 @@ export default function DesktopTaskRun({
     heading.current?.focus({ preventScroll: true });
   }, [run.id, page, model.mode]);
   const active = model.view.activity === 'active' && !model.view.closing && !detail.fault;
+  const currentStep =
+    active &&
+    !model.terminal &&
+    !model.uncertain &&
+    ['current', 'paused', 'waiting'].includes(model.view.step.kind) &&
+    model.current?.nodeId === desktop.node.id
+      ? model.view.step.kind === 'paused'
+        ? '下一步 1 / 1'
+        : '第 1 / 1 步'
+      : undefined;
   const verified = desktop.phase === 'verified';
   const title =
     page === 'details'
@@ -79,7 +89,10 @@ export default function DesktopTaskRun({
           <span className={'badge state-' + (model.uncertain ? 'INTERRUPTED' : run.state)}>
             {model.uncertain
               ? '结果待核对'
-              : (runDisplayLabels[run.state as keyof typeof runDisplayLabels] ?? run.state)}
+              : model.view.closing
+                ? '正在收尾'
+                : (runDisplayLabels[run.state as keyof typeof runDisplayLabels] ?? run.state)}
+            {currentStep && ` · ${currentStep}`}
           </span>
         </div>
         <h2>
@@ -110,7 +123,18 @@ export default function DesktopTaskRun({
             {run.error}
           </p>
         )}
-        {!verified && <p role={desktop.needsReview ? 'alert' : 'status'}>{desktop.effect}</p>}
+        {!verified && (
+          <div className="desktop-task-progress">
+            <p>
+              步骤记录：{model.completed.length} 次已完成
+              {model.unresolved.length > 0
+                ? ` · ${model.unresolved.length} 次已开始未确认完成`
+                : ` · ${model.unvisited.length} 个尚未执行`}
+              。
+            </p>
+            <p role={desktop.needsReview ? 'alert' : 'status'}>{desktop.effect}</p>
+          </div>
+        )}
         {verified && (
           <>
             <div className="desktop-task-readback">

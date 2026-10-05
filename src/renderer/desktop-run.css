@@ -113,6 +113,13 @@
   gap: 16px;
   color: var(--fa-text-secondary);
 }
+.desktop-task-progress {
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.desktop-task-progress p {
+  margin: 0;
+}
 .desktop-task-object {
   min-height: 120px;
 }
