@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState } from 'react';
+import { useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Event, Flow, Run } from '../shared/types';
 import { flatten } from './flow-editing';
 import { kinds } from './node-kinds';
@@ -8,17 +8,39 @@ import './run-event-log.css';
 
 function LogText({ text, label }: { text: string; label: string }) {
   const [expanded, setExpanded] = useState(false);
+  const contentId = useId();
+  const content = useRef<HTMLPreElement>(null);
+  const toggleOrigin = useRef<HTMLButtonElement | null>(null);
   const long = text.length > 1600;
+  useLayoutEffect(() => {
+    const origin = toggleOrigin.current;
+    toggleOrigin.current = null;
+    if (!origin || !content.current) return;
+    content.current.scrollTo(0, 0);
+    if (document.activeElement === origin) {
+      content.current.focus({ preventScroll: true });
+      content.current.scrollIntoView({ block: 'nearest' });
+    }
+  }, [expanded]);
   return (
     <div className="run-log-text">
-      <pre>{long && !expanded ? text.slice(0, 1600) + '…' : text}</pre>
+      <pre id={contentId} ref={content} tabIndex={0} aria-label={label}>
+        {long && !expanded ? text.slice(0, 1600) + '…' : text}
+      </pre>
       {long && (
         <>
           <p>
             共 {text.length.toLocaleString('zh-CN')} 字符
             {expanded ? '，已展开已保存内容。' : '，当前显示前 1600 字符。'}
           </p>
-          <button aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
+          <button
+            aria-expanded={expanded}
+            aria-controls={contentId}
+            onClick={(event) => {
+              toggleOrigin.current = event.currentTarget;
+              setExpanded(!expanded);
+            }}
+          >
             {expanded ? `收起${label}` : `展开完整${label}`}
           </button>
         </>

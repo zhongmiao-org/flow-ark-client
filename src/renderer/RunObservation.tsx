@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Clock, ListChecks, Terminal } from 'lucide-react';
 import { formatRunDuration, presentRun } from '../shared/run-presentation';
 import RunStepDetails, { RunFileOperation, fileOperationTitle } from './RunStepDetails';
@@ -100,7 +100,20 @@ export function RunOutput({
   layout?: 'panel' | 'task';
 }) {
   const [expanded, setExpanded] = useState(false);
+  const outputId = useId();
+  const content = useRef<HTMLPreElement>(null);
+  const toggleOrigin = useRef<HTMLButtonElement | null>(null);
   const output = useMemo(() => presentRun(detail, Date.now()).output, [detail.output]);
+  useLayoutEffect(() => {
+    const origin = toggleOrigin.current;
+    toggleOrigin.current = null;
+    if (!origin || !content.current) return;
+    content.current.scrollTo(0, 0);
+    if (document.activeElement === origin) {
+      content.current.focus({ preventScroll: true });
+      content.current.scrollIntoView({ block: 'nearest' });
+    }
+  }, [expanded]);
   return (
     <section
       className={layout === 'task' ? 'run-output task-run-output' : 'run-output panel'}
@@ -118,7 +131,14 @@ export function RunOutput({
           )}
         </h3>
         {output.truncated && (
-          <button onClick={() => setExpanded(!expanded)} aria-expanded={expanded}>
+          <button
+            onClick={(event) => {
+              toggleOrigin.current = event.currentTarget;
+              setExpanded(!expanded);
+            }}
+            aria-expanded={expanded}
+            aria-controls={outputId}
+          >
             {expanded ? '收起输出' : '展开完整输出'}
           </button>
         )}
@@ -134,7 +154,7 @@ export function RunOutput({
               字符。展开只读取已保存内容。
             </p>
           )}
-          <pre tabIndex={0} aria-label="已保存的结构化输出">
+          <pre id={outputId} ref={content} tabIndex={0} aria-label="已保存的结构化输出">
             {expanded ? output.full : output.preview}
           </pre>
         </>
