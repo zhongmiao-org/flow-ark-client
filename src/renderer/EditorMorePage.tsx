@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { FlowRecord } from '../shared/types';
 import { flatten } from './flow-editing';
 import RunHistory from './RunHistory';
@@ -17,28 +17,64 @@ type Props = {
   copy: (name: string, id: string) => Promise<FlowRecord>;
   openCopy: (record: FlowRecord) => void;
 };
+type MorePage = 'menu' | 'scripts' | 'copy' | 'history';
 
 export default function EditorMorePage(props: Props) {
   const { active, record, saved, busy } = props;
-  const [page, setPage] = useState<'menu' | 'scripts' | 'copy' | 'history'>('menu');
+  const [page, setPage] = useState<MorePage>('menu');
   const [filterOpen, setFilterOpen] = useState(false);
   const [name, setName] = useState(() => `${record.flow.name} · 副本`.slice(0, 100));
-  const [reviewed, setReviewed] = useState(false);
+  const [reviewedSource, setReviewedSource] = useState<string>();
+  const copySource = JSON.stringify({
+    flow: record.flow,
+    configuration: record.bindings.configuration,
+  });
+  const reviewed = reviewedSource === copySource;
   const [receipt, setReceipt] = useState<FlowRecord>();
   const [error, setError] = useState('');
   const [copying, setCopying] = useState(false);
   const locked = useRef(false);
   const copyId = useRef(crypto.randomUUID());
+  const root = useRef<HTMLElement>(null);
+  const menuOrigin = useRef<{ page: MorePage; scroll: number } | undefined>(undefined);
+  const restoreMenu = useRef(false);
+  const previousPage = useRef<MorePage>('menu');
   const heading = useRef<HTMLHeadingElement>(null);
   const receiptHeading = useRef<HTMLHeadingElement>(null);
   const copyError = useRef<HTMLParagraphElement>(null);
   const unavailable = busy || copying;
   const scripts = flatten(record.flow.steps).filter((step) => step.type === 'script');
-  useEffect(() => {
-    if (active) {
+  const openPage = (next: Exclude<MorePage, 'menu'>) => {
+    menuOrigin.current = { page: next, scroll: root.current?.closest('main')?.scrollTop ?? 0 };
+    setPage(next);
+  };
+  const returnMenu = () => {
+    restoreMenu.current = true;
+    setPage('menu');
+  };
+  useLayoutEffect(() => {
+    if (!active) return;
+    const main = root.current?.closest('main');
+    let restoreFrame: number | undefined;
+    if (page === 'menu' && restoreMenu.current) {
+      restoreMenu.current = false;
+      restoreFrame = requestAnimationFrame(() => {
+        main?.scrollTo({ top: menuOrigin.current?.scroll ?? 0 });
+        const target = root.current?.querySelector<HTMLElement>(
+          `[data-more-page="${menuOrigin.current?.page}"]`,
+        );
+        (target ?? heading.current)?.focus({ preventScroll: true });
+      });
+    } else {
+      if (page !== previousPage.current) main?.scrollTo({ top: 0 });
       const target = page === 'copy' && receipt ? receiptHeading.current : heading.current;
       target?.focus({ preventScroll: true });
+      if (page === 'copy' && receipt) target?.scrollIntoView({ block: 'nearest' });
     }
+    previousPage.current = page;
+    return () => {
+      if (restoreFrame !== undefined) cancelAnimationFrame(restoreFrame);
+    };
   }, [active, page, receipt]);
   useEffect(() => {
     if (active && page === 'copy' && error && !unavailable) copyError.current?.focus();
@@ -57,7 +93,7 @@ export default function EditorMorePage(props: Props) {
       if (!unavailable && !locked.current) {
         if (page === 'menu') props.back();
         else if (page === 'history' && filterOpen) setFilterOpen(false);
-        else setPage('menu');
+        else returnMenu();
       }
     };
     window.addEventListener('keydown', escape);
@@ -73,6 +109,7 @@ export default function EditorMorePage(props: Props) {
           : '版本与运行历史';
   return (
     <section
+      ref={root}
       className="page editor-more-page"
       style={active ? undefined : { display: 'none' }}
       aria-label="编排更多操作"
@@ -87,7 +124,7 @@ export default function EditorMorePage(props: Props) {
           </p>
         </div>
         {page !== 'menu' && (
-          <button disabled={unavailable} onClick={() => setPage('menu')}>
+          <button disabled={unavailable} onClick={returnMenu}>
             返回更多操作
           </button>
         )}
@@ -101,16 +138,17 @@ export default function EditorMorePage(props: Props) {
             <button disabled={busy} onClick={props.exportZip}>
               导出 ZIP
             </button>
-            <button disabled={busy} onClick={() => setPage('history')}>
+            <button data-more-page="history" disabled={busy} onClick={() => openPage('history')}>
               版本与历史
             </button>
-            <button disabled={busy} onClick={() => setPage('copy')}>
+            <button data-more-page="copy" disabled={busy} onClick={() => openPage('copy')}>
               复制为新任务
             </button>
             <button
+              data-more-page="scripts"
               disabled={busy}
               onClick={() =>
-                scripts.length === 1 ? props.script(scripts[0].id) : setPage('scripts')
+                scripts.length === 1 ? props.script(scripts[0].id) : openPage('scripts')
               }
             >
               编辑脚本
@@ -196,7 +234,10 @@ export default function EditorMorePage(props: Props) {
                   maxLength={100}
                   required
                   disabled={unavailable}
-                  onChange={(event) => setName(event.target.value)}
+                  onChange={(event) => {
+                    setName(event.target.value);
+                    setError('');
+                  }}
                 />
               </label>
               <p>复制当前草稿的全部步骤、参数和配置值{saved ? '。' : '，包括尚未保存的修改。'}</p>
@@ -208,12 +249,21 @@ export default function EditorMorePage(props: Props) {
                   type="checkbox"
                   checked={reviewed}
                   disabled={unavailable}
-                  onChange={(event) => setReviewed(event.target.checked)}
+                  aria-describedby={reviewedSource && !reviewed ? 'copy-source-changed' : undefined}
+                  onChange={(event) => {
+                    setReviewedSource(event.target.checked ? copySource : undefined);
+                    setError('');
+                  }}
                 />
                 我已核对要保留的内容，创建后重新绑定资源
               </label>
+              {reviewedSource && !reviewed && (
+                <p id="copy-source-changed" className="note" role="status">
+                  草稿已更新，请重新核对要保留的内容后再创建副本。
+                </p>
+              )}
               <button className="primary" disabled={unavailable || !reviewed || !name.trim()}>
-                {copying ? '正在创建…' : '创建独立副本'}
+                {copying ? '正在创建…' : error ? '重新创建独立副本' : '创建独立副本'}
               </button>
             </>
           )}

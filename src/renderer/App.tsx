@@ -1525,7 +1525,7 @@ function WorkspaceApp() {
           )}
           {error && (
             <div className="alert error" role="alert">
-              <b>操作未完成</b>
+              <b>{error === dataRefreshError.current ? '工作区信息读取失败' : '操作未完成'}</b>
               <span>{error}</span>
               <button onClick={() => setError('')}>关闭</button>
             </div>
