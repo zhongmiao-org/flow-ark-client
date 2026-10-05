@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { FlowRecord } from '../shared/types';
 import type { FramePath } from '../shared/contracts.generated';
@@ -61,6 +61,15 @@ export default function BrowserActionWorkspace(props: Props) {
   const [frames, setFrames] = useState(path.join('\n'));
   const [frameError, setFrameError] = useState('');
   const topLevel = ['navigate', 'screenshot'].includes(node.operation);
+  const currentGroup = groups.findIndex((group) => group.operations.includes(node.operation));
+  const previousGroup = useRef(currentGroup);
+  useLayoutEffect(() => {
+    if (previousGroup.current === currentGroup) return;
+    previousGroup.current = currentGroup;
+    const target = dialog.current?.querySelector<HTMLElement>('[data-current] h2');
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: 'start' });
+  }, [currentGroup]);
   useEffect(() => {
     setFrames(path.join('\n'));
     setFrameError('');
@@ -142,7 +151,7 @@ export default function BrowserActionWorkspace(props: Props) {
                 aria-label={group.title}
                 data-current={active || undefined}
               >
-                <h2>
+                <h2 tabIndex={-1}>
                   {group.title}
                   {active && <span>当前动作</span>}
                 </h2>

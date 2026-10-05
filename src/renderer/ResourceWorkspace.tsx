@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { FlowRecord, Step } from '../shared/types';
 import { flatten } from './flow-editing';
@@ -20,6 +20,9 @@ const groups = [
   { title: 'Excel 写入', type: 'excel', operations: ['write'] },
   { title: '模板工作簿映射', type: 'excel', operations: ['fill', 'map'] },
 ];
+const matchesGroup = (step: Step, group: (typeof groups)[number]) =>
+  step.type === group.type &&
+  (step.type === 'http' || ('operation' in step && group.operations.includes(step.operation)));
 function fields(node: ResourceStep, record: FlowRecord): [string, string][] {
   const value = (input: unknown) => taskStepValue(input, record.flow, node.id);
   if (node.type === 'http')
@@ -91,6 +94,16 @@ export default function ResourceWorkspace(props: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const steps = flatten(props.record.flow.steps);
+  const selected = steps.find((step) => step.id === props.selected);
+  const currentGroup = groups.findIndex((group) => selected && matchesGroup(selected, group));
+  const previousGroup = useRef(currentGroup);
+  useLayoutEffect(() => {
+    if (previousGroup.current === currentGroup) return;
+    previousGroup.current = currentGroup;
+    const target = dialog.current?.querySelector<HTMLElement>('[data-current] h2');
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: 'start' });
+  }, [currentGroup]);
   useEffect(() => {
     const trigger = document.activeElement as HTMLElement | null;
     const element = dialog.current!;
@@ -161,12 +174,7 @@ export default function ResourceWorkspace(props: Props) {
         )}
         <div className="resource-workspace-grid">
           {groups.map((group, index) => {
-            const matches = steps.filter(
-              (step) =>
-                step.type === group.type &&
-                (step.type === 'http' ||
-                  ('operation' in step && group.operations.includes(step.operation))),
-            ) as ResourceStep[];
+            const matches = steps.filter((step) => matchesGroup(step, group)) as ResourceStep[];
             const node = matches.find((step) => step.id === props.selected) ?? matches[0];
             const active = node?.id === props.selected;
             return (
