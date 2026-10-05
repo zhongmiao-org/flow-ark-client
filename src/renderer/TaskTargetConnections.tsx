@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ToolConnection } from '../shared/tool-connections';
 import type { PlanningTask, TaskDetail } from '../shared/planning';
@@ -35,6 +35,7 @@ export default function TaskTargetConnections({
     [busy, setBusy] = useState(false);
   const [error, setError] = useState(''),
     [query, setQuery] = useState('');
+  const [listError, setListError] = useState('');
   const [selectedId, setSelectedId] = useState('');
   const [choices, setChoices] = useState<
     Record<
@@ -56,6 +57,8 @@ export default function TaskTargetConnections({
     heading = useRef<HTMLHeadingElement>(null);
   const reviewButton = useRef<HTMLButtonElement>(null),
     search = useRef<HTMLInputElement>(null);
+  const errorNotice = useRef<HTMLParagraphElement>(null);
+  const focusError = useRef(false);
   const token = useRef<string | undefined>(undefined);
   const epoch = useRef(0),
     locked = useRef(false);
@@ -63,6 +66,11 @@ export default function TaskTargetConnections({
   const detailsId = useId();
   const detailsHeading = useRef<HTMLHeadingElement>(null);
   const identity = { id: task.id, revision: task.revision };
+  useLayoutEffect(() => {
+    if (!active || busy || !error || !focusError.current) return;
+    focusError.current = false;
+    errorNotice.current?.focus();
+  }, [active, busy, error]);
   useEffect(() => {
     setSelectedId('');
     setChoices({});
@@ -79,7 +87,9 @@ export default function TaskTargetConnections({
     const ticket = ++epoch.current;
     if (!active) return;
     setLoading(true);
+    setListError('');
     setError('');
+    focusError.current = false;
     void api('tool.connection.list').then(
       (next: ToolConnection[]) => {
         if (ticket !== epoch.current) return;
@@ -88,12 +98,13 @@ export default function TaskTargetConnections({
       },
       (reason) => {
         if (ticket !== epoch.current) return;
-        setError(reason.message || '连接列表读取失败');
+        setListError(reason.message || '连接列表读取失败');
         setLoading(false);
       },
     );
     return () => {
       epoch.current++;
+      focusError.current = false;
       if (token.current)
         void api('task.tools.cancel', { id: task.id, token: token.current }).catch(() => {});
       token.current = undefined;
@@ -128,13 +139,13 @@ export default function TaskTargetConnections({
     } catch (reason) {
       if (ticket !== epoch.current) return;
       cancelCandidate();
+      focusError.current = true;
       setError(
         (reason instanceof Error ? reason.message : '操作未完成').replace(
           /^Error invoking remote method 'flowark:request': (?:Error: )?/,
           '',
         ),
       );
-      requestAnimationFrame(() => reviewButton.current?.focus());
     } finally {
       locked.current = false;
       setBusy(false);
@@ -168,14 +179,16 @@ export default function TaskTargetConnections({
       : [];
   const selectionChanged = sameTask ? !matchingChoice : !!saved && !matchingSaved;
   const connectionLimit = (task.toolTargets?.length ?? 0) >= 5 && !saved;
-  const blocked = loading || !!error || record?.status !== 'verified' || connectionLimit;
+  const blocked = loading || !!listError || record?.status !== 'verified' || connectionLimit;
   const choose = (next: ToolConnection, keyboard = false) => {
     cancelCandidate();
+    setError('');
     setSelectedId(next.id);
     if (keyboard) requestAnimationFrame(() => detailsHeading.current?.focus());
   };
   const changeNames = (next: string[]) => {
     if (!record || busy || blocked) return;
+    setError('');
     setChoices((previous) => ({
       ...previous,
       [record.id]: {
@@ -199,11 +212,16 @@ export default function TaskTargetConnections({
         选择本次任务需要的工具，再核对来源和完整定义。账号、工作区与系统权限尚未核对。
       </p>
       {error && (
-        <p className="alert error" role="alert">
+        <p className="alert error" role="alert" ref={errorNotice} tabIndex={-1}>
           {error}
         </p>
       )}
-      {error && !!records.length && (
+      {listError && (
+        <p className="alert error" role="alert">
+          {listError}
+        </p>
+      )}
+      {listError && !!records.length && (
         <p className="ai-task-note">
           下方保留上次读取的连接资料。重新加载成功后才能核对并保存新的工具选择。
         </p>
@@ -225,7 +243,7 @@ export default function TaskTargetConnections({
                 <p>
                   {loading
                     ? '正在读取连接状态…'
-                    : error
+                    : listError
                       ? '连接状态尚未取得'
                       : valid
                         ? '已保存到任务草稿'
@@ -254,7 +272,7 @@ export default function TaskTargetConnections({
       )}
       {loading ? (
         <p role="status">正在读取你的连接…</p>
-      ) : error && !records.length ? (
+      ) : listError && !records.length ? (
         <button onClick={() => setRefresh((value) => value + 1)}>重新加载</button>
       ) : !records.length ? (
         <div className="task-target-empty">
