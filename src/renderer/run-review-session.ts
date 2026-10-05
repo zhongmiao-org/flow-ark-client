@@ -7,6 +7,7 @@ import type {
 } from '../shared/run-review';
 
 type Attempt = {
+  source: string;
   input: RunReviewConfirmation;
   preview: RunReviewPreview;
   phase: 'pending' | 'unknown' | 'rejected' | 'created';
@@ -68,7 +69,14 @@ export class RunReviewSession {
     if (this.state.active && this.source === next) return;
     this.source = next;
     this.generation++;
-    const attempt = this.attempts.get(context(selection));
+    const key = context(selection);
+    let attempt = this.attempts.get(key);
+    // A rejected confirmation created no Run. Changed inputs need a new check;
+    // pending, unknown and created receipts remain tied to their original request.
+    if (attempt?.phase === 'rejected' && attempt.source !== next) {
+      this.attempts.delete(key);
+      attempt = undefined;
+    }
     this.publish({
       active: true,
       selection: structuredClone(selection),
@@ -138,6 +146,7 @@ export class RunReviewSession {
     if (!attempt) {
       if (!state.preview?.ready || !state.preview.token || !state.reviewed) return;
       attempt = {
+        source: this.source,
         phase: 'pending',
         preview: state.preview,
         input: {
