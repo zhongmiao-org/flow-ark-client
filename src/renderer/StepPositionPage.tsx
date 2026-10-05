@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import './editor-workspace-dialog.css';
 import './step-position.css';
@@ -23,6 +23,7 @@ type Props = {
   save: () => Promise<unknown>;
   busy: boolean;
   structureError: string;
+  referenceRecovery?: ReactNode;
   saveError: string;
   view: (mode: 'all' | 'selected') => void;
   close: () => void;
@@ -87,6 +88,7 @@ export default function StepPositionPage(props: Props) {
             {error}
           </p>
         )}
+        {props.referenceRecovery}
         <fieldset disabled={props.busy} className="step-position-columns">
           <section className="step-position-card" aria-label="当前步骤与位置">
             <h2>{props.title ? `当前步骤 · ${props.title}` : '当前未选择步骤'}</h2>

@@ -11,6 +11,7 @@ export default function VariablePicker({
   current,
   choose,
   fixed,
+  fixedLabel = '改用固定值',
   close,
 }: {
   label: string;
@@ -18,6 +19,7 @@ export default function VariablePicker({
   current?: string;
   choose: (path: string) => void;
   fixed: () => void;
+  fixedLabel?: string;
   close: () => void;
 }) {
   const navigationContext = useContext(VariableNavigationContext);
@@ -246,7 +248,7 @@ export default function VariablePicker({
                 使用此变量
               </button>
               <button type="button" onClick={() => apply(fixed)}>
-                改用固定值
+                {fixedLabel}
               </button>
               <button type="button" onClick={close} aria-label={'取消选择 · ' + label}>
                 取消

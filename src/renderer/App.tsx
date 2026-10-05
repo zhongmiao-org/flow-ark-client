@@ -1,4 +1,6 @@
 import { VariableNavigationContext } from './variable-navigation';
+import StructureReferenceRecovery from './StructureReferenceRecovery';
+import type { ReferenceIssue } from '../shared/flow-references';
 import { usePageBack } from './use-page-back';
 import DesktopStepDetails from './DesktopStepDetails';
 import StepPositionPage from './StepPositionPage';
@@ -41,6 +43,7 @@ import {
   moveStep,
   moveSibling,
   checkStructure,
+  StructureReferenceError,
   type Destination,
 } from './flow-editing';
 import { draftHistory, emptyHistory } from './draft-history';
@@ -2502,7 +2505,17 @@ function Editor({
   const [tab, setTab] = useState('node');
   const [destination, setDestination] = useState('main');
   const [moveTo, setMoveTo] = useState('');
-  const [structureError, setStructureError] = useState('');
+  const [structureError, updateStructureError] = useState('');
+  const [structureIssues, setStructureIssues] = useState<ReferenceIssue[]>([]);
+  const [referenceNotice, setReferenceNotice] = useState<{ nodeId: string; message: string }>();
+  const referenceFeedback = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (draftSaved) setReferenceNotice(undefined);
+  }, [draftSaved]);
+  const setStructureError = (message: string) => {
+    updateStructureError(message);
+    if (!message) setStructureIssues([]);
+  };
   const [raw, setRaw] = useState('');
   const [invalid, setInvalid] = useState('');
   const [copiedStep, setCopiedStep] = useState<{ id: string; flowId: string; count: number }>();
@@ -2554,6 +2567,7 @@ function Editor({
       setCopiedStep(undefined);
   }, [draftSaved, selected, copiedStep, r.id]);
   const patch = (fn: (n: Step) => Step | null) => {
+    setReferenceNotice(undefined);
     setCopiedStep(undefined);
     const steps = changeSteps(r.flow.steps, selected, fn);
     const mapped = flatten(steps).some((node) => node.type === 'excel' && node.operation === 'map');
@@ -2585,6 +2599,7 @@ function Editor({
   };
   const structure = (build: () => Step[], nextSelected = selected) => {
     if (!guardNodeInput()) return false;
+    setReferenceNotice(undefined);
     try {
       const steps = build();
       checkStructure(r.flow.steps, steps, r.flow.parameters);
@@ -2596,7 +2611,12 @@ function Editor({
       setCopiedStep(undefined);
       return true;
     } catch (error: any) {
-      setStructureError(error.message);
+      setStructureError(
+        error instanceof StructureReferenceError
+          ? '结构操作会使其他步骤的引用失效，请先调整下列字段。'
+          : error.message,
+      );
+      setStructureIssues(error instanceof StructureReferenceError ? error.issues : []);
       return false;
     }
   };
@@ -2621,6 +2641,7 @@ function Editor({
       }
     } catch (error: any) {
       setStructureError(error.message);
+      setStructureIssues([]);
     }
   };
   const insertAt = (side: 'before' | 'after') => {
@@ -2774,10 +2795,50 @@ function Editor({
     setResourceOpen(false);
     setBrowserActionOpen(false);
     setControlOpen(false);
+    setPositionOpen(false);
     setPanel('node');
     requestAnimationFrame(() => inspectorHeading.current?.focus({ preventScroll: true }));
     return true;
   };
+  const finishReferenceEdit = (nodeId: string, label: string, changed: boolean) => {
+    if (!flatten(r.flow.steps).some((node) => node.id === nodeId))
+      throw new Error('引用字段所在步骤已不存在，请返回重新核对。');
+    setStructureError('');
+    setPositionOpen(false);
+    setControlOpen(false);
+    setBrowserActionOpen(false);
+    setResourceOpen(false);
+    setLogicConfigurationOpen(false);
+    setScriptConfigurationOpen(false);
+    setSelected(nodeId);
+    setTab('node');
+    setPanel('node');
+    setReferenceNotice({
+      nodeId,
+      message: changed
+        ? `已调整 ${label} 的引用，保存草稿后生效。原删除或移动尚未执行。`
+        : `已定位到 ${label}，请在该字段改为固定值。原删除或移动尚未执行。`,
+    });
+    requestAnimationFrame(() => referenceFeedback.current?.focus());
+  };
+  const referenceRecovery =
+    structureError && structureIssues.length ? (
+      <StructureReferenceRecovery
+        flow={r.flow}
+        issues={structureIssues}
+        change={(node, label) => {
+          if (!guardNodeInput()) throw new Error('请先修正当前未完成的输入。');
+          const steps = changeSteps(r.flow.steps, node.id, () => node);
+          checkStructure(r.flow.steps, steps, r.flow.parameters);
+          setRecord({ ...r, flow: { ...r.flow, steps } });
+          finishReferenceEdit(node.id, label, true);
+        }}
+        edit={(nodeId, label) => {
+          if (!guardNodeInput()) throw new Error('请先修正当前未完成的输入。');
+          finishReferenceEdit(nodeId, label, false);
+        }}
+      />
+    ) : undefined;
   return (
     <VariableNavigationContext.Provider
       value={{
@@ -2987,6 +3048,7 @@ function Editor({
           save={save}
           busy={saveBusy}
           structureError={structureError}
+          referenceRecovery={referenceRecovery}
           saveError={saveError}
           close={() => setPositionOpen(false)}
           view={(mode) => {
@@ -3239,6 +3301,12 @@ function Editor({
                           {structureError}
                         </p>
                       )}
+                      {referenceRecovery}
+                      {referenceNotice && referenceNotice.nodeId === selected && (
+                        <p ref={referenceFeedback} tabIndex={-1} role="status" className="note">
+                          {referenceNotice.message}
+                        </p>
+                      )}
                       <details className="read-step-more">
                         <summary>更多步骤设置</summary>
                         <button
@@ -3358,6 +3426,12 @@ function Editor({
                           {structureError && (
                             <p className="field-error" role="alert">
                               {structureError}
+                            </p>
+                          )}
+                          {referenceRecovery}
+                          {referenceNotice && referenceNotice.nodeId === selected && (
+                            <p ref={referenceFeedback} tabIndex={-1} role="status" className="note">
+                              {referenceNotice.message}
                             </p>
                           )}
                           <p className="muted">{selectedNode.id} · 修改后保存，下一次运行生效</p>
