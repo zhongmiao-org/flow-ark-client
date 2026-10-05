@@ -3268,6 +3268,7 @@ function Editor({
                       >
                         <ReadStepInspector
                           key={selectedNode.id + ':' + revision}
+                          compact={compactBrowser}
                           pickerControls={pickerControls}
                           record={r}
                           node={selectedNode}

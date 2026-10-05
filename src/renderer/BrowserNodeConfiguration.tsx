@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode, type Ref } from 'react';
+import { Fragment, useEffect, useId, useRef, useState, type ReactNode, type Ref } from 'react';
 import type { FramePath } from '../shared/contracts.generated';
 import type { Step } from '../shared/types';
 import ElementPicker, { type ElementPickerControls } from './ElementPicker';
@@ -59,6 +59,118 @@ export default function BrowserNodeConfiguration({
       setTarget(null);
   }, [node.selector, pathKey]);
   const topLevel = ['navigate', 'screenshot'].includes(node.operation);
+  const picker = (
+    <Fragment key="picker">
+      <ElementPicker
+        key={`${node.id}:${node.operation}`}
+        controls={pickerControls}
+        confirmBeforeApply
+        pickLabel={readInspector ? (node.selector ? '重新拾取目标' : '拾取目标') : undefined}
+        active={active}
+        blockingRunId={blockingRunId}
+        onViewRun={onViewRun}
+        selector={node.selector}
+        framePath={path}
+        onStart={() => setTarget(null)}
+        onInspect={(picked) => {
+          setTarget(picked);
+          setInspected(true);
+        }}
+        onAdjust={() => {
+          if (locator.current) locator.current.open = true;
+          selectorInput.current?.focus();
+        }}
+        onSelect={(picked) => {
+          setInspected(false);
+          setTarget(picked);
+          change({
+            ...node,
+            version: node.version === 3 ? 3 : 2,
+            selector: picked.selector,
+            framePath: picked.framePath,
+            ...(!node.name
+              ? {
+                  name:
+                    ({
+                      navigate: '打开',
+                      screenshot: '截图',
+                      fill: '填写',
+                      check: '勾选',
+                      select: '选择',
+                      click: '点击',
+                      read: '读取',
+                      wait: '等待',
+                      inputValue: '读取',
+                      upload: '上传到',
+                      download: '下载',
+                      press: '按键',
+                    }[node.operation] ?? '') +
+                    ' ' +
+                    picked.label,
+                }
+              : {}),
+          } as BrowserNode);
+        }}
+      />
+      {target && !inspected && (
+        <div className="picked-target">
+          <strong>{target.label}</strong>
+          <span>
+            {target.tag}
+            {target.inputType ? ' · ' + target.inputType : ''} ·{' '}
+            {target.framePath.length ? target.framePath.length + ' 层框架' : '当前页面'}
+          </span>
+          {target.structural && <p>使用结构定位，页面布局变化后请重新验证。</p>}
+        </div>
+      )}
+    </Fragment>
+  );
+  const locatorEditor = (
+    <details key="locator" ref={locator} className="locator-details" open={!node.selector}>
+      <summary>
+        {readInspector ? (compact ? '高级定位' : '高级定位与超时') : '定位信息 · 高级编辑'}
+      </summary>
+      <label htmlFor={fieldId + 'browser-selector'}>目标元素选择器</label>
+      <input
+        ref={selectorInput}
+        id={fieldId + 'browser-selector'}
+        disabled={topLevel}
+        value={node.selector}
+        placeholder="#submit"
+        onChange={(e) => change({ ...node, selector: e.target.value })}
+      />
+      <label htmlFor={fieldId + 'browser-frame-path'}>iframe 路径</label>
+      <textarea
+        id={fieldId + 'browser-frame-path'}
+        value={frames}
+        disabled={topLevel}
+        rows={3}
+        aria-describedby={fieldId + 'browser-frame-help'}
+        placeholder={'iframe#outer\niframe[name="content"]'}
+        onChange={(e) => {
+          setFrames(e.target.value);
+          change({
+            ...node,
+            version: node.version === 3 ? 3 : 2,
+            framePath: parseFrames(e.target.value) as FramePath,
+          } as BrowserNode);
+        }}
+      />
+      <p id={fieldId + 'browser-frame-help'} className="note">
+        {topLevel
+          ? '打开网页和页面截图作用于顶层页面。'
+          : '留空表示顶层页面。每行一个 CSS 选择器，从外到内，最多 8 层；每层必须唯一匹配。'}
+      </p>
+    </details>
+  );
+  const inspectorOutput = readInspector ? (
+    <Fragment key="output">{readInspector.output}</Fragment>
+  ) : null;
+  const inspectorTiming = readInspector ? (
+    <div key="timing" className="read-step-timing">
+      {readInspector.timing}
+    </div>
+  ) : null;
   return (
     <section className="node-configuration" aria-label="浏览器节点配置">
       {!fieldsOnly && !compact && !readInspector && (
@@ -128,104 +240,9 @@ export default function BrowserNodeConfiguration({
                 : node.selector || '尚未选择目标元素'}
             </p>
           )}
-          <ElementPicker
-            key={`${node.id}:${node.operation}`}
-            controls={pickerControls}
-            confirmBeforeApply
-            pickLabel={readInspector ? (node.selector ? '重新拾取目标' : '拾取目标') : undefined}
-            active={active}
-            blockingRunId={blockingRunId}
-            onViewRun={onViewRun}
-            selector={node.selector}
-            framePath={path}
-            onStart={() => setTarget(null)}
-            onInspect={(picked) => {
-              setTarget(picked);
-              setInspected(true);
-            }}
-            onAdjust={() => {
-              if (locator.current) locator.current.open = true;
-              selectorInput.current?.focus();
-            }}
-            onSelect={(picked) => {
-              setInspected(false);
-              setTarget(picked);
-              change({
-                ...node,
-                version: node.version === 3 ? 3 : 2,
-                selector: picked.selector,
-                framePath: picked.framePath,
-                ...(!node.name
-                  ? {
-                      name:
-                        ({
-                          navigate: '打开',
-                          screenshot: '截图',
-                          fill: '填写',
-                          check: '勾选',
-                          select: '选择',
-                          click: '点击',
-                          read: '读取',
-                          wait: '等待',
-                          inputValue: '读取',
-                          upload: '上传到',
-                          download: '下载',
-                          press: '按键',
-                        }[node.operation] ?? '') +
-                        ' ' +
-                        picked.label,
-                    }
-                  : {}),
-              } as BrowserNode);
-            }}
-          />
-          {target && !inspected && (
-            <div className="picked-target">
-              <strong>{target.label}</strong>
-              <span>
-                {target.tag}
-                {target.inputType ? ' · ' + target.inputType : ''} ·{' '}
-                {target.framePath.length ? target.framePath.length + ' 层框架' : '当前页面'}
-              </span>
-              {target.structural && <p>使用结构定位，页面布局变化后请重新验证。</p>}
-            </div>
-          )}
-          {readInspector?.output}
-          <details ref={locator} className="locator-details" open={!node.selector}>
-            <summary>{readInspector ? '高级定位与超时' : '定位信息 · 高级编辑'}</summary>
-            <label htmlFor={fieldId + 'browser-selector'}>目标元素选择器</label>
-            <input
-              ref={selectorInput}
-              id={fieldId + 'browser-selector'}
-              disabled={topLevel}
-              value={node.selector}
-              placeholder="#submit"
-              onChange={(e) => change({ ...node, selector: e.target.value })}
-            />
-            <label htmlFor={fieldId + 'browser-frame-path'}>iframe 路径</label>
-            <textarea
-              id={fieldId + 'browser-frame-path'}
-              value={frames}
-              disabled={topLevel}
-              rows={3}
-              aria-describedby={fieldId + 'browser-frame-help'}
-              placeholder={'iframe#outer\niframe[name="content"]'}
-              onChange={(e) => {
-                setFrames(e.target.value);
-                change({
-                  ...node,
-                  version: node.version === 3 ? 3 : 2,
-                  framePath: parseFrames(e.target.value) as FramePath,
-                } as BrowserNode);
-              }}
-            />
-            <p id={fieldId + 'browser-frame-help'} className="note">
-              {topLevel
-                ? '打开网页和页面截图作用于顶层页面。'
-                : '留空表示顶层页面。每行一个 CSS 选择器，从外到内，最多 8 层；每层必须唯一匹配。'}
-            </p>
-            {readInspector?.timing}
-          </details>
+          {compact && readInspector
+            ? [inspectorTiming, picker, inspectorOutput, locatorEditor]
+            : [picker, inspectorOutput, locatorEditor, inspectorTiming]}
         </>
       )}
       {node.operation === 'fill' && (

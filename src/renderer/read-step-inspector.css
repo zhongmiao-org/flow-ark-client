@@ -11,6 +11,8 @@
   margin: 0 0 16px;
 }
 .read-step-selection {
+  display: inline-flex;
+  align-items: center;
   align-self: flex-start;
   padding: 4px 12px;
   margin-bottom: 16px;
@@ -29,7 +31,10 @@
   border-radius: 50%;
   background: currentColor;
 }
-.read-step-inspector > label,
+.read-step-identity > input {
+  width: 100%;
+}
+.read-step-identity > label,
 .read-step-inspector .node-configuration > label,
 .read-step-output > label {
   display: block;
@@ -38,7 +43,7 @@
   line-height: 18px;
   color: var(--fa-text-secondary);
 }
-.read-step-inspector > input,
+.read-step-identity > input,
 .read-step-inspector .read-step-value,
 .read-step-inspector .compact-target-selector {
   height: 32px;
@@ -158,4 +163,38 @@
 .read-step-more[open] > button {
   width: 100%;
   margin-top: 16px;
+}
+
+.read-step-inspector:not(.is-compact) .read-step-identity > summary,
+.read-step-inspector:not(.is-compact)
+  .locator-details:not([open])
+  + .read-step-timing:not(:has([data-value-invalid])):not(:focus-within) {
+  display: none;
+}
+.read-step-timing {
+  margin-bottom: 16px;
+}
+.read-step-inspector.is-compact .read-step-timing > .node-timing {
+  padding: 0;
+  border: 0;
+}
+.read-step-inspector.is-compact > .read-step-apply {
+  display: none;
+}
+.read-step-inspector.is-compact .read-step-identity > summary {
+  cursor: pointer;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 20px;
+  margin-bottom: 16px;
+}
+
+.read-step-inspector.is-compact .node-timing input:not([type='checkbox']) {
+  height: 32px;
+  min-height: 32px;
+  padding: 6px;
+  border: 0;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 20px;
 }

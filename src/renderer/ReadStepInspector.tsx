@@ -33,7 +33,9 @@ export default function ReadStepInspector({
   view,
   select,
   pickerControls,
+  compact = false,
 }: {
+  compact?: boolean;
   pickerControls?: Ref<ElementPickerControls>;
   record: FlowRecord;
   node: BrowserNode;
@@ -49,17 +51,23 @@ export default function ReadStepInspector({
   select: (id: string) => void;
 }) {
   const [referencesOpen, setReferencesOpen] = useState(false);
+  const [identityOpen, setIdentityOpen] = useState(false);
   const [notice, setNotice] = useState('');
   const steps = flatten(record.flow.steps);
   const ordinal = steps.findIndex((step) => step.id === node.id) + 1;
   const reference = 'steps.' + node.id;
   const consumers = steps.filter((step) => usesOutput(nodeReferenceValues(step), reference));
   useEffect(() => setNotice(''), [node]);
-  return (
-    <section className="read-step-inspector" aria-label="读取文字步骤配置">
-      <h3 ref={heading} tabIndex={-1}>
-        读取文字
-      </h3>
+  const identity = (
+    <details
+      key="identity"
+      className="read-step-identity"
+      open={!compact || identityOpen}
+      onToggle={(event) => {
+        if (compact) setIdentityOpen(event.currentTarget.open);
+      }}
+    >
+      <summary>步骤名称与编号</summary>
       <span className="read-step-selection">步骤 {String(ordinal).padStart(2, '0')} · 已选择</span>
       <label htmlFor="step-name">动作名称</label>
       <input
@@ -69,51 +77,64 @@ export default function ReadStepInspector({
         placeholder="便于识别的名称（可选）"
         onChange={(event) => change({ ...node, name: event.target.value })}
       />
-      <BrowserNodeConfiguration
-        pickerControls={pickerControls}
-        node={node}
-        choices={[]}
-        change={change}
-        active={active}
-        blockingRunId={blockingRunId}
-        onViewRun={onViewRun}
-        readInspector={{
-          timing: <NodeTiming node={node} change={changeTiming} />,
-          output: (
-            <div className="read-step-output">
-              <label>输出</label>
-              <p className="read-step-value" title={reference}>
-                当前步骤输出 → 文本
-              </p>
-              <button
-                aria-expanded={referencesOpen}
-                onClick={() => setReferencesOpen(!referencesOpen)}
-              >
-                查看输出引用 · {consumers.length}
-              </button>
-              {referencesOpen && (
-                <div className="read-step-references">
-                  <code>{reference}</code>
-                  <p>
-                    后续步骤可通过变量选择引用此输出。这里展示草稿引用关系，不包含实际读取结果。
-                  </p>
-                  {consumers.length ? (
-                    consumers.map((step) => (
-                      <button key={step.id} onClick={() => select(step.id)}>
-                        {String(steps.indexOf(step) + 1).padStart(2, '0')} {taskStepTitle(step)}
-                      </button>
-                    ))
-                  ) : (
-                    <p>当前草稿没有步骤引用此输出。</p>
-                  )}
-                </div>
-              )}
-            </div>
-          ),
-        }}
-      />
+    </details>
+  );
+  const configuration = (
+    <BrowserNodeConfiguration
+      key="configuration"
+      compact={compact}
+      pickerControls={pickerControls}
+      node={node}
+      choices={[]}
+      change={change}
+      active={active}
+      blockingRunId={blockingRunId}
+      onViewRun={onViewRun}
+      readInspector={{
+        timing: <NodeTiming node={node} change={changeTiming} compact={compact} />,
+        output: (
+          <div className="read-step-output">
+            <label>输出</label>
+            <p className="read-step-value" title={reference}>
+              当前步骤输出 → 文本
+            </p>
+            <button
+              aria-expanded={referencesOpen}
+              onClick={() => setReferencesOpen(!referencesOpen)}
+            >
+              查看输出引用 · {consumers.length}
+            </button>
+            {referencesOpen && (
+              <div className="read-step-references">
+                <code>{reference}</code>
+                <p>后续步骤可通过变量选择引用此输出。这里展示草稿引用关系，不包含实际读取结果。</p>
+                {consumers.length ? (
+                  consumers.map((step) => (
+                    <button key={step.id} onClick={() => select(step.id)}>
+                      {String(steps.indexOf(step) + 1).padStart(2, '0')} {taskStepTitle(step)}
+                    </button>
+                  ))
+                ) : (
+                  <p>当前草稿没有步骤引用此输出。</p>
+                )}
+              </div>
+            )}
+          </div>
+        ),
+      }}
+    />
+  );
+  return (
+    <section
+      className={`read-step-inspector${compact ? ' is-compact' : ''}`}
+      aria-label="读取文字步骤配置"
+    >
+      <h3 ref={heading} tabIndex={-1}>
+        {compact ? '配置 · 读取文字' : '读取文字'}
+      </h3>
+      {compact ? [configuration, identity] : [identity, configuration]}
       <button
-        className="primary"
+        className="primary read-step-apply"
         onClick={() => {
           if (guard()) setNotice('已应用到当前草稿；保存后用于下一次运行。');
         }}
