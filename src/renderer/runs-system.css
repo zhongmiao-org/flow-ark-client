@@ -113,6 +113,9 @@
 .history-duration-col {
   width: 8.07%;
 }
+.run-history td.history-duration {
+  white-space: nowrap;
+}
 .history-open-col {
   width: 18.18%;
 }
@@ -208,10 +211,23 @@
   gap: 20px;
   margin-top: 20px;
 }
-.history-applied-source {
+.history-applied-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
   color: var(--fa-text-secondary);
   font-size: 12px;
   margin: 0 0 12px;
+}
+.history-applied-filters p {
+  flex: 1 1 320px;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.history-applied-filters button {
+  flex: 0 0 auto;
 }
 .run-detail {
   display: flex;

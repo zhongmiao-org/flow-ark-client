@@ -54,6 +54,7 @@ export default function RunHistory({
     shown = useRef(visible);
   const root = useRef<HTMLDivElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const appliedFilters = useRef<HTMLDivElement>(null);
   const search = useRef<HTMLInputElement>(null);
   const filterReturn = useRef<{
     trigger: 'flow' | 'source';
@@ -65,6 +66,21 @@ export default function RunHistory({
   const pageSummaryId = useId();
   shown.current = visible && !filterOpen;
   const cursor = cursors[cursors.length - 1];
+  const selectedFlowId = scope?.id ?? query.flowId;
+  const selectedFlowName =
+    scope?.name ?? flows.find((flow) => flow.id === selectedFlowId)?.flow.name;
+  const additionalFilters = [
+    query.query && `搜索：${query.query}`,
+    selectedFlowId && `${scope ? '当前流程' : '流程'}：${selectedFlowName || selectedFlowId}`,
+    query.source && `触发来源：${runSourceLabels[query.source]}`,
+  ].filter(Boolean);
+  const canClearFilters = !!(
+    query.query ||
+    query.state ||
+    query.source ||
+    (!scope && query.flowId) ||
+    range !== 'all'
+  );
   useEffect(() => setPage(cursors.length), [cursors.length, setPage]);
   const resetView = () => {
     setData(null);
@@ -110,8 +126,10 @@ export default function RunHistory({
     if (!saved) return;
     const target = !saved.applied
       ? (root.current?.querySelector<HTMLElement>(`[data-history-filter="${saved.trigger}"]`) ??
-        heading.current)
-      : heading.current;
+        (scope ? appliedFilters.current : heading.current))
+      : scope
+        ? appliedFilters.current
+        : heading.current;
     target?.focus({ preventScroll: true });
     root.current?.closest('main')?.scrollTo({ top: saved.applied ? 0 : saved.scroll });
     filterReturn.current = null;
@@ -159,7 +177,9 @@ export default function RunHistory({
       const button = [
         ...(root.current?.querySelectorAll<HTMLButtonElement>('[data-run-id]') ?? []),
       ].find((e) => e.dataset.runId === saved.id);
-      (button ?? heading.current)?.focus({ preventScroll: true });
+      (button ?? (scope ? appliedFilters.current : heading.current))?.focus({
+        preventScroll: true,
+      });
       root.current?.closest('main')?.scrollTo({ top: saved.scroll });
       restore.current = null;
     });
@@ -171,7 +191,7 @@ export default function RunHistory({
   useEffect(() => {
     if (!pageArrival.current || !visible || filterOpen || loading || error || !data) return;
     pageArrival.current = false;
-    heading.current?.focus({ preventScroll: true });
+    (scope ? appliedFilters.current : heading.current)?.focus({ preventScroll: true });
     root.current?.closest('main')?.scrollTo({ top: 0 });
   }, [visible, filterOpen, loading, error, data]);
   const inspect = async (id: string) => {
@@ -317,6 +337,13 @@ export default function RunHistory({
                   onChange={(e) => setDraft({ ...draft, flowId: e.target.value })}
                 >
                   <option value="">所有流程</option>
+                  {draft.flowId && !flows.some((flow) => flow.id === draft.flowId) && (
+                    <option value={draft.flowId}>
+                      {scope?.id === draft.flowId
+                        ? scope.name
+                        : `当前筛选的流程（不在本地清单）：${draft.flowId}`}
+                    </option>
+                  )}
                   {flows.map((flow) => (
                     <option key={flow.id} value={flow.id}>
                       {flow.flow.name}
@@ -381,8 +408,28 @@ export default function RunHistory({
               )}
             </p>
           )}
-          {query.source && (
-            <p className="history-applied-source">触发来源：{runSourceLabels[query.source]}</p>
+          {!!additionalFilters.length && (
+            <div
+              ref={appliedFilters}
+              className="history-applied-filters"
+              tabIndex={-1}
+              aria-label="已应用的运行筛选"
+              aria-describedby={pageSummaryId}
+            >
+              <p>{additionalFilters.join(' · ')}</p>
+              {canClearFilters && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    pageArrival.current = true;
+                    setRange('all');
+                    filter({ limit: query.limit });
+                  }}
+                >
+                  {scope ? '清除筛选，保留当前流程' : '清除筛选'}
+                </button>
+              )}
+            </div>
           )}
           <div className="table-wrap" aria-busy={loading}>
             <table aria-label="运行记录">
@@ -429,7 +476,7 @@ export default function RunHistory({
                       <td>
                         <RunStartTime value={elapsed?.startedAt} queued={r.state === 'QUEUED'} />
                       </td>
-                      <td>
+                      <td className="history-duration">
                         {elapsed?.milliseconds == null ? (
                           '待核对'
                         ) : (
