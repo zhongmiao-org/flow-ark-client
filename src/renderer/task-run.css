@@ -351,7 +351,7 @@
   border-radius: 12px;
   background: var(--fa-action-subtle);
 }
-.task-run-steps ol {
+.task-run-steps > ol {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -359,21 +359,21 @@
   flex-direction: column;
   gap: 16px;
 }
-.task-run-steps li {
+.task-run-steps > ol > li {
   display: flex;
   gap: 16px;
   padding: 16px;
   background: var(--fa-bg-canvas);
   border-radius: 8px;
 }
-.task-run-steps li[aria-current] {
+.task-run-steps > ol > li[aria-current] {
   outline: 1px solid var(--fa-action-primary);
 }
-.task-run-steps li div {
+.task-run-steps > ol > li div {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.task-run-steps li p {
+.task-run-steps > ol > li p {
   margin: 8px 0 0;
 }
 .task-run-index {

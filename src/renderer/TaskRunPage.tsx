@@ -256,7 +256,7 @@ export default function TaskRunPage({
       key={run.id}
       model={model}
       compact={compactLive && page === 'overview'}
-      snapshot={detail.snapshot}
+      detail={detail}
       view={stepsView?.runId === run.id ? stepsView : undefined}
       change={(view) => setStepsView({ ...view, runId: run.id })}
     />

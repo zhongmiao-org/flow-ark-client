@@ -214,7 +214,12 @@ export default function DesktopTaskRun({
               </p>
               <p>记录只代表本次执行时的目标和回读，不代表当前窗口或文档仍然一致。</p>
             </div>
-            <TaskExecutionSteps model={model} view={stepsView} change={setStepsView} />
+            <TaskExecutionSteps
+              model={model}
+              detail={detail}
+              view={stepsView}
+              change={setStepsView}
+            />
             <RunEventLog runId={run.id} events={detail.events} snapshot={detail.snapshot} />
             <button onClick={() => setPage('overview')}>返回应用结果</button>
           </>

@@ -1,13 +1,19 @@
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import type { taskRunPresentation } from './task-run-presentation';
 import './task-execution-steps.css';
-import type { Flow } from '../shared/types';
+import type { RunPresentationInput } from '../shared/run-presentation';
+import RunStepDetails from './RunStepDetails';
 import { flatten } from './flow-editing';
 import { taskStepSummary } from './task-step-presentation';
 
 type Model = ReturnType<typeof taskRunPresentation>;
 type Filter = 'all' | 'completed' | 'unresolved' | 'unvisited';
-export type TaskExecutionView = { query: string; filter: Filter; scroll: number };
+export type TaskExecutionView = {
+  query: string;
+  filter: Filter;
+  scroll: number;
+  expanded?: string;
+};
 const filters: Record<Filter, string> = {
   all: '全部',
   completed: '已完成',
@@ -20,16 +26,18 @@ export default function TaskExecutionSteps({
   view,
   change,
   compact = false,
-  snapshot,
+  detail,
 }: {
   model: Model;
   compact?: boolean;
-  snapshot?: Flow;
+  detail: RunPresentationInput;
   view?: TaskExecutionView;
   change: (view: TaskExecutionView) => void;
 }) {
   const id = useId();
-  const { query = '', filter = 'all', scroll = 0 } = view ?? {};
+  const { query = '', filter = 'all', scroll = 0, expanded } = view ?? {};
+  const { snapshot } = detail;
+  const update = (next: Omit<TaskExecutionView, 'expanded'>) => change({ ...next, expanded });
   const [focusRequest, setFocusRequest] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState<boolean>();
   const showFilters = filtersOpen ?? (model.rows.length > 8 || !!query || filter !== 'all');
@@ -87,7 +95,7 @@ export default function TaskExecutionSteps({
           disabled={!model.current}
           onClick={() => {
             if (!model.current) return;
-            change({ query: '', filter: 'all', scroll: 0 });
+            update({ query: '', filter: 'all', scroll: 0 });
             requested.current = model.current.instance;
             setFocusRequest((value) => value + 1);
           }}
@@ -98,7 +106,7 @@ export default function TaskExecutionSteps({
           <button
             type="button"
             onClick={() => {
-              change({ query: '', filter: 'all', scroll: 0 });
+              update({ query: '', filter: 'all', scroll: 0 });
               setFiltersOpen(true);
               requestAnimationFrame(() => search.current?.focus());
             }}
@@ -124,7 +132,7 @@ export default function TaskExecutionSteps({
           id={`${id}-search`}
           value={query}
           placeholder="步骤名称、编号或循环位置"
-          onChange={(event) => change({ query: event.target.value, filter, scroll: 0 })}
+          onChange={(event) => update({ query: event.target.value, filter, scroll: 0 })}
         />
         <div className="task-execution-actions" aria-label="执行步骤状态">
           {(Object.keys(filters) as Filter[]).map((value) => (
@@ -132,7 +140,7 @@ export default function TaskExecutionSteps({
               type="button"
               key={value}
               aria-pressed={value === filter}
-              onClick={() => change({ query, filter: value, scroll: 0 })}
+              onClick={() => update({ query, filter: value, scroll: 0 })}
             >
               {filters[value]} · {value === 'all' ? model.rows.length : model[value].length}
             </button>
@@ -157,7 +165,7 @@ export default function TaskExecutionSteps({
       <ol
         ref={list}
         aria-label="执行步骤清单"
-        onScroll={(event) => change({ query, filter, scroll: event.currentTarget.scrollTop })}
+        onScroll={(event) => update({ query, filter, scroll: event.currentTarget.scrollTop })}
       >
         {visible.map(({ row, index }) => {
           const node = nodes.get(row.nodeId);
@@ -178,7 +186,23 @@ export default function TaskExecutionSteps({
               <span className="task-run-index">{String(index + 1).padStart(2, '0')}</span>
               <div>
                 <div className="task-execution-row-heading">
-                  <strong>{row.name}</strong>
+                  <button
+                    type="button"
+                    className="task-execution-record-toggle"
+                    aria-label={`步骤记录：${String(index + 1).padStart(2, '0')} · ${row.name}`}
+                    aria-expanded={expanded === row.instance}
+                    aria-controls={`${id}-record-${index}`}
+                    onClick={() =>
+                      change({
+                        query,
+                        filter,
+                        scroll: list.current?.scrollTop ?? scroll,
+                        expanded: expanded === row.instance ? undefined : row.instance,
+                      })
+                    }
+                  >
+                    <strong>{row.name}</strong>
+                  </button>
                   {compact && (
                     <span className={'run-status run-tone-' + row.tone}>{row.label}</span>
                   )}
@@ -195,6 +219,22 @@ export default function TaskExecutionSteps({
                     {row.instance}
                   </small>
                 )}
+                <div id={`${id}-record-${index}`} hidden={expanded !== row.instance}>
+                  {expanded === row.instance && (
+                    <RunStepDetails
+                      detail={detail}
+                      compact
+                      step={{
+                        instance: row.instance,
+                        nodeId: row.nodeId,
+                        name: row.name,
+                        type: row.type,
+                        label: row.label,
+                        kind: row.current ? model.view.step.kind : row.started ? 'last' : 'pending',
+                      }}
+                    />
+                  )}
+                </div>
               </div>
             </li>
           );
@@ -209,7 +249,7 @@ export default function TaskExecutionSteps({
         </p>
       )}
       <p className="task-run-note">
-        条件中未选择的分支保持未执行；定位和筛选不会执行步骤，也不会更改运行起点。
+        点击步骤名称查看该次记录与启动时配置。未选分支保持未执行；查看和筛选不会执行步骤或更改运行起点。
       </p>
     </section>
   );
