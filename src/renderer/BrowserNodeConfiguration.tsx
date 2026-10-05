@@ -53,11 +53,18 @@ export default function BrowserNodeConfiguration({
   }, [pathKey]);
   useEffect(() => {
     if (
-      target &&
-      (target.selector !== node.selector || JSON.stringify(target.framePath) !== pathKey)
-    )
+      !active ||
+      (target &&
+        (target.selector !== node.selector || JSON.stringify(target.framePath) !== pathKey))
+    ) {
       setTarget(null);
-  }, [node.selector, pathKey]);
+      setInspected(false);
+    }
+  }, [node.selector, pathKey, active]);
+  const observedTarget =
+    active && target?.selector === node.selector && JSON.stringify(target.framePath) === pathKey
+      ? target
+      : null;
   const topLevel = ['navigate', 'screenshot'].includes(node.operation);
   const picker = (
     <Fragment key="picker">
@@ -112,15 +119,17 @@ export default function BrowserNodeConfiguration({
           } as BrowserNode);
         }}
       />
-      {target && !inspected && (
+      {observedTarget && !inspected && !compact && !readInspector && (
         <div className="picked-target">
-          <strong>{target.label}</strong>
+          <strong>{observedTarget.label}</strong>
           <span>
-            {target.tag}
-            {target.inputType ? ' · ' + target.inputType : ''} ·{' '}
-            {target.framePath.length ? target.framePath.length + ' 层框架' : '当前页面'}
+            {observedTarget.tag}
+            {observedTarget.inputType ? ' · ' + observedTarget.inputType : ''} ·{' '}
+            {observedTarget.framePath.length
+              ? observedTarget.framePath.length + ' 层框架'
+              : '当前页面'}
           </span>
-          {target.structural && <p>使用结构定位，页面布局变化后请重新验证。</p>}
+          {observedTarget.structural && <p>使用结构定位，页面布局变化后请重新验证。</p>}
         </div>
       )}
     </Fragment>
@@ -234,11 +243,31 @@ export default function BrowserNodeConfiguration({
         <>
           <label>目标元素</label>
           {(compact || readInspector) && (
-            <p className="compact-target-selector" title={node.selector}>
-              {readInspector && node.selector === 'title'
-                ? '页面标题 · title'
-                : node.selector || '尚未选择目标元素'}
-            </p>
+            <div className="node-target-summary">
+              <p
+                className="compact-target-selector"
+                title={
+                  observedTarget
+                    ? `${observedTarget.label || observedTarget.tag}\n${[...path, node.selector].join(' → ')}`
+                    : node.selector
+                }
+              >
+                {observedTarget
+                  ? observedTarget.label || observedTarget.tag
+                  : readInspector && node.selector === 'title'
+                    ? '页面标题 · title'
+                    : node.selector || '尚未选择目标元素'}
+              </p>
+              {observedTarget && (
+                <div className="node-target-observation">
+                  <p>
+                    {observedTarget.tag} · {path.length ? `${path.length} 层框架` : '主页面'} ·{' '}
+                    {inspected ? '最近验证唯一匹配' : '已应用目标'}
+                  </p>
+                  {observedTarget.structural && <p>使用结构定位，页面布局变化后请重新验证。</p>}
+                </div>
+              )}
+            </div>
           )}
           {compact && readInspector
             ? [inspectorTiming, picker, inspectorOutput, locatorEditor]
