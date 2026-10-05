@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { TaskRunIntent, TaskRunView, taskRunPresentation } from './task-run-presentation';
 import { runDisplayLabels } from '../shared/run-history';
 import DesktopRunReceipt from './DesktopRunReceipt';
@@ -16,6 +16,9 @@ export default function DesktopTaskRun({
   connections,
   control,
   busy,
+  cancelBusy,
+  pausePending,
+  controlFeedback,
   error,
 }: {
   detail: any;
@@ -27,6 +30,9 @@ export default function DesktopTaskRun({
   connections: () => void;
   control: (action: string) => void;
   busy: boolean;
+  cancelBusy: boolean;
+  pausePending: boolean;
+  controlFeedback: ReactNode;
   error: string;
 }) {
   const [stepsView, setStepsView] = useState<TaskExecutionView>();
@@ -126,7 +132,7 @@ export default function DesktopTaskRun({
           <div className="ai-task-actions">
             {active && run.state === 'RUNNING' && (
               <button disabled={busy} onClick={() => control('pause')}>
-                请求暂停
+                {pausePending ? '暂停请求中' : '请求暂停'}
               </button>
             )}
             {active && ['PAUSED', 'WAITING_INPUT'].includes(run.state) && (
@@ -140,13 +146,14 @@ export default function DesktopTaskRun({
               </button>
             )}
             {!model.view.closing && (active || run.state === 'QUEUED') && (
-              <button className="danger" disabled={busy} onClick={() => control('cancel')}>
+              <button className="danger" disabled={cancelBusy} onClick={() => control('cancel')}>
                 取消运行
               </button>
             )}
             <button onClick={connections}>查看连接状态</button>
           </div>
         )}
+        {controlFeedback}
         {model.terminal && (
           <>
             {!verified && (

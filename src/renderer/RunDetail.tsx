@@ -1,5 +1,6 @@
 import McpRunReceipts from './McpRunReceipts';
 import DebugRunWorkspace from './DebugRunWorkspace';
+import { useRunControl, RunControlFeedback } from './useRunControl';
 import { useEffect, useRef, useState } from 'react';
 import type { Event, Run } from '../shared/types';
 import { formatRunDuration, presentRun } from '../shared/run-presentation';
@@ -55,16 +56,6 @@ export default function RunDetail({
   cancelRerun: () => void;
   rerunBusy: (busy: boolean) => void;
 }) {
-  const [controlError, setControlError] = useState('');
-  const [controlBusy, setControlBusy] = useState(false);
-  const [command, setCommand] = useState<{
-    action: string;
-    state: string;
-    sequence: number;
-    accepted: boolean;
-  } | null>(null);
-  const sending = useRef(false);
-  const controlFeedback = useRef<HTMLDivElement>(null);
   const [rerunOpened, setRerunOpened] = useState(tab === 'rerun');
   const previousTab = useRef(tab);
   const rerunHeading = useRef<HTMLHeadingElement>(null);
@@ -100,68 +91,8 @@ export default function RunDetail({
   const timeline = runTimeline(observed);
   const results = d.events.filter((event: Event) => typeof event.data?.outputPreview === 'string');
   const pause = [...d.events].reverse().find((event: Event) => event.type === 'debug-pause');
-  useEffect(() => {
-    if (!command?.accepted) return;
-    const progressed = d.events.some(
-      (event: Event) =>
-        event.sequence > command.sequence &&
-        (event.type === 'debug-pause' || event.type === 'node-start'),
-    );
-    if (
-      terminal ||
-      view.closing ||
-      (command.state !== 'QUEUED' && view.activity !== 'active') ||
-      r.state !== command.state ||
-      (command.action !== 'pause' && progressed)
-    )
-      setCommand(null);
-  }, [command, d.events, r.state, terminal, view.closing, view.activity]);
-  useEffect(() => {
-    if (controlError) controlFeedback.current?.focus();
-  }, [controlError]);
-  const sendControl = async (action: string) => {
-    if (sending.current || (command && action !== 'cancel')) return;
-    sending.current = true;
-    setControlBusy(true);
-    setControlError('');
-    const request = {
-      action,
-      state: r.state,
-      sequence: d.events.reduce(
-        (latest: number, event: Event) => Math.max(latest, event.sequence),
-        0,
-      ),
-      accepted: false,
-    };
-    setCommand(request);
-    let accepted = false;
-    try {
-      accepted = await control(r.id, action);
-      setCommand(accepted ? { ...request, accepted: true } : null);
-      await reload();
-      if (!accepted) setControlError('本次控制未执行，运行可能已经结束，请核对最新状态。');
-    } catch (error) {
-      if (!accepted) setCommand(null);
-      setControlError(
-        (accepted ? '控制请求已接收，但状态读取失败：' : '控制请求未确认，请先刷新状态：') +
-          (error instanceof Error ? error.message : '暂时无法读取运行状态'),
-      );
-    } finally {
-      sending.current = false;
-      setControlBusy(false);
-    }
-  };
-  const controlPending = controlBusy || !!command;
-  const controlNote =
-    command &&
-    (command.accepted
-      ? {
-          pause: '暂停请求已接收，将在步骤边界暂停；当前步骤可能仍在执行。',
-          resume: '继续请求已接收，等待执行状态更新。',
-          step: '单步请求已接收，等待新的步骤记录；不会重复发送。',
-          cancel: '取消请求已接收，等待停止与资源回收；尚未确认结束。',
-        }[command.action]
-      : '正在发送控制请求…');
+  const controller = useRunControl({ run: r, events: d.events, view, control, reload });
+  const { controlBusy, controlPending, controlNote, command, sendControl } = controller;
   const runControls = (
     <div className="run-controls">
       {controllable && !observed.fault && r.state === 'RUNNING' && (
@@ -194,27 +125,7 @@ export default function RunDetail({
       )}
     </div>
   );
-  const controlFeedbackContent = (controlError || controlPending) && (
-    <div
-      ref={controlFeedback}
-      tabIndex={-1}
-      className="run-control-feedback"
-      role={controlError ? 'alert' : undefined}
-    >
-      {controlError && <p>{controlError}</p>}
-      <button
-        disabled={controlBusy}
-        onClick={() =>
-          void reload().then(
-            () => setControlError(''),
-            (error) => setControlError(error instanceof Error ? error.message : '状态读取失败'),
-          )
-        }
-      >
-        刷新状态
-      </button>
-    </div>
-  );
+  const controlFeedbackContent = <RunControlFeedback controller={controller} />;
   return (
     <div
       className={

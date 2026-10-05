@@ -16,6 +16,7 @@ import TaskRunTarget from './TaskRunTarget';
 import DesktopRunReceipt from './DesktopRunReceipt';
 import DesktopTaskRun from './DesktopTaskRun';
 import TaskRunSource from './TaskRunSource';
+import { useRunControl, RunControlFeedback } from './useRunControl';
 
 export type TaskRunReturnContext = {
   runId: string;
@@ -34,6 +35,7 @@ export default function TaskRunPage({
   history,
   connections,
   control,
+  reload,
   reveal,
   showBrowser,
   hideBrowser,
@@ -47,7 +49,8 @@ export default function TaskRunPage({
   navigate: (intent: TaskRunIntent) => void;
   history: () => void;
   connections: () => void;
-  control: (id: string, action: string) => Promise<any>;
+  control: (id: string, action: string) => Promise<boolean>;
+  reload: () => Promise<void>;
   reveal: (id: string) => Promise<any>;
   showBrowser: () => void;
   hideBrowser: () => void;
@@ -100,6 +103,15 @@ export default function TaskRunPage({
     previousMode.current = model.mode;
   }, [model.mode, page]);
   const run = detail.run;
+  const controller = useRunControl({
+    run,
+    events: detail.events,
+    view: model.view,
+    control,
+    reload,
+  });
+  const { controlBusy, controlPending, command, sendControl } = controller;
+  const controlFeedback = <RunControlFeedback controller={controller} showNote />;
   const openSource = (next: any) =>
     open(next, {
       runId: run.id,
@@ -368,9 +380,12 @@ export default function TaskRunPage({
         navigate={navigate}
         history={history}
         connections={connections}
-        busy={busy}
+        busy={controlPending}
+        cancelBusy={controlBusy || command?.action === 'cancel'}
+        controlFeedback={controlFeedback}
+        pausePending={command?.action === 'pause'}
         error={error}
-        control={(action) => void act(() => control(run.id, action))}
+        control={(action) => void sendControl(action)}
       />
     );
   return (
@@ -770,21 +785,21 @@ export default function TaskRunPage({
               )}
               <div className="ai-task-actions">
                 {allowed && run.state === 'RUNNING' && (
-                  <button disabled={busy} onClick={() => void act(() => control(run.id, 'pause'))}>
-                    请求暂停
+                  <button disabled={controlPending} onClick={() => void sendControl('pause')}>
+                    {command?.action === 'pause' ? '暂停请求中' : '请求暂停'}
                   </button>
                 )}
                 {allowed && ['PAUSED', 'WAITING_INPUT'].includes(run.state) && (
                   <button
                     className="primary"
-                    disabled={busy}
-                    onClick={() => void act(() => control(run.id, 'resume'))}
+                    disabled={controlPending}
+                    onClick={() => void sendControl('resume')}
                   >
                     继续
                   </button>
                 )}
                 {allowed && run.state === 'PAUSED' && (
-                  <button disabled={busy} onClick={() => void act(() => control(run.id, 'step'))}>
+                  <button disabled={controlPending} onClick={() => void sendControl('step')}>
                     执行下一步
                   </button>
                 )}
@@ -793,9 +808,9 @@ export default function TaskRunPage({
                   !model.uncertain &&
                   (allowed || run.state === 'QUEUED') && (
                     <button
-                      disabled={busy}
+                      disabled={controlBusy || command?.action === 'cancel'}
                       className="danger"
-                      onClick={() => void act(() => control(run.id, 'cancel'))}
+                      onClick={() => void sendControl('cancel')}
                     >
                       取消运行
                     </button>
@@ -807,6 +822,7 @@ export default function TaskRunPage({
                   详细信息
                 </button>
               </div>
+              {controlFeedback}
               {compactLive && (
                 <details className="task-run-live-impact">
                   <summary>已记录的操作与影响</summary>

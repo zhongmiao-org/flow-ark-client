@@ -2219,6 +2219,11 @@ function WorkspaceApp() {
                     desktopAssistantOpener.current?.();
                   }}
                   control={(id, action) => api('run.control', { id, action })}
+                  reload={async () => {
+                    const id = detail.run.id;
+                    const next = await api('run.detail', { id });
+                    setDetail((current: any) => (current?.run.id === id ? next : current));
+                  }}
                   reveal={(id) => api('artifact.reveal', { id })}
                   showBrowser={() => setBrowserOpen(true)}
                   hideBrowser={() => setBrowserOpen(false)}
