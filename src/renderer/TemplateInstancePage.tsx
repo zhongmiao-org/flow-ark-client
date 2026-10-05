@@ -83,6 +83,8 @@ export default function TemplateInstancePage({
   const [configurationGeneration, setConfigurationGeneration] = useState(0);
   const configurationError = useRef<HTMLDivElement>(null);
   const focusConfigurationError = useRef(false);
+  const resourceError = useRef<HTMLParagraphElement>(null);
+  const focusResourceError = useRef(false);
   const [others, setOthers] = useState(false),
     [version, setVersion] = useState('');
   const [createdVersion, setCreatedVersion] = useState<{ id: string; version: string }>();
@@ -110,6 +112,11 @@ export default function TemplateInstancePage({
       focusConfigurationError.current = false;
     }
   }, [busy, error, leaving, tab]);
+  useLayoutEffect(() => {
+    if (busy || !focusResourceError.current) return;
+    focusResourceError.current = false;
+    if (active && error && !leaving && tab === 'resources') resourceError.current?.focus();
+  }, [active, busy, error, leaving, tab]);
   const rawInvalid = (scope: TemplateSaveScope = 'all', inputId?: string) => {
     const containers =
       scope === 'input'
@@ -173,6 +180,7 @@ export default function TemplateInstancePage({
         try {
           return await fn();
         } catch (error) {
+          focusResourceError.current = tab === 'resources';
           setError(message(error));
           if (/实例已变化|实例不存在|原入口流程/.test(message(error)))
             setSourceError('原实例的已保存内容已变化。当前输入仍保留，请核对后重新读取。');
@@ -422,7 +430,7 @@ export default function TemplateInstancePage({
           </div>
         )}
         {error && !leaving && tab !== 'configuration' && (
-          <p className="ai-task-error" role="alert">
+          <p className="ai-task-error" role="alert" ref={resourceError} tabIndex={-1}>
             {error}
           </p>
         )}

@@ -1,4 +1,4 @@
-import { useId, type Dispatch, type SetStateAction } from 'react';
+import { useId, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import type { Bootstrap } from '../shared/types';
 import { equal, type TemplateDetail } from './template-draft';
 const api = (method: string, args: unknown = {}) => window.flowark.request(method, args);
@@ -29,6 +29,8 @@ export default function TemplateResources({
 }) {
   const { instance, manifest } = detail;
   const scopeId = useId();
+  const chooseButtons = useRef(new Map<string, HTMLButtonElement>());
+  const [choosing, setChoosing] = useState<string>();
   const patch = (
     id: string,
     binding: TemplateDetail['instance']['resources'][string] | undefined,
@@ -86,6 +88,12 @@ export default function TemplateResources({
                       }
                     >
                       <option value="">选择浏览器</option>
+                      {binding.browserId &&
+                        !data.browsers.some((browser) => browser.id === binding.browserId) && (
+                          <option value={binding.browserId}>
+                            原绑定（不在本机清单）：{binding.browserId}
+                          </option>
+                        )}
                       {data.browsers.map((browser) => (
                         <option key={browser.id} value={browser.id}>
                           {browser.product === 'embedded' ? '内置浏览器' : browser.product}{' '}
@@ -116,17 +124,51 @@ export default function TemplateResources({
                   )}
                 </label>
                 {resource.kind === 'file' || resource.kind === 'directory' ? (
-                  <button
-                    onClick={() =>
-                      void work(async () => {
-                        const path = await api('file.choose', { kind: resource.kind });
-                        if (path) patch(resource.id, { path });
-                        return true;
-                      })
-                    }
-                  >
-                    选择{resource.kind === 'file' ? '文件' : '目录'}
-                  </button>
+                  <>
+                    <div className="template-resource-file-actions">
+                      <button
+                        ref={(element) => {
+                          if (element) chooseButtons.current.set(resource.id, element);
+                          else chooseButtons.current.delete(resource.id);
+                        }}
+                        aria-label={`选择${resource.name}${resource.kind === 'file' ? '文件' : '目录'}`}
+                        onClick={() =>
+                          void work(async () => {
+                            setChoosing(resource.id);
+                            try {
+                              const path = await api('file.choose', { kind: resource.kind });
+                              if (path) patch(resource.id, { path });
+                              return true;
+                            } finally {
+                              setChoosing(undefined);
+                            }
+                          })
+                        }
+                      >
+                        {choosing === resource.id
+                          ? '等待选择…'
+                          : resource.kind === 'file'
+                            ? '选择文件'
+                            : '选择目录'}
+                      </button>
+                      {binding.path && (
+                        <button
+                          aria-label={`清除${resource.name}绑定`}
+                          onClick={() => {
+                            patch(resource.id, undefined);
+                            chooseButtons.current.get(resource.id)?.focus();
+                          }}
+                        >
+                          清除绑定
+                        </button>
+                      )}
+                    </div>
+                    {!binding.path && saved.resources[resource.id]?.path && (
+                      <p className="template-resource-cleared" role="status">
+                        已清除草稿绑定，保存授权后生效。
+                      </p>
+                    )}
+                  </>
                 ) : resource.kind === 'browser' ? (
                   !data.browsers.some((browser) => browser.product === 'embedded') && (
                     <button onClick={() => void work(() => api('browser.embedded.enable'))}>
