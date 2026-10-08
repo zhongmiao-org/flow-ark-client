@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
 import type { Flow, Step } from '../shared/types';
 import { flatten } from './flow-editing';
 import { flowOutline } from './flow-outline';
@@ -36,6 +36,19 @@ export default function TaskStepInspector({
   const entry = entries[index];
   const step = entry?.step;
   const longGraph = presentation === 'graph' && entries.length > 12;
+  const heading = useRef<HTMLHeadingElement>(null);
+  const navigationTarget = useRef<string | null>(null);
+  const navigateStep = (id: string) => {
+    navigationTarget.current = id;
+    select(id);
+  };
+  useLayoutEffect(() => {
+    const target = navigationTarget.current;
+    navigationTarget.current = null;
+    if (target !== selected || !heading.current) return;
+    heading.current.scrollIntoView({ block: 'nearest' });
+    heading.current.focus({ preventScroll: true });
+  }, [selected]);
   const value = (input: unknown) => (
     <ConfiguredValue key={selected} input={input} flow={flow} selected={selected} />
   );
@@ -131,7 +144,7 @@ export default function TaskStepInspector({
       </h3>
       {nodes.length ? (
         nodes.map((node) => (
-          <button key={node.id} onClick={() => select(node.id)}>
+          <button key={node.id} onClick={() => navigateStep(node.id)}>
             {entries.find((item) => item.step.id === node.id)?.ordinal} · {taskStepTitle(node)}
           </button>
         ))
@@ -191,12 +204,12 @@ export default function TaskStepInspector({
   ) : null;
   const browse = step ? (
     <div className="task-step-browse" aria-label="按定义顺序浏览">
-      <button disabled={index <= 0} onClick={() => select(entries[index - 1].step.id)}>
+      <button disabled={index <= 0} onClick={() => navigateStep(entries[index - 1].step.id)}>
         上一步
       </button>
       <button
         disabled={index >= entries.length - 1}
-        onClick={() => select(entries[index + 1].step.id)}
+        onClick={() => navigateStep(entries[index + 1].step.id)}
       >
         下一步
       </button>
@@ -219,7 +232,7 @@ export default function TaskStepInspector({
         )}
         {step ? (
           <>
-            <h2 tabIndex={-1} data-task-step-heading>
+            <h2 ref={heading} tabIndex={-1} data-task-step-heading>
               第 {entry.ordinal} 步 · {taskStepTitle(step)}
             </h2>
             <div className="task-step-field">
@@ -273,7 +286,7 @@ export default function TaskStepInspector({
             <p className="task-step-position">
               第 {entry.ordinal} / {entries.length} 步 · {kinds[step.type].label}
             </p>
-            <h2 tabIndex={-1} data-task-step-heading>
+            <h2 ref={heading} tabIndex={-1} data-task-step-heading>
               {taskStepTitle(step)}
             </h2>
           </div>
