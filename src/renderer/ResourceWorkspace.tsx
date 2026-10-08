@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
 import type { FlowRecord, Step } from '../shared/types';
 import { flatten } from './flow-editing';
-import { stepTitle } from './flow-outline';
+import { taskStepTitle } from './task-step-title';
 import { taskStepValue } from './task-step-presentation';
 import { referenceChoices } from './value-references';
 import ResourceNodeConfiguration from './ResourceNodeConfiguration';
@@ -185,6 +185,11 @@ export default function ResourceWorkspace(props: Props) {
                   {group.title}
                   {active && <span>当前步骤</span>}
                 </h2>
+                {node && matches.length === 1 && (
+                  <p className="resource-workspace-step">
+                    {String(steps.indexOf(node) + 1).padStart(2, '0')} {taskStepTitle(node)}
+                  </p>
+                )}
                 {matches.length > 1 && (
                   <>
                     <label htmlFor={`${id}-${index}`}>流程步骤</label>
@@ -195,7 +200,11 @@ export default function ResourceWorkspace(props: Props) {
                     >
                       {matches.map((step) => (
                         <option key={step.id} value={step.id}>
-                          {steps.findIndex((item) => item.id === step.id) + 1}. {stepTitle(step)}
+                          {String(steps.findIndex((item) => item.id === step.id) + 1).padStart(
+                            2,
+                            '0',
+                          )}{' '}
+                          {taskStepTitle(step)}
                         </option>
                       ))}
                     </select>

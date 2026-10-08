@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import ArchiveFileList from './ArchiveFileList';
 import type { Bindings, Json, Step } from '../shared/types';
 import ValueField from './ValueField';
@@ -42,6 +42,14 @@ export default function ResourceNodeConfiguration({
   choose: (binding: string) => void;
 }) {
   const instanceId = useId();
+  const appliedBinding = node.type === 'file' || node.type === 'excel' ? node.binding : '';
+  const [bindingDraft, setBindingDraft] = useState(appliedBinding);
+  const [bindingError, setBindingError] = useState('');
+  const bindingInput = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    setBindingDraft(appliedBinding);
+    setBindingError('');
+  }, [node.id, appliedBinding]);
   const prefix = compact ? instanceId + '-' : '';
   const field = (
     key: string,
@@ -114,7 +122,9 @@ export default function ResourceNodeConfiguration({
   if (node.type !== 'file' && node.type !== 'excel') return null;
   const isExcel = node.type === 'excel';
   const validBinding =
-    !!node.binding.trim() && !['__proto__', 'constructor', 'prototype'].includes(node.binding);
+    !bindingError &&
+    !!node.binding.trim() &&
+    !['__proto__', 'constructor', 'prototype'].includes(node.binding);
   return (
     <section
       className={'node-configuration' + (compact ? ' resource-compact' : '')}
@@ -147,14 +157,46 @@ export default function ResourceNodeConfiguration({
         )}
       </select>
       <p className="note">切换操作使用默认配置，可撤销恢复。</p>
-      <label htmlFor={prefix + 'resource-binding'}>文件目录绑定</label>
-      <input
-        id={prefix + 'resource-binding'}
-        list={prefix + 'resource-binding-names'}
-        value={node.binding}
-        placeholder="workspace"
-        onChange={(e) => change({ ...node, binding: e.target.value })}
-      />
+      <div className="resource-binding-field" data-value-invalid={bindingError || undefined}>
+        <label htmlFor={prefix + 'resource-binding'}>文件目录绑定</label>
+        <input
+          ref={bindingInput}
+          id={prefix + 'resource-binding'}
+          list={prefix + 'resource-binding-names'}
+          value={bindingDraft}
+          placeholder="workspace"
+          aria-invalid={!!bindingError}
+          aria-describedby={bindingError ? prefix + 'resource-binding-error' : undefined}
+          onChange={(event) => {
+            const value = event.target.value;
+            setBindingDraft(value);
+            const error = !value.trim()
+              ? '请填写目录绑定名称，例如 workspace。'
+              : ['__proto__', 'constructor', 'prototype'].includes(value)
+                ? '此名称不可用于目录绑定，请使用其他名称。'
+                : '';
+            setBindingError(error);
+            if (!error) change({ ...node, binding: value });
+          }}
+        />
+        {bindingError && (
+          <>
+            <p id={prefix + 'resource-binding-error'} className="field-error" role="alert">
+              {bindingError}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setBindingDraft(appliedBinding);
+                setBindingError('');
+                bindingInput.current?.focus();
+              }}
+            >
+              恢复已应用绑定
+            </button>
+          </>
+        )}
+      </div>
       <datalist id={prefix + 'resource-binding-names'}>
         {Object.keys(bindings.files).map((name) => (
           <option key={name} value={name} />

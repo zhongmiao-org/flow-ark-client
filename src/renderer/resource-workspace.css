@@ -8,6 +8,7 @@
 .resource-workspace-page h1 {
   margin: 0 0 8px;
   font-size: 28px;
+  font-weight: 700;
   line-height: 40px;
 }
 .resource-workspace-page p {
@@ -161,4 +162,11 @@
   .resource-workspace-card {
     min-height: 0;
   }
+}
+
+.resource-workspace-page > header p {
+  font-size: 14px;
+}
+.resource-workspace-card .resource-workspace-step {
+  color: var(--fa-text-primary);
 }

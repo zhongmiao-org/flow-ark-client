@@ -110,3 +110,12 @@
   gap: 4px;
   margin-bottom: 16px;
 }
+
+.resource-binding-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.resource-binding-field > label {
+  margin: 0;
+}
