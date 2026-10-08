@@ -8,11 +8,12 @@
 .step-position-page h1 {
   margin: 0 0 8px;
   font-size: 28px;
+  font-weight: 700;
   line-height: 40px;
 }
 .step-position-page p {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 22px;
   color: var(--fa-text-secondary);
   overflow-wrap: anywhere;
@@ -46,8 +47,9 @@
 .step-position-card label {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin: 0 0 4px;
+  gap: 6px;
+  min-height: 58px;
+  margin: 0;
   color: var(--fa-text-secondary);
   font-size: 12px;
   line-height: 18px;

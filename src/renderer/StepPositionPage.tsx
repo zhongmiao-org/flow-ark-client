@@ -13,14 +13,15 @@ type Props = {
   setMoveTo: (value: string) => void;
   add: () => void;
   insert: (side: 'before' | 'after') => void;
-  duplicate: () => void;
-  move: () => void;
-  remove: () => void;
+  duplicate: () => boolean;
+  move: () => boolean;
+  remove: () => boolean;
   undo: () => void;
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
   saved: boolean;
+  revision: number;
   save: () => Promise<unknown>;
   busy: boolean;
   structureError: string;
@@ -33,6 +34,10 @@ export default function StepPositionPage(props: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
+  const saveButton = useRef<HTMLButtonElement>(null);
+  const wasSaving = useRef(false);
+  const noticeRef = useRef<HTMLParagraphElement>(null);
+  const [notice, setNotice] = useState('');
   const titleId = useId();
   const [attempted, setAttempted] = useState(false);
   const addTarget = props.targets.find((target) => target.value === props.destination);
@@ -51,7 +56,20 @@ export default function StepPositionPage(props: Props) {
   }, []);
   useEffect(() => {
     if (error && !props.busy) errorRef.current?.focus();
+    else if (wasSaving.current && !props.busy) saveButton.current?.focus();
+    wasSaving.current = props.busy;
   }, [error, props.busy]);
+  useEffect(() => {
+    heading.current?.focus();
+    setNotice('');
+  }, [props.revision]);
+  const applyStructure = (operation: () => boolean, message: string) => {
+    setNotice('');
+    if (operation()) {
+      setNotice(message);
+      requestAnimationFrame(() => noticeRef.current?.focus());
+    }
+  };
   return createPortal(
     <dialog
       ref={dialog}
@@ -90,6 +108,11 @@ export default function StepPositionPage(props: Props) {
         {error && (
           <p ref={errorRef} tabIndex={-1} role="alert" className="step-position-error">
             {error}
+          </p>
+        )}
+        {notice && !error && (
+          <p ref={noticeRef} tabIndex={-1} role="status" className="step-position-note">
+            {notice} {props.saved ? '草稿与已保存内容一致。' : '尚未保存。'}没有启动运行。
           </p>
         )}
         {props.referenceRecovery}
@@ -149,13 +172,36 @@ export default function StepPositionPage(props: Props) {
                 <div className="step-position-actions">
                   <button onClick={() => props.insert('before')}>前方插入</button>
                   <button onClick={() => props.insert('after')}>后方插入</button>
-                  <button onClick={props.duplicate}>复制子树</button>
+                  <button
+                    onClick={() =>
+                      applyStructure(props.duplicate, `已复制「${props.title}」及其子步骤。`)
+                    }
+                  >
+                    复制子树
+                  </button>
                 </div>
                 <div className="step-position-actions">
-                  <button className="primary" disabled={!moveTarget} onClick={props.move}>
+                  <button
+                    className="primary"
+                    disabled={!moveTarget}
+                    onClick={() =>
+                      applyStructure(
+                        props.move,
+                        `已将「${props.title}」移动到「${moveTarget?.label}」。`,
+                      )
+                    }
+                  >
                     移动步骤
                   </button>
-                  <button className="step-position-delete" onClick={props.remove}>
+                  <button
+                    className="step-position-delete"
+                    onClick={() =>
+                      applyStructure(
+                        props.remove,
+                        `已删除「${props.title}」及其子步骤，可撤销恢复。`,
+                      )
+                    }
+                  >
                     删除步骤
                   </button>
                 </div>
@@ -170,16 +216,30 @@ export default function StepPositionPage(props: Props) {
           <section className="step-position-card step-position-draft" aria-label="草稿与视图">
             <h2>草稿与视图</h2>
             <div className="step-position-actions">
-              <button disabled={!props.canUndo} onClick={props.undo}>
+              <button
+                disabled={!props.canUndo}
+                onClick={() => {
+                  setNotice('');
+                  props.undo();
+                }}
+              >
                 撤销
               </button>
-              <button disabled={!props.canRedo} onClick={props.redo}>
+              <button
+                disabled={!props.canRedo}
+                onClick={() => {
+                  setNotice('');
+                  props.redo();
+                }}
+              >
                 重做
               </button>
             </div>
             <button
+              ref={saveButton}
               className="primary"
               onClick={() => {
+                setNotice('');
                 setAttempted(true);
                 void props.save();
               }}

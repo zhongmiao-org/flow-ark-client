@@ -2682,11 +2682,13 @@ function Editor({
           flowId: r.id,
           count: selectedNode ? flatten([selectedNode]).length : 1,
         });
+        return true;
       }
     } catch (error: any) {
       setStructureError(error.message);
       setStructureIssues([]);
     }
+    return false;
   };
   const insertAt = (side: 'before' | 'after') => {
     if (!guardNodeInput()) return;
@@ -3076,16 +3078,18 @@ function Editor({
           duplicate={duplicate}
           move={() => {
             const target = targets.find((target) => target.value === moveTo);
-            if (target) structure(() => moveStep(r.flow.steps, selected, target));
+            return !!target && structure(() => moveStep(r.flow.steps, selected, target));
           }}
           remove={() => {
-            if (structure(() => changeSteps(r.flow.steps, selected, () => null), ''))
-              setDestination('main');
+            const removed = structure(() => changeSteps(r.flow.steps, selected, () => null), '');
+            if (removed) setDestination('main');
+            return removed;
           }}
           undo={undo}
           redo={redo}
           canUndo={canUndo}
           canRedo={canRedo}
+          revision={revision}
           saved={draftSaved}
           save={save}
           busy={saveBusy}
