@@ -8,6 +8,8 @@ import {
   type SetStateAction,
 } from 'react';
 import type { Attention, Bootstrap, Json } from '../shared/types';
+import type { TemplateHumanReview } from '../shared/contracts.generated';
+import { template_human_review_v1 } from '../shared/node-schema.generated';
 import { runStateLabels } from '../shared/run-history';
 import { schemaDefaults, validateConfigurationSchema } from '../shared/template-config';
 import { Field, type ConfigurationFieldDraft } from './TemplateConfiguration';
@@ -147,7 +149,7 @@ function AnswerForm({
             if ((event.target as HTMLElement).closest('button')) resetReview();
           }}
         >
-          <legend>补充本次请求需要的信息</legend>
+          <legend className="sr-only">补充本次请求需要的信息</legend>
           {supported && (Object.hasOwn(schema, 'const') || schema.readOnly) && (
             <pre>{JSON.stringify(value, null, 2)}</pre>
           )}
@@ -273,6 +275,13 @@ export default function AttentionWorkspace({
     [active, selectedId, tab, query, kind],
   );
   const selected = data.attention.find((item) => item.id === selectedId);
+  const savedReview = selected && human(selected) ? selected.detail?.review : undefined;
+  const review =
+    savedReview === undefined
+      ? undefined
+      : template_human_review_v1(savedReview)
+        ? (savedReview as TemplateHumanReview)
+        : null;
   const runIds = selected ? relatedRunIds(selected) : [];
   const runRecords = new Map(data.runs.map((run) => [run.id, run]));
   const currentState = (item: Attention) =>
@@ -658,14 +667,46 @@ export default function AttentionWorkspace({
               </div>
             ) : null}
             {human(selected) ? (
-              <div className="attention-request-content">
-                <span>本次请求内容</span>
-                <div>{description(selected)}</div>
-              </div>
+              review === null ? (
+                <div className="attention-banner is-error" role="alert">
+                  <strong>本次核对内容格式无效</strong>
+                  <p>
+                    无法完整展示目标和拟执行内容，不能回应此请求。请查看来源运行并联系模板提供者。
+                  </p>
+                </div>
+              ) : review ? (
+                <>
+                  <dl className="attention-review-content">
+                    <div>
+                      <dt>目标</dt>
+                      <dd>{review.target}</dd>
+                    </div>
+                    <div>
+                      <dt>拟执行内容</dt>
+                      <dd className="attention-review-preview">
+                        {review.content === '' ? (
+                          <span className="attention-muted">空内容</span>
+                        ) : (
+                          review.content
+                        )}
+                      </dd>
+                    </div>
+                  </dl>
+                  {typeof selected.detail?.description === 'string' &&
+                    selected.detail.description.trim() && (
+                      <p className="attention-muted">{selected.detail.description}</p>
+                    )}
+                </>
+              ) : (
+                <div className="attention-request-content">
+                  <span>本次请求内容</span>
+                  <div>{description(selected)}</div>
+                </div>
+              )
             ) : (
               <AttentionDetails item={selected} omitRunReferences={runIds.length > 0} />
             )}
-            {human(selected) && state !== 'answered' && (
+            {human(selected) && state !== 'answered' && review !== null && (
               <AnswerForm
                 drafts={drafts.current}
                 key={selected.id}

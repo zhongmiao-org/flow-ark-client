@@ -567,3 +567,30 @@
 .attention-context-body .attention-source-facts dd + dt {
   margin-top: 8px;
 }
+
+/* 2:2911: template-supplied target and proposed content remain separate. */
+.attention-review-content {
+  display: grid;
+  gap: 26px;
+  margin: 20px 0;
+}
+.attention-review-content dt {
+  margin-bottom: 8px;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.attention-review-content dd {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.attention-review-preview {
+  min-height: 108px;
+  padding: 12px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-subtle);
+}

@@ -18,6 +18,7 @@ export const capabilityLabel = (name: string) =>
       deepseek: 'DeepSeek',
       'openai-codex': 'OpenAI',
       human: '人工处理',
+      'human-review-v1': '目标与内容核对',
       condition: '条件判断',
       loop: '串行循环',
       value: '数据赋值',

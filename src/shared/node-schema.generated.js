@@ -1,4 +1,4 @@
-/* Generated from contracts/p1.schema.json (d9773871e83dcd2a136f00186d9574fa11f326941ef04e4c9e0414f325d66db1). Do not edit. */
+/* Generated from contracts/p1.schema.json (03ecf3ffb254ba7312862a623d0e280e5b3d8d023ada3e6b22c8a82960ade921). Do not edit. */
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {
   try {
@@ -10001,6 +10001,142 @@ function validate144(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate144.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+var template_human_review_v1 = validate145;
+function validate145(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+  let vErrors = null;
+  let errors = 0;
+  const evaluated0 = validate145.evaluated;
+  if (evaluated0.dynamicProps) {
+    evaluated0.props = void 0;
+  }
+  if (evaluated0.dynamicItems) {
+    evaluated0.items = void 0;
+  }
+  if (data && typeof data == "object" && !Array.isArray(data)) {
+    if (data.version === void 0) {
+      const err0 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "version" }, message: "must have required property 'version'" };
+      if (vErrors === null) {
+        vErrors = [err0];
+      } else {
+        vErrors.push(err0);
+      }
+      errors++;
+    }
+    if (data.target === void 0) {
+      const err1 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "target" }, message: "must have required property 'target'" };
+      if (vErrors === null) {
+        vErrors = [err1];
+      } else {
+        vErrors.push(err1);
+      }
+      errors++;
+    }
+    if (data.content === void 0) {
+      const err2 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "content" }, message: "must have required property 'content'" };
+      if (vErrors === null) {
+        vErrors = [err2];
+      } else {
+        vErrors.push(err2);
+      }
+      errors++;
+    }
+    for (const key0 in data) {
+      if (!(key0 === "version" || key0 === "target" || key0 === "content")) {
+        const err3 = { instancePath, schemaPath: "#/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key0 }, message: "must NOT have additional properties" };
+        if (vErrors === null) {
+          vErrors = [err3];
+        } else {
+          vErrors.push(err3);
+        }
+        errors++;
+      }
+    }
+    if (data.version !== void 0) {
+      if (1 !== data.version) {
+        const err4 = { instancePath: instancePath + "/version", schemaPath: "#/properties/version/const", keyword: "const", params: { allowedValue: 1 }, message: "must be equal to constant" };
+        if (vErrors === null) {
+          vErrors = [err4];
+        } else {
+          vErrors.push(err4);
+        }
+        errors++;
+      }
+    }
+    if (data.target !== void 0) {
+      let data1 = data.target;
+      if (typeof data1 === "string") {
+        if (func1(data1) > 4096) {
+          const err5 = { instancePath: instancePath + "/target", schemaPath: "#/properties/target/maxLength", keyword: "maxLength", params: { limit: 4096 }, message: "must NOT have more than 4096 characters" };
+          if (vErrors === null) {
+            vErrors = [err5];
+          } else {
+            vErrors.push(err5);
+          }
+          errors++;
+        }
+        if (func1(data1) < 1) {
+          const err6 = { instancePath: instancePath + "/target", schemaPath: "#/properties/target/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
+          if (vErrors === null) {
+            vErrors = [err6];
+          } else {
+            vErrors.push(err6);
+          }
+          errors++;
+        }
+        if (!pattern13.test(data1)) {
+          const err7 = { instancePath: instancePath + "/target", schemaPath: "#/properties/target/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
+          if (vErrors === null) {
+            vErrors = [err7];
+          } else {
+            vErrors.push(err7);
+          }
+          errors++;
+        }
+      } else {
+        const err8 = { instancePath: instancePath + "/target", schemaPath: "#/properties/target/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+        if (vErrors === null) {
+          vErrors = [err8];
+        } else {
+          vErrors.push(err8);
+        }
+        errors++;
+      }
+    }
+    if (data.content !== void 0) {
+      let data2 = data.content;
+      if (typeof data2 === "string") {
+        if (func1(data2) > 1e5) {
+          const err9 = { instancePath: instancePath + "/content", schemaPath: "#/properties/content/maxLength", keyword: "maxLength", params: { limit: 1e5 }, message: "must NOT have more than 100000 characters" };
+          if (vErrors === null) {
+            vErrors = [err9];
+          } else {
+            vErrors.push(err9);
+          }
+          errors++;
+        }
+      } else {
+        const err10 = { instancePath: instancePath + "/content", schemaPath: "#/properties/content/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+        if (vErrors === null) {
+          vErrors = [err10];
+        } else {
+          vErrors.push(err10);
+        }
+        errors++;
+      }
+    }
+  } else {
+    const err11 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+    if (vErrors === null) {
+      vErrors = [err11];
+    } else {
+      vErrors.push(err11);
+    }
+    errors++;
+  }
+  validate145.errors = vErrors;
+  return errors === 0;
+}
+validate145.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 export {
   node_assert_1,
   node_browser_1,
@@ -10020,5 +10156,6 @@ export {
   node_loop_1,
   node_mcp_1,
   node_script_1,
-  node_value_1
+  node_value_1,
+  template_human_review_v1
 };

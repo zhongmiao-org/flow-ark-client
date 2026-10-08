@@ -22,6 +22,7 @@ const validators = Object.fromEntries(
 );
 if (Object.keys(validators).length !== schema.$defs.Node.oneOf.length)
   throw new Error('Node variants must have distinct type/version pairs');
+validators.template_human_review_v1 = `${schema.$id}#/$defs/TemplateHumanReview`;
 const digest = createHash('sha256').update(source).digest('hex');
 const banner = `/* Generated from contracts/p1.schema.json (${digest}). Do not edit. */`;
 await build({

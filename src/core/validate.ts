@@ -32,6 +32,7 @@ export const capabilities = [
   'browser-frames-v1',
   'browser-forms-v1',
   'human',
+  'human-review-v1',
   'condition',
   'loop',
   'openai-codex',

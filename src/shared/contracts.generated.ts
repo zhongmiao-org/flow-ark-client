@@ -455,6 +455,7 @@ export interface FlowArkP1 {
   AIPlanningResult?: AIPlanningResult;
   ExcelColumnMapping?: ExcelColumnMapping;
   McpToolResult?: McpToolResult;
+  TemplateHumanReview?: TemplateHumanReview;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -943,4 +944,9 @@ export interface McpToolResult {
     [k: string]: Json;
   };
   isError: boolean;
+}
+export interface TemplateHumanReview {
+  version: 1;
+  target: string;
+  content: string;
 }

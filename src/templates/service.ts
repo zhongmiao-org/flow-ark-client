@@ -14,9 +14,10 @@ import {
   type Entry,
 } from '../../contracts/package-format';
 import { schemaDefaults, validateConfigurationSchema } from '../shared/template-config';
-import { capabilities, validateFlow } from '../core/validate';
+import { capabilities, validateFlow, validateObject } from '../core/validate';
 import { generate } from '../ai/providers';
 import type { Bindings, FlowRecord, Run } from '../shared/types';
+import type { TemplateHumanReview } from '../shared/contracts.generated';
 import type { TemplateInstance } from './types';
 import { templateSaveSchema, type TemplateSave } from '../shared/ipc';
 export class Templates {
@@ -369,10 +370,20 @@ export class Templates {
     if (typeof request.title !== 'string' || request.title.length > 200)
       throw new Error('人工请求标题无效');
     const schema = request.schema ?? { type: 'boolean' };
+    const review =
+      request.review === undefined
+        ? undefined
+        : validateObject<TemplateHumanReview>('TemplateHumanReview', request.review);
     const item = this.store.attention(
       'template-input',
       request.title,
-      { runId, schema, description: request.description ?? '', answered: false },
+      {
+        runId,
+        schema,
+        description: request.description ?? '',
+        answered: false,
+        ...(review ? { review } : {}),
+      },
       runId + ':' + randomUUID(),
     );
     this.store.state(runId, 'WAITING_INPUT');
@@ -544,6 +555,7 @@ export class Templates {
       }
       case 'human':
         need('human');
+        if (args.request?.review !== undefined) need('human-review-v1');
         return this.human(runId, args.request, signal);
       case 'attention': {
         need('attention');
@@ -562,6 +574,10 @@ export class Templates {
       case 'effect.prepare': {
         need('effect');
         const q = args.request;
+        if (q.review !== undefined) {
+          need('human-review-v1');
+          validateObject<TemplateHumanReview>('TemplateHumanReview', q.review);
+        }
         if (!entry.actions.includes(q.action) || typeof q.key !== 'string' || !q.key)
           throw new Error('动作未声明或缺少去重键');
         const grant = record.bindings.grants?.[q.action];
@@ -575,6 +591,7 @@ export class Templates {
             {
               title: '确认：' + q.action,
               description: q.description ?? '',
+              ...(q.review !== undefined ? { review: q.review } : {}),
               schema: { type: 'boolean' },
             },
             signal,

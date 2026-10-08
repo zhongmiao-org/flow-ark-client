@@ -3,6 +3,7 @@ import './attention-workspace.css';
 
 const detailLabels: Record<string, string> = {
   description: '请求内容',
+  review: '本次核对目标与内容',
   reason: '原因',
   message: '说明',
   error: '错误信息',
