@@ -31,6 +31,8 @@ export default function ParameterConfiguration({
   const [name, setName] = useState(''),
     [error, setError] = useState('');
   const [adding, setAdding] = useState(!columns);
+  const [addError, setAddError] = useState('');
+  const addId = useId();
   const nameInput = useRef<HTMLInputElement>(null);
   const addButton = useRef<HTMLButtonElement>(null);
   const root = useRef<HTMLElement>(null);
@@ -75,6 +77,29 @@ export default function ParameterConfiguration({
     change(next);
     setError('');
     setNotice('');
+  };
+  const cancelAdd = () => {
+    setName('');
+    setAddError('');
+    setAdding(false);
+    requestAnimationFrame(() => addButton.current?.focus());
+  };
+  const add = () => {
+    try {
+      if (!referenceKey(name) || name.trim() !== name)
+        throw new Error('名称不能为空、含点、首尾空格或原型相关属性');
+      if (Object.hasOwn(value, name)) throw new Error('参数名称已存在');
+      apply({ ...value, [name]: '' });
+      setName('');
+      setAddError('');
+      if (columns) {
+        setAdding(false);
+        requestAnimationFrame(() => addButton.current?.focus());
+      }
+    } catch (reason) {
+      setAddError(reason instanceof Error ? reason.message : '添加未完成，请重新核对名称。');
+      nameInput.current?.focus();
+    }
   };
   return (
     <section ref={root} aria-label="运行参数配置" className="parameter-fields">
@@ -126,41 +151,42 @@ export default function ParameterConfiguration({
       ))}
       {adding && (
         <div className="parameter-add-fields">
-          <label htmlFor="parameter-name">新参数名称</label>
+          <label htmlFor={addId}>新参数名称</label>
           <input
             ref={nameInput}
-            id="parameter-name"
+            id={addId}
             data-value-invalid={name ? '新参数名称尚未添加，请添加或清空' : undefined}
             value={name}
             placeholder="例如 userName"
-            onChange={(e) => setName(e.target.value)}
-          />
-          <button
-            type="button"
-            onClick={() => {
-              if (!referenceKey(name) || name.trim() !== name)
-                return setError('名称不能为空、含点、首尾空格或原型相关属性');
-              if (Object.hasOwn(value, name)) return setError('参数名称已存在');
-              apply({ ...value, [name]: '' });
-              setName('');
-              if (columns) {
-                setAdding(false);
-                requestAnimationFrame(() => addButton.current?.focus());
+            aria-invalid={!!addError}
+            aria-describedby={addError ? addId + '-error' : undefined}
+            onChange={(e) => {
+              setName(e.target.value);
+              setAddError('');
+            }}
+            onKeyDown={(event) => {
+              if (event.nativeEvent.isComposing) return;
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                event.stopPropagation();
+                add();
+              } else if (event.key === 'Escape' && columns) {
+                event.preventDefault();
+                event.stopPropagation();
+                cancelAdd();
               }
             }}
-          >
+          />
+          {addError && (
+            <p id={addId + '-error'} className="field-error" role="alert">
+              {addError}
+            </p>
+          )}
+          <button type="button" onClick={add}>
             {columns ? '确认添加' : '添加参数'}
           </button>
           {columns && (
-            <button
-              type="button"
-              onClick={() => {
-                setName('');
-                setError('');
-                setAdding(false);
-                requestAnimationFrame(() => addButton.current?.focus());
-              }}
-            >
+            <button type="button" onClick={cancelAdd}>
               取消添加
             </button>
           )}
