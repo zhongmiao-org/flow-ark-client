@@ -143,6 +143,9 @@
 }
 .browser-sidebar.browser-observation.browser-observation-expanded footer > span:last-child {
   margin-left: 0;
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
 }
 .browser-sidebar.browser-observation.browser-observation-expanded footer {
   overflow-wrap: anywhere;
@@ -165,10 +168,14 @@
   }
   .application-shell .app:has(.browser-observation-expanded) .sidebar nav button {
     width: 100%;
-    padding: 8px 12px;
-    font-size: 14px;
-    gap: 12px;
+    padding: 10px;
+    font-size: 13px;
+    gap: 10px;
     justify-content: flex-start;
+  }
+  .application-shell .app:has(.browser-observation-expanded) .sidebar nav button b {
+    position: static;
+    font-size: 10px;
   }
   .application-shell .app:has(.browser-observation-expanded) .brand {
     justify-content: flex-start;

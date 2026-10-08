@@ -506,8 +506,13 @@ export default function BrowserSidebar({
         if (event.key === 'Tab') {
           const controls = Array.from(
             panel.current?.querySelectorAll<HTMLElement>(
-              'button:not(:disabled),input:not(:disabled),[tabindex="0"]',
+              'button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex]',
             ) ?? [],
+          ).filter(
+            (control) =>
+              control.tabIndex >= 0 &&
+              control.getClientRects().length > 0 &&
+              !control.closest('[hidden],[inert]'),
           );
           const first = controls[0],
             last = controls[controls.length - 1];
