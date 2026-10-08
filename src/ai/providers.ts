@@ -13,9 +13,12 @@ export async function generate(
   signal: AbortSignal,
   fetcher: typeof fetch = fetch,
   images: PlanningImageV1[] = [],
+  budget: 'standard' | 'planning' = 'standard',
 ): Promise<AIResult> {
   validateObject('AIRequest', input);
   const deep = input.provider === 'deepseek';
+  const maxTokens = budget === 'planning' ? 16384 : 4096;
+  const timeoutMs = budget === 'planning' ? 120000 : 45000;
   let total = 0;
   if (images.length > 4) throw new Error('每次最多发送四张图片');
   for (const image of images) {
@@ -50,7 +53,7 @@ export async function generate(
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
-      signal: AbortSignal.any([signal, AbortSignal.timeout(45000)]),
+      signal: AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]),
       redirect: 'error',
       body: JSON.stringify(
         deep
@@ -72,7 +75,7 @@ export async function generate(
                 },
               ],
               response_format: { type: 'json_object' },
-              max_tokens: 4096,
+              max_tokens: maxTokens,
               stream: false,
             }
           : {
@@ -87,7 +90,7 @@ export async function generate(
                     },
                   ]
                 : inputText,
-              max_output_tokens: 4096,
+              max_output_tokens: maxTokens,
               text: {
                 format: {
                   type: 'json_schema',
@@ -102,6 +105,17 @@ export async function generate(
   );
   if (!response.ok) throw new Error('AI 接口 HTTP ' + response.status + '；未重试或切换供应商');
   const body: any = await response.json();
+  const incompleteReason = deep
+    ? body.choices?.[0]?.finish_reason
+    : body.incomplete_details?.reason;
+  if (incompleteReason === 'length' || incompleteReason === 'max_output_tokens')
+    throw new Error(
+      'AI 生成达到输出或上下文长度限制，未返回完整结果。请减少本次内容或分次描述修改。',
+    );
+  if (incompleteReason === 'content_filter')
+    throw new Error('AI 服务因内容限制未能提供完整结果。请检查任务描述和所选资料后重新生成。');
+  if (deep && incompleteReason === 'insufficient_system_resource')
+    throw new Error('AI 服务暂时无法完成生成，请稍后手动重试。');
   if (
     deep
       ? body.choices?.[0]?.finish_reason !== 'stop'

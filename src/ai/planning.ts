@@ -63,6 +63,7 @@ export async function generatePlan(
     signal,
     fetcher,
     images,
+    'planning',
   );
   const output = result.output as { resultJson: string };
   if (output.resultJson.length > 1024 * 1024) throw new Error('AI 方案超过 1 MiB');
