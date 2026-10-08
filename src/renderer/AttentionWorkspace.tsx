@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -91,6 +92,15 @@ function AnswerForm({
   const [reviewed, setReviewed] = useState(false);
   const [error, setError] = useState('');
   const form = useRef<HTMLFormElement>(null);
+  const jsonInput = useRef<HTMLTextAreaElement>(null);
+  const errorId = useId();
+  const resetReview = () => {
+    setReviewed(false);
+    setError('');
+  };
+  useEffect(() => {
+    setReviewed(false);
+  }, [state]);
   const enabled = state === 'waiting' && !busy && !blocked;
   return (
     <form
@@ -111,6 +121,7 @@ function AnswerForm({
             answer = JSON.parse(text);
           } catch {
             setError('请输入有效 JSON，或联系模板提供者核对所需格式');
+            jsonInput.current?.focus();
             return;
           }
         }
@@ -120,21 +131,32 @@ function AnswerForm({
       }}
     >
       {!simpleBoolean && (
-        <fieldset disabled={!enabled} className="attention-fields">
+        <fieldset disabled={!enabled} className="attention-fields" onChangeCapture={resetReview}>
           <legend>补充本次请求需要的信息</legend>
           {supported && (Object.hasOwn(schema, 'const') || schema.readOnly) && (
             <pre>{JSON.stringify(value, null, 2)}</pre>
           )}
           {supported ? (
-            <Field schema={schema} value={value} change={setValue} label="处理结果" />
+            <Field
+              schema={schema}
+              value={value}
+              change={(next: Json) => {
+                resetReview();
+                setValue(next);
+              }}
+              label="处理结果"
+            />
           ) : (
             <>
               <label>
                 此请求使用复杂数据格式
                 <textarea
+                  ref={jsonInput}
                   value={text}
                   onChange={(event) => setText(event.target.value)}
                   aria-label="处理结果 JSON"
+                  aria-invalid={!!error || undefined}
+                  aria-describedby={error ? errorId : undefined}
                   placeholder="填写请求要求的 JSON"
                   rows={7}
                 />
@@ -157,7 +179,7 @@ function AnswerForm({
         已核对本次目标和内容
       </label>
       {error && (
-        <p role="alert" className="attention-error">
+        <p id={errorId} role="alert" className="attention-error">
           {error}
         </p>
       )}
