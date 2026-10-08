@@ -165,12 +165,17 @@ function WorkspaceApp() {
         trigger: HTMLElement | null;
         browserOpen: boolean;
         scroll: number;
+        label?: string;
+        section: string;
       }
     | undefined
   >(undefined);
-  const inspectTaskBrowser = () => {
+  const inspectTaskBrowser = (trigger?: HTMLElement, label?: string) => {
     browserObservationOrigin.current = {
-      trigger: document.activeElement instanceof HTMLElement ? document.activeElement : null,
+      trigger:
+        trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null),
+      label,
+      section,
       browserOpen,
       scroll: document.querySelector('main')?.scrollTop ?? 0,
     };
@@ -383,7 +388,8 @@ function WorkspaceApp() {
   const edit = history.present?.record ?? null,
     selected = history.present?.selected ?? '';
   useEffect(() => {
-    if (!browserOpen || section !== 'tasks') setBrowserObservationRequest(undefined);
+    if (!browserOpen || browserObservationOrigin.current?.section !== section)
+      setBrowserObservationRequest(undefined);
   }, [browserOpen, section]);
   const editorBrowser = section === 'editor' && browserOpen;
   const draftHasTools =
@@ -2388,6 +2394,7 @@ function WorkspaceApp() {
             }}
           />
           <AISettingsPage
+            inspectBrowser={(trigger) => inspectTaskBrowser(trigger, 'AI 服务')}
             templateLibrary={() =>
               leaveAIContext(() => {
                 setTemplateHomeRequest(crypto.randomUUID());
@@ -2449,6 +2456,7 @@ function WorkspaceApp() {
         {browserOpen && section !== 'editor' && (
           <BrowserSidebar
             observationRequest={browserObservationRequest}
+            observationOriginLabel={browserObservationOrigin.current?.label}
             returnFromObservation={returnFromBrowserObservation}
             close={() => setBrowserOpen(false)}
             running={!!active && !['PAUSED', 'WAITING_INPUT'].includes(active.state)}

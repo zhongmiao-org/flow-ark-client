@@ -82,6 +82,7 @@ export default function AISettingsPage({
   home,
   selectProvider,
   templateLibrary,
+  inspectBrowser,
 }: {
   active: boolean;
   entry: AISettingsEntry;
@@ -92,6 +93,7 @@ export default function AISettingsPage({
   home: (tab?: SettingsDestination) => void;
   selectProvider: (provider: AIProviderId) => void;
   templateLibrary: () => void;
+  inspectBrowser: (trigger: HTMLButtonElement) => void;
 }) {
   const [storedState, setState] = useState<AIConfigurationState>();
   const [loadedEntry, setLoadedEntry] = useState<string>();
@@ -664,6 +666,16 @@ export default function AISettingsPage({
           )}
           <span aria-current="page">AI 服务</span>
         </nav>
+        <button
+          className="embedded-show"
+          disabled={checkingSource || removing || busy === 'save' || busy === 'remove'}
+          onClick={(event) => {
+            const trigger = event.currentTarget;
+            go(() => inspectBrowser(trigger), '网页查看');
+          }}
+        >
+          显示网页
+        </button>
       </header>
       <section
         className="page ai-task-page ai-settings-page"
@@ -1148,6 +1160,12 @@ export default function AISettingsPage({
                   .then((cancelled) => {
                     if (!cancelled) return;
                     setKey('');
+                    if (dirty) {
+                      setModel(state?.model ?? entry.model);
+                      setEditing(!state?.configured);
+                      setInvalid(undefined);
+                      setError('');
+                    }
                     setDirty(false);
                     setLeaving(undefined);
                     lastInput.current = null;

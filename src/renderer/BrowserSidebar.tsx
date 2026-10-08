@@ -18,9 +18,11 @@ export default function BrowserSidebar({
   onPick,
   onLocate,
   observationRequest,
+  observationOriginLabel,
   returnFromObservation,
 }: {
   observationRequest?: string;
+  observationOriginLabel?: string;
   returnFromObservation?: () => void;
   editing?: boolean;
   onPick?: () => void;
@@ -523,7 +525,11 @@ export default function BrowserSidebar({
         {expanded ? (
           <>
             <button ref={returnButton} onClick={restorePanel}>
-              {focusEntry ? '← 返回' : observationRequest ? '← 返回选择对象' : '← 返回右侧面板'}
+              {focusEntry
+                ? '← 返回'
+                : observationRequest
+                  ? `← 返回${observationOriginLabel ?? '选择对象'}`
+                  : '← 返回右侧面板'}
             </button>
             <nav className="breadcrumbs" aria-label="当前位置">
               <a
@@ -533,7 +539,11 @@ export default function BrowserSidebar({
                   restorePanel();
                 }}
               >
-                {focusEntry || observationRequest ? '选择操作对象' : '内置网页'}
+                {focusEntry
+                  ? '选择操作对象'
+                  : observationRequest
+                    ? (observationOriginLabel ?? '选择操作对象')
+                    : '内置网页'}
               </a>
               <span aria-hidden="true">/</span>
               <span aria-current="page">{observationTitle}</span>
