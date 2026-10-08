@@ -37,6 +37,7 @@ export type AISettingsEntry = {
         view?: 'resources' | 'entry';
       };
 };
+type AISettingsContinuation = (saved?: AIConfigurationState) => void;
 export type AISettingsNavigation = (next: () => void, destination?: string) => void;
 const providerName = (id: AIProviderId) => (id === 'deepseek' ? 'DeepSeek' : 'OpenAI');
 const mask = (state: AIConfigurationState) => `••••••••${state.tail ? ' ' + state.tail : ''}`;
@@ -146,7 +147,7 @@ export default function AISettingsPage({
   const [busy, setBusy] = useState<'save' | 'remove' | 'test' | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const cancellationPending = useRef(false);
-  const [leaving, setLeaving] = useState<{ next: () => void; destination: string }>(),
+  const [leaving, setLeaving] = useState<{ next: AISettingsContinuation; destination: string }>(),
     [removing, setRemoving] = useState(false);
   const removeButton = useRef<HTMLButtonElement>(null),
     removeHeading = useRef<HTMLHeadingElement>(null),
@@ -303,7 +304,7 @@ export default function AISettingsPage({
       clearInterval(timer);
     };
   }, [active, entry.key, state?.revision, busy]);
-  const go: AISettingsNavigation = (next, destination = sourceLabel) => {
+  const go = (next: AISettingsContinuation, destination = sourceLabel) => {
     if (cancellationPending.current) return;
     if (busy === 'save' || busy === 'remove') {
       setError('请等待配置保存或移除完成');
@@ -316,7 +317,7 @@ export default function AISettingsPage({
       next();
     }
   };
-  navigation.current = go;
+  navigation.current = (next, destination) => go(() => next(), destination);
   const checkSource = async () => {
     if (sourcePending.current) return;
     if (entry.source?.kind !== 'template') {
@@ -419,7 +420,7 @@ export default function AISettingsPage({
       setEditing(false);
       onSaved(saved);
       await changed().catch(() => setError('配置已保存，本地概览暂未刷新，请稍后重新打开设置。'));
-      return true;
+      return saved;
     } catch (error) {
       feedbackFocus.current = { target: 'form-error', origin };
       setError(message(error));
@@ -441,15 +442,16 @@ export default function AISettingsPage({
     setError('');
   };
   const cancelEdit = () =>
-    go(() => {
+    go((saved = state) => {
       setKey('');
-      setModel(state?.model ?? entry.model);
-      focusResult.current = !!state?.configured;
+      setModel(saved?.model ?? entry.model);
+      focusResult.current = !!saved?.configured;
+      focusField.current = saved?.configured ? undefined : 'model';
       setInvalid(undefined);
       setError('');
       setDirty(false);
-      setEditing(!state?.configured);
-    }, '当前 AI 配置');
+      setEditing(!saved?.configured);
+    }, `${name} · 配置详情`);
   const test = async () => {
     if (!state?.configured || !state.revision || lock.current) return;
     const origin = document.activeElement;
@@ -649,7 +651,7 @@ export default function AISettingsPage({
             href="#ai-source"
             onClick={(e) => {
               e.preventDefault();
-              if (fromTemplate) go(home, '本地设置');
+              if (fromTemplate) go(() => home(), '本地设置');
               else returnToSource();
             }}
           >
@@ -1188,11 +1190,11 @@ export default function AISettingsPage({
                 disabled={!!busy}
                 onClick={() => {
                   const next = leaving!.next;
-                  void save().then((ok) => {
-                    if (ok) {
+                  void save().then((saved) => {
+                    if (saved) {
                       setLeaving(undefined);
                       lastInput.current = null;
-                      next();
+                      next(saved);
                     }
                   });
                 }}
