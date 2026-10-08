@@ -1452,6 +1452,16 @@
 .task-plan-conversation .ai-step-reply h2 {
   color: var(--fa-action-primary);
 }
+.task-plan-answers ol {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding-left: 24px;
+}
+.task-plan-answers li {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .task-plan-conversation > button {
   align-self: flex-start;
   min-width: 240px;

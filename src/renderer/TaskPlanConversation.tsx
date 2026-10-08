@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 export default function TaskPlanConversation({
   request,
+  answers,
   reply,
   explanation,
   pending,
@@ -18,6 +19,7 @@ export default function TaskPlanConversation({
   notice,
 }: {
   request: string;
+  answers?: Record<string, string>;
   reply: string;
   explanation?: string;
   pending: boolean;
@@ -33,11 +35,22 @@ export default function TaskPlanConversation({
   children?: ReactNode;
   notice?: ReactNode;
 }) {
+  const suppliedAnswers = Object.entries(answers || {}).filter(([, value]) => value.trim());
   return (
     <div className="task-plan-conversation" aria-label="任务与方案说明">
       <article className="ai-step-user">
         <h2>你</h2>
         <p>{request}</p>
+        {suppliedAnswers.length > 0 && (
+          <details className="ai-task-disclosure task-plan-answers">
+            <summary>补充信息 · {suppliedAnswers.length} 项</summary>
+            <ol aria-label="已保存的补充信息">
+              {suppliedAnswers.map(([id, value]) => (
+                <li key={id}>{value}</li>
+              ))}
+            </ol>
+          </details>
+        )}
       </article>
       <article className="ai-task-note ai-step-reply">
         <h2>FlowArk</h2>

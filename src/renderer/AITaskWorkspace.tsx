@@ -2337,6 +2337,7 @@ export default function AITaskWorkspace(props: Props) {
                         ) : undefined
                       }
                       request={detail.task.description || flow.name}
+                      answers={detail.task.answers}
                       reply={
                         detail.proposal
                           ? taskProposalSummary(detail) ||
