@@ -503,3 +503,67 @@
   line-height: 22px;
   height: 40px;
 }
+
+/* Human request context uses the two disclosure actions in 2:2911. */
+.attention-human-context > h2 {
+  margin: 0;
+}
+.attention-context-links {
+  display: grid;
+  gap: 16px;
+}
+.attention-context-disclosure {
+  min-width: 0;
+}
+.attention-context-disclosure > summary {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-bg-surface);
+  font-size: 13px;
+  line-height: 22px;
+  text-align: center;
+  cursor: pointer;
+  list-style: none;
+}
+.attention-context-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.attention-context-disclosure > summary:hover,
+.attention-context-disclosure[open] > summary {
+  border-color: var(--fa-action-primary);
+  color: var(--fa-action-primary);
+  background: var(--fa-action-subtle);
+}
+.attention-context-disclosure > summary:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 2px;
+}
+.attention-context-body {
+  display: grid;
+  gap: 16px;
+  padding-top: 16px;
+}
+.attention-context-body > h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+}
+.attention-context-body > button {
+  width: 100%;
+}
+.attention-context-body .attention-source-facts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.attention-context-body .attention-source-facts dt {
+  margin: 0;
+}
+.attention-context-body .attention-source-facts dd + dt {
+  margin-top: 8px;
+}

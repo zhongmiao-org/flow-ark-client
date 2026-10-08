@@ -440,6 +440,37 @@ export default function AttentionWorkspace({
           ? '需要处理'
           : '提醒';
   };
+  const relatedRuns = runIds.length ? (
+    <section className="attention-related-runs" aria-label="关联运行">
+      <h3>关联运行 · {runIds.length}</h3>
+      <ul>
+        {runIds.map((id, index) => {
+          const run = runRecords.get(id);
+          return (
+            <li key={id}>
+              <strong>{run?.name || `运行记录 ${index + 1}`}</strong>
+              <p className="attention-muted">
+                {run
+                  ? `保存状态：${runStateLabels[run.state]} · ${date(run.updatedAt)}`
+                  : '当前摘要未包含此记录，可打开详情核对。'}
+              </p>
+              <code>{id}</code>
+              <button
+                disabled={busy}
+                aria-label={`查看第 ${index + 1} 个关联运行：${run?.name || id}`}
+                onClick={(event) => viewRun(id, event.currentTarget)}
+              >
+                {openingRunId === id ? '正在读取运行…' : '查看运行详情'}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="attention-muted">查看记录和标为已读都不会重新执行任务。</p>
+    </section>
+  ) : (
+    <p className="attention-muted">这条提醒未提供可直接打开的运行记录。</p>
+  );
   return (
     <section className="page attention-page" hidden={!active} aria-label="待办与提醒">
       <header className="attention-heading">
@@ -741,7 +772,9 @@ export default function AttentionWorkspace({
               </details>
             )}
           </article>
-          <aside className="attention-detail-card attention-context">
+          <aside
+            className={`attention-detail-card attention-context${human(selected) ? ' attention-human-context' : ''}`}
+          >
             <h2>{human(selected) ? '仅对本次请求生效' : '查看来源与证据'}</h2>
             <p>
               {human(selected)
@@ -751,41 +784,54 @@ export default function AttentionWorkspace({
             <p className="attention-muted">
               超时、取消或宿主退出后，人工请求失效。结果未知的操作不会自动重放。
             </p>
-            {runIds.length ? (
-              <section className="attention-related-runs" aria-label="关联运行">
-                <h3>关联运行 · {runIds.length}</h3>
-                <ul>
-                  {runIds.map((id, index) => {
-                    const run = runRecords.get(id);
-                    return (
-                      <li key={id}>
-                        <strong>{run?.name || `运行记录 ${index + 1}`}</strong>
-                        <p className="attention-muted">
-                          {run
-                            ? `保存状态：${runStateLabels[run.state]} · ${date(run.updatedAt)}`
-                            : '当前摘要未包含此记录，可打开详情核对。'}
-                        </p>
-                        <code>{id}</code>
-                        <button
-                          disabled={busy}
-                          aria-label={`查看第 ${index + 1} 个关联运行：${run?.name || id}`}
-                          onClick={(event) => viewRun(id, event.currentTarget)}
-                        >
-                          {openingRunId === id ? '正在读取运行…' : '查看运行详情'}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-                <p className="attention-muted">查看记录和标为已读都不会重新执行任务。</p>
-              </section>
+            {human(selected) ? (
+              <div className="attention-context-links" key={selected.id}>
+                <details className="attention-context-disclosure">
+                  <summary>查看请求状态</summary>
+                  <div className="attention-context-body">
+                    <h3>{label(selected)}</h3>
+                    <p>
+                      {state === 'waiting'
+                        ? '来源运行正在等待本次回应。请核对左侧内容后再确认。'
+                        : state === 'answered'
+                          ? '本次请求已经回应，不会重复提交。后续结果请查看来源运行。'
+                          : state === 'expired'
+                            ? '请求已超时或来源运行已结束，无法继续回应。'
+                            : '当前无法核实来源运行是否仍在等待，暂时不能回应。'}
+                    </p>
+                    <dl className="attention-source-facts">
+                      <dt>创建时间</dt>
+                      <dd>{date(selected.time)}</dd>
+                      <dt>来源运行保存状态</dt>
+                      <dd>
+                        {sourceRun ? runStateLabels[sourceRun.state] : '当前摘要未包含来源运行'}
+                      </dd>
+                    </dl>
+                    <p className="attention-muted">
+                      请求最长等待 10 分钟；取消或宿主退出会提前失效。
+                    </p>
+                    <button
+                      disabled={busy}
+                      onClick={() => void act(async () => {}, '已刷新当前处理状态')}
+                    >
+                      {busy ? '正在处理…' : '刷新状态'}
+                    </button>
+                  </div>
+                </details>
+                <details className="attention-context-disclosure">
+                  <summary>查看动作来源和证据</summary>
+                  <div className="attention-context-body">{relatedRuns}</div>
+                </details>
+              </div>
             ) : (
-              <p className="attention-muted">这条提醒未提供可直接打开的运行记录。</p>
+              <>
+                {relatedRuns}
+                <button disabled={busy} onClick={showBrowser}>
+                  查看当前网页
+                </button>
+                <p className="attention-muted">当前网页可能已切换，请先核对地址与目标。</p>
+              </>
             )}
-            <button disabled={busy} onClick={showBrowser}>
-              查看当前网页
-            </button>
-            <p className="attention-muted">当前网页可能已切换，请先核对地址与目标。</p>
           </aside>
         </div>
       )}
