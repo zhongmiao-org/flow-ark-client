@@ -104,6 +104,9 @@ export default function ValueField({
 }
 const valueType = (value: Json) =>
   value === null ? 'null' : typeof value === 'object' ? 'json' : typeof value;
+export type LiteralValueDraftSlot = {
+  literal?: { source: string; text: string; error: string };
+};
 export function LiteralValue({
   label,
   value,
@@ -111,6 +114,7 @@ export function LiteralValue({
   compact = false,
   displayLabels,
   onIncompleteChange,
+  draft,
 }: {
   label: string;
   value: Json;
@@ -118,22 +122,32 @@ export function LiteralValue({
   compact?: boolean;
   displayLabels?: { type: string; value: string };
   onIncompleteChange?: (label: string, incomplete: boolean) => void;
+  draft?: LiteralValueDraftSlot;
 }) {
   const id = useId(),
     type = valueType(value);
   const format = () =>
     type === 'json' ? JSON.stringify(value, null, compact ? undefined : 2) : String(value ?? '');
-  const [text, setText] = useState(format),
-    [error, setError] = useState('');
+  const source = JSON.stringify(value);
+  const restored = draft?.literal && draft.literal.source === source ? draft.literal : undefined;
+  const [text, setText] = useState(() => restored?.text ?? format()),
+    [error, setError] = useState(() => restored?.error ?? '');
+  const previousSource = useRef(source);
+  const sourceChanged = previousSource.current !== source;
   const input = useRef<HTMLTextAreaElement>(null);
   useLayoutEffect(() => {
     onIncompleteChange?.(label, !!error);
     return () => onIncompleteChange?.(label, false);
   }, [label, error, onIncompleteChange]);
   useEffect(() => {
+    if (previousSource.current === source) return;
+    previousSource.current = source;
     setText(format());
     setError('');
-  }, [JSON.stringify(value)]);
+  }, [source]);
+  useEffect(() => {
+    if (draft && !sourceChanged) draft.literal = { source, text, error };
+  }, [draft, source, text, error, sourceChanged]);
   const defaults: Record<string, Json> = {
     string: '',
     number: 0,

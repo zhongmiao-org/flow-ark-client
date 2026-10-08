@@ -2,7 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import type { Bindings, Json } from '../shared/types';
 import { schemaDefaults } from '../shared/template-config';
-import { LiteralValue } from './ValueField';
+import { LiteralValue, type LiteralValueDraftSlot } from './ValueField';
 import './template-fields.css';
 
 function sameOption(a: any, b: any): boolean {
@@ -16,13 +16,26 @@ function sameOption(a: any, b: any): boolean {
   );
 }
 
+export type ConfigurationFieldDraft = LiteralValueDraftSlot & {
+  children?: Map<string, ConfigurationFieldDraft>;
+  rows?: { keys: number[]; next: number };
+};
+function childDraft(draft: ConfigurationFieldDraft | undefined, key: string) {
+  if (!draft) return undefined;
+  const children = (draft.children ??= new Map());
+  if (!children.has(key)) children.set(key, {});
+  return children.get(key);
+}
+
 /** A generic, data-only form. Business field labels and options live in the package. */
-export function Field({ schema: s, value, change, label, required = false }: any) {
+export function Field({ schema: s, value, change, label, required = false, draft }: any) {
   const id = useId();
   if (Object.hasOwn(s, 'const') || s.readOnly) return null;
   const title = s.title ?? label;
   if (!s.type && !s.enum && !s.oneOf)
-    return <LiteralValue label={title ?? '值'} value={value ?? null} change={change} />;
+    return (
+      <LiteralValue label={title ?? '值'} value={value ?? null} change={change} draft={draft} />
+    );
   if (s.type === 'object')
     return (
       <fieldset className="template-fieldset">
@@ -34,6 +47,7 @@ export function Field({ schema: s, value, change, label, required = false }: any
             schema={schema}
             label={key}
             required={s.required?.includes(key)}
+            draft={childDraft(draft, 'property:' + key)}
             value={value?.[key]}
             change={(next: Json) => change({ ...(value ?? schemaDefaults(s)), [key]: next })}
           />
@@ -41,7 +55,7 @@ export function Field({ schema: s, value, change, label, required = false }: any
       </fieldset>
     );
   if (s.type === 'array')
-    return <TemplateArray schema={s} value={value} change={change} title={title} />;
+    return <TemplateArray schema={s} value={value} change={change} title={title} draft={draft} />;
   const options =
     s.oneOf ??
     s.enum?.map((v: Json) => ({
@@ -144,12 +158,18 @@ export function Field({ schema: s, value, change, label, required = false }: any
     </label>
   );
 }
-function TemplateArray({ schema, value, change, title }: any) {
+function TemplateArray({ schema, value, change, title, draft }: any) {
   const values: Json[] = Array.isArray(value) ? value : [];
-  const [rows, setRows] = useState(() => ({
-    keys: values.map((_, index) => index),
-    next: values.length,
-  }));
+  const [rows, setRows] = useState<{ keys: number[]; next: number }>(
+    () =>
+      draft?.rows ?? {
+        keys: values.map((_, index) => index),
+        next: values.length,
+      },
+  );
+  useLayoutEffect(() => {
+    if (draft) draft.rows = rows;
+  }, [draft, rows]);
   const rowElements = useRef(new Map<number, HTMLDivElement>());
   const add = useRef<HTMLButtonElement>(null);
   const focusRow = useRef<number | 'add' | null>(null);
@@ -196,6 +216,7 @@ function TemplateArray({ schema, value, change, title }: any) {
             schema={schema.items}
             label={`${title} ${index + 1}`}
             value={item}
+            draft={childDraft(draft, 'item:' + rows.keys[index])}
             change={(next: Json) => change(values.map((v, i) => (i === index ? next : v)))}
           />
           <button
@@ -203,6 +224,7 @@ function TemplateArray({ schema, value, change, title }: any) {
             className="icon-button"
             aria-label={`移除 ${title} ${index + 1}`}
             onClick={() => {
+              draft?.children?.delete('item:' + rows.keys[index]);
               const keys = rows.keys.filter((_, i) => i !== index);
               focusRow.current = keys[Math.min(index, keys.length - 1)] ?? 'add';
               setRows({ ...rows, keys });

@@ -10,7 +10,7 @@ import {
 import type { Attention, Bootstrap, Json } from '../shared/types';
 import { runStateLabels } from '../shared/run-history';
 import { schemaDefaults, validateConfigurationSchema } from '../shared/template-config';
-import { Field } from './TemplateConfiguration';
+import { Field, type ConfigurationFieldDraft } from './TemplateConfiguration';
 import './attention-workspace.css';
 import AttentionDetails from './AttentionDetails';
 
@@ -50,7 +50,7 @@ function description(item: Attention) {
   if (item.kind === 'contact') return '已保存模板提供的联系信息，可查看来源并复制。';
   return '打开详情查看完整信息与处理入口。';
 }
-type AnswerDraft = { value: Json; text: string };
+type AnswerDraft = { value: Json; text: string; fields: ConfigurationFieldDraft };
 function AnswerForm({
   item,
   state,
@@ -82,12 +82,14 @@ function AnswerForm({
     !schema.enum &&
     !schema.oneOf &&
     !schema.readOnly;
-  const [value, setValue] = useState<Json>(
-    () => drafts.get(item.id)?.value ?? (supported ? schemaDefaults(schema) : null),
+  const cached = drafts.get(item.id);
+  const fields = useRef<ConfigurationFieldDraft>(cached?.fields ?? {});
+  const [value, setValue] = useState<Json>(() =>
+    cached ? cached.value : supported ? schemaDefaults(schema) : null,
   );
   const [text, setText] = useState(() => drafts.get(item.id)?.text ?? '');
   useEffect(() => {
-    drafts.set(item.id, { value, text });
+    drafts.set(item.id, { value, text, fields: fields.current });
   }, [drafts, item.id, value, text]);
   const [reviewed, setReviewed] = useState(false);
   const [error, setError] = useState('');
@@ -153,6 +155,7 @@ function AnswerForm({
             <Field
               schema={schema}
               value={value}
+              draft={fields.current}
               change={(next: Json) => {
                 resetReview();
                 setValue(next);
