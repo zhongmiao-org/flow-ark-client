@@ -189,3 +189,25 @@
 .schedule-workbench-form .ai-task-actions > .primary {
   min-width: 160px;
 }
+
+.schedule-feedback > button {
+  width: min(230px, 100%);
+  min-height: 40px;
+}
+.schedules-page > .schedule-feedback,
+.schedules-page > .schedule-operation {
+  margin-bottom: 24px;
+}
+.schedule-feedback h2 {
+  font-weight: 700;
+}
+.schedule-operation {
+  margin: 0;
+  padding: 16px 20px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  color: var(--fa-text-secondary);
+  background: var(--fa-bg-surface);
+  font-size: 14px;
+  line-height: 22px;
+}

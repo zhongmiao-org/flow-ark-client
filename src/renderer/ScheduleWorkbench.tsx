@@ -54,7 +54,16 @@ export default function ScheduleWorkbench({
   const [notice, setNotice] = useState<{ title: string; detail: string; badge: string }>();
   const [error, setError] = useState('');
   const [conflict, setConflict] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [operation, setOperation] = useState<'read' | 'save' | 'enable' | 'pause'>();
+  const busy = operation !== undefined;
+  const operationLabel =
+    operation &&
+    {
+      read: '正在读取计划…',
+      save: '正在保存计划…',
+      enable: '正在启用计划…',
+      pause: '正在暂停计划…',
+    }[operation];
   const [leaving, setLeaving] = useState<{ next: () => void; destination: string }>();
   const [history, setHistory] = useState<{
     id: string;
@@ -80,6 +89,8 @@ export default function ScheduleWorkbench({
   const scroll = useRef(0);
   const listFocus = useRef<HTMLElement | null>(null);
   const pageHeading = useRef<HTMLHeadingElement>(null);
+  const feedbackHeading = useRef<HTMLHeadingElement>(null);
+  const pageError = useRef<HTMLParagraphElement>(null);
   const cancelHistoryReads = () => {
     readToken.current++;
     runToken.current++;
@@ -105,10 +116,14 @@ export default function ScheduleWorkbench({
     setConflict(false);
     setNotice(undefined);
   };
-  async function perform(fn: () => Promise<any>, message?: string) {
+  async function perform(
+    fn: () => Promise<any>,
+    kind: NonNullable<typeof operation> = 'save',
+    message?: string,
+  ) {
     if (lock.current) return;
     lock.current = true;
-    setBusy(true);
+    setOperation(kind);
     setError('');
     setNotice(undefined);
     try {
@@ -128,14 +143,21 @@ export default function ScheduleWorkbench({
       }, message);
     } finally {
       lock.current = false;
-      setBusy(false);
+      setOperation(undefined);
     }
   }
   async function open(plan: Schedule) {
     listFocus.current = document.activeElement as HTMLElement;
-    const result: ScheduleInspection | undefined = await perform(() =>
-      api('schedule.inspect', { id: plan.id }),
-    );
+    const result: ScheduleInspection | undefined = await perform(async () => {
+      const value: ScheduleInspection = await api('schedule.inspect', { id: plan.id });
+      if (
+        value?.plan?.id !== plan.id ||
+        value.plan.flowId !== plan.flowId ||
+        (value.version && value.version.id !== value.plan.versionId)
+      )
+        throw new Error('读取的计划或固定版本与所选记录不一致，请重新读取。');
+      return value;
+    }, 'read');
     if (!result) return;
     const next: Draft = {
       mode: 'edit',
@@ -166,6 +188,11 @@ export default function ScheduleWorkbench({
       target?.focus({ preventScroll: true });
     }
   }, [active, draft?.mode, draft?.plan?.id]);
+  useLayoutEffect(() => {
+    if (!active || busy || leaving) return;
+    if (error) pageError.current?.focus();
+    else if (notice) feedbackHeading.current?.focus();
+  }, [active, busy, leaving, error, notice]);
   useLayoutEffect(() => {
     if (!active) {
       historyRef.current?.close();
@@ -390,9 +417,31 @@ export default function ScheduleWorkbench({
         {notice && (
           <div className="schedule-feedback" role="status">
             <span className="ai-config-status success">{notice.badge}</span>
-            <h2>{notice.title}</h2>
+            <h2 ref={feedbackHeading} tabIndex={-1}>
+              {notice.title}
+            </h2>
             <p>{notice.detail}</p>
+            <button
+              type="button"
+              className="primary"
+              onClick={() => {
+                setNotice(undefined);
+                requestAnimationFrame(() => {
+                  const target = listFocus.current?.isConnected
+                    ? listFocus.current
+                    : pageHeading.current;
+                  target?.focus();
+                });
+              }}
+            >
+              返回计划
+            </button>
           </div>
+        )}
+        {operationLabel && (
+          <p role="status" className="schedule-operation">
+            {operationLabel}
+          </p>
         )}
         <datalist id="schedule-timezones">
           {['Asia/Shanghai', 'UTC', 'Asia/Tokyo', 'America/New_York', 'Europe/London'].map(
@@ -436,26 +485,30 @@ export default function ScheduleWorkbench({
                 <div className="ai-task-actions">
                   <button
                     disabled={busy}
-                    onClick={() => {
+                    onClick={(event) => {
+                      listFocus.current = event.currentTarget;
                       const toggle = () => {
-                        void perform(async () => {
-                          const result = await api('schedule.toggle', {
-                            id: plan.id,
-                            enabled: !plan.enabled,
-                          });
-                          if (draft?.plan?.id === plan.id) assign();
-                          const name =
-                            data.flows.find((flow) => flow.id === plan.flowId)?.flow.name ??
-                            '此计划';
-                          setNotice({
-                            title: plan.enabled ? '计划已暂停' : '计划已启用',
-                            badge: '固定版本保持不变',
-                            detail: plan.enabled
-                              ? `${name}已暂停；已有运行不受影响。`
-                              : `${name}已启用，下次执行按当前间隔重新计算；不会补跑错过的计划。`,
-                          });
-                          return result;
-                        });
+                        void perform(
+                          async () => {
+                            const result = await api('schedule.toggle', {
+                              id: plan.id,
+                              enabled: !plan.enabled,
+                            });
+                            if (draft?.plan?.id === plan.id) assign();
+                            const name =
+                              data.flows.find((flow) => flow.id === plan.flowId)?.flow.name ??
+                              '此计划';
+                            setNotice({
+                              title: plan.enabled ? '计划已暂停' : '计划已启用',
+                              badge: '固定版本保持不变',
+                              detail: plan.enabled
+                                ? `${name}已暂停；已有运行不受影响。`
+                                : `${name}已启用，下次执行按当前间隔重新计算；不会补跑错过的计划。`,
+                            });
+                            return result;
+                          },
+                          plan.enabled ? 'pause' : 'enable',
+                        );
                       };
                       if (draft?.plan?.id === plan.id)
                         go(toggle, plan.enabled ? '暂停计划' : '启用计划');
@@ -499,6 +552,7 @@ export default function ScheduleWorkbench({
                 (draft.mode === 'edit' ? 'schedule-edit' : 'schedule-form')
               }
               aria-label={draft.mode === 'edit' ? '编辑本机计划' : '创建本机计划'}
+              aria-busy={busy}
               onSubmit={(event) => {
                 event.preventDefault();
                 void save();
@@ -609,7 +663,7 @@ export default function ScheduleWorkbench({
                   </div>
                 )}
                 {error && !leaving && (
-                  <p role="alert" className="ai-task-error">
+                  <p role="alert" className="ai-task-error" ref={pageError} tabIndex={-1}>
                     {error}
                   </p>
                 )}
@@ -618,7 +672,11 @@ export default function ScheduleWorkbench({
                     className="primary"
                     disabled={changed || (draft.mode === 'create' && (!draft.flow || !draft.adopt))}
                   >
-                    {busy ? '正在保存…' : draft.mode === 'edit' ? '保存计划' : '创建计划'}
+                    {operation === 'save'
+                      ? '正在保存…'
+                      : draft.mode === 'edit'
+                        ? '保存计划'
+                        : '创建计划'}
                   </button>
                   <button
                     type="button"
@@ -647,7 +705,7 @@ export default function ScheduleWorkbench({
               <h2>选择一个计划</h2>
               <p>选择左侧计划进行编辑，或创建一个新的本机计划。</p>
               {error && (
-                <p role="alert" className="ai-task-error">
+                <p role="alert" className="ai-task-error" ref={pageError} tabIndex={-1}>
                   {error}
                 </p>
               )}
