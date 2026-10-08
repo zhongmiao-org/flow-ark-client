@@ -14,6 +14,14 @@ const modes = { snapshot: '原执行快照', saved: '当前已保存流程' };
 const names = (values: string[]) => values.join('、') || '无';
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
+export type RunRerunView = {
+  mode: RunRerunMode;
+  debug: boolean;
+  reasonsOpen: boolean;
+  relationsOpen: boolean;
+  focusRunId?: string;
+};
+
 export default function RunRerunPanel({
   run,
   related,
@@ -24,6 +32,8 @@ export default function RunRerunPanel({
   cancel,
   busyChanged,
   inspectSource,
+  inspectRelated,
+  initialView,
 }: {
   run: Run;
   related?: RunRerunDetails;
@@ -34,12 +44,24 @@ export default function RunRerunPanel({
   cancel?: () => void;
   busyChanged?: (busy: boolean) => void;
   inspectSource?: (tab: 'output' | 'logs') => void;
+  inspectRelated?: (detail: any, view: RunRerunView) => void;
+  initialView?: RunRerunView;
 }) {
   const activeRef = useRef(active);
   activeRef.current = active;
   const choiceId = useId();
-  const [reasonsOpen, setReasonsOpen] = useState(false);
-  const [relationsOpen, setRelationsOpen] = useState(false);
+  const [reasonsOpen, setReasonsOpen] = useState(initialView?.reasonsOpen ?? false);
+  const [relationsOpen, setRelationsOpen] = useState(initialView?.relationsOpen ?? false);
+  const relatedButtons = useRef(new Map<string, HTMLButtonElement>());
+  useEffect(() => {
+    if (!initialView?.focusRunId) return;
+    const frame = requestAnimationFrame(() => {
+      (relatedButtons.current.get(initialView.focusRunId!) ?? relationsHeading.current)?.focus({
+        preventScroll: true,
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
   const reasonsHeading = useRef<HTMLHeadingElement>(null);
   const relationsHeading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
@@ -51,8 +73,8 @@ export default function RunRerunPanel({
   const previewHeading = useRef<HTMLHeadingElement>(null);
   const previewRegion = useRef<HTMLFormElement>(null);
   const errorPanel = useRef<HTMLParagraphElement>(null);
-  const [mode, setMode] = useState<RunRerunMode>(initialMode);
-  const [debug, setDebug] = useState(false);
+  const [mode, setMode] = useState<RunRerunMode>(initialView?.mode ?? initialMode);
+  const [debug, setDebug] = useState(initialView?.debug ?? false);
   const [preview, setPreview] = useState<RunRerunPreview>();
   const [reviewed, setReviewed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -135,7 +157,12 @@ export default function RunRerunPanel({
     setOpening(runId);
     try {
       const detail = await api('run.detail', { id: runId });
-      if (current(id) && activeRef.current) open(detail);
+      if (current(id) && activeRef.current) {
+        if (detail?.run?.id !== runId) throw new Error('返回的记录与所选运行不一致，请重新读取');
+        if (inspectRelated)
+          inspectRelated(detail, { mode, debug, reasonsOpen, relationsOpen, focusRunId: runId });
+        else open(detail);
+      }
     } catch (error) {
       if (current(id)) setError(message(error));
     } finally {
@@ -490,6 +517,10 @@ export default function RunRerunPanel({
                   <button
                     type="button"
                     aria-label={'查看来源运行 ' + run.rerun.runId}
+                    ref={(element) => {
+                      if (element) relatedButtons.current.set(run.rerun!.runId, element);
+                      else relatedButtons.current.delete(run.rerun!.runId);
+                    }}
                     disabled={submitting || !!opening}
                     onClick={() => void inspect(run.rerun!.runId)}
                   >
@@ -508,6 +539,10 @@ export default function RunRerunPanel({
                         <button
                           type="button"
                           aria-label={'查看派生运行 ' + item.id}
+                          ref={(element) => {
+                            if (element) relatedButtons.current.set(item.id, element);
+                            else relatedButtons.current.delete(item.id);
+                          }}
                           disabled={submitting || !!opening}
                           onClick={() => void inspect(item.id)}
                         >

@@ -10,12 +10,18 @@ import {
   runDisplayLabels as runStateLabels,
 } from '../shared/run-history';
 import { RunObservation } from './RunObservation';
-import RunRerunPanel from './RunRerunPanel';
+import RunRerunPanel, { type RunRerunView } from './RunRerunPanel';
 import RunOutputWorkspace from './RunOutputWorkspace';
 import { runTimeline } from './run-timeline';
 import RunEventLog, { type RunLogPosition } from './RunEventLog';
 import DesktopRunReceipt from './DesktopRunReceipt';
 
+export type RunDetailReturnContext = {
+  runId: string;
+  tab: RunTab;
+  scroll: number;
+  rerun: RunRerunView;
+};
 export type RunTab = 'current' | 'output' | 'logs' | 'rerun';
 const tabs: [RunTab, string][] = [
   ['current', '当前步骤'],
@@ -42,6 +48,8 @@ export default function RunDetail({
   showBrowser,
   cancelRerun,
   rerunBusy,
+  inspectRelated,
+  restored,
 }: {
   detail: any;
   fault?: string;
@@ -54,6 +62,8 @@ export default function RunDetail({
   showBrowser: () => void;
   cancelRerun: () => void;
   rerunBusy: (busy: boolean) => void;
+  inspectRelated: (detail: any, context: RunDetailReturnContext) => void;
+  restored?: RunDetailReturnContext;
 }) {
   const visibleTabs: [RunTab, string][] =
     tab === 'output'
@@ -64,7 +74,14 @@ export default function RunDetail({
         ]
       : tabs;
   const [rerunOpened, setRerunOpened] = useState(tab === 'rerun');
-  const previousTab = useRef(tab);
+  const previousTab = useRef<RunTab | null>(null);
+  useEffect(() => {
+    if (!restored || restored.runId !== d.run.id) return;
+    const frame = requestAnimationFrame(() =>
+      document.querySelector('main')?.scrollTo({ top: restored.scroll }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, []);
   const rerunHeading = useRef<HTMLHeadingElement>(null);
   const pageHeading = useRef<HTMLHeadingElement>(null);
   const logPosition = useRef<RunLogPosition>({ instance: '*', limit: 100, latest: null });
@@ -72,7 +89,7 @@ export default function RunDetail({
     if (tab === 'rerun') {
       setRerunOpened(true);
       rerunHeading.current?.focus({ preventScroll: true });
-    } else if (tab === 'logs' || tab === 'output') {
+    } else if (tab === 'logs' || tab === 'output' || previousTab.current === null) {
       pageHeading.current?.focus({ preventScroll: true });
     } else if (
       previousTab.current === 'rerun' ||
@@ -415,6 +432,15 @@ export default function RunDetail({
             run={r}
             related={d.rerun}
             open={open}
+            initialView={restored?.runId === r.id ? restored.rerun : undefined}
+            inspectRelated={(next, view) =>
+              inspectRelated(next, {
+                runId: r.id,
+                tab,
+                scroll: document.querySelector('main')?.scrollTop ?? 0,
+                rerun: view,
+              })
+            }
             page
             active={tab === 'rerun'}
             cancel={cancelRerun}

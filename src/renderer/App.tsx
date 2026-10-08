@@ -96,7 +96,7 @@ import McpNodeConfiguration from './McpNodeConfiguration';
 import FlowParametersPage from './FlowParametersPage';
 import NodeTiming from './NodeTiming';
 import RunHistory from './RunHistory';
-import RunDetail, { type RunTab } from './RunDetail';
+import RunDetail, { type RunTab, type RunDetailReturnContext } from './RunDetail';
 import TaskRunPage, { type TaskRunReturnContext } from './TaskRunPage';
 import { taskRunPresentation, type TaskRunIntent, type TaskRunView } from './task-run-presentation';
 import { runStateLabels } from '../shared/run-history';
@@ -226,6 +226,18 @@ function WorkspaceApp() {
       }
     | undefined
   >(undefined);
+  const [runDetailTrail, setRunDetailTrail] = useState<
+    {
+      targetId: string;
+      context: RunDetailReturnContext;
+      returnTab?: { tab: Exclude<RunTab, 'rerun'>; scroll: number };
+    }[]
+  >([]);
+  const runDetailTrailRef = useRef(runDetailTrail);
+  runDetailTrailRef.current = runDetailTrail;
+  const [runDetailRestored, setRunDetailRestored] = useState<RunDetailReturnContext>();
+  const [runDetailReturning, setRunDetailReturning] = useState(false);
+  const runDetailReturnLock = useRef(false);
   const [runRerunBusy, setRunRerunBusy] = useState(false);
   function changeRunTab(next: RunTab) {
     if (next === 'rerun' && runTab !== 'rerun') {
@@ -335,6 +347,49 @@ function WorkspaceApp() {
   >(() => {});
   const runLocation = useRef({ section, id: detail?.run.id });
   runLocation.current = { section, id: detail?.run.id };
+  const linkedDetailSource =
+    runOrigin !== 'task' && runDetailTrail.at(-1)?.targetId === detail?.run.id
+      ? runDetailTrail.at(-1)
+      : undefined;
+  useEffect(() => {
+    if (
+      section !== 'runs' ||
+      runOrigin === 'task' ||
+      !detail ||
+      (runDetailTrail.length && !linkedDetailSource)
+    ) {
+      setRunDetailTrail([]);
+      setRunDetailRestored(undefined);
+    }
+  }, [section, runOrigin, detail?.run.id]);
+  async function returnRelatedDetail() {
+    if (!linkedDetailSource || runDetailReturnLock.current) return;
+    const source = linkedDetailSource;
+    runDetailReturnLock.current = true;
+    setRunDetailReturning(true);
+    setError('');
+    const current = () =>
+      runLocation.current.section === 'runs' &&
+      runLocation.current.id === source.targetId &&
+      runDetailTrailRef.current.at(-1) === source;
+    try {
+      const next = await api('run.detail', { id: source.context.runId });
+      if (!current()) return;
+      if (next?.run?.id !== source.context.runId)
+        throw new Error('返回的记录与来源运行不一致，请重新读取');
+      setRunDetailTrail((trail) => trail.slice(0, -1));
+      setRunDetailRestored(source.context);
+      runRerunReturn.current = source.returnTab ? { ...source.returnTab, focus: null } : undefined;
+      setRunTab(source.context.tab);
+      setDetail(next);
+    } catch (reason) {
+      if (current())
+        setError(reason instanceof Error ? reason.message : '无法返回来源运行，请稍后重试');
+    } finally {
+      runDetailReturnLock.current = false;
+      setRunDetailReturning(false);
+    }
+  }
   const linkedRunSource =
     runOrigin === 'task' && taskRunTrail.at(-1)?.targetId === detail?.run.id
       ? taskRunTrail.at(-1)
@@ -377,11 +432,15 @@ function WorkspaceApp() {
       setTaskRunReturning(false);
     }
   }
+  const detailScrollLocation = useRef<string | undefined>(undefined);
   useEffect(() => {
+    const enteringDetail = detailScrollLocation.current !== detail?.run.id;
+    detailScrollLocation.current = detail?.run.id;
     if (
       section === 'runs' &&
       (detail || runFilter) &&
-      !(runOrigin === 'task' && taskRunRestored?.runId === detail?.run.id)
+      !(runOrigin === 'task' && taskRunRestored?.runId === detail?.run.id) &&
+      !(enteringDetail && runOrigin !== 'task' && runDetailRestored?.runId === detail?.run.id)
     )
       document.querySelector('main')?.scrollTo({ top: 0 });
   }, [section, detail?.run.id, runFilter, runTab]);
@@ -479,6 +538,7 @@ function WorkspaceApp() {
     if (detail && runOrigin === 'task' && taskRunView !== 'overview') setTaskRunView('overview');
     else if (linkedRunSource) void returnLinkedRun();
     else if (detail && runTab !== 'current') returnRunSubview();
+    else if (linkedDetailSource) void returnRelatedDetail();
     else if (detail) {
       setDetail(null);
       if (runOrigin === 'inbox') setSection('inbox');
@@ -1182,7 +1242,9 @@ function WorkspaceApp() {
             {section === 'runs' && (detail || runFilter) && (
               <button
                 disabled={
-                  taskRunReturning || (runOrigin !== 'task' && runTab === 'rerun' && runRerunBusy)
+                  taskRunReturning ||
+                  runDetailReturning ||
+                  (runOrigin !== 'task' && runTab === 'rerun' && runRerunBusy)
                 }
                 className="context-back"
                 onClick={returnRun}
@@ -1198,21 +1260,25 @@ function WorkspaceApp() {
                         ? `← 返回${runRerunReturn.current?.tab === 'output' ? '输出与产物' : runRerunReturn.current?.tab === 'logs' ? '运行日志' : '运行详情'}`
                         : runTab !== 'current'
                           ? '← 返回运行详情'
-                          : runOrigin === 'inbox'
-                            ? '← 返回待办与提醒'
-                            : runOrigin === 'schedule'
-                              ? '← 返回本机计划'
-                              : runOrigin === 'template'
-                                ? '← 返回模板入口'
-                                : runOrigin === 'task'
-                                  ? '← 返回 AI 任务'
-                                  : runOrigin === 'editor' && edit
-                                    ? moreOpen
-                                      ? '← 返回更多操作'
-                                      : outlineOpen
-                                        ? '← 返回长流程大纲'
-                                        : '← 返回流程编排'
-                                    : `← 返回记录第 ${runPage} 页`
+                          : linkedDetailSource
+                            ? runDetailReturning
+                              ? '正在读取来源…'
+                              : '← 返回来源运行'
+                            : runOrigin === 'inbox'
+                              ? '← 返回待办与提醒'
+                              : runOrigin === 'schedule'
+                                ? '← 返回本机计划'
+                                : runOrigin === 'template'
+                                  ? '← 返回模板入口'
+                                  : runOrigin === 'task'
+                                    ? '← 返回 AI 任务'
+                                    : runOrigin === 'editor' && edit
+                                      ? moreOpen
+                                        ? '← 返回更多操作'
+                                        : outlineOpen
+                                          ? '← 返回长流程大纲'
+                                          : '← 返回流程编排'
+                                      : `← 返回记录第 ${runPage} 页`
                   : '← 返回运行记录'}
               </button>
             )}
@@ -2286,6 +2352,25 @@ function WorkspaceApp() {
                     setDetail((current: any) =>
                       current?.run.id === detail.run.id ? next : current,
                     );
+                  }}
+                  restored={runDetailRestored}
+                  inspectRelated={(next, context) => {
+                    if (next.run.id === detail.run.id) return;
+                    const returnTab = runRerunReturn.current
+                      ? { tab: runRerunReturn.current.tab, scroll: runRerunReturn.current.scroll }
+                      : undefined;
+                    setRunDetailTrail((trail) => [
+                      ...trail,
+                      {
+                        targetId: next.run.id,
+                        context,
+                        returnTab,
+                      },
+                    ]);
+                    setRunDetailRestored(undefined);
+                    runRerunReturn.current = undefined;
+                    setRunTab('current');
+                    setDetail(next);
                   }}
                   reload={async () => {
                     const id = detail.run.id;
