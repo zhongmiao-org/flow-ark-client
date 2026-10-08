@@ -191,7 +191,13 @@ export default function VariablePicker({
                       : '先添加流程参数或可访问的前序步骤，也可以返回填写固定值。'}
                   </p>
                   {search && (
-                    <button type="button" onClick={() => setSearch('')}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearch('');
+                        searchInput.current?.focus();
+                      }}
+                    >
                       清除搜索
                     </button>
                   )}

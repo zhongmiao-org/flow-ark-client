@@ -2,7 +2,8 @@ import type { Bindings, Flow, Step } from '../shared/types';
 import type { TaskWebTarget } from '../shared/task-web-target';
 import type { TaskOutputTarget } from '../shared/task-output';
 import type { TaskMcpTarget } from '../shared/task-mcp-targets';
-import { kinds } from './node-kinds';
+import { browserLabels, taskStepTitle } from './task-step-title';
+export { taskStepTitle } from './task-step-title';
 import { referenceOf, referenceScope } from './value-references';
 
 export type TaskStepContext = {
@@ -16,42 +17,6 @@ const concise = (value: string, limit = 120) => {
   const line = value.replace(/\s+/g, ' ').trim();
   return line.length > limit ? line.slice(0, limit - 1) + '…' : line;
 };
-const browserLabels = {
-  navigate: '打开网页',
-  read: '读取网页文字',
-  click: '点击网页元素',
-  fill: '填写网页内容',
-  wait: '等待网页元素',
-  upload: '上传文件',
-  screenshot: '页面截图',
-  download: '下载文件',
-  select: '选择网页选项',
-  check: '设置勾选',
-  inputValue: '读取输入值',
-  press: '按下按键',
-};
-const fileLabels = {
-  read: '读取文本文件',
-  write: '写入文本文件',
-  copy: '复制文件',
-  archive: '归档文件',
-  create: '新建文本文件',
-};
-const excelLabels = {
-  read: '读取表格',
-  write: '写入表格',
-  fill: '填写表格模板',
-  map: '映射表格字段',
-};
-export function taskStepTitle(step: Step): string {
-  if (step.type === 'file') return fileLabels[step.operation];
-  if (step.type === 'excel') return excelLabels[step.operation];
-  return concise(
-    step.name?.trim() ||
-      (step.type === 'browser' ? browserLabels[step.operation] : kinds[step.type].label),
-    80,
-  );
-}
 
 export function taskStepValue(input: unknown, flow: Flow, stepId: string): string {
   const scope = referenceScope(flow.steps, stepId);

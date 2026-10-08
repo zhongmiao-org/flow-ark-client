@@ -50,11 +50,12 @@ body:has(.variable-picker-dialog[open])
 .variable-picker-heading h2 {
   margin: 0 0 8px;
   font-size: 28px;
+  font-weight: 700;
   line-height: 40px;
 }
 .variable-picker-heading p {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 22px;
   color: var(--fa-text-secondary);
 }
@@ -77,9 +78,6 @@ body:has(.variable-picker-dialog[open])
 }
 .variable-picker-detail {
   padding: 28px;
-}
-.variable-picker-sources {
-  gap: 18px;
 }
 .variable-picker-dialog label,
 .variable-picker-dialog dt {
@@ -106,10 +104,8 @@ body:has(.variable-picker-dialog[open])
 .variable-picker-path {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-.variable-picker-search {
   gap: 6px;
+  min-height: 58px;
 }
 .variable-picker-source-list,
 .variable-picker-source-list section {
@@ -148,12 +144,12 @@ body:has(.variable-picker-dialog[open])
 .variable-picker-dialog dd {
   margin: 0;
   font-size: 13px;
-  line-height: 22px;
+  line-height: 20px;
   overflow-wrap: anywhere;
 }
 .variable-picker-note,
 .variable-picker-empty p {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 22px;
   color: var(--fa-text-secondary);
   margin: 0;
