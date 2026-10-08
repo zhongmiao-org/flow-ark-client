@@ -53,6 +53,7 @@ function Contents({
   const destinations = locations.filter((r) => ['write', 'readwrite'].includes(r.access));
   const reads = preview.effects.filter((e) => e.kind === 'read');
   const changes = preview.effects.filter((e) => ['write', 'network', 'unknown'].includes(e.kind));
+  const otherReadScopes = changes.length > 0 || tools.length > 0;
   const versionSummary = (
     <p>
       {preview.flow.name} · {preview.flow.stepCount} 个步骤 ·{' '}
@@ -116,10 +117,14 @@ function Contents({
           <p>
             {sources.length
               ? '以上资源允许读取；具体内容取决于流程参数和实际执行步骤。'
-              : '没有独立的文件或网页读取步骤。'}
-            脚本、HTTP、上传、工具与应用选区的读取范围需结合下方影响说明核对。
+              : !preview.ready
+                ? '检查尚未通过，暂不确认读取范围。'
+                : otherReadScopes
+                  ? '没有独立的文件或网页读取步骤。'
+                  : '只处理流程中提供的数据与步骤结果，没有文件或网页读取步骤。'}
           </p>
         )}
+        {otherReadScopes && <p>其他操作涉及的读取范围，请结合下方影响说明与参数核对。</p>}
       </section>
       <section className="run-review-card">
         <h2>会产生的更改</h2>
