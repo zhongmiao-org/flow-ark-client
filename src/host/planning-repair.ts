@@ -69,7 +69,7 @@ export class PlanningRepair {
     if (
       !node ||
       node.type !== 'browser' ||
-      ![2, 3].includes(node.version) ||
+      ![1, 2, 3].includes(node.version) ||
       typeof node.selector !== 'string' ||
       !node.selector.trim() ||
       node.operation === 'navigate'
@@ -106,6 +106,10 @@ export class PlanningRepair {
     const selection = repairSelectionSchema.parse(await this.deps.capture(args.pickRequestId));
     if (selection.requestId !== args.pickRequestId)
       throw new Error('网页选取身份不一致，请重新选取');
+    if (before.node.version === 1 && selection.target.framePath.length)
+      throw new Error(
+        '此步骤仅支持网页主文档目标；请重新选择主文档元素，或回到任务修改支持框架的方案',
+      );
     if (this.source(args).signature !== before.signature)
       throw new Error('修复依据已变化，请重新检查');
     const source = {
@@ -127,7 +131,10 @@ export class PlanningRepair {
       flowId: before.task.flowId,
       description:
         before.task.description +
-        '\n\n本次仅修复指定网页步骤的 selector/framePath。返回完整流程；其他字段、步骤、能力、参数和权限保持不变。',
+        (before.node.version === 1
+          ? '\n\n本次仅修复指定网页步骤的 selector。保持 version 1，不添加 framePath；目标位于网页主文档。'
+          : '\n\n本次仅修复指定网页步骤的 selector/framePath。') +
+        '返回完整流程；其他字段、步骤、能力、参数和权限保持不变。',
       context: [
         {
           id: 'selected-target-repair',
@@ -162,10 +169,14 @@ export class PlanningRepair {
     if (result.kind !== 'plan') return;
     const expected = structuredClone(before);
     const node = walk(expected.steps).find((n) => n.id === nodeId);
-    if (!node || node.type !== 'browser' || !('framePath' in node))
+    if (!node || node.type !== 'browser' || ![1, 2, 3].includes(node.version))
       throw new Error('修复步骤已失效');
     node.selector = target.selector;
-    node.framePath = target.framePath as typeof node.framePath;
+    if (node.version === 1) {
+      if (target.framePath.length) throw new Error('此步骤仅支持网页主文档目标');
+    } else {
+      node.framePath = target.framePath as typeof node.framePath;
+    }
     if (canonical(result.flow) !== canonical(expected))
       throw new Error('AI 修改超出已确认的目标范围，提案已拒绝；原方案保持不变');
   }

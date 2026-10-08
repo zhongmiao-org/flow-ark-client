@@ -315,7 +315,7 @@ export default function TaskRunPage({
     !!model.current?.started &&
     !model.current.ended &&
     model.node?.type === 'browser' &&
-    [2, 3].includes(model.node.version) &&
+    [1, 2, 3].includes(model.node.version) &&
     model.node.operation !== 'navigate' &&
     !!model.node.selector;
   const actions = (
