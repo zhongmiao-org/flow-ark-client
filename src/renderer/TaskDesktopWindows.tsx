@@ -164,6 +164,9 @@ export function DesktopWindowList({
             暂时无法取得窗口
           </h3>
           <p>{snapshot.reason || '请检查文本编辑是否可以正常响应，再重新检查。'}</p>
+          {snapshot.accessibility === 'granted' && !state.expired && !loading && (
+            <p>本次检查已确认辅助功能权限。请先确认文本编辑的文档窗口可以正常响应，再重新检查。</p>
+          )}
         </div>
       )}
       <p className="ai-task-note">

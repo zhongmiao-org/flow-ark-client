@@ -61,7 +61,9 @@ export default function DesktopAssistantConnection({
               : snapshot?.availability === 'unsupported'
                 ? '当前系统暂不支持'
                 : snapshot?.availability === 'unavailable'
-                  ? '本机助手暂不可用'
+                  ? permission === 'granted'
+                    ? '暂时无法读取应用窗口'
+                    : '本机助手暂不可用'
                   : available
                     ? hasWindows
                       ? '窗口检查通过'
@@ -82,7 +84,9 @@ export default function DesktopAssistantConnection({
         : snapshot?.availability === 'unsupported'
           ? '应用窗口当前接入 macOS 的文本编辑。你仍可以使用内置网页、文件或已连接工具。'
           : snapshot?.availability === 'unavailable'
-            ? snapshot.reason || '未能取得应用窗口，请检查文本编辑是否正常响应后重试。'
+            ? permission === 'granted'
+              ? '本次检查已确认辅助功能权限。请先回到文本编辑，确认文档窗口可以正常响应，再重新检查窗口信息。'
+              : snapshot.reason || '未能取得应用窗口，请检查文本编辑是否正常响应后重试。'
             : available
               ? snapshot.windows.length
                 ? `本次发现 ${snapshot.windows.length} 个 TextEdit 窗口。下一步选择具体窗口，再决定是否读取选中段落。`
