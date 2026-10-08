@@ -7,7 +7,8 @@ import { browserActions, type BrowserNode, type BrowserOperation } from './brows
 import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 import NodeTiming from './NodeTiming';
 import { referenceChoices } from './value-references';
-import { stepTitle } from './flow-outline';
+import { flowOutline } from './flow-outline';
+import { taskStepTitle } from './task-step-title';
 import './editor-workspace-dialog.css';
 import './browser-action-workspace.css';
 
@@ -56,6 +57,9 @@ export default function BrowserActionWorkspace(props: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const locator = useRef<HTMLInputElement>(null);
+  const frameInput = useRef<HTMLTextAreaElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const ordinal = flowOutline(props.record.flow.steps).byId.get(node.id)?.ordinal;
   const path =
     node.version >= 2 ? (node as Extract<BrowserNode, { version: 2 | 3 }>).framePath : [];
   const pathKey = JSON.stringify(path);
@@ -85,6 +89,10 @@ export default function BrowserActionWorkspace(props: Props) {
       if (trigger?.isConnected) trigger.focus({ preventScroll: true });
     };
   }, []);
+  useEffect(() => {
+    if (props.error && !document.activeElement?.closest('[aria-invalid="true"]'))
+      errorRef.current?.focus();
+  }, [props.error]);
   const operation = (value: BrowserOperation) => {
     if (value === node.operation || !props.guard()) return;
     props.change({
@@ -129,13 +137,21 @@ export default function BrowserActionWorkspace(props: Props) {
             网页动作配置
           </h1>
           <p>
-            当前步骤：{stepTitle(node)}。切换动作会恢复该动作的默认输入；应用后返回流程编排保存。
+            当前步骤：{ordinal ? `${String(ordinal).padStart(2, '0')} ` : ''}
+            {taskStepTitle(node)}。切换动作会恢复该动作的默认输入；应用后返回流程编排保存。
           </p>
         </header>
         {props.error && (
-          <div role="alert" className="browser-action-error">
+          <div ref={errorRef} tabIndex={-1} role="alert" className="browser-action-error">
             <p>{props.error}</p>
-            <button onClick={props.clearError}>关闭提示</button>
+            <button
+              onClick={() => {
+                props.clearError();
+                heading.current?.focus();
+              }}
+            >
+              关闭提示
+            </button>
           </div>
         )}
         <div className="browser-action-grid">
@@ -210,6 +226,7 @@ export default function BrowserActionWorkspace(props: Props) {
             data-value-invalid={frameError || undefined}
           >
             <h2>定位与期限</h2>
+            {topLevel && <p>此动作作用于顶层网页，不使用元素定位和 iframe 路径。</p>}
             <label htmlFor={id + '-selector'}>选择器</label>
             <input
               ref={locator}
@@ -221,12 +238,13 @@ export default function BrowserActionWorkspace(props: Props) {
             />
             <label htmlFor={id + '-frames'}>iframe 路径</label>
             <textarea
+              ref={frameInput}
               id={id + '-frames'}
               disabled={topLevel}
               rows={1}
               value={frames}
               aria-invalid={!!frameError}
-              aria-describedby={id + '-frame-help'}
+              aria-describedby={`${id}-frame-help${frameError ? ` ${id}-frame-error` : ''}`}
               placeholder="每行一层；留空表示顶层页面"
               onChange={(event) => {
                 const text = event.target.value;
@@ -257,13 +275,14 @@ export default function BrowserActionWorkspace(props: Props) {
             </details>
             {frameError && (
               <>
-                <p role="alert" className="field-error">
+                <p id={id + '-frame-error'} role="alert" className="field-error">
                   {frameError}
                 </p>
                 <button
                   onClick={() => {
                     setFrames(path.join('\n'));
                     setFrameError('');
+                    frameInput.current?.focus();
                   }}
                 >
                   恢复已应用路径

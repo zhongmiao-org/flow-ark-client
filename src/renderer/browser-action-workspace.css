@@ -8,7 +8,11 @@
 .browser-action-page h1 {
   margin: 0 0 8px;
   font-size: 28px;
+  font-weight: 700;
   line-height: 40px;
+}
+.browser-action-page > header p {
+  font-size: 14px;
 }
 .browser-action-page p {
   margin: 0;
@@ -28,14 +32,14 @@
   min-height: 362px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   padding: 20px;
   border: 1px solid var(--fa-border-default);
   border-radius: 12px;
   background: var(--fa-bg-surface);
 }
 .browser-action-card h2 {
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   font-size: 18px;
   line-height: 28px;
   display: flex;

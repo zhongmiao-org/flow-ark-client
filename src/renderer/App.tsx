@@ -3004,7 +3004,7 @@ function Editor({
           node={selectedNode}
           change={updateNode}
           guard={guardNodeInput}
-          close={() => setBrowserActionOpen(false)}
+          close={returnToFlow}
           showBrowser={() => {
             setBrowserActionOpen(false);
             setPanel('node');
