@@ -55,6 +55,14 @@ export default function RunDetail({
   cancelRerun: () => void;
   rerunBusy: (busy: boolean) => void;
 }) {
+  const visibleTabs: [RunTab, string][] =
+    tab === 'output'
+      ? [
+          ['output', '输出与产物'],
+          ['logs', '日志与步骤'],
+          ['rerun', '核对后重新运行'],
+        ]
+      : tabs;
   const [rerunOpened, setRerunOpened] = useState(tab === 'rerun');
   const previousTab = useRef(tab);
   const rerunHeading = useRef<HTMLHeadingElement>(null);
@@ -172,9 +180,17 @@ export default function RunDetail({
                   {tab === 'logs' ? '日志与步骤输出' : tab === 'output' ? '运行结果与产物' : r.name}
                 </h1>
                 <p>
-                  {tab !== 'current' && `${r.name} · `}
-                  <span title={r.id}>{r.id}</span> · {runSourceLabels[runSource(r)] ?? r.source} ·{' '}
-                  {time(r.createdAt)}
+                  {tab === 'output' ? (
+                    <>
+                      <span title={r.id}>{r.id}</span> · 使用本次运行保存的结果，不重新执行节点。
+                    </>
+                  ) : (
+                    <>
+                      {tab !== 'current' && `${r.name} · `}
+                      <span title={r.id}>{r.id}</span> · {runSourceLabels[runSource(r)] ?? r.source}{' '}
+                      · {time(r.createdAt)}
+                    </>
+                  )}
                 </p>
               </div>
               {tab === 'current' && (
@@ -263,7 +279,7 @@ export default function RunDetail({
                   aria-label="运行详情内容"
                   hidden={tab === 'logs'}
                 >
-                  {tabs.map(([id, label], index) => (
+                  {visibleTabs.map(([id, label], index) => (
                     <button
                       key={id}
                       id={'run-tab-' + id}
@@ -277,15 +293,15 @@ export default function RunDetail({
                           event.key === 'Home'
                             ? 0
                             : event.key === 'End'
-                              ? tabs.length - 1
+                              ? visibleTabs.length - 1
                               : event.key === 'ArrowRight'
-                                ? (index + 1) % tabs.length
+                                ? (index + 1) % visibleTabs.length
                                 : event.key === 'ArrowLeft'
-                                  ? (index + tabs.length - 1) % tabs.length
+                                  ? (index + visibleTabs.length - 1) % visibleTabs.length
                                   : null;
                         if (target === null) return;
                         event.preventDefault();
-                        setTab(tabs[target][0]);
+                        setTab(visibleTabs[target][0]);
                         event.currentTarget.parentElement
                           ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
                           [target]?.focus();
@@ -388,7 +404,7 @@ export default function RunDetail({
         )}
       </div>
       {(tab === 'rerun' || rerunOpened) && (
-        <div className="run-rerun-page" hidden={tab !== 'rerun'}>
+        <div className="run-rerun-page" id="run-panel-rerun" hidden={tab !== 'rerun'}>
           <header className="runs-heading">
             <h1 ref={rerunHeading} tabIndex={-1}>
               重新运行前核对

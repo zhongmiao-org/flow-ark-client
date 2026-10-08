@@ -97,7 +97,7 @@ export function RunOutput({
   layout = 'panel',
 }: {
   detail: any;
-  layout?: 'panel' | 'task';
+  layout?: 'panel' | 'task' | 'result';
 }) {
   const [expanded, setExpanded] = useState(false);
   const outputId = useId();
@@ -116,13 +116,21 @@ export function RunOutput({
   }, [expanded]);
   return (
     <section
-      className={layout === 'task' ? 'run-output task-run-output' : 'run-output panel'}
-      aria-label={layout === 'task' ? '结构化输出' : '运行输出'}
+      className={
+        layout === 'task'
+          ? 'run-output task-run-output'
+          : layout === 'result'
+            ? 'run-output result-output'
+            : 'run-output panel'
+      }
+      aria-label={layout === 'task' ? '结构化输出' : layout === 'result' ? '入口结果' : '运行输出'}
     >
       <div className="section-row">
         <h3>
           {layout === 'task' ? (
             '结构化输出'
+          ) : layout === 'result' ? (
+            '入口结果'
           ) : (
             <>
               <Terminal size={16} />
@@ -130,7 +138,7 @@ export function RunOutput({
             </>
           )}
         </h3>
-        {output.truncated && (
+        {layout !== 'result' && output.truncated && (
           <button
             onClick={(event) => {
               toggleOrigin.current = event.currentTarget;
@@ -146,7 +154,11 @@ export function RunOutput({
       {output.available ? (
         <>
           <p className="muted">
-            {layout === 'task' ? '已脱敏 JSON' : '已保存的脱敏输出；业务结果请结合回执核对。'}
+            {layout === 'task'
+              ? '已脱敏 JSON'
+              : layout === 'result'
+                ? '已保存输出 · 已脱敏'
+                : '已保存的脱敏输出；业务结果请结合回执核对。'}
           </p>
           {output.truncated && !expanded && (
             <p className="output-limit">
@@ -154,7 +166,13 @@ export function RunOutput({
               字符。展开只读取已保存内容。
             </p>
           )}
-          <pre id={outputId} ref={content} tabIndex={0} aria-label="已保存的结构化输出">
+          <pre
+            data-expanded={expanded}
+            id={outputId}
+            ref={content}
+            tabIndex={0}
+            aria-label="已保存的结构化输出"
+          >
             {expanded ? output.full : output.preview}
           </pre>
         </>
@@ -162,6 +180,26 @@ export function RunOutput({
         <p className="muted">
           尚无已保存的运行输出。失败、取消或存储异常时，请查看步骤记录与业务回执。
         </p>
+      )}
+      {layout === 'result' && (
+        <>
+          <p className="run-output-boundary">
+            运行结束、外部业务结果与文件可用性分别核对；查看结果不会重新执行步骤。
+          </p>
+          {output.available && (
+            <button
+              className="run-result-output-toggle"
+              aria-expanded={expanded}
+              aria-controls={outputId}
+              onClick={(event) => {
+                toggleOrigin.current = event.currentTarget;
+                setExpanded(!expanded);
+              }}
+            >
+              {expanded ? '收起完整脱敏输出' : '展开完整脱敏输出'}
+            </button>
+          )}
+        </>
       )}
     </section>
   );

@@ -130,10 +130,7 @@ export default function RunOutputWorkspace({
               {view.statusNote}
             </p>
           )}
-          <RunOutput detail={detail} />
-          <p className="run-output-boundary">
-            运行结束、外部业务结果与文件可用性分别核对；查看结果不会重新执行步骤。
-          </p>
+          <RunOutput detail={detail} layout="result" />
           <RunResultReview key={detail.run.id} runId={detail.run.id} />
         </section>
         <aside className="run-output-files" aria-label="本次运行的产物">
