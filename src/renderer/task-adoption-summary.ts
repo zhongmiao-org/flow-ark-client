@@ -13,7 +13,14 @@ const kindLabels = { added: '新增', removed: '移除', changed: '修改', move
 
 export function taskAdoptionSummary(detail: TaskDetail): string | undefined {
   const { adoption, flow: record } = detail;
-  if (!adoption || adoption.version !== 1 || !record || detail.proposal || !detail.canUndo)
+  if (
+    !adoption ||
+    adoption.version !== 1 ||
+    !record ||
+    detail.proposal ||
+    detail.proposalRejected ||
+    !detail.canUndo
+  )
     return undefined;
   const flow = record.flow;
   const steps = flatten(flow.steps);

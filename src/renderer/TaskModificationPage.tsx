@@ -9,6 +9,7 @@ export default function TaskModificationPage({
   taskId,
   baseHash,
   name,
+  revision,
   instruction,
   busy,
   conflict,
@@ -26,6 +27,7 @@ export default function TaskModificationPage({
   taskId: string;
   baseHash: string;
   name: string;
+  revision: number;
   instruction: string;
   busy: boolean;
   conflict: boolean;
@@ -145,7 +147,7 @@ export default function TaskModificationPage({
         </button>
       </section>
       <section className="ai-task-card">
-        <h2>当前方案 · {name}</h2>
+        <h2 title={name}>当前方案 · 修订 {revision}</h2>
         <TaskStepList
           key={`${taskId}:${baseHash}`}
           ref={stepList}

@@ -79,6 +79,7 @@ export type PlanningAdoption = {
   flowFields: string[];
 };
 export type TaskDetail = {
+  proposalRejected?: true;
   adoption?: PlanningAdoption;
   toolTargetStates?: TaskMcpState[];
   flowHash: string;

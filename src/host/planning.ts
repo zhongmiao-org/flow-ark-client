@@ -29,6 +29,7 @@ import type { DesktopPlanResponse } from '../shared/desktop-planning';
 
 type SavedTask = PlanningTask & {
   proposal?: PlanningProposal;
+  rejected?: { revision: number; flowHash: string; requestId?: string };
   undo?: { before: FlowRecord | null; afterHash: string; toolsRequirePlan?: boolean };
 };
 type Job = { id: string; abort: AbortController; provider: string };
@@ -94,12 +95,21 @@ export class Planning {
     if (flow) assertMcpPlan(flow, task.toolTargets, task.outputTarget ? OUTPUT_BINDING : undefined);
   }
   detail(id: string): TaskDetail {
-    const { proposal, undo, ...task } = this.task(id);
+    const { proposal, undo, rejected, ...task } = this.task(id);
     const flow = this.flow(task);
     const result = proposal?.result;
     const currentHash = flowHash(flow);
     const canUndo = !!undo && undo.afterHash === currentHash;
     return {
+      proposalRejected:
+        rejected &&
+        rejected.revision === task.revision &&
+        rejected.requestId === task.requestId &&
+        rejected.flowHash === currentHash &&
+        !proposal &&
+        task.status === 'draft'
+          ? true
+          : undefined,
       adoption:
         canUndo && flow ? planningAdoption(undo!.before?.flow ?? null, flow.flow) : undefined,
       toolTargetStates: this.deps.tools?.states(task.toolTargets),
@@ -601,7 +611,17 @@ export class Planning {
       if (this.jobs.has(task.id)) throw new Error('请先取消正在生成的方案');
       if (task.proposal?.id !== args.proposalId) throw new Error('提案已变化，请重新查看');
       this.abort(task.id);
-      this.put({ ...task, proposal: undefined, status: 'draft', error: undefined });
+      this.put({
+        ...task,
+        rejected: {
+          revision: task.revision,
+          requestId: task.requestId,
+          flowHash: flowHash(this.flow(task)),
+        },
+        proposal: undefined,
+        status: 'draft',
+        error: undefined,
+      });
     } else if (method === 'task.adopt') {
       this.verifyTools(task);
       if (this.jobs.has(task.id)) throw new Error('请先取消正在生成的方案');

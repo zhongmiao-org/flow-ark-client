@@ -294,6 +294,10 @@ export default function AITaskWorkspace(props: Props) {
   const dirty = contentDirty || outputDirty;
   const generating = detail?.task.status === 'generating';
   const stale = !!detail && detail.task.revision !== revision;
+  const rejectionNotice =
+    detail?.proposalRejected && !dirty && !stale
+      ? '本次提案未采纳，当前保留已有草稿。你可以继续描述修改，生成新的提议后再决定是否采纳。'
+      : undefined;
   const result = detail?.proposal?.result;
   const previousAnswerIds = Object.keys(draft.answers).filter(
     (id) => result?.kind !== 'clarify' || !result.questions.some((question) => question.id === id),
@@ -1774,7 +1778,7 @@ export default function AITaskWorkspace(props: Props) {
           <h1 tabIndex={-1}>{page === 'home' ? '你想完成什么？' : title}</h1>
           <p>
             {page === 'modify'
-              ? `${detail?.flow?.flow.name ?? '当前任务'} · 基于当前已采纳草稿，目标与输出位置保留`
+              ? `${detail?.flow?.flow.name ?? '当前任务'} · 当前草稿修订 ${revision} · 目标与输出位置保留`
               : page === 'generation'
                 ? generating
                   ? `${providerName} · 仅规划，尚未执行本次任务`
@@ -2115,6 +2119,7 @@ export default function AITaskWorkspace(props: Props) {
           taskId={detail.task.id}
           baseHash={modification.baseHash}
           name={detail.flow.flow.name}
+          revision={revision}
           instruction={modification.instruction}
           busy={inputDisabled || stale}
           conflict={modificationConflict}
@@ -2335,7 +2340,8 @@ export default function AITaskWorkspace(props: Props) {
                         detail.proposal
                           ? result?.summary ||
                             `已生成 ${flatten(flow.steps).length} 个步骤，请先检查方案。`
-                          : (!dirty && !stale && taskAdoptionSummary(detail)) ||
+                          : rejectionNotice ||
+                            (!dirty && !stale && taskAdoptionSummary(detail)) ||
                             `当前流程草稿包含 ${flatten(flow.steps).length} 个步骤（含分支和循环内步骤）。你可以继续修改要求，或查看同一方案的流程图。`
                       }
                       pending={hasPlanProposal}
@@ -2482,6 +2488,7 @@ export default function AITaskWorkspace(props: Props) {
                       )}
                       {scope && (
                         <div className="ai-task-scope-source">
+                          {rejectionNotice && <p className="ai-task-note">{rejectionNotice}</p>}
                           <b>
                             仅修改第 {scopeIndex + 1} 步 ·{' '}
                             {scopedStep ? stepTitle(scopedStep) : scope.nodeId}
