@@ -29,12 +29,14 @@ export function taskAdoptionSummary(detail: TaskDetail): string | undefined {
 
   const changed = adoption.steps[0];
   const current = changed && steps.find((step) => step.id === changed.id);
+  const settings = adoption.flowFields.length
+    ? `另已更新${adoption.flowFields.map((field) => fieldLabels[field] ?? '方案设置').join('、')}。`
+    : '';
   if (
     adoption.stepCount === 1 &&
     changed?.kinds.length === 1 &&
     changed.kinds[0] === 'changed' &&
-    current &&
-    !adoption.flowFields.length
+    current
   ) {
     const summary = taskStepSummary(current, flow, {
       bindings: record.bindings,
@@ -42,7 +44,7 @@ export function taskAdoptionSummary(detail: TaskDetail): string | undefined {
       outputTarget: detail.task.outputTarget,
       toolTargets: detail.task.toolTargets,
     });
-    return `已采纳修改：第 ${steps.indexOf(current) + 1} 步「${taskStepTitle(current)}」。当前设置：${summary}。其他步骤保持原样。`;
+    return `已采纳修改：第 ${steps.indexOf(current) + 1} 步「${taskStepTitle(current)}」。当前设置：${summary}。${settings}其他步骤保持原样。`;
   }
 
   const parts = adoption.steps.map((step) => {
