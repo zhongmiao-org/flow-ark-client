@@ -97,7 +97,7 @@ export function RunOutput({
   layout = 'panel',
 }: {
   detail: any;
-  layout?: 'panel' | 'task' | 'result';
+  layout?: 'panel' | 'task' | 'result' | 'log';
 }) {
   const [expanded, setExpanded] = useState(false);
   const outputId = useId();
@@ -121,7 +121,9 @@ export function RunOutput({
           ? 'run-output task-run-output'
           : layout === 'result'
             ? 'run-output result-output'
-            : 'run-output panel'
+            : layout === 'log'
+              ? 'run-output log-output'
+              : 'run-output panel'
       }
       aria-label={layout === 'task' ? '结构化输出' : layout === 'result' ? '入口结果' : '运行输出'}
     >
@@ -131,6 +133,8 @@ export function RunOutput({
             '结构化输出'
           ) : layout === 'result' ? (
             '入口结果'
+          ) : layout === 'log' ? (
+            '普通输出'
           ) : (
             <>
               <Terminal size={16} />

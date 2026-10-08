@@ -1,4 +1,12 @@
-import { useId, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import {
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+  type ReactNode,
+} from 'react';
 import type { Event, Flow, Run } from '../shared/types';
 import { runInstancePresenter } from './run-instance-presentation';
 import { runEventMessage, runEventTitle } from './run-event-presentation';
@@ -105,12 +113,14 @@ export default function RunEventLog({
   snapshot,
   run,
   position,
+  summary,
 }: {
   runId: string;
   events: Event[];
   snapshot?: Flow;
   run?: Run;
   position?: RefObject<RunLogPosition>;
+  summary?: ReactNode;
 }) {
   const [reading, setReading] = useState<RunLogPosition>(
     () => position?.current ?? { instance: '*', limit: 100, latest: null },
@@ -230,6 +240,7 @@ export default function RunEventLog({
             </button>
             <p>只显示已保存内容，不重新执行步骤。</p>
           </section>
+          {summary}
         </div>
       )}
       <div className="run-log-heading">

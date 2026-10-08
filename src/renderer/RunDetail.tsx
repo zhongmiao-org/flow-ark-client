@@ -14,13 +14,16 @@ import RunRerunPanel, { type RunRerunView } from './RunRerunPanel';
 import RunOutputWorkspace from './RunOutputWorkspace';
 import { runTimeline } from './run-timeline';
 import RunEventLog, { type RunLogPosition } from './RunEventLog';
+import RunLogSummary from './RunLogSummary';
 import DesktopRunReceipt from './DesktopRunReceipt';
 
 export type RunDetailReturnContext = {
   runId: string;
   tab: RunTab;
   scroll: number;
-  rerun: RunRerunView;
+  rerun?: RunRerunView;
+  logs?: RunLogPosition;
+  relatedRunId?: string;
 };
 export type RunTab = 'current' | 'output' | 'logs' | 'rerun';
 const tabs: [RunTab, string][] = [
@@ -84,7 +87,9 @@ export default function RunDetail({
   }, []);
   const rerunHeading = useRef<HTMLHeadingElement>(null);
   const pageHeading = useRef<HTMLHeadingElement>(null);
-  const logPosition = useRef<RunLogPosition>({ instance: '*', limit: 100, latest: null });
+  const logPosition = useRef<RunLogPosition>(
+    restored?.logs ?? { instance: '*', limit: 100, latest: null },
+  );
   useEffect(() => {
     if (tab === 'rerun') {
       setRerunOpened(true);
@@ -386,6 +391,25 @@ export default function RunDetail({
                     run={r}
                     events={d.events}
                     snapshot={d.snapshot}
+                    summary={
+                      <RunLogSummary
+                        detail={observed}
+                        active={tab === 'logs'}
+                        restoredRunId={restored?.relatedRunId}
+                        showOutput={() => setTab('output')}
+                        showCurrent={() => setTab('current')}
+                        showRerun={() => setTab('rerun')}
+                        inspect={(next, relatedRunId) =>
+                          inspectRelated(next, {
+                            runId: r.id,
+                            tab: 'logs',
+                            scroll: document.querySelector('main')?.scrollTop ?? 0,
+                            logs: { ...logPosition.current },
+                            relatedRunId,
+                          })
+                        }
+                      />
+                    }
                   />
                   {d.scriptBundles?.length > 0 && (
                     <details className="script-bundles">
@@ -408,7 +432,7 @@ export default function RunDetail({
                 </div>
               </section>
             </div>
-            <div className="run-rerun-entry" hidden={tab === 'output'}>
+            <div className="run-rerun-entry" hidden={tab === 'output' || tab === 'logs'}>
               <div>
                 <h2>重新运行与关联记录</h2>
                 <p>先核对已保存输出和外部结果，再选择执行内容。查看不会创建运行。</p>
