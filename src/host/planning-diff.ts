@@ -1,5 +1,5 @@
 import type { Flow, Step } from '../shared/types';
-import type { PlanningChange } from '../shared/planning';
+import type { PlanningAdoption, PlanningChange } from '../shared/planning';
 import { canonical } from '../shared/utils';
 
 function nodes(flow: Flow | null) {
@@ -72,6 +72,30 @@ export function planningDiff(before: Flow | null, after: Flow): PlanningChange[]
     }
   }
   return changes;
+}
+export function planningAdoption(before: Flow | null, after: Flow): PlanningAdoption {
+  const steps = new Map<string, PlanningAdoption['steps'][number]>();
+  const flowFields = new Set<string>();
+  for (const change of planningDiff(before, after)) {
+    if (!change.nodeId) {
+      flowFields.add(change.path);
+      continue;
+    }
+    const step = steps.get(change.nodeId) ?? {
+      id: change.nodeId,
+      name: change.label,
+      kinds: [],
+    };
+    if (!step.kinds.includes(change.kind)) step.kinds.push(change.kind);
+    steps.set(change.nodeId, step);
+  }
+  return {
+    version: 1,
+    created: before === null,
+    stepCount: steps.size,
+    steps: [...steps.values()].slice(0, 3),
+    flowFields: [...flowFields],
+  };
 }
 export function planningResources(flow: Flow): string[] {
   return [

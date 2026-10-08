@@ -10,7 +10,7 @@ import {
   type TaskDetail,
 } from '../shared/planning';
 import type { Bindings, Flow, FlowRecord } from '../shared/types';
-import { planningDiff, planningResources } from './planning-diff';
+import { planningAdoption, planningDiff, planningResources } from './planning-diff';
 import { generatePlan } from '../ai/planning';
 import type { PlanningRepair } from './planning-repair';
 import type { RepairReference } from '../shared/task-repair';
@@ -97,19 +97,23 @@ export class Planning {
     const { proposal, undo, ...task } = this.task(id);
     const flow = this.flow(task);
     const result = proposal?.result;
+    const currentHash = flowHash(flow);
+    const canUndo = !!undo && undo.afterHash === currentHash;
     return {
+      adoption:
+        canUndo && flow ? planningAdoption(undo!.before?.flow ?? null, flow.flow) : undefined,
       toolTargetStates: this.deps.tools?.states(task.toolTargets),
-      flowHash: flowHash(flow),
+      flowHash: currentHash,
       task,
       flow,
       proposal,
       conflict:
         !!proposal &&
-        (proposal.baseRevision !== task.revision || proposal.baseFlowHash !== flowHash(flow)),
+        (proposal.baseRevision !== task.revision || proposal.baseFlowHash !== currentHash),
       changes:
         result?.kind === 'plan' && result.flow ? planningDiff(proposal!.baseFlow, result.flow) : [],
       resources: result?.kind === 'plan' && result.flow ? planningResources(result.flow) : [],
-      canUndo: !!undo && undo.afterHash === flowHash(flow),
+      canUndo,
     };
   }
   adoptDesktop(candidate: DesktopPlanResponse, original: string): TaskDetail {

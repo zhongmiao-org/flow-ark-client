@@ -2,6 +2,7 @@ import TaskMissingAI from './TaskMissingAI';
 import TaskStepList, { type TaskStepListHandle } from './TaskStepList';
 import TaskStepInspector from './TaskStepInspector';
 import TaskPlanConversation from './TaskPlanConversation';
+import { taskAdoptionSummary } from './task-adoption-summary';
 import TaskPlanIdentity from './TaskPlanIdentity';
 import TaskProposalReview from './TaskProposalReview';
 import TaskPlanScope from './TaskPlanScope';
@@ -2334,7 +2335,8 @@ export default function AITaskWorkspace(props: Props) {
                         detail.proposal
                           ? result?.summary ||
                             `已生成 ${flatten(flow.steps).length} 个步骤，请先检查方案。`
-                          : `当前流程草稿包含 ${flatten(flow.steps).length} 个步骤（含分支和循环内步骤）。你可以继续修改要求，或查看同一方案的流程图。`
+                          : (!dirty && !stale && taskAdoptionSummary(detail)) ||
+                            `当前流程草稿包含 ${flatten(flow.steps).length} 个步骤（含分支和循环内步骤）。你可以继续修改要求，或查看同一方案的流程图。`
                       }
                       pending={hasPlanProposal}
                       dirty={dirty}

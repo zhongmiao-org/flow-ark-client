@@ -71,7 +71,15 @@ export type PlanningChange = {
   before: unknown;
   after: unknown;
 };
+export type PlanningAdoption = {
+  version: 1;
+  created: boolean;
+  stepCount: number;
+  steps: { id: string; name: string; kinds: PlanningChange['kind'][] }[];
+  flowFields: string[];
+};
 export type TaskDetail = {
+  adoption?: PlanningAdoption;
   toolTargetStates?: TaskMcpState[];
   flowHash: string;
   task: PlanningTask;
