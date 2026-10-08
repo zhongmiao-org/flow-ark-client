@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import type { Json, Step } from '../shared/types';
 import ValueField from './ValueField';
-import type { ReferenceChoice } from './value-references';
+import { referenceOf, type ReferenceChoice } from './value-references';
 import './node-configuration.css';
 
 export default function LogicNodeConfiguration({
@@ -26,7 +26,14 @@ export default function LogicNodeConfiguration({
       value={value}
       choices={choices}
       defaultValue={defaultValue}
-      change={(next) => change({ ...node, [key]: next } as Step)}
+      jsonDefault={node.type === 'loop' && key === 'items' ? [] : undefined}
+      change={(next) => {
+        if (node.type === 'loop' && key === 'items' && referenceOf(next) === undefined) {
+          if (!Array.isArray(next)) throw new Error('循环集合必须是数组，或选择数组来源的变量引用');
+          if (next.length > 1000) throw new Error('循环集合最多 1000 项');
+        }
+        change({ ...node, [key]: next } as Step);
+      }}
     />
   );
   if (node.type === 'value')

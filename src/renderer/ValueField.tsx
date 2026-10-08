@@ -9,6 +9,7 @@ type Props = {
   change: (value: Json) => void;
   choices?: ReferenceChoice[];
   defaultValue?: Json;
+  jsonDefault?: Json;
   compactReference?: boolean;
   children?: ReactNode;
   onIncompleteChange?: (label: string, incomplete: boolean) => void;
@@ -19,6 +20,7 @@ export default function ValueField({
   change,
   choices,
   defaultValue = '',
+  jsonDefault,
   compactReference = false,
   children,
   onIncompleteChange,
@@ -72,6 +74,7 @@ export default function ValueField({
             label={label}
             value={value}
             change={change}
+            jsonDefault={jsonDefault}
             onIncompleteChange={onIncompleteChange}
           />
         ))
@@ -115,6 +118,7 @@ export function LiteralValue({
   displayLabels,
   onIncompleteChange,
   draft,
+  jsonDefault,
 }: {
   label: string;
   value: Json;
@@ -123,6 +127,7 @@ export function LiteralValue({
   displayLabels?: { type: string; value: string };
   onIncompleteChange?: (label: string, incomplete: boolean) => void;
   draft?: LiteralValueDraftSlot;
+  jsonDefault?: Json;
 }) {
   const id = useId(),
     type = valueType(value);
@@ -153,7 +158,7 @@ export function LiteralValue({
     number: 0,
     boolean: true,
     null: null,
-    json: {},
+    json: jsonDefault ?? {},
   };
   return (
     <div className="literal-value" data-value-invalid={error || undefined}>
@@ -183,7 +188,16 @@ export function LiteralValue({
           id={id}
           aria-label={displayLabels ? label : undefined}
           value={String(value)}
-          onChange={(e) => change(e.target.value === 'true')}
+          aria-invalid={!!error}
+          aria-describedby={error ? id + '-error' : undefined}
+          onChange={(e) => {
+            try {
+              change(e.target.value === 'true');
+              setError('');
+            } catch (reason) {
+              setError(reason instanceof Error ? reason.message : '值未修改，请检查输入');
+            }
+          }}
         >
           <option value="true">true</option>
           <option value="false">false</option>
