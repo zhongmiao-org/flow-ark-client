@@ -128,35 +128,68 @@ export default function ScriptPackages(props: Props) {
       if (!opened) refocus(trigger, source);
     }
   };
-  const inspect = async (name: string) => {
+  const inspect = async (name?: string) => {
     if (locked.current || props.guard?.() === false) return;
     const trigger = document.activeElement as HTMLElement | null;
     const source = identity(props);
-    const before = signature(props, name);
-    const expected = props.node.dependencies.find((dep) => dep.name === name);
-    const binding = props.bindings.scriptPackages?.[name];
-    if (!binding?.path || !expected) return;
+    const names = name
+      ? [name]
+      : props.node.dependencies
+          .filter((dep) => props.bindings.scriptPackages?.[dep.name]?.path)
+          .map((dep) => dep.name);
+    if (!names.length) return;
+    const before = JSON.stringify([source, props.node.dependencies, props.bindings.scriptPackages]);
+    const current = () =>
+      alive.current &&
+      before ===
+        JSON.stringify([
+          identity(latest.current),
+          latest.current.node.dependencies,
+          latest.current.bindings.scriptPackages,
+        ]);
+    let passed = 0;
+    let failed = 0;
     locked.current = true;
-    setBusy(name);
     setError('');
     setNotice('');
     try {
-      const info: Package = await window.flowark.request('script.package.inspect', {
-        path: binding.path,
-      });
-      if (!alive.current || before !== signature(latest.current, name)) return;
-      if (
-        info.name !== name ||
-        info.version !== expected.version ||
-        binding.version !== expected.version
-      )
-        throw new Error(
-          `要求 ${name}@${expected.version}；目录实际为 ${info.name}@${info.version}，请重新绑定。`,
+      for (const item of names) {
+        if (!current()) return;
+        const expected = props.node.dependencies.find((dep) => dep.name === item);
+        const binding = props.bindings.scriptPackages?.[item];
+        if (!binding?.path || !expected) continue;
+        const itemSignature = signature(props, item);
+        setBusy(item);
+        let error: string | undefined;
+        try {
+          const info: Package = await window.flowark.request('script.package.inspect', {
+            path: binding.path,
+          });
+          if (!current()) return;
+          if (
+            info.name !== item ||
+            info.version !== expected.version ||
+            binding.version !== expected.version
+          )
+            throw new Error(
+              `要求 ${item}@${expected.version}；目录实际为 ${info.name}@${info.version}，请重新绑定。`,
+            );
+          passed++;
+        } catch (reason) {
+          if (!current()) return;
+          error = fail(reason);
+          failed++;
+        }
+        setChecks((values) => ({ ...values, [item]: { signature: itemSignature, error } }));
+      }
+      if (current()) {
+        const missing = props.node.dependencies.length - names.length;
+        setNotice(
+          name
+            ? `目录核对${failed ? '失败，请查看该依赖的错误说明' : '完成，包名与版本一致'}。`
+            : `目录核对完成：${passed} 个通过，${failed} 个失败${missing ? `，${missing} 个未绑定目录` : ''}。完整编译与运行前检查仍需通过。`,
         );
-      setChecks((values) => ({ ...values, [name]: { signature: before } }));
-    } catch (reason) {
-      if (alive.current && before === signature(latest.current, name))
-        setChecks((values) => ({ ...values, [name]: { signature: before, error: fail(reason) } }));
+      }
     } finally {
       locked.current = false;
       if (alive.current) setBusy('');
@@ -213,6 +246,17 @@ export default function ScriptPackages(props: Props) {
         <span>{props.node.dependencies.length} 个</span>
       </header>
       <p className="note">选择已安装包的目录，使用精确版本。运行时不自动安装依赖。</p>
+      {props.node.dependencies.length > 1 && (
+        <button
+          disabled={
+            !!busy ||
+            !props.node.dependencies.some((dep) => props.bindings.scriptPackages?.[dep.name]?.path)
+          }
+          onClick={() => void inspect()}
+        >
+          核对全部已绑定目录
+        </button>
+      )}
       {!props.node.dependencies.length && (
         <p className="script-package-empty">当前步骤未声明第三方依赖。需要时绑定已有包目录。</p>
       )}

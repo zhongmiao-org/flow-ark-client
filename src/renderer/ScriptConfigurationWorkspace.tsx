@@ -5,6 +5,8 @@ import type { FlowRecord } from '../shared/types';
 import type { ScriptNode } from './script-editor';
 import ValueField from './ValueField';
 import ScriptPackages from './ScriptPackages';
+import { flowOutline } from './flow-outline';
+import { taskStepTitle } from './task-step-title';
 import { referenceChoices } from './value-references';
 import './editor-workspace-dialog.css';
 import './resource-workspace.css';
@@ -40,6 +42,7 @@ export default function ScriptConfigurationWorkspace(props: Props) {
   const id = useId();
   const dialog = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const ordinal = flowOutline(props.record.flow.steps).byId.get(props.node.id)?.ordinal;
   const template = props.record.bindings.template;
   const resources = Object.entries(props.record.bindings.resources ?? {}).filter(
     ([, resource]) => resource.provider,
@@ -95,7 +98,10 @@ export default function ScriptConfigurationWorkspace(props: Props) {
           <h1 id={id} ref={heading} tabIndex={-1}>
             脚本与依赖配置
           </h1>
-          <p>配置当前脚本、输入与本地依赖。应用后返回编排页保存。</p>
+          <p>
+            当前步骤：{ordinal ? `${String(ordinal).padStart(2, '0')} ` : ''}
+            {taskStepTitle(props.node)}。配置脚本、输入与本地依赖，应用后返回编排页保存。
+          </p>
         </header>
         {props.error && (
           <div role="alert" className="resource-workspace-error">
@@ -159,13 +165,16 @@ export default function ScriptConfigurationWorkspace(props: Props) {
                 ],
                 [
                   '绑定状态',
-                  missing.length
-                    ? `${missing.length} 个缺少目录`
-                    : mismatched.length
-                      ? `${mismatched.length} 个版本不一致`
-                      : props.node.dependencies.length
-                        ? '已绑定 · 目录尚需核对'
-                        : '未声明第三方依赖',
+                  missing.length || mismatched.length
+                    ? [
+                        missing.length ? `${missing.length} 个缺少目录` : '',
+                        mismatched.length ? `${mismatched.length} 个版本不一致` : '',
+                      ]
+                        .filter(Boolean)
+                        .join('；')
+                    : props.node.dependencies.length
+                      ? '已绑定 · 目录尚需核对'
+                      : '未声明第三方依赖',
                 ],
                 ['运行中', '不自动安装依赖'],
               ]}

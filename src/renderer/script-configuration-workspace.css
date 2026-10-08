@@ -2,7 +2,7 @@
   padding-bottom: 50px;
 }
 .script-configuration-workspace .resource-workspace-card > dl {
-  gap: 15px;
+  gap: 16px;
 }
 .script-configuration-workspace .resource-workspace-card > button:last-child,
 .script-configuration-packages,
@@ -60,4 +60,15 @@
 }
 .script-configuration-workspace .reference-value-compact button {
   margin-top: 0;
+}
+
+.script-configuration-workspace .resource-workspace-page h1 {
+  font-weight: 700;
+}
+.script-configuration-workspace .resource-workspace-page > header p {
+  font-size: 14px;
+}
+.script-configuration-workspace .resource-workspace-card[aria-label='依赖检查'] dd {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
