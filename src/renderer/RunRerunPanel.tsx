@@ -38,6 +38,16 @@ export default function RunRerunPanel({
   const activeRef = useRef(active);
   activeRef.current = active;
   const choiceId = useId();
+  const [reasonsOpen, setReasonsOpen] = useState(false);
+  const [relationsOpen, setRelationsOpen] = useState(false);
+  const reasonsHeading = useRef<HTMLHeadingElement>(null);
+  const relationsHeading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (reasonsOpen) reasonsHeading.current?.focus({ preventScroll: true });
+  }, [reasonsOpen]);
+  useEffect(() => {
+    if (relationsOpen) relationsHeading.current?.focus({ preventScroll: true });
+  }, [relationsOpen]);
   const previewHeading = useRef<HTMLHeadingElement>(null);
   const previewRegion = useRef<HTMLFormElement>(null);
   const errorPanel = useRef<HTMLParagraphElement>(null);
@@ -394,73 +404,123 @@ export default function RunRerunPanel({
         </div>
         <aside className="run-rerun-context" aria-label="重新运行的来源与边界">
           <h3>当前授权重新检查</h3>
-          {inspectSource && (
-            <div className="run-rerun-source-actions">
-              <button type="button" disabled={submitting} onClick={() => inspectSource('output')}>
-                查看原运行输出
-              </button>
-              <button type="button" disabled={submitting} onClick={() => inspectSource('logs')}>
-                查看原运行日志
-              </button>
-            </div>
+          <p>旧快照不会恢复已撤销的授权。确认时会重新检查当前授权、资源和执行环境。</p>
+          <button
+            className="run-rerun-context-toggle"
+            type="button"
+            aria-expanded={reasonsOpen}
+            aria-controls={choiceId + '-reasons'}
+            onClick={() => setReasonsOpen(!reasonsOpen)}
+          >
+            {reasonsOpen ? '收起阻止原因' : '查看阻止原因'}
+          </button>
+          {reasonsOpen && (
+            <section
+              id={choiceId + '-reasons'}
+              className="run-rerun-context-detail"
+              aria-labelledby={choiceId + '-reasons-title'}
+            >
+              <h4 id={choiceId + '-reasons-title'} ref={reasonsHeading} tabIndex={-1}>
+                当前可用性与阻止原因
+              </h4>
+              <p className="run-rerun-availability" role="status">
+                {created
+                  ? '新运行已创建，请先查看记录'
+                  : !terminal
+                    ? (related?.reason ?? '请等待原运行结束，再核对结果。')
+                    : related?.available
+                      ? '当前记录允许准备预览'
+                      : (related?.reason ?? '当前运行暂不可重新运行。')}
+              </p>
+              {error && <p className="field-error">最近操作：{error}</p>}
+              {retry && <p>确认结果尚未明确。请在左侧使用“重试此次确认”核对同一次请求。</p>}
+              <p>
+                此处显示已取得的记录。允许预览不代表已通过当前授权检查；预览和确认仍可能返回具体阻止原因。
+              </p>
+            </section>
           )}
-          <p className="run-rerun-availability" role="status">
-            {created
-              ? '新运行已创建，请先查看记录'
-              : terminal && related?.available
-                ? '可以预览执行内容'
-                : (related?.reason ?? '当前运行暂不可重新运行。')}
-          </p>
-          <p>
-            预览不会启动任务。确认时会重新检查当前授权、资源和执行环境，旧快照不会恢复已撤销的授权。
-          </p>
-          <dl className="run-rerun-origin">
-            <dt>当前运行</dt>
-            <dd>{run.name}</dd>
-            <dt>运行标识</dt>
-            <dd>
-              <code>{run.id}</code>
-            </dd>
-            <dt>当前记录状态</dt>
-            <dd>{runStateLabels[run.state]}</dd>
-          </dl>
-          <p className="run-rerun-effect-note">
-            新运行从第一步开始，可能再次发生网页或文件操作。原运行记录、产物和副作用去重记录保持保留。
-          </p>
-          {run.rerun && (
-            <div className="run-rerun-source">
-              <span>本次根据{modes[run.rerun.mode]}重新运行，来源：</span>
-              <button
-                type="button"
-                aria-label={'查看来源运行 ' + run.rerun.runId}
-                disabled={submitting || !!opening}
-                onClick={() => void inspect(run.rerun!.runId)}
-              >
-                {related?.source?.name ?? '来源运行'} · {run.rerun.runId.slice(0, 8)}
-              </button>
-              {related?.source && <span>{runStateLabels[related.source.state]}</span>}
-            </div>
-          )}
-          {!!related?.derived.length && (
-            <details className="run-rerun-relations" open>
-              <summary>由本次派生的运行 · {related.derived.length}</summary>
-              <ul aria-label="派生运行">
-                {related.derived.map((item) => (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      aria-label={'查看派生运行 ' + item.id}
-                      disabled={submitting || !!opening}
-                      onClick={() => void inspect(item.id)}
-                    >
-                      {item.name} · {item.id.slice(0, 8)}
-                    </button>
-                    <span>{runStateLabels[item.state]}</span>
-                    <time>{new Date(item.createdAt).toLocaleString('zh-CN')}</time>
-                  </li>
-                ))}
-              </ul>
-            </details>
+          <button
+            className="run-rerun-context-toggle"
+            type="button"
+            aria-expanded={relationsOpen}
+            aria-controls={choiceId + '-relations'}
+            onClick={() => setRelationsOpen(!relationsOpen)}
+          >
+            {relationsOpen ? '收起来源与派生记录' : '查看来源与派生记录'}
+          </button>
+          {relationsOpen && (
+            <section
+              id={choiceId + '-relations'}
+              className="run-rerun-context-detail"
+              aria-labelledby={choiceId + '-relations-title'}
+            >
+              <h4 id={choiceId + '-relations-title'} ref={relationsHeading} tabIndex={-1}>
+                来源与派生记录
+              </h4>
+              {inspectSource && (
+                <div className="run-rerun-source-actions">
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => inspectSource('output')}
+                  >
+                    查看原运行输出
+                  </button>
+                  <button type="button" disabled={submitting} onClick={() => inspectSource('logs')}>
+                    查看原运行日志
+                  </button>
+                </div>
+              )}
+              <dl className="run-rerun-origin">
+                <dt>当前运行</dt>
+                <dd>{run.name}</dd>
+                <dt>运行标识</dt>
+                <dd>
+                  <code>{run.id}</code>
+                </dd>
+                <dt>当前记录状态</dt>
+                <dd>{runStateLabels[run.state]}</dd>
+              </dl>
+              <p className="run-rerun-effect-note">
+                新运行从第一步开始，可能再次发生网页或文件操作。原运行记录、产物和副作用去重记录保持保留。
+              </p>
+              {run.rerun && (
+                <div className="run-rerun-source">
+                  <span>本次根据{modes[run.rerun.mode]}重新运行，来源：</span>
+                  <button
+                    type="button"
+                    aria-label={'查看来源运行 ' + run.rerun.runId}
+                    disabled={submitting || !!opening}
+                    onClick={() => void inspect(run.rerun!.runId)}
+                  >
+                    {related?.source?.name ?? '来源运行'} · {run.rerun.runId.slice(0, 8)}
+                  </button>
+                  {related?.source && <span>{runStateLabels[related.source.state]}</span>}
+                </div>
+              )}
+              {related && !related.derived.length && <p>尚无由本次运行派生的记录。</p>}
+              {!!related?.derived.length && (
+                <details className="run-rerun-relations" open>
+                  <summary>由本次派生的运行 · {related.derived.length}</summary>
+                  <ul aria-label="派生运行">
+                    {related.derived.map((item) => (
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          aria-label={'查看派生运行 ' + item.id}
+                          disabled={submitting || !!opening}
+                          onClick={() => void inspect(item.id)}
+                        >
+                          {item.name} · {item.id.slice(0, 8)}
+                        </button>
+                        <span>{runStateLabels[item.state]}</span>
+                        <time>{new Date(item.createdAt).toLocaleString('zh-CN')}</time>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+            </section>
           )}
         </aside>
       </div>

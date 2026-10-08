@@ -325,3 +325,41 @@
 .run-rerun-page .run-rerun-summary {
   margin-top: 0;
 }
+
+.run-rerun-context-toggle {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  margin-top: 16px;
+}
+.run-rerun-context-detail {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 8px;
+  background: var(--fa-bg-canvas);
+}
+.run-rerun-context-detail h4 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 22px;
+}
+.run-rerun-context-detail h4:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 4px;
+}
+.run-rerun-context-detail .run-rerun-source-actions {
+  margin: 0 0 16px;
+}
+.run-rerun-page > .runs-heading h1 {
+  font-weight: 700;
+}
+.run-rerun-page .run-rerun-mode strong {
+  font-size: 14px;
+  line-height: 22px;
+}
+.run-rerun-page .run-rerun-context > p {
+  font-size: 14px;
+  line-height: 22px;
+  margin: 24px 0 0;
+}
