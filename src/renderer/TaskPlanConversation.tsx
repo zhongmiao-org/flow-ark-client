@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 export default function TaskPlanConversation({
   request,
   reply,
+  explanation,
   pending,
   dirty,
   busy,
@@ -18,6 +19,7 @@ export default function TaskPlanConversation({
 }: {
   request: string;
   reply: string;
+  explanation?: string;
   pending: boolean;
   dirty: boolean;
   busy: boolean;
@@ -40,6 +42,12 @@ export default function TaskPlanConversation({
       <article className="ai-task-note ai-step-reply">
         <h2>FlowArk</h2>
         <p>{reply}</p>
+        {explanation && (
+          <details className="ai-task-disclosure">
+            <summary>查看 AI 的方案说明</summary>
+            <p>{explanation}</p>
+          </details>
+        )}
       </article>
       {notice}
       {dirty && (

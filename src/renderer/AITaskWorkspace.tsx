@@ -3,6 +3,7 @@ import TaskStepList, { type TaskStepListHandle } from './TaskStepList';
 import TaskStepInspector from './TaskStepInspector';
 import TaskPlanConversation from './TaskPlanConversation';
 import { taskAdoptionSummary } from './task-adoption-summary';
+import { taskProposalSummary } from './task-proposal-summary';
 import TaskPlanIdentity from './TaskPlanIdentity';
 import TaskProposalReview from './TaskProposalReview';
 import TaskPlanScope from './TaskPlanScope';
@@ -2338,12 +2339,13 @@ export default function AITaskWorkspace(props: Props) {
                       request={detail.task.description || flow.name}
                       reply={
                         detail.proposal
-                          ? result?.summary ||
+                          ? taskProposalSummary(detail) ||
                             `已生成 ${flatten(flow.steps).length} 个步骤，请先检查方案。`
                           : rejectionNotice ||
                             (!dirty && !stale && taskAdoptionSummary(detail)) ||
                             `当前流程草稿包含 ${flatten(flow.steps).length} 个步骤（含分支和循环内步骤）。你可以继续修改要求，或查看同一方案的流程图。`
                       }
+                      explanation={detail.proposal ? result?.summary : undefined}
                       pending={hasPlanProposal}
                       dirty={dirty}
                       busy={inputDisabled}
@@ -2445,7 +2447,11 @@ export default function AITaskWorkspace(props: Props) {
                       </div>
                       <div className="ai-task-note ai-step-reply">
                         <b>FlowArk</b>
-                        <p>{result?.summary}</p>
+                        <p>{taskProposalSummary(detail)}</p>
+                        <details className="ai-task-disclosure">
+                          <summary>查看 AI 的方案说明</summary>
+                          <p>{result?.summary}</p>
+                        </details>
                         <p>已核对：只调整所选步骤，其他步骤、结构、静态资源与现有授权保持不变。</p>
                       </div>
                       <p className="ai-task-note">
