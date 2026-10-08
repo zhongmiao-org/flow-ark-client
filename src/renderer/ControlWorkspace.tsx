@@ -4,7 +4,8 @@ import type { FlowRecord, Step } from '../shared/types';
 import DiagramCanvas from './DiagramCanvas';
 import { buildTaskDiagram } from './task-diagram';
 import { flatten } from './flow-editing';
-import { stepTitle } from './flow-outline';
+import { taskStepTitle } from './task-step-title';
+import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
 import { referenceChoices, referenceScope } from './value-references';
 import LogicNodeConfiguration from './LogicNodeConfiguration';
 import ValueField from './ValueField';
@@ -15,7 +16,7 @@ import './control-workspace.css';
 type Props = {
   record: FlowRecord;
   selected: string;
-  select: (id: string) => void;
+  select: (id: string) => boolean;
   change: (node: Step) => void;
   destination: string;
   setDestination: (value: string) => void;
@@ -32,9 +33,15 @@ type Props = {
 export default function ControlWorkspace(props: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const currentHeading = useRef<HTMLHeadingElement>(null);
+  const saveButton = useRef<HTMLButtonElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const wasSaving = useRef(false);
   const titleId = useId();
   const [attemptedSave, setAttemptedSave] = useState(false);
-  const node = flatten(props.record.flow.steps).find((step) => step.id === props.selected);
+  const steps = flatten(props.record.flow.steps);
+  const node = steps.find((step) => step.id === props.selected);
+  const destination = props.targets.find((target) => target.value === props.destination);
   const diagram = buildTaskDiagram(
     props.record.flow,
     props.selected,
@@ -51,6 +58,15 @@ export default function ControlWorkspace(props: Props) {
       if (trigger?.isConnected) trigger.focus({ preventScroll: true });
     };
   }, []);
+  useEffect(() => {
+    if (props.error && !props.busy) {
+      if (!document.activeElement?.closest('[aria-invalid="true"]')) errorRef.current?.focus();
+    } else if (wasSaving.current && !props.busy) saveButton.current?.focus();
+    wasSaving.current = props.busy;
+  }, [props.error, props.busy]);
+  const selectRelated = (id: string) => {
+    if (props.select(id)) requestAnimationFrame(() => currentHeading.current?.focus());
+  };
   const related =
     node?.type === 'loop'
       ? flatten(node.body).find((step) => step.type === 'condition' || step.type === 'human')
@@ -87,12 +103,7 @@ export default function ControlWorkspace(props: Props) {
         }
       }}
     >
-      <div className="control-workspace-toolbar">
-        <button disabled={props.busy} onClick={props.close}>
-          ← 返回流程编排
-        </button>
-        <nav aria-label="当前位置">{props.record.flow.name} / 条件与串行循环</nav>
-      </div>
+      <EditorWorkspaceToolbar current="条件与串行循环" back={props.close} disabled={props.busy} />
       <div className="control-workspace-page">
         <header>
           <h1 id={titleId} ref={heading} tabIndex={-1}>
@@ -101,7 +112,7 @@ export default function ControlWorkspace(props: Props) {
           <p>逐项执行、真假分支与明确汇合；回边仅表示既有串行循环。</p>
         </header>
         {props.error && (
-          <div role="alert" className="control-workspace-error">
+          <div ref={errorRef} tabIndex={-1} role="alert" className="control-workspace-error">
             <p>{props.error}</p>
             <button onClick={props.clearError}>关闭提示</button>
           </div>
@@ -120,10 +131,12 @@ export default function ControlWorkspace(props: Props) {
           <fieldset disabled={props.busy} className="control-workspace-card">
             {node ? (
               <>
-                <h2>{kinds[node.type].label}</h2>
-                {stepTitle(node) !== kinds[node.type].label && (
-                  <p className="control-workspace-current">{stepTitle(node)}</p>
-                )}
+                <h2 ref={currentHeading} tabIndex={-1}>
+                  {kinds[node.type].label}
+                </h2>
+                <p className="control-workspace-current">
+                  {String(steps.indexOf(node) + 1).padStart(2, '0')} {taskStepTitle(node)}
+                </p>
                 {node.type === 'loop' ? (
                   <ValueField
                     compactReference
@@ -147,33 +160,44 @@ export default function ControlWorkspace(props: Props) {
                 <div className="control-workspace-add">
                   <select
                     id={titleId + '-destination'}
-                    value={
-                      props.targets.some((target) => target.value === props.destination)
-                        ? props.destination
-                        : 'main'
-                    }
+                    value={destination ? props.destination : ''}
+                    title={destination?.label}
+                    aria-invalid={!destination}
+                    aria-describedby={!destination ? titleId + '-destination-error' : undefined}
                     onChange={(event) => props.setDestination(event.target.value)}
                   >
+                    {!destination && (
+                      <option value="" disabled>
+                        原位置已删除，请重新选择
+                      </option>
+                    )}
                     {props.targets.map((target) => (
                       <option key={target.value} value={target.value}>
                         {target.label}
                       </option>
                     ))}
                   </select>
-                  <button onClick={props.add}>选择动作</button>
+                  <button disabled={!destination} onClick={props.add}>
+                    选择动作
+                  </button>
                 </div>
+                {!destination && (
+                  <p id={titleId + '-destination-error'} className="field-error" role="alert">
+                    添加位置已失效，请先重新选择位置。
+                  </p>
+                )}
                 {node.type === 'loop' && (
                   <p>空集合直接走完成路径；每次迭代分别记录步骤实例和输出。</p>
                 )}
                 {node.type === 'condition' && <p>空分支直接汇合，不会创建或执行额外步骤。</p>}
                 {related && (
-                  <button onClick={() => props.select(related.id)}>
-                    配置 {stepTitle(related)}
+                  <button onClick={() => selectRelated(related.id)}>
+                    配置 {taskStepTitle(related)}
                   </button>
                 )}
                 {dataSource && (
-                  <button onClick={() => props.select(dataSource.id)}>
-                    配置数据 · {stepTitle(dataSource)}
+                  <button onClick={() => selectRelated(dataSource.id)}>
+                    配置数据 · {taskStepTitle(dataSource)}
                   </button>
                 )}
                 <button onClick={props.edit}>编辑当前步骤与期限</button>
@@ -185,6 +209,7 @@ export default function ControlWorkspace(props: Props) {
               </>
             )}
             <button
+              ref={saveButton}
               className="primary"
               onClick={() => {
                 setAttemptedSave(true);

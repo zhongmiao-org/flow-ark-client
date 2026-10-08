@@ -3019,7 +3019,9 @@ function Editor({
           record={r}
           selected={selected}
           select={(id) => {
-            if (guardNodeInput()) setSelected(id);
+            if (!guardNodeInput()) return false;
+            setSelected(id);
+            return true;
           }}
           change={updateNode}
           destination={destination}
