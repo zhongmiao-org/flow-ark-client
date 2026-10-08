@@ -701,7 +701,13 @@ export default function AISettingsPage({
         {(!entry.source || fromTemplate) && (
           <nav className="ai-settings-tabs" aria-label="设置分类">
             <button onClick={() => go(() => home('browser'), '浏览器设置')}>浏览器</button>
-            <span aria-current="page">AI 服务</span>
+            {fromTemplate ? (
+              <button aria-current="page" onClick={() => go(() => home('ai'), 'AI 服务配置')}>
+                AI 服务
+              </button>
+            ) : (
+              <span aria-current="page">AI 服务</span>
+            )}
             <button onClick={() => go(() => home('resources'), '凭据与本机资源')}>
               凭据与文件
             </button>
@@ -886,8 +892,8 @@ export default function AISettingsPage({
                     >
                       {busy === 'save' ? '正在保存…' : '保存配置'}
                     </button>
-                    <button disabled={!!busy} onClick={cancelEdit}>
-                      取消
+                    <button disabled={!!busy} onClick={fromTemplate ? returnToSource : cancelEdit}>
+                      {fromTemplate ? `取消并返回${templateLabel}` : '取消'}
                     </button>
                   </div>
                 </>

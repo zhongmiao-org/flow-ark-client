@@ -2505,11 +2505,13 @@ function WorkspaceApp() {
                 },
                 tab === 'browser'
                   ? '浏览器设置'
-                  : tab === 'resources'
-                    ? '凭据与本机资源'
-                    : tab === 'scripts'
-                      ? '脚本包配置'
-                      : '本地设置',
+                  : tab === 'ai'
+                    ? 'AI 服务配置'
+                    : tab === 'resources'
+                      ? '凭据与本机资源'
+                      : tab === 'scripts'
+                        ? '脚本包配置'
+                        : '本地设置',
               )
             }
             navigation={aiSettingsNavigation}

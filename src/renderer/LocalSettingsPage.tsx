@@ -19,7 +19,7 @@ const tabs = [
   ['scripts', '脚本包'],
 ] as const;
 type Tab = (typeof tabs)[number][0];
-export type SettingsDestination = Exclude<Tab, 'ai'>;
+export type SettingsDestination = Tab;
 export type SettingsTabRequest = { key: string; tab: SettingsDestination };
 type Session = { started: boolean; visible: boolean; url: string; blocked?: string };
 export type SettingsNavigation = { title: string; back?: () => void; busy?: boolean };
