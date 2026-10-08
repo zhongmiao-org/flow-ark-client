@@ -109,9 +109,15 @@ function AnswerForm({
       onSubmit={(event) => {
         event.preventDefault();
         if (!enabled || !reviewed) return;
-        const invalid = form.current?.querySelector<HTMLElement>('[data-value-invalid="true"]');
+        const invalid = form.current?.querySelector<HTMLElement>('[data-value-invalid]');
         if (invalid) {
-          invalid.focus();
+          const input = invalid.matches('input, select, textarea, button')
+            ? invalid
+            : (invalid.querySelector<HTMLElement>('[aria-invalid="true"]') ??
+              invalid.querySelector<HTMLElement>(
+                'input:not(:disabled), textarea:not(:disabled), select:not(:disabled)',
+              ));
+          input?.focus();
           setError('请先填写有效的输入内容');
           return;
         }
@@ -131,7 +137,14 @@ function AnswerForm({
       }}
     >
       {!simpleBoolean && (
-        <fieldset disabled={!enabled} className="attention-fields" onChangeCapture={resetReview}>
+        <fieldset
+          disabled={!enabled}
+          className="attention-fields"
+          onChangeCapture={resetReview}
+          onClickCapture={(event) => {
+            if ((event.target as HTMLElement).closest('button')) resetReview();
+          }}
+        >
           <legend>补充本次请求需要的信息</legend>
           {supported && (Object.hasOwn(schema, 'const') || schema.readOnly) && (
             <pre>{JSON.stringify(value, null, 2)}</pre>

@@ -268,6 +268,7 @@ function TemplateNumber({ schema, value, change, labelId, required }: any) {
             (schema.type !== 'integer' || Number.isInteger(parsed))
           )
             change(parsed);
+          else change(raw);
         }}
       />
       {invalid && (
