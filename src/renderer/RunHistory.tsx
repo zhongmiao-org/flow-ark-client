@@ -91,6 +91,10 @@ export default function RunHistory({
   const latest = () => {
     pageArrival.current = true;
     resetView();
+    setQuery((current) => ({
+      ...current,
+      ...historyTimeRange(range === 'all' ? null : Number(range)),
+    }));
     setCursors([undefined]);
     setRevision((r) => r + 1);
   };
