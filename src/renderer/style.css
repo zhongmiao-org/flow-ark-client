@@ -2024,20 +2024,6 @@ main {
   margin-top: 16px;
   padding-top: 12px;
 }
-.run-rerun-facts {
-  display: grid;
-  grid-template-columns: 90px minmax(0, 1fr);
-  gap: 8px 12px;
-  font-size: 12px;
-}
-.run-rerun-facts dt {
-  color: var(--muted);
-}
-.run-rerun-facts dd {
-  margin: 0;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
 .run-rerun-review {
   margin: 18px 0 12px;
 }
