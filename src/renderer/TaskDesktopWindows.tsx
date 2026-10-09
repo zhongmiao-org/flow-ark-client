@@ -1,4 +1,4 @@
-import { Button, Checkbox } from 'antd';
+import { Alert, Button, Checkbox, type AlertRef } from 'antd';
 import { useEffect, useRef } from 'react';
 import useDesktopWindows from './useDesktopWindows';
 import DesktopSelectionPreview from './DesktopSelectionPreview';
@@ -20,7 +20,7 @@ export function DesktopWindowList({
   const list = useRef<HTMLDivElement>(null);
   const listHeading = useRef<HTMLHeadingElement>(null);
   const resultHeading = useRef<HTMLHeadingElement>(null);
-  const failure = useRef<HTMLParagraphElement>(null);
+  const failure = useRef<AlertRef>(null);
   const windowButtons = useRef(new Map<string, HTMLButtonElement>());
   const handledRefresh = useRef(state.refreshRequest);
   const previous = useRef<string | undefined>(undefined);
@@ -34,10 +34,13 @@ export function DesktopWindowList({
     if (handledRefresh.current === state.refreshRequest || loading || state.settingsPending) return;
     handledRefresh.current = state.refreshRequest;
     const firstWindow = list.current?.querySelector<HTMLButtonElement>('button:not(:disabled)');
-    (error
-      ? failure.current
-      : (firstWindow ?? resultHeading.current ?? listHeading.current)
-    )?.focus();
+    const target = error
+      ? failure.current?.nativeElement
+      : (firstWindow ?? resultHeading.current ?? listHeading.current);
+    if (target) {
+      if (error) target.tabIndex = -1;
+      target.focus();
+    }
   }, [state.refreshRequest, loading, state.settingsPending, snapshot, error]);
   return (
     <div className={`task-desktop-list${ready ? ' is-selected' : ''}`} aria-busy={loading}>
@@ -55,19 +58,16 @@ export function DesktopWindowList({
         </div>
       )}
       {!selected && (
-        <p className="ai-task-note">查看已打开的 TextEdit 窗口。选择后可核对窗口信息和可用能力。</p>
+        <Alert
+          type="info"
+          showIcon
+          role="status"
+          title="查看已打开的 TextEdit 窗口。选择后可核对窗口信息和可用能力。"
+        />
       )}
-      {loading && <p role="status">正在检查系统权限与窗口…</p>}
-      {error && (
-        <p className="ai-task-note ai-task-failure" role="alert" ref={failure} tabIndex={-1}>
-          {error}
-        </p>
-      )}
-      {notice && (
-        <p className="ai-task-note" role="status">
-          {notice}
-        </p>
-      )}
+      {loading && <Alert type="info" showIcon role="status" title="正在检查系统权限与窗口…" />}
+      {error && <Alert type="error" showIcon role="alert" ref={failure} title={error} />}
+      {notice && <Alert type="info" showIcon role="status" title={notice} />}
       {snapshot?.availability === 'available' && (
         <>
           {selected ? (
@@ -137,9 +137,12 @@ export function DesktopWindowList({
             </div>
           )}
           {snapshot.truncated && (
-            <p className="ai-task-note" role="status">
-              清单可能不完整：部分窗口未能读取，或已达到本次显示上限。
-            </p>
+            <Alert
+              type="warning"
+              showIcon
+              role="status"
+              title="清单可能不完整：部分窗口未能读取，或已达到本次显示上限。"
+            />
           )}
           {!ready && (
             <p className="task-desktop-observed">
@@ -178,9 +181,12 @@ export function DesktopWindowList({
           )}
         </div>
       )}
-      <p className="ai-task-note">
-        窗口关闭、内容或选区变化后需要重新核对。刷新会清除本次查看选择，不会自动选择同名窗口。
-      </p>
+      <Alert
+        type="info"
+        showIcon
+        role="status"
+        title="窗口关闭、内容或选区变化后需要重新核对。刷新会清除本次查看选择，不会自动选择同名窗口。"
+      />
       {ready && snapshot && (
         <details className="task-desktop-observed">
           <summary>窗口检查记录</summary>
@@ -226,27 +232,29 @@ export function DesktopWindowCapabilities({
           {label}
         </Checkbox>
       ))}
-      <div
-        className={`task-desktop-permission ${permission === 'granted' ? 'is-ready' : permission === 'not-granted' ? 'is-warning' : ''}`}
+      <Alert
+        type={
+          permission === 'granted' ? 'success' : permission === 'not-granted' ? 'warning' : 'info'
+        }
+        showIcon
         role="status"
-      >
-        <h3>
-          {loading
+        title={
+          loading
             ? '正在检查系统权限'
             : permission === 'granted'
               ? '系统权限已就绪'
               : permission === 'not-granted'
                 ? '尚需系统授权'
-                : '系统权限尚未核对'}
-        </h3>
-        <p>
-          {permission === 'granted'
+                : '系统权限尚未核对'
+        }
+        description={
+          permission === 'granted'
             ? '辅助功能已授予本机助手；读取段落仍需明确点击，文档修改尚未授权。'
             : permission === 'not-granted'
               ? '辅助功能权限未授予，当前不能识别或操作窗口。系统授权须由你在设置中决定。'
-              : '取得权限状态后才能判断窗口发现是否可用。'}
-        </p>
-      </div>
+              : '取得权限状态后才能判断窗口发现是否可用。'
+        }
+      />
       <DesktopSelectionPreview state={state} plan={plan} />
       {snapshot?.platform === 'macos' && (
         <details className="task-desktop-permission-settings" open={permission !== 'granted'}>
@@ -261,9 +269,12 @@ export function DesktopWindowCapabilities({
         </details>
       )}
       {!state.selected && (
-        <p className="ai-task-note">
-          选择窗口并读取段落后可生成改动预览；保存方案后，还需重新绑定原选区并确认试运行。
-        </p>
+        <Alert
+          type="info"
+          showIcon
+          role="status"
+          title="选择窗口并读取段落后可生成改动预览；保存方案后，还需重新绑定原选区并确认试运行。"
+        />
       )}
       <div className="ai-task-actions">
         <Button onClick={chooseWeb}>改用网页目标</Button>
