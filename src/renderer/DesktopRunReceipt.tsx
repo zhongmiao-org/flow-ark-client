@@ -1,3 +1,5 @@
+import { Alert, Tag } from 'antd';
+import { desktopReceiptColors } from './theme';
 import type { DesktopReceipt } from '../shared/desktop-run';
 import type { Flow } from '../shared/types';
 import { flatten } from './flow-editing';
@@ -36,14 +38,26 @@ export default function DesktopRunReceipt({
       <h2>应用修改回执</h2>
       {items.map((receipt, index) => (
         <div key={receipt.nodeId + ':' + index} data-desktop-result={receipt.status}>
-          <h3>
+          <Tag className="run-state-tag" color={desktopReceiptColors[receipt.status]}>
             {receipt.status === 'verified'
               ? '选区文字已替换并回读一致'
               : receipt.status === 'not-written'
                 ? '本次没有发出文字修改'
                 : '修改结果尚未确认，请人工核对'}
-          </h3>
-          <p role={receipt.status === 'unknown' ? 'alert' : 'status'}>{receipt.message}</p>
+          </Tag>
+          <Alert
+            className="desktop-receipt-feedback"
+            type={
+              receipt.status === 'unknown'
+                ? 'warning'
+                : receipt.status === 'verified'
+                  ? 'success'
+                  : 'info'
+            }
+            role={receipt.status === 'unknown' ? 'alert' : 'status'}
+            showIcon
+            title={receipt.message}
+          />
           {receipt.status === 'verified' ? (
             <>
               <div className="desktop-run-texts">

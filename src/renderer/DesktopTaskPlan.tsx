@@ -1,4 +1,4 @@
-import { ConfigProvider, Select, Button, Checkbox } from 'antd';
+import { Alert, ConfigProvider, Select, Button, Checkbox } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { PlanningTask } from '../shared/planning';
 import type { DesktopSelectionPreview, DesktopWindow } from '../shared/desktop-windows';
@@ -195,9 +195,12 @@ export default function DesktopTaskPlan({
                 <h2>影响范围</h2>
                 <p>目标为这个 TextEdit 窗口的原选区。当前只生成候选，尚未修改文档。</p>
               </div>
-              <p className="ai-task-note">
-                未来写入前仍须核对同一窗口与原选区；本次预览不代表写入授权。
-              </p>
+              <Alert
+                type="info"
+                role="note"
+                showIcon
+                description={<>未来写入前仍须核对同一窗口与原选区；本次预览不代表写入授权。</>}
+              />
             </>
           ) : (
             <>
@@ -213,10 +216,17 @@ export default function DesktopTaskPlan({
                 <p>文本编辑 · {target.title || '未命名窗口'}</p>
                 <p>仅本次选中段落 · 尚未建立执行绑定</p>
               </div>
-              <p className="ai-task-note">
-                窗口关闭、选区变化或权限失效时停止，重新确认目标。检查有效至{' '}
-                {new Date(selection.expiresAt).toLocaleTimeString('zh-CN')}。
-              </p>
+              <Alert
+                type="info"
+                role="note"
+                showIcon
+                description={
+                  <>
+                    窗口关闭、选区变化或权限失效时停止，重新确认目标。检查有效至{' '}
+                    {new Date(selection.expiresAt).toLocaleTimeString('zh-CN')}。
+                  </>
+                }
+              />
               <details className="desktop-plan-source" open={!proposal}>
                 <summary>本次发送的原段落</summary>
                 {plainText('本次发送的原段落', selection.text)}
@@ -232,9 +242,12 @@ export default function DesktopTaskPlan({
               </h2>
               <p>{proposal.summary}</p>
               {unchanged && (
-                <p className="ai-task-note" role="status">
-                  候选与原段落相同，没有文字改动。
-                </p>
+                <Alert
+                  type="info"
+                  role="status"
+                  showIcon
+                  description={<>候选与原段落相同，没有文字改动。</>}
+                />
               )}
               {!!proposal.limitations.length && (
                 <div>
@@ -295,10 +308,13 @@ export default function DesktopTaskPlan({
                 <Button onClick={back}>重新选窗口</Button>
               </div>
               {proposal && (
-                <p className="desktop-plan-candidate-summary" role="status">
-                  {unchanged ? '候选与原文相同。' : '已生成改动预览。'}
-                  {proposal.summary}
-                </p>
+                <Alert
+                  type="info"
+                  role="status"
+                  showIcon
+                  title={unchanged ? '候选与原文相同。' : '已生成改动预览。'}
+                  description={proposal.summary}
+                />
               )}
               <details
                 className="desktop-plan-generation"
@@ -339,18 +355,31 @@ export default function DesktopTaskPlan({
                   </fieldset>
                 </ConfigProvider>
                 {!loading && configuration?.operation && (
-                  <p role="status">AI 配置正在处理，请完成后重新读取。</p>
+                  <Alert
+                    type="info"
+                    role="status"
+                    showIcon
+                    title="AI 配置正在处理，请完成后重新读取。"
+                  />
                 )}
                 {!loading && !configuration?.configured && (
                   <Button onClick={editDescription}>返回描述页配置 AI</Button>
                 )}
                 {selection.redacted && (
-                  <p className="ai-task-note">原段落包含已遮盖的信息，请返回缩小选区后重新读取。</p>
+                  <Alert
+                    type="warning"
+                    role="note"
+                    showIcon
+                    description={<>原段落包含已遮盖的信息，请返回缩小选区后重新读取。</>}
+                  />
                 )}
                 {!hasDescription && (
-                  <p className="ai-task-note" role="status">
-                    尚未填写需求。请先点击“填写需求”，再核对文字与 AI 服务。
-                  </p>
+                  <Alert
+                    type="info"
+                    role="status"
+                    showIcon
+                    description={<>尚未填写需求。请先点击“填写需求”，再核对文字与 AI 服务。</>}
+                  />
                 )}
                 <p className="desktop-plan-send-note">
                   只发送左侧需求和原段落给 {name}
@@ -365,17 +394,22 @@ export default function DesktopTaskPlan({
                   我已核对本次文字与模型，同意发送给 {name}
                 </Checkbox>
                 {busy ? (
-                  <div role="status">
-                    <p>正在核对选区并生成预览，尚未修改文档。</p>
-                    <Button
-                      onClick={() => {
-                        cancel();
-                        setMessage('已取消生成，原文未修改。再次生成前请重新核对。');
-                      }}
-                    >
-                      取消生成
-                    </Button>
-                  </div>
+                  <Alert
+                    type="info"
+                    role="status"
+                    showIcon
+                    title="正在核对选区并生成预览，尚未修改文档。"
+                    description={
+                      <Button
+                        onClick={() => {
+                          cancel();
+                          setMessage('已取消生成，原文未修改。再次生成前请重新核对。');
+                        }}
+                      >
+                        取消生成
+                      </Button>
+                    }
+                  />
                 ) : (
                   <Button
                     type="primary"
@@ -387,21 +421,24 @@ export default function DesktopTaskPlan({
                 )}
               </details>
               {result?.result.kind === 'unsupported' && (
-                <div className="ai-task-note" role="status">
-                  <h3>这次需求还不能生成候选</h3>
-                  <p>{result.result.summary}</p>
-                  <ul>
-                    {result.result.limitations.map((line, i) => (
-                      <li key={i}>{line}</li>
-                    ))}
-                  </ul>
-                </div>
+                <Alert
+                  type="warning"
+                  role="status"
+                  showIcon
+                  title={<h3>这次需求还不能生成候选</h3>}
+                  description={
+                    <div className="feedback-body">
+                      <p>{result.result.summary}</p>
+                      <ul>
+                        {result.result.limitations.map((line, i) => (
+                          <li key={i}>{line}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  }
+                />
               )}
-              {message && (
-                <p className="ai-task-note" role="status">
-                  {message}
-                </p>
-              )}
+              {message && <Alert type="info" role="status" showIcon description={<>{message}</>} />}
             </>
           )}
         </section>

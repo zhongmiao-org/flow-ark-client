@@ -1,4 +1,5 @@
-import { Button } from 'antd';
+import { Alert, Button, Descriptions, Tag } from 'antd';
+import { desktopCapabilityColors } from './theme';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { TaskDetail } from '../shared/planning';
 import {
@@ -177,41 +178,75 @@ export default function DesktopModificationCheck({
         )}
       </div>
       {unchanged ? (
-        <p role="status">候选与原文相同，无需检查或发起文字修改。</p>
+        <Alert
+          className="desktop-modification-feedback"
+          type="info"
+          role="status"
+          showIcon
+          title="候选与原文相同，无需检查或发起文字修改。"
+        />
       ) : checking ? (
-        <p role="status">正在核对同一窗口、原段落和可用能力；没有修改文档。</p>
+        <Alert
+          className="desktop-modification-feedback"
+          type="info"
+          role="status"
+          showIcon
+          title="正在核对同一窗口、原段落和可用能力；没有修改文档。"
+        />
       ) : checked ? (
         <>
-          <dl>
-            <div>
-              <dt>窗口与原选区</dt>
-              <dd>与生成时一致</dd>
-            </div>
-            <div data-state={checked.replacement}>
-              <dt>替换选中段落</dt>
-              <dd>{capabilityLabel[checked.replacement]}</dd>
-            </div>
-            <div data-state={checked.readback}>
-              <dt>按选区范围读取</dt>
-              <dd>
-                {checked.readback === 'available'
-                  ? '原范围读取一致'
-                  : capabilityLabel[checked.readback]}
-              </dd>
-            </div>
-          </dl>
+          <Descriptions
+            className="desktop-modification-capabilities"
+            bordered
+            column={1}
+            items={[
+              { key: 'source', label: '窗口与原选区', children: '与生成时一致' },
+              {
+                key: 'replacement',
+                label: '替换选中段落',
+                children: (
+                  <Tag
+                    color={desktopCapabilityColors[checked.replacement]}
+                    data-state={checked.replacement}
+                  >
+                    {capabilityLabel[checked.replacement]}
+                  </Tag>
+                ),
+              },
+              {
+                key: 'readback',
+                label: '按选区范围读取',
+                children: (
+                  <Tag
+                    color={desktopCapabilityColors[checked.readback]}
+                    data-state={checked.readback}
+                  >
+                    {checked.readback === 'available'
+                      ? '原范围读取一致'
+                      : capabilityLabel[checked.readback]}
+                  </Tag>
+                ),
+              },
+            ]}
+          />
           <p className="task-desktop-observed">
             检查于 {new Date(checked.checkedAt).toLocaleTimeString('zh-CN')} · 有效至{' '}
             {new Date(checked.expiresAt).toLocaleTimeString('zh-CN')}
           </p>
           {!complete && (
-            <p className="ai-task-note" role="status">
-              {checked.replacement === 'unsupported'
-                ? '这个编辑区未提供选中文本替换能力，当前不能确认修改。'
-                : checked.readback === 'unsupported'
-                  ? '这个编辑区未提供按范围读取能力，无法核对修改后的文字。'
-                  : '有条件尚未核对成功，可以重新检查。'}
-            </p>
+            <Alert
+              className="desktop-modification-feedback"
+              type="warning"
+              role="status"
+              showIcon
+              title={
+                checked.replacement === 'unsupported'
+                  ? '这个编辑区未提供选中文本替换能力，当前不能确认修改。'
+                  : checked.readback === 'unsupported'
+                    ? '这个编辑区未提供按范围读取能力，无法核对修改后的文字。'
+                    : '有条件尚未核对成功，可以重新检查。'
+              }
+            />
           )}
           <p>
             这是本次只读检查。系统报告可写和原范围读取成功，都不代表实际写入或写后回读已经通过。
@@ -219,15 +254,27 @@ export default function DesktopModificationCheck({
         </>
       ) : null}
       {error && (
-        <div role="alert">
-          <p className="ai-task-note ai-task-failure">{error}</p>
-          <Button onClick={back}>返回窗口重新读取</Button>
-        </div>
+        <Alert
+          className="desktop-modification-feedback"
+          type="error"
+          role="alert"
+          showIcon
+          title={error}
+          description={<Button onClick={back}>返回窗口重新读取</Button>}
+        />
       )}
       {!unchanged && (
         <>
           <p>保存这份方案后，可在任务清单和流程图中继续核对；保存不会修改文档。</p>
-          {adoptionUnavailable && <p role="status">{adoptionUnavailable}</p>}
+          {adoptionUnavailable && (
+            <Alert
+              className="desktop-modification-feedback"
+              type="warning"
+              role="status"
+              showIcon
+              title={adoptionUnavailable}
+            />
+          )}
           <Button
             type="primary"
             disabled={
@@ -245,9 +292,13 @@ export default function DesktopModificationCheck({
             {saving ? '正在保存方案…' : '保存方案，继续核对'}
           </Button>
           {saveError && (
-            <p className="ai-task-note ai-task-failure" role="alert">
-              {saveError}
-            </p>
+            <Alert
+              className="desktop-modification-feedback"
+              type="error"
+              role="alert"
+              showIcon
+              title={saveError}
+            />
           )}
         </>
       )}

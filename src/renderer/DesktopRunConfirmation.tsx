@@ -1,3 +1,4 @@
+import { Alert } from 'antd';
 import type { RunReviewPreview } from '../shared/run-review';
 
 export default function DesktopRunConfirmation({ preview }: { preview: RunReviewPreview }) {
@@ -26,9 +27,12 @@ export default function DesktopRunConfirmation({ preview }: { preview: RunReview
           只替换本次明确选择的原文，并读取修改后的文字核对。不会自动保存文档；不包含发送消息或操作其他窗口的步骤。
         </p>
       </section>
-      <p className="desktop-confirm-notice">
-        执行前再次核对窗口与原选区；发生变化或能力不可用时停止，结果未知不自动重放。
-      </p>
+      <Alert
+        type="info"
+        role="note"
+        showIcon
+        title="执行前再次核对窗口与原选区；发生变化或能力不可用时停止，结果未知不自动重放。"
+      />
       {desktop.expiresAt && (
         <p>
           绑定有效至 {new Date(desktop.expiresAt).toLocaleTimeString('zh-CN')}

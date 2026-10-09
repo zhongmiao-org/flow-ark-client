@@ -53,14 +53,7 @@
 .desktop-run-confirmation section > p {
   margin-top: 8px;
 }
-.run-review-page .desktop-confirm-notice {
-  min-height: 72px;
-  padding: 16px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-  background: var(--fa-action-subtle);
-  color: var(--fa-action-primary);
-}
+
 .desktop-confirm-authorization {
   color: var(--fa-text-secondary);
 }
@@ -172,4 +165,9 @@
     padding: 24px;
     min-height: 0;
   }
+}
+
+.desktop-receipt-feedback {
+  margin-block: 12px;
+  overflow-wrap: anywhere;
 }
