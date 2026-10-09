@@ -1,5 +1,5 @@
 import { runStateColors } from './theme';
-import { Button, Tag, Badge } from 'antd';
+import { Alert, Button, Collapse, Tag, Badge } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { RunOutput } from './RunObservation';
 import ArtifactCleanupPanel from './ArtifactCleanupPanel';
@@ -29,7 +29,7 @@ function ArtifactCard({
   const [notice, setNotice] = useState('');
   const lock = useRef(false);
   const snapshot = artifact.storage === 'snapshot-v1';
-  const errorPanel = useRef<HTMLParagraphElement>(null);
+  const errorPanel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     setError('');
     setNotice('');
@@ -39,12 +39,12 @@ function ArtifactCard({
   }, [error]);
   const tone =
     artifact.integrity === 'cleared'
-      ? 'is-cleared'
+      ? 'default'
       : artifact.available && artifact.integrity === 'verified'
-        ? 'is-verified'
+        ? 'success'
         : ['missing', 'changed'].includes(artifact.integrity)
-          ? 'is-unavailable'
-          : 'is-unverified';
+          ? 'error'
+          : 'warning';
   return (
     <article
       className="run-artifact-card"
@@ -55,20 +55,36 @@ function ArtifactCard({
         <h4>{artifact.name}</h4>
         <span>{fileSize(artifact.size)}</span>
       </header>
-      <p role="status" className={'run-artifact-status ' + tone}>
+      <Tag
+        className="run-artifact-status"
+        color={tone}
+        icon={<Badge status={tone} />}
+        role="status"
+      >
         {!artifact.available && artifact.integrity === 'verified'
           ? '副本暂不可访问'
           : artifactLabel(artifact)}
-      </p>
-      <details>
-        <summary>查看保存位置</summary>
-        <p className="path-text">{artifact.path || '位置未记录'}</p>
-        <p>
-          {snapshot
-            ? '本次运行保存的独立副本，定位不会改写业务输出原文件。'
-            : '外部文件记录，当前文件不代表运行时的历史内容。'}
-        </p>
-      </details>
+      </Tag>
+      <Collapse
+        size="small"
+        items={[
+          {
+            key: 'location',
+            label: '查看保存位置',
+            forceRender: true,
+            children: (
+              <>
+                <p className="path-text">{artifact.path || '位置未记录'}</p>
+                <p>
+                  {snapshot
+                    ? '本次运行保存的独立副本，定位不会改写业务输出原文件。'
+                    : '外部文件记录，当前文件不代表运行时的历史内容。'}
+                </p>
+              </>
+            ),
+          },
+        ]}
+      />
       <Button
         disabled={busy || !artifact.available || undefined}
         onClick={async () => {
@@ -91,11 +107,11 @@ function ArtifactCard({
         {busy ? '正在定位…' : snapshot ? '定位副本' : '定位当前文件'}
       </Button>
       {!artifact.available && <p>当前文件不可定位；保留本条记录供核对。</p>}
-      {notice && artifact.available && <p role="status">{notice}</p>}
+      {notice && artifact.available && <Alert type="info" showIcon title={notice} role="status" />}
       {error && (
-        <p ref={errorPanel} tabIndex={-1} role="alert" className="field-error">
-          {error}
-        </p>
+        <div ref={errorPanel} tabIndex={-1} className="run-artifact-error">
+          <Alert type="error" showIcon title={error} />
+        </div>
       )}
     </article>
   );
@@ -133,9 +149,7 @@ export default function RunOutputWorkspace({
             {runDisplayLabels[detail.run.state as RunState] ?? detail.run.state}
           </Tag>
           {view.statusNote && (
-            <p className="run-output-boundary" role="status">
-              {view.statusNote}
-            </p>
+            <Alert type="warning" showIcon title={view.statusNote} role="status" />
           )}
           <RunOutput detail={detail} layout="result" />
           <RunResultReview key={detail.run.id} runId={detail.run.id} />

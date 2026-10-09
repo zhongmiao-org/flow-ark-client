@@ -1,4 +1,4 @@
-import { Select, Button } from 'antd';
+import { Select, Button, Collapse, Descriptions } from 'antd';
 import {
   useId,
   useLayoutEffect,
@@ -98,12 +98,24 @@ function EventItem({ event, name }: { event: Event; name?: string }) {
           <LogText text={output} label="输出预览" />
         </section>
       )}
-      <details onToggle={(event) => setRawOpen(event.currentTarget.open)}>
-        <summary>原始记录 · {event.type}</summary>
-        {rawOpen && (
-          <LogText text={JSON.stringify(event.data, null, 2) ?? '未记录数据'} label="原始记录" />
-        )}
-      </details>
+      <Collapse
+        size="small"
+        activeKey={rawOpen ? ['raw'] : []}
+        onChange={(keys) => setRawOpen(keys.includes('raw'))}
+        destroyOnHidden
+        items={[
+          {
+            key: 'raw',
+            label: `原始记录 · ${event.type}`,
+            children: rawOpen ? (
+              <LogText
+                text={JSON.stringify(event.data, null, 2) ?? '未记录数据'}
+                label="原始记录"
+              />
+            ) : null,
+          },
+        ]}
+      />
     </li>
   );
 }
@@ -158,20 +170,20 @@ export default function RunEventLog({
         <div className="run-log-context">
           <section aria-label="日志来源与快照">
             <h3>来源与快照</h3>
-            <dl>
-              <div>
-                <dt>Run</dt>
-                <dd>{run.id}</dd>
-              </div>
-              <div>
-                <dt>来源</dt>
-                <dd>{runSourceLabels[runSource(run)] ?? run.source}</dd>
-              </div>
-              <div>
-                <dt>启动时固定版本</dt>
-                <dd>{run.versionId}</dd>
-              </div>
-            </dl>
+            <Descriptions
+              size="small"
+              layout="vertical"
+              column={1}
+              items={[
+                { key: 'run', label: 'Run', children: run.id },
+                {
+                  key: 'source',
+                  label: '来源',
+                  children: runSourceLabels[runSource(run)] ?? run.source,
+                },
+                { key: 'version', label: '启动时固定版本', children: run.versionId },
+              ]}
+            />
             {run.rerun && (
               <p>
                 原运行：{run.rerun.runId} ·{' '}
@@ -216,31 +228,33 @@ export default function RunEventLog({
                 <code>{instance}</code>
               </p>
             )}
-            <dl>
-              <div>
-                <dt>已记录实例</dt>
-                <dd>{instances.length} 个</dd>
-              </div>
-              <div>
-                <dt>当前范围</dt>
-                <dd>{matching.length} 条记录</dd>
-              </div>
-            </dl>
+            <Descriptions
+              size="small"
+              layout="vertical"
+              column={1}
+              items={[
+                { key: 'instances', label: '已记录实例', children: `${instances.length} 个` },
+                { key: 'matching', label: '当前范围', children: `${matching.length} 条记录` },
+              ]}
+            />
           </section>
           <section aria-label="脱敏日志阅读位置">
             <h3>脱敏日志</h3>
-            <dl>
-              <div>
-                <dt>已保存记录</dt>
-                <dd>{records.length} 条</dd>
-              </div>
-              <div>
-                <dt>显示范围</dt>
-                <dd>
-                  {shown.length ? `#${shown[0].sequence} — #${shown.at(-1)!.sequence}` : '暂无记录'}
-                </dd>
-              </div>
-            </dl>
+            <Descriptions
+              size="small"
+              layout="vertical"
+              column={1}
+              items={[
+                { key: 'saved', label: '已保存记录', children: `${records.length} 条` },
+                {
+                  key: 'range',
+                  label: '显示范围',
+                  children: shown.length
+                    ? `#${shown[0].sequence} — #${shown.at(-1)!.sequence}`
+                    : '暂无记录',
+                },
+              ]}
+            />
             <Button disabled={!matching.length || undefined} onClick={showLatest}>
               查看最新记录
             </Button>

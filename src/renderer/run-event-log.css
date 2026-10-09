@@ -100,21 +100,6 @@
   flex-direction: column;
   gap: 8px;
 }
-.run-log-entry details summary {
-  cursor: pointer;
-  font-size: 12px;
-  line-height: 20px;
-  color: var(--fa-text-secondary);
-  overflow-wrap: anywhere;
-}
-.run-log-entry details[open] summary {
-  margin-bottom: 12px;
-}
-.run-log-entry details summary:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
 .run-log-more,
 .run-log-empty {
   display: flex;
@@ -147,12 +132,6 @@
   font-size: 18px;
   line-height: 28px;
 }
-.run-log-context dl {
-  display: grid;
-  gap: 14px;
-  margin: 0;
-}
-.run-log-context dt,
 .run-log-context label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper),
 .run-log-context p {
   margin: 0 0 4px;
@@ -161,18 +140,11 @@
   line-height: 20px;
   overflow-wrap: anywhere;
 }
-.run-log-context .ant-select {
-  margin: 0;
+.run-log-context .ant-descriptions {
   overflow-wrap: anywhere;
 }
-.run-log-context dd {
+.run-log-context .ant-select {
   margin: 0;
-  padding: 6px;
-  min-height: 32px;
-  background: var(--fa-bg-canvas);
-  border-radius: 6px;
-  font-size: 13px;
-  line-height: 20px;
   overflow-wrap: anywhere;
 }
 .run-log-context .ant-select {
@@ -253,6 +225,8 @@
   overflow-wrap: anywhere;
 }
 .run-log-relations button:has(code) {
+  height: auto;
+  white-space: normal;
   flex-direction: column;
   gap: 4px;
 }
@@ -265,12 +239,10 @@
   color: var(--fa-text-secondary);
   font-size: 12px;
 }
-.run-log-relations details {
+.run-log-derived {
   margin-top: 16px;
 }
-.run-log-relations summary {
-  cursor: pointer;
-}
-.run-log-context .run-log-relations .field-error {
-  color: var(--fa-status-error);
+.run-log-error:focus-visible {
+  outline: 2px solid var(--fa-status-error);
+  outline-offset: 4px;
 }

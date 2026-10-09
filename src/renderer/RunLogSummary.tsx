@@ -1,4 +1,4 @@
-import { Button } from 'antd';
+import { Alert, Button, Collapse, Descriptions } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { presentRun } from '../shared/run-presentation';
 import { runDisplayLabels } from '../shared/run-history';
@@ -34,7 +34,7 @@ export default function RunLogSummary({
   const busy = useRef(false);
   const buttons = useRef(new Map<string, HTMLButtonElement>());
   const heading = useRef<HTMLHeadingElement>(null);
-  const errorRef = useRef<HTMLParagraphElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!active) {
       request.current++;
@@ -102,16 +102,24 @@ export default function RunLogSummary({
       </section>
       <section aria-label="步骤进度说明">
         <h3>{view.step.type === 'script' ? '脚本进度' : '步骤进度'}</h3>
-        <dl>
-          <div>
-            <dt>{view.step.kind === 'last' ? '最后记录步骤' : '记录位置'}</dt>
-            <dd>{view.step.name ?? view.step.label}</dd>
-          </div>
-          <div>
-            <dt>活动步骤数量</dt>
-            <dd>{view.step.kind === 'last' ? '历史步骤请查看已保存日志' : view.progress.label}</dd>
-          </div>
-        </dl>
+        <Descriptions
+          size="small"
+          layout="vertical"
+          column={1}
+          items={[
+            {
+              key: 'position',
+              label: view.step.kind === 'last' ? '最后记录步骤' : '记录位置',
+              children: view.step.name ?? view.step.label,
+            },
+            {
+              key: 'progress',
+              label: '活动步骤数量',
+              children:
+                view.step.kind === 'last' ? '历史步骤请查看已保存日志' : view.progress.label,
+            },
+          ]}
+        />
         <p>仅显示该步骤实际报告的数量；未报告时不以步骤数估算百分比。</p>
         {view.statusNote && <p>{view.statusNote}</p>}
         <Button htmlType="button" onClick={showCurrent}>
@@ -123,9 +131,9 @@ export default function RunLogSummary({
           来源与派生
         </h3>
         {error && (
-          <p className="field-error" role="alert" ref={errorRef} tabIndex={-1}>
-            {error}
-          </p>
+          <div ref={errorRef} tabIndex={-1} className="run-log-error">
+            <Alert type="error" showIcon title={error} />
+          </div>
         )}
         {run.rerun ? (
           <>
@@ -139,17 +147,28 @@ export default function RunLogSummary({
         )}
         {related ? (
           related.derived.length ? (
-            <details open>
-              <summary>派生运行 · {related.derived.length}</summary>
-              <ul>
-                {related.derived.map((item) => (
-                  <li key={item.id}>
-                    {recordButton(item.id, item.name)}
-                    <span>{runDisplayLabels[item.state] ?? item.state}</span>
-                  </li>
-                ))}
-              </ul>
-            </details>
+            <Collapse
+              className="run-log-derived"
+              size="small"
+              defaultActiveKey={['derived']}
+              items={[
+                {
+                  key: 'derived',
+                  label: `派生运行 · ${related.derived.length}`,
+                  forceRender: true,
+                  children: (
+                    <ul>
+                      {related.derived.map((item) => (
+                        <li key={item.id}>
+                          {recordButton(item.id, item.name)}
+                          <span>{runDisplayLabels[item.state] ?? item.state}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ),
+                },
+              ]}
+            />
           ) : (
             <p>尚无派生运行。</p>
           )
