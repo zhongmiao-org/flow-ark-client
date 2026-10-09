@@ -1,3 +1,5 @@
+import { activateCollapseWithSpace } from './collapseKeyboard';
+import { Collapse } from 'antd';
 import type { Step } from '../shared/types';
 import './desktop-task-plan.css';
 
@@ -13,10 +15,21 @@ export default function DesktopStepDetails({ node }: { node: Extract<Step, { typ
       <p>
         这是流程中保存的文字，尚未修改文档。请从原任务进入试运行检查，重新选择窗口与原选区，核对后授权本次单次修改。
       </p>
-      <details>
-        <summary>查看目标引用</summary>
-        <p>{node.target}</p>
-      </details>
+      <Collapse
+        items={[
+          {
+            key: 'evidence-0',
+            label: '查看目标引用',
+            forceRender: true,
+            onKeyDown: activateCollapseWithSpace,
+            children: (
+              <div className="feedback-body">
+                <p>{node.target}</p>
+              </div>
+            ),
+          },
+        ]}
+      />
     </section>
   );
 }
