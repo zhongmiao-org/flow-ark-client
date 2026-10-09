@@ -159,6 +159,7 @@ export function Field({ schema: s, value, change, label, required = false, draft
   );
 }
 function TemplateArray({ schema, value, change, title, draft }: any) {
+  const errorId = useId();
   const values: Json[] = Array.isArray(value) ? value : [];
   const [rows, setRows] = useState<{ keys: number[]; next: number }>(
     () =>
@@ -196,13 +197,32 @@ function TemplateArray({ schema, value, change, title, draft }: any) {
     target?.focus();
   }, [rows]);
   const limit = schema.maxItems ?? 1000;
+  const minimum = schema.minItems ?? 0;
+  const error =
+    values.length < minimum
+      ? `至少添加 ${minimum} 项，当前 ${values.length} 项。`
+      : values.length > limit
+        ? `最多保留 ${limit} 项，当前 ${values.length} 项。`
+        : '';
   return (
-    <fieldset className="template-fieldset template-array-field">
+    <fieldset
+      className="template-fieldset template-array-field"
+      tabIndex={error ? -1 : undefined}
+      aria-invalid={!!error || undefined}
+      aria-describedby={error ? errorId : undefined}
+      data-value-invalid={!!error || undefined}
+    >
       <legend>{title}</legend>
       {schema.description && <p className="muted">{schema.description}</p>}
       <p className="muted" role="status">
         已添加 {values.length} / {limit} 项{values.length >= limit ? '，已达到数量上限。' : '。'}
+        {minimum > 0 && `至少需要 ${minimum} 项。`}
       </p>
+      {error && (
+        <p id={errorId} className="template-field-error">
+          {error}
+        </p>
+      )}
       {values.map((item, index) => (
         <div
           className="template-array-row"
