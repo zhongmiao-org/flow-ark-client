@@ -628,10 +628,14 @@ export class Templates {
           !['confirmed', 'failed', 'unknown'].includes(q.state)
         )
           throw new Error('动作状态不能变更');
-        this.store.put('template-effect', q.id, {
-          ...old,
-          state: q.state,
-          evidence: q.evidence ?? null,
+        this.store.tx(() => {
+          this.store.put('template-effect', q.id, {
+            ...old,
+            state: q.state,
+            evidence: q.evidence ?? null,
+          });
+          if (q.state === 'unknown')
+            this.store.templateEffectAttention(old, '模板未能确认操作结果。');
         });
         return true;
       }
@@ -656,8 +660,12 @@ export class Templates {
         q.reject(new Error('运行已结束'));
         this.questions.delete(id);
       }
-    for (const effect of this.store.list<any>('template-effect'))
-      if (effect.runId === runId && effect.state === 'submitting')
-        this.store.put('template-effect', effect.id, { ...effect, state: 'unknown' });
+    this.store.tx(() => {
+      for (const effect of this.store.list<any>('template-effect'))
+        if (effect.runId === runId && effect.state === 'submitting') {
+          this.store.put('template-effect', effect.id, { ...effect, state: 'unknown' });
+          this.store.templateEffectAttention(effect, '运行已结束，但操作结果尚未确认。');
+        }
+    });
   }
 }
