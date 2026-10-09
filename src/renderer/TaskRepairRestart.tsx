@@ -1,27 +1,42 @@
-import { Button, Checkbox } from 'antd';
+import { Button, Checkbox, Collapse, Descriptions } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { taskRunPresentation } from './task-run-presentation';
 
 type Observation = ReturnType<typeof taskRunPresentation>;
 
 function History({ title, rows }: { title: string; rows: Observation['rows'] }) {
   return (
-    <details className="task-restart-history">
-      <summary>
-        {title} · {rows.length} 次
-      </summary>
-      {rows.length ? (
-        <ol tabIndex={0} aria-label={`${title}的完整步骤记录`}>
-          {rows.map((row) => (
-            <li key={row.instance}>
-              <span>{row.name}</span>
-              <small>步骤记录：{row.instance}</small>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <p>没有此类步骤记录。</p>
-      )}
-    </details>
+    <Collapse
+      className="task-restart-history"
+      items={[
+        {
+          key: 'evidence-1',
+          label: (
+            <>
+              {title} · {rows.length} 次
+            </>
+          ),
+          forceRender: true,
+          onKeyDown: activateCollapseWithSpace,
+          children: (
+            <div className="feedback-body">
+              {rows.length ? (
+                <ol tabIndex={0} aria-label={`${title}的完整步骤记录`}>
+                  {rows.map((row) => (
+                    <li key={row.instance}>
+                      <span>{row.name}</span>
+                      <small>步骤记录：{row.instance}</small>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p>没有此类步骤记录。</p>
+              )}
+            </div>
+          ),
+        },
+      ]}
+    />
   );
 }
 
@@ -60,14 +75,27 @@ export default function TaskRepairRestart({
         >
           我已核对原运行的输出与外部结果，确认可以从头执行
         </Checkbox>
-        <dl className="task-restart-version">
-          <dt>执行起点</dt>
-          <dd>第 1 步</dd>
-          <dt>采用版本</dt>
-          <dd>{applied ? `已采纳的修复方案 · 任务修订 ${revision}` : '修复依据需要重新核对'}</dd>
-          <dt>运行前检查</dt>
-          <dd>下一页重新核对当前对象、权限、保存位置与可能更改。</dd>
-        </dl>
+        <Descriptions
+          className="metadata-facts"
+          column={1}
+          bordered
+          size="small"
+          items={[
+            { key: 'start', label: '执行起点', children: '第 1 步' },
+            {
+              key: 'version',
+              label: '采用版本',
+              children: applied
+                ? `已采纳的修复方案 · 任务修订 ${revision}`
+                : '修复依据需要重新核对',
+            },
+            {
+              key: 'check',
+              label: '运行前检查',
+              children: '下一页重新核对当前对象、权限、保存位置与可能更改。',
+            },
+          ]}
+        />
         <p className="task-run-note">
           不恢复旧脚本内部现场。已经完成或结果未知的外部操作，可能在新运行中再次发生。
         </p>
@@ -95,10 +123,22 @@ export default function TaskRepairRestart({
           <History title="已开始未确认完成" rows={observation.unresolved} />
           <p>按实际执行次数列出，循环中的同一步骤分别保留。步骤完成记录不代替外部结果核对。</p>
         </div>
-        <details className="task-restart-history">
-          <summary>此前已经提交过试运行确认？</summary>
-          <p>下一页会保留该次请求，先查询或查看结果；返回这里不会自动再创建运行。</p>
-        </details>
+        <Collapse
+          className="task-restart-history"
+          items={[
+            {
+              key: 'evidence-2',
+              label: <>此前已经提交过试运行确认？</>,
+              forceRender: true,
+              onKeyDown: activateCollapseWithSpace,
+              children: (
+                <div className="feedback-body">
+                  <p>下一页会保留该次请求，先查询或查看结果；返回这里不会自动再创建运行。</p>
+                </div>
+              ),
+            },
+          ]}
+        />
       </section>
     </div>
   );

@@ -40,16 +40,6 @@
 .task-repair-target {
   min-height: 108px;
 }
-.task-repair-target summary,
-.task-repair-location summary {
-  color: var(--fa-text-secondary);
-  cursor: pointer;
-  font-size: 12px;
-}
-.task-repair-target details,
-.task-repair-location {
-  margin-top: 12px;
-}
 .task-repair-target ol {
   padding-left: 20px;
   margin-bottom: 0;
@@ -87,26 +77,6 @@
 .task-restart-columns .task-run-note {
   min-height: 72px;
 }
-.task-restart-version {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  gap: 8px 12px;
-  margin: 0;
-  line-height: 1.6;
-}
-.task-restart-version dt {
-  color: var(--fa-text-secondary);
-}
-.task-restart-version dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-.task-restart-history summary {
-  cursor: pointer;
-  color: var(--fa-text-secondary);
-  font-size: 12px;
-}
-.task-restart-history > p,
 .task-restart-records > p {
   margin-top: 12px;
   font-size: 12px;
@@ -177,14 +147,6 @@
 }
 .task-repair-pick-note {
   min-height: 72px;
-}
-.task-repair-picker-options summary {
-  cursor: pointer;
-  color: var(--fa-text-secondary);
-  font-size: 12px;
-}
-.task-repair-picker-options .element-picker {
-  margin-top: 12px;
 }
 @media (max-width: 1100px) {
   .task-repair-page[data-repair-phase='pick'] {
@@ -612,4 +574,19 @@
 .task-artifact-location p:focus-visible {
   outline: 2px solid var(--fa-action-primary);
   outline-offset: 2px;
+}
+
+.task-repair-target-location,
+.task-repair-location {
+  margin-top: 12px;
+}
+.task-repair-error:focus-visible {
+  outline: 2px solid var(--fa-status-error);
+  outline-offset: 4px;
+}
+.task-repair-error .ant-alert-title {
+  overflow-wrap: anywhere;
+}
+.task-repair-page .feedback-body {
+  align-items: stretch;
 }

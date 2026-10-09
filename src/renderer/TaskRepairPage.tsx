@@ -1,4 +1,5 @@
-import { Select, Button, Checkbox, Input } from 'antd';
+import { Alert, Collapse, Select, Button, Checkbox, Input } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import TaskRepairTarget from './TaskRepairTarget';
 import TaskRepairRestart from './TaskRepairRestart';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -32,6 +33,9 @@ export default function TaskRepairPage({
   const [phase, setPhase] = useState<Phase>('pick');
   const [task, setTask] = useState<TaskDetail>();
   const [picked, setPicked] = useState<{ target: ElementTarget; requestId: string }>();
+  const [pickerOpen, setPickerOpen] = useState(true);
+  const hasPicked = !!picked;
+  useEffect(() => setPickerOpen(!hasPicked), [hasPicked]);
   const [preview, setPreview] = useState<RepairPreview>();
   const [selection, setSelection] = useState<RepairInput>();
   const [provider, setProvider] = useState<'deepseek' | 'openai-codex'>('deepseek');
@@ -51,8 +55,8 @@ export default function TaskRepairPage({
   const pickConfirm = useRef<HTMLButtonElement>(null);
   const proposalHeading = useRef<HTMLHeadingElement>(null);
   const proposalOrigin = useRef<HTMLButtonElement | null>(null);
-  const operationError = useRef<HTMLParagraphElement>(null);
-  const generationError = useRef<HTMLParagraphElement>(null);
+  const operationError = useRef<HTMLDivElement>(null);
+  const generationError = useRef<HTMLDivElement>(null);
   const observation = taskRunPresentation(runDetail);
   const node = observation.node;
   const stepName = typeof node?.name === 'string' ? node.name : node?.id;
@@ -253,14 +257,14 @@ export default function TaskRepairPage({
           </div>
         </div>
         {error && (
-          <p className="alert error" role="alert" tabIndex={-1} ref={operationError}>
-            {error}
-          </p>
+          <div className="task-repair-error" tabIndex={-1} ref={operationError}>
+            <Alert type="error" role="alert" showIcon title={error} />
+          </div>
         )}
         {task?.task.error && (
-          <p className="alert error" role="alert" tabIndex={-1} ref={generationError}>
-            {task.task.error}
-          </p>
+          <div className="task-repair-error" tabIndex={-1} ref={generationError}>
+            <Alert type="error" role="alert" showIcon title={task.task.error} />
+          </div>
         )}
         {phase === 'review' && selectionChanged && (
           <p className="task-run-note" role="status">
@@ -316,33 +320,51 @@ export default function TaskRepairPage({
             <p className="task-run-note task-repair-pick-note">
               定位来自选择的真实元素；无法唯一匹配时不会采用。返回保留任务草稿，修复不会自动重复执行。
             </p>
-            <details className="task-repair-picker-options" open={!picked}>
-              <summary>{picked ? '重新选择其他目标' : '选择网页目标'}</summary>
-              {node?.type === 'browser' && (
-                <ElementPicker
-                  selector={node.selector}
-                  framePath={'framePath' in node ? node.framePath : []}
-                  allowInspect={false}
-                  active={active && phase === 'pick'}
-                  disabled={busy || generating}
-                  onStart={() => {
-                    setError('');
-                    discardSelection();
-                  }}
-                  onSelect={(target, requestId) => {
-                    if (!location.current.active || location.current.phase !== 'pick') {
-                      void api('browser.embedded.pick.cancel', { requestId }).catch(() => {});
-                      return;
-                    }
-                    ownPick.current = requestId;
-                    setPicked({ target, requestId });
-                    setPreview(undefined);
-                    setReviewed(false);
-                  }}
-                  onInspect={() => setError('验证原定位不等于重新选择，请从网页选取修复目标。')}
-                />
-              )}
-            </details>
+            <Collapse
+              className="task-repair-picker-options"
+              activeKey={pickerOpen ? ['picker'] : []}
+              onChange={(keys) => setPickerOpen(keys.includes('picker'))}
+              items={[
+                {
+                  key: 'picker',
+                  label: <>{picked ? '重新选择其他目标' : '选择网页目标'}</>,
+                  forceRender: true,
+                  onKeyDown: activateCollapseWithSpace,
+                  children: (
+                    <div className="feedback-body">
+                      {node?.type === 'browser' && (
+                        <ElementPicker
+                          selector={node.selector}
+                          framePath={'framePath' in node ? node.framePath : []}
+                          allowInspect={false}
+                          active={active && phase === 'pick'}
+                          disabled={busy || generating}
+                          onStart={() => {
+                            setError('');
+                            discardSelection();
+                          }}
+                          onSelect={(target, requestId) => {
+                            if (!location.current.active || location.current.phase !== 'pick') {
+                              void api('browser.embedded.pick.cancel', { requestId }).catch(
+                                () => {},
+                              );
+                              return;
+                            }
+                            ownPick.current = requestId;
+                            setPicked({ target, requestId });
+                            setPreview(undefined);
+                            setReviewed(false);
+                          }}
+                          onInspect={() =>
+                            setError('验证原定位不等于重新选择，请从网页选取修复目标。')
+                          }
+                        />
+                      )}
+                    </div>
+                  ),
+                },
+              ]}
+            />
           </>
         ) : phase === 'review' ? (
           <div className="task-run-columns task-repair-columns">
@@ -372,23 +394,35 @@ export default function TaskRepairPage({
                   </>
                 )}
                 {preview && (
-                  <details className="task-repair-location">
-                    <summary>核对选择时的网页与元素信息</summary>
-                    <p>网页：{preview.selection.title || '未命名网页'}</p>
-                    <p className="task-run-path">{preview.selection.url}</p>
-                    <p>
-                      元素类型：{preview.selection.target.tag}
-                      {preview.selection.target.inputType
-                        ? ` · ${preview.selection.target.inputType}`
-                        : ''}
-                    </p>
-                    {preview.selection.target.structural && (
-                      <p>使用结构定位，网页布局变化后需要重新选择。</p>
-                    )}
-                    <p>
-                      仅供本机核对，不表示网页当前仍未变化；网页地址和标题不会自动加入模型输入。
-                    </p>
-                  </details>
+                  <Collapse
+                    className="task-repair-location"
+                    items={[
+                      {
+                        key: 'evidence-2',
+                        label: <>核对选择时的网页与元素信息</>,
+                        forceRender: true,
+                        onKeyDown: activateCollapseWithSpace,
+                        children: (
+                          <div className="feedback-body">
+                            <p>网页：{preview.selection.title || '未命名网页'}</p>
+                            <p className="task-run-path">{preview.selection.url}</p>
+                            <p>
+                              元素类型：{preview.selection.target.tag}
+                              {preview.selection.target.inputType
+                                ? ` · ${preview.selection.target.inputType}`
+                                : ''}
+                            </p>
+                            {preview.selection.target.structural && (
+                              <p>使用结构定位，网页布局变化后需要重新选择。</p>
+                            )}
+                            <p>
+                              仅供本机核对，不表示网页当前仍未变化；网页地址和标题不会自动加入模型输入。
+                            </p>
+                          </div>
+                        ),
+                      },
+                    ]}
+                  />
                 )}
               </div>
               <p className="task-run-note">
@@ -425,15 +459,26 @@ export default function TaskRepairPage({
                       }}
                     />
                   </label>
-                  <details>
-                    <summary>核对实际发送内容</summary>
-                    <p>
-                      发送任务描述、当前完整流程及本次目标修复说明。未选择的附件和历史输出不自动发送。
-                    </p>
-                    <pre tabIndex={0} aria-label="本次修复实际发送内容">
-                      {JSON.stringify(preview?.input, null, 2)}
-                    </pre>
-                  </details>
+                  <Collapse
+                    items={[
+                      {
+                        key: 'evidence-3',
+                        label: <>核对实际发送内容</>,
+                        forceRender: true,
+                        onKeyDown: activateCollapseWithSpace,
+                        children: (
+                          <div className="feedback-body">
+                            <p>
+                              发送任务描述、当前完整流程及本次目标修复说明。未选择的附件和历史输出不自动发送。
+                            </p>
+                            <pre tabIndex={0} aria-label="本次修复实际发送内容">
+                              {JSON.stringify(preview?.input, null, 2)}
+                            </pre>
+                          </div>
+                        ),
+                      },
+                    ]}
+                  />
                   <Checkbox
                     checked={reviewed}
                     disabled={
@@ -524,19 +569,30 @@ export default function TaskRepairPage({
                         ? '当前方案已有变化，请重新核对修复。'
                         : '本次未产生可采纳的修复方案，请回到任务补充信息。'}
                   </p>
-                  <details>
-                    <summary>查看完整差异 · {task?.changes.length} 项</summary>
-                    {task?.changes.map((c) => (
-                      <div key={c.path}>
-                        <b>
-                          {c.label} · {c.path}
-                        </b>
-                        <pre tabIndex={0} aria-label={`${c.label}的完整差异`}>
-                          {JSON.stringify({ 原值: c.before, 新值: c.after }, null, 2)}
-                        </pre>
-                      </div>
-                    ))}
-                  </details>
+                  <Collapse
+                    items={[
+                      {
+                        key: 'evidence-4',
+                        label: <>查看完整差异 · {task?.changes.length} 项</>,
+                        forceRender: true,
+                        onKeyDown: activateCollapseWithSpace,
+                        children: (
+                          <div className="feedback-body">
+                            {task?.changes.map((c) => (
+                              <div key={c.path}>
+                                <b>
+                                  {c.label} · {c.path}
+                                </b>
+                                <pre tabIndex={0} aria-label={`${c.label}的完整差异`}>
+                                  {JSON.stringify({ 原值: c.before, 新值: c.after }, null, 2)}
+                                </pre>
+                              </div>
+                            ))}
+                          </div>
+                        ),
+                      },
+                    ]}
+                  />
                   {proposal!.result.limitations.map((text, i) => (
                     <p key={i}>{text}</p>
                   ))}
