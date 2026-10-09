@@ -1,4 +1,4 @@
-import { ConfigProvider, Select, Button, Input, Modal, Flex, Tag, Badge } from 'antd';
+import { ConfigProvider, Collapse, Select, Button, Input, Modal, Flex, Tag, Badge } from 'antd';
 import {
   lazy,
   Suspense,
@@ -15,6 +15,7 @@ import { changeSteps, flatten } from './flow-editing';
 import { referenceChoices } from './value-references';
 import ValueField from './ValueField';
 import ScriptPackages from './ScriptPackages';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { CodeLocation } from './CodeEditor';
 import {
   editScriptPackage,
@@ -54,6 +55,13 @@ export default function ScriptEditorPage({
   const [timeoutError, setTimeoutError] = useState('');
   const [location, setLocation] = useState<CodeLocation>();
   const [focusRequest, setFocusRequest] = useState<{ selector: string }>();
+  const [expandedSettings, setExpandedSettings] = useState<string[]>([]);
+  const expandSetting = (key: string, open: boolean) =>
+    setExpandedSettings((current) =>
+      open
+        ? [...current.filter((item) => item !== key), key]
+        : current.filter((item) => item !== key),
+    );
   const [syntax, setSyntax] = useState<{
     checking?: boolean;
     issues?: Diagnostic[];
@@ -134,6 +142,10 @@ export default function ScriptEditorPage({
     if (pendingLeave || saving || !focusRequest) return;
     const element = root.current?.querySelector<HTMLElement>(focusRequest.selector);
     if (!element) return;
+    if (element.closest('.script-input-settings') && !expandedSettings.includes('input')) {
+      expandSetting('input', true);
+      return;
+    }
     let ancestor = element.parentElement;
     while (ancestor && ancestor !== root.current) {
       if (ancestor instanceof HTMLDetailsElement) ancestor.open = true;
@@ -144,10 +156,14 @@ export default function ScriptEditorPage({
       : (element.querySelector<HTMLElement>('textarea') ??
         element.querySelector<HTMLElement>('input,select') ??
         element);
-    target.focus({ preventScroll: true });
-    target.scrollIntoView({ block: 'nearest' });
-    setFocusRequest(undefined);
-  }, [pendingLeave, saving, focusRequest]);
+    const frame = requestAnimationFrame(() => {
+      if (!target.isConnected) return;
+      target.focus({ preventScroll: true });
+      target.scrollIntoView({ block: 'nearest' });
+      setFocusRequest(undefined);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [pendingLeave, saving, focusRequest, expandedSettings]);
   const persist = async (next?: () => void) => {
     if (persisting.current) return;
     setError('');
@@ -305,7 +321,7 @@ export default function ScriptEditorPage({
           {error}
         </p>
       )}
-      <ConfigProvider componentDisabled={saving || undefined}>
+      <ConfigProvider componentDisabled={saving}>
         <fieldset className="script-editor-columns" disabled={saving}>
           <section className="script-editor-code ai-task-card">
             <div className="script-editor-toolbar">
@@ -491,17 +507,30 @@ export default function ScriptEditorPage({
                 { value: 'js', label: 'JavaScript' },
               ]}
             />
-            <details className="script-input-settings">
-              <summary>输入 · 配置来源</summary>
-              <ValueField
-                label="脚本输入"
-                value={node.input}
-                choices={referenceChoices(draft.flow, nodeId)}
-                defaultValue={{}}
-                change={(input) => change({ ...node, input })}
-                onIncompleteChange={inputStateChanged}
-              />
-            </details>
+            <Collapse
+              className="script-input-settings"
+              size="small"
+              activeKey={expandedSettings.includes('input') ? ['input'] : []}
+              onChange={(keys) => expandSetting('input', keys.includes('input'))}
+              items={[
+                {
+                  key: 'input',
+                  label: '输入 · 配置来源',
+                  forceRender: true,
+                  onKeyDown: activateCollapseWithSpace,
+                  children: (
+                    <ValueField
+                      label="脚本输入"
+                      value={node.input}
+                      choices={referenceChoices(draft.flow, nodeId)}
+                      defaultValue={{}}
+                      change={(input) => change({ ...node, input })}
+                      onIncompleteChange={inputStateChanged}
+                    />
+                  ),
+                },
+              ]}
+            />
             <label htmlFor="script-timeout">超时（毫秒）</label>
             <Input
               status={!!timeoutError ? 'error' : undefined}
@@ -526,29 +555,49 @@ export default function ScriptEditorPage({
             <p className="note" id="script-timeout-help">
               100–3600000 毫秒；未配置时为 60000 毫秒，外层步骤可能先到期。
             </p>
-            <details className="script-dependency-settings">
-              <summary>
-                依赖 ·{' '}
-                {node.dependencies.length ? `${node.dependencies.length} 个本地包` : '仅内置 SDK'}
-              </summary>
-              <ScriptPackages
-                flowId={record.id}
-                node={node}
-                bindings={draft.bindings}
-                bind={(info) => setDraft(editScriptPackage(draft, node, info.name, info))}
-                remove={(name) => setDraft(editScriptPackage(draft, node, name))}
-              />
-            </details>
-            <details className="script-access">
-              <summary>
-                文件与凭据 · {Object.keys(draft.bindings.files).length} 个目录 ·{' '}
-                {draft.bindings.credentials.length} 个凭据引用
-              </summary>
-              <p className="note">
-                可信脚本可使用 Node 能力；这些绑定不是文件或网络安全隔离。模板 SDK
-                另按当前入口授权检查。
-              </p>
-            </details>
+            <Collapse
+              className="script-dependency-settings"
+              size="small"
+              activeKey={expandedSettings.includes('dependencies') ? ['dependencies'] : []}
+              onChange={(keys) => expandSetting('dependencies', keys.includes('dependencies'))}
+              items={[
+                {
+                  key: 'dependencies',
+                  label: `依赖 · ${node.dependencies.length ? `${node.dependencies.length} 个本地包` : '仅内置 SDK'}`,
+                  forceRender: true,
+                  onKeyDown: activateCollapseWithSpace,
+                  children: (
+                    <ScriptPackages
+                      flowId={record.id}
+                      node={node}
+                      bindings={draft.bindings}
+                      bind={(info) => setDraft(editScriptPackage(draft, node, info.name, info))}
+                      remove={(name) => setDraft(editScriptPackage(draft, node, name))}
+                    />
+                  ),
+                },
+              ]}
+            />
+            <Collapse
+              className="script-access"
+              size="small"
+              activeKey={expandedSettings.includes('access') ? ['access'] : []}
+              onChange={(keys) => expandSetting('access', keys.includes('access'))}
+              items={[
+                {
+                  key: 'access',
+                  label: `文件与凭据 · ${Object.keys(draft.bindings.files).length} 个目录 · ${draft.bindings.credentials.length} 个凭据引用`,
+                  forceRender: true,
+                  onKeyDown: activateCollapseWithSpace,
+                  children: (
+                    <p className="note">
+                      可信脚本可使用 Node 能力；这些绑定不是文件或网络安全隔离。模板 SDK
+                      另按当前入口授权检查。
+                    </p>
+                  ),
+                },
+              ]}
+            />
             <p className="script-editor-note">
               保存会更新当前流程草稿。代码和依赖在运行前固定，不自动安装依赖；语法检查不代表业务结果通过。
             </p>
