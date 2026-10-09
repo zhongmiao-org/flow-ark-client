@@ -17,7 +17,6 @@
 .ai-task-page h2 {
   margin: 0;
 }
-.ai-task-composer,
 .ai-task-card {
   border: 1px solid var(--fa-border-default);
   border-radius: var(--fa-radius-12);
@@ -32,20 +31,33 @@
   background: var(--fa-action-subtle);
   min-height: 256px;
   margin-bottom: 24px;
+}
+.ai-task-composer > .ant-card-body,
+.task-home-card > .ant-card-body,
+.task-understanding-card > .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  min-width: 0;
+}
+.ai-task-composer > .ant-card-body {
   gap: 12px;
+}
+.task-home-card,
+.task-understanding-card {
+  min-width: 0;
+  height: 100%;
 }
 .ai-task-page .ai-task-composer textarea {
   min-height: 36px;
   height: 36px;
-  padding: 0;
-  border-color: transparent;
-  background: transparent;
   font-size: 18px;
   font-weight: 500;
   line-height: 28px;
   resize: vertical;
 }
-.ai-task-composer > .ai-task-actions:last-child {
+.ai-task-composer > .ant-card-body > .ai-task-actions:last-child {
   margin-top: 4px;
   gap: 16px;
 }
@@ -890,9 +902,10 @@
 .task-home-status .learning-home {
   margin-bottom: 0;
 }
-.task-home-status > .ai-task-card {
+.task-home-status .task-home-card {
   min-height: 160px;
-  padding: 16px;
+}
+.task-home-status .task-home-card > .ant-card-body {
   gap: 8px;
 }
 .task-home-status .ai-task-actions button {
@@ -948,23 +961,20 @@
   gap: 24px;
   align-items: stretch;
 }
-.task-understanding-columns > .ai-task-card {
+.task-understanding-columns .task-understanding-card {
   min-height: 710px;
 }
 .task-understanding-reply {
   min-height: 152px;
-  padding: 16px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
   background: var(--fa-bg-canvas);
   font-size: 13px;
   line-height: 22px;
 }
-.task-understanding-reply > b {
+.task-understanding-reply > .ant-card-body > b {
   color: var(--fa-action-primary);
   font-weight: 500;
 }
-.task-understanding-reply > p {
+.task-understanding-reply > .ant-card-body > p {
   color: var(--fa-text-primary);
   margin-top: 8px;
 }
@@ -979,11 +989,8 @@
 }
 .task-understanding-directory > button {
   width: 100%;
-  min-height: 40px;
   justify-content: flex-start;
   text-align: left;
-  color: var(--fa-text-secondary);
-  padding: 8px 12px;
 }
 .task-understanding-directory > small {
   color: var(--fa-text-secondary);
@@ -1007,19 +1014,11 @@
   line-height: 20px;
   gap: 10px;
 }
-.task-output-policy
-  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
-  width: 14px;
-  height: 14px;
-  margin: 0;
-  accent-color: var(--fa-action-primary);
-}
 .task-understanding-fact {
   min-height: 108px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-  padding: 16px;
   min-width: 0;
+}
+.task-understanding-fact > .ant-card-body {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1029,7 +1028,7 @@
   line-height: 24px;
   margin: 0;
 }
-.task-understanding-fact > .ant-tag {
+.task-understanding-fact > .ant-card-body > .ant-tag {
   align-self: flex-start;
 }
 .task-understanding-fact p {
@@ -1103,7 +1102,7 @@
   .task-understanding-columns {
     grid-template-columns: minmax(0, 1fr);
   }
-  .task-understanding-columns > .ai-task-card {
+  .task-understanding-columns .task-understanding-card {
     min-height: auto;
   }
 }
@@ -1333,7 +1332,7 @@
   }
 }
 
-.ai-task-composer > .ai-task-actions > .ant-btn-primary {
+.ai-task-composer > .ant-card-body > .ai-task-actions > .ant-btn-primary {
   min-width: 180px;
 }
 .ai-task-page > .task-home-navigation {
