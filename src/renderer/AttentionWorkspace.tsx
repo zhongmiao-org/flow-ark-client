@@ -1,4 +1,4 @@
-import { ConfigProvider, Select, Button, Checkbox, Input } from 'antd';
+import { ConfigProvider, Select, Button, Checkbox, Input, Tabs } from 'antd';
 import {
   useEffect,
   useId,
@@ -272,6 +272,7 @@ export default function AttentionWorkspace({
   const drafts = useRef(new Map<string, AnswerDraft>());
   const locked = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
+  const searchInput = useRef<HTMLInputElement>(null);
   const answerFocus = useRef<string | undefined>(undefined);
   const actionFocus = useRef<{ visit: number; trigger: HTMLButtonElement } | null>(null);
   const noticePanel = useRef<HTMLDivElement>(null);
@@ -534,6 +535,87 @@ export default function AttentionWorkspace({
   ) : (
     <p className="attention-muted">这条提醒未提供可直接打开的运行记录。</p>
   );
+  const listContent = (
+    <>
+      {tab === 'done' && (
+        <p className="attention-muted">
+          这里保留已读和已回应的提醒。提醒已读不代表外部业务结果已核对。
+        </p>
+      )}
+      <div className="attention-list" id="attention-list">
+        {visible.map((item) => (
+          <article
+            className={`attention-card is-${tone(item)} ${item.kind === 'unknown-result' ? 'is-expanded' : 'is-compact'}`}
+            key={item.id}
+            aria-label={item.title}
+          >
+            <div className="attention-card-heading">
+              <span className={`attention-status is-${tone(item)}`}>{label(item)}</span>
+              {item.kind !== 'unknown-result' && <h2>{item.title}</h2>}
+              <time dateTime={item.time}>{date(item.time)}</time>
+            </div>
+            {item.kind === 'unknown-result' && <h2>{item.title}</h2>}
+            <p>{description(item)}</p>
+            {item.kind === 'unknown-result' && (
+              <p className="attention-muted">
+                FlowArk 不会自动重复提交。请先核对证据，再决定是否另建运行。
+              </p>
+            )}
+            <div className="attention-actions">
+              <Button
+                type={item.kind === 'unknown-result' ? 'primary' : 'default'}
+                data-attention-open={item.id}
+                onClick={() => open(item)}
+              >
+                {item.kind === 'unknown-result'
+                  ? '查看证据并核对'
+                  : human(item) && !completed(item)
+                    ? '查看本次请求'
+                    : '查看详情'}
+              </Button>
+              {sourceId(item) && (
+                <Button
+                  disabled={busy || undefined}
+                  onClick={(event) =>
+                    viewRun(sourceId(item)!, event.currentTarget as HTMLButtonElement)
+                  }
+                >
+                  查看运行详情
+                </Button>
+              )}
+            </div>
+          </article>
+        ))}
+        {!visible.length && (
+          <div className="attention-empty">
+            <h2>
+              {query || kind !== 'all'
+                ? '没有匹配的提醒'
+                : tab === 'pending'
+                  ? '暂时没有需要处理的事项'
+                  : '还没有已处理记录'}
+            </h2>
+            <p>
+              {query || kind !== 'all'
+                ? '调整关键词或提醒类型，再试一次。'
+                : '需要你的确认或出现异常时，提醒会保存在这里。'}
+            </p>
+            {(query || kind !== 'all') && (
+              <Button
+                onClick={() => {
+                  setQuery('');
+                  setKind('all');
+                  searchInput.current?.focus({ preventScroll: true });
+                }}
+              >
+                清除筛选
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    </>
+  );
   return (
     <section className="page attention-page" hidden={!active} aria-label="待办与提醒">
       <header className="attention-heading">
@@ -567,144 +649,54 @@ export default function AttentionWorkspace({
       )}
       {!selected ? (
         <>
-          <div className="attention-toolbar">
-            <div className="attention-tabs" role="tablist" aria-label="处理状态">
-              {(
-                [
-                  ['pending', '待处理', pendingCount],
-                  ['done', '已处理', doneCount],
-                ] as const
-              ).map(([id, name, count]) => (
-                <Button
-                  key={id}
-                  role="tab"
-                  id={`attention-tab-${id}`}
-                  aria-controls="attention-list"
-                  aria-selected={tab === id}
-                  tabIndex={tab === id ? 0 : -1}
-                  onClick={() => setTab(id)}
-                  onKeyDown={(event) => {
-                    if (['ArrowLeft', 'ArrowRight'].includes(event.key)) {
-                      event.preventDefault();
-                      setTab(id === 'pending' ? 'done' : 'pending');
-                      const parent = (event.currentTarget as HTMLButtonElement).parentElement;
-                      (
-                        parent?.querySelectorAll('button')[
-                          id === 'pending' ? 1 : 0
-                        ] as HTMLButtonElement
-                      )?.focus();
-                    }
-                  }}
-                >
-                  {name}
-                  <span>{count}</span>
-                </Button>
-              ))}
-            </div>
-            <label className="attention-search">
-              <span className="sr-only">搜索待办</span>
-              <Input
-                type="search"
-                placeholder="搜索标题或说明"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-            </label>
-            <label className="attention-filter">
-              <span className="sr-only">提醒类型</span>
-              <Select<string>
-                value={kind}
-                onChange={(value) => setKind(value)}
-                options={[
-                  { value: 'all', label: '全部类型' },
-                  { value: 'human', label: '人工请求' },
-                  { value: 'unknown', label: '结果待核对' },
-                  { value: 'other', label: '其他提醒' },
-                ]}
-              />
-            </label>
-          </div>
-          {tab === 'done' && (
-            <p className="attention-muted">
-              这里保留已读和已回应的提醒。提醒已读不代表外部业务结果已核对。
-            </p>
-          )}
-          <div
-            className="attention-list"
-            id="attention-list"
-            role="tabpanel"
-            aria-labelledby={`attention-tab-${tab}`}
-          >
-            {visible.map((item) => (
-              <article
-                className={`attention-card is-${tone(item)} ${item.kind === 'unknown-result' ? 'is-expanded' : 'is-compact'}`}
-                key={item.id}
-                aria-label={item.title}
-              >
-                <div className="attention-card-heading">
-                  <span className={`attention-status is-${tone(item)}`}>{label(item)}</span>
-                  {item.kind !== 'unknown-result' && <h2>{item.title}</h2>}
-                  <time dateTime={item.time}>{date(item.time)}</time>
-                </div>
-                {item.kind === 'unknown-result' && <h2>{item.title}</h2>}
-                <p>{description(item)}</p>
-                {item.kind === 'unknown-result' && (
-                  <p className="attention-muted">
-                    FlowArk 不会自动重复提交。请先核对证据，再决定是否另建运行。
-                  </p>
-                )}
-                <div className="attention-actions">
-                  <Button
-                    type={item.kind === 'unknown-result' ? 'primary' : 'default'}
-                    data-attention-open={item.id}
-                    onClick={() => open(item)}
-                  >
-                    {item.kind === 'unknown-result'
-                      ? '查看证据并核对'
-                      : human(item) && !completed(item)
-                        ? '查看本次请求'
-                        : '查看详情'}
-                  </Button>
-                  {sourceId(item) && (
-                    <Button
-                      disabled={busy || undefined}
-                      onClick={(event) =>
-                        viewRun(sourceId(item)!, event.currentTarget as HTMLButtonElement)
-                      }
-                    >
-                      查看运行详情
-                    </Button>
-                  )}
-                </div>
-              </article>
-            ))}
-            {!visible.length && (
-              <div className="attention-empty">
-                <h2>
-                  {query || kind !== 'all'
-                    ? '没有匹配的提醒'
-                    : tab === 'pending'
-                      ? '暂时没有需要处理的事项'
-                      : '还没有已处理记录'}
-                </h2>
-                <p>
-                  {query || kind !== 'all'
-                    ? '调整关键词或提醒类型，再试一次。'
-                    : '需要你的确认或出现异常时，提醒会保存在这里。'}
-                </p>
-                {(query || kind !== 'all') && (
-                  <Button
-                    onClick={() => {
-                      setQuery('');
-                      setKind('all');
+          <Tabs
+            id="attention"
+            className="attention-tabs"
+            aria-label="处理状态"
+            activeKey={tab}
+            animated={false}
+            destroyOnHidden
+            onChange={(key) => setTab(key as 'pending' | 'done')}
+            tabBarExtraContent={
+              <div className="attention-toolbar">
+                <label className="attention-search">
+                  <span className="sr-only">搜索待办</span>
+                  <Input
+                    ref={(instance) => {
+                      searchInput.current = instance?.input ?? null;
                     }}
-                  >
-                    清除筛选
-                  </Button>
-                )}
+                    type="search"
+                    placeholder="搜索标题或说明"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                  />
+                </label>
+                <label className="attention-filter">
+                  <span className="sr-only">提醒类型</span>
+                  <Select<string>
+                    value={kind}
+                    onChange={(value) => setKind(value)}
+                    options={[
+                      { value: 'all', label: '全部类型' },
+                      { value: 'human', label: '人工请求' },
+                      { value: 'unknown', label: '结果待核对' },
+                      { value: 'other', label: '其他提醒' },
+                    ]}
+                  />
+                </label>
               </div>
-            )}
-          </div>
+            }
+            items={(
+              [
+                ['pending', '待处理', pendingCount],
+                ['done', '已处理', doneCount],
+              ] as const
+            ).map(([key, name, count]) => ({
+              key,
+              label: `${name} · ${count}`,
+              children: tab === key ? listContent : undefined,
+            }))}
+          />
         </>
       ) : (
         <div className="attention-detail-layout">

@@ -24,26 +24,11 @@
 }
 .attention-toolbar {
   display: flex;
-  align-items: end;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 16px;
+}
+.attention-tabs > .ant-tabs-nav {
   margin-bottom: 24px;
-}
-.attention-tabs {
-  display: flex;
-  gap: 8px;
-  margin-right: auto;
-}
-.attention-tabs button {
-  border-color: transparent;
-  gap: 8px;
-}
-.attention-tabs button[aria-selected='true'] {
-  background: var(--fa-action-subtle);
-  color: var(--fa-action-primary);
-}
-.attention-tabs span {
-  font-size: 12px;
 }
 .attention-search,
 .attention-filter {
@@ -310,10 +295,13 @@
   }
 }
 @container (max-width: 550px) {
-  .attention-toolbar {
-    align-items: stretch;
+  .attention-tabs > .ant-tabs-nav {
+    flex-wrap: wrap;
+    gap: 16px;
   }
-  .attention-tabs {
+  .attention-tabs .ant-tabs-nav-wrap,
+  .attention-tabs .ant-tabs-extra-content,
+  .attention-toolbar {
     width: 100%;
   }
   .attention-search {
@@ -388,17 +376,6 @@
 .attention-toolbar input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   height: 40px;
 }
-.attention-tabs {
-  gap: 24px;
-}
-.attention-tabs button {
-  padding-inline: 0;
-  background: transparent;
-}
-.attention-tabs button[aria-selected='true'] {
-  background: transparent;
-}
-
 /* 2:2911: request content and schema fields stay in the 728/400 split. */
 .attention-detail-layout > .attention-detail-card {
   min-height: 676px;

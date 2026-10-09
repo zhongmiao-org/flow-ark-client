@@ -24,23 +24,12 @@
   margin: 0;
   color: var(--fa-text-secondary);
 }
-.local-settings-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  min-height: 40px;
+.local-settings-tabs > .ant-tabs-nav {
   margin-bottom: 36px;
 }
-.local-settings-tabs button {
-  border-color: transparent;
-  background: transparent;
-  padding: 0;
-  min-width: 0;
-  font-weight: 400;
-  color: var(--fa-text-secondary);
-}
-.local-settings-tabs button[aria-selected='true'] {
-  color: var(--fa-action-primary);
+.local-resources-page .local-settings-tabs > .ant-tabs-nav,
+.local-browser-binding-page .local-settings-tabs > .ant-tabs-nav {
+  display: none;
 }
 .local-browser-overview {
   grid-template-columns: minmax(0, 768fr) minmax(280px, 360fr);
@@ -384,12 +373,6 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 6px;
   }
-  .local-settings-tabs {
-    gap: 4px;
-  }
-  .local-settings-tabs button {
-    padding: 8px 12px;
-  }
   .local-settings-field
     input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
     width: 100%;
@@ -402,9 +385,6 @@
   background: var(--fa-status-warning-bg);
 }
 
-.local-settings-tabs[hidden] {
-  display: none;
-}
 .local-browser-binding-page .local-settings-heading {
   margin-bottom: 32px;
 }

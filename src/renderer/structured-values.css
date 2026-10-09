@@ -68,8 +68,7 @@
   font-size: 12px;
   color: var(--fa-text-secondary);
 }
-.mapping-values .mapping-row button.selected,
-.matrix-values .matrix-scroll button.selected {
+.mapping-values .mapping-row button.selected {
   background: var(--fa-action-subtle);
   color: var(--fa-action-primary);
 }
@@ -141,35 +140,16 @@
   line-height: 20px;
   color: var(--fa-text-secondary);
 }
-.matrix-values .matrix-scroll {
-  border-color: var(--fa-border-default);
-  border-radius: var(--fa-radius-8);
+.matrix-scroll {
+  min-width: 0;
+  width: 100%;
 }
-.matrix-values .matrix-scroll table {
-  font-size: 12px;
-}
-.matrix-values .matrix-scroll th,
-.matrix-values .matrix-scroll td {
-  border-color: var(--fa-border-default);
-}
-.matrix-values .matrix-scroll th {
-  background: var(--fa-bg-canvas);
-  color: var(--fa-text-secondary);
-  padding: 8px;
-  min-width: 40px;
-}
-.matrix-values .matrix-scroll td button {
-  min-height: 40px;
+.matrix-cell-button {
+  display: block;
   width: 96px;
-  max-width: 96px;
-  font-size: 12px;
-  padding: 8px 12px;
-  background: var(--fa-bg-surface);
-  color: var(--fa-text-primary);
-}
-.matrix-values .matrix-scroll td button:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
-  outline-offset: -2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .node-configuration .note {
   background: var(--fa-bg-canvas);

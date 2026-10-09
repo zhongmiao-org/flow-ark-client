@@ -1,4 +1,15 @@
-import { ConfigProvider, Select, Button, Checkbox, Input, Modal, Flex, Tag, Badge } from 'antd';
+import {
+  ConfigProvider,
+  Select,
+  Button,
+  Checkbox,
+  Input,
+  Modal,
+  Flex,
+  Tag,
+  Badge,
+  Table,
+} from 'antd';
 import {
   useCallback,
   useEffect,
@@ -449,35 +460,27 @@ export default function ExcelMappingPage({
                     role="region"
                     aria-label="映射结果表格，可滚动查看"
                   >
-                    <table aria-label="Excel 映射预览">
-                      <thead>
-                        <tr>
-                          {columns.map((item) => (
-                            <th key={item.column} scope="col">
-                              {item.column}
-                              {node.includeHeaders && ` · ${item.header}`}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {rows.map((row, i) => (
-                          <tr key={i}>
-                            {columns.map((item) => (
-                              <td key={item.column}>
-                                {row[columnIndex(item.column)] === null ? (
-                                  <span className="muted">空</span>
-                                ) : (
-                                  String(row[columnIndex(item.column)])
-                                )}
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <Table<{ index: number; values: (typeof rows)[number] }>
+                      aria-label="Excel 映射预览"
+                      size="small"
+                      pagination={false}
+                      rowKey="index"
+                      scroll={{ x: 'max-content' }}
+                      dataSource={rows.map((values, index) => ({ index, values }))}
+                      locale={{ emptyText: '来源记录为空；当前预览没有数据行。' }}
+                      columns={columns.map((item) => ({
+                        key: item.column,
+                        title: item.column + (node.includeHeaders ? ` · ${item.header}` : ''),
+                        width: 200,
+                        render: (_, row) =>
+                          row.values[columnIndex(item.column)] === null ? (
+                            <span className="muted">空</span>
+                          ) : (
+                            String(row.values[columnIndex(item.column)])
+                          ),
+                      }))}
+                    />
                   </div>
-                  {!rows.length && <p>来源记录为空；当前预览没有数据行。</p>}
                 </>
               ) : (
                 <p id={`${issueId}-preview-description`} role="status">
