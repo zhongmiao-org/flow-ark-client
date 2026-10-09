@@ -1,9 +1,10 @@
-import { Alert, Badge, Select, Button, Input, Tabs, Tag } from 'antd';
+import { Alert, Badge, Collapse, Descriptions, Select, Button, Input, Tabs, Tag } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { Bootstrap, BrowserBinding, FlowRecord } from '../shared/types';
 import type { AIProviderId } from '../shared/ai-settings';
 import { AISettingsSummary } from './AISettingsPage';
 import './local-settings.css';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import LocalStoragePanel from './LocalStoragePanel';
 import LocalCredentialsPanel from './LocalCredentialsPanel';
 
@@ -423,12 +424,13 @@ export default function LocalSettingsPage({
                   </div>
                 )}
                 <h2>网页展示</h2>
-                <dl className="local-settings-facts">
-                  <div>
-                    <dt>页面布局</dt>
-                    <dd>桌面宽度 · 1920 CSS px</dd>
-                  </div>
-                </dl>
+                <Descriptions
+                  className="local-browser-display-facts"
+                  layout="vertical"
+                  column={1}
+                  size="small"
+                  items={[{ key: 'layout', label: '页面布局', children: '桌面宽度 · 1920 CSS px' }]}
+                />
                 <p className="local-browser-display-note">
                   右侧面板等比缩放显示，展开与收起保留会话。
                 </p>
@@ -534,19 +536,34 @@ export default function LocalSettingsPage({
                   <p>系统保护不可用时拒绝保存。</p>
                 </div>
                 <p className="local-settings-muted">只有使用相应资源的流程才需要完成绑定。</p>
-                <details className="local-session-details">
-                  <summary>网页会话详情</summary>
-                  <p className="local-settings-path">
-                    {sessionError ||
-                      session?.blocked ||
-                      session?.url ||
-                      '打开网页或执行网页步骤时才创建会话。'}
-                  </p>
-                  <Button onClick={() => setStatusRevision((v) => v + 1)}>重新读取状态</Button>
-                  <p className="local-settings-muted">
-                    收起面板不会停止运行；最小化不阻止电脑休眠，退出后停止执行与调度。
-                  </p>
-                </details>
+                <Collapse
+                  className="local-session-details"
+                  size="small"
+                  items={[
+                    {
+                      key: 'session',
+                      onKeyDown: activateCollapseWithSpace,
+                      label: '网页会话详情',
+                      forceRender: true,
+                      children: (
+                        <>
+                          <p className="local-settings-path">
+                            {sessionError ||
+                              session?.blocked ||
+                              session?.url ||
+                              '打开网页或执行网页步骤时才创建会话。'}
+                          </p>
+                          <Button onClick={() => setStatusRevision((v) => v + 1)}>
+                            重新读取状态
+                          </Button>
+                          <p className="local-settings-muted">
+                            收起面板不会停止运行；最小化不阻止电脑休眠，退出后停止执行与调度。
+                          </p>
+                        </>
+                      ),
+                    },
+                  ]}
+                />
               </aside>
             </div>
           ) : (
@@ -554,7 +571,12 @@ export default function LocalSettingsPage({
               <div className="local-browser-binding-fields">
                 <div className="local-settings-field">
                   <label htmlFor="local-browser-mode">执行方式</label>
-                  <Input id="local-browser-mode" readOnly value="本机已安装浏览器" />
+                  <Input
+                    id="local-browser-mode"
+                    variant="filled"
+                    readOnly
+                    value="本机已安装浏览器"
+                  />
                 </div>
                 <div className="local-settings-field">
                   <label htmlFor="local-browser-choice">浏览器</label>
@@ -619,6 +641,9 @@ export default function LocalSettingsPage({
                   <label htmlFor="local-driver-path">驱动来源（Firefox 需要）</label>
                   <Button
                     id="local-driver-path"
+                    color="default"
+                    size="small"
+                    variant="filled"
                     className="local-browser-file-choice"
                     disabled={!!busy || picked?.product === 'safari' || undefined}
                     aria-label="选择驱动"
@@ -726,14 +751,27 @@ export default function LocalSettingsPage({
               <p className="local-settings-muted">
                 请在流程资源中明确选择浏览器。返回不修改已有绑定，也不关闭用户原有窗口。
               </p>
-              <details className="local-browser-binding-help">
-                <summary>浏览器与驱动说明</summary>
-                <p>发现只读取安装信息；检测并保存后才可在流程中选择。</p>
-                <p>
-                  不自动下载驱动或浏览器。Safari 使用系统驱动；Chrome 不需要驱动文件，Firefox
-                  需显式选择 geckodriver。
-                </p>
-              </details>
+              <Collapse
+                className="local-browser-binding-help"
+                size="small"
+                items={[
+                  {
+                    key: 'drivers',
+                    onKeyDown: activateCollapseWithSpace,
+                    label: '浏览器与驱动说明',
+                    forceRender: true,
+                    children: (
+                      <>
+                        <p>发现只读取安装信息；检测并保存后才可在流程中选择。</p>
+                        <p>
+                          不自动下载驱动或浏览器。Safari 使用系统驱动；Chrome
+                          不需要驱动文件，Firefox 需显式选择 geckodriver。
+                        </p>
+                      </>
+                    ),
+                  },
+                ]}
+              />
             </section>
           ))}
         {tab === 'ai' && active && <AISettingsSummary open={openAI} />}
