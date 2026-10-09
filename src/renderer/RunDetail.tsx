@@ -53,6 +53,7 @@ export default function RunDetail({
   rerunBusy,
   inspectRelated,
   restored,
+  humanRequest,
 }: {
   detail: any;
   fault?: string;
@@ -67,6 +68,7 @@ export default function RunDetail({
   rerunBusy: (busy: boolean) => void;
   inspectRelated: (detail: any, context: RunDetailReturnContext) => void;
   restored?: RunDetailReturnContext;
+  humanRequest?: () => void;
 }) {
   const visibleTabs: [RunTab, string][] =
     tab === 'output'
@@ -139,11 +141,18 @@ export default function RunDetail({
           执行下一步
         </button>
       )}
-      {controllable && !observed.fault && ['PAUSED', 'WAITING_INPUT'].includes(r.state) && (
-        <button disabled={controlPending} onClick={() => void sendControl('resume')}>
-          继续运行
-        </button>
-      )}
+      {controllable &&
+        !observed.fault &&
+        ['PAUSED', 'WAITING_INPUT'].includes(r.state) &&
+        (r.state === 'WAITING_INPUT' && humanRequest ? (
+          <button className="primary" onClick={humanRequest}>
+            查看本次人工请求
+          </button>
+        ) : (
+          <button disabled={controlPending} onClick={() => void sendControl('resume')}>
+            继续运行
+          </button>
+        ))}
       {!terminal && (controllable || (r.state === 'QUEUED' && !observed.fault)) && (
         <button
           className="danger"
