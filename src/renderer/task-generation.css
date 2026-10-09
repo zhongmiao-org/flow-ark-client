@@ -101,23 +101,12 @@
   width: 100%;
   min-width: 0;
 }
-.task-generation-record dl {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px 24px;
-  margin: 0 0 16px;
+.task-generation-record .ant-descriptions {
+  margin-bottom: 16px;
 }
-.task-generation-record dl > div {
-  min-width: 0;
-}
-.task-generation-record dt,
 .task-generation-record p {
   color: var(--fa-text-secondary);
   font-size: 13px;
-}
-.task-generation-record dd {
-  margin: 4px 0 0;
-  overflow-wrap: anywhere;
 }
 @container (max-width: 760px) {
   .ai-task-card.task-generation,
@@ -131,8 +120,5 @@
   .task-generation-current,
   .task-generation-review {
     padding: 16px;
-  }
-  .task-generation-record dl {
-    grid-template-columns: minmax(0, 1fr);
   }
 }

@@ -245,14 +245,10 @@
 .tool-config .tool-config-actions-compact {
   display: none;
 }
-.tool-protocol-settings summary {
-  cursor: pointer;
-  color: var(--fa-text-secondary);
-  font-size: 12px;
+.tool-protocol-settings .tool-field {
+  margin: 0;
 }
-.tool-protocol-settings[open] .tool-field {
-  margin-top: 16px;
-}
+
 .tool-field .tool-field-error {
   color: var(--fa-status-error);
 }
@@ -332,14 +328,6 @@
   padding-left: 20px;
   font-size: 13px;
   line-height: 22px;
-}
-/* Metadata is plain service-provided text, including long addresses. */
-.tool-connection-facts .ant-descriptions-item-label {
-  width: 160px;
-}
-.tool-connection-facts .ant-descriptions-item-content {
-  min-width: 0;
-  overflow-wrap: anywhere;
 }
 .tool-oauth-server .ant-card-head-title {
   white-space: normal;

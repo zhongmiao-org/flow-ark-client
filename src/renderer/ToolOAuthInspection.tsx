@@ -62,7 +62,7 @@ export default function ToolOAuthInspection({
         }
       />
       <Descriptions
-        className="tool-connection-facts"
+        className="metadata-facts"
         column={1}
         bordered
         size="small"
@@ -155,7 +155,7 @@ export default function ToolOAuthInspection({
                   label: '查看站点声明',
                   children: (
                     <Descriptions
-                      className="tool-connection-facts"
+                      className="metadata-facts"
                       column={1}
                       bordered
                       size="small"
