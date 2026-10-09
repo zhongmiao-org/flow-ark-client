@@ -275,6 +275,23 @@
 .template-entry-input .ai-task-actions > .template-entry-return {
   min-width: 180px;
 }
+.template-entry-alternatives {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid var(--fa-border-default);
+  padding-top: 20px;
+}
+.template-entry-alternatives p {
+  margin: 0;
+  color: var(--fa-text-secondary);
+  font-size: 13px;
+  line-height: 22px;
+}
+.template-entry-alternatives button {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .template-entry-columns.template-entry-inspection > .template-entry-resources {
   min-height: 0;
   display: block;

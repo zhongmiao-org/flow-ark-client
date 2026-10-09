@@ -504,6 +504,29 @@ export default function TemplateEntry({
                 </button>
               )}
             </div>
+            {inspection &&
+              !reading &&
+              !sourceError &&
+              !readError &&
+              needsResourceConfiguration &&
+              detail.entries.length > 1 && (
+                <div className="template-entry-alternatives" role="group" aria-label="切换操作入口">
+                  <p>缺项只影响需要它的入口。可切换到其他入口核对；切换不会保存输入或开始运行。</p>
+                  <div className="ai-task-actions">
+                    {detail.entries
+                      .filter((other) => other.id !== entryId)
+                      .map((other) => (
+                        <button
+                          key={other.id}
+                          disabled={blocked}
+                          onClick={() => openDetail(other.id)}
+                        >
+                          切换到 {other.name}
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
           </section>
           <ResourceContainer className="ai-task-card template-entry-resources">
             {inspection ? (
