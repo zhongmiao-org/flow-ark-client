@@ -65,6 +65,9 @@
 .local-storage-location button {
   width: 100%;
 }
+.local-storage-details .ant-btn {
+  width: 100%;
+}
 .local-storage-layout .local-settings-empty p {
   margin-top: 0;
 }

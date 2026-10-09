@@ -1,4 +1,5 @@
-import { Button, Input } from 'antd';
+import { Button, Collapse, Input } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useRef, useState } from 'react';
 import type { Bootstrap, FlowRecord } from '../shared/types';
 import './local-storage.css';
@@ -61,6 +62,7 @@ export default function LocalStoragePanel({
   openRuns: () => void;
 }) {
   const [query, setQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const search = useRef<HTMLInputElement>(null);
   const inventory = data.flows
     .map((flow) => ({ flow, resources: resourcesFor(flow, data.templates) }))
@@ -77,29 +79,70 @@ export default function LocalStoragePanel({
     }))
     .filter((item) => item.resources.length);
   const count = filtered.reduce((sum, item) => sum + item.resources.length, 0);
+  const searchControls = (
+    <>
+      <label className="local-settings-search">
+        搜索本机资源
+        <Input
+          size={compact ? 'small' : undefined}
+          ref={(instance) => {
+            search.current = instance?.input ?? null;
+          }}
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="流程名称、资源名称或路径"
+        />
+      </label>
+      <div className="local-storage-count" role="status">
+        {filtered.length} 个流程 · {count} 项资源
+      </div>
+    </>
+  );
+  const dataLocation = (
+    <>
+      <p className="local-settings-path">{data.dataPath || '正在初始化安全存储…'}</p>
+      <Button disabled={busy || !data.dataPath || undefined} onClick={showData}>
+        打开数据目录
+      </Button>
+    </>
+  );
+  const resourceHelp = (
+    <>
+      {compact && (
+        <p className="local-settings-muted">
+          用途来自模板声明，选择路径不等于授权执行；已保存路径是否可用，会在运行前重新检查。
+        </p>
+      )}
+      <p className="local-settings-muted">
+        本地路径和凭据不随流程 ZIP 导出。外部输出文件与应用内副本的状态，以对应运行的产物记录为准。
+      </p>
+    </>
+  );
   return (
     <div className={`local-storage-layout${compact ? ' is-compact' : ''}`}>
       <section className="local-settings-card local-storage-bindings">
         <h2>{compact ? '文件与存储' : '文件与目录绑定'}</h2>
         <p>本地路径只保存在这台 Mac 上。重新选择位置，请打开所属流程的资源配置。</p>
-        <details className="local-resource-search-controls" open={compact ? undefined : true}>
-          <summary hidden={!compact}>查找本机资源 · {count}</summary>
-          <label className="local-settings-search">
-            搜索本机资源
-            <Input
-              ref={(instance) => {
-                search.current = instance?.input ?? null;
-              }}
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="流程名称、资源名称或路径"
-            />
-          </label>
-          <div className="local-storage-count" role="status">
-            {filtered.length} 个流程 · {count} 项资源
-          </div>
-        </details>
+        {compact ? (
+          <Collapse
+            className="local-resource-search-controls"
+            size="small"
+            activeKey={searchOpen ? ['search'] : []}
+            onChange={(keys) => setSearchOpen(keys.includes('search'))}
+            items={[
+              {
+                key: 'search',
+                label: `查找本机资源 · ${count}`,
+                forceRender: true,
+                onKeyDown: activateCollapseWithSpace,
+                children: searchControls,
+              },
+            ]}
+          />
+        ) : (
+          searchControls
+        )}
         {filtered.map(({ flow, resources }) => (
           <article className="local-settings-resource" key={flow.id}>
             <div className="local-settings-row">
@@ -137,7 +180,8 @@ export default function LocalStoragePanel({
               <Button
                 onClick={() => {
                   setQuery('');
-                  search.current?.focus();
+                  setSearchOpen(true);
+                  requestAnimationFrame(() => search.current?.focus());
                 }}
               >
                 清除搜索
@@ -168,29 +212,36 @@ export default function LocalStoragePanel({
             查看运行与产物
           </Button>
         </div>
-        <details
-          className="local-storage-location local-storage-data"
-          open={compact ? undefined : true}
-        >
-          <summary hidden={!compact}>本地数据目录</summary>
-          {!compact && <h3>本地数据目录</h3>}
-          <p className="local-settings-path">{data.dataPath || '正在初始化安全存储…'}</p>
-          <Button disabled={busy || !data.dataPath || undefined} onClick={showData}>
-            打开数据目录
-          </Button>
-        </details>
-        <details className="local-storage-help" open={compact ? undefined : true}>
-          <summary hidden={!compact}>资源使用说明</summary>
-          {compact && (
-            <p className="local-settings-muted">
-              用途来自模板声明，选择路径不等于授权执行；已保存路径是否可用，会在运行前重新检查。
-            </p>
-          )}
-          <p className="local-settings-muted">
-            本地路径和凭据不随流程 ZIP
-            导出。外部输出文件与应用内副本的状态，以对应运行的产物记录为准。
-          </p>
-        </details>
+        {compact ? (
+          <Collapse
+            className="local-storage-details"
+            size="small"
+            items={[
+              {
+                key: 'data',
+                label: '本地数据目录',
+                forceRender: true,
+                onKeyDown: activateCollapseWithSpace,
+                children: dataLocation,
+              },
+              {
+                key: 'help',
+                label: '资源使用说明',
+                forceRender: true,
+                onKeyDown: activateCollapseWithSpace,
+                children: resourceHelp,
+              },
+            ]}
+          />
+        ) : (
+          <>
+            <div className="local-storage-location">
+              <h3>本地数据目录</h3>
+              {dataLocation}
+            </div>
+            {resourceHelp}
+          </>
+        )}
       </section>
     </div>
   );
