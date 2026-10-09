@@ -1,3 +1,4 @@
+import { Select, Button, Input } from 'antd';
 import { useId, useRef, useState } from 'react';
 import { Search, Plus, X } from 'lucide-react';
 import type { Step } from '../shared/types';
@@ -129,8 +130,10 @@ export default function ActionLibrary({
           <span>搜索动作</span>
           <div className="action-search">
             <Search size={14} aria-hidden="true" />
-            <input
-              ref={search}
+            <Input
+              ref={(instance) => {
+                search.current = instance?.input ?? null;
+              }}
               aria-label="搜索动作"
               placeholder="搜索名称 / 操作"
               value={query}
@@ -140,31 +143,26 @@ export default function ActionLibrary({
               }}
             />
             {query && (
-              <button aria-label="清空动作搜索" onClick={clear}>
+              <Button aria-label="清空动作搜索" onClick={clear}>
                 <X size={12} />
-              </button>
+              </Button>
             )}
           </div>
         </label>
         <label className="action-destination">
           添加到
-          <select
+          <Select<string>
             aria-label="动作添加位置"
             title={target?.label}
             value={target ? destination : ''}
-            onChange={(e) => setDestination(e.target.value)}
-          >
-            {!target && (
-              <option value="" disabled>
-                原位置已删除，请重新选择
-              </option>
-            )}
-            {targets.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => setDestination(value)}
+            options={[
+              ...(!target
+                ? [{ value: '', disabled: true, label: '原位置已删除，请重新选择' }]
+                : []),
+              ...targets.map((item) => ({ value: item.value, label: item.label })),
+            ]}
+          />
         </label>
         {terms.length > 0 && (
           <p className="action-result-count" role="status">
@@ -186,7 +184,7 @@ export default function ActionLibrary({
           const panelId = `${scope}-${group.id}`;
           return (
             <section className="action-group" key={group.id} aria-label={group.label}>
-              <button
+              <Button
                 className="action-category"
                 aria-expanded={open}
                 aria-controls={panelId}
@@ -200,16 +198,16 @@ export default function ActionLibrary({
               >
                 {group.label}
                 {group.id === 'browser' ? ` · ${members.length}` : ''}
-              </button>
+              </Button>
               <div id={panelId} className="action-category-members" hidden={!open}>
                 {members.map((entry) => {
                   const Icon = kinds[entry.type].icon;
                   return (
-                    <button
+                    <Button
                       key={entry.id}
                       aria-label={`添加 ${entry.label}`}
                       title={`${entry.detail} · ${target?.label ?? '请选择添加位置'}`}
-                      disabled={!target}
+                      disabled={!target || undefined}
                       onClick={() => {
                         if (!target) return;
                         const added = add(entry.create(), target);
@@ -226,7 +224,7 @@ export default function ActionLibrary({
                         <small>{entry.detail}</small>
                       </span>
                       <Plus size={12} className="action-add-icon" aria-hidden="true" />
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -237,7 +235,7 @@ export default function ActionLibrary({
           <div className="action-library-empty">
             <p>没有匹配动作</p>
             <p>调整关键词后重试。</p>
-            {query && <button onClick={clear}>清空搜索</button>}
+            {query && <Button onClick={clear}>清空搜索</Button>}
           </div>
         )}
       </div>

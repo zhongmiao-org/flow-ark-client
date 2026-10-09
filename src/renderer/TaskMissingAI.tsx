@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import type { PlanningContext } from '../shared/planning';
 
 const contextKinds: Record<PlanningContext['kind'], string> = {
@@ -58,12 +59,12 @@ export default function TaskMissingAI({
         )}
       </article>
       <div className="ai-task-actions">
-        <button className="primary" disabled={busy} onClick={configure}>
+        <Button type="primary" disabled={busy || undefined} onClick={configure}>
           去配置 AI 服务
-        </button>
-        <button disabled={busy} onClick={manual}>
+        </Button>
+        <Button disabled={busy || undefined} onClick={manual}>
           {busy ? '正在准备…' : '先手动搭建'}
-        </button>
+        </Button>
       </div>
     </section>
   );

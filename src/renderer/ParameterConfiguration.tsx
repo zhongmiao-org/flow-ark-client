@@ -1,3 +1,4 @@
+import { Button, Input } from 'antd';
 import {
   useCallback,
   useEffect,
@@ -122,8 +123,8 @@ export default function ParameterConfiguration({
             ) : (
               <strong>{key}</strong>
             )}
-            <button
-              type="button"
+            <Button
+              htmlType="button"
               aria-label={'删除参数 ' + key}
               onClick={() => {
                 try {
@@ -136,7 +137,7 @@ export default function ParameterConfiguration({
               }}
             >
               删除
-            </button>
+            </Button>
           </header>
           <LiteralValue
             compact
@@ -152,8 +153,11 @@ export default function ParameterConfiguration({
       {adding && (
         <div className="parameter-add-fields">
           <label htmlFor={addId}>新参数名称</label>
-          <input
-            ref={nameInput}
+          <Input
+            status={!!addError ? 'error' : undefined}
+            ref={(instance) => {
+              nameInput.current = instance?.input ?? null;
+            }}
             id={addId}
             data-value-invalid={name ? '新参数名称尚未添加，请添加或清空' : undefined}
             value={name}
@@ -182,13 +186,13 @@ export default function ParameterConfiguration({
               {addError}
             </p>
           )}
-          <button type="button" onClick={add}>
+          <Button htmlType="button" onClick={add}>
             {columns ? '确认添加' : '添加参数'}
-          </button>
+          </Button>
           {columns && (
-            <button type="button" onClick={cancelAdd}>
+            <Button htmlType="button" onClick={cancelAdd}>
               取消添加
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -204,9 +208,14 @@ export default function ParameterConfiguration({
       )}
       {columns && (
         <div className="parameter-actions">
-          <button ref={addButton} type="button" disabled={adding} onClick={() => setAdding(true)}>
+          <Button
+            ref={addButton}
+            htmlType="button"
+            disabled={adding || undefined}
+            onClick={() => setAdding(true)}
+          >
             添加参数
-          </button>
+          </Button>
           {actions}
         </div>
       )}
@@ -249,9 +258,12 @@ function ParameterName({
     <div>
       <label className="parameter-name-field" htmlFor={id}>
         名称
-        <input
+        <Input
+          status={!!error ? 'error' : undefined}
           id={id}
-          ref={input}
+          ref={(instance) => {
+            input.current = instance?.input ?? null;
+          }}
           value={next}
           data-parameter-name={name}
           data-value-invalid={changed ? '参数名称尚未确认，请确认改名或取消' : undefined}
@@ -286,12 +298,12 @@ function ParameterName({
             {error || '同步更新变量引用；代码和普通文本请自行核对。'}
           </p>
           <div>
-            <button type="button" onClick={apply}>
+            <Button htmlType="button" onClick={apply}>
               确认改名
-            </button>
-            <button type="button" onClick={cancel}>
+            </Button>
+            <Button htmlType="button" onClick={cancel}>
               取消改名
-            </button>
+            </Button>
           </div>
         </div>
       )}

@@ -1,3 +1,4 @@
+import { ConfigProvider, Select, Button, Checkbox } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { PlanningTask } from '../shared/planning';
 import type { DesktopSelectionPreview, DesktopWindow } from '../shared/desktop-windows';
@@ -203,9 +204,9 @@ export default function DesktopTaskPlan({
               <div className="desktop-plan-description">
                 <h2>你</h2>
                 <p>{hasDescription ? task.description : '先说明你想怎样整理这段文字。'}</p>
-                <button onClick={editDescription}>
+                <Button onClick={editDescription}>
                   {hasDescription ? '修改需求' : '填写需求'}
-                </button>
+                </Button>
               </div>
               <div className="desktop-plan-scope">
                 <h2>当前对象</h2>
@@ -253,8 +254,8 @@ export default function DesktopTaskPlan({
                 adoptionUnavailable={adoptionUnavailable}
               />
               <div className="ai-task-actions">
-                <button onClick={() => setView('plan')}>取消，回到方案</button>
-                <button onClick={back}>重新选窗口</button>
+                <Button onClick={() => setView('plan')}>取消，回到方案</Button>
+                <Button onClick={back}>重新选窗口</Button>
               </div>
             </>
           ) : (
@@ -287,15 +288,11 @@ export default function DesktopTaskPlan({
               </ol>
               <div className="ai-task-actions desktop-plan-actions">
                 {proposal && (
-                  <button
-                    ref={candidateButton}
-                    className="primary"
-                    onClick={() => setView('changes')}
-                  >
+                  <Button ref={candidateButton} type="primary" onClick={() => setView('changes')}>
                     查看改动并确认
-                  </button>
+                  </Button>
                 )}
-                <button onClick={back}>重新选窗口</button>
+                <Button onClick={back}>重新选窗口</Button>
               </div>
               {proposal && (
                 <p className="desktop-plan-candidate-summary" role="status">
@@ -311,38 +308,41 @@ export default function DesktopTaskPlan({
                 <summary>
                   {proposal ? '重新生成或更换 AI 服务' : '核对文字与 AI 服务，生成改动预览'}
                 </summary>
-                <fieldset className="ai-task-provider" disabled={busy}>
-                  <legend>本次 AI 服务</legend>
-                  <label>
-                    供应商
-                    <select
-                      value={provider}
-                      onChange={(e) => setProvider(e.target.value as AIProviderId)}
+                <ConfigProvider componentDisabled={busy || undefined}>
+                  <fieldset className="ai-task-provider" disabled={busy}>
+                    <legend>本次 AI 服务</legend>
+                    <label>
+                      供应商
+                      <Select<string>
+                        value={provider}
+                        onChange={(value) => setProvider(value as AIProviderId)}
+                        options={[
+                          { value: 'deepseek', label: 'DeepSeek' },
+                          { value: 'openai-codex', label: 'OpenAI' },
+                        ]}
+                      />
+                    </label>
+                    <p>
+                      {loading
+                        ? '正在读取配置…'
+                        : configuration?.configured
+                          ? `模型：${configuration.model}`
+                          : '尚未配置这个服务'}
+                    </p>
+                    <Button
+                      htmlType="button"
+                      onClick={() => setConfigEpoch((x) => x + 1)}
+                      disabled={loading || undefined}
                     >
-                      <option value="deepseek">DeepSeek</option>
-                      <option value="openai-codex">OpenAI</option>
-                    </select>
-                  </label>
-                  <p>
-                    {loading
-                      ? '正在读取配置…'
-                      : configuration?.configured
-                        ? `模型：${configuration.model}`
-                        : '尚未配置这个服务'}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setConfigEpoch((x) => x + 1)}
-                    disabled={loading}
-                  >
-                    重新读取配置
-                  </button>
-                </fieldset>
+                      重新读取配置
+                    </Button>
+                  </fieldset>
+                </ConfigProvider>
                 {!loading && configuration?.operation && (
                   <p role="status">AI 配置正在处理，请完成后重新读取。</p>
                 )}
                 {!loading && !configuration?.configured && (
-                  <button onClick={editDescription}>返回描述页配置 AI</button>
+                  <Button onClick={editDescription}>返回描述页配置 AI</Button>
                 )}
                 {selection.redacted && (
                   <p className="ai-task-note">原段落包含已遮盖的信息，请返回缩小选区后重新读取。</p>
@@ -356,35 +356,34 @@ export default function DesktopTaskPlan({
                   只发送左侧需求和原段落给 {name}
                   ；不附带网页、工具、附件或其他文档。生成可能产生服务费用。
                 </p>
-                <label className="ai-task-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={reviewed}
-                    disabled={!ready}
-                    onChange={(e) => setReviewed(e.target.checked)}
-                  />
+                <Checkbox
+                  checked={reviewed}
+                  disabled={!ready || undefined}
+                  onChange={(e) => setReviewed(e.target.checked)}
+                  className="ai-task-checkbox"
+                >
                   我已核对本次文字与模型，同意发送给 {name}
-                </label>
+                </Checkbox>
                 {busy ? (
                   <div role="status">
                     <p>正在核对选区并生成预览，尚未修改文档。</p>
-                    <button
+                    <Button
                       onClick={() => {
                         cancel();
                         setMessage('已取消生成，原文未修改。再次生成前请重新核对。');
                       }}
                     >
                       取消生成
-                    </button>
+                    </Button>
                   </div>
                 ) : (
-                  <button
-                    className="primary"
-                    disabled={!ready || !reviewed}
+                  <Button
+                    type="primary"
+                    disabled={!ready || !reviewed || undefined}
                     onClick={() => void generate()}
                   >
                     {result ? '重新生成改动预览' : '生成改动预览'}
-                  </button>
+                  </Button>
                 )}
               </details>
               {result?.result.kind === 'unsupported' && (

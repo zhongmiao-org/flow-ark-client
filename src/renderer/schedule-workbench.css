@@ -26,11 +26,9 @@
 .schedule-workbench-form .schedule-adoption {
   margin: 0;
 }
-.schedule-workbench-form select {
-  background: var(--fa-bg-canvas);
+.schedule-workbench-form .ant-select {
   width: 100%;
   min-width: 0;
-  font-size: 13px;
 }
 .schedule-fixed-version {
   display: flex;
@@ -177,16 +175,20 @@
 .schedule-workbench-form fieldset {
   gap: 20px;
 }
-.schedule-workbench-form fieldset > label:not(.schedule-adoption) {
+.schedule-workbench-form
+  fieldset
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.schedule-adoption) {
   gap: 4px;
 }
-.schedule-workbench-form input:not([type='checkbox']),
-.schedule-workbench-form select {
+.schedule-workbench-form
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):not(
+    [type='checkbox']
+  ) {
   min-height: 32px;
   padding: 5px 6px;
   line-height: 20px;
 }
-.schedule-workbench-form .ai-task-actions > .primary {
+.schedule-workbench-form .ai-task-actions > .ant-btn-primary {
   min-width: 160px;
 }
 

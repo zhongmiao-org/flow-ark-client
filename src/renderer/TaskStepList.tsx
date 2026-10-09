@@ -1,3 +1,4 @@
+import { Button, Input } from 'antd';
 import { useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type Ref } from 'react';
 import type { Flow, Step } from '../shared/types';
 import { flatten } from './flow-editing';
@@ -62,7 +63,7 @@ export default function TaskStepList({
   }, [active, focusId]);
   function row(step: Step) {
     return (
-      <button
+      <Button
         className="ai-task-step"
         aria-pressed={selected === step.id}
         data-step-id={step.id}
@@ -73,13 +74,13 @@ export default function TaskStepList({
           <strong>{taskStepTitle(step)}</strong>
           <small>{taskStepSummary(step, flow, context)}</small>
         </span>
-      </button>
+      </Button>
     );
   }
   function branch(steps: Step[], key: string, label: string) {
     return (
       <div className="ai-task-step-branch">
-        <button
+        <Button
           className="ai-task-branch-toggle"
           aria-expanded={!collapsed.has(key)}
           onClick={() =>
@@ -93,7 +94,7 @@ export default function TaskStepList({
         >
           <span aria-hidden="true">{collapsed.has(key) ? '▸' : '▾'}</span>
           {label} · {flatten(steps).length} 步
-        </button>
+        </Button>
         {!collapsed.has(key) && block(steps)}
       </div>
     );
@@ -127,8 +128,10 @@ export default function TaskStepList({
         <div className="task-step-search">
           <label>
             查找步骤
-            <input
-              ref={search}
+            <Input
+              ref={(instance) => {
+                search.current = instance?.input ?? null;
+              }}
               type="search"
               value={query}
               placeholder="输入步骤名称、编号或内容"
@@ -142,14 +145,14 @@ export default function TaskStepList({
             />
           </label>
           {query && (
-            <button
+            <Button
               onClick={() => {
                 setQuery('');
                 search.current?.focus();
               }}
             >
               清空查找
-            </button>
+            </Button>
           )}
           <p role="status">
             {terms.length

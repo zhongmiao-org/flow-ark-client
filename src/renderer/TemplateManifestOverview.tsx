@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useState } from 'react';
 import type { InstalledPackage } from '../templates/archive';
 export type TemplateManifest = InstalledPackage['manifest'];
@@ -64,14 +65,14 @@ export default function TemplateManifestOverview({
       <h3>操作入口与要求</h3>
       <div className="template-entry-choices" role="group" aria-label="查看入口要求">
         {manifest.entries.map((e) => (
-          <button key={e.id} aria-pressed={entry?.id === e.id} onClick={() => setEntryId(e.id)}>
+          <Button key={e.id} aria-pressed={entry?.id === e.id} onClick={() => setEntryId(e.id)}>
             <strong>{e.name}</strong>
             <span>{e.capabilities.map(capabilityLabel).join(' · ') || '无额外能力声明'}</span>
             <small>
               {e.actions.length ? `${e.actions.length} 项动作待授权` : '未声明写入动作'} ·{' '}
               {e.schedulable ? '可创建本机计划' : '手动运行'}
             </small>
-          </button>
+          </Button>
         ))}
       </div>
       {entry && (

@@ -1,3 +1,4 @@
+import { Button, Input } from 'antd';
 import { useEffect, useState, type RefObject, type Ref } from 'react';
 import type { FlowRecord, Step } from '../shared/types';
 import { nodeReferenceValues } from '../shared/flow-references';
@@ -70,7 +71,7 @@ export default function ReadStepInspector({
       <summary>步骤名称与编号</summary>
       <span className="read-step-selection">步骤 {String(ordinal).padStart(2, '0')} · 已选择</span>
       <label htmlFor="step-name">动作名称</label>
-      <input
+      <Input
         id="step-name"
         aria-label="步骤名称"
         value={node.name ?? ''}
@@ -98,21 +99,21 @@ export default function ReadStepInspector({
             <p className="read-step-value" title={reference}>
               当前步骤输出 → 文本
             </p>
-            <button
+            <Button
               aria-expanded={referencesOpen}
               onClick={() => setReferencesOpen(!referencesOpen)}
             >
               查看输出引用 · {consumers.length}
-            </button>
+            </Button>
             {referencesOpen && (
               <div className="read-step-references">
                 <code>{reference}</code>
                 <p>后续步骤可通过变量选择引用此输出。这里展示草稿引用关系，不包含实际读取结果。</p>
                 {consumers.length ? (
                   consumers.map((step) => (
-                    <button key={step.id} onClick={() => select(step.id)}>
+                    <Button key={step.id} onClick={() => select(step.id)}>
                       {String(steps.indexOf(step) + 1).padStart(2, '0')} {taskStepTitle(step)}
-                    </button>
+                    </Button>
                   ))
                 ) : (
                   <p>当前草稿没有步骤引用此输出。</p>
@@ -133,23 +134,24 @@ export default function ReadStepInspector({
         {compact ? '配置 · 读取文字' : '读取文字'}
       </h3>
       {compact ? [configuration, identity] : [identity, configuration]}
-      <button
-        className="primary read-step-apply"
+      <Button
+        className="read-step-apply"
+        type="primary"
         onClick={() => {
           if (guard()) setNotice('已应用到当前草稿；保存后用于下一次运行。');
         }}
       >
         应用配置
-      </button>
+      </Button>
       {notice && (
         <p role="status" className="read-step-notice">
           {notice}
         </p>
       )}
-      <button onClick={position}>复制 / 移动 / 删除</button>
+      <Button onClick={position}>复制 / 移动 / 删除</Button>
       <div className="read-step-view" role="group" aria-label="流程图视图">
-        <button onClick={() => view('all')}>全图</button>
-        <button onClick={() => view('selected')}>聚焦当前步骤</button>
+        <Button onClick={() => view('all')}>全图</Button>
+        <Button onClick={() => view('selected')}>聚焦当前步骤</Button>
       </div>
     </section>
   );

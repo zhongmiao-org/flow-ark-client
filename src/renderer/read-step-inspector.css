@@ -31,19 +31,21 @@
   border-radius: 50%;
   background: currentColor;
 }
-.read-step-identity > input {
+.read-step-identity
+  > input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   width: 100%;
 }
-.read-step-identity > label,
-.read-step-inspector .node-configuration > label,
-.read-step-output > label {
+.read-step-identity > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper),
+.read-step-inspector .node-configuration > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper),
+.read-step-output > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   display: block;
   margin: 0 0 6px;
   font-size: 12px;
   line-height: 18px;
   color: var(--fa-text-secondary);
 }
-.read-step-identity > input,
+.read-step-identity
+  > input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']),
 .read-step-inspector .read-step-value,
 .read-step-inspector .compact-target-selector {
   height: 32px;
@@ -189,7 +191,11 @@
   margin-bottom: 16px;
 }
 
-.read-step-inspector.is-compact .node-timing input:not([type='checkbox']) {
+.read-step-inspector.is-compact
+  .node-timing
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):not(
+    [type='checkbox']
+  ) {
   height: 32px;
   min-height: 32px;
   padding: 6px;

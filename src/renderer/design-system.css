@@ -1,23 +1,5 @@
 /* Figma sVciNUZHG9yx81gCpYzjH9: FlowArk primitives and semantic variables. */
 :root {
-  --fa-raw-white: #ffffff;
-  --fa-raw-fog: #f6f7fb;
-  --fa-raw-soft: #eff2f7;
-  --fa-raw-line: #dfe4ed;
-  --fa-raw-ink: #172033;
-  --fa-raw-muted: #637089;
-  --fa-raw-nav: #121a2a;
-  --fa-raw-navMuted: #a8b4ca;
-  --fa-raw-blue: #315ef5;
-  --fa-raw-blueHover: #244bdc;
-  --fa-raw-blueSoft: #edf2ff;
-  --fa-raw-green: #147d61;
-  --fa-raw-greenSoft: #e8f6ef;
-  --fa-raw-amber: #946200;
-  --fa-raw-amberSoft: #fff5db;
-  --fa-raw-red: #b83b48;
-  --fa-raw-redSoft: #fdedf0;
-  --fa-raw-disabled: #b9c3d3;
   --fa-bg-canvas: var(--fa-raw-fog);
   --fa-bg-surface: var(--fa-raw-white);
   --fa-bg-subtle: var(--fa-raw-soft);
@@ -68,61 +50,15 @@
   font-size: 14px;
   line-height: 22px;
 }
-button {
-  min-height: 40px;
-  padding: 9px 12px;
-  border-radius: var(--fa-radius-8);
-  color: var(--fa-text-primary);
-  background: var(--fa-bg-surface);
-  border-color: var(--fa-border-default);
-  font-size: 13px;
-  line-height: 20px;
-  font-weight: 500;
-}
-button:hover {
-  background: var(--fa-bg-subtle);
-  border-color: var(--fa-border-default);
-}
-button:disabled {
-  background: var(--fa-bg-subtle);
-  color: var(--fa-text-secondary);
-  opacity: 0.65;
-  cursor: not-allowed;
-}
 button:focus-visible,
-input:focus-visible,
+input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):focus-visible,
 textarea:focus-visible,
-select:focus-visible,
 a:focus-visible,
 summary:focus-visible {
   outline: 2px solid var(--fa-action-primary);
   outline-offset: 2px;
 }
-input,
-select,
-textarea {
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--fa-text-primary);
-  border-color: var(--fa-border-default);
-  border-radius: var(--fa-radius-8);
-  background: var(--fa-bg-surface);
-  padding: 8px 12px;
-}
-input:focus,
-textarea:focus {
-  border-color: var(--fa-action-primary);
-}
-input[aria-invalid='true'],
-textarea[aria-invalid='true'] {
-  border-color: var(--fa-status-error);
-}
-input::placeholder,
-textarea::placeholder {
-  color: var(--fa-text-secondary);
-  opacity: 1;
-}
-label {
+label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   font-size: 13px;
   line-height: 20px;
   color: var(--fa-text-secondary);
@@ -147,22 +83,6 @@ p {
 small {
   font-size: 12px;
   line-height: 18px;
-}
-.primary {
-  color: var(--fa-text-inverse);
-  background: var(--fa-action-primary);
-  border-color: var(--fa-action-primary);
-  box-shadow: none;
-}
-.primary:hover {
-  color: var(--fa-text-inverse);
-  background: var(--fa-action-hover);
-  border-color: var(--fa-action-hover);
-}
-button.danger {
-  color: var(--fa-status-error);
-  background: var(--fa-status-error-bg);
-  border-color: transparent;
 }
 .badge {
   display: inline-flex;

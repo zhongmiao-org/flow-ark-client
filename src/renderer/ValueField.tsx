@@ -1,3 +1,4 @@
+import { Select, Button, Input } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { Json } from '../shared/types';
 import { referenceOf, type ReferenceChoice } from './value-references';
@@ -38,8 +39,8 @@ export default function ValueField({
       {current !== undefined && compactReference ? (
         <div className="reference-value-compact">
           <span className="value-field-label">{label}</span>
-          <button
-            type="button"
+          <Button
+            htmlType="button"
             className="value-source-button"
             aria-label={'选择变量 · ' + label}
             aria-expanded={open}
@@ -47,7 +48,7 @@ export default function ValueField({
             title={current}
           >
             {source ? `${source.group} → ${source.label}` : current}
-          </button>
+          </Button>
           {!source && <p className="field-error">来源已缺失或不在当前作用域，请重新选择。</p>}
         </div>
       ) : current !== undefined ? (
@@ -57,8 +58,8 @@ export default function ValueField({
           <strong>{source?.label ?? '当前来源不可用'}</strong>
           <code>{current}</code>
           {!source && <p className="field-error">来源已缺失或不在当前作用域，请重新选择。</p>}
-          <button
-            type="button"
+          <Button
+            htmlType="button"
             aria-label={'改为固定值 · ' + label}
             onClick={() => {
               change(structuredClone(defaultValue));
@@ -66,7 +67,7 @@ export default function ValueField({
             }}
           >
             改为固定值
-          </button>
+          </Button>
         </div>
       ) : (
         (children ?? (
@@ -80,15 +81,15 @@ export default function ValueField({
         ))
       )}
       {choices && !(compactReference && current !== undefined) && (
-        <button
+        <Button
           className="value-source-button"
-          type="button"
+          htmlType="button"
           aria-expanded={open}
           aria-label={'选择变量 · ' + label}
           onClick={() => setOpen(true)}
         >
           ↳ {current !== undefined ? '更换变量' : '选择变量'}
-        </button>
+        </Button>
       )}
       {open && (
         <VariablePicker
@@ -163,50 +164,56 @@ export function LiteralValue({
   return (
     <div className="literal-value" data-value-invalid={error || undefined}>
       <label htmlFor={id + '-type'}>{displayLabels?.type ?? `${label}类型`}</label>
-      <select
+      <Select<string>
         id={id + '-type'}
         aria-label={displayLabels ? `${label}类型` : undefined}
         value={type}
-        onChange={(e) => {
+        onChange={(value) => {
           try {
-            change(defaults[e.target.value]);
+            change(defaults[value]);
             setError('');
           } catch (reason) {
             setError(reason instanceof Error ? reason.message : '类型未修改，请检查引用');
           }
         }}
-      >
-        <option value="string">文本</option>
-        <option value="number">数字</option>
-        <option value="boolean">布尔</option>
-        <option value="null">空值</option>
-        <option value="json">数组 / 对象</option>
-      </select>
+        options={[
+          { value: 'string', label: '文本' },
+          { value: 'number', label: '数字' },
+          { value: 'boolean', label: '布尔' },
+          { value: 'null', label: '空值' },
+          { value: 'json', label: '数组 / 对象' },
+        ]}
+      />
       <label htmlFor={id}>{displayLabels?.value ?? label}</label>
       {type === 'boolean' ? (
-        <select
+        <Select<string>
+          status={!!error ? 'error' : undefined}
           id={id}
           aria-label={displayLabels ? label : undefined}
           value={String(value)}
           aria-invalid={!!error}
           aria-describedby={error ? id + '-error' : undefined}
-          onChange={(e) => {
+          onChange={(value) => {
             try {
-              change(e.target.value === 'true');
+              change(value === 'true');
               setError('');
             } catch (reason) {
               setError(reason instanceof Error ? reason.message : '值未修改，请检查输入');
             }
           }}
-        >
-          <option value="true">true</option>
-          <option value="false">false</option>
-        </select>
+          options={[
+            { value: 'true', label: 'true' },
+            { value: 'false', label: 'false' },
+          ]}
+        />
       ) : type === 'null' ? (
         <p className="note">null · 空值</p>
       ) : (
-        <textarea
-          ref={input}
+        <Input.TextArea
+          status={!!error ? 'error' : undefined}
+          ref={(instance) => {
+            input.current = instance?.resizableTextArea?.textArea ?? null;
+          }}
           id={id}
           aria-label={displayLabels ? label : undefined}
           rows={compact ? 1 : type === 'json' ? 5 : 2}
@@ -241,8 +248,8 @@ export function LiteralValue({
           <p id={id + '-error'} className="field-error" role="alert">
             {error}；修正后才能保存、运行或切换步骤。
           </p>
-          <button
-            type="button"
+          <Button
+            htmlType="button"
             className="literal-value-restore"
             aria-label={'恢复已应用值 · ' + label}
             onClick={() => {
@@ -252,7 +259,7 @@ export function LiteralValue({
             }}
           >
             恢复已应用值
-          </button>
+          </Button>
         </>
       )}
     </div>

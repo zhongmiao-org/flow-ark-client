@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useEffect, useId, useRef, type RefObject } from 'react';
 import './editor-leave.css';
 import './schedule-leave.css';
@@ -70,15 +71,19 @@ export default function ScheduleLeaveDialog({
         </p>
       )}
       <div className="editor-leave-actions">
-        <button ref={continueButton} autoFocus disabled={busy} onClick={stay}>
+        <Button ref={continueButton} autoFocus disabled={busy || undefined} onClick={stay}>
           继续编辑
-        </button>
-        <button className="editor-leave-discard" disabled={busy} onClick={discard}>
+        </Button>
+        <Button className="editor-leave-discard" disabled={busy || undefined} onClick={discard}>
           不保存离开
-        </button>
-        <button className="primary" disabled={busy || blocked || unconfirmed} onClick={save}>
+        </Button>
+        <Button
+          type="primary"
+          disabled={busy || blocked || unconfirmed || undefined}
+          onClick={save}
+        >
           {busy ? (creating ? '正在创建…' : '正在保存…') : error ? '重试保存并离开' : '保存并离开'}
-        </button>
+        </Button>
       </div>
     </dialog>
   );

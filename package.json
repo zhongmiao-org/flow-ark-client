@@ -8,7 +8,7 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "3bf2664bc9580ef07810bd8be2f73ff42de87264",
+    "governanceBaseline": "38adf61cbc875a82abaa9efcd8024208ad203d6e",
     "contractsVersion": "0.16.0",
     "contractsTag": "contracts-v0.16.0"
   },
@@ -128,6 +128,7 @@
     "@monaco-editor/react": "4.7.0",
     "@xyflow/react": "12.11.6",
     "ajv": "8.20.0",
+    "antd": "6.6.5",
     "esbuild": "0.28.2",
     "exceljs": "4.4.0",
     "jszip": "3.10.2",

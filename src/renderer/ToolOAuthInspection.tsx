@@ -1,3 +1,4 @@
+import { ConfigProvider, Button, Checkbox, Input, Radio } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { OAuthInspection } from '../shared/tool-connections';
 
@@ -99,20 +100,19 @@ export default function ToolOAuthInspection({
           </p>
           {server.status === 'ready' &&
             (server.publicClientSupported ? (
-              <label className="ai-task-checkbox">
-                <input
-                  type="radio"
-                  name="oauth-issuer"
-                  checked={issuer === server.issuer}
-                  disabled={disabled || expired}
-                  onChange={() => {
-                    setIssuer(server.issuer);
-                    setClientId(previous?.issuer === server.issuer ? previous.clientId : '');
-                    setReviewed(false);
-                  }}
-                />
+              <Radio
+                name="oauth-issuer"
+                checked={issuer === server.issuer}
+                disabled={disabled || expired || undefined}
+                onChange={() => {
+                  setIssuer(server.issuer);
+                  setClientId(previous?.issuer === server.issuer ? previous.clientId : '');
+                  setReviewed(false);
+                }}
+                className="ai-task-checkbox"
+              >
                 选择此认证站点登录
-              </label>
+              </Radio>
             ) : (
               <p>
                 此站点未声明支持公开客户端。当前无法使用其客户端秘密或动态注册，请向提供者核对。
@@ -162,69 +162,71 @@ export default function ToolOAuthInspection({
         以上信息由服务提供，不证明账号、工作区或发布者身份。配置检查不发送凭据、注册客户端或调用工具。
       </p>
       {issuer && (
-        <fieldset disabled={disabled || expired} className="tool-oauth-login">
-          <legend>登录前核对</legend>
-          <label className="tool-field">
-            公开客户端 ID
-            <input
-              value={clientId}
-              maxLength={500}
-              onChange={(e) => {
-                setClientId(e.target.value);
-                setReviewed(false);
-              }}
-              placeholder="由此服务提供者分配，无需填写客户端秘密"
-            />
-          </label>
-          <label className="tool-field">
-            已登记的回调端口
-            <input
-              type="number"
-              min={1024}
-              max={65535}
-              step={1}
-              value={port}
-              onChange={(e) => {
-                setPort(e.target.value);
-                setReviewed(false);
-              }}
-            />
-          </label>
-          <p>
-            回调地址：<code>http://127.0.0.1:{port || '端口'}/oauth/callback</code>
-          </p>
-          <p>
-            请核对该地址已在此客户端登记。FlowArk
-            将打开系统浏览器，向所选认证站点请求上方展示的全部范围；登录后仅发现工具，不执行工具。
-          </p>
-          <label className="ai-task-checkbox">
-            <input
-              type="checkbox"
+        <ConfigProvider componentDisabled={disabled || expired || undefined}>
+          <fieldset disabled={disabled || expired} className="tool-oauth-login">
+            <legend>登录前核对</legend>
+            <label className="tool-field">
+              公开客户端 ID
+              <Input
+                value={clientId}
+                maxLength={500}
+                onChange={(e) => {
+                  setClientId(e.target.value);
+                  setReviewed(false);
+                }}
+                placeholder="由此服务提供者分配，无需填写客户端秘密"
+              />
+            </label>
+            <label className="tool-field">
+              已登记的回调端口
+              <Input
+                type="number"
+                min={1024}
+                max={65535}
+                step={1}
+                value={port}
+                onChange={(e) => {
+                  setPort(e.target.value);
+                  setReviewed(false);
+                }}
+              />
+            </label>
+            <p>
+              回调地址：<code>http://127.0.0.1:{port || '端口'}/oauth/callback</code>
+            </p>
+            <p>
+              请核对该地址已在此客户端登记。FlowArk
+              将打开系统浏览器，向所选认证站点请求上方展示的全部范围；登录后仅发现工具，不执行工具。
+            </p>
+            <Checkbox
               checked={reviewed}
               onChange={(e) => setReviewed(e.target.checked)}
-            />
-            我已核对认证站点、客户端、回调地址和请求范围，同意打开登录网页
-          </label>
-          <button
-            type="button"
-            className="primary"
-            disabled={
-              !reviewed ||
-              !clientId.trim() ||
-              !Number.isInteger(Number(port)) ||
-              Number(port) < 1024 ||
-              Number(port) > 65535
-            }
-            onClick={() => void authorize(issuer, clientId.trim(), Number(port))}
-          >
-            登录并核对能力
-          </button>
-        </fieldset>
+              className="ai-task-checkbox"
+            >
+              我已核对认证站点、客户端、回调地址和请求范围，同意打开登录网页
+            </Checkbox>
+            <Button
+              htmlType="button"
+              type="primary"
+              disabled={
+                !reviewed ||
+                !clientId.trim() ||
+                !Number.isInteger(Number(port)) ||
+                Number(port) < 1024 ||
+                Number(port) > 65535 ||
+                undefined
+              }
+              onClick={() => void authorize(issuer, clientId.trim(), Number(port))}
+            >
+              登录并核对能力
+            </Button>
+          </fieldset>
+        </ConfigProvider>
       )}
       {busy && (
-        <button type="button" onClick={cancel}>
+        <Button htmlType="button" onClick={cancel}>
           取消本次登录
-        </button>
+        </Button>
       )}
     </section>
   );

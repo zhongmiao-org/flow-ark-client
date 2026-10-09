@@ -76,7 +76,7 @@
   font-size: 14px;
   line-height: 22px;
 }
-.task-desktop-selection > button.primary {
+.task-desktop-selection > button.ant-btn-primary {
   align-self: flex-start;
   min-width: 200px;
 }

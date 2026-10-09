@@ -5,7 +5,7 @@
 .ai-task-columns.task-modification > .ai-task-card {
   min-height: 720px;
 }
-.task-modification > .ai-task-card > label {
+.task-modification > .ai-task-card > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   margin-bottom: -8px;
   font-size: 12px;
   line-height: 18px;

@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { Event, Run } from '../shared/types';
 import type { RunPresentation } from '../shared/run-presentation';
@@ -164,9 +165,12 @@ export function RunControlFeedback({
     >
       {showNote && controlNote && <p role="status">{controlNote}</p>}
       {controlError && <p>{controlError}</p>}
-      <button disabled={controlBusy || refreshing} onClick={() => void controller.refreshControl()}>
+      <Button
+        disabled={controlBusy || refreshing || undefined}
+        onClick={() => void controller.refreshControl()}
+      >
         {refreshing ? '正在刷新状态…' : '刷新状态'}
-      </button>
+      </Button>
     </div>
   );
 }

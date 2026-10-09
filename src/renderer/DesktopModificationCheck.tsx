@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { TaskDetail } from '../shared/planning';
 import {
@@ -167,12 +168,12 @@ export default function DesktopModificationCheck({
           修改条件
         </h2>
         {!unchanged && (
-          <button
-            disabled={checking || saving || expired || !!error}
+          <Button
+            disabled={checking || saving || expired || !!error || undefined}
             onClick={() => void inspect()}
           >
             {checking ? '正在检查…' : '重新检查'}
-          </button>
+          </Button>
         )}
       </div>
       {unchanged ? (
@@ -220,15 +221,15 @@ export default function DesktopModificationCheck({
       {error && (
         <div role="alert">
           <p className="ai-task-note ai-task-failure">{error}</p>
-          <button onClick={back}>返回窗口重新读取</button>
+          <Button onClick={back}>返回窗口重新读取</Button>
         </div>
       )}
       {!unchanged && (
         <>
           <p>保存这份方案后，可在任务清单和流程图中继续核对；保存不会修改文档。</p>
           {adoptionUnavailable && <p role="status">{adoptionUnavailable}</p>}
-          <button
-            className="primary"
+          <Button
+            type="primary"
             disabled={
               !!adoptionUnavailable ||
               !complete ||
@@ -236,12 +237,13 @@ export default function DesktopModificationCheck({
               saving ||
               expired ||
               !!error ||
-              !!saveError
+              !!saveError ||
+              undefined
             }
             onClick={() => void save()}
           >
             {saving ? '正在保存方案…' : '保存方案，继续核对'}
-          </button>
+          </Button>
           {saveError && (
             <p className="ai-task-note ai-task-failure" role="alert">
               {saveError}

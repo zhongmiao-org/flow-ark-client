@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { PlanningTask, PlanningResult } from '../shared/planning';
 import './task-generation.css';
@@ -113,44 +114,44 @@ export default function TaskGenerationPage({
       )}
       <div className="ai-task-actions">
         {generating ? (
-          <button disabled={busy} onClick={cancel}>
+          <Button disabled={busy || undefined} onClick={cancel}>
             {busy ? '正在取消…' : '取消生成'}
-          </button>
+          </Button>
         ) : unsupported ? (
           <>
-            <button className="primary" disabled={busy} onClick={tools}>
+            <Button type="primary" disabled={busy || undefined} onClick={tools}>
               查看应用与工具
-            </button>
-            <button disabled={busy} onClick={edit}>
+            </Button>
+            <Button disabled={busy || undefined} onClick={edit}>
               调整任务要求
-            </button>
+            </Button>
           </>
         ) : (
           <>
-            <button
-              className="primary"
+            <Button
+              type="primary"
               ref={retryButton}
               aria-expanded={retry}
-              disabled={busy}
+              disabled={busy || undefined}
               onClick={() => {
                 if (!retry) resetReview();
                 setRetry(true);
               }}
             >
               重试生成
-            </button>
-            <button disabled={busy} onClick={edit}>
+            </Button>
+            <Button disabled={busy || undefined} onClick={edit}>
               返回修改需求
-            </button>
-            <button disabled={busy} onClick={settings}>
+            </Button>
+            <Button disabled={busy || undefined} onClick={settings}>
               检查 AI 配置
-            </button>
+            </Button>
           </>
         )}
         {!generating && savedFlow && (
-          <button disabled={busy} onClick={showSaved}>
+          <Button disabled={busy || undefined} onClick={showSaved}>
             查看保留的草稿
-          </button>
+          </Button>
         )}
       </div>
       {unsupported && !!result?.limitations.length && (
@@ -176,8 +177,8 @@ export default function TaskGenerationPage({
           <h3>核对后重新生成</h3>
           <p>检查本次发送的内容与 AI 服务，再明确确认。重试会发起新的模型请求。</p>
           {controls}
-          <button
-            disabled={busy}
+          <Button
+            disabled={busy || undefined}
             onClick={() => {
               resetReview();
               setRetry(false);
@@ -185,7 +186,7 @@ export default function TaskGenerationPage({
             }}
           >
             取消重试
-          </button>
+          </Button>
         </div>
       )}
       {!generating && !unsupported && (

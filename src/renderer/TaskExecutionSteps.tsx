@@ -1,3 +1,4 @@
+import { Button, Input } from 'antd';
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import type { taskRunPresentation } from './task-run-presentation';
 import './task-execution-steps.css';
@@ -90,9 +91,9 @@ export default function TaskExecutionSteps({
         {model.unvisited.length} 个尚未执行
       </p>
       <div className="task-execution-actions">
-        <button
-          type="button"
-          disabled={!model.current}
+        <Button
+          htmlType="button"
+          disabled={!model.current || undefined}
           onClick={() => {
             if (!model.current) return;
             update({ query: '', filter: 'all', scroll: 0 });
@@ -101,10 +102,10 @@ export default function TaskExecutionSteps({
           }}
         >
           {focusLabel}
-        </button>
+        </Button>
         {(query || filter !== 'all') && (
-          <button
-            type="button"
+          <Button
+            htmlType="button"
             onClick={() => {
               update({ query: '', filter: 'all', scroll: 0 });
               setFiltersOpen(true);
@@ -112,10 +113,10 @@ export default function TaskExecutionSteps({
             }}
           >
             清除步骤筛选
-          </button>
+          </Button>
         )}
-        <button
-          type="button"
+        <Button
+          htmlType="button"
           className="task-execution-filter-toggle"
           aria-expanded={showFilters}
           aria-controls={`${id}-filters`}
@@ -123,12 +124,14 @@ export default function TaskExecutionSteps({
         >
           {showFilters ? '收起查找与筛选' : '查找与筛选步骤'}
           {!!query || filter !== 'all' ? ' · 已有筛选条件' : ''}
-        </button>
+        </Button>
       </div>
       <div id={`${id}-filters`} className="task-execution-filters" hidden={!showFilters}>
         <label htmlFor={`${id}-search`}>查找执行步骤</label>
-        <input
-          ref={search}
+        <Input
+          ref={(instance) => {
+            search.current = instance?.input ?? null;
+          }}
           id={`${id}-search`}
           value={query}
           placeholder="步骤名称、编号或循环位置"
@@ -136,14 +139,14 @@ export default function TaskExecutionSteps({
         />
         <div className="task-execution-actions" aria-label="执行步骤状态">
           {(Object.keys(filters) as Filter[]).map((value) => (
-            <button
-              type="button"
+            <Button
+              htmlType="button"
               key={value}
               aria-pressed={value === filter}
               onClick={() => update({ query, filter: value, scroll: 0 })}
             >
               {filters[value]} · {value === 'all' ? model.rows.length : model[value].length}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -186,8 +189,8 @@ export default function TaskExecutionSteps({
               <span className="task-run-index">{String(index + 1).padStart(2, '0')}</span>
               <div>
                 <div className="task-execution-row-heading">
-                  <button
-                    type="button"
+                  <Button
+                    htmlType="button"
                     className="task-execution-record-toggle"
                     aria-label={`步骤记录：${String(index + 1).padStart(2, '0')} · ${row.name}`}
                     aria-expanded={expanded === row.instance}
@@ -202,7 +205,7 @@ export default function TaskExecutionSteps({
                     }
                   >
                     <strong>{row.name}</strong>
-                  </button>
+                  </Button>
                   {compact && (
                     <span className={'run-status run-tone-' + row.tone}>{row.label}</span>
                   )}

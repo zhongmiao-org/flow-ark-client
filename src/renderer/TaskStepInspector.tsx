@@ -1,3 +1,4 @@
+import { Select, Button } from 'antd';
 import { useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
 import type { Flow, Step } from '../shared/types';
 import { flatten } from './flow-editing';
@@ -144,9 +145,9 @@ export default function TaskStepInspector({
       </h3>
       {nodes.length ? (
         nodes.map((node) => (
-          <button key={node.id} onClick={() => navigateStep(node.id)}>
+          <Button key={node.id} onClick={() => navigateStep(node.id)}>
             {entries.find((item) => item.step.id === node.id)?.ordinal} · {taskStepTitle(node)}
-          </button>
+          </Button>
         ))
       ) : (
         <p>没有步骤，继续后续流程。</p>
@@ -156,20 +157,22 @@ export default function TaskStepInspector({
   const picker = (
     <label>
       按定义浏览步骤
-      <select
+      <Select<string>
         aria-label="选择方案步骤"
         value={step?.id ?? ''}
-        onChange={(event) => select(event.target.value)}
-      >
-        <option value="" disabled>
-          选择一个步骤
-        </option>
-        {entries.map((item) => (
-          <option key={item.step.id} value={item.step.id}>
-            {item.ordinal} · {taskStepTitle(item.step)}
-          </option>
-        ))}
-      </select>
+        onChange={(value) => select(value)}
+        options={[
+          { value: '', disabled: true, label: '选择一个步骤' },
+          ...entries.map((item) => ({
+            value: item.step.id,
+            label: (
+              <>
+                {item.ordinal} · {taskStepTitle(item.step)}
+              </>
+            ),
+          })),
+        ]}
+      />
     </label>
   );
   const stepDetails = step ? (
@@ -204,15 +207,18 @@ export default function TaskStepInspector({
   ) : null;
   const browse = step ? (
     <div className="task-step-browse" aria-label="按定义顺序浏览">
-      <button disabled={index <= 0} onClick={() => navigateStep(entries[index - 1].step.id)}>
+      <Button
+        disabled={index <= 0 || undefined}
+        onClick={() => navigateStep(entries[index - 1].step.id)}
+      >
         上一步
-      </button>
-      <button
-        disabled={index >= entries.length - 1}
+      </Button>
+      <Button
+        disabled={index >= entries.length - 1 || undefined}
         onClick={() => navigateStep(entries[index + 1].step.id)}
       >
         下一步
-      </button>
+      </Button>
     </div>
   ) : null;
   if (presentation === 'graph')
@@ -227,7 +233,7 @@ export default function TaskStepInspector({
                 : `共 ${entries.length} 步，选择后聚焦图中位置。`}
             </p>
             {browse}
-            {step && focusInGraph && <button onClick={focusInGraph}>回到图中此步</button>}
+            {step && focusInGraph && <Button onClick={focusInGraph}>回到图中此步</Button>}
           </div>
         )}
         {step ? (
@@ -253,7 +259,7 @@ export default function TaskStepInspector({
               {location}
               {stepDetails}
               {!longGraph && browse}
-              {!longGraph && focusInGraph && <button onClick={focusInGraph}>回到图中此步</button>}
+              {!longGraph && focusInGraph && <Button onClick={focusInGraph}>回到图中此步</Button>}
               <p className="task-step-position">编号按流程定义排列，实际执行取决于条件与循环。</p>
               <details className="task-step-original">
                 <summary>查看步骤原始配置</summary>

@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useContext, useState } from 'react';
 import type { Flow, Step } from '../shared/types';
 import { nodeReferenceValues, type ReferenceIssue } from '../shared/flow-references';
@@ -96,13 +97,13 @@ export default function StructureReferenceRecovery({
           <li key={JSON.stringify([field.nodeId, field.keys])}>
             <strong>{field.label}</strong>
             <code>{field.reference}</code>
-            <button
-              type="button"
+            <Button
+              htmlType="button"
               onClick={() => setTarget(field)}
               aria-label={`查看引用来源 · ${field.label}`}
             >
               查看引用来源
-            </button>
+            </Button>
           </li>
         ))}
       </ul>

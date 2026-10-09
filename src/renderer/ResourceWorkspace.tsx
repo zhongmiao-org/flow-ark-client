@@ -1,3 +1,4 @@
+import { Select, Button } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
@@ -166,7 +167,7 @@ export default function ResourceWorkspace(props: Props) {
         {props.error && (
           <div className="resource-workspace-error" role="alert">
             <p>{props.error}</p>
-            <button onClick={props.clearError}>关闭提示</button>
+            <Button onClick={props.clearError}>关闭提示</Button>
           </div>
         )}
         <div className="resource-workspace-grid">
@@ -193,21 +194,25 @@ export default function ResourceWorkspace(props: Props) {
                 {matches.length > 1 && (
                   <>
                     <label htmlFor={`${id}-${index}`}>流程步骤</label>
-                    <select
+                    <Select<string>
                       id={`${id}-${index}`}
                       value={node?.id}
-                      onChange={(event) => select(event.target.value)}
-                    >
-                      {matches.map((step) => (
-                        <option key={step.id} value={step.id}>
-                          {String(steps.findIndex((item) => item.id === step.id) + 1).padStart(
-                            2,
-                            '0',
-                          )}{' '}
-                          {taskStepTitle(step)}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(value) => select(value)}
+                      options={[
+                        ...matches.map((step) => ({
+                          value: step.id,
+                          label: (
+                            <>
+                              {String(steps.findIndex((item) => item.id === step.id) + 1).padStart(
+                                2,
+                                '0',
+                              )}{' '}
+                              {taskStepTitle(step)}
+                            </>
+                          ),
+                        })),
+                      ]}
+                    />
                   </>
                 )}
                 {node ? (
@@ -226,17 +231,17 @@ export default function ResourceWorkspace(props: Props) {
                         }}
                       />
                       {node.type === 'excel' && node.operation === 'map' && (
-                        <button
+                        <Button
                           onClick={() => {
                             if (props.guard()) props.openExcel(node.id);
                           }}
                         >
                           打开字段映射编辑器
-                        </button>
+                        </Button>
                       )}
-                      <button className="primary" onClick={finish}>
+                      <Button type="primary" onClick={finish}>
                         应用配置
-                      </button>
+                      </Button>
                     </>
                   ) : (
                     <>
@@ -248,16 +253,16 @@ export default function ResourceWorkspace(props: Props) {
                           </div>
                         ))}
                       </dl>
-                      <button className="primary" onClick={() => select(node.id)}>
+                      <Button type="primary" onClick={() => select(node.id)}>
                         配置此步骤
-                      </button>
+                      </Button>
                     </>
                   )
                 ) : (
                   <>
                     <p className="resource-workspace-empty">当前流程尚无此类步骤。</p>
                     <p>添加后先配置资源和输入，保存草稿不会执行步骤。</p>
-                    <button
+                    <Button
                       onClick={() => {
                         if (!props.guard()) return;
                         const draft = newStep(group.type);
@@ -272,7 +277,7 @@ export default function ResourceWorkspace(props: Props) {
                       }}
                     >
                       添加到主流程末尾
-                    </button>
+                    </Button>
                   </>
                 )}
               </section>

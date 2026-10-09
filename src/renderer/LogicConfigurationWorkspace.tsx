@@ -1,3 +1,4 @@
+import { ConfigProvider, Select, Button } from 'antd';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
@@ -146,7 +147,7 @@ export default function LogicConfigurationWorkspace(props: Props) {
         {props.error && (
           <div role="alert" className="resource-workspace-error">
             <p>{props.error}</p>
-            <button onClick={props.clearError}>关闭提示</button>
+            <Button onClick={props.clearError}>关闭提示</Button>
           </div>
         )}
         <div className="resource-workspace-grid">
@@ -168,47 +169,54 @@ export default function LogicConfigurationWorkspace(props: Props) {
                 {matches.length > 1 && (
                   <>
                     <label htmlFor={`${id}-${index}`}>流程步骤</label>
-                    <select
+                    <Select<string>
                       id={`${id}-${index}`}
                       value={node?.id}
-                      onChange={(event) => select(event.target.value)}
-                    >
-                      {matches.map((step) => (
-                        <option key={step.id} value={step.id}>
-                          {steps.findIndex((item) => item.id === step.id) + 1}. {stepTitle(step)}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(value) => select(value)}
+                      options={[
+                        ...matches.map((step) => ({
+                          value: step.id,
+                          label: (
+                            <>
+                              {steps.findIndex((item) => item.id === step.id) + 1}.{' '}
+                              {stepTitle(step)}
+                            </>
+                          ),
+                        })),
+                      ]}
+                    />
                   </>
                 )}
                 {node ? (
                   active ? (
                     <>
-                      <fieldset
-                        disabled={props.advancedInvalid}
-                        className="logic-configuration-fields"
-                      >
-                        <LogicNodeConfiguration
-                          compact
-                          guard={props.guard}
-                          key={node.id}
-                          node={node}
-                          choices={referenceChoices(props.record.flow, node.id)}
-                          change={props.change}
-                        />
-                      </fieldset>
+                      <ConfigProvider componentDisabled={props.advancedInvalid || undefined}>
+                        <fieldset
+                          disabled={props.advancedInvalid}
+                          className="logic-configuration-fields"
+                        >
+                          <LogicNodeConfiguration
+                            compact
+                            guard={props.guard}
+                            key={node.id}
+                            node={node}
+                            choices={referenceChoices(props.record.flow, node.id)}
+                            change={props.change}
+                          />
+                        </fieldset>
+                      </ConfigProvider>
                       {['condition', 'loop'].includes(node.type) && (
-                        <button
+                        <Button
                           onClick={() => {
                             if (props.guard()) props.openControl();
                           }}
                         >
                           配置子步骤与分支
-                        </button>
+                        </Button>
                       )}
-                      <button className="primary" onClick={finish}>
+                      <Button type="primary" onClick={finish}>
                         应用配置
-                      </button>
+                      </Button>
                     </>
                   ) : (
                     <>
@@ -220,16 +228,16 @@ export default function LogicConfigurationWorkspace(props: Props) {
                           </div>
                         ))}
                       </dl>
-                      <button className="primary" onClick={() => select(node.id)}>
+                      <Button type="primary" onClick={() => select(node.id)}>
                         配置此步骤
-                      </button>
+                      </Button>
                     </>
                   )
                 ) : (
                   <>
                     <p className="resource-workspace-empty">当前流程尚无此类步骤。</p>
                     <p>添加后配置输入，保存草稿不会执行步骤。</p>
-                    <button
+                    <Button
                       onClick={() => {
                         if (props.guard()) {
                           props.add(newStep(group.type));
@@ -238,7 +246,7 @@ export default function LogicConfigurationWorkspace(props: Props) {
                       }}
                     >
                       添加到主流程末尾
-                    </button>
+                    </Button>
                   </>
                 )}
               </section>
@@ -252,18 +260,20 @@ export default function LogicConfigurationWorkspace(props: Props) {
             {selected ? (
               <>
                 <p>当前步骤：{stepTitle(selected)}</p>
-                <fieldset disabled={props.advancedInvalid} className="logic-configuration-fields">
-                  <NodeTiming
-                    compact
-                    key={selected.id}
-                    node={selected}
-                    change={props.changeTiming}
-                  />
-                </fieldset>
+                <ConfigProvider componentDisabled={props.advancedInvalid || undefined}>
+                  <fieldset disabled={props.advancedInvalid} className="logic-configuration-fields">
+                    <NodeTiming
+                      compact
+                      key={selected.id}
+                      node={selected}
+                      change={props.changeTiming}
+                    />
+                  </fieldset>
+                </ConfigProvider>
                 {props.advanced}
-                <button className="primary" onClick={finish}>
+                <Button type="primary" onClick={finish}>
                   应用配置
-                </button>
+                </Button>
               </>
             ) : (
               <p>选择一个步骤后配置期限和高级输入。</p>

@@ -1,3 +1,4 @@
+import { Select, Button } from 'antd';
 import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
@@ -106,7 +107,7 @@ export default function ScriptConfigurationWorkspace(props: Props) {
         {props.error && (
           <div role="alert" className="resource-workspace-error">
             <p>{props.error}</p>
-            <button onClick={props.clearError}>关闭提示</button>
+            <Button onClick={props.clearError}>关闭提示</Button>
           </div>
         )}
         <div className="resource-workspace-grid">
@@ -114,18 +115,17 @@ export default function ScriptConfigurationWorkspace(props: Props) {
             <h2>JS / TS 脚本</h2>
             <div className="script-configuration-field">
               <label htmlFor={id + '-language'}>语言</label>
-              <select
+              <Select<string>
                 id={id + '-language'}
                 value={props.node.language}
-                onChange={(event) =>
-                  navigate(() =>
-                    props.change({ ...props.node, language: event.target.value as 'js' | 'ts' }),
-                  )
+                onChange={(value) =>
+                  navigate(() => props.change({ ...props.node, language: value as 'js' | 'ts' }))
                 }
-              >
-                <option value="ts">TypeScript</option>
-                <option value="js">JavaScript</option>
-              </select>
+                options={[
+                  { value: 'ts', label: 'TypeScript' },
+                  { value: 'js', label: 'JavaScript' },
+                ]}
+              />
             </div>
             <Summary fields={[['入口', 'export default 的函数 · 接收 ctx']]} />
             <ValueField
@@ -136,9 +136,9 @@ export default function ScriptConfigurationWorkspace(props: Props) {
               defaultValue={{}}
               change={(input) => props.change({ ...props.node, input })}
             />
-            <button className="primary" onClick={() => navigate(props.close)}>
+            <Button type="primary" onClick={() => navigate(props.close)}>
               应用配置
-            </button>
+            </Button>
           </section>
           <section className="resource-workspace-card" aria-label="脚本正文">
             <h2>脚本正文</h2>
@@ -149,9 +149,9 @@ export default function ScriptConfigurationWorkspace(props: Props) {
                 ['定位错误', '编辑器可检查语法并定位行列'],
               ]}
             />
-            <button className="primary" onClick={() => navigate(() => props.openEditor())}>
+            <Button type="primary" onClick={() => navigate(() => props.openEditor())}>
               打开脚本编辑器
-            </button>
+            </Button>
           </section>
           <section className="resource-workspace-card" aria-label="依赖检查">
             <h2>依赖检查</h2>
@@ -226,9 +226,9 @@ export default function ScriptConfigurationWorkspace(props: Props) {
                 ['取消', '协作取消，超时回收进程'],
               ]}
             />
-            <button className="primary" onClick={() => navigate(() => props.openEditor(true))}>
+            <Button type="primary" onClick={() => navigate(() => props.openEditor(true))}>
               打开编辑器查看历史输出
-            </button>
+            </Button>
           </section>
           <section className="resource-workspace-card" aria-label="AI 调用边界">
             <h2>AI 调用边界</h2>
@@ -260,9 +260,9 @@ export default function ScriptConfigurationWorkspace(props: Props) {
                 <p>仅展示当前绑定，不表示密钥可用或 API 已验证。</p>
               </details>
             )}
-            <button className="primary" onClick={() => navigate(props.openParameters)}>
+            <Button type="primary" onClick={() => navigate(props.openParameters)}>
               查看参数与资源
-            </button>
+            </Button>
           </section>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { Button, Input } from 'antd';
 import { useId, useRef, useState } from 'react';
 import type { PlanningChange } from '../shared/planning';
 import type { Flow, Step } from '../shared/types';
@@ -268,23 +269,25 @@ export default function PlanningChanges({
         <>
           <label htmlFor={`${id}-search`}>查找修改</label>
           <div className="planning-changes-search">
-            <input
+            <Input
               id={`${id}-search`}
-              ref={search}
+              ref={(instance) => {
+                search.current = instance?.input ?? null;
+              }}
               value={query}
               placeholder="步骤名称、编号或字段"
               onChange={(event) => setQuery(event.target.value)}
             />
             {(query || filter !== 'all') && (
-              <button type="button" onClick={clear}>
+              <Button htmlType="button" onClick={clear}>
                 清除筛选
-              </button>
+              </Button>
             )}
           </div>
           <div className="planning-changes-filters" aria-label="修改类型">
             {(['all', 'added', 'changed', 'moved', 'removed'] as const).map((kind) => (
-              <button
-                type="button"
+              <Button
+                htmlType="button"
                 key={kind}
                 aria-pressed={filter === kind}
                 onClick={() => setFilter(kind)}
@@ -293,7 +296,7 @@ export default function PlanningChanges({
                 {kind === 'all'
                   ? changes.length
                   : changes.filter((item) => item.kind === kind).length}
-              </button>
+              </Button>
             ))}
           </div>
           <p className="planning-changes-count" role="status">
@@ -301,8 +304,8 @@ export default function PlanningChanges({
           </p>
           <div className="planning-changes-list" role="group" aria-label="修改清单">
             {visible.map(({ change, index }) => (
-              <button
-                type="button"
+              <Button
+                htmlType="button"
                 key={index}
                 aria-pressed={active?.index === index}
                 onClick={() => {
@@ -322,7 +325,7 @@ export default function PlanningChanges({
                 <span className={`planning-change-kind ${change.kind}`}>
                   {categories[change.kind]}
                 </span>
-              </button>
+              </Button>
             ))}
           </div>
           {!visible.length && (

@@ -68,7 +68,7 @@
 .task-repair-adoption > button {
   min-width: 144px;
 }
-.task-repair-adoption > .primary {
+.task-repair-adoption > .ant-btn-primary {
   min-width: 208px;
 }
 .task-repair-speaker {
@@ -140,7 +140,10 @@
 .task-repair-page .task-run-note {
   color: var(--fa-action-primary);
 }
-.task-repair-page input:not([type='checkbox']) {
+.task-repair-page
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):not(
+    [type='checkbox']
+  ) {
   width: 100%;
   min-width: 0;
 }
@@ -393,7 +396,7 @@
   border-radius: 8px;
   background: var(--fa-bg-canvas);
 }
-.task-run-page select {
+.task-run-page .ant-select {
   width: 100%;
   min-width: 0;
 }
@@ -508,7 +511,7 @@
 .task-run-evidence-summary .task-run-path {
   font-size: 14px;
 }
-.task-run-evidence > .primary {
+.task-run-evidence > .ant-btn-primary {
   margin-right: -2px;
 }
 .task-run-record-info dl,

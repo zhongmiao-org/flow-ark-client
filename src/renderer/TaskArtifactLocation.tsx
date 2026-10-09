@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { RunArtifact } from './task-run-presentation';
 
@@ -50,15 +51,15 @@ export default function TaskArtifactLocation({
   const label = state === 'pending' ? '正在定位…' : state === 'error' ? '重新定位文件' : '定位文件';
   return (
     <div className="task-artifact-location">
-      <button
+      <Button
         ref={button}
-        disabled={!artifact.available || state === 'pending'}
+        disabled={!artifact.available || state === 'pending' || undefined}
         aria-label={`${label}：${artifact.name}`}
         aria-describedby={state !== 'idle' ? feedbackId : undefined}
         onClick={() => void locate()}
       >
         {label}
-      </button>
+      </Button>
       {state !== 'idle' && (
         <p
           id={feedbackId}

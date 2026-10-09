@@ -1,0 +1,28 @@
+/* Layout integration only; component appearance is owned by ConfigProvider. */
+.ant-btn {
+  flex-shrink: 0;
+}
+.ant-select {
+  min-width: 0;
+}
+label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) > .ant-select,
+.template-field > .ant-select {
+  display: flex;
+  width: 100%;
+  margin-top: 8px;
+}
+.template-field {
+  display: block;
+  margin: 16px 0 8px;
+}
+.ant-checkbox-wrapper,
+.ant-radio-wrapper {
+  margin: 0;
+}
+/* Existing compound rows contain their own layout and may wrap long content. */
+.ant-btn:has(> div),
+.ant-btn:has(> article),
+.ant-btn:has(> strong) {
+  height: auto;
+  white-space: normal;
+}

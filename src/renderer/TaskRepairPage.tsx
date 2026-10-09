@@ -1,3 +1,4 @@
+import { Select, Button, Checkbox, Input } from 'antd';
 import TaskRepairTarget from './TaskRepairTarget';
 import TaskRepairRestart from './TaskRepairRestart';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -270,16 +271,16 @@ export default function TaskRepairPage({
         {phase === 'pick' ? (
           <>
             <div className="ai-task-actions task-repair-pick-actions" aria-label="重新拾取操作">
-              <button onClick={back}>取消重新拾取</button>
-              <button
+              <Button onClick={back}>取消重新拾取</Button>
+              <Button
                 ref={pickConfirm}
-                className="primary"
-                disabled={!picked || !task || busy || generating}
+                type="primary"
+                disabled={!picked || !task || busy || generating || undefined}
                 onClick={() => void act(confirmTarget)}
               >
                 {busy ? '正在核对目标…' : '确认这个目标'}
-              </button>
-              <button onClick={back}>返回失败详情</button>
+              </Button>
+              <Button onClick={back}>返回失败详情</Button>
             </div>
             <section className="ai-task-card task-repair-pick" aria-label="重新拾取的目标">
               <h2>{picked ? picked.target.label || picked.target.tag : '从真实网页选择元素'}</h2>
@@ -398,25 +399,26 @@ export default function TaskRepairPage({
                   <h3>本次使用的 AI</h3>
                   <label>
                     供应商
-                    <select
+                    <Select<string>
                       value={provider}
-                      disabled={busy}
-                      onChange={(e) => {
-                        const value = e.target.value as typeof provider;
+                      disabled={busy || undefined}
+                      onChange={(selection) => {
+                        const value = selection as typeof provider;
                         setProvider(value);
                         setModel(value === 'deepseek' ? 'deepseek-flash' : 'gpt-5.4');
                         setReviewed(false);
                       }}
-                    >
-                      <option value="deepseek">DeepSeek</option>
-                      <option value="openai-codex">OpenAI</option>
-                    </select>
+                      options={[
+                        { value: 'deepseek', label: 'DeepSeek' },
+                        { value: 'openai-codex', label: 'OpenAI' },
+                      ]}
+                    />
                   </label>
                   <label>
                     模型
-                    <input
+                    <Input
                       value={model}
-                      disabled={busy}
+                      disabled={busy || undefined}
                       onChange={(e) => {
                         setModel(e.target.value);
                         setReviewed(false);
@@ -432,31 +434,39 @@ export default function TaskRepairPage({
                       {JSON.stringify(preview?.input, null, 2)}
                     </pre>
                   </details>
-                  <label className="run-review-toggle">
-                    <input
-                      type="checkbox"
-                      checked={reviewed}
-                      disabled={busy || !preview || task?.task.revision !== selection?.revision}
-                      onChange={(e) => setReviewed(e.target.checked)}
-                    />
+                  <Checkbox
+                    checked={reviewed}
+                    disabled={
+                      busy || !preview || task?.task.revision !== selection?.revision || undefined
+                    }
+                    onChange={(e) => setReviewed(e.target.checked)}
+                    className="run-review-toggle"
+                  >
                     我已核对发送内容、供应商和模型
-                  </label>
-                  <button
-                    className="primary"
-                    disabled={busy || !reviewed || !model.trim() || !preview || selectionChanged}
+                  </Checkbox>
+                  <Button
+                    type="primary"
+                    disabled={
+                      busy ||
+                      !reviewed ||
+                      !model.trim() ||
+                      !preview ||
+                      selectionChanged ||
+                      undefined
+                    }
                     onClick={(event) => {
-                      proposalOrigin.current = event.currentTarget;
+                      proposalOrigin.current = event.currentTarget as HTMLButtonElement;
                       void act(generateRepair);
                     }}
                   >
                     让 AI 提议修复
-                  </button>
+                  </Button>
                 </>
               )}
               {generating && (
                 <>
                   <p role="status">正在生成修复提议，尚未更改流程或执行。</p>
-                  <button
+                  <Button
                     onClick={() =>
                       void act(async (epoch) => {
                         const next = await api('task.cancel', { id: taskId });
@@ -465,12 +475,12 @@ export default function TaskRepairPage({
                     }
                   >
                     取消生成
-                  </button>
+                  </Button>
                 </>
               )}
-              <button
-                className={selectionChanged ? 'primary' : undefined}
-                disabled={busy || generating}
+              <Button
+                type={selectionChanged ? 'primary' : 'default'}
+                disabled={busy || generating || undefined}
                 onClick={() => {
                   discardSelection();
                   setPhase('pick');
@@ -478,7 +488,7 @@ export default function TaskRepairPage({
                 }}
               >
                 重新选择目标
-              </button>
+              </Button>
             </section>
             <section className="ai-task-card">
               <h2 ref={proposalHeading} tabIndex={-1}>
@@ -531,9 +541,9 @@ export default function TaskRepairPage({
                     <p key={i}>{text}</p>
                   ))}
                   <div className="ai-task-actions task-repair-adoption">
-                    <button
-                      className="primary"
-                      disabled={!canAdopt || busy || !!pendingAdoption}
+                    <Button
+                      type="primary"
+                      disabled={!canAdopt || busy || !!pendingAdoption || undefined}
                       onClick={() =>
                         void act(async (epoch) => {
                           const proposalId = proposal!.id;
@@ -557,9 +567,9 @@ export default function TaskRepairPage({
                       }
                     >
                       采纳并检查起点
-                    </button>
-                    <button
-                      disabled={busy || !!pendingAdoption}
+                    </Button>
+                    <Button
+                      disabled={busy || !!pendingAdoption || undefined}
                       onClick={() =>
                         void act(async (epoch) => {
                           const next = await api('task.reject', {
@@ -575,21 +585,21 @@ export default function TaskRepairPage({
                       }
                     >
                       不采纳
-                    </button>
+                    </Button>
                   </div>
                 </>
               )}
               {pendingAdoption && (
                 <>
                   <p role="status">采纳结果以任务记录为准，未自动重新提交。</p>
-                  <button
-                    disabled={busy}
+                  <Button
+                    disabled={busy || undefined}
                     onClick={() => void act((epoch) => queryAdoption(epoch, pendingAdoption))}
                   >
                     核对采纳结果
-                  </button>
-                  <button
-                    disabled={busy}
+                  </Button>
+                  <Button
+                    disabled={busy || undefined}
                     onClick={() =>
                       void act(async (epoch) => {
                         // Stop an adoption still awaiting native verification, then read
@@ -614,10 +624,10 @@ export default function TaskRepairPage({
                     }
                   >
                     取消等待并核对当前方案
-                  </button>
+                  </Button>
                 </>
               )}
-              <button onClick={modify}>回到任务修改</button>
+              <Button onClick={modify}>回到任务修改</Button>
             </section>
           </div>
         ) : (

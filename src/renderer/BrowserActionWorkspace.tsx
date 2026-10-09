@@ -1,3 +1,4 @@
+import { Select, Button, Input } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
@@ -144,14 +145,14 @@ export default function BrowserActionWorkspace(props: Props) {
         {props.error && (
           <div ref={errorRef} tabIndex={-1} role="alert" className="browser-action-error">
             <p>{props.error}</p>
-            <button
+            <Button
               onClick={() => {
                 props.clearError();
                 heading.current?.focus();
               }}
             >
               关闭提示
-            </button>
+            </Button>
           </div>
         )}
         <div className="browser-action-grid">
@@ -169,28 +170,26 @@ export default function BrowserActionWorkspace(props: Props) {
                   {active && <span>当前动作</span>}
                 </h2>
                 <label htmlFor={`${id}-operation-${index}`}>操作</label>
-                <select
+                <Select<string>
                   id={`${id}-operation-${index}`}
                   value={active ? node.operation : ''}
-                  onChange={(event) => operation(event.target.value as BrowserOperation)}
-                >
-                  <option value="" disabled>
-                    选择动作以配置此步骤
-                  </option>
-                  {group.operations.map((value) => (
-                    <option key={value} value={value}>
-                      {browserActions[value].label}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => operation(value as BrowserOperation)}
+                  options={[
+                    { value: '', disabled: true, label: '选择动作以配置此步骤' },
+                    ...group.operations.map((value) => ({
+                      value: value,
+                      label: browserActions[value].label,
+                    })),
+                  ]}
+                />
                 {active ? (
                   <>
                     {!topLevel && (
                       <div className="browser-action-target">
                         <span>目标元素</span>
-                        <button onClick={() => locator.current?.focus()}>
+                        <Button onClick={() => locator.current?.focus()}>
                           {node.selector || '设置目标元素选择器'}
-                        </button>
+                        </Button>
                       </div>
                     )}
                     <BrowserNodeConfiguration
@@ -206,15 +205,15 @@ export default function BrowserActionWorkspace(props: Props) {
                         ? '结果进入本次运行产物。'
                         : ''}
                     </p>
-                    <button className="primary" onClick={finish}>
+                    <Button type="primary" onClick={finish}>
                       应用配置
-                    </button>
+                    </Button>
                   </>
                 ) : (
                   <>
                     <p className="browser-action-description">{group.detail}</p>
                     <p>选择操作将切换当前步骤，不会添加或执行新步骤。</p>
-                    <button onClick={() => operation(group.operations[0])}>配置此类动作</button>
+                    <Button onClick={() => operation(group.operations[0])}>配置此类动作</Button>
                   </>
                 )}
               </section>
@@ -228,19 +227,24 @@ export default function BrowserActionWorkspace(props: Props) {
             <h2>定位与期限</h2>
             {topLevel && <p>此动作作用于顶层网页，不使用元素定位和 iframe 路径。</p>}
             <label htmlFor={id + '-selector'}>选择器</label>
-            <input
-              ref={locator}
+            <Input
+              ref={(instance) => {
+                locator.current = instance?.input ?? null;
+              }}
               id={id + '-selector'}
-              disabled={topLevel}
+              disabled={topLevel || undefined}
               value={node.selector}
               placeholder="目标元素的 CSS 选择器"
               onChange={(event) => props.change({ ...node, selector: event.target.value })}
             />
             <label htmlFor={id + '-frames'}>iframe 路径</label>
-            <textarea
-              ref={frameInput}
+            <Input.TextArea
+              status={!!frameError ? 'error' : undefined}
+              ref={(instance) => {
+                frameInput.current = instance?.resizableTextArea?.textArea ?? null;
+              }}
               id={id + '-frames'}
-              disabled={topLevel}
+              disabled={topLevel || undefined}
               rows={1}
               value={frames}
               aria-invalid={!!frameError}
@@ -278,7 +282,7 @@ export default function BrowserActionWorkspace(props: Props) {
                 <p id={id + '-frame-error'} role="alert" className="field-error">
                   {frameError}
                 </p>
-                <button
+                <Button
                   onClick={() => {
                     setFrames(path.join('\n'));
                     setFrameError('');
@@ -286,13 +290,13 @@ export default function BrowserActionWorkspace(props: Props) {
                   }}
                 >
                   恢复已应用路径
-                </button>
+                </Button>
               </>
             )}
             <NodeTiming compact node={node} change={(next) => props.change(next as BrowserNode)} />
-            <button className="primary" onClick={finish}>
+            <Button type="primary" onClick={finish}>
               应用配置
-            </button>
+            </Button>
           </section>
         </div>
       </div>

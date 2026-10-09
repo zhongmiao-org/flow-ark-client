@@ -1,3 +1,4 @@
+import { ConfigProvider, Button, Checkbox, Radio } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { Run } from '../shared/types';
 import type {
@@ -235,12 +236,11 @@ export default function RunRerunPanel({
           {terminal && !created && (
             <>
               <div className="run-rerun-options">
-                <fieldset className="run-rerun-mode" disabled={submitting}>
-                  <legend>选择执行内容</legend>
-                  {(['snapshot', 'saved'] as const).map((value) => (
-                    <label key={value} className={mode === value ? 'is-selected' : undefined}>
-                      <input
-                        type="radio"
+                <ConfigProvider componentDisabled={submitting || undefined}>
+                  <fieldset className="run-rerun-mode" disabled={submitting}>
+                    <legend>选择执行内容</legend>
+                    {(['snapshot', 'saved'] as const).map((value) => (
+                      <Radio
                         name={choiceId}
                         value={value}
                         checked={mode === value}
@@ -249,40 +249,42 @@ export default function RunRerunPanel({
                           reset();
                           setMode(value);
                         }}
-                      />
-                      <span>
-                        <strong>{modes[value]}</strong>
-                        <small>
-                          {value === 'snapshot'
-                            ? '采用原运行保存的流程、参数与固定脚本。'
-                            : '采用当前已保存的流程，未保存草稿不包含在内。'}
-                        </small>
-                      </span>
-                    </label>
-                  ))}
-                </fieldset>
-                <label className="run-rerun-check">
-                  <input
-                    type="checkbox"
-                    checked={debug}
-                    disabled={submitting}
-                    onChange={(event) => {
-                      if (sending.current) return;
-                      reset();
-                      setDebug(event.target.checked);
-                    }}
-                  />
+                        key={value}
+                        className={mode === value ? 'is-selected' : undefined}
+                      >
+                        <span>
+                          <strong>{modes[value]}</strong>
+                          <small>
+                            {value === 'snapshot'
+                              ? '采用原运行保存的流程、参数与固定脚本。'
+                              : '采用当前已保存的流程，未保存草稿不包含在内。'}
+                          </small>
+                        </span>
+                      </Radio>
+                    ))}
+                  </fieldset>
+                </ConfigProvider>
+                <Checkbox
+                  checked={debug}
+                  disabled={submitting || undefined}
+                  onChange={(event) => {
+                    if (sending.current) return;
+                    reset();
+                    setDebug(event.target.checked);
+                  }}
+                  className="run-rerun-check"
+                >
                   逐步调试新运行
-                </label>
-                <button
-                  type="button"
+                </Checkbox>
+                <Button
+                  htmlType="button"
                   hidden={!!preview}
                   ref={previewButton}
-                  disabled={loading || submitting || !related?.available}
+                  disabled={loading || submitting || !related?.available || undefined}
                   onClick={() => void load()}
                 >
                   {loading ? '正在准备预览…' : '预览重新运行'}
-                </button>
+                </Button>
               </div>
               <p className="note" hidden={!!preview}>
                 {mode === 'snapshot'
@@ -296,15 +298,15 @@ export default function RunRerunPanel({
           {created && (
             <p role="status" className="run-rerun-source">
               已创建新运行
-              <button
-                type="button"
+              <Button
+                htmlType="button"
                 aria-label={'查看新运行 ' + created.id}
                 ref={createdButton}
-                disabled={submitting || !!opening}
+                disabled={submitting || !!opening || undefined}
                 onClick={() => void inspect(created.id)}
               >
                 {created.id.slice(0, 8)} · 查看新运行
-              </button>
+              </Button>
             </p>
           )}
           {error && (
@@ -395,52 +397,56 @@ export default function RunRerunPanel({
                   {warning}
                 </p>
               ))}
-              <label className="run-rerun-check run-rerun-review">
-                <input
-                  type="checkbox"
-                  checked={reviewed}
-                  disabled={submitting}
-                  onChange={(event) => setReviewed(event.target.checked)}
-                />
+              <Checkbox
+                checked={reviewed}
+                disabled={submitting || undefined}
+                onChange={(event) => setReviewed(event.target.checked)}
+                className="run-rerun-check run-rerun-review"
+              >
                 已核对原运行的输出与外部结果，确认从头执行
-              </label>
+              </Checkbox>
               <div className="run-rerun-actions">
-                <button
-                  type="submit"
-                  className="primary"
-                  disabled={submitting || !reviewed || (!related?.available && !attempt.current)}
+                <Button
+                  htmlType="submit"
+                  type="primary"
+                  disabled={
+                    submitting ||
+                    !reviewed ||
+                    (!related?.available && !attempt.current) ||
+                    undefined
+                  }
                 >
                   {submitting ? '正在确认…' : retry ? '重试此次确认' : '确认创建新运行'}
-                </button>
-                <button type="button" disabled={submitting} onClick={leave}>
+                </Button>
+                <Button htmlType="button" disabled={submitting || undefined} onClick={leave}>
                   取消
-                </button>
+                </Button>
               </div>
             </form>
           )}
           {!preview && (cancel || loading || retry || created) && (
-            <button
-              type="button"
+            <Button
+              htmlType="button"
               className="run-rerun-cancel"
-              disabled={submitting}
+              disabled={submitting || undefined}
               onClick={leave}
             >
               {created ? '返回原运行' : cancel ? '取消并返回' : '取消重新运行'}
-            </button>
+            </Button>
           )}
         </div>
         <aside className="run-rerun-context" aria-label="重新运行的来源与边界">
           <h3>当前授权重新检查</h3>
           <p>旧快照不会恢复已撤销的授权。确认时会重新检查当前授权、资源和执行环境。</p>
-          <button
+          <Button
             className="run-rerun-context-toggle"
-            type="button"
+            htmlType="button"
             aria-expanded={reasonsOpen}
             aria-controls={choiceId + '-reasons'}
             onClick={() => setReasonsOpen(!reasonsOpen)}
           >
             {reasonsOpen ? '收起阻止原因' : '查看阻止原因'}
-          </button>
+          </Button>
           {reasonsOpen && (
             <section
               id={choiceId + '-reasons'}
@@ -466,15 +472,15 @@ export default function RunRerunPanel({
               </p>
             </section>
           )}
-          <button
+          <Button
             className="run-rerun-context-toggle"
-            type="button"
+            htmlType="button"
             aria-expanded={relationsOpen}
             aria-controls={choiceId + '-relations'}
             onClick={() => setRelationsOpen(!relationsOpen)}
           >
             {relationsOpen ? '收起来源与派生记录' : '查看来源与派生记录'}
-          </button>
+          </Button>
           {relationsOpen && (
             <section
               id={choiceId + '-relations'}
@@ -486,16 +492,20 @@ export default function RunRerunPanel({
               </h4>
               {inspectSource && (
                 <div className="run-rerun-source-actions">
-                  <button
-                    type="button"
-                    disabled={submitting}
+                  <Button
+                    htmlType="button"
+                    disabled={submitting || undefined}
                     onClick={() => inspectSource('output')}
                   >
                     查看原运行输出
-                  </button>
-                  <button type="button" disabled={submitting} onClick={() => inspectSource('logs')}>
+                  </Button>
+                  <Button
+                    htmlType="button"
+                    disabled={submitting || undefined}
+                    onClick={() => inspectSource('logs')}
+                  >
                     查看原运行日志
-                  </button>
+                  </Button>
                 </div>
               )}
               <dl className="run-rerun-origin">
@@ -514,18 +524,19 @@ export default function RunRerunPanel({
               {run.rerun && (
                 <div className="run-rerun-source">
                   <span>本次根据{modes[run.rerun.mode]}重新运行，来源：</span>
-                  <button
-                    type="button"
+                  <Button
+                    htmlType="button"
                     aria-label={'查看来源运行 ' + run.rerun.runId}
                     ref={(element) => {
-                      if (element) relatedButtons.current.set(run.rerun!.runId, element);
+                      if (element instanceof HTMLButtonElement)
+                        relatedButtons.current.set(run.rerun!.runId, element);
                       else relatedButtons.current.delete(run.rerun!.runId);
                     }}
-                    disabled={submitting || !!opening}
+                    disabled={submitting || !!opening || undefined}
                     onClick={() => void inspect(run.rerun!.runId)}
                   >
                     {related?.source?.name ?? '来源运行'} · {run.rerun.runId.slice(0, 8)}
-                  </button>
+                  </Button>
                   {related?.source && <span>{runStateLabels[related.source.state]}</span>}
                 </div>
               )}
@@ -536,18 +547,19 @@ export default function RunRerunPanel({
                   <ul aria-label="派生运行">
                     {related.derived.map((item) => (
                       <li key={item.id}>
-                        <button
-                          type="button"
+                        <Button
+                          htmlType="button"
                           aria-label={'查看派生运行 ' + item.id}
                           ref={(element) => {
-                            if (element) relatedButtons.current.set(item.id, element);
+                            if (element instanceof HTMLButtonElement)
+                              relatedButtons.current.set(item.id, element);
                             else relatedButtons.current.delete(item.id);
                           }}
-                          disabled={submitting || !!opening}
+                          disabled={submitting || !!opening || undefined}
                           onClick={() => void inspect(item.id)}
                         >
                           {item.name} · {item.id.slice(0, 8)}
-                        </button>
+                        </Button>
                         <span>{runStateLabels[item.state]}</span>
                         <time>{new Date(item.createdAt).toLocaleString('zh-CN')}</time>
                       </li>

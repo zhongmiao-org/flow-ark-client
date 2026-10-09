@@ -22,13 +22,17 @@
   color: var(--fa-text-secondary);
   margin: 0;
 }
-.node-library .action-search input {
+.node-library
+  .action-search
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   height: 30px;
   min-height: 30px;
   padding-block: 0;
   margin: 0;
 }
-.node-library .action-search input {
+.node-library
+  .action-search
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   font-size: 12px;
   background: transparent;
 }
@@ -40,12 +44,8 @@
   outline: 2px solid var(--fa-action-primary);
   outline-offset: 2px;
 }
-.node-library .action-library-tools select {
-  min-height: 32px;
-  height: 32px;
-  padding-block: 0;
+.node-library .action-library-tools .ant-select {
   margin: 0;
-  font-size: 12px;
 }
 .node-library .action-destination {
   font-size: 12px;

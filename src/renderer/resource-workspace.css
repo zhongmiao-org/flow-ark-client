@@ -56,7 +56,7 @@
   gap: 16px;
 }
 .resource-workspace-card dt,
-.resource-workspace-card label {
+.resource-workspace-card label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   margin: 0 0 6px;
   color: var(--fa-text-secondary);
   font-size: 12px;
@@ -74,8 +74,15 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.resource-workspace-card input:not([type='checkbox']),
-.resource-workspace-card select,
+.resource-workspace-card .ant-select {
+  margin: 0;
+  min-width: 0;
+  width: 100%;
+}
+.resource-workspace-card
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):not(
+    [type='checkbox']
+  ),
 .resource-workspace-card textarea {
   margin: 0;
   min-width: 0;
@@ -123,7 +130,9 @@
 .resource-workspace-card .resource-inline {
   flex-wrap: wrap;
 }
-.resource-workspace-card .resource-inline input {
+.resource-workspace-card
+  .resource-inline
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   flex: 1;
   min-width: 120px;
 }

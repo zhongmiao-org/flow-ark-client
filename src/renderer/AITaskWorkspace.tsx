@@ -1,3 +1,4 @@
+import { ConfigProvider, Select, Button, Checkbox, Input } from 'antd';
 import TaskMissingAI from './TaskMissingAI';
 import TaskStepList, { type TaskStepListHandle } from './TaskStepList';
 import TaskStepInspector from './TaskStepInspector';
@@ -1401,25 +1402,60 @@ export default function AITaskWorkspace(props: Props) {
           <summary>
             AI 服务 · {providerName} · {model}
           </summary>{' '}
+          <ConfigProvider componentDisabled={inputDisabled || undefined}>
+            <fieldset className="ai-task-provider" disabled={inputDisabled}>
+              <label>
+                AI 服务
+                <Select<string>
+                  value={provider}
+                  onChange={(value) => {
+                    const p = value as typeof provider;
+                    setProvider(p);
+                    setModel(p === 'deepseek' ? 'deepseek-flash' : 'gpt-5.3-codex');
+                    setReviewed(false);
+                  }}
+                  options={[
+                    { value: 'deepseek', label: 'DeepSeek' },
+                    { value: 'openai-codex', label: 'OpenAI · Codex' },
+                  ]}
+                />
+              </label>
+              <label>
+                模型 ID
+                <Input
+                  value={model}
+                  maxLength={100}
+                  onChange={(e) => {
+                    setModel(e.target.value);
+                    setReviewed(false);
+                  }}
+                />
+              </label>
+            </fieldset>
+          </ConfigProvider>
+        </details>
+      ) : (
+        <ConfigProvider componentDisabled={inputDisabled || undefined}>
           <fieldset className="ai-task-provider" disabled={inputDisabled}>
             <label>
               AI 服务
-              <select
+              <Select<string>
                 value={provider}
-                onChange={(e) => {
-                  const p = e.target.value as typeof provider;
+                onChange={(value) => {
+                  const p = value as typeof provider;
                   setProvider(p);
                   setModel(p === 'deepseek' ? 'deepseek-flash' : 'gpt-5.3-codex');
                   setReviewed(false);
                 }}
-              >
-                <option value="deepseek">DeepSeek</option>
-                <option value="openai-codex">OpenAI · Codex</option>
-              </select>
+                options={[
+                  { value: 'deepseek', label: 'DeepSeek' },
+                  { value: 'openai-codex', label: 'OpenAI · Codex' },
+                ]}
+              />
             </label>
             <label>
               模型 ID
-              <input
+              <Input
                 value={model}
                 maxLength={100}
                 onChange={(e) => {
@@ -1429,42 +1465,13 @@ export default function AITaskWorkspace(props: Props) {
               />
             </label>
           </fieldset>
-        </details>
-      ) : (
-        <fieldset className="ai-task-provider" disabled={inputDisabled}>
-          <label>
-            AI 服务
-            <select
-              value={provider}
-              onChange={(e) => {
-                const p = e.target.value as typeof provider;
-                setProvider(p);
-                setModel(p === 'deepseek' ? 'deepseek-flash' : 'gpt-5.3-codex');
-                setReviewed(false);
-              }}
-            >
-              <option value="deepseek">DeepSeek</option>
-              <option value="openai-codex">OpenAI · Codex</option>
-            </select>
-          </label>
-          <label>
-            模型 ID
-            <input
-              value={model}
-              maxLength={100}
-              onChange={(e) => {
-                setModel(e.target.value);
-                setReviewed(false);
-              }}
-            />
-          </label>
-        </fieldset>
+        </ConfigProvider>
       )}
       {!props.data.credentials.includes(provider) && (
         <div className="ai-task-note">
           <p>{providerName} 尚未配置，先保存草稿，再配置服务。</p>
-          <button
-            disabled={busy}
+          <Button
+            disabled={busy || undefined}
             onClick={() =>
               void run(async () => {
                 await save();
@@ -1481,7 +1488,7 @@ export default function AITaskWorkspace(props: Props) {
             }
           >
             配置 AI 服务
-          </button>
+          </Button>
         </div>
       )}
       {detail.task.toolsRequirePlan && !detail.task.toolTargets?.length && (
@@ -1505,9 +1512,9 @@ export default function AITaskWorkspace(props: Props) {
               当前不能混合只读网页与工具方案，请移除其中一种目标后继续。
             </p>
           )}
-          <button disabled={inputDisabled} onClick={() => void openTarget()}>
+          <Button disabled={inputDisabled || undefined} onClick={() => void openTarget()}>
             查看或移除工具选择
-          </button>
+          </Button>
         </div>
       )}
       <details className="ai-task-disclosure">
@@ -1536,9 +1543,12 @@ export default function AITaskWorkspace(props: Props) {
               {a.mimeType} · {Math.ceil(a.size / 1024)} KiB
               {a.kind === 'image' ? ` · ${a.width} × ${a.height}` : ''}
             </p>
-            <button disabled={inputDisabled || stale} onClick={() => void previewAttachment(a.id)}>
+            <Button
+              disabled={inputDisabled || stale || undefined}
+              onClick={() => void previewAttachment(a.id)}
+            >
               查看发送附件：{a.name}
-            </button>
+            </Button>
             {(page !== 'brief' || scope) &&
               attachmentFeedback?.attachmentId === a.id &&
               attachmentFeedback.status !== 'success' && (
@@ -1611,33 +1621,32 @@ export default function AITaskWorkspace(props: Props) {
       {detail.task.outputTarget && outputNameError && page !== 'understand' && (
         <div className="ai-task-note" role="alert">
           <p>{outputNameError}</p>
-          <button disabled={inputDisabled} onClick={() => setPage('understand')}>
+          <Button disabled={inputDisabled || undefined} onClick={() => setPage('understand')}>
             修改输出文件名
-          </button>
+          </Button>
         </div>
       )}
-      <label className="ai-task-checkbox">
-        <input
-          type="checkbox"
-          checked={reviewed}
-          disabled={inputDisabled}
-          onChange={(e) => setReviewed(e.target.checked)}
-        />
+      <Checkbox
+        checked={reviewed}
+        disabled={inputDisabled || undefined}
+        onChange={(e) => setReviewed(e.target.checked)}
+        className="ai-task-checkbox"
+      >
         我已核对本次内容，将发送给 {providerName}
-      </label>
+      </Checkbox>
       <div className="ai-task-actions">
         {page === 'understand' && flow && (
-          <button
-            disabled={busy || stale || dirty}
+          <Button
+            disabled={busy || stale || dirty || undefined}
             title={dirty ? '请先保存任务草稿，再核对仍可用的方案' : undefined}
             onClick={returnToExistingPlan}
           >
             {detail.proposal?.result.kind === 'plan' ? '返回待采纳方案' : '返回当前方案'}
-          </button>
+          </Button>
         )}
         {generating ? (
-          <button
-            disabled={busy}
+          <Button
+            disabled={busy || undefined}
             onClick={() =>
               void run(async () => {
                 accept(await api('task.cancel', { id: detail.task.id }));
@@ -1646,10 +1655,10 @@ export default function AITaskWorkspace(props: Props) {
             }
           >
             取消生成
-          </button>
+          </Button>
         ) : (
-          <button
-            className="primary"
+          <Button
+            type="primary"
             disabled={
               busy ||
               stale ||
@@ -1668,7 +1677,8 @@ export default function AITaskWorkspace(props: Props) {
               (page === 'understand' &&
                 learning?.taskId === detail.task.id &&
                 !detail.task.outputTarget) ||
-              (!!detail.task.outputTarget && !!outputNameError)
+              (!!detail.task.outputTarget && !!outputNameError) ||
+              undefined
             }
             onClick={() => void generate()}
           >
@@ -1683,12 +1693,16 @@ export default function AITaskWorkspace(props: Props) {
                       ? '生成这一步的修改'
                       : '生成修改方案'
                     : '理解我的任务'}
-          </button>
+          </Button>
         )}
         {page !== 'modify' && (
-          <button
+          <Button
             disabled={
-              inputDisabled || !dirty || stale || (!!detail.task.outputTarget && !!outputNameError)
+              inputDisabled ||
+              !dirty ||
+              stale ||
+              (!!detail.task.outputTarget && !!outputNameError) ||
+              undefined
             }
             onClick={() =>
               void run(async () => {
@@ -1698,7 +1712,7 @@ export default function AITaskWorkspace(props: Props) {
             }
           >
             保存任务草稿
-          </button>
+          </Button>
         )}
       </div>
     </>
@@ -1706,9 +1720,9 @@ export default function AITaskWorkspace(props: Props) {
 
   const trialAction =
     detail?.flow && !detail.proposal && flow ? (
-      <button
-        className="primary"
-        disabled={busy || dirty || stale || generating || !!scope}
+      <Button
+        type="primary"
+        disabled={busy || dirty || stale || generating || !!scope || undefined}
         ref={trialButton}
         data-run-review-start
         onClick={() => {
@@ -1725,7 +1739,7 @@ export default function AITaskWorkspace(props: Props) {
           : standaloneGraph
             ? '试运行'
             : '确认方案，去试运行'}
-      </button>
+      </Button>
     ) : null;
 
   const proposalControls =
@@ -1737,16 +1751,19 @@ export default function AITaskWorkspace(props: Props) {
           </p>
         )}
         <div className={`ai-task-actions${planListView ? ' task-plan-confirm' : ''}`}>
-          <button
-            className="primary"
-            disabled={busy || dirty || stale || detail.conflict}
+          <Button
+            type="primary"
+            disabled={busy || dirty || stale || detail.conflict || undefined}
             onClick={() => void proposalAction('adopt')}
           >
             {fullModification ? '采纳修改' : '采纳方案'}
-          </button>
-          <button disabled={busy || dirty || stale} onClick={() => void proposalAction('reject')}>
+          </Button>
+          <Button
+            disabled={busy || dirty || stale || undefined}
+            onClick={() => void proposalAction('reject')}
+          >
             不采纳
-          </button>
+          </Button>
         </div>
       </>
     ) : null;
@@ -1754,18 +1771,18 @@ export default function AITaskWorkspace(props: Props) {
   const proposalNavigation =
     fullModification && detail.proposal ? (
       <div className="ai-task-actions task-proposal-tabs" aria-label="提案核对视图">
-        <button
+        <Button
           aria-pressed={changesView}
           onClick={() => setProposalView({ id: detail.proposal!.id, mode: 'changes' })}
         >
           修改差异
-        </button>
-        <button
+        </Button>
+        <Button
           aria-pressed={!changesView}
           onClick={() => setProposalView({ id: detail.proposal!.id, mode: 'flow' })}
         >
           完整新方案
-        </button>
+        </Button>
       </div>
     ) : null;
 
@@ -1827,8 +1844,8 @@ export default function AITaskWorkspace(props: Props) {
           page !== 'modify' && (
             <div className="ai-task-actions">
               {detail?.flow && detail.flow.id === props.sourceFlowId && (
-                <button
-                  disabled={busy}
+                <Button
+                  disabled={busy || undefined}
                   onClick={() =>
                     void run(async () => {
                       const next = scopeConflict ? detail : await save();
@@ -1837,30 +1854,30 @@ export default function AITaskWorkspace(props: Props) {
                   }
                 >
                   返回来源步骤
-                </button>
+                </Button>
               )}
-              <button disabled={busy} onClick={() => void back()}>
+              <Button disabled={busy || undefined} onClick={() => void back()}>
                 返回开始任务
-              </button>
+              </Button>
             </div>
           )}
       </div>
       {connectionOrigin && detail?.task.id === connectionOrigin.taskId && page !== 'home' && (
         <aside className="ai-task-note task-connection-origin" aria-label="任务来源">
           <span>来自应用与工具 · {connectionOrigin.connectionName}</span>
-          <button
-            disabled={busy}
+          <Button
+            disabled={busy || undefined}
             onClick={() => props.returnConnection(connectionOrigin.connectionId)}
           >
             返回连接详情
-          </button>
+          </Button>
         </aside>
       )}
       {error && (
         <div className="alert error" role="alert">
           <b>操作未完成</b>
           <span>{error}</span>
-          <button onClick={() => setError('')}>关闭</button>
+          <Button onClick={() => setError('')}>关闭</Button>
         </div>
       )}
       {message && (
@@ -1884,7 +1901,7 @@ export default function AITaskWorkspace(props: Props) {
             <h2 ref={attachmentHeading} tabIndex={-1}>
               {attachmentPreview.name}
             </h2>
-            <button onClick={closeAttachmentPreview}>关闭附件预览</button>
+            <Button onClick={closeAttachmentPreview}>关闭附件预览</Button>
           </div>
           {attachmentPreview.kind === 'image' ? (
             <img src={attachmentPreview.dataUrl} alt={attachmentPreview.name} />
@@ -1899,8 +1916,8 @@ export default function AITaskWorkspace(props: Props) {
       {stale && detail && (
         <div className="alert error" role="alert">
           <span>任务已在其他位置修改；重新读取会替换当前未保存输入。</span>
-          <button
-            disabled={busy}
+          <Button
+            disabled={busy || undefined}
             onClick={() =>
               void run(async () => {
                 const next: TaskDetail = await api('task.detail', { id: detail.task.id });
@@ -1911,7 +1928,7 @@ export default function AITaskWorkspace(props: Props) {
             }
           >
             重新读取任务
-          </button>
+          </Button>
         </div>
       )}
       {page === 'guide' ? (
@@ -1946,40 +1963,42 @@ export default function AITaskWorkspace(props: Props) {
             <label className="sr-only" htmlFor="new-task-description">
               你想完成的任务
             </label>
-            <textarea
+            <Input.TextArea
               id="new-task-description"
-              ref={homeInput}
+              ref={(instance) => {
+                homeInput.current = instance?.resizableTextArea?.textArea ?? null;
+              }}
               rows={1}
               value={homeText}
-              disabled={busy}
+              disabled={busy || undefined}
               maxLength={20000}
               onChange={(e) => setHomeText(e.target.value)}
               placeholder="把指定网页的标题保存到文件，标题为空就提醒我。"
             />
             <p>也可以附加文件、网页链接或目标截图，帮助说明需求。</p>
             <div className="ai-task-actions task-home-attachments" aria-label="添加任务资料">
-              <button disabled={busy} onClick={() => void create(homeText, 'file')}>
+              <Button disabled={busy || undefined} onClick={() => void create(homeText, 'file')}>
                 ＋ 文件
-              </button>
-              <button disabled={busy} onClick={() => void create(homeText, 'web')}>
+              </Button>
+              <Button disabled={busy || undefined} onClick={() => void create(homeText, 'web')}>
                 ＋ 网页
-              </button>
-              <button disabled={busy} onClick={() => void create(homeText, 'image')}>
+              </Button>
+              <Button disabled={busy || undefined} onClick={() => void create(homeText, 'image')}>
                 ＋ 截图
-              </button>
+              </Button>
             </div>
             <div className="ai-task-actions">
-              <button
-                className="primary"
-                disabled={busy || !homeText.trim()}
+              <Button
+                type="primary"
+                disabled={busy || !homeText.trim() || undefined}
                 onClick={() => void create(homeText)}
               >
                 开始规划
-              </button>
-              <button disabled={busy} onClick={() => props.settings(provider, model)}>
+              </Button>
+              <Button disabled={busy || undefined} onClick={() => props.settings(provider, model)}>
                 AI 服务 · {providerName} ·{' '}
                 {props.data.credentials.includes(provider) ? '已配置' : '未配置'}
-              </button>
+              </Button>
             </div>
           </section>
           <div className="ai-task-examples">
@@ -2000,9 +2019,9 @@ export default function AITaskWorkspace(props: Props) {
                 '整理我明确选择的文本编辑窗口中的选中段落，先核对原文和改动方案，再由我确认修改。',
               ],
             ].map(([heading, description, prompt]) => (
-              <button
+              <Button
                 key={heading}
-                disabled={busy}
+                disabled={busy || undefined}
                 onClick={() =>
                   void (heading === '跟着示例做一次'
                     ? showGuide()
@@ -2011,7 +2030,7 @@ export default function AITaskWorkspace(props: Props) {
               >
                 <h2>{heading}</h2>
                 <p>{description}</p>
-              </button>
+              </Button>
             ))}
           </div>
           <div className="task-home-status">
@@ -2027,15 +2046,15 @@ export default function AITaskWorkspace(props: Props) {
                   <p role="status">原教学任务已不存在，可以重新学习。已记录的学习进度仍保留。</p>
                 )}
                 <div className="ai-task-actions">
-                  <button
-                    disabled={busy || !!learningError || !learning.taskExists}
+                  <Button
+                    disabled={busy || !!learningError || !learning.taskExists || undefined}
                     onClick={() => void startLearning('continue')}
                   >
                     {learning.status === 'completed' ? '查看教学结果' : '继续教学'}
-                  </button>
-                  <button disabled={busy} onClick={() => void showGuide()}>
+                  </Button>
+                  <Button disabled={busy || undefined} onClick={() => void showGuide()}>
                     {learningError ? '查看学习说明' : '重新学习'}
-                  </button>
+                  </Button>
                 </div>
               </section>
             )}
@@ -2048,35 +2067,35 @@ export default function AITaskWorkspace(props: Props) {
                   '当前没有未读提醒。仍可查看待办、人工请求和历史提醒。'}
               </p>
               <div className="ai-task-actions">
-                <button disabled={busy} onClick={props.openAttention}>
+                <Button disabled={busy || undefined} onClick={props.openAttention}>
                   查看待办与提醒
-                </button>
+                </Button>
               </div>
             </section>
           </div>
           <div className="ai-task-actions task-home-navigation">
-            <button disabled={busy} onClick={props.flows}>
+            <Button disabled={busy || undefined} onClick={props.flows}>
               使用已有流程
-            </button>
-            <button disabled={busy} onClick={() => void openManual(false)}>
+            </Button>
+            <Button disabled={busy || undefined} onClick={() => void openManual(false)}>
               手动创建流程
-            </button>
-            <button disabled={busy} onClick={props.openTools}>
+            </Button>
+            <Button disabled={busy || undefined} onClick={props.openTools}>
               应用与工具
-            </button>
+            </Button>
           </div>
           <section className="ai-task-card" aria-labelledby="task-home-recents-title">
             <div className="task-home-recents-heading">
               <h2 id="task-home-recents-title">继续你的任务</h2>
-              <button
-                disabled={busy}
+              <Button
+                disabled={busy || undefined}
                 aria-disabled={tasksLoading || undefined}
                 onClick={() => {
                   if (!tasksLoading) setTasksRefresh((current) => current + 1);
                 }}
               >
                 {tasksLoading ? '正在读取…' : tasksError ? '重新读取' : '刷新列表'}
-              </button>
+              </Button>
             </div>
             <div
               role="status"
@@ -2104,12 +2123,16 @@ export default function AITaskWorkspace(props: Props) {
             {tasks.length > 0 && (
               <div className="ai-task-recents">
                 {tasks.map((task) => (
-                  <button key={task.id} disabled={busy} onClick={() => void open(task.id)}>
+                  <Button
+                    key={task.id}
+                    disabled={busy || undefined}
+                    onClick={() => void open(task.id)}
+                  >
                     <span>{task.description || '尚未描述的任务'}</span>
                     <small>
                       {status[task.status]} · {new Date(task.updatedAt).toLocaleString('zh-CN')}
                     </small>
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -2382,29 +2405,29 @@ export default function AITaskWorkspace(props: Props) {
                       }}
                       stepAction={
                         !detail.proposal && selectedStep ? (
-                          <button
-                            disabled={inputDisabled || dirty || stale}
+                          <Button
+                            disabled={inputDisabled || dirty || stale || undefined}
                             onClick={() => void run(() => chooseScope(detail, selectedStep.id))}
                           >
                             修改第{' '}
                             {flatten(flow.steps).findIndex((step) => step.id === selected) + 1} 步
-                          </button>
+                          </Button>
                         ) : undefined
                       }
                       undoAction={
                         !detail.proposal && detail.canUndo ? (
-                          <button
-                            disabled={inputDisabled || dirty || stale}
+                          <Button
+                            disabled={inputDisabled || dirty || stale || undefined}
                             onClick={() => void proposalAction('undo')}
                           >
                             撤销最近采纳
-                          </button>
+                          </Button>
                         ) : undefined
                       }
                     >
                       {fullModification && detail.proposal && (
-                        <button
-                          disabled={busy}
+                        <Button
+                          disabled={busy || undefined}
                           onClick={() => {
                             setProposalView({ id: detail.proposal!.id, mode: 'changes' });
                             requestAnimationFrame(() => {
@@ -2417,12 +2440,15 @@ export default function AITaskWorkspace(props: Props) {
                           }}
                         >
                           检查修改差异
-                        </button>
+                        </Button>
                       )}
                       {!detail.proposal && (
-                        <button disabled={inputDisabled} onClick={() => setPage('brief')}>
+                        <Button
+                          disabled={inputDisabled || undefined}
+                          onClick={() => setPage('brief')}
+                        >
                           编辑描述与资料
-                        </button>
+                        </Button>
                       )}
                       {!detail.proposal && (
                         <TaskLatestRun
@@ -2477,8 +2503,8 @@ export default function AITaskWorkspace(props: Props) {
                           <p className="ai-task-note">
                             修改要求不会直接改写当前提案。重新生成后，仍需检查并明确采纳。
                           </p>
-                          <button
-                            disabled={inputDisabled}
+                          <Button
+                            disabled={inputDisabled || undefined}
                             onClick={() => {
                               setEditingProposal(false);
                               setReviewed(false);
@@ -2490,7 +2516,7 @@ export default function AITaskWorkspace(props: Props) {
                             }}
                           >
                             返回方案说明
-                          </button>
+                          </Button>
                         </>
                       )}
                       {scope && (
@@ -2509,9 +2535,9 @@ export default function AITaskWorkspace(props: Props) {
                       <label htmlFor="task-description">
                         {scope ? '这一步怎么改' : '你的需求'}
                       </label>
-                      <textarea
+                      <Input.TextArea
                         id="task-description"
-                        disabled={inputDisabled}
+                        disabled={inputDisabled || undefined}
                         value={scope ? scope.instruction : draft.description}
                         maxLength={scope ? 10000 : 20000}
                         onChange={(e) =>
@@ -2537,14 +2563,15 @@ export default function AITaskWorkspace(props: Props) {
                       {page === 'brief' && (
                         <>
                           <div className="ai-task-actions">
-                            <button
+                            <Button
                               disabled={
                                 inputDisabled ||
                                 draft.context.length >=
                                   20 -
                                     Number(!!detail.task.webTarget) -
                                     Number(!!detail.task.outputTarget) -
-                                    (detail.task.attachments?.length ?? 0)
+                                    (detail.task.attachments?.length ?? 0) ||
+                                undefined
                               }
                               onClick={() =>
                                 edit({
@@ -2562,19 +2589,19 @@ export default function AITaskWorkspace(props: Props) {
                               }
                             >
                               附加文本资料
-                            </button>
-                            <button
-                              disabled={inputDisabled || !!scope}
+                            </Button>
+                            <Button
+                              disabled={inputDisabled || !!scope || undefined}
                               onClick={() => void openTarget()}
                             >
                               网页链接与对象
-                            </button>
-                            <button
-                              disabled={inputDisabled || !!scope}
+                            </Button>
+                            <Button
+                              disabled={inputDisabled || !!scope || undefined}
                               onClick={() => void understand()}
                             >
                               理解与输出位置
-                            </button>
+                            </Button>
                           </div>
                           <h2>
                             已选上下文 ·{' '}
@@ -2584,54 +2611,55 @@ export default function AITaskWorkspace(props: Props) {
                             项
                           </h2>
                           {draft.context.map((entry, index) => (
-                            <fieldset
+                            <ConfigProvider
+                              componentDisabled={inputDisabled || undefined}
                               key={entry.id}
-                              className="ai-task-context"
-                              disabled={inputDisabled}
                             >
-                              <label>
-                                资料名称
-                                <input
-                                  aria-label={`资料 ${index + 1} 名称`}
-                                  value={entry.label}
-                                  maxLength={200}
-                                  onChange={(e) =>
+                              <fieldset className="ai-task-context" disabled={inputDisabled}>
+                                <label>
+                                  资料名称
+                                  <Input
+                                    aria-label={`资料 ${index + 1} 名称`}
+                                    value={entry.label}
+                                    maxLength={200}
+                                    onChange={(e) =>
+                                      edit({
+                                        ...draft,
+                                        context: draft.context.map((c) =>
+                                          c.id === entry.id ? { ...c, label: e.target.value } : c,
+                                        ),
+                                      })
+                                    }
+                                  />
+                                </label>
+                                <label>
+                                  资料内容
+                                  <Input.TextArea
+                                    aria-label={`资料 ${index + 1} 内容`}
+                                    value={entry.text}
+                                    maxLength={50000}
+                                    onChange={(e) =>
+                                      edit({
+                                        ...draft,
+                                        context: draft.context.map((c) =>
+                                          c.id === entry.id ? { ...c, text: e.target.value } : c,
+                                        ),
+                                      })
+                                    }
+                                  />
+                                </label>
+                                <Button
+                                  onClick={() =>
                                     edit({
                                       ...draft,
-                                      context: draft.context.map((c) =>
-                                        c.id === entry.id ? { ...c, label: e.target.value } : c,
-                                      ),
+                                      context: draft.context.filter((c) => c.id !== entry.id),
                                     })
                                   }
-                                />
-                              </label>
-                              <label>
-                                资料内容
-                                <textarea
-                                  aria-label={`资料 ${index + 1} 内容`}
-                                  value={entry.text}
-                                  maxLength={50000}
-                                  onChange={(e) =>
-                                    edit({
-                                      ...draft,
-                                      context: draft.context.map((c) =>
-                                        c.id === entry.id ? { ...c, text: e.target.value } : c,
-                                      ),
-                                    })
-                                  }
-                                />
-                              </label>
-                              <button
-                                onClick={() =>
-                                  edit({
-                                    ...draft,
-                                    context: draft.context.filter((c) => c.id !== entry.id),
-                                  })
-                                }
-                              >
-                                移除资料 {index + 1}
-                              </button>
-                            </fieldset>
+                                >
+                                  移除资料 {index + 1}
+                                </Button>
+                              </fieldset>
+                            </ConfigProvider>
                           ))}
                         </>
                       )}
@@ -2645,12 +2673,12 @@ export default function AITaskWorkspace(props: Props) {
                               : '只读取此网页'}{' '}
                             · 账号未核对 · 本机内置浏览器
                           </p>
-                          <button
-                            disabled={inputDisabled || !!scope}
+                          <Button
+                            disabled={inputDisabled || !!scope || undefined}
                             onClick={() => void openTarget()}
                           >
                             查看或更换网页目标
-                          </button>
+                          </Button>
                         </div>
                       )}
                       {result?.kind === 'clarify' && (
@@ -2666,13 +2694,13 @@ export default function AITaskWorkspace(props: Props) {
                       )}
                       {planningControls}
                       {page === 'review' && (
-                        <button disabled={busy} onClick={() => setPage('brief')}>
+                        <Button disabled={busy || undefined} onClick={() => setPage('brief')}>
                           编辑描述与资料
-                        </button>
+                        </Button>
                       )}
                       {scope && (
-                        <button
-                          disabled={inputDisabled}
+                        <Button
+                          disabled={inputDisabled || undefined}
                           onClick={() =>
                             void run(async () => {
                               const { scope: _scope, ...whole } = draft;
@@ -2692,7 +2720,7 @@ export default function AITaskWorkspace(props: Props) {
                           }
                         >
                           改为修改完整任务
-                        </button>
+                        </Button>
                       )}
                     </>
                   )}
@@ -2748,22 +2776,22 @@ export default function AITaskWorkspace(props: Props) {
                         </p>
                       )}
                       <div className="ai-task-actions">
-                        <button
-                          className="primary"
-                          disabled={busy || dirty || stale || detail.conflict}
+                        <Button
+                          type="primary"
+                          disabled={busy || dirty || stale || detail.conflict || undefined}
                           onClick={() => void proposalAction('adopt')}
                         >
                           采纳修改
-                        </button>
-                        <button
-                          disabled={busy || dirty || stale}
+                        </Button>
+                        <Button
+                          disabled={busy || dirty || stale || undefined}
                           onClick={() => void proposalAction('reject')}
                         >
                           不采纳
-                        </button>
+                        </Button>
                       </div>
-                      <button
-                        disabled={inputDisabled}
+                      <Button
+                        disabled={inputDisabled || undefined}
                         onClick={() => {
                           setEditingProposal(true);
                           requestAnimationFrame(() =>
@@ -2774,20 +2802,23 @@ export default function AITaskWorkspace(props: Props) {
                         }}
                       >
                         继续描述修改
-                      </button>
+                      </Button>
                     </>
                   ) : flow ? (
                     <>
                       {viewingPreserved && (
                         <div className="ai-task-note" role="status">
                           <p>这是此前保存的草稿。本次回复没有可采纳的方案，也没有修改这些步骤。</p>
-                          <button disabled={busy} onClick={recoverDescription}>
+                          <Button disabled={busy || undefined} onClick={recoverDescription}>
                             调整任务要求
-                          </button>
+                          </Button>
                           {detail.task.status === 'unsupported' && (
-                            <button disabled={busy} onClick={() => setPage('generation')}>
+                            <Button
+                              disabled={busy || undefined}
+                              onClick={() => setPage('generation')}
+                            >
                               返回能力说明
-                            </button>
+                            </Button>
                           )}
                         </div>
                       )}
@@ -2818,27 +2849,27 @@ export default function AITaskWorkspace(props: Props) {
                             data-plan-preview-heading={standaloneGraph ? true : undefined}
                             aria-label="方案视图"
                           >
-                            <button aria-pressed={view === 'list'} onClick={() => setView('list')}>
+                            <Button aria-pressed={view === 'list'} onClick={() => setView('list')}>
                               步骤清单
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               aria-pressed={view === 'graph'}
                               onClick={() => setView('graph')}
                             >
                               流程图
-                            </button>
+                            </Button>
                             {!planListView && trialAction}
                             {!detail.proposal && (
-                              <button
+                              <Button
                                 className="task-plan-more"
                                 ref={moreButton}
                                 aria-label="打开任务更多操作"
                                 aria-describedby={moreUnavailable ? 'task-more-reason' : undefined}
-                                disabled={!!moreUnavailable}
+                                disabled={!!moreUnavailable || undefined}
                                 onClick={() => void openPlanMore()}
                               >
                                 更多 ···
-                              </button>
+                              </Button>
                             )}
                           </div>
                           {moreUnavailable && !detail.proposal && !viewingPreserved && (
@@ -2948,27 +2979,31 @@ export default function AITaskWorkspace(props: Props) {
                                 actions={
                                   <>
                                     {view === 'list' && selectedStep && (
-                                      <button
+                                      <Button
                                         onClick={() => {
                                           planStepList.current?.reveal(selectedStep.id);
                                           setHiddenListStep(selectedStep.id);
                                         }}
                                       >
                                         返回步骤清单
-                                      </button>
+                                      </Button>
                                     )}
                                     {selectedStep && !scope && (
-                                      <button
-                                        className="primary"
+                                      <Button
+                                        type="primary"
                                         disabled={
-                                          inputDisabled || dirty || stale || !!detail.proposal
+                                          inputDisabled ||
+                                          dirty ||
+                                          stale ||
+                                          !!detail.proposal ||
+                                          undefined
                                         }
                                         onClick={() =>
                                           void run(() => chooseScope(detail, selectedStep.id))
                                         }
                                       >
                                         用 AI 修改此步
-                                      </button>
+                                      </Button>
                                     )}
                                     {selectedStep &&
                                       !scope &&
@@ -2984,7 +3019,7 @@ export default function AITaskWorkspace(props: Props) {
                                         </p>
                                       )}
                                     {view === 'graph' && (
-                                      <button onClick={returnToConversation}>回到对话</button>
+                                      <Button onClick={returnToConversation}>回到对话</Button>
                                     )}
                                   </>
                                 }
@@ -3074,8 +3109,8 @@ export default function AITaskWorkspace(props: Props) {
                       {!detail.proposal && detail.flow && (
                         <div className="ai-task-actions task-plan-confirm">
                           {planListView && trialAction}
-                          <button
-                            disabled={busy}
+                          <Button
+                            disabled={busy || undefined}
                             onClick={() =>
                               void run(async () => {
                                 const next = await save();
@@ -3084,14 +3119,14 @@ export default function AITaskWorkspace(props: Props) {
                             }
                           >
                             {planListView ? '手动编辑' : '打开流程编排'}
-                          </button>
+                          </Button>
                           {detail.canUndo && !planListView && (
-                            <button
-                              disabled={busy || dirty || stale}
+                            <Button
+                              disabled={busy || dirty || stale || undefined}
                               onClick={() => void proposalAction('undo')}
                             >
                               撤销最近采纳
-                            </button>
+                            </Button>
                           )}
                         </div>
                       )}
@@ -3105,9 +3140,9 @@ export default function AITaskWorkspace(props: Props) {
                     <>
                       <h2>{result?.kind === 'clarify' ? '补充这些信息后继续' : '当前任务说明'}</h2>
                       <p>{result?.summary || '保存描述后，核对本次内容并生成方案。'}</p>
-                      <button disabled={busy} onClick={() => setPage('brief')}>
+                      <Button disabled={busy || undefined} onClick={() => setPage('brief')}>
                         返回描述与资料
-                      </button>
+                      </Button>
                     </>
                   )}
                   {result?.limitations.length ? (

@@ -1,3 +1,4 @@
+import { ConfigProvider, Select, Button, Checkbox, Input } from 'antd';
 import {
   useCallback,
   useEffect,
@@ -229,274 +230,276 @@ export default function ExcelMappingPage({
           {error}
         </p>
       )}
-      <fieldset disabled={busy}>
-        <div className="excel-workbook-fields">
-          <div className="excel-workbook-name" {...fieldProps('name')} tabIndex={-1}>
-            <ValueField
-              label="工作簿"
-              value={node.name}
-              choices={choices}
-              defaultValue="mapped.xlsx"
-              change={(name) => change({ ...node, name })}
-            >
-              {typeof node.name === 'string' ? (
-                <label>
-                  工作簿
-                  <input
-                    aria-label="输出工作簿"
-                    {...fieldProps('name')}
-                    value={node.name}
-                    onChange={(event) => change({ ...node, name: event.target.value })}
-                  />
-                </label>
-              ) : undefined}
-            </ValueField>
-            {fieldError('name')}
+      <ConfigProvider componentDisabled={busy || undefined}>
+        <fieldset disabled={busy}>
+          <div className="excel-workbook-fields">
+            <div className="excel-workbook-name" {...fieldProps('name')} tabIndex={-1}>
+              <ValueField
+                label="工作簿"
+                value={node.name}
+                choices={choices}
+                defaultValue="mapped.xlsx"
+                change={(name) => change({ ...node, name })}
+              >
+                {typeof node.name === 'string' ? (
+                  <label>
+                    工作簿
+                    <Input
+                      aria-label="输出工作簿"
+                      {...fieldProps('name')}
+                      value={node.name}
+                      onChange={(event) => change({ ...node, name: event.target.value })}
+                    />
+                  </label>
+                ) : undefined}
+              </ValueField>
+              {fieldError('name')}
+            </div>
+            <label>
+              工作表
+              <Input
+                aria-label="映射工作表"
+                {...fieldProps('sheet')}
+                value={node.sheet}
+                onChange={(event) => change({ ...node, sheet: event.target.value })}
+              />
+              {fieldError('sheet')}
+            </label>
+            <label>
+              写入方式
+              <Input value="新建文件 · 不覆盖" readOnly />
+            </label>
           </div>
-          <label>
-            工作表
-            <input
-              aria-label="映射工作表"
-              {...fieldProps('sheet')}
-              value={node.sheet}
-              onChange={(event) => change({ ...node, sheet: event.target.value })}
-            />
-            {fieldError('sheet')}
-          </label>
-          <label>
-            写入方式
-            <input value="新建文件 · 不覆盖" readOnly />
-          </label>
-        </div>
-        <div className="excel-mapping-columns">
-          <section className="ai-task-card excel-mapping-list" aria-label="字段映射配置">
-            <h2>字段映射</h2>
-            <div className="excel-mapping-rows">
-              {node.mappings.map((item, i) => (
-                <div className="excel-mapping-row" key={i} data-mapping={i}>
-                  <label>
-                    来源
-                    <input
-                      aria-label={`映射 ${i + 1} 来源`}
-                      {...fieldProps('source', i)}
-                      value={item.source}
-                      placeholder="记录字段名，或数组索引 0"
-                      onChange={(event) => patchMapping(i, { source: event.target.value })}
-                    />
-                    {fieldError('source', i)}
-                  </label>
-                  <label>
-                    目标列
-                    <input
-                      aria-label={`映射 ${i + 1} 目标列`}
-                      {...fieldProps('column', i)}
-                      value={item.column}
-                      onChange={(event) =>
-                        patchMapping(i, { column: event.target.value.toUpperCase() })
-                      }
-                    />
-                    {fieldError('column', i)}
-                  </label>
-                  <details className="excel-column-options">
-                    <summary>
-                      {item.header || '无表头'} ·{' '}
-                      {{ text: '文本', number: '数字', boolean: '布尔' }[item.type]}
-                    </summary>
+          <div className="excel-mapping-columns">
+            <section className="ai-task-card excel-mapping-list" aria-label="字段映射配置">
+              <h2>字段映射</h2>
+              <div className="excel-mapping-rows">
+                {node.mappings.map((item, i) => (
+                  <div className="excel-mapping-row" key={i} data-mapping={i}>
                     <label>
-                      表头
-                      <input
-                        aria-label={`映射 ${i + 1} 表头`}
-                        {...fieldProps('header', i)}
-                        value={item.header}
-                        onChange={(event) => patchMapping(i, { header: event.target.value })}
+                      来源
+                      <Input
+                        aria-label={`映射 ${i + 1} 来源`}
+                        {...fieldProps('source', i)}
+                        value={item.source}
+                        placeholder="记录字段名，或数组索引 0"
+                        onChange={(event) => patchMapping(i, { source: event.target.value })}
                       />
-                      {fieldError('header', i)}
+                      {fieldError('source', i)}
                     </label>
                     <label>
-                      类型
-                      <select
-                        aria-label={`映射 ${i + 1} 类型`}
-                        {...fieldProps('type', i)}
-                        value={item.type}
+                      目标列
+                      <Input
+                        aria-label={`映射 ${i + 1} 目标列`}
+                        {...fieldProps('column', i)}
+                        value={item.column}
                         onChange={(event) =>
-                          patchMapping(i, { type: event.target.value as ExcelMapping['type'] })
+                          patchMapping(i, { column: event.target.value.toUpperCase() })
                         }
-                      >
-                        <option value="text">文本</option>
-                        <option value="number">数字</option>
-                        <option value="boolean">布尔</option>
-                      </select>
-                      {fieldError('type', i)}
+                      />
+                      {fieldError('column', i)}
                     </label>
-                    <button
-                      onClick={() => {
-                        focusRequest.current =
-                          node.mappings.length > 1
-                            ? `[data-mapping="${Math.min(i, node.mappings.length - 2)}"] [data-excel-field="source"]`
-                            : '[data-excel-field="mappings"]';
-                        change({
-                          ...node,
-                          mappings: node.mappings.filter(
-                            (_, j) => j !== i,
-                          ) as MappedExcel['mappings'],
-                        });
-                      }}
-                    >
-                      删除映射 {i + 1}
-                    </button>
-                  </details>
-                </div>
-              ))}
-            </div>
-            <div className="excel-actions">
-              <button
-                {...fieldProps('mappings')}
-                disabled={node.mappings.length >= 256}
-                onClick={() => {
-                  let i = 0;
-                  while (node.mappings.some((item) => item.column === columnName(i))) i++;
-                  focusRequest.current = `[data-mapping="${node.mappings.length}"] [data-excel-field="source"]`;
-                  change({
-                    ...node,
-                    mappings: [
-                      ...node.mappings,
-                      { source: '', column: columnName(i), header: '', type: 'text' },
-                    ],
-                  });
-                }}
-              >
-                添加映射
-              </button>
-              <button
-                className="primary"
-                onClick={() => {
-                  try {
-                    setPreview(validate());
-                    setError('');
-                    setIssue(undefined);
-                    focusRequest.current = '[data-excel-preview]';
-                    setFocusRevision((revision) => revision + 1);
-                  } catch (error) {
-                    report(error);
-                  }
-                }}
-              >
-                预览 3 行
-              </button>
-            </div>
-            {fieldError('mappings')}
-            <details className="excel-source-settings">
-              <summary>来源数据、输出目录与表头</summary>
-              <div className="excel-source-value" {...fieldProps('rows')} tabIndex={-1}>
-                <ValueField
-                  label="来源记录"
-                  value={node.rows}
-                  choices={choices}
-                  defaultValue={[]}
-                  change={(rows) => change({ ...node, rows })}
-                  onIncompleteChange={sourceInputChanged}
-                />
-                {fieldError('rows')}
+                    <details className="excel-column-options">
+                      <summary>
+                        {item.header || '无表头'} ·{' '}
+                        {{ text: '文本', number: '数字', boolean: '布尔' }[item.type]}
+                      </summary>
+                      <label>
+                        表头
+                        <Input
+                          aria-label={`映射 ${i + 1} 表头`}
+                          {...fieldProps('header', i)}
+                          value={item.header}
+                          onChange={(event) => patchMapping(i, { header: event.target.value })}
+                        />
+                        {fieldError('header', i)}
+                      </label>
+                      <label>
+                        类型
+                        <Select<string>
+                          aria-label={`映射 ${i + 1} 类型`}
+                          {...fieldProps('type', i)}
+                          value={item.type}
+                          onChange={(value) =>
+                            patchMapping(i, { type: value as ExcelMapping['type'] })
+                          }
+                          options={[
+                            { value: 'text', label: '文本' },
+                            { value: 'number', label: '数字' },
+                            { value: 'boolean', label: '布尔' },
+                          ]}
+                        />
+                        {fieldError('type', i)}
+                      </label>
+                      <Button
+                        onClick={() => {
+                          focusRequest.current =
+                            node.mappings.length > 1
+                              ? `[data-mapping="${Math.min(i, node.mappings.length - 2)}"] [data-excel-field="source"]`
+                              : '[data-excel-field="mappings"]';
+                          change({
+                            ...node,
+                            mappings: node.mappings.filter(
+                              (_, j) => j !== i,
+                            ) as MappedExcel['mappings'],
+                          });
+                        }}
+                      >
+                        删除映射 {i + 1}
+                      </Button>
+                    </details>
+                  </div>
+                ))}
               </div>
-              <label>
-                输出目录绑定
-                <input
-                  aria-label="映射目录绑定"
-                  {...fieldProps('binding')}
-                  value={node.binding}
-                  onChange={(event) => change({ ...node, binding: event.target.value })}
-                />
-                {fieldError('binding')}
-              </label>
-              <p className="path-text">
-                {draft.bindings.files[node.binding] || '尚未绑定；运行前需要选择输出目录'}
-              </p>
-              <button onClick={choose}>
-                {selectingDirectory ? '正在选择目录…' : '选择输出目录'}
-              </button>
-              <label className="check-label">
-                <input
-                  type="checkbox"
+              <div className="excel-actions">
+                <Button
+                  {...fieldProps('mappings')}
+                  disabled={node.mappings.length >= 256 || undefined}
+                  onClick={() => {
+                    let i = 0;
+                    while (node.mappings.some((item) => item.column === columnName(i))) i++;
+                    focusRequest.current = `[data-mapping="${node.mappings.length}"] [data-excel-field="source"]`;
+                    change({
+                      ...node,
+                      mappings: [
+                        ...node.mappings,
+                        { source: '', column: columnName(i), header: '', type: 'text' },
+                      ],
+                    });
+                  }}
+                >
+                  添加映射
+                </Button>
+                <Button
+                  type="primary"
+                  onClick={() => {
+                    try {
+                      setPreview(validate());
+                      setError('');
+                      setIssue(undefined);
+                      focusRequest.current = '[data-excel-preview]';
+                      setFocusRevision((revision) => revision + 1);
+                    } catch (error) {
+                      report(error);
+                    }
+                  }}
+                >
+                  预览 3 行
+                </Button>
+              </div>
+              {fieldError('mappings')}
+              <details className="excel-source-settings">
+                <summary>来源数据、输出目录与表头</summary>
+                <div className="excel-source-value" {...fieldProps('rows')} tabIndex={-1}>
+                  <ValueField
+                    label="来源记录"
+                    value={node.rows}
+                    choices={choices}
+                    defaultValue={[]}
+                    change={(rows) => change({ ...node, rows })}
+                    onIncompleteChange={sourceInputChanged}
+                  />
+                  {fieldError('rows')}
+                </div>
+                <label>
+                  输出目录绑定
+                  <Input
+                    aria-label="映射目录绑定"
+                    {...fieldProps('binding')}
+                    value={node.binding}
+                    onChange={(event) => change({ ...node, binding: event.target.value })}
+                  />
+                  {fieldError('binding')}
+                </label>
+                <p className="path-text">
+                  {draft.bindings.files[node.binding] || '尚未绑定；运行前需要选择输出目录'}
+                </p>
+                <Button onClick={choose}>
+                  {selectingDirectory ? '正在选择目录…' : '选择输出目录'}
+                </Button>
+                <Checkbox
                   checked={node.includeHeaders}
                   onChange={(event) => change({ ...node, includeHeaders: event.target.checked })}
-                />
-                首行写入表头
-              </label>
-            </details>
-          </section>
-          <section className="ai-task-card excel-data-preview" aria-label="写入预览">
-            <h2
-              data-excel-preview
-              tabIndex={-1}
-              aria-describedby={`${issueId}-preview-description`}
-            >
-              写入预览{preview?.available ? ` · ${rows.length} 行` : ''}
-            </h2>
-            {preview?.available ? (
-              <>
-                <div
-                  className="excel-preview-scroll"
-                  tabIndex={0}
-                  role="region"
-                  aria-label="映射结果表格，可滚动查看"
+                  className="check-label"
                 >
-                  <table aria-label="Excel 映射预览">
-                    <thead>
-                      <tr>
-                        {columns.map((item) => (
-                          <th key={item.column} scope="col">
-                            {item.column}
-                            {node.includeHeaders && ` · ${item.header}`}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map((row, i) => (
-                        <tr key={i}>
+                  首行写入表头
+                </Checkbox>
+              </details>
+            </section>
+            <section className="ai-task-card excel-data-preview" aria-label="写入预览">
+              <h2
+                data-excel-preview
+                tabIndex={-1}
+                aria-describedby={`${issueId}-preview-description`}
+              >
+                写入预览{preview?.available ? ` · ${rows.length} 行` : ''}
+              </h2>
+              {preview?.available ? (
+                <>
+                  <div
+                    className="excel-preview-scroll"
+                    tabIndex={0}
+                    role="region"
+                    aria-label="映射结果表格，可滚动查看"
+                  >
+                    <table aria-label="Excel 映射预览">
+                      <thead>
+                        <tr>
                           {columns.map((item) => (
-                            <td key={item.column}>
-                              {row[columnIndex(item.column)] === null ? (
-                                <span className="muted">空</span>
-                              ) : (
-                                String(row[columnIndex(item.column)])
-                              )}
-                            </td>
+                            <th key={item.column} scope="col">
+                              {item.column}
+                              {node.includeHeaders && ` · ${item.header}`}
+                            </th>
                           ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {!rows.length && <p>来源记录为空；当前预览没有数据行。</p>}
-              </>
-            ) : (
-              <p id={`${issueId}-preview-description`} role="status">
-                {incompleteSource
-                  ? '来源记录输入尚未完成。修正后重新预览。'
-                  : preview && !preview.available
-                    ? preview.reason
-                    : '点击「预览 3 行」核对来源及映射。修改配置后需要重新预览。'}
-              </p>
-            )}
-            <div className="excel-mapping-note">
-              空值策略：保留空单元格。类型冲突时阻止保存并定位字段；公式和宏不在本次能力范围。
-            </div>
-            {preview?.available && (
-              <p className="note" id={`${issueId}-preview-description`}>
-                已核对全部 {preview.count} 条记录。预览显示前 {rows.length} 条，未写入文件。
-                未映射的列保留空白，预览仅展示选定列。
-              </p>
-            )}
-          </section>
-        </div>
-        <footer className="excel-actions">
-          <button className="primary" onClick={() => void persist()}>
-            {saving ? '正在保存…' : '保存映射并返回'}
-          </button>
-          <button onClick={() => navigation.current?.()}>取消</button>
-        </footer>
-      </fieldset>
+                      </thead>
+                      <tbody>
+                        {rows.map((row, i) => (
+                          <tr key={i}>
+                            {columns.map((item) => (
+                              <td key={item.column}>
+                                {row[columnIndex(item.column)] === null ? (
+                                  <span className="muted">空</span>
+                                ) : (
+                                  String(row[columnIndex(item.column)])
+                                )}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {!rows.length && <p>来源记录为空；当前预览没有数据行。</p>}
+                </>
+              ) : (
+                <p id={`${issueId}-preview-description`} role="status">
+                  {incompleteSource
+                    ? '来源记录输入尚未完成。修正后重新预览。'
+                    : preview && !preview.available
+                      ? preview.reason
+                      : '点击「预览 3 行」核对来源及映射。修改配置后需要重新预览。'}
+                </p>
+              )}
+              <div className="excel-mapping-note">
+                空值策略：保留空单元格。类型冲突时阻止保存并定位字段；公式和宏不在本次能力范围。
+              </div>
+              {preview?.available && (
+                <p className="note" id={`${issueId}-preview-description`}>
+                  已核对全部 {preview.count} 条记录。预览显示前 {rows.length} 条，未写入文件。
+                  未映射的列保留空白，预览仅展示选定列。
+                </p>
+              )}
+            </section>
+          </div>
+          <footer className="excel-actions">
+            <Button type="primary" onClick={() => void persist()}>
+              {saving ? '正在保存…' : '保存映射并返回'}
+            </Button>
+            <Button onClick={() => navigation.current?.()}>取消</Button>
+          </footer>
+        </fieldset>
+      </ConfigProvider>
       <dialog
         ref={dialog}
         className="script-leave-dialog"
@@ -510,15 +513,19 @@ export default function ExcelMappingPage({
         <h2 id={`${issueId}-leave-title`}>映射有未保存的修改</h2>
         <p id={`${issueId}-leave-description`}>保存后离开，或放弃本次映射编辑。</p>
         <div>
-          <button className="primary" disabled={saving} onClick={() => void persist(pending?.next)}>
+          <Button
+            type="primary"
+            disabled={saving || undefined}
+            onClick={() => void persist(pending?.next)}
+          >
             {saving ? '正在保存…' : '保存并离开'}
-          </button>
-          <button disabled={saving} onClick={() => close(pending?.next)}>
+          </Button>
+          <Button disabled={saving || undefined} onClick={() => close(pending?.next)}>
             放弃修改
-          </button>
-          <button disabled={saving} onClick={() => setPending(undefined)}>
+          </Button>
+          <Button disabled={saving || undefined} onClick={() => setPending(undefined)}>
             继续编辑
-          </button>
+          </Button>
         </div>
       </dialog>
     </section>

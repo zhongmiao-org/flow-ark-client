@@ -1,3 +1,4 @@
+import { Button, Checkbox } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { FlowRecord } from '../shared/types';
 import { flatten } from './flow-editing';
@@ -130,9 +131,14 @@ export default function ExportReviewDialog({
                 : '保留原模板身份与版本，实例内容保持不变。'}
           </p>
         </div>
-        <button type="button" disabled={!!busy} onClick={close} aria-label="关闭导出核对">
+        <Button
+          htmlType="button"
+          disabled={!!busy || undefined}
+          onClick={close}
+          aria-label="关闭导出核对"
+        >
           关闭
-        </button>
+        </Button>
       </header>
       {error && (
         <div className="export-review-message error" role="alert" ref={feedback} tabIndex={-1}>
@@ -162,16 +168,20 @@ export default function ExportReviewDialog({
           </p>
           <p>导入验证会让你选择 ZIP 文件，安装和执行仍需明确操作。</p>
           <div className="export-review-actions">
-            <button className="primary" disabled={!!busy} onClick={() => void run('import')}>
+            <Button
+              type="primary"
+              disabled={!!busy || undefined}
+              onClick={() => void run('import')}
+            >
               {busy === 'import'
                 ? '正在选择并检查 ZIP…'
                 : error?.operation === 'import'
                   ? '重新选择 ZIP 进行导入验证'
                   : '选择 ZIP 进行导入验证'}
-            </button>
-            <button disabled={!!busy} onClick={close}>
+            </Button>
+            <Button disabled={!!busy || undefined} onClick={close}>
               {draft ? '返回流程编排' : `返回${templateReturnLabel}`}
-            </button>
+            </Button>
           </div>
         </section>
       ) : (
@@ -244,20 +254,19 @@ export default function ExportReviewDialog({
             </aside>
           </div>
           <footer className="export-review-footer">
-            <label className="export-review-check">
-              <input
-                autoFocus
-                type="checkbox"
-                checked={reviewed}
-                disabled={!!busy}
-                onChange={(event) => setReviewed(event.target.checked)}
-              />
+            <Checkbox
+              autoFocus
+              checked={reviewed}
+              disabled={!!busy || undefined}
+              onChange={(event) => setReviewed(event.target.checked)}
+              className="export-review-check"
+            >
               我已核对字面量、脚本和配置定义，确认可以导出
-            </label>
+            </Checkbox>
             <div className="export-review-actions">
-              <button
-                className="primary"
-                disabled={!!busy || !reviewed}
+              <Button
+                type="primary"
+                disabled={!!busy || !reviewed || undefined}
                 onClick={() => void run('export')}
               >
                 {busy === 'export'
@@ -265,10 +274,10 @@ export default function ExportReviewDialog({
                   : error
                     ? '重新确认并导出'
                     : '确认导出 ZIP'}
-              </button>
-              <button disabled={!!busy} onClick={close}>
+              </Button>
+              <Button disabled={!!busy || undefined} onClick={close}>
                 {draft ? '取消，返回编辑' : `取消，返回${templateReturnLabel}`}
-              </button>
+              </Button>
             </div>
           </footer>
         </>

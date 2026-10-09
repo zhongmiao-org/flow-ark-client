@@ -58,7 +58,10 @@
   font-size: 12px;
   line-height: 20px;
 }
-.task-understanding-fact input[aria-invalid='true'] {
+.task-understanding-fact
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not(
+    [class*='ant-select']
+  )[aria-invalid='true'] {
   border-color: var(--fa-status-error);
 }
 .task-understanding-input-list {

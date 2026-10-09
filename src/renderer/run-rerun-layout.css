@@ -45,7 +45,7 @@
   line-height: 22px;
   font-weight: 500;
 }
-.run-rerun-mode label {
+.run-rerun-mode label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   display: flex;
   gap: 12px;
   align-items: flex-start;
@@ -55,18 +55,20 @@
   margin: 0;
   cursor: pointer;
 }
-.run-rerun-mode label.is-selected {
+.run-rerun-mode label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper).is-selected {
   border-color: var(--fa-action-primary);
   background: var(--fa-action-subtle);
 }
-.run-rerun-workspace .run-rerun-mode input {
+.run-rerun-workspace
+  .run-rerun-mode
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   width: 16px;
   height: 16px;
   min-height: 16px;
   margin: 3px 0 0;
   flex: 0 0 16px;
 }
-.run-rerun-mode label > span {
+.run-rerun-mode label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) > span {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -247,7 +249,7 @@
 .run-rerun-page .run-rerun-mode {
   gap: 16px;
 }
-.run-rerun-page .run-rerun-mode label {
+.run-rerun-page .run-rerun-mode label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   padding: 0;
   border: 0;
   background: transparent;
@@ -303,7 +305,7 @@
   min-width: 130px;
   min-height: 40px;
 }
-.run-rerun-actions > .primary {
+.run-rerun-actions > .ant-btn-primary {
   min-width: 220px;
 }
 .run-rerun-workspace .field-error:focus-visible {

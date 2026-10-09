@@ -1,3 +1,4 @@
+import { Button, Checkbox, Input } from 'antd';
 import { useId, useRef, useState } from 'react';
 import type { ToolDefinition } from '../shared/tool-connections';
 import { ToolDefinitionDetails } from './ToolCapabilityReview';
@@ -34,22 +35,24 @@ export default function TaskToolPicker({
   return (
     <section className="task-tool-picker" aria-label="本次工具选择">
       <label htmlFor={`${id}-search`}>查找本次工具</label>
-      <input
+      <Input
         id={`${id}-search`}
-        ref={input}
+        ref={(instance) => {
+          input.current = instance?.input ?? null;
+        }}
         type="search"
         value={query}
         placeholder="工具名称、原名或用途"
         onChange={(event) => setQuery(event.target.value)}
       />
       <div className="ai-task-actions" role="group" aria-label="工具选择筛选">
-        <button aria-pressed={!onlySelected} onClick={() => setOnlySelected(false)}>
+        <Button aria-pressed={!onlySelected} onClick={() => setOnlySelected(false)}>
           全部工具 · {tools.length}
-        </button>
-        <button aria-pressed={onlySelected} onClick={() => setOnlySelected(true)}>
+        </Button>
+        <Button aria-pressed={onlySelected} onClick={() => setOnlySelected(true)}>
           已选工具 · {names.length}
-        </button>
-        {!!(query || onlySelected) && <button onClick={clear}>清除工具筛选</button>}
+        </Button>
+        {!!(query || onlySelected) && <Button onClick={clear}>清除工具筛选</Button>}
       </div>
       <p role="status">
         显示 {shown.length} / {tools.length} 项；已选 {names.length} / 30 项。筛选不会取消已选工具。
@@ -61,31 +64,30 @@ export default function TaskToolPicker({
         <legend>选择本次需要的工具</legend>
         {shown.map((tool) => (
           <div className="task-tool-option" key={tool.name}>
-            <label className="ai-task-checkbox">
-              <input
-                type="checkbox"
-                checked={names.includes(tool.name)}
-                disabled={disabled || (!names.includes(tool.name) && names.length >= 30)}
-                onChange={(event) =>
-                  change(
-                    event.target.checked
-                      ? [...names, tool.name]
-                      : names.filter((name) => name !== tool.name),
-                  )
-                }
-              />
+            <Checkbox
+              checked={names.includes(tool.name)}
+              disabled={disabled || (!names.includes(tool.name) && names.length >= 30) || undefined}
+              onChange={(event) =>
+                change(
+                  event.target.checked
+                    ? [...names, tool.name]
+                    : names.filter((name) => name !== tool.name),
+                )
+              }
+              className="ai-task-checkbox"
+            >
               <span>
                 <strong>{tool.title || tool.name}</strong>
                 <small>{tool.name}</small>
                 <p>{tool.description || '尚无用途说明'}</p>
               </span>
-            </label>
-            <button
+            </Checkbox>
+            <Button
               aria-expanded={expanded === tool.name}
               onClick={() => setExpanded(expanded === tool.name ? undefined : tool.name)}
             >
               查看 {tool.title || tool.name} 的参数与声明
-            </button>
+            </Button>
             {expanded === tool.name && (
               <div className="task-tool-definition">
                 <ToolDefinitionDetails tool={tool} />
@@ -104,7 +106,7 @@ export default function TaskToolPicker({
                 ? '还没有勾选工具，可返回全部工具选择。'
                 : '没有符合当前筛选的工具。'}
           </p>
-          {!!tools.length && <button onClick={clear}>查看全部工具</button>}
+          {!!tools.length && <Button onClick={clear}>查看全部工具</Button>}
         </div>
       )}
     </section>

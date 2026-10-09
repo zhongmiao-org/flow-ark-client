@@ -81,7 +81,7 @@
 .task-generation[data-generation-state='generating'] .ai-task-actions button {
   min-width: 144px;
 }
-.task-generation[data-generation-state='unsupported'] .ai-task-actions button.primary {
+.task-generation[data-generation-state='unsupported'] .ai-task-actions button.ant-btn-primary {
   min-width: 208px;
 }
 .task-generation-review > button {

@@ -1,3 +1,4 @@
+import { Select, Button, Input } from 'antd';
 import { usePageBack } from './use-page-back';
 import type { SettingsDestination } from './LocalSettingsPage';
 import type { TemplateDetail } from './template-draft';
@@ -569,9 +570,9 @@ export default function AISettingsPage({
     return (
       <div className="ai-settings-host" hidden={!active}>
         <header className="topbar">
-          <button className="context-back" onClick={stayInSettings}>
+          <Button className="context-back" onClick={stayInSettings}>
             ← 返回 AI 设置
-          </button>
+          </Button>
           <nav className="breadcrumbs" aria-label="当前位置">
             <a
               href="#ai-settings"
@@ -605,14 +606,14 @@ export default function AISettingsPage({
             <p>此次返回未修改已保存的 AI 配置，也不会自动打开另一个实例。</p>
             <p className="ai-source-unavailable-origin">原来源：{entry.source?.title}</p>
             <div className="ai-task-actions">
-              <button className="primary" onClick={templateLibrary}>
+              <Button type="primary" onClick={templateLibrary}>
                 返回模板库
-              </button>
-              <button onClick={stayInSettings}>留在 AI 设置</button>
+              </Button>
+              <Button onClick={stayInSettings}>留在 AI 设置</Button>
               {sourceFailure === 'unavailable' && (
-                <button disabled={checkingSource} onClick={() => void checkSource()}>
+                <Button disabled={checkingSource || undefined} onClick={() => void checkSource()}>
                   {checkingSource ? '正在核对来源…' : '重新核对来源'}
-                </button>
+                </Button>
               )}
             </div>
           </article>
@@ -630,9 +631,9 @@ export default function AISettingsPage({
       }}
     >
       <header className="topbar">
-        <button
+        <Button
           ref={sourceReturn}
-          disabled={checkingSource}
+          disabled={checkingSource || undefined}
           className={`context-back${entry.source ? ' from-task' : ''}`}
           onClick={() => (removing ? stay() : returnToSource())}
         >
@@ -645,7 +646,7 @@ export default function AISettingsPage({
                 : entry.source
                   ? '原任务'
                   : '本地设置')}
-        </button>
+        </Button>
         <nav className="breadcrumbs" aria-label="当前位置">
           <a
             href="#ai-source"
@@ -668,16 +669,16 @@ export default function AISettingsPage({
           )}
           <span aria-current="page">AI 服务</span>
         </nav>
-        <button
+        <Button
           className="embedded-show"
-          disabled={checkingSource || removing || busy === 'save' || busy === 'remove'}
+          disabled={checkingSource || removing || busy === 'save' || busy === 'remove' || undefined}
           onClick={(event) => {
-            const trigger = event.currentTarget;
+            const trigger = event.currentTarget as HTMLButtonElement;
             go(() => inspectBrowser(trigger), '网页查看');
           }}
         >
           显示网页
-        </button>
+        </Button>
       </header>
       <section
         className="page ai-task-page ai-settings-page"
@@ -700,18 +701,18 @@ export default function AISettingsPage({
         </div>
         {(!entry.source || fromTemplate) && (
           <nav className="ai-settings-tabs" aria-label="设置分类">
-            <button onClick={() => go(() => home('browser'), '浏览器设置')}>浏览器</button>
+            <Button onClick={() => go(() => home('browser'), '浏览器设置')}>浏览器</Button>
             {fromTemplate ? (
-              <button aria-current="page" onClick={() => go(() => home('ai'), 'AI 服务配置')}>
+              <Button aria-current="page" onClick={() => go(() => home('ai'), 'AI 服务配置')}>
                 AI 服务
-              </button>
+              </Button>
             ) : (
               <span aria-current="page">AI 服务</span>
             )}
-            <button onClick={() => go(() => home('resources'), '凭据与本机资源')}>
+            <Button onClick={() => go(() => home('resources'), '凭据与本机资源')}>
               凭据与文件
-            </button>
-            <button onClick={() => go(() => home('scripts'), '脚本包配置')}>脚本</button>
+            </Button>
+            <Button onClick={() => go(() => home('scripts'), '脚本包配置')}>脚本</Button>
           </nav>
         )}
         {error && !removing && !editing && (
@@ -750,16 +751,16 @@ export default function AISettingsPage({
               </p>
             )}
             <div className="ai-task-actions">
-              <button ref={cancelRemove} disabled={busy === 'remove'} onClick={stay}>
+              <Button ref={cancelRemove} disabled={busy === 'remove' || undefined} onClick={stay}>
                 取消
-              </button>
-              <button
+              </Button>
+              <Button
                 className="ai-remove-button"
-                disabled={!!busy || !state || state.inUse}
+                disabled={!!busy || !state || state.inUse || undefined}
                 onClick={() => void remove()}
               >
                 {busy === 'remove' ? '正在移除…' : error ? '重试移除' : '确认移除'}
-              </button>
+              </Button>
             </div>
           </section>
         ) : !state ? (
@@ -772,9 +773,9 @@ export default function AISettingsPage({
                 {readError}
               </p>
             )}
-            <button disabled={reading} onClick={() => readConfiguration.current?.()}>
+            <Button disabled={reading || undefined} onClick={() => readConfiguration.current?.()}>
               {reading ? '正在读取…' : '重新读取'}
-            </button>
+            </Button>
           </section>
         ) : (
           <div className={`ai-settings-columns${!entry.source ? ' is-general-settings' : ''}`}>
@@ -784,18 +785,19 @@ export default function AISettingsPage({
               {!entry.source ? (
                 <label className="ai-settings-field ai-provider-selection">
                   服务商
-                  <select
+                  <Select<string>
                     value={provider}
-                    disabled={!!busy || testing}
-                    onChange={(event) => {
-                      const next = event.target.value as AIProviderId;
+                    disabled={!!busy || testing || undefined}
+                    onChange={(value) => {
+                      const next = value as AIProviderId;
                       if (next !== provider)
                         go(() => selectProvider(next), `${providerName(next)} 配置`);
                     }}
-                  >
-                    <option value="openai-codex">Codex / OpenAI API</option>
-                    <option value="deepseek">DeepSeek</option>
-                  </select>
+                    options={[
+                      { value: 'openai-codex', label: 'Codex / OpenAI API' },
+                      { value: 'deepseek', label: 'DeepSeek' },
+                    ]}
+                  />
                 </label>
               ) : (
                 <>
@@ -819,13 +821,16 @@ export default function AISettingsPage({
                 <>
                   <label className="ai-settings-field">
                     模型 ID
-                    <input
-                      ref={modelInput}
+                    <Input
+                      status={invalid === 'model' ? 'error' : undefined}
+                      ref={(instance) => {
+                        modelInput.current = instance?.input ?? null;
+                      }}
                       aria-invalid={invalid === 'model'}
                       aria-describedby={invalid === 'model' ? 'ai-settings-error' : undefined}
                       value={model}
                       placeholder="填写账号可用的模型 ID"
-                      disabled={!!busy || testing || state.inUse}
+                      disabled={!!busy || testing || state.inUse || undefined}
                       onChange={(e) => {
                         setModel(e.target.value);
                         setDirty(true);
@@ -844,8 +849,11 @@ export default function AISettingsPage({
                   )}
                   <label className="ai-settings-field">
                     {state.configured ? '新的 API Key（可选）' : 'API Key'}
-                    <input
-                      ref={keyInput}
+                    <Input
+                      status={invalid === 'key' ? 'error' : undefined}
+                      ref={(instance) => {
+                        keyInput.current = instance?.input ?? null;
+                      }}
                       aria-invalid={invalid === 'key'}
                       aria-describedby={invalid === 'key' ? 'ai-settings-error' : undefined}
                       type="password"
@@ -855,7 +863,7 @@ export default function AISettingsPage({
                       placeholder={
                         state.configured ? '输入新 Key，留空则保留原 Key' : `输入 ${name} API Key`
                       }
-                      disabled={!!busy || testing || state.inUse}
+                      disabled={!!busy || testing || state.inUse || undefined}
                       onChange={(e) => {
                         setKey(e.target.value);
                         setDirty(true);
@@ -885,31 +893,40 @@ export default function AISettingsPage({
                     </p>
                   )}
                   <div className="ai-task-actions">
-                    <button
-                      className="primary"
-                      disabled={!!busy || testing || state.inUse || (!dirty && state.configured)}
+                    <Button
+                      type="primary"
+                      disabled={
+                        !!busy ||
+                        testing ||
+                        state.inUse ||
+                        (!dirty && state.configured) ||
+                        undefined
+                      }
                       onClick={() => void save()}
                     >
                       {busy === 'save' ? '正在保存…' : '保存配置'}
-                    </button>
-                    <button disabled={!!busy} onClick={fromTemplate ? returnToSource : cancelEdit}>
+                    </Button>
+                    <Button
+                      disabled={!!busy || undefined}
+                      onClick={fromTemplate ? returnToSource : cancelEdit}
+                    >
                       {fromTemplate ? `取消并返回${templateLabel}` : '取消'}
-                    </button>
+                    </Button>
                   </div>
                 </>
               ) : (
                 <>
                   <div className="ai-settings-field">
                     <span>模型 ID</span>
-                    <button
+                    <Button
                       className="ai-model-value"
-                      disabled={!!busy || testing || state.inUse}
+                      disabled={!!busy || testing || state.inUse || undefined}
                       aria-label="修改模型 ID"
                       onClick={() => beginEdit('model')}
                     >
                       <span className="ai-model-name">{state.model}</span>
                       <span>修改</span>
-                    </button>
+                    </Button>
                   </div>
                   <div className="ai-saved-key">
                     <div>
@@ -919,24 +936,24 @@ export default function AISettingsPage({
                     <small>{state.tail ? '仅显示尾四位' : '已有受保护 Key · 无尾号元数据'}</small>
                   </div>
                   <div className="ai-task-actions">
-                    <button
-                      disabled={!!busy || testing || state.inUse}
+                    <Button
+                      disabled={!!busy || testing || state.inUse || undefined}
                       onClick={() => beginEdit('key')}
                     >
                       替换 Key
-                    </button>
+                    </Button>
                     {!entry.source && (
-                      <button
+                      <Button
                         ref={removeButton}
                         className="ai-remove-button"
-                        disabled={!!busy || testing || state.inUse}
+                        disabled={!!busy || testing || state.inUse || undefined}
                         onClick={() => {
                           setError('');
                           setRemoving(true);
                         }}
                       >
                         移除配置
-                      </button>
+                      </Button>
                     )}
                   </div>
                   <p>重新打开设置仍显示脱敏标识；完整 Key 不提供回显或复制。</p>
@@ -1059,9 +1076,9 @@ export default function AISettingsPage({
               )}
               {state.configured && !editing && (
                 <>
-                  <button
-                    className="primary"
-                    disabled={cancelling || (!!busy && !testing)}
+                  <Button
+                    type="primary"
+                    disabled={cancelling || (!!busy && !testing) || undefined}
                     onClick={() =>
                       void (testing ? cancelTest() : test()).catch((e) => setError(message(e)))
                     }
@@ -1073,20 +1090,23 @@ export default function AISettingsPage({
                       : state.test?.status === 'passed'
                         ? '重新测试'
                         : '测试连接'}
-                  </button>
+                  </Button>
                   {!testing && repairField && (
-                    <button disabled={!!busy || state.inUse} onClick={() => beginEdit(repairField)}>
+                    <Button
+                      disabled={!!busy || state.inUse || undefined}
+                      onClick={() => beginEdit(repairField)}
+                    >
                       {repairField === 'key' ? '替换 Key' : '修改模型 ID'}
-                    </button>
+                    </Button>
                   )}
                   <small>
                     测试只发送固定测试文本，可能产生少量 API 费用。不会发送任务或模板业务数据。
                   </small>
                 </>
               )}
-              <button
+              <Button
                 className="ai-source-return"
-                disabled={checkingSource}
+                disabled={checkingSource || undefined}
                 onClick={returnToSource}
               >
                 {checkingSource
@@ -1096,7 +1116,7 @@ export default function AISettingsPage({
                     : entry.source
                       ? '继续原任务'
                       : '返回本地设置'}
-              </button>
+              </Button>
               <small>
                 {fromTemplate
                   ? '业务提示、上下文与输出规则由模板定义。返回后保留本次输入。'
@@ -1151,17 +1171,18 @@ export default function AISettingsPage({
             </p>
           )}
           <div className="editor-leave-actions">
-            <button
+            <Button
               autoFocus
               ref={continueButton}
-              disabled={cancelling || busy === 'save' || busy === 'remove'}
+              disabled={cancelling || busy === 'save' || busy === 'remove' || undefined}
               onClick={stay}
             >
               {testing ? '继续等待' : dirty ? '继续编辑' : '查看测试结果'}
-            </button>
-            <button
-              className={testing || dirty ? 'editor-leave-discard' : 'primary'}
-              disabled={cancelling || busy === 'save' || busy === 'remove'}
+            </Button>
+            <Button
+              type={testing || dirty ? 'default' : 'primary'}
+              className={testing || dirty ? 'editor-leave-discard' : ''}
+              disabled={cancelling || busy === 'save' || busy === 'remove' || undefined}
               onClick={() => {
                 const next = leaving!.next;
                 void (testing ? cancelTest() : Promise.resolve(true))
@@ -1189,11 +1210,11 @@ export default function AISettingsPage({
                   : dirty
                     ? '不保存离开'
                     : '继续离开'}
-            </button>
+            </Button>
             {!testing && dirty && (
-              <button
-                className="primary"
-                disabled={!!busy}
+              <Button
+                type="primary"
+                disabled={!!busy || undefined}
                 onClick={() => {
                   const next = leaving!.next;
                   void save().then((saved) => {
@@ -1206,7 +1227,7 @@ export default function AISettingsPage({
                 }}
               >
                 {busy === 'save' ? '正在保存…' : error ? '重试保存并离开' : '保存并离开'}
-              </button>
+              </Button>
             )}
           </div>
         </dialog>
@@ -1254,7 +1275,7 @@ export function AISettingsSummary({
                   : '未配置'
                 : '配置状态尚未取得'}
             </p>
-            <button
+            <Button
               onClick={() =>
                 open(
                   provider,
@@ -1264,7 +1285,7 @@ export function AISettingsSummary({
               }
             >
               管理 {providerName(provider)}
-            </button>
+            </Button>
           </div>
         ))}
       </div>

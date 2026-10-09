@@ -1,3 +1,4 @@
+import { ConfigProvider, Select, Button, Input } from 'antd';
 import { usePageBack } from './use-page-back';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
 import {
@@ -447,14 +448,14 @@ export default function TemplateInstancePage({
       }}
     >
       <header className="topbar">
-        <button
+        <Button
           className="context-back"
           title={`返回${entryDetail ? '实例' : returnLabel}`}
-          disabled={busy}
+          disabled={busy || undefined}
           onClick={back}
         >
           <span>← 返回{entryDetail ? '实例' : returnLabel}</span>
-        </button>
+        </Button>
         <nav className="breadcrumbs" aria-label="当前位置">
           <a
             href="#templates"
@@ -507,19 +508,19 @@ export default function TemplateInstancePage({
             </p>
             <div className="ai-task-actions">
               {tab !== 'resources' && (
-                <button
-                  className="primary"
-                  disabled={busy}
+                <Button
+                  type="primary"
+                  disabled={busy || undefined}
                   onClick={() => {
                     switchTab('resources');
                     resourceTab.current?.focus();
                   }}
                 >
                   核对资源与动作授权
-                </button>
+                </Button>
               )}
-              <button
-                disabled={busy}
+              <Button
+                disabled={busy || undefined}
                 onClick={() =>
                   go(
                     () =>
@@ -532,32 +533,35 @@ export default function TemplateInstancePage({
                 }
               >
                 打开原实例 · v{adoptedFrom.version}
-              </button>
+              </Button>
             </div>
           </section>
         )}
         <nav className="ai-settings-tabs" aria-label="实例分类" hidden={entryDetail}>
           {tabs.map(([id, label]) => (
-            <button
+            <Button
               key={id}
               ref={id === 'resources' ? resourceTab : undefined}
-              disabled={busy}
+              disabled={busy || undefined}
               aria-current={tab === id ? 'page' : undefined}
               onClick={() => switchTab(id)}
             >
               {label}
-            </button>
+            </Button>
           ))}
         </nav>
         {sourceError && (
           <div className="ai-task-error template-source-error" role="alert">
             <p>{sourceError}</p>
             <div className="ai-task-actions">
-              <button disabled={busy || checking} onClick={() => setReload((v) => v + 1)}>
+              <Button
+                disabled={busy || checking || undefined}
+                onClick={() => setReload((v) => v + 1)}
+              >
                 重新读取状态
-              </button>
-              <button
-                disabled={busy}
+              </Button>
+              <Button
+                disabled={busy || undefined}
                 onClick={() =>
                   void work(async () => {
                     const fresh: TemplateDetail = await api('template.detail', { id: instance.id });
@@ -572,8 +576,8 @@ export default function TemplateInstancePage({
                 }
               >
                 放弃未保存内容并重新读取实例
-              </button>
-              <button onClick={() => go(home, '模板库')}>返回模板库</button>
+              </Button>
+              <Button onClick={() => go(home, '模板库')}>返回模板库</Button>
             </div>
           </div>
         )}
@@ -589,39 +593,41 @@ export default function TemplateInstancePage({
               aria-busy={busy}
             >
               <h2>共享配置</h2>
-              <fieldset
-                disabled={busy}
-                className="template-entry-fields"
+              <ConfigProvider
+                componentDisabled={busy || undefined}
                 key={'config-' + generation + ':' + configurationGeneration}
               >
-                <label className="template-field">
-                  <span>实例名称</span>
-                  <input
-                    value={instance.name}
-                    maxLength={100}
-                    aria-label="实例名称"
-                    aria-required="true"
-                    aria-invalid={!!nameError}
-                    aria-describedby={nameError ? 'template-instance-name-error' : undefined}
-                    data-value-invalid={!!nameError || undefined}
-                    onChange={(event) =>
-                      setDraft({ ...draft, instance: { ...instance, name: event.target.value } })
+                <fieldset disabled={busy} className="template-entry-fields">
+                  <label className="template-field">
+                    <span>实例名称</span>
+                    <Input
+                      status={!!nameError ? 'error' : undefined}
+                      value={instance.name}
+                      maxLength={100}
+                      aria-label="实例名称"
+                      aria-required="true"
+                      aria-invalid={!!nameError}
+                      aria-describedby={nameError ? 'template-instance-name-error' : undefined}
+                      data-value-invalid={!!nameError || undefined}
+                      onChange={(event) =>
+                        setDraft({ ...draft, instance: { ...instance, name: event.target.value } })
+                      }
+                    />
+                    {nameError && (
+                      <small className="template-field-error" id="template-instance-name-error">
+                        {nameError}
+                      </small>
+                    )}
+                  </label>
+                  <Field
+                    schema={draft.configurationSchema}
+                    value={instance.configuration}
+                    change={(configuration: unknown) =>
+                      setDraft({ ...draft, instance: { ...instance, configuration } })
                     }
                   />
-                  {nameError && (
-                    <small className="template-field-error" id="template-instance-name-error">
-                      {nameError}
-                    </small>
-                  )}
-                </label>
-                <Field
-                  schema={draft.configurationSchema}
-                  value={instance.configuration}
-                  change={(configuration: unknown) =>
-                    setDraft({ ...draft, instance: { ...instance, configuration } })
-                  }
-                />
-              </fieldset>
+                </fieldset>
+              </ConfigProvider>
               <p className="ai-task-note">字段由模板提供；打开表单不会执行模板代码。</p>
               {error && !leaving && (
                 <div
@@ -636,37 +642,39 @@ export default function TemplateInstancePage({
                 </div>
               )}
               <div className="ai-task-actions">
-                <button
-                  className="primary"
-                  disabled={blocked}
-                  onClick={(event) => void save('configuration', undefined, event.currentTarget)}
+                <Button
+                  type="primary"
+                  disabled={blocked || undefined}
+                  onClick={(event) =>
+                    void save('configuration', undefined, event.currentTarget as HTMLButtonElement)
+                  }
                 >
                   {busy ? '正在保存…' : error ? '重试保存配置' : '保存配置'}
-                </button>
-                <button disabled={busy} onClick={() => reset('configuration')}>
+                </Button>
+                <Button disabled={busy || undefined} onClick={() => reset('configuration')}>
                   取消更改
-                </button>
+                </Button>
               </div>
             </section>
             <aside className="ai-task-card template-instance-guide">
               <h2>实例与入口</h2>
               <p>共享配置适用于本实例所有入口；每次运行仍有独立的入口输入。</p>
               <p>另一个实例保留自己的配置、状态、资源和授权。</p>
-              <button disabled={busy} onClick={() => setOthers((value) => !value)}>
+              <Button disabled={busy || undefined} onClick={() => setOthers((value) => !value)}>
                 查看其他实例
-              </button>
+              </Button>
               {others && (
                 <div className="template-other-instances">
                   {data.instances
                     .filter((other) => other.id !== instance.id)
                     .map((other) => (
-                      <button
+                      <Button
                         key={other.id}
-                        disabled={busy}
+                        disabled={busy || undefined}
                         onClick={() => go(() => choose(other.id), `实例 · ${other.name}`)}
                       >
                         {other.name} · {other.id.slice(0, 8)}
-                      </button>
+                      </Button>
                     ))}
                   {data.instances.every((other) => other.id === instance.id) && (
                     <p>尚无其他实例。</p>
@@ -765,19 +773,19 @@ export default function TemplateInstancePage({
                 {alternatives.length ? (
                   <label className="ai-settings-field">
                     已安装的其他版本
-                    <select
+                    <Select<string>
                       aria-label="采用模板版本"
-                      disabled={blocked || !!createdVersion}
+                      disabled={blocked || !!createdVersion || undefined}
                       value={version}
-                      onChange={(event) => setVersion(event.target.value)}
-                    >
-                      <option value="">选择版本</option>
-                      {alternatives.map((item) => (
-                        <option key={item.key} value={item.key}>
-                          v{item.manifest.version}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(value) => setVersion(value)}
+                      options={[
+                        { value: '', label: '选择版本' },
+                        ...alternatives.map((item) => ({
+                          value: item.key,
+                          label: <>v{item.manifest.version}</>,
+                        })),
+                      ]}
+                    />
                   </label>
                 ) : (
                   <p>本机尚未安装其他版本。</p>
@@ -798,9 +806,9 @@ export default function TemplateInstancePage({
                     <p>暂时无法打开时，可以继续打开这个实例；原实例仍保留。</p>
                   </div>
                 )}
-                <button
-                  className="primary"
-                  disabled={blocked || (!createdVersion && !selectedVersion)}
+                <Button
+                  type="primary"
+                  disabled={blocked || (!createdVersion && !selectedVersion) || undefined}
                   onClick={adoptVersion}
                 >
                   {adopting
@@ -810,21 +818,21 @@ export default function TemplateInstancePage({
                     : createdVersion
                       ? '打开已创建实例'
                       : '创建新版实例'}
-                </button>
+                </Button>
               </div>
             </section>
             <aside className="ai-task-card template-instance-guide">
               <h2>导出原模板定义</h2>
               <p>保留原版本与身份；不包含配置值、密钥、本机路径或历史。</p>
-              <button
-                className="primary"
-                disabled={blocked || !originalPackage}
+              <Button
+                type="primary"
+                disabled={blocked || !originalPackage || undefined}
                 onClick={() => {
                   if (!blocked && originalPackage) exportTemplate(originalPackage, '来源与版本');
                 }}
               >
                 导出 ZIP
-              </button>
+              </Button>
               {!originalPackage && <p role="status">原模板包不可用，请先恢复此版本后再导出。</p>}
               <h3>原实例保持原样</h3>
               <p>新旧版本并存。模板更新不会覆盖本实例、计划或正在运行的快照。</p>
@@ -862,12 +870,12 @@ export default function TemplateInstancePage({
             </p>
           )}
           <div className="editor-leave-actions">
-            <button autoFocus ref={continueButton} disabled={busy} onClick={stay}>
+            <Button autoFocus ref={continueButton} disabled={busy || undefined} onClick={stay}>
               {error && invalidField.current ? '返回修正' : '继续编辑'}
-            </button>
-            <button
+            </Button>
+            <Button
               className="editor-leave-discard"
-              disabled={busy}
+              disabled={busy || undefined}
               onClick={() => {
                 const next = leaving.next;
                 setDraft(structuredClone(saved));
@@ -879,10 +887,10 @@ export default function TemplateInstancePage({
               }}
             >
               不保存离开
-            </button>
-            <button
-              className="primary"
-              disabled={blocked}
+            </Button>
+            <Button
+              type="primary"
+              disabled={blocked || undefined}
               onClick={() => {
                 const next = leaving.next;
                 void save('all').then((ok) => {
@@ -896,7 +904,7 @@ export default function TemplateInstancePage({
               }}
             >
               {busy ? '正在保存…' : error ? '重试保存并离开' : '保存并离开'}
-            </button>
+            </Button>
           </div>
         </dialog>
       )}

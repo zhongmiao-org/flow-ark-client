@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useLayoutEffect, useRef } from 'react';
 
 export type AttachmentFeedback = {
@@ -34,7 +35,7 @@ export default function TaskAttachmentFeedback({
     >
       <p>{feedback.message}</p>
       {feedback.status === 'error' && (
-        <button disabled={busy} onClick={retry}>
+        <Button disabled={busy || undefined} onClick={retry}>
           {feedback.action === 'preview'
             ? '重新读取附件'
             : feedback.action === 'remove'
@@ -42,7 +43,7 @@ export default function TaskAttachmentFeedback({
               : feedback.action === 'image'
                 ? '重新选择图片'
                 : '重新选择文件'}
-        </button>
+        </Button>
       )}
     </div>
   );

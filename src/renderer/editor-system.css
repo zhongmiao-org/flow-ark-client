@@ -84,7 +84,7 @@
   width: 136px;
   flex-shrink: 0;
 }
-.app .editor-toolbar > .primary {
+.app .editor-toolbar > .ant-btn-primary {
   width: 100px;
 }
 .editor-toolbar .draft-history {
@@ -207,7 +207,9 @@
   border: 0;
   background: transparent;
 }
-.editor-region .browser-address input {
+.editor-region
+  .browser-address
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   height: 40px;
   background: var(--fa-bg-canvas);
 }
@@ -419,7 +421,7 @@
   .app .editor-toolbar .draft-history {
     width: 136px;
   }
-  .app .editor-toolbar > .primary {
+  .app .editor-toolbar > .ant-btn-primary {
     width: 100px;
   }
   .app .editor-toolbar > .editor-more-trigger {

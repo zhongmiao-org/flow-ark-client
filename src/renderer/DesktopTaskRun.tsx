@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { TaskRunIntent, TaskRunView, taskRunPresentation } from './task-run-presentation';
 import { runDisplayLabels } from '../shared/run-history';
@@ -155,26 +156,26 @@ export default function DesktopTaskRun({
         {!model.terminal && (
           <div className="ai-task-actions">
             {active && run.state === 'RUNNING' && (
-              <button disabled={busy} onClick={() => control('pause')}>
+              <Button disabled={busy || undefined} onClick={() => control('pause')}>
                 {pausePending ? '暂停请求中' : '请求暂停'}
-              </button>
+              </Button>
             )}
             {active && ['PAUSED', 'WAITING_INPUT'].includes(run.state) && (
-              <button className="primary" disabled={busy} onClick={() => control('resume')}>
+              <Button type="primary" disabled={busy || undefined} onClick={() => control('resume')}>
                 继续
-              </button>
+              </Button>
             )}
             {active && run.state === 'PAUSED' && (
-              <button disabled={busy} onClick={() => control('step')}>
+              <Button disabled={busy || undefined} onClick={() => control('step')}>
                 执行下一步
-              </button>
+              </Button>
             )}
             {!model.view.closing && (active || run.state === 'QUEUED') && (
-              <button className="danger" disabled={cancelBusy} onClick={() => control('cancel')}>
+              <Button danger disabled={cancelBusy || undefined} onClick={() => control('cancel')}>
                 取消运行
-              </button>
+              </Button>
             )}
-            <button onClick={connections}>查看连接状态</button>
+            <Button onClick={connections}>查看连接状态</Button>
           </div>
         )}
         {controlFeedback}
@@ -184,11 +185,11 @@ export default function DesktopTaskRun({
               <p>再次执行需回到任务，重新选择窗口与原文并确认单次修改。未知结果应先人工核对。</p>
             )}
             <div className="ai-task-actions">
-              <button onClick={() => navigate('desktop-target')}>重新查看应用窗口</button>
-              <button onClick={() => navigate('plan')}>返回任务方案</button>
-              <button className="primary" onClick={() => navigate('home')}>
+              <Button onClick={() => navigate('desktop-target')}>重新查看应用窗口</Button>
+              <Button onClick={() => navigate('plan')}>返回任务方案</Button>
+              <Button type="primary" onClick={() => navigate('home')}>
                 开始新任务
-              </button>
+              </Button>
             </div>
           </>
         )}
@@ -221,17 +222,17 @@ export default function DesktopTaskRun({
               change={setStepsView}
             />
             <RunEventLog runId={run.id} events={detail.events} snapshot={detail.snapshot} />
-            <button onClick={() => setPage('overview')}>返回应用结果</button>
+            <Button onClick={() => setPage('overview')}>返回应用结果</Button>
           </>
         ) : (
-          <button className="desktop-task-details" onClick={() => setPage('details')}>
+          <Button className="desktop-task-details" onClick={() => setPage('details')}>
             查看修改回执与执行记录
-          </button>
+          </Button>
         )}
       </section>
       <div className="ai-task-actions">
-        {!model.terminal && <button onClick={() => navigate('plan')}>返回任务方案</button>}
-        <button onClick={history}>运行记录</button>
+        {!model.terminal && <Button onClick={() => navigate('plan')}>返回任务方案</Button>}
+        <Button onClick={history}>运行记录</Button>
       </div>
       <p className="task-run-note">查看结果、返回或重新查看窗口不会重复执行修改。</p>
     </div>

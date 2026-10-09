@@ -1,3 +1,4 @@
+import { ConfigProvider, Select, Button, Input } from 'antd';
 import { useId, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import type { Bootstrap } from '../shared/types';
 import { equal, type TemplateDetail } from './template-draft';
@@ -52,153 +53,165 @@ export default function TemplateResources({
         <h2 tabIndex={-1} data-navigation-heading>
           本机资源绑定
         </h2>
-        <fieldset disabled={busy} className="template-resource-fields">
-          {manifest.resources.length === 0 && <p>此模板未声明本机资源。</p>}
-          {manifest.resources.map((resource) => {
-            const binding = instance.resources[resource.id] ?? {};
-            return (
-              <div
-                className={
-                  'template-resource' +
-                  (resource.kind === 'file' || resource.kind === 'directory'
-                    ? ' template-resource-file'
-                    : '')
-                }
-                key={resource.id}
-              >
-                <label className="ai-settings-field">
-                  <span>
-                    {resource.name} · {resource.kind} / {resource.access}
-                    {resource.required ? '（必需）' : '（可选）'}
-                  </span>
+        <ConfigProvider componentDisabled={busy || undefined}>
+          <fieldset disabled={busy} className="template-resource-fields">
+            {manifest.resources.length === 0 && <p>此模板未声明本机资源。</p>}
+            {manifest.resources.map((resource) => {
+              const binding = instance.resources[resource.id] ?? {};
+              return (
+                <div
+                  className={
+                    'template-resource' +
+                    (resource.kind === 'file' || resource.kind === 'directory'
+                      ? ' template-resource-file'
+                      : '')
+                  }
+                  key={resource.id}
+                >
+                  <label className="ai-settings-field">
+                    <span>
+                      {resource.name} · {resource.kind} / {resource.access}
+                      {resource.required ? '（必需）' : '（可选）'}
+                    </span>
+                    {resource.kind === 'file' || resource.kind === 'directory' ? (
+                      <Input
+                        aria-label={resource.name}
+                        readOnly
+                        value={binding.path ?? ''}
+                        placeholder="尚未绑定"
+                      />
+                    ) : resource.kind === 'browser' ? (
+                      <Select<string>
+                        aria-label={resource.name}
+                        value={binding.browserId ?? ''}
+                        onChange={(value) =>
+                          patch(resource.id, value ? { browserId: value } : undefined)
+                        }
+                        options={[
+                          { value: '', label: '选择浏览器' },
+                          ...(binding.browserId &&
+                          !data.browsers.some((browser) => browser.id === binding.browserId)
+                            ? [
+                                {
+                                  value: binding.browserId,
+                                  label: <>原绑定（不在本机清单）：{binding.browserId}</>,
+                                },
+                              ]
+                            : []),
+                          ...data.browsers.map((browser) => ({
+                            value: browser.id,
+                            label: (
+                              <>
+                                {browser.product === 'embedded' ? '内置浏览器' : browser.product}{' '}
+                                {browser.version}
+                              </>
+                            ),
+                          })),
+                        ]}
+                      />
+                    ) : (
+                      <Select<string>
+                        aria-label={resource.name + '供应商'}
+                        value={binding.provider ?? ''}
+                        onChange={(value) =>
+                          patch(
+                            resource.id,
+                            value
+                              ? {
+                                  provider: value as 'deepseek' | 'openai-codex',
+                                  model: '',
+                                }
+                              : undefined,
+                          )
+                        }
+                        options={[
+                          { value: '', label: '选择 AI' },
+                          { value: 'deepseek', label: 'DeepSeek' },
+                          { value: 'openai-codex', label: 'OpenAI' },
+                        ]}
+                      />
+                    )}
+                  </label>
                   {resource.kind === 'file' || resource.kind === 'directory' ? (
-                    <input
-                      aria-label={resource.name}
-                      readOnly
-                      value={binding.path ?? ''}
-                      placeholder="尚未绑定"
-                    />
-                  ) : resource.kind === 'browser' ? (
-                    <select
-                      aria-label={resource.name}
-                      value={binding.browserId ?? ''}
-                      onChange={(event) =>
-                        patch(
-                          resource.id,
-                          event.target.value ? { browserId: event.target.value } : undefined,
-                        )
-                      }
-                    >
-                      <option value="">选择浏览器</option>
-                      {binding.browserId &&
-                        !data.browsers.some((browser) => browser.id === binding.browserId) && (
-                          <option value={binding.browserId}>
-                            原绑定（不在本机清单）：{binding.browserId}
-                          </option>
-                        )}
-                      {data.browsers.map((browser) => (
-                        <option key={browser.id} value={browser.id}>
-                          {browser.product === 'embedded' ? '内置浏览器' : browser.product}{' '}
-                          {browser.version}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <select
-                      aria-label={resource.name + '供应商'}
-                      value={binding.provider ?? ''}
-                      onChange={(event) =>
-                        patch(
-                          resource.id,
-                          event.target.value
-                            ? {
-                                provider: event.target.value as 'deepseek' | 'openai-codex',
-                                model: '',
+                    <>
+                      <div className="template-resource-file-actions">
+                        <Button
+                          ref={(element) => {
+                            if (element instanceof HTMLButtonElement)
+                              chooseButtons.current.set(resource.id, element);
+                            else chooseButtons.current.delete(resource.id);
+                          }}
+                          aria-label={`选择${resource.name}${resource.kind === 'file' ? '文件' : '目录'}`}
+                          onClick={() =>
+                            void work(async () => {
+                              setChoosing(resource.id);
+                              try {
+                                const path = await api('file.choose', { kind: resource.kind });
+                                if (path) patch(resource.id, { path });
+                                return true;
+                              } finally {
+                                setChoosing(undefined);
                               }
-                            : undefined,
-                        )
-                      }
-                    >
-                      <option value="">选择 AI</option>
-                      <option value="deepseek">DeepSeek</option>
-                      <option value="openai-codex">OpenAI</option>
-                    </select>
-                  )}
-                </label>
-                {resource.kind === 'file' || resource.kind === 'directory' ? (
-                  <>
-                    <div className="template-resource-file-actions">
-                      <button
-                        ref={(element) => {
-                          if (element) chooseButtons.current.set(resource.id, element);
-                          else chooseButtons.current.delete(resource.id);
-                        }}
-                        aria-label={`选择${resource.name}${resource.kind === 'file' ? '文件' : '目录'}`}
-                        onClick={() =>
-                          void work(async () => {
-                            setChoosing(resource.id);
-                            try {
-                              const path = await api('file.choose', { kind: resource.kind });
-                              if (path) patch(resource.id, { path });
-                              return true;
-                            } finally {
-                              setChoosing(undefined);
-                            }
-                          })
+                            })
+                          }
+                        >
+                          {choosing === resource.id
+                            ? '等待选择…'
+                            : resource.kind === 'file'
+                              ? '选择文件'
+                              : '选择目录'}
+                        </Button>
+                        {binding.path && (
+                          <Button
+                            aria-label={`清除${resource.name}绑定`}
+                            onClick={() => {
+                              patch(resource.id, undefined);
+                              chooseButtons.current.get(resource.id)?.focus();
+                            }}
+                          >
+                            清除绑定
+                          </Button>
+                        )}
+                      </div>
+                      {!binding.path && saved.resources[resource.id]?.path && (
+                        <p className="template-resource-cleared" role="status">
+                          已清除草稿绑定，保存授权后生效。
+                        </p>
+                      )}
+                    </>
+                  ) : resource.kind === 'browser' ? (
+                    !data.browsers.some((browser) => browser.product === 'embedded') && (
+                      <Button onClick={() => void work(() => api('browser.embedded.enable'))}>
+                        启用内置浏览器
+                      </Button>
+                    )
+                  ) : (
+                    <>
+                      <label className="ai-settings-field">
+                        模型 ID
+                        <Input
+                          aria-label={resource.name + '模型'}
+                          value={binding.model ?? ''}
+                          onChange={(event) =>
+                            patch(resource.id, { ...binding, model: event.target.value })
+                          }
+                        />
+                      </label>
+                      <p>切换供应商后，请重新填写该供应商的模型 ID；保存后才更新实例绑定。</p>
+                      <Button
+                        onClick={(event) =>
+                          openAI(resource.id, event.currentTarget as HTMLButtonElement)
                         }
                       >
-                        {choosing === resource.id
-                          ? '等待选择…'
-                          : resource.kind === 'file'
-                            ? '选择文件'
-                            : '选择目录'}
-                      </button>
-                      {binding.path && (
-                        <button
-                          aria-label={`清除${resource.name}绑定`}
-                          onClick={() => {
-                            patch(resource.id, undefined);
-                            chooseButtons.current.get(resource.id)?.focus();
-                          }}
-                        >
-                          清除绑定
-                        </button>
-                      )}
-                    </div>
-                    {!binding.path && saved.resources[resource.id]?.path && (
-                      <p className="template-resource-cleared" role="status">
-                        已清除草稿绑定，保存授权后生效。
-                      </p>
-                    )}
-                  </>
-                ) : resource.kind === 'browser' ? (
-                  !data.browsers.some((browser) => browser.product === 'embedded') && (
-                    <button onClick={() => void work(() => api('browser.embedded.enable'))}>
-                      启用内置浏览器
-                    </button>
-                  )
-                ) : (
-                  <>
-                    <label className="ai-settings-field">
-                      模型 ID
-                      <input
-                        aria-label={resource.name + '模型'}
-                        value={binding.model ?? ''}
-                        onChange={(event) =>
-                          patch(resource.id, { ...binding, model: event.target.value })
-                        }
-                      />
-                    </label>
-                    <p>切换供应商后，请重新填写该供应商的模型 ID；保存后才更新实例绑定。</p>
-                    <button onClick={(event) => openAI(resource.id, event.currentTarget)}>
-                      管理 AI 配置
-                    </button>
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </fieldset>
+                        管理 AI 配置
+                      </Button>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </fieldset>
+        </ConfigProvider>
         <h2>动作权限</h2>
         {manifest.actions.length === 0 && <p>此模板未声明需要授权的动作。</p>}
         {manifest.actions.map((action) => (
@@ -207,19 +220,18 @@ export default function TemplateResources({
             <p id={`${scopeId}-${action.id}-description`}>{action.description}</p>
             <label className="ai-settings-field">
               允许范围
-              <select
+              <Select<string>
                 aria-label={action.name + '授权'}
                 aria-describedby={`${scopeId}-${action.id}-description`}
-                disabled={busy}
+                disabled={busy || undefined}
                 value={instance.grants[action.id] ?? 'deny'}
-                onChange={(event) =>
-                  grant(action.id, event.target.value as 'deny' | 'confirm' | 'auto')
-                }
-              >
-                <option value="deny">禁止</option>
-                <option value="confirm">每次确认</option>
-                <option value="auto">配置范围内自动</option>
-              </select>
+                onChange={(value) => grant(action.id, value as 'deny' | 'confirm' | 'auto')}
+                options={[
+                  { value: 'deny', label: '禁止' },
+                  { value: 'confirm', label: '每次确认' },
+                  { value: 'auto', label: '配置范围内自动' },
+                ]}
+              />
             </label>
             <div
               className="template-grant-options"
@@ -234,31 +246,31 @@ export default function TemplateResources({
                   ['auto', '配置范围内自动'],
                 ] as const
               ).map(([mode, label]) => (
-                <button
+                <Button
+                  type={(instance.grants[action.id] ?? 'deny') === mode ? 'primary' : 'default'}
                   key={mode}
-                  disabled={busy}
-                  className={(instance.grants[action.id] ?? 'deny') === mode ? 'primary' : ''}
+                  disabled={busy || undefined}
                   aria-pressed={(instance.grants[action.id] ?? 'deny') === mode}
                   onClick={() => grant(action.id, mode)}
                 >
                   {label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
         ))}
         <p>默认为禁止。选择目录只建立资源绑定，不等于授权写入。</p>
         <div className="ai-task-actions template-resource-actions">
-          <button
-            className="primary"
-            disabled={blocked}
-            onClick={(event) => save(event.currentTarget)}
+          <Button
+            type="primary"
+            disabled={blocked || undefined}
+            onClick={(event) => save(event.currentTarget as HTMLButtonElement)}
           >
             保存授权
-          </button>
-          <button disabled={busy} onClick={cancel}>
+          </Button>
+          <Button disabled={busy || undefined} onClick={cancel}>
             取消
-          </button>
+          </Button>
         </div>
       </section>
       <aside className="ai-task-card template-instance-guide">
@@ -315,9 +327,9 @@ export default function TemplateResources({
                 </p>
               )}
               {!pending && !incomplete && <p>只核对当前入口所需的资源与动作；保存不会自动运行。</p>}
-              <button disabled={busy} onClick={() => openEntry(entry.id)}>
+              <Button disabled={busy || undefined} onClick={() => openEntry(entry.id)}>
                 打开 {entry.name}
-              </button>
+              </Button>
             </section>
           );
         })}

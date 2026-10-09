@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { Run } from '../shared/types';
 import { runDisplayLabels, type RunListPage } from '../shared/run-history';
@@ -79,18 +80,18 @@ export default function TaskLatestRun({
   return (
     <section className="task-latest-run" aria-label="当前任务的最近运行">
       <h3>
-        <button
-          type="button"
+        <Button
+          htmlType="button"
           aria-expanded={expanded}
           aria-controls={bodyId}
-          disabled={disabled && !expanded}
+          disabled={(disabled && !expanded) || undefined}
           onClick={() => {
             epoch.current++;
             setExpanded(!expanded);
           }}
         >
           {expanded ? '收起最近一次运行' : '查看最近一次运行'}
-        </button>
+        </Button>
       </h3>
       <div
         id={bodyId}
@@ -116,13 +117,13 @@ export default function TaskLatestRun({
               <p>运行：{latest.id}</p>
               <p>版本：{latest.versionId}</p>
             </details>
-            <button
-              className="primary"
-              disabled={disabled || loading || opening}
+            <Button
+              type="primary"
+              disabled={disabled || loading || opening || undefined}
               onClick={() => void view()}
             >
               {opening ? '正在打开…' : '查看本次进度与结果'}
-            </button>
+            </Button>
             <p>打开后核对当前执行状态。查看历史快照不会运行当前草稿或重复执行。</p>
           </>
         )}
@@ -131,9 +132,12 @@ export default function TaskLatestRun({
             {error}
           </p>
         )}
-        <button disabled={disabled || loading || opening} onClick={() => void refresh()}>
+        <Button
+          disabled={disabled || loading || opening || undefined}
+          onClick={() => void refresh()}
+        >
           刷新运行记录
-        </button>
+        </Button>
       </div>
     </section>
   );

@@ -38,16 +38,25 @@
 .node-configuration p.field-error {
   color: var(--fa-status-error);
 }
-.node-timing label,
-.node-configuration > label {
+.node-timing label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper),
+.node-configuration > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   font-size: 12px;
   color: var(--fa-text-secondary);
   margin: 0;
 }
-.node-timing input:not([type='checkbox']),
-.node-configuration input:not([type='checkbox']),
-.node-configuration textarea,
-.node-configuration select {
+.node-configuration .ant-select {
+  width: 100%;
+  min-width: 0;
+}
+.node-timing
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):not(
+    [type='checkbox']
+  ),
+.node-configuration
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):not(
+    [type='checkbox']
+  ),
+.node-configuration textarea {
   width: 100%;
   min-width: 0;
   background: var(--fa-bg-canvas);
@@ -57,7 +66,8 @@
   align-items: flex-start;
   gap: 8px;
 }
-.node-timing-toggle input[type='checkbox'] {
+.node-timing-toggle
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select'])[type='checkbox'] {
   width: 16px;
   min-height: 16px;
   height: 16px;
@@ -116,6 +126,6 @@
   flex-direction: column;
   gap: 6px;
 }
-.resource-binding-field > label {
+.resource-binding-field > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   margin: 0;
 }

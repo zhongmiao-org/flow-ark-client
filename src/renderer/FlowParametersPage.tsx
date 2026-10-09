@@ -1,3 +1,4 @@
+import { ConfigProvider, Select, Button, Checkbox } from 'antd';
 import { usePageBack } from './use-page-back';
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import type { BrowserBinding, FlowRecord, Json } from '../shared/types';
@@ -244,17 +245,17 @@ export default function FlowParametersPage({
   const ids = [...new Set([...credentials, ...draft.bindings.credentials])];
   const actions = (
     <>
-      <button
-        className="primary"
-        disabled={!!busy}
+      <Button
+        type="primary"
+        disabled={!!busy || undefined}
         title={`保存参数、资源及当前流程草稿，并返回${returnLabel}`}
         onClick={() => void persist()}
       >
         {busy === 'save' ? '正在保存…' : error ? '重试保存参数' : '保存参数'}
-      </button>
-      <button disabled={!!busy} onClick={() => leave()}>
+      </Button>
+      <Button disabled={!!busy || undefined} onClick={() => leave()}>
         返回{returnLabel}
-      </button>
+      </Button>
     </>
   );
   return (
@@ -279,128 +280,134 @@ export default function FlowParametersPage({
           {error}
         </div>
       )}
-      <fieldset disabled={!!busy} className="flow-parameters-columns">
-        <section className="flow-parameters-card flow-parameters-input" aria-label="运行参数">
-          <h2>运行参数</h2>
-          {managed ? (
-            managedValues ? (
-              <TemplateParameters
-                value={managedValues}
-                edit={() => leave(configuration, '实例配置')}
-              />
+      <ConfigProvider componentDisabled={!!busy || undefined}>
+        <fieldset disabled={!!busy} className="flow-parameters-columns">
+          <section className="flow-parameters-card flow-parameters-input" aria-label="运行参数">
+            <h2>运行参数</h2>
+            {managed ? (
+              managedValues ? (
+                <TemplateParameters
+                  value={managedValues}
+                  edit={() => leave(configuration, '实例配置')}
+                />
+              ) : (
+                <>
+                  <p role="alert">实例参数格式不可用，请打开实例配置核对。</p>
+                  <Button htmlType="button" onClick={() => leave(configuration, '实例配置')}>
+                    编辑实例配置
+                  </Button>
+                </>
+              )
             ) : (
               <>
-                <p role="alert">实例参数格式不可用，请打开实例配置核对。</p>
-                <button type="button" onClick={() => leave(configuration, '实例配置')}>
-                  编辑实例配置
-                </button>
-              </>
-            )
-          ) : (
-            <>
-              {!Object.keys(draft.flow.parameters).length && (
-                <p className="flow-parameters-empty">
-                  还没有运行参数。添加后可在步骤中选择变量引用。
-                </p>
-              )}
-              <ParameterConfiguration
-                columns
-                actions={actions}
-                value={draft.flow.parameters}
-                change={parameters}
-                onIncompleteChange={setIncompleteInput}
-                rename={(from, to) => {
-                  if (
-                    root.current?.querySelector('[data-value-invalid]:not([data-parameter-name])')
-                  )
-                    throw new Error('请先完成参数值和新参数输入，再确认改名。');
-                  const next = renameParameter(draft.flow, from, to);
-                  const before = new Set(
-                    referenceIssues(draft.flow.steps, draft.flow.parameters).map((issue) =>
-                      JSON.stringify(issue),
-                    ),
-                  );
-                  const added = referenceIssues(next.flow.steps, next.flow.parameters).filter(
-                    (issue) => !before.has(JSON.stringify(issue)),
-                  );
-                  if (added.length) throw new Error(referenceFeedback(added));
-                  setDraft({ ...draft, flow: next.flow });
-                  setError('');
-                  return next.references;
-                }}
-              />
-            </>
-          )}
-          {managed && <div className="parameter-actions">{actions}</div>}
-        </section>
-        <section className="flow-parameters-card" aria-label="本机资源">
-          <h2>本机资源</h2>
-          <div className="flow-parameters-binding">
-            <label htmlFor="parameters-browser">浏览器</label>
-            <select
-              id="parameters-browser"
-              value={draft.bindings.browserId ?? ''}
-              onChange={(event) =>
-                setDraft({
-                  ...draft,
-                  bindings: { ...draft.bindings, browserId: event.target.value || undefined },
-                })
-              }
-            >
-              <option value="">尚未绑定</option>
-              {draft.bindings.browserId &&
-                !browsers.some((browser) => browser.id === draft.bindings.browserId) && (
-                  <option value={draft.bindings.browserId}>
-                    原浏览器绑定不可用 · {draft.bindings.browserId}
-                  </option>
-                )}
-              {browsers.map((browser) => (
-                <option key={browser.id} value={browser.id}>
-                  {browser.product === 'embedded' ? 'FlowArk 内置浏览器' : browser.product}{' '}
-                  {browser.version}
-                </option>
-              ))}
-            </select>
-          </div>
-          {!browsers.length && <p>尚未发现可用绑定，请先在本地设置中配置浏览器。</p>}
-          {fileBindingNames(draft.flow.steps, draft.bindings.files, draft.flow.parameters).map(
-            (binding) => (
-              <div
-                className="flow-parameters-resource"
-                key={binding}
-                aria-busy={busy === 'choose' && choosing === binding}
-              >
-                <strong>{binding} 目录</strong>
-                <button
-                  type="button"
-                  onClick={() => void choose(binding)}
-                  aria-label={'选择 ' + binding + ' 目录'}
-                  title={draft.bindings.files[binding] ?? '尚未选择'}
-                >
-                  {busy === 'choose' && choosing === binding
-                    ? '正在选择…'
-                    : (draft.bindings.files[binding] ?? '选择目录')}
-                </button>
-                {selection?.binding === binding && (
-                  <p
-                    ref={selectionMessage}
-                    tabIndex={-1}
-                    role={selection.failed ? 'alert' : 'status'}
-                    className={selection.failed ? 'field-error' : undefined}
-                  >
-                    {selection.message}
+                {!Object.keys(draft.flow.parameters).length && (
+                  <p className="flow-parameters-empty">
+                    还没有运行参数。添加后可在步骤中选择变量引用。
                   </p>
                 )}
-              </div>
-            ),
-          )}
-          <h3>凭据引用 · 允许脚本读取</h3>
-          {!ids.length && <p>未使用凭据。可在本地设置的凭据、AI 服务或应用与工具中管理。</p>}
-          {credentialError && <p role="status">{credentialError}</p>}
-          {ids.map((id) => (
-            <label className="flow-parameters-credential" key={id}>
-              <input
-                type="checkbox"
+                <ParameterConfiguration
+                  columns
+                  actions={actions}
+                  value={draft.flow.parameters}
+                  change={parameters}
+                  onIncompleteChange={setIncompleteInput}
+                  rename={(from, to) => {
+                    if (
+                      root.current?.querySelector('[data-value-invalid]:not([data-parameter-name])')
+                    )
+                      throw new Error('请先完成参数值和新参数输入，再确认改名。');
+                    const next = renameParameter(draft.flow, from, to);
+                    const before = new Set(
+                      referenceIssues(draft.flow.steps, draft.flow.parameters).map((issue) =>
+                        JSON.stringify(issue),
+                      ),
+                    );
+                    const added = referenceIssues(next.flow.steps, next.flow.parameters).filter(
+                      (issue) => !before.has(JSON.stringify(issue)),
+                    );
+                    if (added.length) throw new Error(referenceFeedback(added));
+                    setDraft({ ...draft, flow: next.flow });
+                    setError('');
+                    return next.references;
+                  }}
+                />
+              </>
+            )}
+            {managed && <div className="parameter-actions">{actions}</div>}
+          </section>
+          <section className="flow-parameters-card" aria-label="本机资源">
+            <h2>本机资源</h2>
+            <div className="flow-parameters-binding">
+              <label htmlFor="parameters-browser">浏览器</label>
+              <Select<string>
+                id="parameters-browser"
+                value={draft.bindings.browserId ?? ''}
+                onChange={(value) =>
+                  setDraft({
+                    ...draft,
+                    bindings: { ...draft.bindings, browserId: value || undefined },
+                  })
+                }
+                options={[
+                  { value: '', label: '尚未绑定' },
+                  ...(draft.bindings.browserId &&
+                  !browsers.some((browser) => browser.id === draft.bindings.browserId)
+                    ? [
+                        {
+                          value: draft.bindings.browserId,
+                          label: <>原浏览器绑定不可用 · {draft.bindings.browserId}</>,
+                        },
+                      ]
+                    : []),
+                  ...browsers.map((browser) => ({
+                    value: browser.id,
+                    label: (
+                      <>
+                        {browser.product === 'embedded' ? 'FlowArk 内置浏览器' : browser.product}{' '}
+                        {browser.version}
+                      </>
+                    ),
+                  })),
+                ]}
+              />
+            </div>
+            {!browsers.length && <p>尚未发现可用绑定，请先在本地设置中配置浏览器。</p>}
+            {fileBindingNames(draft.flow.steps, draft.bindings.files, draft.flow.parameters).map(
+              (binding) => (
+                <div
+                  className="flow-parameters-resource"
+                  key={binding}
+                  aria-busy={busy === 'choose' && choosing === binding}
+                >
+                  <strong>{binding} 目录</strong>
+                  <Button
+                    htmlType="button"
+                    onClick={() => void choose(binding)}
+                    aria-label={'选择 ' + binding + ' 目录'}
+                    title={draft.bindings.files[binding] ?? '尚未选择'}
+                  >
+                    {busy === 'choose' && choosing === binding
+                      ? '正在选择…'
+                      : (draft.bindings.files[binding] ?? '选择目录')}
+                  </Button>
+                  {selection?.binding === binding && (
+                    <p
+                      ref={selectionMessage}
+                      tabIndex={-1}
+                      role={selection.failed ? 'alert' : 'status'}
+                      className={selection.failed ? 'field-error' : undefined}
+                    >
+                      {selection.message}
+                    </p>
+                  )}
+                </div>
+              ),
+            )}
+            <h3>凭据引用 · 允许脚本读取</h3>
+            {!ids.length && <p>未使用凭据。可在本地设置的凭据、AI 服务或应用与工具中管理。</p>}
+            {credentialError && <p role="status">{credentialError}</p>}
+            {ids.map((id) => (
+              <Checkbox
                 checked={draft.bindings.credentials.includes(id)}
                 onChange={(event) =>
                   setDraft({
@@ -413,22 +420,25 @@ export default function FlowParametersPage({
                     },
                   })
                 }
-              />
-              <span>
-                {credentialNames[id] ? `${credentialNames[id]} · ${id}` : id}
-                {!credentials.includes(id) ? ' · 凭据不可用' : ''}
-              </span>
-            </label>
-          ))}
-          <details className="flow-parameters-help">
-            <summary>本机绑定与凭据范围</summary>
-            <p>
-              绑定只在本机保存，不随流程导出。勾选凭据后允许脚本读取对应凭据；这里只显示引用，不显示密钥。资源可用性在运行前重新核对。
-            </p>
-          </details>
-          <p className="flow-parameters-note">删除被引用的参数会被阻止，并标出引用步骤。</p>
-        </section>
-      </fieldset>
+                className="flow-parameters-credential"
+                key={id}
+              >
+                <span>
+                  {credentialNames[id] ? `${credentialNames[id]} · ${id}` : id}
+                  {!credentials.includes(id) ? ' · 凭据不可用' : ''}
+                </span>
+              </Checkbox>
+            ))}
+            <details className="flow-parameters-help">
+              <summary>本机绑定与凭据范围</summary>
+              <p>
+                绑定只在本机保存，不随流程导出。勾选凭据后允许脚本读取对应凭据；这里只显示引用，不显示密钥。资源可用性在运行前重新核对。
+              </p>
+            </details>
+            <p className="flow-parameters-note">删除被引用的参数会被阻止，并标出引用步骤。</p>
+          </section>
+        </fieldset>
+      </ConfigProvider>
       {pending && (
         <dialog
           className="editor-leave-dialog flow-parameters-leave"
@@ -457,23 +467,23 @@ export default function FlowParametersPage({
             </p>
           )}
           <div className="editor-leave-actions">
-            <button autoFocus ref={continueButton} disabled={!!busy} onClick={stay}>
+            <Button autoFocus ref={continueButton} disabled={!!busy || undefined} onClick={stay}>
               继续编辑
-            </button>
-            <button
+            </Button>
+            <Button
               className="editor-leave-discard"
-              disabled={!!busy}
+              disabled={!!busy || undefined}
               onClick={() => close(pending.next)}
             >
               不保存离开
-            </button>
-            <button
-              className="primary"
-              disabled={!!busy}
+            </Button>
+            <Button
+              type="primary"
+              disabled={!!busy || undefined}
               onClick={() => void persist(pending.next)}
             >
               {busy === 'save' ? '正在保存…' : error ? '重试保存并离开' : '保存并离开'}
-            </button>
+            </Button>
           </div>
         </dialog>
       )}

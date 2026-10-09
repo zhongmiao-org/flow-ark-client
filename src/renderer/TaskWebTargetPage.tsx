@@ -1,3 +1,4 @@
+import { Button, Checkbox, Input } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { PlanningTask, TaskDetail } from '../shared/planning';
 import { sameWebPage, type TaskWebPreview } from '../shared/task-web-target';
@@ -278,15 +279,15 @@ export default function TaskWebTargetPage({
             hidden={tab === 'window' && !!desktop.selected && !desktop.expired}
           >
             {tabs.map((item, index) => (
-              <button
+              <Button
                 key={item.id}
                 id={`${tabId}-${item.id}`}
-                type="button"
+                htmlType="button"
                 role="tab"
                 aria-selected={tab === item.id}
                 aria-controls={`${tabId}-panel-${item.id}`}
                 tabIndex={tab === item.id ? 0 : -1}
-                disabled={busy}
+                disabled={busy || undefined}
                 onClick={() => setTab(item.id)}
                 onKeyDown={(event) => {
                   const next =
@@ -306,7 +307,7 @@ export default function TaskWebTargetPage({
                 }}
               >
                 {item.label}
-              </button>
+              </Button>
             ))}
           </div>
           <div
@@ -326,9 +327,9 @@ export default function TaskWebTargetPage({
                 <br />
                 账号：未核对 · 工作区：本机内置浏览器
               </p>
-              <button disabled={busy} onClick={inspectBrowser}>
+              <Button disabled={busy || undefined} onClick={inspectBrowser}>
                 扩大查看
-              </button>
+              </Button>
             </div>
             {task.webTarget && (
               <p className="ai-task-note" role="status">
@@ -352,16 +353,19 @@ export default function TaskWebTargetPage({
               }}
             >
               <label htmlFor="task-target-url">网页地址</label>
-              <input
+              <Input
+                status={invalidUrl ? 'error' : undefined}
                 id="task-target-url"
-                ref={urlInput}
+                ref={(instance) => {
+                  urlInput.current = instance?.input ?? null;
+                }}
                 aria-invalid={invalidUrl}
                 aria-describedby={invalidUrl ? 'task-web-error' : undefined}
                 type="url"
                 value={url}
                 maxLength={8192}
                 placeholder="https://example.com"
-                disabled={busy}
+                disabled={busy || undefined}
                 onChange={(e) => {
                   setUrl(e.target.value);
                   if (invalidUrl) {
@@ -371,12 +375,12 @@ export default function TaskWebTargetPage({
                 }}
               />
               <div className="ai-task-actions">
-                <button disabled={busy || !url.trim()} type="submit">
+                <Button disabled={busy || !url.trim() || undefined} htmlType="submit">
                   {webAction === 'open' ? '正在打开网页…' : '打开此网页'}
-                </button>
-                <button type="button" disabled={busy} onClick={recheckWeb}>
+                </Button>
+                <Button htmlType="button" disabled={busy || undefined} onClick={recheckWeb}>
                   {webAction === 'refresh' ? '正在重新检查…' : '重新检查网页'}
-                </button>
+                </Button>
               </div>
             </form>
             <p className="ai-task-note">切换目标后重新核对方案与能力，不沿用旧对象的执行授权。</p>
@@ -419,9 +423,9 @@ export default function TaskWebTargetPage({
             />
           ) : tab === 'tools' ? (
             <>
-              <button disabled={busy} onClick={back}>
+              <Button disabled={busy || undefined} onClick={back}>
                 {backLabel}
-              </button>
+              </Button>
             </>
           ) : (
             <>
@@ -453,15 +457,13 @@ export default function TaskWebTargetPage({
                 '定位页面元素',
                 '新建本地输出文件',
               ].map((label) => (
-                <label className="ai-task-checkbox" key={label}>
-                  <input type="checkbox" checked={webReady} disabled />
+                <Checkbox checked={webReady} disabled className="ai-task-checkbox" key={label}>
                   {label}
-                </label>
+                </Checkbox>
               ))}
-              <label className="ai-task-checkbox">
-                <input type="checkbox" checked={false} disabled />
+              <Checkbox checked={false} disabled className="ai-task-checkbox">
                 提交表单或发送消息 · 未授权
-              </label>
+              </Checkbox>
               <p className="task-web-scope">
                 仅将网页标题、地址与能力范围加入任务；不读取账号或 Cookie，不收集整页内容。
                 {elementCandidate
@@ -499,9 +501,9 @@ export default function TaskWebTargetPage({
               />
               <div className="ai-task-actions task-web-selection-actions">
                 {!elementCandidate && (
-                  <button
-                    className="primary"
-                    disabled={busy || !webReady}
+                  <Button
+                    type="primary"
+                    disabled={busy || !webReady || undefined}
                     onClick={() =>
                       void act(async (isCurrent) => {
                         const next = await api('task.web.select', {
@@ -517,18 +519,18 @@ export default function TaskWebTargetPage({
                       : task.webTarget?.element
                         ? '改用整个网页'
                         : '使用整个网页'}
-                  </button>
+                  </Button>
                 )}
-                <button
+                <Button
                   ref={connectionsButton}
-                  disabled={busy}
+                  disabled={busy || undefined}
                   onClick={() => {
                     returningConnections.current = true;
                     openTools();
                   }}
                 >
                   连接其他应用
-                </button>
+                </Button>
               </div>
               {tab !== 'web' && (
                 <p className="ai-task-note" role="status">
@@ -536,8 +538,8 @@ export default function TaskWebTargetPage({
                 </p>
               )}
               {task.webTarget && (
-                <button
-                  disabled={busy}
+                <Button
+                  disabled={busy || undefined}
                   onClick={() =>
                     void act(async (isCurrent) => {
                       const next = await api('task.web.clear', identity);
@@ -546,7 +548,7 @@ export default function TaskWebTargetPage({
                   }
                 >
                   {webAction === 'clear' ? '正在移除…' : '移除网页目标'}
-                </button>
+                </Button>
               )}
             </>
           )}

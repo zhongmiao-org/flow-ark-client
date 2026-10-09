@@ -1,4 +1,5 @@
-.task-execution-steps input {
+.task-execution-steps
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   width: 100%;
   min-width: 0;
 }

@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useEffect, useRef } from 'react';
 import type { LearningStatus } from '../shared/learning';
 
@@ -96,24 +97,24 @@ export default function FirstTaskGuide({
             <strong>暂时无法读取学习记录</strong>
             <p>{readError}</p>
             <p>上次记录保留，恢复读取后再继续或跳过。重新读取不会创建教学任务。</p>
-            <button
-              disabled={busy}
+            <Button
+              disabled={busy || undefined}
               onClick={() => {
                 retrying.current = true;
                 refresh();
               }}
             >
               {action === 'refresh' ? '正在重新读取…' : '重新读取学习记录'}
-            </button>
+            </Button>
           </div>
         ) : !progress ? (
           <p role="status">正在读取学习记录…</p>
         ) : null}
         <div className="ai-task-actions" aria-busy={busy}>
-          <button
+          <Button
             ref={actionButton}
-            className="primary"
-            disabled={unavailable || (!!progress?.taskId && !progress.taskExists)}
+            type="primary"
+            disabled={unavailable || (!!progress?.taskId && !progress.taskExists) || undefined}
             onClick={() => start('continue')}
           >
             {action === 'continue'
@@ -123,16 +124,16 @@ export default function FirstTaskGuide({
                 : progress?.taskId
                   ? '继续教学'
                   : '跟着做一次'}
-          </button>
+          </Button>
           {progress?.taskId && (
-            <button disabled={unavailable} onClick={() => start('restart')}>
+            <Button disabled={unavailable || undefined} onClick={() => start('restart')}>
               {action === 'restart' ? '正在创建新教学草稿…' : '重新开始学习'}
-            </button>
+            </Button>
           )}
           {progress?.status !== 'completed' && (
-            <button disabled={unavailable} onClick={skip}>
+            <Button disabled={unavailable || undefined} onClick={skip}>
               {action === 'skip' ? '正在保存跳过状态…' : '先跳过'}
-            </button>
+            </Button>
           )}
         </div>
         {progress?.taskId && !progress.taskExists && (

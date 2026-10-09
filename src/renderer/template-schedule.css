@@ -57,14 +57,19 @@
   gap: 24px;
   min-width: 0;
 }
-.template-schedule-form fieldset > label:not(.schedule-adoption) {
+.template-schedule-form
+  fieldset
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.schedule-adoption) {
   display: flex;
   flex-direction: column;
   gap: 8px;
   font-size: 12px;
   color: var(--fa-text-secondary);
 }
-.template-schedule-form input:not([type='checkbox']) {
+.template-schedule-form
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):not(
+    [type='checkbox']
+  ) {
   width: 100%;
   min-width: 0;
   background: var(--fa-bg-canvas);
@@ -89,7 +94,9 @@
   }
 }
 
-.template-schedule-form .schedule-adoption input {
+.template-schedule-form
+  .schedule-adoption
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   width: 16px;
   height: 16px;
   min-height: 16px;

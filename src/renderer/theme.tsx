@@ -1,0 +1,96 @@
+import { ConfigProvider, theme, type ThemeConfig } from 'antd';
+import zhCN from 'antd/locale/zh_CN';
+import { useLayoutEffect, type ReactNode } from 'react';
+
+// Figma semantic tokens. All shared controls and workspace colours derive from this theme.
+export const flowArkTheme = {
+  token: {
+    colorPrimary: '#315EF5',
+    colorPrimaryHover: '#244BDC',
+    colorPrimaryBg: '#EDF2FF',
+    colorInfo: '#315EF5',
+    colorSuccess: '#147D61',
+    colorSuccessBg: '#E8F6EF',
+    colorWarning: '#946200',
+    colorWarningBg: '#FFF5DB',
+    colorError: '#B83B48',
+    colorErrorBg: '#FDEDF0',
+    colorText: '#172033',
+    colorTextSecondary: '#637089',
+    colorTextPlaceholder: '#637089',
+    colorTextDisabled: '#B9C3D3',
+    colorTextLightSolid: '#FFFFFF',
+    colorBgContainer: '#FFFFFF',
+    colorBgLayout: '#F6F7FB',
+    colorFillQuaternary: '#EFF2F7',
+    colorBorder: '#DFE4ED',
+    colorBgSpotlight: '#121A2A',
+    fontFamily: "'Noto Sans SC Variable', sans-serif",
+    fontSize: 14,
+    lineHeight: 22 / 14,
+    controlHeight: 40,
+    borderRadius: 8,
+    borderRadiusLG: 16,
+    controlOutlineWidth: 2,
+  },
+  components: {
+    Menu: { darkItemColor: '#A8B4CA' },
+    Button: { fontWeight: 500, primaryShadow: 'none', defaultShadow: 'none' },
+  },
+} satisfies ThemeConfig;
+
+function WorkspaceTokens({ children }: { children: ReactNode }) {
+  const { token } = theme.useToken();
+  useLayoutEffect(() => {
+    const values: Record<string, string> = {
+      white: token.colorBgContainer,
+      fog: token.colorBgLayout,
+      soft: token.colorFillQuaternary,
+      line: token.colorBorder,
+      ink: token.colorText,
+      muted: token.colorTextSecondary,
+      nav: token.colorBgSpotlight,
+      navMuted: flowArkTheme.components.Menu.darkItemColor,
+      blue: token.colorPrimary,
+      blueHover: token.colorPrimaryHover,
+      blueSoft: token.colorPrimaryBg,
+      green: token.colorSuccess,
+      greenSoft: token.colorSuccessBg,
+      amber: token.colorWarning,
+      amberSoft: token.colorWarningBg,
+      red: token.colorError,
+      redSoft: token.colorErrorBg,
+      disabled: token.colorTextDisabled,
+    };
+    const root = document.documentElement.style;
+    const previous = Object.keys(values).map((key) => [
+      key,
+      root.getPropertyValue(`--fa-raw-${key}`),
+    ]);
+    for (const [key, value] of Object.entries(values)) root.setProperty(`--fa-raw-${key}`, value);
+    root.setProperty('--fa-font-body', token.fontFamily);
+    root.setProperty('--fa-radius-8', `${token.borderRadius}px`);
+    return () => {
+      for (const [key, value] of previous) {
+        if (value) root.setProperty(`--fa-raw-${key}`, value);
+        else root.removeProperty(`--fa-raw-${key}`);
+      }
+      root.removeProperty('--fa-font-body');
+      root.removeProperty('--fa-radius-8');
+    };
+  }, [token]);
+  return children;
+}
+
+export function ApplicationTheme({ children }: { children: ReactNode }) {
+  return (
+    <ConfigProvider
+      locale={zhCN}
+      theme={flowArkTheme}
+      button={{ autoInsertSpace: false }}
+      getPopupContainer={(trigger) => trigger?.closest('dialog') ?? document.body}
+    >
+      <WorkspaceTokens>{children}</WorkspaceTokens>
+    </ConfigProvider>
+  );
+}

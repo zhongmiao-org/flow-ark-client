@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { Run } from '../shared/types';
 
@@ -36,14 +37,14 @@ export default function TaskRunSource({ run, open }: { run: Run; open: (detail: 
   return (
     <span className="task-run-source">
       关联{' '}
-      <button
-        type="button"
+      <Button
+        htmlType="button"
         aria-label={`查看原运行 ${sourceId}`}
-        disabled={pending}
+        disabled={pending || undefined}
         onClick={() => void inspect()}
       >
         {sourceId}
-      </button>
+      </Button>
       {pending && <span role="status"> · 正在读取原运行…</span>}
       {error && (
         <span className="field-error" role="alert">

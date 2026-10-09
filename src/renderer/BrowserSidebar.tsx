@@ -1,3 +1,4 @@
+import { Button, Input } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { Globe, X, ArrowRight, RefreshCw } from 'lucide-react';
 import './browser-observation.css';
@@ -529,13 +530,13 @@ export default function BrowserSidebar({
       <header className={`browser-observation-header${expanded ? ' topbar' : ''}`}>
         {expanded ? (
           <>
-            <button ref={returnButton} onClick={restorePanel}>
+            <Button ref={returnButton} onClick={restorePanel}>
               {focusEntry
                 ? '← 返回'
                 : observationRequest
                   ? `← 返回${observationOriginLabel ?? '选择对象'}`
                   : '← 返回右侧面板'}
-            </button>
+            </Button>
             <nav className="breadcrumbs" aria-label="当前位置">
               <a
                 href="#browser-panel"
@@ -559,14 +560,15 @@ export default function BrowserSidebar({
             {!editing && <Globe size={18} />}
             <strong>{editing ? '内置网页' : '内置浏览器'}</strong>
             {editing ? (
-              <button
-                className="primary browser-pick-current"
-                disabled={!onPick || running || !statusKnown || !!status.blocked}
+              <Button
+                className="browser-pick-current"
+                type="primary"
+                disabled={!onPick || running || !statusKnown || !!status.blocked || undefined}
                 onClick={onPick}
                 title={onPick ? '为当前步骤拾取网页目标' : '先选择需要网页目标的步骤'}
               >
                 拾取元素
-              </button>
+              </Button>
             ) : (
               <span className="badge">
                 {!statusKnown
@@ -582,17 +584,17 @@ export default function BrowserSidebar({
         )}
         <div className="browser-observation-actions" hidden={targetView}>
           {!expanded && (
-            <button ref={expandButton} onClick={() => setExpanded(true)}>
+            <Button ref={expandButton} onClick={() => setExpanded(true)}>
               扩大查看
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             title={observationRequest ? '退出网页总览' : '关闭网页面板'}
             aria-label={observationRequest ? '退出网页总览' : '关闭网页面板'}
             onClick={closePanel}
           >
             <X size={17} />
-          </button>
+          </Button>
         </div>
       </header>
       <div className="browser-observation-workspace">
@@ -621,45 +623,54 @@ export default function BrowserSidebar({
         )}
         {targetView ? (
           <div className="browser-observation-modes browser-focus-actions">
-            <button
-              disabled={focusPending}
+            <Button
+              disabled={focusPending || undefined}
               onClick={() => {
                 setFocusView(false);
                 void changeObservation('overview');
               }}
             >
               返回总览
-            </button>
-            <button
-              className="primary"
-              disabled={!focusReady || !!focusError || !!observation?.error || observationDisabled}
+            </Button>
+            <Button
+              type="primary"
+              disabled={
+                !focusReady ||
+                !!focusError ||
+                !!observation?.error ||
+                observationDisabled ||
+                undefined
+              }
               onClick={() => void confirmFocus()}
             >
               {focusPending ? '正在核对目标…' : '确认这个目标'}
-            </button>
-            <button onClick={restorePanel}>返回目标选择</button>
+            </Button>
+            <Button onClick={restorePanel}>返回目标选择</Button>
           </div>
         ) : (
           expanded && (
             <div className="browser-observation-modes" aria-label="网页查看模式">
-              <button
-                disabled={observationDisabled}
+              <Button
+                disabled={observationDisabled || undefined}
                 aria-pressed={confirmed && observation.mode === 'readable'}
                 onClick={() => void changeObservation('readable')}
               >
                 100% · 清晰查看
-              </button>
-              <button
-                disabled={observationDisabled}
+              </Button>
+              <Button
+                disabled={observationDisabled || undefined}
                 aria-pressed={confirmed && observation.mode === 'overview'}
                 onClick={() => void changeObservation('overview')}
               >
                 适应全部
-              </button>
+              </Button>
               {focusEntry && (
-                <button disabled={observationDisabled} onClick={() => setFocusView(true)}>
+                <Button
+                  disabled={observationDisabled || undefined}
+                  onClick={() => setFocusView(true)}
+                >
                   聚焦选中目标
-                </button>
+                </Button>
               )}
             </div>
           )
@@ -684,15 +695,20 @@ export default function BrowserSidebar({
             }}
           >
             {editing && <label htmlFor={addressId}>网址</label>}
-            <input
+            <Input
+              status={invalidAddress ? 'error' : undefined}
               id={addressId}
-              ref={addressInput}
+              ref={(instance) => {
+                addressInput.current = instance?.input ?? null;
+              }}
               aria-label="网页地址"
               aria-invalid={invalidAddress}
               aria-describedby={invalidAddress ? `${addressId}-error` : undefined}
               placeholder="输入网址，打开网页"
               value={address}
-              disabled={running || loading || adjusting || !statusKnown || !!status.blocked}
+              disabled={
+                running || loading || adjusting || !statusKnown || !!status.blocked || undefined
+              }
               onFocus={() => {
                 focused.current = true;
               }}
@@ -708,18 +724,24 @@ export default function BrowserSidebar({
                 setAddress(e.target.value);
               }}
             />
-            <button
-              type="submit"
+            <Button
+              htmlType="submit"
               disabled={
-                running || loading || adjusting || !statusKnown || !!status.blocked || !address
+                running ||
+                loading ||
+                adjusting ||
+                !statusKnown ||
+                !!status.blocked ||
+                !address ||
+                undefined
               }
               title="访问网页"
               aria-label="访问网页"
             >
               <ArrowRight size={17} />
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              htmlType="button"
               disabled={
                 running ||
                 loading ||
@@ -727,14 +749,15 @@ export default function BrowserSidebar({
                 !statusKnown ||
                 !!status.blocked ||
                 !status.url ||
-                status.url === 'about:blank'
+                status.url === 'about:blank' ||
+                undefined
               }
               onClick={() => navigate(status.url)}
               title="重新加载"
               aria-label="重新加载"
             >
               <RefreshCw size={15} />
-            </button>
+            </Button>
           </form>
         )}
         {editing && !expanded && (
@@ -748,12 +771,12 @@ export default function BrowserSidebar({
             tabIndex={-1}
           >
             <p>网页会话状态未取得：{statusError}</p>
-            <button
-              disabled={rereading || loading || adjusting}
+            <Button
+              disabled={rereading || loading || adjusting || undefined}
               onClick={() => void rereadStatus.current?.()}
             >
               {rereading ? '正在读取…' : '重新读取会话'}
-            </button>
+            </Button>
           </div>
         )}
         {statusKnown && status.blocked && (
@@ -775,7 +798,7 @@ export default function BrowserSidebar({
             tabIndex={-1}
           >
             {error}
-            <button
+            <Button
               onClick={() => {
                 setError('');
                 setInvalidAddress(false);
@@ -783,7 +806,7 @@ export default function BrowserSidebar({
               }}
             >
               关闭
-            </button>
+            </Button>
           </div>
         )}
         {targetView && focusError && (
@@ -822,9 +845,9 @@ export default function BrowserSidebar({
         )}
         {editing && !targetView && (
           <div className="browser-session-disclosure">
-            <button aria-expanded={sessionOpen} onClick={() => setSessionOpen(!sessionOpen)}>
+            <Button aria-expanded={sessionOpen} onClick={() => setSessionOpen(!sessionOpen)}>
               查看定位与会话状态
-            </button>
+            </Button>
             {sessionOpen && (
               <section aria-label="定位与会话状态" className="browser-session-details">
                 <dl>
@@ -860,7 +883,7 @@ export default function BrowserSidebar({
                   </div>
                 </dl>
                 {onLocate ? (
-                  <button
+                  <Button
                     onClick={() => {
                       if (expanded) {
                         restorePanel();
@@ -869,7 +892,7 @@ export default function BrowserSidebar({
                     }}
                   >
                     查看当前步骤定位
-                  </button>
+                  </Button>
                 ) : (
                   <p>在画布中选择需要网页目标的步骤后查看定位。</p>
                 )}

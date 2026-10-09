@@ -1,3 +1,4 @@
+import { Select, Button, Input } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import {
@@ -218,22 +219,28 @@ export default function RunHistory({
     }
   };
   const stateSelect = (value: string, onChange: (state: string) => void) => (
-    <select aria-label="运行状态筛选" value={value} onChange={(e) => onChange(e.target.value)}>
-      <option value="">全部状态</option>
-      {Object.entries(runStateLabels).map(([value, label]) => (
-        <option key={value} value={value}>
-          {label}
-        </option>
-      ))}
-    </select>
+    <Select<string>
+      aria-label="运行状态筛选"
+      value={value}
+      onChange={(value) => onChange(value)}
+      options={[
+        { value: '', label: '全部状态' },
+        ...Object.entries(runStateLabels).map(([value, label]) => ({ value: value, label: label })),
+      ]}
+    />
   );
   const rangeSelect = (value: string, onChange: (days: string) => void) => (
-    <select aria-label="运行时间范围" value={value} onChange={(e) => onChange(e.target.value)}>
-      <option value="all">全部时间</option>
-      <option value="1">今天</option>
-      <option value="7">最近 7 天</option>
-      <option value="30">最近 30 天</option>
-    </select>
+    <Select<string>
+      aria-label="运行时间范围"
+      value={value}
+      onChange={(value) => onChange(value)}
+      options={[
+        { value: 'all', label: '全部时间' },
+        { value: '1', label: '今天' },
+        { value: '7', label: '最近 7 天' },
+        { value: '30', label: '最近 30 天' },
+      ]}
+    />
   );
   return (
     <div
@@ -273,8 +280,10 @@ export default function RunHistory({
           <div className="history-primary-filters">
             <label>
               搜索流程或运行编号
-              <input
-                ref={search}
+              <Input
+                ref={(instance) => {
+                  search.current = instance?.input ?? null;
+                }}
                 aria-label="搜索运行记录"
                 maxLength={200}
                 placeholder="流程名称、运行或流程 ID"
@@ -285,29 +294,29 @@ export default function RunHistory({
             <label>状态{stateSelect(draft.state, (state) => setDraft({ ...draft, state }))}</label>
             <label>
               触发来源
-              <select
+              <Select<string>
                 aria-label="运行来源筛选"
                 value={draft.source}
-                onChange={(e) => setDraft({ ...draft, source: e.target.value })}
-              >
-                <option value="">全部来源</option>
-                {Object.entries(runSourceLabels).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setDraft({ ...draft, source: value })}
+                options={[
+                  { value: '', label: '全部来源' },
+                  ...Object.entries(runSourceLabels).map(([value, label]) => ({
+                    value: value,
+                    label: label,
+                  })),
+                ]}
+              />
             </label>
             <label>
               时间范围{rangeSelect(draft.range, (range) => setDraft({ ...draft, range }))}
             </label>
           </div>
           <div className="history-filter-actions">
-            <button className="primary" type="submit">
+            <Button type="primary" htmlType="submit">
               应用筛选
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              htmlType="button"
               onClick={() => {
                 setDraft({
                   query: '',
@@ -320,10 +329,10 @@ export default function RunHistory({
               }}
             >
               清空条件
-            </button>
-            <button type="button" onClick={() => setFilterOpen(false)}>
+            </Button>
+            <Button htmlType="button" onClick={() => setFilterOpen(false)}>
               取消
-            </button>
+            </Button>
           </div>
           <details
             className="history-extra-filters"
@@ -334,40 +343,38 @@ export default function RunHistory({
               {' '}
               <label>
                 流程
-                <select
+                <Select<string>
                   aria-label="运行流程筛选"
-                  disabled={!!scope}
+                  disabled={!!scope || undefined}
                   value={draft.flowId}
-                  onChange={(e) => setDraft({ ...draft, flowId: e.target.value })}
-                >
-                  <option value="">所有流程</option>
-                  {draft.flowId && !flows.some((flow) => flow.id === draft.flowId) && (
-                    <option value={draft.flowId}>
-                      {scope?.id === draft.flowId
-                        ? scope.name
-                        : `当前筛选的流程（不在本地清单）：${draft.flowId}`}
-                    </option>
-                  )}
-                  {flows.map((flow) => (
-                    <option key={flow.id} value={flow.id}>
-                      {flow.flow.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setDraft({ ...draft, flowId: value })}
+                  options={[
+                    { value: '', label: '所有流程' },
+                    ...(draft.flowId && !flows.some((flow) => flow.id === draft.flowId)
+                      ? [
+                          {
+                            value: draft.flowId,
+                            label:
+                              scope?.id === draft.flowId
+                                ? scope.name
+                                : `当前筛选的流程（不在本地清单）：${draft.flowId}`,
+                          },
+                        ]
+                      : []),
+                    ...flows.map((flow) => ({ value: flow.id, label: flow.flow.name })),
+                  ]}
+                />
               </label>
               <label>
                 每页
-                <select
+                <Select<string>
                   aria-label="每页运行条数"
-                  value={draft.limit}
-                  onChange={(e) => setDraft({ ...draft, limit: Number(e.target.value) })}
-                >
-                  {[6, 25, 50, 100].map((n) => (
-                    <option key={n} value={n}>
-                      {n} 条
-                    </option>
-                  ))}
-                </select>
+                  value={String(draft.limit)}
+                  onChange={(value) => setDraft({ ...draft, limit: Number(value) })}
+                  options={[
+                    ...[6, 25, 50, 100].map((n) => ({ value: String(n), label: <>{n} 条</> })),
+                  ]}
+                />
               </label>
             </div>
           </details>
@@ -382,13 +389,13 @@ export default function RunHistory({
               setRange(days);
               filter({ ...query, ...historyTimeRange(days === 'all' ? null : Number(days)) });
             })}
-            <button data-history-filter="flow" onClick={() => editFilters('flow')}>
+            <Button data-history-filter="flow" onClick={() => editFilters('flow')}>
               {scope
                 ? '筛选当前流程'
                 : query.query || query.flowId || query.source
                   ? '已设置筛选'
                   : '所有流程'}
-            </button>
+            </Button>
             <span aria-live="polite">
               {data
                 ? `共 ${data.matchedCount} 条记录`
@@ -401,14 +408,14 @@ export default function RunHistory({
             <p ref={errorPanel} tabIndex={-1} className="field-error history-error" role="alert">
               <span>{error || openError?.message}</span>
               {error ? (
-                <button onClick={() => setRevision((value) => value + 1)}>重试读取</button>
+                <Button onClick={() => setRevision((value) => value + 1)}>重试读取</Button>
               ) : (
-                <button
-                  disabled={!!opening}
+                <Button
+                  disabled={!!opening || undefined}
                   onClick={() => openError && void inspect(openError.id)}
                 >
                   重试打开详情
-                </button>
+                </Button>
               )}
             </p>
           )}
@@ -422,8 +429,8 @@ export default function RunHistory({
             >
               <p>{additionalFilters.join(' · ')}</p>
               {canClearFilters && (
-                <button
-                  type="button"
+                <Button
+                  htmlType="button"
                   onClick={() => {
                     pageArrival.current = true;
                     setRange('all');
@@ -431,7 +438,7 @@ export default function RunHistory({
                   }}
                 >
                   {scope ? '清除筛选，保留当前流程' : '清除筛选'}
-                </button>
+                </Button>
               )}
             </div>
           )}
@@ -493,16 +500,16 @@ export default function RunHistory({
                         )}
                       </td>
                       <td>
-                        <button
+                        <Button
                           className="history-open"
                           aria-label={`查看 ${r.name} · ${r.id}`}
                           title={`查看 ${r.name} · ${r.id}`}
                           data-run-id={r.id}
-                          disabled={!!opening}
+                          disabled={!!opening || undefined}
                           onClick={() => void inspect(r.id)}
                         >
                           {opening === r.id ? '…' : <ChevronRight size={18} />}
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   );
@@ -534,8 +541,8 @@ export default function RunHistory({
               · <span>第 {cursors.length} 页</span>
             </span>
             <div className="history-page-actions">
-              <button
-                disabled={loading || cursors.length < 2}
+              <Button
+                disabled={loading || cursors.length < 2 || undefined}
                 onClick={() => {
                   pageArrival.current = true;
                   resetView();
@@ -543,9 +550,9 @@ export default function RunHistory({
                 }}
               >
                 上一页
-              </button>
-              <button
-                disabled={loading || !!error || !data?.nextCursor}
+              </Button>
+              <Button
+                disabled={loading || !!error || !data?.nextCursor || undefined}
                 onClick={() => {
                   if (data?.nextCursor) {
                     pageArrival.current = true;
@@ -555,13 +562,13 @@ export default function RunHistory({
                 }}
               >
                 下一页
-              </button>
-              <button data-history-filter="source" onClick={() => editFilters('source')}>
+              </Button>
+              <Button data-history-filter="source" onClick={() => editFilters('source')}>
                 触发来源筛选
-              </button>
-              <button className="history-refresh" onClick={latest}>
+              </Button>
+              <Button className="history-refresh" onClick={latest}>
                 查看最新
-              </button>
+              </Button>
             </div>
             {!!data?.newerCount && <small>新增 {data.newerCount} 条记录，可查看最新</small>}
           </div>

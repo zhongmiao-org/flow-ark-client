@@ -1,3 +1,4 @@
+import { Select, Button, Checkbox, Input } from 'antd';
 import { FileSpreadsheet, Folder, Globe, MousePointer2, Workflow } from 'lucide-react';
 import { usePageBack } from './use-page-back';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
@@ -329,22 +330,22 @@ export default function TemplateLibrary({
     setNotice('');
   };
   const createButton = (p: InstalledPackage, label = '创建独立实例') => (
-    <button
-      className="primary"
-      disabled={!!busy || !!resumeInstance}
+    <Button
+      type="primary"
+      disabled={!!busy || !!resumeInstance || undefined}
       data-catalog-focus={`create-${p.key}`}
       onClick={() => void create(p)}
     >
       {busy === 'create' ? '正在创建…' : label}
-    </button>
+    </Button>
   );
   return (
     <>
       <header className="topbar">
         {view !== 'library' && (
-          <button className="context-back" disabled={!!busy} onClick={back}>
+          <Button className="context-back" disabled={!!busy || undefined} onClick={back}>
             ← {backLabel}
-          </button>
+          </Button>
         )}
         <nav className="breadcrumbs" aria-label="当前位置">
           {view !== 'library' && (
@@ -390,9 +391,9 @@ export default function TemplateLibrary({
           </div>
           {view === 'instances' && instancePackage && createButton(instancePackage)}
           {view === 'library' && (
-            <button className="primary" disabled={!!busy} onClick={() => void selectZip()}>
+            <Button type="primary" disabled={!!busy || undefined} onClick={() => void selectZip()}>
               {busy === 'inspect' ? '正在检查 ZIP…' : '导入 ZIP 模板'}
-            </button>
+            </Button>
           )}
         </header>
         {error && (
@@ -406,9 +407,9 @@ export default function TemplateLibrary({
             </strong>
             <p>{error}</p>
             {failedOperation === 'inspect' && (
-              <button disabled={!!busy} onClick={() => void selectZip()}>
+              <Button disabled={!!busy || undefined} onClick={() => void selectZip()}>
                 重新选择 ZIP
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -421,12 +422,15 @@ export default function TemplateLibrary({
           <div className="template-catalog-banner warning">
             <strong>实例已创建，详情尚未打开</strong>
             <p>可以重新打开这个实例，避免重复创建。</p>
-            <button disabled={!!busy} onClick={() => void openInstance(resumeInstance)}>
+            <Button
+              disabled={!!busy || undefined}
+              onClick={() => void openInstance(resumeInstance)}
+            >
               打开已创建实例
-            </button>
-            <button disabled={!!busy} onClick={() => setResumeInstance(undefined)}>
+            </Button>
+            <Button disabled={!!busy || undefined} onClick={() => setResumeInstance(undefined)}>
               稍后到实例列表查看
-            </button>
+            </Button>
           </div>
         )}
         {view === 'library' && (
@@ -434,12 +438,15 @@ export default function TemplateLibrary({
             {preview && (
               <div className="template-catalog-banner">
                 <strong>{preview.manifest.name} · 安装检查未结束</strong>
-                <button disabled={!!busy} onClick={() => setView('inspect')}>
+                <Button disabled={!!busy || undefined} onClick={() => setView('inspect')}>
                   继续查看检查
-                </button>
-                <button disabled={!!busy} onClick={() => void work('cancel', cancelPreview)}>
+                </Button>
+                <Button
+                  disabled={!!busy || undefined}
+                  onClick={() => void work('cancel', cancelPreview)}
+                >
                   取消这次检查
-                </button>
+                </Button>
               </div>
             )}
             <div className="template-catalog-intro">
@@ -451,7 +458,7 @@ export default function TemplateLibrary({
               <strong>已安装 {data.templates.length} 个版本</strong>
               <label>
                 <span className="sr-only">搜索模板</span>
-                <input
+                <Input
                   type="search"
                   placeholder="名称、说明或作者"
                   value={query}
@@ -460,29 +467,33 @@ export default function TemplateLibrary({
               </label>
               <label>
                 <span className="sr-only">能力</span>
-                <select value={capability} onChange={(e) => setCapability(e.target.value)}>
-                  <option value="">全部能力</option>
-                  {caps.map((c) => (
-                    <option key={c} value={c}>
-                      {capabilityLabel(c)}
-                    </option>
-                  ))}
-                </select>
+                <Select<string>
+                  value={capability}
+                  onChange={(value) => setCapability(value)}
+                  options={[
+                    { value: '', label: '全部能力' },
+                    ...caps.map((c) => ({ value: c, label: capabilityLabel(c) })),
+                  ]}
+                />
               </label>
               <label>
                 <span className="sr-only">排序</span>
-                <select value={sort} onChange={(e) => setSort(e.target.value)}>
-                  <option value="recent">最近安装</option>
-                  <option value="name">名称</option>
-                </select>
+                <Select<string>
+                  value={sort}
+                  onChange={(value) => setSort(value)}
+                  options={[
+                    { value: 'recent', label: '最近安装' },
+                    { value: 'name', label: '名称' },
+                  ]}
+                />
               </label>
-              <button
-                disabled={!!busy}
+              <Button
+                disabled={!!busy || undefined}
                 data-catalog-focus="all-instances"
                 onClick={() => showInstances()}
               >
                 本地实例 {data.instances.length}
-              </button>
+              </Button>
             </div>
             <div className="template-catalog-grid">
               {matches.map((p) => {
@@ -512,13 +523,13 @@ export default function TemplateLibrary({
                       <span className="template-catalog-muted">
                         v{p.manifest.version} · {p.manifest.entries.length} 个入口
                       </span>
-                      <button
-                        disabled={!!busy}
+                      <Button
+                        disabled={!!busy || undefined}
                         data-catalog-focus={`package-${p.key}`}
                         onClick={() => openPackage(p)}
                       >
                         查看模板与实例
-                      </button>
+                      </Button>
                     </div>
                   </article>
                 );
@@ -533,14 +544,14 @@ export default function TemplateLibrary({
                     : '选择标准 .flowark-template.zip 文件，先检查再安装。'}
                 </p>
                 {data.templates.length > 0 && (
-                  <button
+                  <Button
                     onClick={() => {
                       setQuery('');
                       setCapability('');
                     }}
                   >
                     清除筛选
-                  </button>
+                  </Button>
                 )}
               </div>
             )}
@@ -584,21 +595,20 @@ export default function TemplateLibrary({
                 安装不会执行模板代码。
               </p>
               {(!same || conflict) && (
-                <label className="template-catalog-check">
-                  <input
-                    type="checkbox"
-                    checked={reviewed}
-                    disabled={!!busy || preview.consumed || !!conflict}
-                    onChange={(e) => setReviewed(e.target.checked)}
-                  />
+                <Checkbox
+                  checked={reviewed}
+                  disabled={!!busy || preview.consumed || !!conflict || undefined}
+                  onChange={(e) => setReviewed(e.target.checked)}
+                  className="template-catalog-check"
+                >
                   我已核对模板来源
-                </label>
+                </Checkbox>
               )}
               <p>创建实例后再按入口配置资源；新实例动作权限默认为禁止。</p>
               {same && !conflict ? (
-                <button
-                  className="primary"
-                  disabled={!!busy}
+                <Button
+                  type="primary"
+                  disabled={!!busy || undefined}
                   onClick={() =>
                     void work('open-installed', async () => {
                       await cancelPreview();
@@ -607,11 +617,11 @@ export default function TemplateLibrary({
                   }
                 >
                   打开已安装模板
-                </button>
+                </Button>
               ) : (
-                <button
-                  className="primary"
-                  disabled={!!busy || !reviewed || preview.consumed || !!conflict}
+                <Button
+                  type="primary"
+                  disabled={!!busy || !reviewed || preview.consumed || !!conflict || undefined}
                   onClick={() =>
                     void work('install', async () => {
                       const token = preview.token;
@@ -626,14 +636,14 @@ export default function TemplateLibrary({
                   }
                 >
                   {busy === 'install' ? '正在安装…' : '确认安装'}
-                </button>
+                </Button>
               )}
-              <button disabled={!!busy} onClick={() => void selectZip()}>
+              <Button disabled={!!busy || undefined} onClick={() => void selectZip()}>
                 重新选择 ZIP
-              </button>
-              <button disabled={!!busy} onClick={back}>
+              </Button>
+              <Button disabled={!!busy || undefined} onClick={back}>
                 {same && !conflict ? '返回模板库' : '取消安装'}
-              </button>
+              </Button>
             </aside>
           </div>
         )}
@@ -649,9 +659,9 @@ export default function TemplateLibrary({
             <p>{shown.manifest.entries.length} 个入口 · 普通配置和业务状态由每个实例独立保存。</p>
             <div className="template-catalog-actions">
               {createButton(shown, '创建实例')}
-              <button disabled={!!busy} onClick={home}>
+              <Button disabled={!!busy || undefined} onClick={home}>
                 返回模板库
-              </button>
+              </Button>
             </div>
           </section>
         )}
@@ -662,47 +672,52 @@ export default function TemplateLibrary({
               <h2>创建与管理</h2>
               <p>同一版本可以创建多个实例，配置、资源和业务状态互相独立。</p>
               {createButton(pkg)}
-              <button disabled={!!busy} onClick={() => showInstances(pkg.key)}>
+              <Button disabled={!!busy || undefined} onClick={() => showInstances(pkg.key)}>
                 查看此版本实例 · {references.length}
-              </button>
-              <button disabled={!!busy} onClick={() => exportTemplate(pkg)}>
+              </Button>
+              <Button disabled={!!busy || undefined} onClick={() => exportTemplate(pkg)}>
                 导出原模板 ZIP
-              </button>
+              </Button>
               <h3>采用此版本</h3>
               <label>
                 复制已有实例的普通配置
-                <select
+                <Select<string>
                   value={copyFrom}
-                  disabled={!!busy || !!resumeInstance}
-                  onChange={(e) => setCopyFrom(e.target.value)}
-                >
-                  <option value="">选择其他版本的实例…</option>
-                  {data.instances
-                    .filter(
-                      (i) =>
-                        i.packageKey.startsWith(pkg.manifest.id + '@') && i.packageKey !== pkg.key,
-                    )
-                    .map((i) => (
-                      <option key={i.id} value={i.id}>
-                        {i.name} · {i.packageKey}
-                      </option>
-                    ))}
-                </select>
+                  disabled={!!busy || !!resumeInstance || undefined}
+                  onChange={(value) => setCopyFrom(value)}
+                  options={[
+                    { value: '', label: '选择其他版本的实例…' },
+                    ...data.instances
+                      .filter(
+                        (i) =>
+                          i.packageKey.startsWith(pkg.manifest.id + '@') &&
+                          i.packageKey !== pkg.key,
+                      )
+                      .map((i) => ({
+                        value: i.id,
+                        label: (
+                          <>
+                            {i.name} · {i.packageKey}
+                          </>
+                        ),
+                      })),
+                  ]}
+                />
               </label>
               <p className="template-catalog-muted">
                 仅复制符合新 Schema 的配置，否则使用默认值；资源、授权和业务状态不复制。
               </p>
-              <button
-                disabled={!copyFrom || !!busy || !!resumeInstance}
+              <Button
+                disabled={!copyFrom || !!busy || !!resumeInstance || undefined}
                 onClick={() => void create(pkg, copyFrom)}
               >
                 创建此版本的新实例
-              </button>
+              </Button>
               <div className="template-catalog-divider" />
               <p className="template-catalog-muted">安装于 {date(pkg.installedAt)}</p>
-              <button
-                disabled={!!busy}
-                className="danger"
+              <Button
+                disabled={!!busy || undefined}
+                danger
                 data-catalog-focus="review-package-removal"
                 onClick={() => {
                   remember();
@@ -711,7 +726,7 @@ export default function TemplateLibrary({
                 }}
               >
                 卸载此版本…
-              </button>
+              </Button>
             </aside>
           </div>
         )}
@@ -721,7 +736,7 @@ export default function TemplateLibrary({
               <strong>{instances.length} 个实例</strong>
               <label>
                 <span className="sr-only">搜索实例</span>
-                <input
+                <Input
                   type="search"
                   value={instanceQuery}
                   onChange={(e) => setInstanceQuery(e.target.value)}
@@ -730,19 +745,19 @@ export default function TemplateLibrary({
               </label>
               <label>
                 <span className="sr-only">模板版本</span>
-                <select value={instanceFilter} onChange={(e) => setInstanceFilter(e.target.value)}>
-                  <option value="">全部版本</option>
-                  {[
-                    ...new Set([
-                      ...data.templates.map((item) => item.key),
-                      ...data.instances.map((i) => i.packageKey),
-                    ]),
-                  ].map((key) => (
-                    <option key={key} value={key}>
-                      {key}
-                    </option>
-                  ))}
-                </select>
+                <Select<string>
+                  value={instanceFilter}
+                  onChange={(value) => setInstanceFilter(value)}
+                  options={[
+                    { value: '', label: '全部版本' },
+                    ...[
+                      ...new Set([
+                        ...data.templates.map((item) => item.key),
+                        ...data.instances.map((i) => i.packageKey),
+                      ]),
+                    ].map((key) => ({ value: key, label: key })),
+                  ]}
+                />
               </label>
             </div>
             <div className="template-instance-list">
@@ -759,9 +774,9 @@ export default function TemplateLibrary({
                       {Object.keys(i.entryFlows).length} 个入口
                       {' · '}已保存 {Object.keys(i.resources).length} 项资源，运行前复核
                     </p>
-                    <button
-                      className="primary"
-                      disabled={!!busy}
+                    <Button
+                      type="primary"
+                      disabled={!!busy || undefined}
                       data-catalog-focus={`instance-${i.id}`}
                       onClick={() => {
                         remember();
@@ -769,7 +784,7 @@ export default function TemplateLibrary({
                       }}
                     >
                       打开实例
-                    </button>
+                    </Button>
                   </article>
                 );
               })}
@@ -778,15 +793,15 @@ export default function TemplateLibrary({
               <div className="template-catalog-empty">
                 <h2>没有匹配的实例</h2>
                 <p>从模板详情创建独立实例，或调整搜索和版本筛选。</p>
-                <button
+                <Button
                   onClick={() => {
                     setInstanceFilter('');
                     setInstanceQuery('');
                   }}
                 >
                   查看全部实例
-                </button>
-                <button onClick={home}>选择模板</button>
+                </Button>
+                <Button onClick={home}>选择模板</Button>
               </div>
             )}
           </>
@@ -810,30 +825,29 @@ export default function TemplateLibrary({
               个流程引用此版本。历史版本、计划和 Run 的引用仍由宿主最终检查。
             </p>
             {references.length > 0 && (
-              <button
-                disabled={!!busy}
+              <Button
+                disabled={!!busy || undefined}
                 data-catalog-focus="view-package-references"
                 onClick={() => showInstances(pkg.key)}
               >
                 查看引用此版本的实例
-              </button>
+              </Button>
             )}
             {!referenced && (
-              <label className="template-catalog-check">
-                <input
-                  type="checkbox"
-                  checked={removeReviewed}
-                  disabled={!!busy}
-                  onChange={(e) => setRemoveReviewed(e.target.checked)}
-                />
+              <Checkbox
+                checked={removeReviewed}
+                disabled={!!busy || undefined}
+                onChange={(e) => setRemoveReviewed(e.target.checked)}
+                className="template-catalog-check"
+              >
                 确认只卸载这个模板版本
-              </label>
+              </Checkbox>
             )}
             <div className="template-catalog-actions">
               {!referenced && (
-                <button
-                  className="danger"
-                  disabled={!!busy || !removeReviewed}
+                <Button
+                  danger
+                  disabled={!!busy || !removeReviewed || undefined}
                   onClick={() =>
                     void work('remove', async () => {
                       await api('template.remove', { key: pkg.key });
@@ -844,11 +858,11 @@ export default function TemplateLibrary({
                   }
                 >
                   {busy === 'remove' ? '正在卸载…' : '确认卸载'}
-                </button>
+                </Button>
               )}
-              <button disabled={!!busy} onClick={back}>
+              <Button disabled={!!busy || undefined} onClick={back}>
                 保留，返回模板详情
-              </button>
+              </Button>
             </div>
           </section>
         )}
@@ -856,7 +870,7 @@ export default function TemplateLibrary({
           <div className="template-catalog-empty">
             <h2>此版本已不在当前模板库</h2>
             <p>请返回列表核对，或重新选择 ZIP 导入。</p>
-            <button onClick={home}>返回模板库</button>
+            <Button onClick={home}>返回模板库</Button>
           </div>
         )}
       </section>

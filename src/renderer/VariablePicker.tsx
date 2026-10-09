@@ -1,3 +1,4 @@
+import { Button, Input } from 'antd';
 import { useContext, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { composeReference, type ReferenceChoice } from './value-references';
@@ -102,23 +103,23 @@ export default function VariablePicker({
       }}
     >
       <div className="variable-picker-toolbar">
-        <button type="button" onClick={close} aria-label={`返回${returnLabel} · ${label}`}>
+        <Button htmlType="button" onClick={close} aria-label={`返回${returnLabel} · ${label}`}>
           ← 返回{returnLabel}
-        </button>
+        </Button>
         <nav aria-label="当前位置">
           {navigation ? (
             <>
-              <button type="button" onClick={() => navigate(navigation.openLibrary)}>
+              <Button htmlType="button" onClick={() => navigate(navigation.openLibrary)}>
                 我的流程
-              </button>
+              </Button>
               <span aria-hidden="true">/</span>
-              <button type="button" onClick={() => navigate(navigation.openFlow)}>
+              <Button htmlType="button" onClick={() => navigate(navigation.openFlow)}>
                 {navigation.flowName}
-              </button>
+              </Button>
               <span aria-hidden="true">/</span>
-              <button type="button" onClick={close}>
+              <Button htmlType="button" onClick={close}>
                 {navigation.source}
-              </button>
+              </Button>
               <span aria-hidden="true">/</span>
             </>
           ) : (
@@ -130,13 +131,13 @@ export default function VariablePicker({
           <span aria-current="page">选择变量</span>
         </nav>
         {navigation && (
-          <button
-            type="button"
+          <Button
+            htmlType="button"
             className="variable-picker-browser"
             onClick={() => navigate(navigation.showBrowser)}
           >
             显示网页
-          </button>
+          </Button>
         )}
       </div>
       <div className="variable-picker-page">
@@ -150,9 +151,11 @@ export default function VariablePicker({
           <section className="variable-picker-sources" aria-label="可用变量来源">
             <div className="variable-picker-search">
               <label htmlFor={titleId + '-search'}>搜索</label>
-              <input
+              <Input
                 id={titleId + '-search'}
-                ref={searchInput}
+                ref={(instance) => {
+                  searchInput.current = instance?.input ?? null;
+                }}
                 aria-label="搜索名称或来源"
                 value={search}
                 placeholder="输入名称、来源或路径"
@@ -165,9 +168,9 @@ export default function VariablePicker({
                 return items.length ? (
                   <section key={group} aria-label={group}>
                     {items.map((choice) => (
-                      <button
+                      <Button
                         key={choice.path}
-                        type="button"
+                        htmlType="button"
                         aria-pressed={base === choice.path}
                         title={choice.path}
                         onClick={() => {
@@ -177,7 +180,7 @@ export default function VariablePicker({
                         }}
                       >
                         {group === '前序步骤' ? choice.label : `${group} / ${choice.label}`}
-                      </button>
+                      </Button>
                     ))}
                   </section>
                 ) : null;
@@ -191,15 +194,15 @@ export default function VariablePicker({
                       : '先添加流程参数或可访问的前序步骤，也可以返回填写固定值。'}
                   </p>
                   {search && (
-                    <button
-                      type="button"
+                    <Button
+                      htmlType="button"
                       onClick={() => {
                         setSearch('');
                         searchInput.current?.focus();
                       }}
                     >
                       清除搜索
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
@@ -218,7 +221,7 @@ export default function VariablePicker({
                 </dl>
                 <div className="variable-picker-path">
                   <label htmlFor={titleId + '-path'}>引用路径</label>
-                  <input
+                  <Input
                     id={titleId + '-path'}
                     readOnly
                     value={suffix ? `${base}.${suffix}` : base}
@@ -245,29 +248,30 @@ export default function VariablePicker({
               </p>
             )}
             <footer className="variable-picker-actions">
-              <button
-                type="button"
-                className="primary"
-                disabled={!path}
+              <Button
+                htmlType="button"
+                type="primary"
+                disabled={!path || undefined}
                 onClick={() => apply(() => choose(path))}
               >
                 使用此变量
-              </button>
-              <button type="button" onClick={() => apply(fixed)}>
+              </Button>
+              <Button htmlType="button" onClick={() => apply(fixed)}>
                 {fixedLabel}
-              </button>
-              <button type="button" onClick={close} aria-label={'取消选择 · ' + label}>
+              </Button>
+              <Button htmlType="button" onClick={close} aria-label={'取消选择 · ' + label}>
                 取消
-              </button>
+              </Button>
             </footer>
             {selected && (
               <details className="variable-picker-advanced" open={suffix ? true : undefined}>
                 <summary>编辑子路径（可选）</summary>
                 <label htmlFor={titleId + '-suffix'}>子路径</label>
-                <input
+                <Input
+                  status={!!invalid ? 'error' : undefined}
                   id={titleId + '-suffix'}
                   value={suffix}
-                  disabled={base === 'index'}
+                  disabled={base === 'index' || undefined}
                   placeholder={base === 'index' ? '循环序号没有子字段' : '例如 rows.0.name'}
                   aria-invalid={!!invalid}
                   aria-describedby={invalid ? titleId + '-invalid' : undefined}

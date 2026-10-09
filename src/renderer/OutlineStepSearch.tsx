@@ -1,3 +1,4 @@
+import { Button, Input } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
 import { stepTitle, type OutlineEntry } from './flow-outline';
 
@@ -39,8 +40,10 @@ export default function OutlineStepSearch({
     >
       <label htmlFor={id}>搜索步骤</label>
       <div className="outline-search-field">
-        <input
-          ref={input}
+        <Input
+          ref={(instance) => {
+            input.current = instance?.input ?? null;
+          }}
           id={id}
           role="combobox"
           aria-autocomplete="list"
@@ -84,8 +87,8 @@ export default function OutlineStepSearch({
           }}
         />
         {query && (
-          <button
-            type="button"
+          <Button
+            htmlType="button"
             className="outline-search-clear"
             aria-label="清除步骤搜索"
             onClick={() => {
@@ -95,7 +98,7 @@ export default function OutlineStepSearch({
             }}
           >
             ×
-          </button>
+          </Button>
         )}
       </div>
       {query.trim() && <span role="status">找到 {matches.length} 个步骤</span>}

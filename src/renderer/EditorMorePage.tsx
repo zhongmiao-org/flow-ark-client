@@ -1,3 +1,4 @@
+import { Button, Checkbox, Input } from 'antd';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { FlowRecord } from '../shared/types';
 import { flatten } from './flow-editing';
@@ -124,9 +125,9 @@ export default function EditorMorePage(props: Props) {
           </p>
         </div>
         {page !== 'menu' && (
-          <button disabled={unavailable} onClick={returnMenu}>
+          <Button disabled={unavailable || undefined} onClick={returnMenu}>
             返回更多操作
-          </button>
+          </Button>
         )}
       </div>
       {page === 'menu' && (
@@ -135,30 +136,38 @@ export default function EditorMorePage(props: Props) {
             {record.flow.name} · {saved ? '已保存' : '有未保存修改'}
           </h2>
           <div className="editor-more-actions">
-            <button disabled={busy} onClick={props.exportZip}>
+            <Button disabled={busy || undefined} onClick={props.exportZip}>
               导出 ZIP
-            </button>
-            <button data-more-page="history" disabled={busy} onClick={() => openPage('history')}>
+            </Button>
+            <Button
+              data-more-page="history"
+              disabled={busy || undefined}
+              onClick={() => openPage('history')}
+            >
               版本与历史
-            </button>
-            <button data-more-page="copy" disabled={busy} onClick={() => openPage('copy')}>
+            </Button>
+            <Button
+              data-more-page="copy"
+              disabled={busy || undefined}
+              onClick={() => openPage('copy')}
+            >
               复制为新任务
-            </button>
-            <button
+            </Button>
+            <Button
               data-more-page="scripts"
-              disabled={busy}
+              disabled={busy || undefined}
               onClick={() =>
                 scripts.length === 1 ? props.script(scripts[0].id) : openPage('scripts')
               }
             >
               编辑脚本
-            </button>
-            <button disabled={busy} onClick={props.outline}>
+            </Button>
+            <Button disabled={busy || undefined} onClick={props.outline}>
               长流程大纲
-            </button>
-            <button disabled={busy} onClick={props.back}>
+            </Button>
+            <Button disabled={busy || undefined} onClick={props.back}>
               返回任务
-            </button>
+            </Button>
           </div>
           <p className="note">
             保存状态常驻任务顶部。显示网页只有一个入口，不在工具栏与属性区重复放置。
@@ -171,20 +180,24 @@ export default function EditorMorePage(props: Props) {
           {scripts.length ? (
             <div className="editor-more-actions">
               {scripts.map((step) => (
-                <button key={step.id} disabled={busy} onClick={() => props.script(step.id)}>
+                <Button
+                  key={step.id}
+                  disabled={busy || undefined}
+                  onClick={() => props.script(step.id)}
+                >
                   <span>{step.name || '脚本步骤'}</span>
                   <small>
                     {step.id} · {step.type === 'script' ? step.language : ''}
                   </small>
-                </button>
+                </Button>
               ))}
             </div>
           ) : (
             <p className="note">当前流程没有脚本步骤。返回编排页，从动作库添加脚本后即可编辑。</p>
           )}
-          <button disabled={busy} onClick={props.back}>
+          <Button disabled={busy || undefined} onClick={props.back}>
             返回任务
-          </button>
+          </Button>
         </div>
       )}
       {page === 'copy' && (
@@ -216,24 +229,24 @@ export default function EditorMorePage(props: Props) {
               <p className="note">
                 新流程需要重新选择本机资源、凭据与授权。复制没有创建运行或计划。
               </p>
-              <button
-                type="button"
-                disabled={busy}
-                className="primary"
+              <Button
+                htmlType="button"
+                disabled={busy || undefined}
+                type="primary"
                 onClick={() => props.openCopy(receipt)}
               >
                 打开新流程
-              </button>
+              </Button>
             </>
           ) : (
             <>
               <label>
                 新流程名称
-                <input
+                <Input
                   value={name}
                   maxLength={100}
                   required
-                  disabled={unavailable}
+                  disabled={unavailable || undefined}
                   onChange={(event) => {
                     setName(event.target.value);
                     setError('');
@@ -244,27 +257,30 @@ export default function EditorMorePage(props: Props) {
               <p className="note">
                 副本是独立本地流程，不是模板实例。不复制凭据、本机路径绑定、浏览器与工具目标、动作授权、计划或运行历史；步骤中的字面量、脚本与参数内容会保留。
               </p>
-              <label className="editor-copy-consent">
-                <input
-                  type="checkbox"
-                  checked={reviewed}
-                  disabled={unavailable}
-                  aria-describedby={reviewedSource && !reviewed ? 'copy-source-changed' : undefined}
-                  onChange={(event) => {
-                    setReviewedSource(event.target.checked ? copySource : undefined);
-                    setError('');
-                  }}
-                />
+              <Checkbox
+                checked={reviewed}
+                disabled={unavailable || undefined}
+                aria-describedby={reviewedSource && !reviewed ? 'copy-source-changed' : undefined}
+                onChange={(event) => {
+                  setReviewedSource(event.target.checked ? copySource : undefined);
+                  setError('');
+                }}
+                className="editor-copy-consent"
+              >
                 我已核对要保留的内容，创建后重新绑定资源
-              </label>
+              </Checkbox>
               {reviewedSource && !reviewed && (
                 <p id="copy-source-changed" className="note" role="status">
                   草稿已更新，请重新核对要保留的内容后再创建副本。
                 </p>
               )}
-              <button className="primary" disabled={unavailable || !reviewed || !name.trim()}>
+              <Button
+                htmlType="submit"
+                type="primary"
+                disabled={unavailable || !reviewed || !name.trim() || undefined}
+              >
                 {copying ? '正在创建…' : error ? '重新创建独立副本' : '创建独立副本'}
-              </button>
+              </Button>
             </>
           )}
           {error && (

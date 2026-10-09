@@ -1,3 +1,4 @@
+import { Button, Input } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import './structured-values.css';
 import type { Json } from '../shared/types';
@@ -124,9 +125,9 @@ export function MappingValues({
               <div className="mapping-list" role="group" aria-label={label + '条目'}>
                 {keys.map((key, index) => (
                   <div className="mapping-row" key={key}>
-                    <button
+                    <Button
                       className={active === key ? 'selected' : ''}
-                      type="button"
+                      htmlType="button"
                       aria-pressed={active === key}
                       aria-label={label + '条目 ' + key}
                       onClick={() => {
@@ -137,9 +138,9 @@ export function MappingValues({
                     >
                       <strong title={key}>{key}</strong>
                       <span title={shortValue(object[key])}>{shortValue(object[key])}</span>
-                    </button>
-                    <button
-                      type="button"
+                    </Button>
+                    <Button
+                      htmlType="button"
                       aria-label={'删除' + label + '条目 ' + key}
                       onClick={() => {
                         const next = { ...object };
@@ -150,7 +151,7 @@ export function MappingValues({
                       }}
                     >
                       移除
-                    </button>
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -159,7 +160,8 @@ export function MappingValues({
               )}
               <label htmlFor={`${id}-new`}>新增{label}名称</label>
               <div className="resource-inline">
-                <input
+                <Input
+                  status={protectDraft && !!name ? 'error' : undefined}
                   id={`${id}-new`}
                   className="mapping-new-input"
                   aria-invalid={protectDraft && !!name}
@@ -176,9 +178,9 @@ export function MappingValues({
                     }
                   }}
                 />
-                <button type="button" aria-label={'添加' + label + '条目'} onClick={add}>
+                <Button htmlType="button" aria-label={'添加' + label + '条目'} onClick={add}>
                   添加
-                </button>
+                </Button>
               </div>
             </div>
             {active && (
@@ -186,7 +188,8 @@ export function MappingValues({
                 <h5>当前条目 · {active}</h5>
                 <label htmlFor={`${id}-rename`}>当前{label}名称</label>
                 <div className="resource-inline">
-                  <input
+                  <Input
+                    status={protectDraft && rename !== active ? 'error' : undefined}
                     id={`${id}-rename`}
                     className="mapping-rename-input"
                     aria-invalid={protectDraft && rename !== active}
@@ -202,14 +205,14 @@ export function MappingValues({
                       }
                     }}
                   />
-                  <button
-                    type="button"
+                  <Button
+                    htmlType="button"
                     aria-label={'更改' + label + '名称'}
-                    disabled={rename === active}
+                    disabled={rename === active || undefined}
                     onClick={renameCurrent}
                   >
                     更名
-                  </button>
+                  </Button>
                 </div>
                 <div className="mapping-value-editor">
                   <ValueField
@@ -227,8 +230,8 @@ export function MappingValues({
             )}
           </div>
           {protectDraft && (name || rename !== active || error) && (
-            <button
-              type="button"
+            <Button
+              htmlType="button"
               onClick={() => {
                 setName('');
                 setRename(active);
@@ -236,7 +239,7 @@ export function MappingValues({
               }}
             >
               放弃未应用的名称
-            </button>
+            </Button>
           )}
           {error && (
             <p className="field-error" role="alert">
@@ -285,9 +288,9 @@ export function MatrixValues({
             </span>
           </header>
           <div className="matrix-actions">
-            <button
-              type="button"
-              disabled={rows.length >= 1048576}
+            <Button
+              htmlType="button"
+              disabled={rows.length >= 1048576 || undefined}
               onClick={() => {
                 change([...rows, Array.from({ length: width }, () => null)]);
                 setRowPage(Math.floor(rows.length / 10));
@@ -296,10 +299,10 @@ export function MatrixValues({
               }}
             >
               添加数据行
-            </button>
-            <button
-              type="button"
-              disabled={!rows.length || width >= 16384}
+            </Button>
+            <Button
+              htmlType="button"
+              disabled={!rows.length || width >= 16384 || undefined}
               onClick={() => {
                 change(addColumn(rows));
                 setColumnPage(Math.floor(width / 6));
@@ -308,7 +311,7 @@ export function MatrixValues({
               }}
             >
               添加数据列
-            </button>
+            </Button>
           </div>
           <div className="matrix-scroll">
             <table aria-label="Excel 数据表格">
@@ -328,8 +331,8 @@ export function MatrixValues({
                     <th scope="row">{rowStart + i + 1}</th>
                     {columns.map((c) => (
                       <td key={c}>
-                        <button
-                          type="button"
+                        <Button
+                          htmlType="button"
                           className={
                             active?.[0] === rowStart + i && active[1] === c ? 'selected' : ''
                           }
@@ -339,7 +342,7 @@ export function MatrixValues({
                           onClick={() => setSelected([rowStart + i, c])}
                         >
                           {shortValue(row[c])}
-                        </button>
+                        </Button>
                       </td>
                     ))}
                   </tr>
@@ -359,50 +362,50 @@ export function MatrixValues({
                 : '尚无数据行'}{' '}
               · {columnName(columnStart)}–{columnName(columnStart + columns.length - 1)} 列
             </span>
-            <button
-              type="button"
+            <Button
+              htmlType="button"
               aria-label="上一页数据行"
-              disabled={!rowStart}
+              disabled={!rowStart || undefined}
               onClick={() => {
                 setRowPage(rowStart / 10 - 1);
                 setSelected(null);
               }}
             >
               ↑ 行
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              htmlType="button"
               aria-label="下一页数据行"
-              disabled={rowStart + 10 >= rows.length}
+              disabled={rowStart + 10 >= rows.length || undefined}
               onClick={() => {
                 setRowPage(rowStart / 10 + 1);
                 setSelected(null);
               }}
             >
               ↓ 行
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              htmlType="button"
               aria-label="上一组数据列"
-              disabled={!columnStart}
+              disabled={!columnStart || undefined}
               onClick={() => {
                 setColumnPage(columnStart / 6 - 1);
                 setSelected(null);
               }}
             >
               ← 列
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              htmlType="button"
               aria-label="下一组数据列"
-              disabled={columnStart + 6 >= width}
+              disabled={columnStart + 6 >= width || undefined}
               onClick={() => {
                 setColumnPage(columnStart / 6 + 1);
                 setSelected(null);
               }}
             >
               → 列
-            </button>
+            </Button>
           </div>
           {active && (
             <div className="matrix-current">
@@ -411,8 +414,8 @@ export function MatrixValues({
                 {active[0] + 1}
               </p>
               <div className="matrix-actions">
-                <button
-                  type="button"
+                <Button
+                  htmlType="button"
                   aria-label="删除当前数据行"
                   onClick={() => {
                     change(rows.filter((_, i) => i !== active[0]));
@@ -420,18 +423,18 @@ export function MatrixValues({
                   }}
                 >
                   删除此行
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  htmlType="button"
                   aria-label="删除当前数据列"
-                  disabled={width <= 1}
+                  disabled={width <= 1 || undefined}
                   onClick={() => {
                     change(removeColumn(rows, active[1]));
                     setSelected(null);
                   }}
                 >
                   删除此列
-                </button>
+                </Button>
               </div>
               <ValueField
                 key={active.join(':')}

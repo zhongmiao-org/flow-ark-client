@@ -50,7 +50,7 @@
   border: 0;
   background: transparent;
 }
-.archive-file-list label {
+.archive-file-list label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   display: block;
   font-size: 12px;
   margin-bottom: 6px;

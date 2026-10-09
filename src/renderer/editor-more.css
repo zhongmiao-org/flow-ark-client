@@ -68,7 +68,7 @@
 .editor-more-card .field-error {
   color: var(--fa-status-error);
 }
-.editor-more-card label {
+.editor-more-card label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -79,7 +79,8 @@
   font-size: 14px;
   line-height: 22px;
 }
-.editor-copy-consent input {
+.editor-copy-consent
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   flex: 0 0 auto;
   width: 16px;
   height: 16px;

@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import type { ReactNode } from 'react';
 
 export default function TaskPlanConversation({
@@ -68,18 +69,18 @@ export default function TaskPlanConversation({
           <p>
             还有未保存的任务修改。当前仍显示原方案，请继续编辑并重新生成，或放弃这些输入后再确认。
           </p>
-          <button disabled={busy || stale} onClick={discard}>
+          <Button disabled={busy || stale || undefined} onClick={discard}>
             放弃未保存修改
-          </button>
+          </Button>
         </div>
       )}
-      <button data-task-modify disabled={busy || stale} onClick={edit}>
+      <Button data-task-modify disabled={busy || stale || undefined} onClick={edit}>
         {dirty ? '继续编辑修改要求' : '继续描述修改'}
-      </button>
+      </Button>
       {stepAction}
-      <button disabled={busy} onClick={toggleView}>
+      <Button disabled={busy || undefined} onClick={toggleView}>
         {graph ? '查看步骤清单' : '查看完整流程图'}
-      </button>
+      </Button>
       {undoAction}
       {pending && (
         <p className="task-plan-approval-note">先检查方案和修改范围，采纳后再决定是否试运行。</p>

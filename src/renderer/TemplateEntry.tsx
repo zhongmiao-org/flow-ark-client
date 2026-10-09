@@ -1,3 +1,4 @@
+import { ConfigProvider, Select, Button, Input } from 'antd';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
 import type { Bootstrap, Run } from '../shared/types';
 import { runDisplayLabels } from '../shared/run-history';
@@ -176,7 +177,7 @@ export default function TemplateEntry({
     if (returnFocus.current) {
       const target = returnFocus.current.matches(':disabled')
         ? inputFields.current?.parentElement?.querySelector<HTMLElement>(
-            'select[aria-label="操作入口"]',
+            '[role="combobox"][aria-label="操作入口"]',
           )
         : returnFocus.current;
       target?.focus({ preventScroll: true });
@@ -353,18 +354,13 @@ export default function TemplateEntry({
   const entrySelector = (
     <label className="ai-settings-field">
       <span>操作入口</span>
-      <select
+      <Select<string>
         aria-label="操作入口"
-        disabled={busy}
+        disabled={busy || undefined}
         value={entryId}
-        onChange={(event) => selectEntry(event.target.value)}
-      >
-        {detail.entries.map((option) => (
-          <option key={option.id} value={option.id}>
-            {option.name}
-          </option>
-        ))}
-      </select>
+        onChange={(value) => selectEntry(value)}
+        options={[...detail.entries.map((option) => ({ value: option.id, label: option.name }))]}
+      />
     </label>
   );
   const ResourceContainer = inspection ? 'details' : 'section';
@@ -374,9 +370,9 @@ export default function TemplateEntry({
         {readError && (
           <div className="ai-task-error" role="alert">
             <p>{readError}</p>
-            <button disabled={checking} onClick={() => setReload((v) => v + 1)}>
+            <Button disabled={checking || undefined} onClick={() => setReload((v) => v + 1)}>
               重新读取 AI 状态
-            </button>
+            </Button>
           </div>
         )}
         <div
@@ -410,7 +406,7 @@ export default function TemplateEntry({
                     return (
                       <label className="template-field" key={key}>
                         <span>{schema.title ?? key}</span>
-                        <input
+                        <Input
                           readOnly
                           value={typeof value === 'string' ? value : JSON.stringify(value)}
                         />
@@ -423,22 +419,24 @@ export default function TemplateEntry({
                 )}
               </div>
             )}
-            <fieldset
-              ref={inputFields}
-              disabled={busy || !!sourceError}
-              className="template-entry-fields"
-            >
-              <Field
-                schema={entry.input}
-                value={entry.values}
-                change={(values: any) =>
-                  change({
-                    ...detail,
-                    entries: detail.entries.map((e) => (e.id === entryId ? { ...e, values } : e)),
-                  })
-                }
-              />
-            </fieldset>
+            <ConfigProvider componentDisabled={busy || !!sourceError || undefined}>
+              <fieldset
+                ref={inputFields}
+                disabled={busy || !!sourceError}
+                className="template-entry-fields"
+              >
+                <Field
+                  schema={entry.input}
+                  value={entry.values}
+                  change={(values: any) =>
+                    change({
+                      ...detail,
+                      entries: detail.entries.map((e) => (e.id === entryId ? { ...e, values } : e)),
+                    })
+                  }
+                />
+              </fieldset>
+            </ConfigProvider>
             {!inspection && !!aiResources.length && entrySelector}
             {!!aiResources.length && (
               <p className="ai-task-note">进入设置不会运行此入口；返回后保留本页输入与所选入口。</p>
@@ -492,51 +490,57 @@ export default function TemplateEntry({
             )}
             <div className="ai-task-actions">
               {!reading && needsResourceConfiguration && (
-                <button
-                  className="primary template-entry-configure"
-                  disabled={blocked || !!readError}
+                <Button
+                  className="template-entry-configure"
+                  type="primary"
+                  disabled={blocked || !!readError || undefined}
                   onClick={configure}
                 >
                   配置资源与动作授权
-                </button>
+                </Button>
               )}
               {dirtyInput && (
-                <button disabled={blocked} onClick={() => void saveInput()}>
+                <Button disabled={blocked || undefined} onClick={() => void saveInput()}>
                   保存入口参数
-                </button>
+                </Button>
               )}
-              <button
-                className="primary template-entry-run"
-                disabled={createdRun ? busy : cannotStart}
+              <Button
+                className="template-entry-run"
+                type="primary"
+                disabled={(createdRun ? busy : cannotStart) || undefined}
                 onClick={() =>
                   void (createdRun ? inspectRun(createdRun.id, createdRun.origin) : start(false))
                 }
               >
                 {createdRun ? '查看已创建运行' : '运行此入口'}
-              </button>
-              <button
+              </Button>
+              <Button
                 className="template-entry-debug"
                 hidden={inspection}
-                disabled={cannotStart}
+                disabled={cannotStart || undefined}
                 onClick={() => void start(true)}
               >
                 逐步调试
-              </button>
-              <button
+              </Button>
+              <Button
                 className="template-entry-schedule"
                 hidden={inspection}
-                disabled={cannotStart || !entry.schedulable}
+                disabled={cannotStart || !entry.schedulable || undefined}
                 title={!entry.schedulable ? '此入口不支持本机计划' : undefined}
                 onClick={() => {
                   if (!hasInvalidInput()) schedule(origin());
                 }}
               >
                 创建本机计划
-              </button>
+              </Button>
               {inspection && (
-                <button className="template-entry-return" disabled={busy} onClick={closeDetail}>
+                <Button
+                  className="template-entry-return"
+                  disabled={busy || undefined}
+                  onClick={closeDetail}
+                >
                   返回实例
-                </button>
+                </Button>
               )}
             </div>
             {inspection &&
@@ -551,13 +555,13 @@ export default function TemplateEntry({
                     {detail.entries
                       .filter((other) => other.id !== entryId)
                       .map((other) => (
-                        <button
+                        <Button
                           key={other.id}
-                          disabled={blocked}
+                          disabled={blocked || undefined}
                           onClick={() => openDetail(other.id)}
                         >
                           切换到 {other.name}
-                        </button>
+                        </Button>
                       ))}
                   </div>
                 </div>
@@ -656,17 +660,18 @@ export default function TemplateEntry({
                   </span>
                   <label className="ai-settings-field">
                     <span>供应商</span>
-                    <select
+                    <Select<string>
                       aria-label={`${resource.name}供应商`}
-                      disabled={busy || checking}
+                      disabled={busy || checking || undefined}
                       value={provider}
-                      onChange={(e) =>
-                        setChoices({ ...choices, [resource.id]: e.target.value as AIProviderId })
+                      onChange={(value) =>
+                        setChoices({ ...choices, [resource.id]: value as AIProviderId })
                       }
-                    >
-                      <option value="deepseek">DeepSeek</option>
-                      <option value="openai-codex">OpenAI</option>
-                    </select>
+                      options={[
+                        { value: 'deepseek', label: 'DeepSeek' },
+                        { value: 'openai-codex', label: 'OpenAI' },
+                      ]}
+                    />
                   </label>
                   {state?.configured && (
                     <div className="ai-settings-field">
@@ -693,15 +698,17 @@ export default function TemplateEntry({
                           ? '配置已保存在本机。绑定模型并保存实例配置后，仍由你明确启动入口。'
                           : '当前入口声明需要 AI。到本地设置完成配置后，再回到这里。'}
                   </p>
-                  <button
-                    className="primary"
-                    disabled={busy || checking || !!readError}
-                    onClick={(event) => openSettings(resource.id, event.currentTarget)}
+                  <Button
+                    type="primary"
+                    disabled={busy || checking || !!readError || undefined}
+                    onClick={(event) =>
+                      openSettings(resource.id, event.currentTarget as HTMLButtonElement)
+                    }
                   >
                     {checking || readError || state?.configured
                       ? '管理 AI 配置'
                       : `去配置 ${providerName(provider)}`}
-                  </button>
+                  </Button>
                   {state?.configured && !checking && !readError && (
                     <details className="template-entry-verification">
                       <summary>查看连接验证状态</summary>
@@ -736,8 +743,8 @@ export default function TemplateEntry({
                     </details>
                   )}
                   {state?.configured && (!bound || binding.model !== state.model) && (
-                    <button
-                      disabled={blocked}
+                    <Button
+                      disabled={blocked || undefined}
                       onClick={() =>
                         change({
                           ...detail,
@@ -752,36 +759,40 @@ export default function TemplateEntry({
                       }
                     >
                       使用 {providerName(provider)} · {state.model}
-                    </button>
+                    </Button>
                   )}
                 </div>
               );
             })}
             {!!dirtyConfiguration && (
-              <button disabled={blocked} onClick={() => void saveConfiguration()}>
+              <Button disabled={blocked || undefined} onClick={() => void saveConfiguration()}>
                 保存实例配置
-              </button>
+              </Button>
             )}
             {!needsResourceConfiguration && entry.actions.length > 0 && (
-              <button disabled={busy} onClick={configure}>
+              <Button disabled={busy || undefined} onClick={configure}>
                 查看资源与动作授权
-              </button>
+              </Button>
             )}
             {!inspection && (
               <div className="template-entry-detail-links">
-                <button
+                <Button
                   className="template-entry-open"
-                  disabled={busy}
+                  disabled={busy || undefined}
                   onClick={() => openDetail(entryId)}
                 >
                   查看入口详情
-                </button>
+                </Button>
                 {detail.entries
                   .filter((other) => other.id !== entryId)
                   .map((other) => (
-                    <button key={other.id} disabled={busy} onClick={() => openDetail(other.id)}>
+                    <Button
+                      key={other.id}
+                      disabled={busy || undefined}
+                      onClick={() => openDetail(other.id)}
+                    >
                       查看 {other.name}
-                    </button>
+                    </Button>
                   ))}
               </div>
             )}
@@ -791,7 +802,7 @@ export default function TemplateEntry({
               ) : latestError ? (
                 <>
                   <p role="alert">{latestError}</p>
-                  <button onClick={() => reloadLatest((v) => v + 1)}>重试最近运行</button>
+                  <Button onClick={() => reloadLatest((v) => v + 1)}>重试最近运行</Button>
                 </>
               ) : latest ? (
                 <>
@@ -799,8 +810,8 @@ export default function TemplateEntry({
                     {latest.id.slice(0, 8)} · {runDisplayLabels[latest.state]} ·{' '}
                     {new Date(latest.createdAt).toLocaleString('zh-CN')}
                   </small>
-                  <button
-                    disabled={busy}
+                  <Button
+                    disabled={busy || undefined}
                     onClick={() =>
                       void inspectRun(
                         latest.id,
@@ -812,7 +823,7 @@ export default function TemplateEntry({
                     {['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(latest.state)
                       ? '查看上次入口结果'
                       : '查看最近入口运行'}
-                  </button>
+                  </Button>
                 </>
               ) : (
                 <small>此入口还没有运行记录。</small>

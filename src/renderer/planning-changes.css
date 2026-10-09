@@ -30,7 +30,8 @@
   color: var(--fa-text-secondary);
   font-size: 12px;
 }
-.planning-changes-search input {
+.planning-changes-search
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   flex: 1;
   min-width: 160px;
 }

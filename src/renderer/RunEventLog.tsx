@@ -1,3 +1,4 @@
+import { Select, Button } from 'antd';
 import {
   useId,
   useLayoutEffect,
@@ -42,16 +43,16 @@ function LogText({ text, label }: { text: string; label: string }) {
             共 {text.length.toLocaleString('zh-CN')} 字符
             {expanded ? '，已展开已保存内容。' : '，当前显示前 1600 字符。'}
           </p>
-          <button
+          <Button
             aria-expanded={expanded}
             aria-controls={contentId}
             onClick={(event) => {
-              toggleOrigin.current = event.currentTarget;
+              toggleOrigin.current = event.currentTarget as HTMLButtonElement;
               setExpanded(!expanded);
             }}
           >
             {expanded ? `收起${label}` : `展开完整${label}`}
-          </button>
+          </Button>
         </>
       )}
     </div>
@@ -181,7 +182,7 @@ export default function RunEventLog({
           <section aria-label="日志步骤实例">
             <h3>步骤实例</h3>
             <label htmlFor={instanceId}>位置</label>
-            <select
+            <Select<string>
               id={instanceId}
               value={instance}
               title={
@@ -191,19 +192,24 @@ export default function RunEventLog({
                     ? '仅运行级记录'
                     : (instanceTitle(instance) ?? instance)
               }
-              onChange={(event) => changeInstance(event.target.value)}
-            >
-              <option value="*">全部步骤与运行级记录</option>
-              <option value="">仅运行级记录</option>
-              {instance && instance !== '*' && !instances.includes(instance) && (
-                <option value={instance}>原选择 · {instanceTitle(instance) ?? instance}</option>
-              )}
-              {instances.map((value) => (
-                <option key={value} value={value}>
-                  {instanceTitle(value) ?? value}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => changeInstance(value)}
+              options={[
+                { value: '*', label: '全部步骤与运行级记录' },
+                { value: '', label: '仅运行级记录' },
+                ...(instance && instance !== '*' && !instances.includes(instance)
+                  ? [
+                      {
+                        value: instance,
+                        label: <>原选择 · {instanceTitle(instance) ?? instance}</>,
+                      },
+                    ]
+                  : []),
+                ...instances.map((value) => ({
+                  value: value,
+                  label: instanceTitle(value) ?? value,
+                })),
+              ]}
+            />
             {instance && instance !== '*' && (
               <p className="run-log-selected-instance">
                 {instanceTitle(instance) ?? '无法从固定快照确认此位置'}
@@ -235,9 +241,9 @@ export default function RunEventLog({
                 </dd>
               </div>
             </dl>
-            <button disabled={!matching.length} onClick={showLatest}>
+            <Button disabled={!matching.length || undefined} onClick={showLatest}>
               查看最新记录
-            </button>
+            </Button>
             <p>只显示已保存内容，不重新执行步骤。</p>
           </section>
           {summary}
@@ -271,10 +277,10 @@ export default function RunEventLog({
               <p>
                 已显示 {shown.length} / {available.length} 条
               </p>
-              <button onClick={() => updateReading({ ...reading, limit: limit + 100 })}>
+              <Button onClick={() => updateReading({ ...reading, limit: limit + 100 })}>
                 显示{latest !== null ? '较早' : '后续'}{' '}
                 {Math.min(100, available.length - shown.length)} 条记录
-              </button>
+              </Button>
             </div>
           )}
         </>

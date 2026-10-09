@@ -1,3 +1,4 @@
+import { ConfigProvider, Button, Checkbox, Input } from 'antd';
 import { usePageBack } from './use-page-back';
 import {
   useEffect,
@@ -174,9 +175,9 @@ export default function TemplateSchedulePage({
       }}
     >
       <header className="topbar">
-        <button className="context-back" disabled={busy} onClick={() => go(back)}>
+        <Button className="context-back" disabled={busy || undefined} onClick={() => go(back)}>
           ← 返回模板入口
-        </button>
+        </Button>
         <nav className="breadcrumbs" aria-label="当前位置">
           <a
             href="#schedules"
@@ -224,15 +225,15 @@ export default function TemplateSchedulePage({
               {notice.title}
             </h2>
             <p>{notice.detail}</p>
-            <button
-              type="button"
+            <Button
+              htmlType="button"
               onClick={() => {
                 setNotice(undefined);
                 requestAnimationFrame(() => toggleFocus.current?.focus());
               }}
             >
               返回计划
-            </button>
+            </Button>
           </div>
         )}
         <div className="template-schedule-columns">
@@ -259,10 +260,10 @@ export default function TemplateSchedulePage({
                   </p>
                   <small>固定版本 {plan.versionId.slice(0, 8)}</small>
                   <div className="ai-task-actions">
-                    <button
-                      disabled={busy}
+                    <Button
+                      disabled={busy || undefined}
                       onClick={(event) => {
-                        toggleFocus.current = event.currentTarget;
+                        toggleFocus.current = event.currentTarget as HTMLButtonElement;
                         void perform(
                           () => api('schedule.toggle', { id: plan.id, enabled: !plan.enabled }),
                           plan.enabled ? 'pause' : 'enable',
@@ -278,23 +279,23 @@ export default function TemplateSchedulePage({
                       }}
                     >
                       {plan.enabled ? '暂停计划' : '启用计划'}
-                    </button>
-                    <button
-                      disabled={busy}
+                    </Button>
+                    <Button
+                      disabled={busy || undefined}
                       aria-label="编辑计划"
                       onClick={() => go(() => manage(plan.id), '编辑此入口计划')}
                     >
                       编辑
-                    </button>
+                    </Button>
                   </div>
                 </article>
               ))
             ) : (
               <p>此入口还没有本机计划。</p>
             )}
-            <button disabled={busy} onClick={() => go(() => manage(), '本机计划')}>
+            <Button disabled={busy || undefined} onClick={() => go(() => manage(), '本机计划')}>
               管理本机计划
-            </button>
+            </Button>
           </section>
           <form
             ref={form}
@@ -307,55 +308,57 @@ export default function TemplateSchedulePage({
             <h2 ref={resultHeading} tabIndex={-1}>
               {created ? '计划已创建' : '创建计划'}
             </h2>
-            <fieldset disabled={busy || !!created}>
-              <label className="ai-settings-field">
-                <span>绑定入口</span>
-                <input readOnly value={origin.title} aria-label="绑定入口" />
-              </label>
-              <Timing
-                {...timing}
-                onChange={(change) => setTiming((old) => ({ ...old, ...change }))}
-              />
-              <div className="ai-settings-field">
-                <span>固定内容</span>
-                <p>
-                  {origin.savedAt
-                    ? inZone(Date.parse(origin.savedAt), timing.timezone) + ' 保存的版本'
-                    : '来源入口的已保存内容'}
-                </p>
-              </div>
-              <label className="schedule-adoption">
-                <input
-                  type="checkbox"
+            <ConfigProvider componentDisabled={busy || !!created || undefined}>
+              <fieldset disabled={busy || !!created}>
+                <label className="ai-settings-field">
+                  <span>绑定入口</span>
+                  <Input readOnly value={origin.title} aria-label="绑定入口" />
+                </label>
+                <Timing
+                  {...timing}
+                  onChange={(change) => setTiming((old) => ({ ...old, ...change }))}
+                />
+                <div className="ai-settings-field">
+                  <span>固定内容</span>
+                  <p>
+                    {origin.savedAt
+                      ? inZone(Date.parse(origin.savedAt), timing.timezone) + ' 保存的版本'
+                      : '来源入口的已保存内容'}
+                  </p>
+                </div>
+                <Checkbox
                   checked={confirmed}
                   onChange={(event) => setConfirmed(event.target.checked)}
-                />
-                <span>固定当前已保存版本与入口</span>
-              </label>
-              <p>
-                不采用未保存草稿。创建后启用，首次运行在所选间隔之后；已排队或活动运行保持原样。
-              </p>
-            </fieldset>
+                  className="schedule-adoption"
+                >
+                  <span>固定当前已保存版本与入口</span>
+                </Checkbox>
+                <p>
+                  不采用未保存草稿。创建后启用，首次运行在所选间隔之后；已排队或活动运行保持原样。
+                </p>
+              </fieldset>
+            </ConfigProvider>
             {created ? (
               <>
                 <p role="status">
                   计划已创建 · 固定版本 {created.versionId.slice(0, 8)}，尚未因本次创建立即运行。
                 </p>
-                <button type="button" onClick={back}>
+                <Button htmlType="button" onClick={back}>
                   返回模板入口
-                </button>
+                </Button>
               </>
             ) : (
               <div className="ai-task-actions">
-                <button
-                  className="primary"
-                  disabled={busy || checking || !!sourceError || !confirmed}
+                <Button
+                  htmlType="submit"
+                  type="primary"
+                  disabled={busy || checking || !!sourceError || !confirmed || undefined}
                 >
                   {operation === 'create' ? '正在创建…' : '创建计划'}
-                </button>
-                <button type="button" disabled={busy} onClick={() => go(back)}>
+                </Button>
+                <Button htmlType="button" disabled={busy || undefined} onClick={() => go(back)}>
                   取消
-                </button>
+                </Button>
               </div>
             )}
           </form>

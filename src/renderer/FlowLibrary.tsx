@@ -1,3 +1,4 @@
+import { Button, Input } from 'antd';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { FileText, Folder, Globe, Search, Workflow } from 'lucide-react';
 import type { Bootstrap, FlowRecord, Run } from '../shared/types';
@@ -103,9 +104,9 @@ export default function FlowLibrary({
           </p>
         </div>
         {!first && (
-          <button className="primary" onClick={create} disabled={busy || !ready}>
+          <Button type="primary" onClick={create} disabled={busy || !ready || undefined}>
             新建流程
-          </button>
+          </Button>
         )}
       </div>
       {!ready ? (
@@ -118,16 +119,19 @@ export default function FlowLibrary({
           <h2>你的工作流，从这里开始。</h2>
           <p>从空白流程搭建，或导入可信模板。所有流程和运行记录保存在本机。</p>
           <div className="row">
-            <button
-              className="primary"
-              disabled={busy || !!entryAction}
+            <Button
+              type="primary"
+              disabled={busy || !!entryAction || undefined}
               onClick={() => void startEntry('create')}
             >
               {entryAction === 'create' ? '正在创建…' : '创建空白流程'}
-            </button>
-            <button disabled={busy || !!entryAction} onClick={() => void startEntry('import')}>
+            </Button>
+            <Button
+              disabled={busy || !!entryAction || undefined}
+              onClick={() => void startEntry('import')}
+            >
               {entryAction === 'import' ? '正在检查模板…' : '导入模板包'}
-            </button>
+            </Button>
           </div>
           <small>无需连接 FlowArk 平台即可开始。</small>
           {entryError && (
@@ -169,11 +173,11 @@ export default function FlowLibrary({
                 {data.runOverview.queued > 0 ? ` · ${data.runOverview.queued} 个排队` : ''}
               </small>
             </div>
-            <button className="summary-attention" onClick={showAttention}>
+            <Button className="summary-attention" onClick={showAttention}>
               <span>需要处理</span>
               <strong>{String(unread).padStart(2, '0')}</strong>
               <small>查看待办与提醒 →</small>
-            </button>
+            </Button>
           </div>
           <div className="flow-filters">
             <div className="flow-tabs" role="group" aria-label="流程筛选">
@@ -184,20 +188,22 @@ export default function FlowLibrary({
                   ['template', '来自模板'],
                 ] as const
               ).map(([value, label]) => (
-                <button
+                <Button
                   key={value}
                   aria-pressed={filter === value}
                   title={value === 'recent' ? '最近七个日历日内编辑' : undefined}
                   onClick={() => setFilter(value)}
                 >
                   {label}
-                </button>
+                </Button>
               ))}
             </div>
             <label className="search flow-search">
               <Search size={20} strokeWidth={1.6} aria-hidden="true" />
-              <input
-                ref={search}
+              <Input
+                ref={(instance) => {
+                  search.current = instance?.input ?? null;
+                }}
                 aria-label="搜索流程名称"
                 placeholder="搜索流程名称"
                 value={query}
@@ -239,13 +245,13 @@ export default function FlowLibrary({
                     <span title={new Date(record.updatedAt).toLocaleString('zh-CN')}>
                       {steps.length} 个步骤 · {relativeEditTime(record.updatedAt, now)}
                     </span>
-                    <button
-                      disabled={busy}
+                    <Button
+                      disabled={busy || undefined}
                       aria-label={`编辑 ${record.flow.name}`}
                       onClick={() => open(record)}
                     >
                       打开
-                    </button>
+                    </Button>
                   </footer>
                 </article>
               );
@@ -255,7 +261,7 @@ export default function FlowLibrary({
             <div className="flow-no-results" role="status">
               <h2>没有找到匹配的流程</h2>
               <p>调整名称或筛选条件后重试。</p>
-              <button
+              <Button
                 onClick={() => {
                   setQuery('');
                   setFilter('all');
@@ -263,7 +269,7 @@ export default function FlowLibrary({
                 }}
               >
                 清除筛选
-              </button>
+              </Button>
             </div>
           )}
         </>

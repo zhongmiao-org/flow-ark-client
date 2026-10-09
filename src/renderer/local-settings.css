@@ -310,7 +310,7 @@
 .local-settings-field {
   margin-bottom: 24px;
 }
-.local-settings-field > label {
+.local-settings-field > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   display: block;
   font-size: 13px;
   margin-bottom: 8px;
@@ -321,7 +321,8 @@
   gap: 12px;
   flex-wrap: wrap;
 }
-.local-settings-field input {
+.local-settings-field
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   flex: 1;
   min-width: 200px;
   background: var(--fa-bg-canvas);
@@ -389,7 +390,8 @@
   .local-settings-tabs button {
     padding: 8px 12px;
   }
-  .local-settings-field input {
+  .local-settings-field
+    input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
     width: 100%;
     flex-basis: 100%;
   }
@@ -415,13 +417,22 @@
 .local-browser-binding .local-settings-field {
   margin-bottom: 30px;
 }
-.local-browser-binding .local-settings-field > label {
+.local-browser-binding
+  .local-settings-field
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   font-size: 13px;
   line-height: 20px;
   margin: 0 0 8px;
 }
-.local-browser-binding .local-settings-field input,
-.local-browser-binding .local-settings-field select,
+.local-browser-binding .local-settings-field .ant-select {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  text-align: left;
+}
+.local-browser-binding
+  .local-settings-field
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']),
 .local-browser-file-choice {
   width: 100%;
   min-width: 0;
@@ -440,7 +451,7 @@
 .local-browser-binding .local-browser-discovery-row {
   flex-wrap: nowrap;
 }
-.local-browser-discovery-row select {
+.local-browser-discovery-row .ant-select {
   flex: 1;
 }
 .local-browser-discovery-row button {
@@ -455,7 +466,9 @@
 .local-browser-binding .local-browser-driver-field {
   margin-bottom: 18px;
 }
-.local-browser-binding .local-browser-driver-field > label {
+.local-browser-binding
+  .local-browser-driver-field
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   font-size: 12px;
   line-height: 18px;
   margin: 0 0 6px;
@@ -501,7 +514,7 @@
   .local-browser-binding .local-browser-discovery-row {
     flex-wrap: wrap;
   }
-  .local-browser-discovery-row select {
+  .local-browser-discovery-row .ant-select {
     flex-basis: 100%;
   }
 }
@@ -535,7 +548,9 @@
   max-width: none;
   margin: 20px 0 12px;
 }
-.local-resources-layout .local-settings-search input {
+.local-resources-layout
+  .local-settings-search
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   min-height: 32px;
   height: 32px;
   padding: 5px 8px;
@@ -604,7 +619,9 @@
   font-size: 12px;
   line-height: 18px;
 }
-.local-resources-layout .local-resource-field-label input {
+.local-resources-layout
+  .local-resource-field-label
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   width: 100%;
   min-height: 32px;
   height: 32px;

@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import {
   useEffect,
   useLayoutEffect,
@@ -217,14 +218,14 @@ export default function FlowOutlineWorkspace({
       closed = collapsed[mode].has(key);
     return (
       <div className="outline-branch" key={key}>
-        <button
+        <Button
           className="outline-branch-toggle"
           aria-expanded={!closed}
           onClick={() => toggle(key)}
         >
           {closed ? '展开' : '收起'}
           {label} · {branchCount(children)} 步
-        </button>
+        </Button>
         {!closed &&
           (children.length ? (
             block(children)
@@ -240,7 +241,7 @@ export default function FlowOutlineWorkspace({
       const live = mode === 'run' && current?.nodeId === step.id;
       return (
         <div key={step.id} className="outline-step-block">
-          <button
+          <Button
             className={'outline-step' + (live ? ' is-current' : '')}
             data-outline-step={step.id}
             aria-pressed={selectedId === step.id}
@@ -259,7 +260,7 @@ export default function FlowOutlineWorkspace({
                     : '当前执行'}
               </small>
             )}
-          </button>
+          </Button>
           {step.type === 'condition' && (
             <div className="outline-branches">
               {branch(step.then, step.id, 'then', '成立分支')}
@@ -305,16 +306,16 @@ export default function FlowOutlineWorkspace({
       </header>
       <div className="outline-toolbar">
         <OutlineStepSearch query={query} change={setQuery} matches={matches} choose={choose} />
-        <button
-          className="primary"
-          disabled={!current?.nodeId}
+        <Button
+          type="primary"
+          disabled={!current?.nodeId || undefined}
           onClick={() => {
             if (current?.nodeId) choose(current.nodeId, 'run');
           }}
         >
           聚焦当前执行
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => {
             setView(view === 'list' ? 'graph' : 'list');
             setFocusRequest((n) => n + 1);
@@ -322,7 +323,7 @@ export default function FlowOutlineWorkspace({
           }}
         >
           {view === 'list' ? '展开流程图' : '返回步骤清单'}
-        </button>
+        </Button>
         <details
           className="outline-more"
           ref={menu}
@@ -339,15 +340,15 @@ export default function FlowOutlineWorkspace({
         >
           <summary>更多 ···</summary>
           <div>
-            <button
+            <Button
               onClick={() => {
                 setCollapsed((old) => ({ ...old, [mode]: new Set() }));
                 closeMenu(true);
               }}
             >
               展开全部分支
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => {
                 setCollapsed((old) => ({
                   ...old,
@@ -365,27 +366,27 @@ export default function FlowOutlineWorkspace({
               }}
             >
               收起全部分支
-            </button>
-            <button
-              disabled={saveBusy || saved}
+            </Button>
+            <Button
+              disabled={saveBusy || saved || undefined}
               onClick={() => {
                 closeMenu(true);
                 save();
               }}
             >
               {saveBusy ? '正在保存…' : saved ? '草稿已保存' : '保存草稿'}
-            </button>
+            </Button>
             {more && (
-              <button
+              <Button
                 aria-label="从大纲打开更多操作"
-                disabled={saveBusy}
+                disabled={saveBusy || undefined}
                 onClick={() => {
                   closeMenu();
                   more();
                 }}
               >
                 任务的更多操作
-              </button>
+              </Button>
             )}
           </div>
         </details>
@@ -394,7 +395,7 @@ export default function FlowOutlineWorkspace({
         <aside className="outline-groups ai-task-card" aria-label="步骤大纲">
           <h2>步骤大纲 · {model.entries.length} 步</h2>
           {model.groups.map((item) => (
-            <button
+            <Button
               key={item.id}
               className="outline-group"
               aria-pressed={chosenGroup === item.id}
@@ -411,7 +412,7 @@ export default function FlowOutlineWorkspace({
                   ? '当前执行在这里'
                   : '展开查看子步骤'}
               </span>
-            </button>
+            </Button>
           ))}
           {!model.entries.length && (
             <p>{mode === 'run' ? '尚未取得运行快照。' : '还没有步骤，可返回编排添加。'}</p>
@@ -424,16 +425,16 @@ export default function FlowOutlineWorkspace({
               : '选择一个步骤'}
           </h2>
           <div className="outline-source" aria-label="大纲数据来源">
-            <button aria-pressed={mode === 'draft'} onClick={() => switchSource('draft')}>
+            <Button aria-pressed={mode === 'draft'} onClick={() => switchSource('draft')}>
               编辑中的草稿
-            </button>
-            <button
+            </Button>
+            <Button
               aria-pressed={mode === 'run'}
-              disabled={!detail?.snapshot}
+              disabled={!detail?.snapshot || undefined}
               onClick={() => switchSource('run')}
             >
               运行快照 · 只读
-            </button>
+            </Button>
             <p>
               {observation.reason ??
                 (detail
@@ -463,12 +464,12 @@ export default function FlowOutlineWorkspace({
                 {chosenGroup === item.id ? (
                   block(item.steps)
                 ) : (
-                  <button
+                  <Button
                     className="outline-collapsed-group"
                     onClick={() => choose(item.steps[0].id)}
                   >
                     {item.start}–{item.end} {item.title}（已折叠）
-                  </button>
+                  </Button>
                 )}
               </div>
             ))}
@@ -522,10 +523,14 @@ export default function FlowOutlineWorkspace({
               </details>
               {mode === 'draft' ? (
                 <>
-                  <button onClick={() => edit(entry.step.id)}>编辑步骤配置</button>
-                  <button data-ai-edit-step disabled={!saved} onClick={() => editAI(entry.step.id)}>
+                  <Button onClick={() => edit(entry.step.id)}>编辑步骤配置</Button>
+                  <Button
+                    data-ai-edit-step
+                    disabled={!saved || undefined}
+                    onClick={() => editAI(entry.step.id)}
+                  >
                     AI 只修改这一步
-                  </button>
+                  </Button>
                   {!saved && <p>先保存草稿，再使用 AI 修改。</p>}
                 </>
               ) : (
@@ -536,16 +541,17 @@ export default function FlowOutlineWorkspace({
                       <code>{row.instance}</code>
                     </div>
                   ))}
-                  <button onClick={() => detail && showRun(detail)}>查看此运行详情</button>
-                  <button
+                  <Button onClick={() => detail && showRun(detail)}>查看此运行详情</Button>
+                  <Button
                     disabled={
                       !record.flow.steps.length ||
-                      !flowOutline(record.flow.steps).byId.has(entry.step.id)
+                      !flowOutline(record.flow.steps).byId.has(entry.step.id) ||
+                      undefined
                     }
                     onClick={() => choose(entry.step.id, 'draft')}
                   >
                     定位草稿中的同一步
-                  </button>
+                  </Button>
                 </>
               )}
             </>

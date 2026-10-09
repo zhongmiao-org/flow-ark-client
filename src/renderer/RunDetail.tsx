@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import McpRunReceipts from './McpRunReceipts';
 import DebugRunWorkspace from './DebugRunWorkspace';
 import { useRunControl, RunControlFeedback } from './useRunControl';
@@ -128,39 +129,39 @@ export default function RunDetail({
   const runControls = (
     <div className="run-controls">
       {controllable && !observed.fault && r.state === 'RUNNING' && (
-        <button disabled={controlPending} onClick={() => void sendControl('pause')}>
+        <Button disabled={controlPending || undefined} onClick={() => void sendControl('pause')}>
           {command?.action === 'pause' ? '暂停请求中' : '请求暂停'}
-        </button>
+        </Button>
       )}
       {controllable && !observed.fault && r.state === 'PAUSED' && (
-        <button
-          className={r.debug ? 'primary' : undefined}
-          disabled={controlPending}
+        <Button
+          type={r.debug ? 'primary' : 'default'}
+          disabled={controlPending || undefined}
           onClick={() => void sendControl('step')}
         >
           执行下一步
-        </button>
+        </Button>
       )}
       {controllable &&
         !observed.fault &&
         ['PAUSED', 'WAITING_INPUT'].includes(r.state) &&
         (r.state === 'WAITING_INPUT' && humanRequest ? (
-          <button className="primary" onClick={humanRequest}>
+          <Button type="primary" onClick={humanRequest}>
             查看本次人工请求
-          </button>
+          </Button>
         ) : (
-          <button disabled={controlPending} onClick={() => void sendControl('resume')}>
+          <Button disabled={controlPending || undefined} onClick={() => void sendControl('resume')}>
             继续运行
-          </button>
+          </Button>
         ))}
       {!terminal && (controllable || (r.state === 'QUEUED' && !observed.fault)) && (
-        <button
-          className="danger"
-          disabled={controlBusy || (!!command && command.action === 'cancel')}
+        <Button
+          danger
+          disabled={controlBusy || (!!command && command.action === 'cancel') || undefined}
           onClick={() => void sendControl('cancel')}
         >
           取消运行
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -225,9 +226,9 @@ export default function RunDetail({
                 </p>
               </div>
               {tab === 'current' && (
-                <button className="primary" onClick={showBrowser}>
+                <Button type="primary" onClick={showBrowser}>
                   查看网页
-                </button>
+                </Button>
               )}
             </div>
             <section
@@ -311,7 +312,7 @@ export default function RunDetail({
                   hidden={tab === 'logs'}
                 >
                   {visibleTabs.map(([id, label], index) => (
-                    <button
+                    <Button
                       key={id}
                       id={'run-tab-' + id}
                       role="tab"
@@ -333,13 +334,13 @@ export default function RunDetail({
                         if (target === null) return;
                         event.preventDefault();
                         setTab(visibleTabs[target][0]);
-                        event.currentTarget.parentElement
+                        (event.currentTarget as HTMLButtonElement).parentElement
                           ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
                           [target]?.focus();
                       }}
                     >
                       {label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
                 <div
@@ -446,9 +447,9 @@ export default function RunDetail({
                 <h2>重新运行与关联记录</h2>
                 <p>先核对已保存输出和外部结果，再选择执行内容。查看不会创建运行。</p>
               </div>
-              <button type="button" onClick={() => setTab('rerun')}>
+              <Button htmlType="button" onClick={() => setTab('rerun')}>
                 核对后重新运行
-              </button>
+              </Button>
             </div>
           </>
         )}
