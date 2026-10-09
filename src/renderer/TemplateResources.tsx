@@ -49,7 +49,9 @@ export default function TemplateResources({
   return (
     <div className="template-instance-columns template-resources-columns">
       <section className="ai-task-card template-instance-form">
-        <h2>本机资源绑定</h2>
+        <h2 tabIndex={-1} data-navigation-heading>
+          本机资源绑定
+        </h2>
         <fieldset disabled={busy} className="template-resource-fields">
           {manifest.resources.length === 0 && <p>此模板未声明本机资源。</p>}
           {manifest.resources.map((resource) => {
