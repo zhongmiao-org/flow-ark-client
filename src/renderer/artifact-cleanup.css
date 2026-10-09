@@ -17,19 +17,6 @@
   flex-wrap: wrap;
   gap: 16px;
 }
-.artifact-cleanup-dialog {
-  width: min(640px, calc(100vw - 48px));
-  max-height: calc(100vh - 48px);
-  padding: 32px;
-  overflow: auto;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-16);
-  background: var(--fa-bg-surface);
-  color: var(--fa-text-primary);
-}
-.artifact-cleanup-dialog::backdrop {
-  background: rgb(18 26 42 / 48%);
-}
 .artifact-cleanup-dialog h2 {
   margin: 8px 0 12px;
   font-size: 24px;
@@ -130,11 +117,6 @@
   min-width: 140px;
 }
 @media (max-width: 600px) {
-  .artifact-cleanup-dialog {
-    width: calc(100vw - 24px);
-    max-height: calc(100vh - 24px);
-    padding: 20px;
-  }
   .artifact-cleanup-summary {
     grid-template-columns: minmax(0, 1fr);
   }

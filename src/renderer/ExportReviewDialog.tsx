@@ -1,4 +1,5 @@
-import { Button, Checkbox } from 'antd';
+import { Button, Checkbox, Modal } from 'antd';
+import './antd-layout.css';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { FlowRecord } from '../shared/types';
 import { flatten } from './flow-editing';
@@ -43,8 +44,8 @@ export default function ExportReviewDialog({
 }) {
   const titleId = useId(),
     descriptionId = useId();
-  const dialog = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const confirmation = useRef<HTMLInputElement>(null);
   const feedback = useRef<HTMLDivElement>(null);
   const locked = useRef(false);
   const [reviewed, setReviewed] = useState(false);
@@ -57,9 +58,7 @@ export default function ExportReviewDialog({
   const templateReturnLabel = source.kind === 'template' ? (source.returnLabel ?? '模板详情') : '';
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
-    dialog.current?.showModal();
     return () => {
-      dialog.current?.close();
       if (previous?.isConnected) previous.focus({ preventScroll: true });
     };
   }, []);
@@ -107,14 +106,24 @@ export default function ExportReviewDialog({
     }
   };
   return (
-    <dialog
-      ref={dialog}
-      className="export-review-dialog"
+    <Modal
+      open
+      width={1040}
+      centered
+      closable={false}
+      mask={{ closable: false }}
+      keyboard={!busy}
+      footer={null}
+      className="flowark-content-modal export-review-dialog"
+      focusable={{ focusTriggerAfterClose: false }}
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
-      onCancel={(event) => {
-        event.preventDefault();
+      aria-busy={!!busy}
+      onCancel={() => {
         if (!locked.current) close();
+      }}
+      afterOpenChange={(open) => {
+        if (open) (stage === 'done' ? heading.current : confirmation.current)?.focus();
       }}
     >
       <header className="export-review-heading">
@@ -255,7 +264,9 @@ export default function ExportReviewDialog({
           </div>
           <footer className="export-review-footer">
             <Checkbox
-              autoFocus
+              ref={(instance) => {
+                confirmation.current = instance?.input ?? null;
+              }}
               checked={reviewed}
               disabled={!!busy || undefined}
               onChange={(event) => setReviewed(event.target.checked)}
@@ -282,6 +293,6 @@ export default function ExportReviewDialog({
           </footer>
         </>
       )}
-    </dialog>
+    </Modal>
   );
 }

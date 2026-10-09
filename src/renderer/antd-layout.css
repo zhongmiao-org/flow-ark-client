@@ -64,3 +64,10 @@ label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) > .ant-select,
 .flowark-leave-actions > .ant-btn:last-child {
   flex: 1.14;
 }
+
+/* Review forms retain their own content layout; Modal owns the floating surface. */
+.flowark-content-modal .ant-modal-body {
+  max-height: calc(100dvh - 112px);
+  overflow: auto;
+  scrollbar-gutter: stable;
+}

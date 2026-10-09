@@ -52,23 +52,16 @@
 .schedule-workbench-form [role='alert'] button {
   align-self: flex-start;
 }
-.script-leave-dialog.schedule-history-dialog {
-  width: min(920px, calc(100vw - 64px));
-  max-width: 920px;
-  max-height: calc(100vh - 80px);
-  padding: 24px;
-  overflow: auto;
-}
-.schedule-history-dialog[open] {
+.schedule-history-dialog .ant-modal-body {
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
-.schedule-history-dialog[open] > div {
+.schedule-history-dialog .ant-modal-body > div {
   margin-top: 0;
   flex-wrap: nowrap;
 }
-.schedule-history-dialog[open] > .ai-task-card {
+.schedule-history-dialog .ant-modal-body > .ai-task-card {
   gap: 16px;
 }
 .schedule-history-dialog h2,
@@ -77,7 +70,7 @@
   margin: 0;
   overflow-wrap: anywhere;
 }
-.schedule-history-dialog > .schedule-history-records {
+.schedule-history-dialog .ant-modal-body > .schedule-history-records {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
@@ -93,7 +86,7 @@
   overflow-wrap: anywhere;
 }
 @media (max-width: 1100px) {
-  .schedule-history-dialog > .schedule-history-records {
+  .schedule-history-dialog .ant-modal-body > .schedule-history-records {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -118,7 +111,7 @@
   color: var(--fa-text-secondary);
   font-size: 12px;
 }
-.schedule-history-dialog > .schedule-history-summary {
+.schedule-history-dialog .ant-modal-body > .schedule-history-summary {
   display: flex;
   flex-direction: column;
   align-items: flex-start;

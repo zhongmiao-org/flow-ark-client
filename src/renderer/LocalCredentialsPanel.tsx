@@ -1,4 +1,5 @@
-import { ConfigProvider, Button, Checkbox, Input } from 'antd';
+import { ConfigProvider, Button, Checkbox, Input, Modal } from 'antd';
+import './antd-layout.css';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { Bootstrap, FlowRecord } from '../shared/types';
 import type { LocalCredentialState } from '../shared/local-credentials';
@@ -21,7 +22,6 @@ function CredentialDialog({
   saved: (message: string) => void;
 }) {
   const id = useId();
-  const dialog = useRef<HTMLDialogElement>(null);
   const nameInput = useRef<HTMLInputElement>(null);
   const errorMessage = useRef<HTMLDivElement>(null);
   const stayButton = useRef<HTMLButtonElement>(null);
@@ -39,12 +39,8 @@ function CredentialDialog({
   useEffect(() => {
     const origin = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     alive.current = true;
-    const node = dialog.current;
-    node?.showModal();
-    nameInput.current?.focus();
     return () => {
       alive.current = false;
-      node?.close();
       if (origin?.isConnected) origin.focus({ preventScroll: true });
     };
   }, []);
@@ -101,20 +97,21 @@ function CredentialDialog({
     }
   };
   return (
-    <dialog
-      className="local-credential-dialog"
-      ref={dialog}
+    <Modal
+      open
+      width={640}
+      centered
+      closable={false}
+      mask={{ closable: false }}
+      keyboard={!busy}
+      footer={null}
+      className="flowark-content-modal local-credential-dialog"
+      focusable={{ focusTriggerAfterClose: false }}
       aria-labelledby={`${id}-title`}
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          event.stopPropagation();
-          cancel();
-        }
-      }}
-      onCancel={(event) => {
-        event.preventDefault();
-        cancel();
+      aria-busy={busy}
+      onCancel={cancel}
+      afterOpenChange={(open) => {
+        if (open) (leaving ? stayButton.current : nameInput.current)?.focus();
       }}
     >
       <form
@@ -166,7 +163,13 @@ function CredentialDialog({
             >
               继续编辑
             </Button>
-            <Button htmlType="button" disabled={busy || undefined} onClick={exit}>
+            <Button
+              htmlType="button"
+              color="danger"
+              variant="filled"
+              disabled={busy || undefined}
+              onClick={exit}
+            >
               不保存离开
             </Button>
             <Button htmlType="submit" type="primary" disabled={busy || blocked || undefined}>
@@ -249,7 +252,7 @@ function CredentialDialog({
           </>
         )}
       </form>
-    </dialog>
+    </Modal>
   );
 }
 

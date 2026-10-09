@@ -1,17 +1,4 @@
 /* Figma 2:4940 / 2:4837: export review and result states. */
-.export-review-dialog {
-  width: min(1040px, calc(100vw - 48px));
-  max-height: calc(100vh - 48px);
-  padding: 32px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-16);
-  background: var(--fa-bg-canvas);
-  color: var(--fa-text-primary);
-  overflow: auto;
-}
-.export-review-dialog::backdrop {
-  background: rgb(18 26 42 / 48%);
-}
 .export-review-heading {
   display: flex;
   align-items: flex-start;
@@ -162,11 +149,6 @@
   color: var(--fa-text-secondary);
 }
 @media (max-width: 760px) {
-  .export-review-dialog {
-    width: calc(100vw - 24px);
-    max-height: calc(100vh - 24px);
-    padding: 20px;
-  }
   .export-review-layout {
     grid-template-columns: minmax(0, 1fr);
     gap: 16px;

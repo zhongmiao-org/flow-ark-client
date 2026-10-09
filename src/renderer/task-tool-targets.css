@@ -67,9 +67,6 @@
   display: grid;
   gap: 12px;
 }
-.task-tool-confirm {
-  width: min(800px, calc(100vw - 40px));
-}
 .task-tool-confirm .tool-capability-review {
   margin: 16px 0;
 }

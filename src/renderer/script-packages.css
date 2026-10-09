@@ -79,19 +79,6 @@
   border-radius: var(--fa-radius-8);
   line-height: 22px;
 }
-.script-package-dialog {
-  width: min(640px, calc(100vw - 48px));
-  max-height: calc(100vh - 48px);
-  overflow: auto;
-  padding: 32px;
-  background: var(--fa-bg-surface);
-  color: var(--fa-text-primary);
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-16);
-}
-.script-package-dialog::backdrop {
-  background: rgb(18 26 42 / 48%);
-}
 .script-package-dialog h2 {
   margin: 0 0 12px;
   font-size: 24px;

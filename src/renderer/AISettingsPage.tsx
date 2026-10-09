@@ -12,7 +12,6 @@ import {
   type AIProviderId,
 } from '../shared/ai-settings';
 import './ai-settings.css';
-import './editor-leave.css';
 
 const api = (method: string, args: unknown): Promise<any> =>
   window.flowark.request('ai.configuration.' + method, args);
