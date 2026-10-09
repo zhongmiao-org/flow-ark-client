@@ -94,7 +94,7 @@ export default function TemplateInstancePage({
       document.querySelector('main')?.scrollTo({ top: 0 });
       entryHeading.current?.focus({ preventScroll: true });
     }
-  }, [entryDetail]);
+  }, [entryDetail, entryId]);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState('');
   const [checking, setChecking] = useState(true),
