@@ -1,4 +1,4 @@
-import { Drawer, ConfigProvider, Select, Button } from 'antd';
+import { Drawer, ConfigProvider, Select, Button, Alert } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { FlowRecord, Step } from '../shared/types';
 import DiagramCanvas from './DiagramCanvas';
@@ -6,7 +6,7 @@ import { buildTaskDiagram } from './task-diagram';
 import { flatten } from './flow-editing';
 import { taskStepTitle } from './task-step-title';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
-import { referenceChoices, referenceScope } from './value-references';
+import { referenceChoices, referenceScope, referenceOf } from './value-references';
 import LogicNodeConfiguration from './LogicNodeConfiguration';
 import ValueField from './ValueField';
 import { kinds } from './node-kinds';
@@ -121,8 +121,13 @@ export default function ControlWorkspace(props: Props) {
         </header>
         {props.error && (
           <div ref={errorRef} tabIndex={-1} role="alert" className="control-workspace-error">
-            <p>{props.error}</p>
-            <Button onClick={props.clearError}>关闭提示</Button>
+            <Alert
+              type="error"
+              role="presentation"
+              showIcon
+              title={props.error}
+              action={<Button onClick={props.clearError}>关闭提示</Button>}
+            />
           </div>
         )}
         <div className="control-workspace-columns">
@@ -136,7 +141,7 @@ export default function ControlWorkspace(props: Props) {
               active={!props.busy}
             />
           </div>
-          <ConfigProvider componentDisabled={props.busy || undefined}>
+          <ConfigProvider componentDisabled={props.busy}>
             <fieldset disabled={props.busy} className="control-workspace-card">
               {node ? (
                 <>
@@ -152,8 +157,16 @@ export default function ControlWorkspace(props: Props) {
                       label="集合来源"
                       value={node.items}
                       defaultValue={[]}
+                      jsonDefault={[]}
                       choices={referenceChoices(props.record.flow, node.id)}
-                      change={(items) => props.change({ ...node, items })}
+                      change={(items) => {
+                        if (referenceOf(items) === undefined) {
+                          if (!Array.isArray(items))
+                            throw new Error('循环集合必须是数组，或选择数组来源的变量引用');
+                          if (items.length > 1000) throw new Error('循环集合最多 1000 项');
+                        }
+                        props.change({ ...node, items });
+                      }}
                     />
                   ) : supported ? (
                     <LogicNodeConfiguration
@@ -219,6 +232,7 @@ export default function ControlWorkspace(props: Props) {
               <Button
                 ref={saveButton}
                 type="primary"
+                loading={props.busy}
                 onClick={() => {
                   setAttemptedSave(true);
                   void props.save();

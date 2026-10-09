@@ -38,13 +38,6 @@
 .script-configuration-workspace .value-field {
   margin: 0;
 }
-.script-configuration-workspace .reference-value-compact .value-field-label {
-  line-height: 18px;
-}
-.script-configuration-workspace .reference-value-compact button {
-  margin-top: 0;
-}
-
 .script-configuration-workspace .resource-workspace-page h1 {
   font-weight: 700;
 }

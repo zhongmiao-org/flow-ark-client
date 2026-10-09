@@ -155,21 +155,3 @@
     min-height: 0;
   }
 }
-
-.browser-action-card .reference-value-compact {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.browser-action-card .reference-value-compact .value-field-label {
-  color: var(--fa-text-secondary);
-  font-size: 12px;
-  line-height: 18px;
-}
-.browser-action-card .reference-value-compact button {
-  min-height: 32px;
-  padding: 4px 6px;
-  justify-content: flex-start;
-  text-align: left;
-  background: var(--fa-bg-canvas);
-}

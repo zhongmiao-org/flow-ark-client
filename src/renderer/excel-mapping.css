@@ -60,14 +60,7 @@
   position: absolute;
   right: 0;
   top: -4px;
-  min-height: 24px;
-  height: 24px;
   margin: 0;
-  padding: 2px 6px;
-}
-.excel-mapping-page .value-source-button {
-  color: var(--fa-action-primary);
-  border-color: var(--fa-border-default);
 }
 .excel-mapping-page .reference-value {
   background: var(--fa-bg-canvas);

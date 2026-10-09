@@ -1822,17 +1822,29 @@ main {
 }
 .value-source-button {
   margin-top: 6px;
-  color: var(--fa-action-primary);
-  font-size: 12px;
-  border-color: var(--fa-border-default);
-}
-.literal-value textarea[aria-invalid='true'] {
-  border-color: var(--fa-status-error);
 }
 .literal-value-restore {
   margin-top: 8px;
-  color: var(--fa-action-primary);
-  border-color: var(--fa-border-default);
+}
+.reference-value-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.reference-value-compact .value-field-label {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--fa-text-secondary);
+}
+.reference-value-compact > .value-source-button {
+  width: 100%;
+  height: auto;
+  min-height: var(--ant-control-height);
+  margin-top: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  justify-content: flex-start;
+  text-align: left;
 }
 .reference-value {
   display: flex;
