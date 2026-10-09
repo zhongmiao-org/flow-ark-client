@@ -193,7 +193,12 @@ export class Store {
       for (const a of this.list<any>('template-effect'))
         if (a.state === 'submitting') {
           this.put('template-effect', a.id, { ...a, state: 'unknown' });
-          this.attention('unknown-result', '操作结果待核对', { effectId: a.id }, 'unknown:' + a.id);
+          this.attention(
+            'unknown-result',
+            '操作结果待核对',
+            { effectId: a.id, runId: a.runId },
+            'unknown:' + a.id,
+          );
         }
       for (const receipt of this.list<any>('desktop-effect'))
         if (receipt.status === 'unknown')
