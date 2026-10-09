@@ -35,7 +35,7 @@
   background: var(--fa-bg-subtle);
   font: 12px/20px var(--fa-font-latin);
 }
-.mcp-run-receipts details {
+.mcp-receipt-content {
   margin: 12px 0;
 }
 .mcp-receipt-time {

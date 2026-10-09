@@ -1,3 +1,5 @@
+import { Collapse, Descriptions, Tag } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { Step } from '../shared/types';
 import type { RunPresentationInput, RunStepPresentation } from '../shared/run-presentation';
 import { flatten } from './flow-editing';
@@ -137,16 +139,14 @@ export function RunFileOperation({
         : '未取得完成记录，文件结果待核对';
   return (
     <section className="run-file-operation" aria-label="文件操作状态">
-      <dl>
-        <div>
-          <dt>{operation}状态</dt>
-          <dd>{status}</dd>
-        </div>
-        <div>
-          <dt>目标文件 · 启动时配置</dt>
-          <dd>{configured(node.name)}</dd>
-        </div>
-      </dl>
+      <Descriptions
+        layout="vertical"
+        column={{ xs: 1, sm: 2 }}
+        items={[
+          { key: 'status', label: `${operation}状态`, children: status },
+          { key: 'target', label: '目标文件 · 启动时配置', children: configured(node.name) },
+        ]}
+      />
       <p>
         {complete
           ? '步骤完成记录与文件副本、外部业务结果分别核对；已保存内容可在“输出与产物”查看。'
@@ -180,17 +180,14 @@ export default function RunStepDetails({
     <>
       <header>
         <h3>{kinds[node.type]?.label ?? node.type} · 启动时配置</h3>
-        <span>只读快照</span>
+        <Tag>只读快照</Tag>
       </header>
       <p>以下为本次运行保存的配置；变量引用保留原路径，不代表运行时解析值或动作回执。</p>
-      <dl>
-        {fields(node).map(([label, value]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd>{value}</dd>
-          </div>
-        ))}
-      </dl>
+      <Descriptions
+        layout="vertical"
+        column={{ xs: 1, sm: 2 }}
+        items={fields(node).map(([label, value]) => ({ key: label, label, children: value }))}
+      />
     </>
   ) : (
     <p>
@@ -232,11 +229,23 @@ export default function RunStepDetails({
         )}
       </div>
       {compact && (
-        <details className="run-snapshot-details">
-          <summary>启动时配置 · 只读快照</summary>
-          {step.instance && <p>节点实例：{step.instance}</p>}
-          {configuration}
-        </details>
+        <Collapse
+          className="run-snapshot-details"
+          items={[
+            {
+              key: 'configuration',
+              label: '启动时配置 · 只读快照',
+              forceRender: true,
+              onKeyDown: activateCollapseWithSpace,
+              children: (
+                <div className="feedback-body">
+                  {step.instance && <p>节点实例：{step.instance}</p>}
+                  {configuration}
+                </div>
+              ),
+            },
+          ]}
+        />
       )}
     </section>
   );

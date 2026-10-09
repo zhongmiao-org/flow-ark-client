@@ -1,4 +1,5 @@
-import { Alert, Tag } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
+import { Alert, Collapse, Tag } from 'antd';
 import { mcpReceiptColors } from './theme';
 import { mcpReceiptsForRun } from './mcp-run-presentation';
 import type { McpReceipt } from '../shared/mcp-run';
@@ -70,21 +71,45 @@ export default function McpRunReceipts({
               </pre>
             ))}
             {result?.structuredContent !== undefined && (
-              <details>
-                <summary>查看结构化结果</summary>
-                <pre tabIndex={0}>{JSON.stringify(result.structuredContent, null, 2)}</pre>
-              </details>
+              <Collapse
+                className="mcp-receipt-content"
+                items={[
+                  {
+                    key: 'evidence-0',
+                    label: '查看结构化结果',
+                    forceRender: true,
+                    onKeyDown: activateCollapseWithSpace,
+                    children: (
+                      <div className="feedback-body">
+                        <pre tabIndex={0}>{JSON.stringify(result.structuredContent, null, 2)}</pre>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
             )}
             {rich > 0 && (
               <p>另有 {rich} 项富内容，保留在完整回复中；未自动打开链接、下载资源或播放媒体。</p>
             )}
             {result && (
-              <details>
-                <summary>查看完整回执内容</summary>
-                <pre tabIndex={0} aria-label="完整回执内容">
-                  {JSON.stringify(result, null, 2)}
-                </pre>
-              </details>
+              <Collapse
+                className="mcp-receipt-content"
+                items={[
+                  {
+                    key: 'evidence-1',
+                    label: '查看完整回执内容',
+                    forceRender: true,
+                    onKeyDown: activateCollapseWithSpace,
+                    children: (
+                      <div className="feedback-body">
+                        <pre tabIndex={0} aria-label="完整回执内容">
+                          {JSON.stringify(result, null, 2)}
+                        </pre>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
             )}
             <p className="mcp-receipt-time">
               尝试时间：{new Date(receipt.attemptedAt).toLocaleString('zh-CN')}

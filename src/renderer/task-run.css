@@ -277,11 +277,6 @@
 .task-run-file p {
   margin: 8px 0;
 }
-.task-run-file summary {
-  cursor: pointer;
-  color: var(--fa-text-secondary);
-  font-size: 12px;
-}
 .task-run-file .ai-task-actions {
   margin-top: 16px;
 }
@@ -514,22 +509,6 @@
 .task-run-evidence > .ant-btn-primary {
   margin-right: -2px;
 }
-.task-run-record-info dl,
-.task-run-record-info p {
-  margin-top: 12px;
-}
-.task-run-evidence summary,
-.task-run-file-info summary {
-  cursor: pointer;
-  color: var(--fa-text-secondary);
-  font-size: 12px;
-}
-.task-run-file-info p,
-.task-run-file-info .ai-task-actions,
-.task-run-fixed-evidence > p,
-.task-run-fixed-evidence > section {
-  margin-top: 12px;
-}
 @container (max-width: 950px) {
   .task-run-live,
   .task-repair-columns,
@@ -622,13 +601,6 @@
     min-height: auto;
   }
 }
-.task-run-live-impact summary {
-  cursor: pointer;
-  color: var(--fa-action-primary);
-}
-.task-run-live-impact p {
-  margin-top: 8px;
-}
 
 .task-run-result .task-run-single-file {
   display: flex;
@@ -646,15 +618,6 @@
 .task-run-result .task-run-single-file p {
   margin: 0;
   line-height: 22px;
-}
-.task-run-next-help summary {
-  cursor: pointer;
-  color: var(--fa-text-secondary);
-  font-size: 12px;
-  line-height: 18px;
-}
-.task-run-next-help p {
-  margin-top: 12px;
 }
 .task-artifact-location {
   display: flex;

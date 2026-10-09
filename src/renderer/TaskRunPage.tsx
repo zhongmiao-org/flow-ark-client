@@ -1,5 +1,6 @@
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { runStateColors } from './theme';
-import { Select, Button, Tag, Badge } from 'antd';
+import { Select, Button, Tag, Badge, Collapse, Descriptions } from 'antd';
 import TaskRunFailure from './TaskRunFailure';
 import McpRunReceipts from './McpRunReceipts';
 import type { LearningStatus } from '../shared/learning';
@@ -292,15 +293,26 @@ export default function TaskRunPage({
             {a.size.toLocaleString('zh-CN')} 字节 · {artifactLabel(a)}
           </p>
           {!singleResultFile && (
-            <details>
-              <summary>保存位置</summary>
-              <p className="task-run-path">{a.path}</p>
-              <TaskArtifactLocation
-                key={JSON.stringify([a.artifactId, a.path, a.available, a.integrity])}
-                artifact={a}
-                reveal={reveal}
-              />
-            </details>
+            <Collapse
+              items={[
+                {
+                  key: 'evidence-0',
+                  label: '保存位置',
+                  forceRender: true,
+                  onKeyDown: activateCollapseWithSpace,
+                  children: (
+                    <div className="feedback-body">
+                      <p className="task-run-path">{a.path}</p>
+                      <TaskArtifactLocation
+                        key={JSON.stringify([a.artifactId, a.path, a.available, a.integrity])}
+                        artifact={a}
+                        reveal={reveal}
+                      />
+                    </div>
+                  ),
+                },
+              ]}
+            />
           )}
           {!singleResultFile && <div className="ai-task-actions">{previewButton(a)}</div>}
         </section>
@@ -347,10 +359,24 @@ export default function TaskRunPage({
         </Button>
       )}
       {model.success ? (
-        <details className="task-run-next-help">
-          <summary>修改与再次运行说明</summary>
-          <p>修改先保存为草稿。重新执行需确认版本和已完成操作，从第一个步骤创建新的运行。</p>
-        </details>
+        <Collapse
+          className="task-run-next-help"
+          items={[
+            {
+              key: 'evidence-1',
+              label: '修改与再次运行说明',
+              forceRender: true,
+              onKeyDown: activateCollapseWithSpace,
+              children: (
+                <div className="feedback-body">
+                  <p>
+                    修改先保存为草稿。重新执行需确认版本和已完成操作，从第一个步骤创建新的运行。
+                  </p>
+                </div>
+              ),
+            },
+          ]}
+        />
       ) : (
         <p>修改先保存为草稿。重新执行需确认版本和已完成操作，从第一个步骤创建新的运行。</p>
       )}
@@ -572,84 +598,190 @@ export default function TaskRunPage({
               <Button type="primary" onClick={() => setPage('overview')}>
                 返回结果摘要
               </Button>
-              <details className="task-run-record-info">
-                <summary>运行状态与耗时</summary>
-                <dl>
-                  <div>
-                    <dt>记录状态</dt>
-                    <dd>{runDisplayLabels[run.state as keyof typeof runDisplayLabels]}</dd>
-                  </div>
-                  <div>
-                    <dt>已记录耗时</dt>
-                    <dd>{model.view.elapsed.label}</dd>
-                  </div>
-                </dl>
-                <p>输出为已保存的脱敏内容；业务结果请结合回执核对。</p>
-              </details>
+              <Collapse
+                className="task-run-record-info"
+                items={[
+                  {
+                    key: 'evidence-2',
+                    label: '运行状态与耗时',
+                    forceRender: true,
+                    onKeyDown: activateCollapseWithSpace,
+                    children: (
+                      <div className="feedback-body">
+                        <Descriptions
+                          className="metadata-facts"
+                          bordered
+                          size="small"
+                          column={1}
+                          items={[
+                            {
+                              key: 'state',
+                              label: '记录状态',
+                              children:
+                                runDisplayLabels[run.state as keyof typeof runDisplayLabels],
+                            },
+                            {
+                              key: 'elapsed',
+                              label: '已记录耗时',
+                              children: model.view.elapsed.label,
+                            },
+                          ]}
+                        />
+                        <p>输出为已保存的脱敏内容；业务结果请结合回执核对。</p>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
               {selected && (
-                <details className="task-run-file-info">
-                  <summary>文件信息与保存位置</summary>
-                  {visiblePreview?.status === 'text' && (
-                    <p>已核对保存的副本 · 纯文本预览，已按当前脱敏规则处理</p>
-                  )}
-                  {item && (
-                    <>
-                      <p>
-                        {item.size.toLocaleString('zh-CN')} 字节 · {artifactLabel(item)}
-                      </p>
-                      <p className="task-run-path">{item.path}</p>
-                    </>
-                  )}
-                  <div className="ai-task-actions">
-                    {!previewError && !(loading && previewRetryOrigin.current) && (
-                      <Button
-                        disabled={
-                          loading || !item?.available || item.integrity !== 'verified' || undefined
-                        }
-                        onClick={(event) => retryPreview(event.currentTarget as HTMLButtonElement)}
-                      >
-                        重新读取预览
-                      </Button>
-                    )}
-                    {item && (
-                      <TaskArtifactLocation
-                        key={JSON.stringify([
-                          item.artifactId,
-                          item.path,
-                          item.available,
-                          item.integrity,
-                        ])}
-                        artifact={item}
-                        reveal={reveal}
-                      />
-                    )}
-                  </div>
-                </details>
-              )}
-              <details className="task-run-fixed-evidence">
-                <summary>固定版本与已记录影响</summary>
-                <p className="task-run-path">版本：{run.versionId}</p>
-                <p>
-                  {versionLabel}
-                  {run.task && ` · 任务修订 ${run.task.revision}`}
-                </p>
-                {run.rerun && <p>本次从第一步创建独立运行，原运行的结果与产物保持保留。</p>}
-                <p>{model.effectNote}</p>
-                {target}
-              </details>
-              <details>
-                <summary>步骤回执与脱敏日志</summary>
-                <RunEventLog
-                  key={run.id}
-                  runId={run.id}
-                  events={detail.events}
-                  snapshot={detail.snapshot}
+                <Collapse
+                  className="task-run-file-info"
+                  items={[
+                    {
+                      key: 'evidence-3',
+                      label: '文件信息与保存位置',
+                      forceRender: true,
+                      onKeyDown: activateCollapseWithSpace,
+                      children: (
+                        <div className="feedback-body">
+                          {visiblePreview?.status === 'text' && (
+                            <p>已核对保存的副本 · 纯文本预览，已按当前脱敏规则处理</p>
+                          )}
+                          {item && (
+                            <>
+                              <Descriptions
+                                className="metadata-facts"
+                                bordered
+                                size="small"
+                                column={1}
+                                items={[
+                                  {
+                                    key: 'size',
+                                    label: '文件大小',
+                                    children: `${item.size.toLocaleString('zh-CN')} 字节`,
+                                  },
+                                  {
+                                    key: 'integrity',
+                                    label: '副本状态',
+                                    children: artifactLabel(item),
+                                  },
+                                  {
+                                    key: 'path',
+                                    label: '保存位置',
+                                    children: <span className="task-run-path">{item.path}</span>,
+                                  },
+                                ]}
+                              />
+                            </>
+                          )}
+                          <div className="ai-task-actions">
+                            {!previewError && !(loading && previewRetryOrigin.current) && (
+                              <Button
+                                disabled={
+                                  loading ||
+                                  !item?.available ||
+                                  item.integrity !== 'verified' ||
+                                  undefined
+                                }
+                                onClick={(event) =>
+                                  retryPreview(event.currentTarget as HTMLButtonElement)
+                                }
+                              >
+                                重新读取预览
+                              </Button>
+                            )}
+                            {item && (
+                              <TaskArtifactLocation
+                                key={JSON.stringify([
+                                  item.artifactId,
+                                  item.path,
+                                  item.available,
+                                  item.integrity,
+                                ])}
+                                artifact={item}
+                                reveal={reveal}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      ),
+                    },
+                  ]}
                 />
-              </details>
-              <details className="task-run-outline">
-                <summary>查看本次执行步骤</summary>
-                {steps}
-              </details>
+              )}
+              <Collapse
+                className="task-run-fixed-evidence"
+                items={[
+                  {
+                    key: 'evidence-4',
+                    label: '固定版本与已记录影响',
+                    forceRender: true,
+                    onKeyDown: activateCollapseWithSpace,
+                    children: (
+                      <div className="feedback-body">
+                        <Descriptions
+                          className="metadata-facts"
+                          bordered
+                          size="small"
+                          column={1}
+                          items={[
+                            {
+                              key: 'version',
+                              label: '版本',
+                              children: <span className="task-run-path">{run.versionId}</span>,
+                            },
+                            { key: 'snapshot', label: '固定配置', children: versionLabel },
+                            ...(run.task
+                              ? [
+                                  {
+                                    key: 'revision',
+                                    label: '任务修订',
+                                    children: run.task.revision,
+                                  },
+                                ]
+                              : []),
+                          ]}
+                        />
+                        {run.rerun && <p>本次从第一步创建独立运行，原运行的结果与产物保持保留。</p>}
+                        <p>{model.effectNote}</p>
+                        {target}
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+              <Collapse
+                items={[
+                  {
+                    key: 'evidence-5',
+                    label: '步骤回执与脱敏日志',
+                    forceRender: true,
+                    onKeyDown: activateCollapseWithSpace,
+                    children: (
+                      <div className="feedback-body">
+                        <RunEventLog
+                          key={run.id}
+                          runId={run.id}
+                          events={detail.events}
+                          snapshot={detail.snapshot}
+                        />
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+              <Collapse
+                className="task-run-outline"
+                items={[
+                  {
+                    key: 'evidence-6',
+                    label: '查看本次执行步骤',
+                    forceRender: true,
+                    onKeyDown: activateCollapseWithSpace,
+                    children: <div className="feedback-body">{steps}</div>,
+                  },
+                ]}
+              />
             </section>
           </div>
         ) : model.success ? (
@@ -835,22 +967,41 @@ export default function TaskRunPage({
               </div>
               {controlFeedback}
               {compactLive && (
-                <details className="task-run-live-impact">
-                  <summary>已记录的操作与影响</summary>
-                  <p>{model.summary}</p>
-                  <p>{model.effectNote}</p>
-                  <p>尚未执行的清单包含未选择的分支；循环次数由运行时数据决定。</p>
-                </details>
+                <Collapse
+                  className="task-run-live-impact"
+                  items={[
+                    {
+                      key: 'evidence-7',
+                      label: '已记录的操作与影响',
+                      forceRender: true,
+                      onKeyDown: activateCollapseWithSpace,
+                      children: (
+                        <div className="feedback-body">
+                          <p>{model.summary}</p>
+                          <p>{model.effectNote}</p>
+                          <p>尚未执行的清单包含未选择的分支；循环次数由运行时数据决定。</p>
+                        </div>
+                      ),
+                    },
+                  ]}
+                />
               )}
             </section>
             {model.terminal || model.uncertain ? (
               <section className="ai-task-card task-run-next">
                 <h2>下一步可以这样做</h2>
                 {actions}
-                <details>
-                  <summary>查看执行步骤</summary>
-                  {steps}
-                </details>
+                <Collapse
+                  items={[
+                    {
+                      key: 'evidence-8',
+                      label: '查看执行步骤',
+                      forceRender: true,
+                      onKeyDown: activateCollapseWithSpace,
+                      children: <div className="feedback-body">{steps}</div>,
+                    },
+                  ]}
+                />
               </section>
             ) : (
               steps
