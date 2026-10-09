@@ -4,6 +4,8 @@ import type { ToolConnection } from '../shared/tool-connections';
 import type { McpArgumentReview } from '../shared/mcp-argument-review';
 import type { McpReceipt } from '../shared/mcp-run';
 import type { PlanningTask } from '../shared/planning';
+import type { DesktopReceipt } from '../shared/desktop-run';
+import type { DesktopPlanInspection } from '../shared/desktop-planning';
 import zhCN from 'antd/locale/zh_CN';
 import { useLayoutEffect, type ReactNode } from 'react';
 
@@ -78,6 +80,23 @@ export const planningTaskColors: Record<PlanningTask['status'], (typeof runState
   unsupported: 'warning',
   failed: 'error',
   cancelled: 'default',
+};
+
+export const desktopCapabilityColors: Record<
+  DesktopPlanInspection['replacement'],
+  (typeof runStateColors)[string]
+> = {
+  available: 'processing',
+  unsupported: 'warning',
+  unavailable: 'warning',
+};
+export const desktopReceiptColors: Record<
+  DesktopReceipt['status'],
+  (typeof runStateColors)[string]
+> = {
+  verified: 'success',
+  'not-written': 'default',
+  unknown: 'warning',
 };
 
 // Figma semantic tokens. All shared controls and workspace colours derive from this theme.

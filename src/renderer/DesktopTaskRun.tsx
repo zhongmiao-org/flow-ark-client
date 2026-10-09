@@ -1,5 +1,5 @@
 import { runStateColors } from './theme';
-import { Button, Tag, Badge } from 'antd';
+import { Alert, Button, Tag, Badge } from 'antd';
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { TaskRunIntent, TaskRunView, taskRunPresentation } from './task-run-presentation';
 import { runDisplayLabels } from '../shared/run-history';
@@ -82,9 +82,7 @@ export default function DesktopTaskRun({
         </div>
       </div>
       {error && (
-        <p className="alert error" role="alert">
-          {error}
-        </p>
+        <Alert className="workspace-feedback" type="error" role="alert" showIcon title={error} />
       )}
       <section className="ai-task-card desktop-task-run-panel" aria-label="应用执行与结果">
         <div className="desktop-task-run-status">
@@ -119,17 +117,11 @@ export default function DesktopTaskRun({
             </p>
           </div>
         )}
-        {model.view.statusNote && <p role="status">{model.view.statusNote}</p>}
-        {detail.fault && (
-          <p role="alert" className="field-error">
-            {detail.fault}
-          </p>
+        {model.view.statusNote && (
+          <Alert type="info" role="status" showIcon title={model.view.statusNote} />
         )}
-        {run.error && (
-          <p role="alert" className="field-error">
-            {run.error}
-          </p>
-        )}
+        {detail.fault && <Alert type="error" role="alert" showIcon title={detail.fault} />}
+        {run.error && <Alert type="error" role="alert" showIcon title={run.error} />}
         {!verified && (
           <div className="desktop-task-progress">
             <p>
@@ -139,7 +131,12 @@ export default function DesktopTaskRun({
                 : ` · ${model.unvisited.length} 个尚未执行`}
               。
             </p>
-            <p role={desktop.needsReview ? 'alert' : 'status'}>{desktop.effect}</p>
+            <Alert
+              type={desktop.needsReview ? 'warning' : 'info'}
+              role={desktop.needsReview ? 'alert' : 'status'}
+              showIcon
+              title={desktop.effect}
+            />
           </div>
         )}
         {verified && (
@@ -151,7 +148,7 @@ export default function DesktopTaskRun({
               </pre>
             </div>
             <div className="desktop-task-effect">
-              <p role="status">{desktop.effect}</p>
+              <Alert type="success" role="status" showIcon title={desktop.effect} />
               <p>结果仍在原文档中，请在文本编辑中查看并按需要保存。此处不会自动刷新后续编辑。</p>
             </div>
             {!model.success && (
