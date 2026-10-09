@@ -1,4 +1,5 @@
 import {
+  Card,
   ConfigProvider,
   Descriptions,
   Select,
@@ -441,106 +442,109 @@ export default function TemplateInstancePage({
     configuration: (
       <div data-instance-tab="configuration" hidden={tab !== 'configuration'}>
         <div className="template-instance-columns">
-          <section
-            className="ai-task-card template-instance-form template-shared-configuration"
-            aria-busy={busy}
-          >
-            <h2>共享配置</h2>
-            <ConfigProvider
-              componentDisabled={busy || undefined}
-              key={'config-' + generation + ':' + configurationGeneration}
-            >
-              <fieldset disabled={busy} className="template-entry-fields">
-                <label className="template-field">
-                  <span>实例名称</span>
-                  <Input
-                    status={!!nameError ? 'error' : undefined}
-                    value={instance.name}
-                    maxLength={100}
-                    aria-label="实例名称"
-                    aria-required="true"
-                    aria-invalid={!!nameError}
-                    aria-describedby={nameError ? 'template-instance-name-error' : undefined}
-                    data-value-invalid={!!nameError || undefined}
-                    onChange={(event) =>
-                      setDraft({ ...draft, instance: { ...instance, name: event.target.value } })
+          <section aria-busy={busy}>
+            <Card className="template-instance-form template-shared-configuration">
+              <h2>共享配置</h2>
+              <ConfigProvider
+                componentDisabled={busy}
+                key={'config-' + generation + ':' + configurationGeneration}
+              >
+                <fieldset disabled={busy} className="template-entry-fields">
+                  <label className="template-field">
+                    <span>实例名称</span>
+                    <Input
+                      status={!!nameError ? 'error' : undefined}
+                      value={instance.name}
+                      maxLength={100}
+                      aria-label="实例名称"
+                      aria-required="true"
+                      aria-invalid={!!nameError}
+                      aria-describedby={nameError ? 'template-instance-name-error' : undefined}
+                      data-value-invalid={!!nameError || undefined}
+                      onChange={(event) =>
+                        setDraft({ ...draft, instance: { ...instance, name: event.target.value } })
+                      }
+                    />
+                    {nameError && (
+                      <small className="template-field-error" id="template-instance-name-error">
+                        {nameError}
+                      </small>
+                    )}
+                  </label>
+                  <Field
+                    schema={draft.configurationSchema}
+                    value={instance.configuration}
+                    change={(configuration: unknown) =>
+                      setDraft({ ...draft, instance: { ...instance, configuration } })
                     }
                   />
-                  {nameError && (
-                    <small className="template-field-error" id="template-instance-name-error">
-                      {nameError}
-                    </small>
-                  )}
-                </label>
-                <Field
-                  schema={draft.configurationSchema}
-                  value={instance.configuration}
-                  change={(configuration: unknown) =>
-                    setDraft({ ...draft, instance: { ...instance, configuration } })
+                </fieldset>
+              </ConfigProvider>
+              <p className="ai-task-note">字段由模板提供；打开表单不会执行模板代码。</p>
+              {error && !leaving && (
+                <div
+                  className="template-configuration-error"
+                  role="alert"
+                  tabIndex={-1}
+                  ref={configurationError}
+                >
+                  <Alert
+                    type="error"
+                    role="presentation"
+                    showIcon
+                    title="配置保存未完成"
+                    description={
+                      <div className="feedback-body">
+                        <p>{error}</p>
+                        <p>当前输入仍保留，请核对后重试；不会自动开始或重放运行。</p>
+                      </div>
+                    }
+                  />
+                </div>
+              )}
+              <div className="ai-task-actions">
+                <Button
+                  type="primary"
+                  disabled={blocked || undefined}
+                  onClick={(event) =>
+                    void save('configuration', undefined, event.currentTarget as HTMLButtonElement)
                   }
-                />
-              </fieldset>
-            </ConfigProvider>
-            <p className="ai-task-note">字段由模板提供；打开表单不会执行模板代码。</p>
-            {error && !leaving && (
-              <div
-                className="template-configuration-error"
-                role="alert"
-                tabIndex={-1}
-                ref={configurationError}
-              >
-                <Alert
-                  type="error"
-                  role="presentation"
-                  showIcon
-                  title="配置保存未完成"
-                  description={
-                    <div className="feedback-body">
-                      <p>{error}</p>
-                      <p>当前输入仍保留，请核对后重试；不会自动开始或重放运行。</p>
-                    </div>
-                  }
-                />
+                >
+                  {busy ? '正在保存…' : error ? '重试保存配置' : '保存配置'}
+                </Button>
+                <Button disabled={busy || undefined} onClick={() => reset('configuration')}>
+                  取消更改
+                </Button>
               </div>
-            )}
-            <div className="ai-task-actions">
-              <Button
-                type="primary"
-                disabled={blocked || undefined}
-                onClick={(event) =>
-                  void save('configuration', undefined, event.currentTarget as HTMLButtonElement)
-                }
-              >
-                {busy ? '正在保存…' : error ? '重试保存配置' : '保存配置'}
-              </Button>
-              <Button disabled={busy || undefined} onClick={() => reset('configuration')}>
-                取消更改
-              </Button>
-            </div>
+            </Card>
           </section>
-          <aside className="ai-task-card template-instance-guide">
-            <h2>实例与入口</h2>
-            <p>共享配置适用于本实例所有入口；每次运行仍有独立的入口输入。</p>
-            <p>另一个实例保留自己的配置、状态、资源和授权。</p>
-            <Button disabled={busy || undefined} onClick={() => setOthers((value) => !value)}>
-              查看其他实例
-            </Button>
-            {others && (
-              <div className="template-other-instances">
-                {data.instances
-                  .filter((other) => other.id !== instance.id)
-                  .map((other) => (
-                    <Button
-                      key={other.id}
-                      disabled={busy || undefined}
-                      onClick={() => go(() => choose(other.id), `实例 · ${other.name}`)}
-                    >
-                      {other.name} · {other.id.slice(0, 8)}
-                    </Button>
-                  ))}
-                {data.instances.every((other) => other.id === instance.id) && <p>尚无其他实例。</p>}
-              </div>
-            )}
+          <aside>
+            <Card className="template-instance-guide">
+              <h2>实例与入口</h2>
+              <p>共享配置适用于本实例所有入口；每次运行仍有独立的入口输入。</p>
+              <p>另一个实例保留自己的配置、状态、资源和授权。</p>
+              <Button disabled={busy || undefined} onClick={() => setOthers((value) => !value)}>
+                查看其他实例
+              </Button>
+              {others && (
+                <div className="template-other-instances">
+                  {data.instances
+                    .filter((other) => other.id !== instance.id)
+                    .map((other) => (
+                      <Button
+                        key={other.id}
+                        disabled={busy || undefined}
+                        onClick={() => go(() => choose(other.id), `实例 · ${other.name}`)}
+                      >
+                        {other.name} · {other.id.slice(0, 8)}
+                      </Button>
+                    ))}
+                  {data.instances.every((other) => other.id === instance.id) && (
+                    <p>尚无其他实例。</p>
+                  )}
+                </div>
+              )}
+            </Card>
           </aside>
         </div>
       </div>
@@ -614,121 +618,125 @@ export default function TemplateInstancePage({
     source: (
       <div data-instance-tab="source" hidden={tab !== 'source'}>
         <div className="template-instance-columns">
-          <section className="ai-task-card template-instance-form">
-            <h2>来源与版本</h2>
-            <Descriptions
-              className="template-source-details"
-              column={1}
-              size="small"
-              items={[
-                { key: 'template', label: '模板', children: draft.manifest.name },
-                { key: 'version', label: '固定版本', children: draft.manifest.version },
-                { key: 'source', label: '来源声明', children: draft.manifest.source },
-                { key: 'author', label: '作者声明', children: draft.manifest.author },
-                { key: 'instance', label: '实例', children: instance.id },
-                { key: 'digest', label: '内容摘要', children: draft.manifest.contentDigest },
-              ]}
-            />
-            <div className="template-version-adoption">
+          <section>
+            <Card className="template-instance-form">
+              <h2>来源与版本</h2>
+              <Descriptions
+                className="template-source-details"
+                column={1}
+                size="small"
+                items={[
+                  { key: 'template', label: '模板', children: draft.manifest.name },
+                  { key: 'version', label: '固定版本', children: draft.manifest.version },
+                  { key: 'source', label: '来源声明', children: draft.manifest.source },
+                  { key: 'author', label: '作者声明', children: draft.manifest.author },
+                  { key: 'instance', label: '实例', children: instance.id },
+                  { key: 'digest', label: '内容摘要', children: draft.manifest.contentDigest },
+                ]}
+              />
+              <div className="template-version-adoption">
+                <Tag
+                  className="run-state-tag"
+                  variant="filled"
+                  color="default"
+                  icon={<Badge status="default" />}
+                >
+                  创建新实例
+                </Tag>
+                <h3>采用模板新版</h3>
+                <p>
+                  创建独立实例，复制符合新模板字段规则的已保存普通配置，资源和权限重新核对，不迁移业务状态。
+                </p>
+                {alternatives.length ? (
+                  <label className="ai-settings-field">
+                    已安装的其他版本
+                    <Select<string>
+                      aria-label="采用模板版本"
+                      disabled={blocked || !!createdVersion || undefined}
+                      value={version}
+                      onChange={(value) => setVersion(value)}
+                      options={[
+                        { value: '', label: '选择版本' },
+                        ...alternatives.map((item) => ({
+                          value: item.key,
+                          label: <>v{item.manifest.version}</>,
+                        })),
+                      ]}
+                    />
+                  </label>
+                ) : (
+                  <p>本机尚未安装其他版本。</p>
+                )}
+                {selectedVersion && !createdVersion && (
+                  <Alert
+                    className="template-version-summary"
+                    type="info"
+                    role="status"
+                    showIcon
+                    title={<>将创建 v{selectedVersion.manifest.version} 的独立实例</>}
+                    description={
+                      <div className="feedback-body">
+                        <p>
+                          当前实例继续使用 v{draft.manifest.version}
+                          。只复制已保存且符合目标字段规则的普通配置。
+                        </p>
+                        <p>新实例的资源绑定、动作权限和业务状态均需重新配置。</p>
+                      </div>
+                    }
+                  />
+                )}
+                {createdVersion && (
+                  <Alert
+                    className="template-version-summary"
+                    type="success"
+                    role="status"
+                    showIcon
+                    title={<>v{createdVersion.version} 的新实例已创建</>}
+                    description="暂时无法打开时，可以继续打开这个实例；原实例仍保留。"
+                  />
+                )}
+                <Button
+                  type="primary"
+                  disabled={blocked || (!createdVersion && !selectedVersion) || undefined}
+                  onClick={adoptVersion}
+                >
+                  {adopting
+                    ? createdVersion
+                      ? '正在打开…'
+                      : '正在创建…'
+                    : createdVersion
+                      ? '打开已创建实例'
+                      : '创建新版实例'}
+                </Button>
+              </div>
+            </Card>
+          </section>
+          <aside>
+            <Card className="template-instance-guide">
+              <h2>导出原模板定义</h2>
+              <p>保留原版本与身份；不包含配置值、密钥、本机路径或历史。</p>
+              <Button
+                type="primary"
+                disabled={blocked || !originalPackage || undefined}
+                onClick={() => {
+                  if (!blocked && originalPackage) exportTemplate(originalPackage, '来源与版本');
+                }}
+              >
+                导出 ZIP
+              </Button>
+              {!originalPackage && <p role="status">原模板包不可用，请先恢复此版本后再导出。</p>}
+              <h3>原实例保持原样</h3>
+              <p>新旧版本并存。模板更新不会覆盖本实例、计划或正在运行的快照。</p>
               <Tag
                 className="run-state-tag"
                 variant="filled"
-                color="default"
-                icon={<Badge status="default" />}
+                color="warning"
+                icon={<Badge status="warning" />}
               >
-                创建新实例
+                该版本仍被引用
               </Tag>
-              <h3>采用模板新版</h3>
-              <p>
-                创建独立实例，复制符合新模板字段规则的已保存普通配置，资源和权限重新核对，不迁移业务状态。
-              </p>
-              {alternatives.length ? (
-                <label className="ai-settings-field">
-                  已安装的其他版本
-                  <Select<string>
-                    aria-label="采用模板版本"
-                    disabled={blocked || !!createdVersion || undefined}
-                    value={version}
-                    onChange={(value) => setVersion(value)}
-                    options={[
-                      { value: '', label: '选择版本' },
-                      ...alternatives.map((item) => ({
-                        value: item.key,
-                        label: <>v{item.manifest.version}</>,
-                      })),
-                    ]}
-                  />
-                </label>
-              ) : (
-                <p>本机尚未安装其他版本。</p>
-              )}
-              {selectedVersion && !createdVersion && (
-                <Alert
-                  className="template-version-summary"
-                  type="info"
-                  role="status"
-                  showIcon
-                  title={<>将创建 v{selectedVersion.manifest.version} 的独立实例</>}
-                  description={
-                    <div className="feedback-body">
-                      <p>
-                        当前实例继续使用 v{draft.manifest.version}
-                        。只复制已保存且符合目标字段规则的普通配置。
-                      </p>
-                      <p>新实例的资源绑定、动作权限和业务状态均需重新配置。</p>
-                    </div>
-                  }
-                />
-              )}
-              {createdVersion && (
-                <Alert
-                  className="template-version-summary"
-                  type="success"
-                  role="status"
-                  showIcon
-                  title={<>v{createdVersion.version} 的新实例已创建</>}
-                  description="暂时无法打开时，可以继续打开这个实例；原实例仍保留。"
-                />
-              )}
-              <Button
-                type="primary"
-                disabled={blocked || (!createdVersion && !selectedVersion) || undefined}
-                onClick={adoptVersion}
-              >
-                {adopting
-                  ? createdVersion
-                    ? '正在打开…'
-                    : '正在创建…'
-                  : createdVersion
-                    ? '打开已创建实例'
-                    : '创建新版实例'}
-              </Button>
-            </div>
-          </section>
-          <aside className="ai-task-card template-instance-guide">
-            <h2>导出原模板定义</h2>
-            <p>保留原版本与身份；不包含配置值、密钥、本机路径或历史。</p>
-            <Button
-              type="primary"
-              disabled={blocked || !originalPackage || undefined}
-              onClick={() => {
-                if (!blocked && originalPackage) exportTemplate(originalPackage, '来源与版本');
-              }}
-            >
-              导出 ZIP
-            </Button>
-            {!originalPackage && <p role="status">原模板包不可用，请先恢复此版本后再导出。</p>}
-            <h3>原实例保持原样</h3>
-            <p>新旧版本并存。模板更新不会覆盖本实例、计划或正在运行的快照。</p>
-            <Tag
-              className="run-state-tag"
-              variant="filled"
-              color="warning"
-              icon={<Badge status="warning" />}
-            >
-              该版本仍被引用
-            </Tag>
-            <p>当前实例正在引用此包，不能卸载。</p>
+              <p>当前实例正在引用此包，不能卸载。</p>
+            </Card>
           </aside>
         </div>
       </div>
