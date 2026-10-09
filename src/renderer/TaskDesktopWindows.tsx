@@ -1,5 +1,6 @@
-import { Alert, Button, Checkbox, type AlertRef } from 'antd';
-import { useEffect, useRef } from 'react';
+import { Alert, Button, Checkbox, Collapse, type AlertRef } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
+import { useEffect, useRef, useState } from 'react';
 import useDesktopWindows from './useDesktopWindows';
 import DesktopSelectionPreview from './DesktopSelectionPreview';
 import './task-desktop-windows.css';
@@ -188,10 +189,21 @@ export function DesktopWindowList({
         title="窗口关闭、内容或选区变化后需要重新核对。刷新会清除本次查看选择，不会自动选择同名窗口。"
       />
       {ready && snapshot && (
-        <details className="task-desktop-observed">
-          <summary>窗口检查记录</summary>
-          <p>检查时间：{new Date(snapshot.observedAt).toLocaleTimeString('zh-CN')} · 本次观察</p>
-        </details>
+        <Collapse
+          items={[
+            {
+              key: 'observation',
+              label: '窗口检查记录',
+              forceRender: true,
+              onKeyDown: activateCollapseWithSpace,
+              children: (
+                <p>
+                  检查时间：{new Date(snapshot.observedAt).toLocaleTimeString('zh-CN')} · 本次观察
+                </p>
+              ),
+            },
+          ]}
+        />
       )}
     </div>
   );
@@ -213,6 +225,8 @@ export function DesktopWindowCapabilities({
   const { snapshot, loading } = state;
   const permission =
     state.expired || loading || state.settingsPending ? undefined : snapshot?.accessibility;
+  const [permissionOpen, setPermissionOpen] = useState(permission !== 'granted');
+  useEffect(() => setPermissionOpen(permission !== 'granted'), [permission]);
   return (
     <div className="task-desktop-capabilities">
       <h2>支持哪些操作</h2>
@@ -257,16 +271,29 @@ export function DesktopWindowCapabilities({
       />
       <DesktopSelectionPreview state={state} plan={plan} />
       {snapshot?.platform === 'macos' && (
-        <details className="task-desktop-permission-settings" open={permission !== 'granted'}>
-          <summary>系统权限与重新检查</summary>
-          <p>打开系统设置会清除这次窗口选择和选区预览。返回后重新检查，再选择任务对象。</p>
-          <Button
-            disabled={state.settingsPending || loading || undefined}
-            onClick={() => void state.openSettings()}
-          >
-            {state.settingsPending ? '正在打开…' : '查看系统辅助功能设置'}
-          </Button>
-        </details>
+        <Collapse
+          activeKey={permissionOpen ? ['permission'] : []}
+          onChange={(keys) => setPermissionOpen(keys.includes('permission'))}
+          items={[
+            {
+              key: 'permission',
+              label: '系统权限与重新检查',
+              forceRender: true,
+              onKeyDown: activateCollapseWithSpace,
+              children: (
+                <div className="feedback-body">
+                  <p>打开系统设置会清除这次窗口选择和选区预览。返回后重新检查，再选择任务对象。</p>
+                  <Button
+                    disabled={state.settingsPending || loading || undefined}
+                    onClick={() => void state.openSettings()}
+                  >
+                    {state.settingsPending ? '正在打开…' : '查看系统辅助功能设置'}
+                  </Button>
+                </div>
+              ),
+            },
+          ]}
+        />
       )}
       {!state.selected && (
         <Alert

@@ -1,4 +1,5 @@
-import { Alert, ConfigProvider, Select, Button, Checkbox } from 'antd';
+import { Alert, Collapse, ConfigProvider, Select, Button, Checkbox, Card, Flex, Tag } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useEffect, useRef, useState } from 'react';
 import type { PlanningTask } from '../shared/planning';
 import type { DesktopSelectionPreview, DesktopWindow } from '../shared/desktop-windows';
@@ -39,6 +40,7 @@ export default function DesktopTaskPlan({
   const [result, setResult] = useState<DesktopPlanResponse>();
   const [view, setView] = useState<'plan' | 'changes'>('plan');
   const [generationOpen, setGenerationOpen] = useState(true);
+  const [sourceOpen, setSourceOpen] = useState(true);
   const candidateButton = useRef<HTMLButtonElement>(null);
   const completedRequest = useRef<string | undefined>(undefined);
   const request = useRef<string | undefined>(undefined),
@@ -172,6 +174,8 @@ export default function DesktopTaskPlan({
   };
   const proposal = result?.result.kind === 'proposal' ? result.result : undefined;
   const unchanged = proposal?.replacement === selection.text;
+  const hasProposal = !!proposal;
+  useEffect(() => setSourceOpen(!hasProposal), [hasProposal, view]);
   useEffect(() => {
     if (proposal && view === 'plan') candidateButton.current?.focus();
   }, [proposal, view]);
@@ -227,10 +231,19 @@ export default function DesktopTaskPlan({
                   </>
                 }
               />
-              <details className="desktop-plan-source" open={!proposal}>
-                <summary>本次发送的原段落</summary>
-                {plainText('本次发送的原段落', selection.text)}
-              </details>
+              <Collapse
+                activeKey={sourceOpen ? ['source'] : []}
+                onChange={(keys) => setSourceOpen(keys.includes('source'))}
+                items={[
+                  {
+                    key: 'source',
+                    label: '本次发送的原段落',
+                    forceRender: true,
+                    onKeyDown: activateCollapseWithSpace,
+                    children: plainText('本次发送的原段落', selection.text),
+                  },
+                ]}
+              />
             </>
           )}
         </section>
@@ -276,7 +289,7 @@ export default function DesktopTaskPlan({
               <h2 ref={heading} tabIndex={-1}>
                 将执行的步骤
               </h2>
-              <ol className="desktop-plan-steps">
+              <Flex vertical gap={16} component="ol" className="desktop-plan-steps">
                 {[
                   ['读取选中段落', '已读取 · 发送前重新核对'],
                   [
@@ -291,14 +304,20 @@ export default function DesktopTaskPlan({
                   ['写入并回读', '采纳方案并确认试运行后，才修改原选区并回读'],
                 ].map(([title, description], i) => (
                   <li key={title}>
-                    <span>{i + 1}</span>
-                    <div>
-                      <h3>{title}</h3>
+                    <Card
+                      size="small"
+                      title={
+                        <h3>
+                          <Tag>{i + 1}</Tag>
+                          {title}
+                        </h3>
+                      }
+                    >
                       <p>{description}</p>
-                    </div>
+                    </Card>
                   </li>
                 ))}
-              </ol>
+              </Flex>
               <div className="ai-task-actions desktop-plan-actions">
                 {proposal && (
                   <Button ref={candidateButton} type="primary" onClick={() => setView('changes')}>
@@ -316,110 +335,119 @@ export default function DesktopTaskPlan({
                   description={proposal.summary}
                 />
               )}
-              <details
-                className="desktop-plan-generation"
-                open={generationOpen}
-                onToggle={(event) => setGenerationOpen(event.currentTarget.open)}
-              >
-                <summary>
-                  {proposal ? '重新生成或更换 AI 服务' : '核对文字与 AI 服务，生成改动预览'}
-                </summary>
-                <ConfigProvider componentDisabled={busy || undefined}>
-                  <fieldset className="ai-task-provider" disabled={busy}>
-                    <legend>本次 AI 服务</legend>
-                    <label>
-                      供应商
-                      <Select<string>
-                        value={provider}
-                        onChange={(value) => setProvider(value as AIProviderId)}
-                        options={[
-                          { value: 'deepseek', label: 'DeepSeek' },
-                          { value: 'openai-codex', label: 'OpenAI' },
-                        ]}
-                      />
-                    </label>
-                    <p>
-                      {loading
-                        ? '正在读取配置…'
-                        : configuration?.configured
-                          ? `模型：${configuration.model}`
-                          : '尚未配置这个服务'}
-                    </p>
-                    <Button
-                      htmlType="button"
-                      onClick={() => setConfigEpoch((x) => x + 1)}
-                      disabled={loading || undefined}
-                    >
-                      重新读取配置
-                    </Button>
-                  </fieldset>
-                </ConfigProvider>
-                {!loading && configuration?.operation && (
-                  <Alert
-                    type="info"
-                    role="status"
-                    showIcon
-                    title="AI 配置正在处理，请完成后重新读取。"
-                  />
-                )}
-                {!loading && !configuration?.configured && (
-                  <Button onClick={editDescription}>返回描述页配置 AI</Button>
-                )}
-                {selection.redacted && (
-                  <Alert
-                    type="warning"
-                    role="note"
-                    showIcon
-                    description={<>原段落包含已遮盖的信息，请返回缩小选区后重新读取。</>}
-                  />
-                )}
-                {!hasDescription && (
-                  <Alert
-                    type="info"
-                    role="status"
-                    showIcon
-                    description={<>尚未填写需求。请先点击“填写需求”，再核对文字与 AI 服务。</>}
-                  />
-                )}
-                <p className="desktop-plan-send-note">
-                  只发送左侧需求和原段落给 {name}
-                  ；不附带网页、工具、附件或其他文档。生成可能产生服务费用。
-                </p>
-                <Checkbox
-                  checked={reviewed}
-                  disabled={!ready || undefined}
-                  onChange={(e) => setReviewed(e.target.checked)}
-                  className="ai-task-checkbox"
-                >
-                  我已核对本次文字与模型，同意发送给 {name}
-                </Checkbox>
-                {busy ? (
-                  <Alert
-                    type="info"
-                    role="status"
-                    showIcon
-                    title="正在核对选区并生成预览，尚未修改文档。"
-                    description={
-                      <Button
-                        onClick={() => {
-                          cancel();
-                          setMessage('已取消生成，原文未修改。再次生成前请重新核对。');
-                        }}
-                      >
-                        取消生成
-                      </Button>
-                    }
-                  />
-                ) : (
-                  <Button
-                    type="primary"
-                    disabled={!ready || !reviewed || undefined}
-                    onClick={() => void generate()}
-                  >
-                    {result ? '重新生成改动预览' : '生成改动预览'}
-                  </Button>
-                )}
-              </details>
+              <Collapse
+                activeKey={generationOpen ? ['generation'] : []}
+                onChange={(keys) => setGenerationOpen(keys.includes('generation'))}
+                items={[
+                  {
+                    key: 'generation',
+                    forceRender: true,
+                    onKeyDown: activateCollapseWithSpace,
+                    label: proposal ? '重新生成或更换 AI 服务' : '核对文字与 AI 服务，生成改动预览',
+                    children: (
+                      <div className="desktop-plan-generation-content">
+                        <ConfigProvider componentDisabled={busy || undefined}>
+                          <fieldset className="ai-task-provider" disabled={busy}>
+                            <legend>本次 AI 服务</legend>
+                            <label>
+                              供应商
+                              <Select<string>
+                                value={provider}
+                                onChange={(value) => setProvider(value as AIProviderId)}
+                                options={[
+                                  { value: 'deepseek', label: 'DeepSeek' },
+                                  { value: 'openai-codex', label: 'OpenAI' },
+                                ]}
+                              />
+                            </label>
+                            <p>
+                              {loading
+                                ? '正在读取配置…'
+                                : configuration?.configured
+                                  ? `模型：${configuration.model}`
+                                  : '尚未配置这个服务'}
+                            </p>
+                            <Button
+                              htmlType="button"
+                              onClick={() => setConfigEpoch((x) => x + 1)}
+                              disabled={loading || undefined}
+                            >
+                              重新读取配置
+                            </Button>
+                          </fieldset>
+                        </ConfigProvider>
+                        {!loading && configuration?.operation && (
+                          <Alert
+                            type="info"
+                            role="status"
+                            showIcon
+                            title="AI 配置正在处理，请完成后重新读取。"
+                          />
+                        )}
+                        {!loading && !configuration?.configured && (
+                          <Button onClick={editDescription}>返回描述页配置 AI</Button>
+                        )}
+                        {selection.redacted && (
+                          <Alert
+                            type="warning"
+                            role="note"
+                            showIcon
+                            description={<>原段落包含已遮盖的信息，请返回缩小选区后重新读取。</>}
+                          />
+                        )}
+                        {!hasDescription && (
+                          <Alert
+                            type="info"
+                            role="status"
+                            showIcon
+                            description={
+                              <>尚未填写需求。请先点击“填写需求”，再核对文字与 AI 服务。</>
+                            }
+                          />
+                        )}
+                        <p className="desktop-plan-send-note">
+                          只发送左侧需求和原段落给 {name}
+                          ；不附带网页、工具、附件或其他文档。生成可能产生服务费用。
+                        </p>
+                        <Checkbox
+                          checked={reviewed}
+                          disabled={!ready || undefined}
+                          onChange={(e) => setReviewed(e.target.checked)}
+                          className="ai-task-checkbox"
+                        >
+                          我已核对本次文字与模型，同意发送给 {name}
+                        </Checkbox>
+                        {busy ? (
+                          <Alert
+                            type="info"
+                            role="status"
+                            showIcon
+                            title="正在核对选区并生成预览，尚未修改文档。"
+                            description={
+                              <Button
+                                onClick={() => {
+                                  cancel();
+                                  setMessage('已取消生成，原文未修改。再次生成前请重新核对。');
+                                }}
+                              >
+                                取消生成
+                              </Button>
+                            }
+                          />
+                        ) : (
+                          <Button
+                            type="primary"
+                            disabled={!ready || !reviewed || undefined}
+                            onClick={() => void generate()}
+                          >
+                            {result ? '重新生成改动预览' : '生成改动预览'}
+                          </Button>
+                        )}
+                      </div>
+                    ),
+                  },
+                ]}
+              />
               {result?.result.kind === 'unsupported' && (
                 <Alert
                   type="warning"
