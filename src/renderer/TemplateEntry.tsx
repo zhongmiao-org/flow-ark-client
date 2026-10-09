@@ -74,6 +74,8 @@ export default function TemplateEntry({
   const inputFields = useRef<HTMLFieldSetElement>(null);
   const [invalidInput, setInvalidInput] = useState(false);
   const [inputSaved, setInputSaved] = useState(0);
+  const focusedInputSave = useRef(0);
+  const readinessNotice = useRef<HTMLDivElement>(null);
   const [createdRun, setCreatedRun] = useState<{ id: string; origin: TemplateEntryOrigin }>();
   const createdRunNotice = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
@@ -95,13 +97,28 @@ export default function TemplateEntry({
     return () => observer.disconnect();
   }, []);
   useLayoutEffect(() => {
-    if (!inputSaved || !active) return;
-    const card = inputFields.current?.parentElement;
-    const target =
-      card?.querySelector<HTMLElement>('.template-entry-run:not(:disabled)') ??
-      card?.querySelector<HTMLElement>('select[aria-label="操作入口"]');
-    target?.focus({ preventScroll: true });
-  }, [inputSaved]);
+    if (
+      !inputSaved ||
+      focusedInputSave.current === inputSaved ||
+      !active ||
+      busy ||
+      checking ||
+      sourceChecking
+    )
+      return;
+    // The parent starts a source refresh in its layout effect after a save.
+    // Wait for that commit; cleanup cancels focus while the controls are replaced.
+    const frame = requestAnimationFrame(() => {
+      const card = inputFields.current?.parentElement;
+      const target =
+        card?.querySelector<HTMLElement>('.template-entry-run:not(:disabled)') ??
+        card?.querySelector<HTMLElement>('.template-entry-configure:not(:disabled)') ??
+        readinessNotice.current;
+      target?.focus();
+      focusedInputSave.current = inputSaved;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [inputSaved, active, busy, checking, sourceChecking]);
   const aiResources = detail.manifest.resources.filter(
     (r) => r.kind === 'ai' && entry.resources.includes(r.id),
   );
@@ -418,7 +435,13 @@ export default function TemplateEntry({
             {!!aiResources.length && (
               <p className="ai-task-note">进入设置不会运行此入口；返回后保留本页输入与所选入口。</p>
             )}
-            <div className="template-entry-readiness" aria-label="入口准备情况" role="status">
+            <div
+              className="template-entry-readiness"
+              aria-label="入口准备情况"
+              role="status"
+              ref={readinessNotice}
+              tabIndex={-1}
+            >
               <span
                 className={
                   'ai-config-status ' +
@@ -461,7 +484,11 @@ export default function TemplateEntry({
             )}
             <div className="ai-task-actions">
               {!reading && needsResourceConfiguration && (
-                <button className="primary" disabled={blocked || !!readError} onClick={configure}>
+                <button
+                  className="primary template-entry-configure"
+                  disabled={blocked || !!readError}
+                  onClick={configure}
+                >
                   配置资源与动作授权
                 </button>
               )}

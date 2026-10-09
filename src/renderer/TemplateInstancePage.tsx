@@ -632,6 +632,7 @@ export default function TemplateInstancePage({
               <TemplateEntry
                 inspection={entryDetail}
                 openDetail={(id) => {
+                  setError('');
                   setEntryId(id);
                   setEntryDetail(true);
                 }}
@@ -641,7 +642,10 @@ export default function TemplateInstancePage({
                 saved={saved}
                 browsers={data.browsers}
                 entryId={entry.id}
-                selectEntry={setEntryId}
+                selectEntry={(id) => {
+                  setError('');
+                  setEntryId(id);
+                }}
                 showRun={showRun}
                 schedule={schedule}
                 savedAt={
