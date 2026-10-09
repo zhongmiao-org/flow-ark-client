@@ -1177,17 +1177,14 @@
   color: var(--fa-text-secondary);
 }
 .task-brief-text-context {
-  border-top: 1px solid var(--fa-border-default);
   min-width: 0;
 }
-.task-brief-text-context > summary {
-  padding: 8px 0;
+.task-brief-text-label {
+  min-width: 0;
   overflow-wrap: anywhere;
-  cursor: pointer;
 }
-.task-brief-text-context > summary small {
-  color: var(--fa-text-secondary);
-  margin-left: 8px;
+.task-brief-text-label small {
+  display: block;
 }
 .task-brief-text-summary {
   display: block;
@@ -1197,17 +1194,10 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.ai-task-page .task-brief-text-context > fieldset.ai-task-context {
+.ai-task-page .task-brief-text-context fieldset.ai-task-context {
   border: 0;
   border-radius: 0;
-  padding: 4px 0 12px;
-}
-.task-brief-format > summary {
-  cursor: pointer;
-  color: var(--fa-text-secondary);
-}
-.task-brief-format > p {
-  margin-top: 8px;
+  padding: 0;
 }
 .task-attachment-preview h2 {
   overflow-wrap: anywhere;
@@ -1246,7 +1236,7 @@
   min-height: 28px;
   flex: 0 0 auto;
 }
-.task-brief-explainer > div {
+.task-brief-explainer > div:not(.ant-alert) {
   min-height: 104px;
   border: 1px solid var(--fa-border-default);
   border-radius: 12px;
@@ -1255,7 +1245,7 @@
   flex-direction: column;
   gap: 8px;
 }
-.task-brief-explainer > div:first-of-type {
+.task-brief-explainer > div:not(.ant-alert):first-of-type {
   min-height: 124px;
   background: var(--fa-action-subtle);
 }
@@ -1263,10 +1253,6 @@
   margin: 0;
   font-size: 18px;
   line-height: 28px;
-}
-.task-brief-explainer > .ai-task-note {
-  min-height: 72px;
-  color: var(--fa-action-primary);
 }
 .task-attachment-preview {
   margin-bottom: 24px;
