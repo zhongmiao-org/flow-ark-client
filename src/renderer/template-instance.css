@@ -205,19 +205,7 @@
   flex-direction: column;
   gap: 8px;
 }
-.template-source-details {
-  display: grid;
-  grid-template-columns: 88px minmax(0, 1fr);
-  gap: 12px;
-  margin: 0;
-  font-size: 13px;
-  line-height: 22px;
-}
-.template-source-details dt {
-  color: var(--fa-text-secondary);
-}
-.template-source-details dd {
-  margin: 0;
+.template-source-details .ant-descriptions-item-content {
   overflow-wrap: anywhere;
 }
 @container (max-width: 1000px) {

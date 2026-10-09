@@ -153,17 +153,9 @@
   width: 100%;
 }
 .template-catalog-facts {
-  display: grid;
-  gap: 16px;
   margin: 20px 0;
 }
-.template-catalog-facts dt {
-  color: var(--fa-text-secondary);
-  font-size: 12px;
-  margin-bottom: 6px;
-}
-.template-catalog-facts dd {
-  margin: 0;
+.template-catalog-facts .ant-descriptions-item-content {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -214,14 +206,6 @@
 }
 .template-manifest-details {
   margin-top: 24px;
-  padding: 16px;
-  border-radius: var(--fa-radius-8);
-  background: var(--fa-bg-subtle);
-}
-.template-manifest-details summary {
-  cursor: pointer;
-  font-size: 12px;
-  color: var(--fa-text-secondary);
 }
 .template-manifest-details li {
   overflow-wrap: anywhere;
@@ -375,14 +359,6 @@
 .template-manifest > h2 {
   font-size: 28px;
   line-height: 40px;
-}
-.template-manifest > .template-catalog-facts dd {
-  padding: 6px;
-  min-height: 32px;
-  font-size: 13px;
-  line-height: 20px;
-  background: var(--fa-bg-canvas);
-  border-radius: var(--fa-radius-8);
 }
 @container (max-width: 860px) {
   .template-catalog-layout > .template-catalog-card {

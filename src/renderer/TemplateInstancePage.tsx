@@ -1,4 +1,16 @@
-import { ConfigProvider, Select, Button, Input, Modal, Flex, Tag, Badge, Alert, Tabs } from 'antd';
+import {
+  ConfigProvider,
+  Descriptions,
+  Select,
+  Button,
+  Input,
+  Modal,
+  Flex,
+  Tag,
+  Badge,
+  Alert,
+  Tabs,
+} from 'antd';
 import { usePageBack } from './use-page-back';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
 import {
@@ -604,20 +616,19 @@ export default function TemplateInstancePage({
         <div className="template-instance-columns">
           <section className="ai-task-card template-instance-form">
             <h2>来源与版本</h2>
-            <dl className="template-source-details">
-              <dt>模板</dt>
-              <dd>{draft.manifest.name}</dd>
-              <dt>固定版本</dt>
-              <dd>{draft.manifest.version}</dd>
-              <dt>来源声明</dt>
-              <dd>{draft.manifest.source}</dd>
-              <dt>作者声明</dt>
-              <dd>{draft.manifest.author}</dd>
-              <dt>实例</dt>
-              <dd>{instance.id}</dd>
-              <dt>内容摘要</dt>
-              <dd>{draft.manifest.contentDigest}</dd>
-            </dl>
+            <Descriptions
+              className="template-source-details"
+              column={1}
+              size="small"
+              items={[
+                { key: 'template', label: '模板', children: draft.manifest.name },
+                { key: 'version', label: '固定版本', children: draft.manifest.version },
+                { key: 'source', label: '来源声明', children: draft.manifest.source },
+                { key: 'author', label: '作者声明', children: draft.manifest.author },
+                { key: 'instance', label: '实例', children: instance.id },
+                { key: 'digest', label: '内容摘要', children: draft.manifest.contentDigest },
+              ]}
+            />
             <div className="template-version-adoption">
               <Tag
                 className="run-state-tag"
