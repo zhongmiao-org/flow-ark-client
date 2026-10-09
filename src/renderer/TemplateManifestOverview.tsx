@@ -23,6 +23,8 @@ export const capabilityLabel = (name: string) =>
       loop: '串行循环',
       value: '数据赋值',
       assert: '结果核对',
+      state: '实例状态读写',
+      effect: '动作去重与回执',
       'template-sdk-v1': '模板 SDK',
     }) as Record<string, string>
   )[name] ?? name;
