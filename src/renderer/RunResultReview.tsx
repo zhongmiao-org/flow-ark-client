@@ -11,6 +11,8 @@ export default function RunResultReview({ runId }: { runId: string }) {
   const trigger = useRef<HTMLButtonElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const feedback = useRef<HTMLParagraphElement>(null);
+  const refresh = useRef<HTMLButtonElement>(null);
+  const refreshFocus = useRef(false);
   const scroll = useRef(0);
   useEffect(
     () => () => {
@@ -24,6 +26,12 @@ export default function RunResultReview({ runId }: { runId: string }) {
   useEffect(() => {
     if (error) feedback.current?.focus();
   }, [error]);
+  useEffect(() => {
+    if (busy || !refreshFocus.current) return;
+    refreshFocus.current = false;
+    if (open && !error && document.activeElement === document.body)
+      refresh.current?.focus({ preventScroll: true });
+  }, [busy, open, error]);
   const read = async () => {
     const request = ++sequence.current;
     setBusy(true);
@@ -49,6 +57,7 @@ export default function RunResultReview({ runId }: { runId: string }) {
   };
   const close = () => {
     sequence.current++;
+    refreshFocus.current = false;
     setOpen(false);
     setBusy(false);
     setError('');
@@ -103,7 +112,14 @@ export default function RunResultReview({ runId }: { runId: string }) {
             </>
           )}
           <div className="ai-task-actions">
-            <button disabled={busy} onClick={() => void read()}>
+            <button
+              ref={refresh}
+              disabled={busy}
+              onClick={() => {
+                refreshFocus.current = document.activeElement === refresh.current;
+                void read();
+              }}
+            >
               {error ? '重试读取' : '刷新记录'}
             </button>
             <button onClick={close}>返回已保存结果</button>

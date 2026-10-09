@@ -193,12 +193,7 @@ export class Store {
       for (const a of this.list<any>('template-effect'))
         if (a.state === 'submitting') {
           this.put('template-effect', a.id, { ...a, state: 'unknown' });
-          this.attention(
-            'unknown-result',
-            '操作结果待核对',
-            { effectId: a.id, runId: a.runId },
-            'unknown:' + a.id,
-          );
+          this.templateEffectAttention(a, '上次运行中断，操作结果未确认。');
         }
       for (const receipt of this.list<any>('desktop-effect'))
         if (receipt.status === 'unknown')
@@ -209,6 +204,14 @@ export class Store {
             'desktop:' + receipt.runId + ':' + receipt.nodeId,
           );
     });
+  }
+  templateEffectAttention(effect: { id: string; runId: string }, reason: string) {
+    return this.attention(
+      'unknown-result',
+      '操作结果待核对',
+      { effectId: effect.id, runId: effect.runId, reason },
+      'unknown:' + effect.id,
+    );
   }
   attention(kind: string, title: string, detail: any, key: string) {
     const old = this.list<any>('attention').find((a) => a.dedupeKey === key);
