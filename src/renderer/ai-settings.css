@@ -28,19 +28,23 @@
   grid-template-columns: minmax(0, 728fr) minmax(0, 400fr);
   gap: 24px;
 }
-.ai-settings-columns > .ai-task-card {
+.ai-settings-columns > section > .ai-provider-card,
+.ai-settings-columns > section > .ai-connection-card {
   min-height: 688px;
 }
-.ai-settings-columns.is-general-settings > .ai-task-card {
+.ai-settings-columns.is-general-settings > section > .ai-provider-card,
+.ai-settings-columns.is-general-settings > section > .ai-connection-card {
   min-height: 656px;
 }
-.ai-settings-columns .ai-provider-card {
-  padding: 28px;
+.ai-provider-card > .ant-card-body,
+.ai-connection-card > .ant-card-body,
+.ai-read-card > .ant-card-body,
+.ai-remove-confirmation > .ant-card-body,
+.ai-source-unavailable-card > .ant-card-body {
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-}
-.ai-settings-columns .ai-connection-card {
-  padding: 24px;
-  gap: 16px;
+  min-width: 0;
 }
 .ai-provider-heading {
   display: flex;
@@ -49,10 +53,10 @@
   min-height: 40px;
 }
 /* Figma 8:19310: an unavailable return source must offer an explicit destination. */
-.ai-settings-page .ai-task-card.ai-source-unavailable-card {
+.ai-source-unavailable-card {
   min-height: 350px;
-  padding: 28px;
-  gap: 16px;
+}
+.ai-source-unavailable-card > .ant-card-body {
   align-items: flex-start;
 }
 .ai-source-unavailable-card h2 {
@@ -66,13 +70,8 @@
 .ai-source-unavailable-origin {
   font-size: 13px;
 }
-.ai-settings-page .ai-task-card.ai-source-unavailable-card .ai-task-actions button {
+.ai-source-unavailable-card .ai-task-actions button {
   min-width: 180px;
-}
-@container (max-width: 760px) {
-  .ai-settings-page .ai-task-card.ai-source-unavailable-card {
-    padding: 24px;
-  }
 }
 .ai-settings-field {
   display: flex;
@@ -126,7 +125,7 @@
   width: 100%;
   min-width: 0;
 }
-.ai-settings-page .ai-provider-card > .ai-provider-scope {
+.ai-settings-page .ai-provider-card > .ant-card-body > .ai-provider-scope {
   margin: 0;
   color: var(--fa-action-primary);
   min-height: 72px;
@@ -142,15 +141,14 @@
   min-width: 180px;
 }
 .ai-saved-key {
+  min-height: 136px;
+}
+.ai-saved-key > .ant-card-body {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-  min-height: 136px;
-  padding: 20px;
 }
-.ai-saved-key > div {
+.ai-saved-key > .ant-card-body > div {
   display: flex;
   align-items: center;
   gap: 16px;
@@ -173,7 +171,7 @@
 .ai-settings-page .ai-task-actions button:first-child {
   min-width: 172px;
 }
-.ai-connection-card > p {
+.ai-connection-card > .ant-card-body > p {
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
@@ -254,8 +252,10 @@
   .ai-settings-columns {
     grid-template-columns: minmax(0, 1fr);
   }
-  .ai-settings-columns > .ai-task-card,
-  .ai-settings-columns.is-general-settings > .ai-task-card {
+  .ai-settings-columns > section > .ai-provider-card,
+  .ai-settings-columns > section > .ai-connection-card,
+  .ai-settings-columns.is-general-settings > section > .ai-provider-card,
+  .ai-settings-columns.is-general-settings > section > .ai-connection-card {
     min-height: 0;
   }
   .ai-source-title {
@@ -269,6 +269,7 @@
   font-weight: 500;
 }
 .ai-provider-card.is-editing
+  > .ant-card-body
   > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper).ai-settings-field {
   min-height: 82px;
   gap: 8px;
@@ -280,8 +281,6 @@
 .ai-settings-page .ai-remove-confirmation {
   width: min(728px, 100%);
   min-height: 440px;
-  padding: 32px;
-  gap: 16px;
 }
 .ai-remove-confirmation h2 {
   font-size: 28px;
@@ -297,9 +296,6 @@
   min-height: 40px;
 }
 @container (max-width: 600px) {
-  .ai-settings-page .ai-remove-confirmation {
-    padding: 24px;
-  }
   .ai-remove-confirmation .ai-task-actions > button {
     width: 100%;
     min-width: 0;
@@ -307,23 +303,24 @@
 }
 
 .ai-provider-card.is-editing
+  > .ant-card-body
   > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper).ai-settings-field {
   line-height: 20px;
 }
-.ai-settings-page .ai-provider-card > p,
-.ai-settings-page .ai-connection-card > p {
+.ai-settings-page .ai-provider-card > .ant-card-body > p,
+.ai-settings-page .ai-connection-card > .ant-card-body > p {
   color: var(--fa-text-secondary);
   font-size: 14px;
   line-height: 22px;
 }
-.ai-settings-page .ai-connection-card > h2,
-.ai-settings-page .ai-connection-card > h3 {
+.ai-settings-page .ai-connection-card > .ant-card-body > h2,
+.ai-settings-page .ai-connection-card > .ant-card-body > h3 {
   font-size: 18px;
   line-height: 28px;
   font-weight: 500;
 }
 
-.ai-settings-page .ai-connection-card > .ai-connection-next {
+.ai-settings-page .ai-connection-card > .ant-card-body > .ai-connection-next {
   border-left: 2px solid var(--fa-border-default);
   padding-left: 12px;
 }

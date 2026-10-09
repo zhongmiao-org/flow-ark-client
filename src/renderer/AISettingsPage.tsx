@@ -10,6 +10,7 @@ import {
   Badge,
   Alert,
   Menu,
+  Card,
 } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { usePageBack } from './use-page-back';
@@ -609,29 +610,31 @@ export default function AISettingsPage({
               </p>
             </div>
           </div>
-          <article className="ai-task-card ai-source-unavailable-card">
-            <Tag
-              className="run-state-tag"
-              variant="filled"
-              color="warning"
-              icon={<Badge status="warning" />}
-            >
-              无法返回原来源
-            </Tag>
-            <h2>{name} 设置仍保留</h2>
-            <p>此次返回未修改已保存的 AI 配置，也不会自动打开另一个实例。</p>
-            <p className="ai-source-unavailable-origin">原来源：{entry.source?.title}</p>
-            <div className="ai-task-actions">
-              <Button type="primary" onClick={templateLibrary}>
-                返回模板库
-              </Button>
-              <Button onClick={stayInSettings}>留在 AI 设置</Button>
-              {sourceFailure === 'unavailable' && (
-                <Button disabled={checkingSource || undefined} onClick={() => void checkSource()}>
-                  {checkingSource ? '正在核对来源…' : '重新核对来源'}
+          <article>
+            <Card className="ai-source-unavailable-card">
+              <Tag
+                className="run-state-tag"
+                variant="filled"
+                color="warning"
+                icon={<Badge status="warning" />}
+              >
+                无法返回原来源
+              </Tag>
+              <h2>{name} 设置仍保留</h2>
+              <p>此次返回未修改已保存的 AI 配置，也不会自动打开另一个实例。</p>
+              <p className="ai-source-unavailable-origin">原来源：{entry.source?.title}</p>
+              <div className="ai-task-actions">
+                <Button type="primary" onClick={templateLibrary}>
+                  返回模板库
                 </Button>
-              )}
-            </div>
+                <Button onClick={stayInSettings}>留在 AI 设置</Button>
+                {sourceFailure === 'unavailable' && (
+                  <Button disabled={checkingSource || undefined} onClick={() => void checkSource()}>
+                    {checkingSource ? '正在核对来源…' : '重新核对来源'}
+                  </Button>
+                )}
+              </div>
+            </Card>
           </article>
         </section>
       </div>
@@ -758,479 +761,486 @@ export default function AISettingsPage({
           </div>
         )}
         {removing ? (
-          <section
-            className="ai-task-card ai-remove-confirmation"
-            aria-labelledby="ai-remove-title"
-            aria-busy={busy === 'remove'}
-          >
-            <Tag
-              className="run-state-tag"
-              variant="filled"
-              color="warning"
-              icon={<Badge status="warning" />}
-            >
-              移除本机配置
-            </Tag>
-            <h2 id="ai-remove-title" ref={removeHeading} tabIndex={-1}>
-              移除 {name} 配置？
-            </h2>
-            <p>
-              将移除这台 Mac 保存的 Key{state?.tail ? `（尾四位 ${state.tail}）` : ''}。
-              依赖此资源的入口下次运行前需要重新配置。
-            </p>
-            <p>
-              不会撤销 {name} 平台上的 Key，也不会删除任务或运行历史。
-              正在使用该资源时需等待运行结束。
-            </p>
-            {state?.inUse && <p className="ai-task-note">资源正在使用，暂时不能移除配置。</p>}
-            {error && (
-              <Alert
-                className="ai-settings-feedback"
-                type="error"
-                showIcon
-                title="移除未完成"
-                description={error}
-              />
-            )}
-            <div className="ai-task-actions">
-              <Button ref={cancelRemove} disabled={busy === 'remove' || undefined} onClick={stay}>
-                取消
-              </Button>
-              <Button
-                color="danger"
+          <section aria-labelledby="ai-remove-title" aria-busy={busy === 'remove'}>
+            <Card className="ai-remove-confirmation">
+              <Tag
+                className="run-state-tag"
                 variant="filled"
-                disabled={!!busy || !state || state.inUse || undefined}
-                onClick={() => void remove()}
+                color="warning"
+                icon={<Badge status="warning" />}
               >
-                {busy === 'remove' ? '正在移除…' : error ? '重试移除' : '确认移除'}
-              </Button>
-            </div>
+                移除本机配置
+              </Tag>
+              <h2 id="ai-remove-title" ref={removeHeading} tabIndex={-1}>
+                移除 {name} 配置？
+              </h2>
+              <p>
+                将移除这台 Mac 保存的 Key{state?.tail ? `（尾四位 ${state.tail}）` : ''}。
+                依赖此资源的入口下次运行前需要重新配置。
+              </p>
+              <p>
+                不会撤销 {name} 平台上的 Key，也不会删除任务或运行历史。
+                正在使用该资源时需等待运行结束。
+              </p>
+              {state?.inUse && <p className="ai-task-note">资源正在使用，暂时不能移除配置。</p>}
+              {error && (
+                <Alert
+                  className="ai-settings-feedback"
+                  type="error"
+                  showIcon
+                  title="移除未完成"
+                  description={error}
+                />
+              )}
+              <div className="ai-task-actions">
+                <Button ref={cancelRemove} disabled={busy === 'remove' || undefined} onClick={stay}>
+                  取消
+                </Button>
+                <Button
+                  color="danger"
+                  variant="filled"
+                  disabled={!!busy || !state || state.inUse || undefined}
+                  onClick={() => void remove()}
+                >
+                  {busy === 'remove' ? '正在移除…' : error ? '重试移除' : '确认移除'}
+                </Button>
+              </div>
+            </Card>
           </section>
         ) : !state ? (
-          <section className="ai-task-card ai-read-card" aria-busy={reading}>
-            <p role="status">
-              {reading ? `正在读取 ${name} 本机配置…` : '配置读取未完成，未将错误当作未配置。'}
-            </p>
-            {readError && (
-              <div className="ai-settings-feedback" role="alert" ref={readFailure} tabIndex={-1}>
-                <Alert
-                  type="error"
-                  role="presentation"
-                  showIcon
-                  title="配置读取未完成"
-                  description={readError}
-                />
-              </div>
-            )}
-            <Button disabled={reading || undefined} onClick={() => readConfiguration.current?.()}>
-              {reading ? '正在读取…' : '重新读取'}
-            </Button>
+          <section aria-busy={reading}>
+            <Card className="ai-read-card">
+              <p role="status">
+                {reading ? `正在读取 ${name} 本机配置…` : '配置读取未完成，未将错误当作未配置。'}
+              </p>
+              {readError && (
+                <div className="ai-settings-feedback" role="alert" ref={readFailure} tabIndex={-1}>
+                  <Alert
+                    type="error"
+                    role="presentation"
+                    showIcon
+                    title="配置读取未完成"
+                    description={readError}
+                  />
+                </div>
+              )}
+              <Button disabled={reading || undefined} onClick={() => readConfiguration.current?.()}>
+                {reading ? '正在读取…' : '重新读取'}
+              </Button>
+            </Card>
           </section>
         ) : (
           <div className={`ai-settings-columns${!entry.source ? ' is-general-settings' : ''}`}>
-            <section
-              className={`ai-task-card ai-provider-card${editing ? ' is-editing' : ''}${!entry.source ? ' is-general-provider' : ''}`}
-            >
-              {!entry.source ? (
-                <label className="ai-settings-field ai-provider-selection">
-                  服务商
-                  <Select<string>
-                    value={provider}
-                    disabled={!!busy || testing || undefined}
-                    onChange={(value) => {
-                      const next = value as AIProviderId;
-                      if (next !== provider)
-                        go(() => selectProvider(next), `${providerName(next)} 配置`);
-                    }}
-                    options={[
-                      { value: 'openai-codex', label: 'Codex / OpenAI API' },
-                      { value: 'deepseek', label: 'DeepSeek' },
-                    ]}
-                  />
-                </label>
-              ) : (
-                <>
-                  <div className="ai-provider-heading">
-                    <h2>{name}</h2>
-                    <Tag className="run-state-tag" variant="filled">
-                      {provider === 'deepseek' ? '首版接入' : 'Responses API'}
-                    </Tag>
-                  </div>
-                  <div className="ai-settings-field">
-                    <span>服务地址</span>
-                    <p>
-                      {provider === 'deepseek'
-                        ? 'https://api.deepseek.com'
-                        : 'https://api.openai.com/v1/responses'}
-                    </p>
-                  </div>
-                </>
-              )}
-              {editing ? (
-                <>
-                  <label className="ai-settings-field">
-                    模型 ID
-                    <Input
-                      status={invalid === 'model' ? 'error' : undefined}
-                      ref={(instance) => {
-                        modelInput.current = instance?.input ?? null;
+            <section>
+              <Card
+                className={`ai-provider-card${editing ? ' is-editing' : ''}${!entry.source ? ' is-general-provider' : ''}`}
+              >
+                {!entry.source ? (
+                  <label className="ai-settings-field ai-provider-selection">
+                    服务商
+                    <Select<string>
+                      value={provider}
+                      disabled={!!busy || testing || undefined}
+                      onChange={(value) => {
+                        const next = value as AIProviderId;
+                        if (next !== provider)
+                          go(() => selectProvider(next), `${providerName(next)} 配置`);
                       }}
-                      aria-invalid={invalid === 'model'}
-                      aria-describedby={invalid === 'model' ? 'ai-settings-error' : undefined}
-                      value={model}
-                      placeholder="填写账号可用的模型 ID"
-                      disabled={!!busy || testing || state.inUse || undefined}
-                      onChange={(e) => {
-                        setModel(e.target.value);
-                        setDirty(true);
-                        if (invalid === 'model') {
-                          setInvalid(undefined);
-                          setError('');
-                        }
-                      }}
+                      options={[
+                        { value: 'openai-codex', label: 'Codex / OpenAI API' },
+                        { value: 'deepseek', label: 'DeepSeek' },
+                      ]}
                     />
                   </label>
-                  {state.configured && (
-                    <div className="ai-settings-field">
-                      <span>当前已保存的 Key</span>
-                      <p>{mask(state)} · 已配置</p>
-                    </div>
-                  )}
-                  <label className="ai-settings-field">
-                    {state.configured ? '新的 API Key（可选）' : 'API Key'}
-                    <Input
-                      status={invalid === 'key' ? 'error' : undefined}
-                      ref={(instance) => {
-                        keyInput.current = instance?.input ?? null;
-                      }}
-                      aria-invalid={invalid === 'key'}
-                      aria-describedby={invalid === 'key' ? 'ai-settings-error' : undefined}
-                      type="password"
-                      autoComplete="off"
-                      spellCheck={false}
-                      value={key}
-                      placeholder={
-                        state.configured ? '输入新 Key，留空则保留原 Key' : `输入 ${name} API Key`
-                      }
-                      disabled={!!busy || testing || state.inUse || undefined}
-                      onChange={(e) => {
-                        setKey(e.target.value);
-                        setDirty(true);
-                        if (invalid === 'key') {
-                          setInvalid(undefined);
-                          setError('');
-                        }
-                      }}
-                    />
-                  </label>
-                  <p>
-                    {state.configured
-                      ? '保存成功前继续保留原 Key；留空不覆盖原配置。'
-                      : key
-                        ? '已输入，尚未保存。粘贴内容不会在其他页面回显。'
-                        : '尚未保存密钥。配置完成后，这里会显示掩码和尾四位。'}
-                  </p>
-                  {error && (
-                    <div
-                      className="ai-settings-feedback"
-                      id="ai-settings-error"
-                      role="alert"
-                      ref={formError}
-                      tabIndex={-1}
-                    >
-                      <Alert
-                        type="error"
-                        role="presentation"
-                        showIcon
-                        title="保存未完成"
-                        description={error}
-                      />
-                    </div>
-                  )}
-                  <div className="ai-task-actions">
-                    <Button
-                      type="primary"
-                      disabled={
-                        !!busy ||
-                        testing ||
-                        state.inUse ||
-                        (!dirty && state.configured) ||
-                        undefined
-                      }
-                      onClick={() => void save()}
-                    >
-                      {busy === 'save' ? '正在保存…' : '保存配置'}
-                    </Button>
-                    <Button
-                      disabled={!!busy || undefined}
-                      onClick={fromTemplate ? returnToSource : cancelEdit}
-                    >
-                      {fromTemplate ? `取消并返回${templateLabel}` : '取消'}
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="ai-settings-field">
-                    <span>模型 ID</span>
-                    <Button
-                      className="ai-model-value"
-                      variant="filled"
-                      size="small"
-                      disabled={!!busy || testing || state.inUse || undefined}
-                      aria-label="修改模型 ID"
-                      onClick={() => beginEdit('model')}
-                    >
-                      <span className="ai-model-name">{state.model}</span>
-                      <span>修改</span>
-                    </Button>
-                  </div>
-                  <div className="ai-saved-key">
-                    <div>
-                      API Key{' '}
-                      <Tag
-                        className="run-state-tag"
-                        variant="filled"
-                        color="success"
-                        icon={<Badge status="success" />}
-                      >
-                        已配置
+                ) : (
+                  <>
+                    <div className="ai-provider-heading">
+                      <h2>{name}</h2>
+                      <Tag className="run-state-tag" variant="filled">
+                        {provider === 'deepseek' ? '首版接入' : 'Responses API'}
                       </Tag>
                     </div>
-                    <strong>{mask(state)}</strong>
-                    <small>{state.tail ? '仅显示尾四位' : '已有受保护 Key · 无尾号元数据'}</small>
-                  </div>
-                  <div className="ai-task-actions">
-                    <Button
-                      disabled={!!busy || testing || state.inUse || undefined}
-                      onClick={() => beginEdit('key')}
-                    >
-                      替换 Key
-                    </Button>
-                    {!entry.source && (
-                      <Button
-                        ref={removeButton}
-                        color="danger"
-                        variant="filled"
-                        disabled={!!busy || testing || state.inUse || undefined}
-                        onClick={() => {
-                          setError('');
-                          setRemoving(true);
+                    <div className="ai-settings-field">
+                      <span>服务地址</span>
+                      <p>
+                        {provider === 'deepseek'
+                          ? 'https://api.deepseek.com'
+                          : 'https://api.openai.com/v1/responses'}
+                      </p>
+                    </div>
+                  </>
+                )}
+                {editing ? (
+                  <>
+                    <label className="ai-settings-field">
+                      模型 ID
+                      <Input
+                        status={invalid === 'model' ? 'error' : undefined}
+                        ref={(instance) => {
+                          modelInput.current = instance?.input ?? null;
                         }}
-                      >
-                        移除配置
-                      </Button>
+                        aria-invalid={invalid === 'model'}
+                        aria-describedby={invalid === 'model' ? 'ai-settings-error' : undefined}
+                        value={model}
+                        placeholder="填写账号可用的模型 ID"
+                        disabled={!!busy || testing || state.inUse || undefined}
+                        onChange={(e) => {
+                          setModel(e.target.value);
+                          setDirty(true);
+                          if (invalid === 'model') {
+                            setInvalid(undefined);
+                            setError('');
+                          }
+                        }}
+                      />
+                    </label>
+                    {state.configured && (
+                      <div className="ai-settings-field">
+                        <span>当前已保存的 Key</span>
+                        <p>{mask(state)} · 已配置</p>
+                      </div>
                     )}
-                  </div>
-                  <p>重新打开设置仍显示脱敏标识；完整 Key 不提供回显或复制。</p>
-                </>
-              )}
-              {!entry.source ? (
-                <>
-                  <p className="ai-task-note ai-provider-scope">
-                    这里配置通用接口。业务提示词和输出规则由模板提供。
+                    <label className="ai-settings-field">
+                      {state.configured ? '新的 API Key（可选）' : 'API Key'}
+                      <Input
+                        status={invalid === 'key' ? 'error' : undefined}
+                        ref={(instance) => {
+                          keyInput.current = instance?.input ?? null;
+                        }}
+                        aria-invalid={invalid === 'key'}
+                        aria-describedby={invalid === 'key' ? 'ai-settings-error' : undefined}
+                        type="password"
+                        autoComplete="off"
+                        spellCheck={false}
+                        value={key}
+                        placeholder={
+                          state.configured ? '输入新 Key，留空则保留原 Key' : `输入 ${name} API Key`
+                        }
+                        disabled={!!busy || testing || state.inUse || undefined}
+                        onChange={(e) => {
+                          setKey(e.target.value);
+                          setDirty(true);
+                          if (invalid === 'key') {
+                            setInvalid(undefined);
+                            setError('');
+                          }
+                        }}
+                      />
+                    </label>
+                    <p>
+                      {state.configured
+                        ? '保存成功前继续保留原 Key；留空不覆盖原配置。'
+                        : key
+                          ? '已输入，尚未保存。粘贴内容不会在其他页面回显。'
+                          : '尚未保存密钥。配置完成后，这里会显示掩码和尾四位。'}
+                    </p>
+                    {error && (
+                      <div
+                        className="ai-settings-feedback"
+                        id="ai-settings-error"
+                        role="alert"
+                        ref={formError}
+                        tabIndex={-1}
+                      >
+                        <Alert
+                          type="error"
+                          role="presentation"
+                          showIcon
+                          title="保存未完成"
+                          description={error}
+                        />
+                      </div>
+                    )}
+                    <div className="ai-task-actions">
+                      <Button
+                        type="primary"
+                        disabled={
+                          !!busy ||
+                          testing ||
+                          state.inUse ||
+                          (!dirty && state.configured) ||
+                          undefined
+                        }
+                        onClick={() => void save()}
+                      >
+                        {busy === 'save' ? '正在保存…' : '保存配置'}
+                      </Button>
+                      <Button
+                        disabled={!!busy || undefined}
+                        onClick={fromTemplate ? returnToSource : cancelEdit}
+                      >
+                        {fromTemplate ? `取消并返回${templateLabel}` : '取消'}
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="ai-settings-field">
+                      <span>模型 ID</span>
+                      <Button
+                        className="ai-model-value"
+                        variant="filled"
+                        size="small"
+                        disabled={!!busy || testing || state.inUse || undefined}
+                        aria-label="修改模型 ID"
+                        onClick={() => beginEdit('model')}
+                      >
+                        <span className="ai-model-name">{state.model}</span>
+                        <span>修改</span>
+                      </Button>
+                    </div>
+                    <Card size="small" className="ai-saved-key">
+                      <div>
+                        API Key{' '}
+                        <Tag
+                          className="run-state-tag"
+                          variant="filled"
+                          color="success"
+                          icon={<Badge status="success" />}
+                        >
+                          已配置
+                        </Tag>
+                      </div>
+                      <strong>{mask(state)}</strong>
+                      <small>{state.tail ? '仅显示尾四位' : '已有受保护 Key · 无尾号元数据'}</small>
+                    </Card>
+                    <div className="ai-task-actions">
+                      <Button
+                        disabled={!!busy || testing || state.inUse || undefined}
+                        onClick={() => beginEdit('key')}
+                      >
+                        替换 Key
+                      </Button>
+                      {!entry.source && (
+                        <Button
+                          ref={removeButton}
+                          color="danger"
+                          variant="filled"
+                          disabled={!!busy || testing || state.inUse || undefined}
+                          onClick={() => {
+                            setError('');
+                            setRemoving(true);
+                          }}
+                        >
+                          移除配置
+                        </Button>
+                      )}
+                    </div>
+                    <p>重新打开设置仍显示脱敏标识；完整 Key 不提供回显或复制。</p>
+                  </>
+                )}
+                {!entry.source ? (
+                  <>
+                    <p className="ai-task-note ai-provider-scope">
+                      这里配置通用接口。业务提示词和输出规则由模板提供。
+                    </p>
+                    <Collapse
+                      className="ai-provider-description"
+                      size="small"
+                      items={[
+                        {
+                          key: 'provider',
+                          label: '服务地址与模型说明',
+                          forceRender: true,
+                          onKeyDown: activateCollapseWithSpace,
+                          children: (
+                            <>
+                              <p>
+                                {provider === 'deepseek'
+                                  ? 'https://api.deepseek.com'
+                                  : 'https://api.openai.com/v1/responses'}
+                              </p>
+                              <p>
+                                两家服务分别保存模型与受保护的
+                                Key，不会自动替换。模型按当前账号可用项填写，修改模型或替换 Key
+                                后需要重新测试连接。
+                              </p>
+                            </>
+                          ),
+                        },
+                      ]}
+                    />
+                  </>
+                ) : (
+                  <small>模型按当前账号可用项填写。修改模型或替换 Key 后，需要重新测试连接。</small>
+                )}
+                {state.inUse && (
+                  <p className="ai-task-note">
+                    该资源正在被运行或方案生成使用，结束后才能更改或移除配置。
                   </p>
+                )}
+              </Card>
+            </section>
+            <section>
+              <Card className="ai-connection-card">
+                <h2 ref={resultHeading} tabIndex={-1}>
+                  连接状态
+                </h2>
+                <Tag
+                  role="status"
+                  className="run-state-tag"
+                  variant="filled"
+                  color={tone}
+                  icon={<Badge status={tone} />}
+                >
+                  {summary}
+                </Tag>
+                <Alert
+                  className="ai-connection-feedback"
+                  type={tone === 'default' || tone === 'processing' ? 'info' : tone}
+                  role={tone === 'error' ? 'alert' : 'status'}
+                  showIcon
+                  title={
+                    testing
+                      ? `正在请求 ${name}`
+                      : dirty
+                        ? '保存后再测试'
+                        : !state.configured
+                          ? '先保存模型与 Key'
+                          : state.test?.status === 'passed'
+                            ? `${name} 可正常响应`
+                            : state.test?.status === 'failed'
+                              ? (failure?.title ?? '连接测试未通过')
+                              : state.test?.status === 'cancelled'
+                                ? '测试已取消'
+                                : state.test?.status === 'interrupted'
+                                  ? '上次测试未完成'
+                                  : '配置已安全保存'
+                  }
+                  description={
+                    <div>
+                      {!testing &&
+                        !dirty &&
+                        state.configured &&
+                        state.test?.status === 'passed' && (
+                          <>
+                            最近测试：
+                            {Number.isFinite(Date.parse(state.test.at)) ? (
+                              <time dateTime={state.test.at}>
+                                {new Date(state.test.at).toLocaleString('zh-CN')}
+                              </time>
+                            ) : (
+                              '未取得有效时间'
+                            )}
+                            <br />
+                            模型：{state.test.model ?? '未记录'}
+                            <br />
+                          </>
+                        )}
+                      {testing
+                        ? '正在测试当前已保存的模型和 Key。'
+                        : dirty
+                          ? '密钥保存与连接测试是两个独立操作。'
+                          : !state.configured
+                            ? '仅需要 AI 的入口受影响，其他流程仍可使用。'
+                            : state.test?.status === 'passed'
+                              ? '此结果对应当前已保存配置；任务输出仍需按其要求单独核对。'
+                              : state.test?.status === 'failed' && state.test.code
+                                ? aiErrorMessage[state.test.code]
+                                : state.test?.status === 'cancelled' ||
+                                    state.test?.status === 'interrupted'
+                                  ? '配置仍然保留，尚未取得本次完整验证结果。没有自动重试。'
+                                  : '尚未发起连接测试。保存成功不代表密钥或模型可用。'}
+                    </div>
+                  }
+                />
+                {!testing && !dirty && state.configured && failure && (
+                  <p className="ai-connection-next">{failure.next}</p>
+                )}
+                {state.test && !testing && (
                   <Collapse
-                    className="ai-provider-description"
+                    className="ai-test-details"
                     size="small"
                     items={[
                       {
-                        key: 'provider',
-                        label: '服务地址与模型说明',
+                        key: 'test',
+                        label: '查看本次连接详情',
                         forceRender: true,
                         onKeyDown: activateCollapseWithSpace,
                         children: (
                           <>
-                            <p>
-                              {provider === 'deepseek'
-                                ? 'https://api.deepseek.com'
-                                : 'https://api.openai.com/v1/responses'}
-                            </p>
-                            <p>
-                              两家服务分别保存模型与受保护的
-                              Key，不会自动替换。模型按当前账号可用项填写，修改模型或替换 Key
-                              后需要重新测试连接。
-                            </p>
+                            {dirty && <p>以下记录对应已保存配置，不包含尚未保存的输入。</p>}
+                            <Descriptions
+                              layout="vertical"
+                              column={1}
+                              size="small"
+                              items={[
+                                { key: 'provider', label: '服务', children: name },
+                                {
+                                  key: 'model',
+                                  label: '测试模型',
+                                  children: state.test.model ?? '未记录',
+                                },
+                                {
+                                  key: 'time',
+                                  label: '更新时间',
+                                  children: Number.isFinite(Date.parse(state.test.at))
+                                    ? new Date(state.test.at).toLocaleString('zh-CN')
+                                    : '未取得有效时间',
+                                },
+                                {
+                                  key: 'request',
+                                  label: '本地请求标识',
+                                  children: state.test.requestId,
+                                },
+                              ]}
+                            />
+                            <p>标识仅用于区分本地测试记录，不是服务商的请求回执。</p>
                           </>
                         ),
                       },
                     ]}
                   />
-                </>
-              ) : (
-                <small>模型按当前账号可用项填写。修改模型或替换 Key 后，需要重新测试连接。</small>
-              )}
-              {state.inUse && (
-                <p className="ai-task-note">
-                  该资源正在被运行或方案生成使用，结束后才能更改或移除配置。
-                </p>
-              )}
-            </section>
-            <section className="ai-task-card ai-connection-card">
-              <h2 ref={resultHeading} tabIndex={-1}>
-                连接状态
-              </h2>
-              <Tag
-                role="status"
-                className="run-state-tag"
-                variant="filled"
-                color={tone}
-                icon={<Badge status={tone} />}
-              >
-                {summary}
-              </Tag>
-              <Alert
-                className="ai-connection-feedback"
-                type={tone === 'default' || tone === 'processing' ? 'info' : tone}
-                role={tone === 'error' ? 'alert' : 'status'}
-                showIcon
-                title={
-                  testing
-                    ? `正在请求 ${name}`
-                    : dirty
-                      ? '保存后再测试'
-                      : !state.configured
-                        ? '先保存模型与 Key'
-                        : state.test?.status === 'passed'
-                          ? `${name} 可正常响应`
-                          : state.test?.status === 'failed'
-                            ? (failure?.title ?? '连接测试未通过')
-                            : state.test?.status === 'cancelled'
-                              ? '测试已取消'
-                              : state.test?.status === 'interrupted'
-                                ? '上次测试未完成'
-                                : '配置已安全保存'
-                }
-                description={
-                  <div>
-                    {!testing && !dirty && state.configured && state.test?.status === 'passed' && (
-                      <>
-                        最近测试：
-                        {Number.isFinite(Date.parse(state.test.at)) ? (
-                          <time dateTime={state.test.at}>
-                            {new Date(state.test.at).toLocaleString('zh-CN')}
-                          </time>
-                        ) : (
-                          '未取得有效时间'
-                        )}
-                        <br />
-                        模型：{state.test.model ?? '未记录'}
-                        <br />
-                      </>
-                    )}
-                    {testing
-                      ? '正在测试当前已保存的模型和 Key。'
-                      : dirty
-                        ? '密钥保存与连接测试是两个独立操作。'
-                        : !state.configured
-                          ? '仅需要 AI 的入口受影响，其他流程仍可使用。'
-                          : state.test?.status === 'passed'
-                            ? '此结果对应当前已保存配置；任务输出仍需按其要求单独核对。'
-                            : state.test?.status === 'failed' && state.test.code
-                              ? aiErrorMessage[state.test.code]
-                              : state.test?.status === 'cancelled' ||
-                                  state.test?.status === 'interrupted'
-                                ? '配置仍然保留，尚未取得本次完整验证结果。没有自动重试。'
-                                : '尚未发起连接测试。保存成功不代表密钥或模型可用。'}
-                  </div>
-                }
-              />
-              {!testing && !dirty && state.configured && failure && (
-                <p className="ai-connection-next">{failure.next}</p>
-              )}
-              {state.test && !testing && (
-                <Collapse
-                  className="ai-test-details"
-                  size="small"
-                  items={[
-                    {
-                      key: 'test',
-                      label: '查看本次连接详情',
-                      forceRender: true,
-                      onKeyDown: activateCollapseWithSpace,
-                      children: (
-                        <>
-                          {dirty && <p>以下记录对应已保存配置，不包含尚未保存的输入。</p>}
-                          <Descriptions
-                            layout="vertical"
-                            column={1}
-                            size="small"
-                            items={[
-                              { key: 'provider', label: '服务', children: name },
-                              {
-                                key: 'model',
-                                label: '测试模型',
-                                children: state.test.model ?? '未记录',
-                              },
-                              {
-                                key: 'time',
-                                label: '更新时间',
-                                children: Number.isFinite(Date.parse(state.test.at))
-                                  ? new Date(state.test.at).toLocaleString('zh-CN')
-                                  : '未取得有效时间',
-                              },
-                              {
-                                key: 'request',
-                                label: '本地请求标识',
-                                children: state.test.requestId,
-                              },
-                            ]}
-                          />
-                          <p>标识仅用于区分本地测试记录，不是服务商的请求回执。</p>
-                        </>
-                      ),
-                    },
-                  ]}
-                />
-              )}
-              {state.configured && !editing && (
-                <>
-                  <Button
-                    type="primary"
-                    disabled={cancelling || (!!busy && !testing) || undefined}
-                    onClick={() =>
-                      void (testing ? cancelTest() : test()).catch((e) => setError(message(e)))
-                    }
-                  >
-                    {testing
-                      ? cancelling
-                        ? '正在取消测试…'
-                        : '取消测试'
-                      : state.test?.status === 'passed'
-                        ? '重新测试'
-                        : '测试连接'}
-                  </Button>
-                  {!testing && repairField && (
+                )}
+                {state.configured && !editing && (
+                  <>
                     <Button
-                      disabled={!!busy || state.inUse || undefined}
-                      onClick={() => beginEdit(repairField)}
+                      type="primary"
+                      disabled={cancelling || (!!busy && !testing) || undefined}
+                      onClick={() =>
+                        void (testing ? cancelTest() : test()).catch((e) => setError(message(e)))
+                      }
                     >
-                      {repairField === 'key' ? '替换 Key' : '修改模型 ID'}
+                      {testing
+                        ? cancelling
+                          ? '正在取消测试…'
+                          : '取消测试'
+                        : state.test?.status === 'passed'
+                          ? '重新测试'
+                          : '测试连接'}
                     </Button>
-                  )}
-                  <small>
-                    测试只发送固定测试文本，可能产生少量 API 费用。不会发送任务或模板业务数据。
-                  </small>
-                </>
-              )}
-              <Button
-                className="ai-source-return"
-                disabled={checkingSource || undefined}
-                onClick={returnToSource}
-              >
-                {checkingSource
-                  ? '正在核对来源…'
-                  : fromTemplate
-                    ? '返回' + sourceLabel
-                    : entry.source
-                      ? '继续原任务'
-                      : '返回本地设置'}
-              </Button>
-              <small>
-                {fromTemplate
-                  ? '业务提示、上下文与输出规则由模板定义。返回后保留本次输入。'
-                  : '本页配置仅用于已授权的任务。'}
-              </small>
+                    {!testing && repairField && (
+                      <Button
+                        disabled={!!busy || state.inUse || undefined}
+                        onClick={() => beginEdit(repairField)}
+                      >
+                        {repairField === 'key' ? '替换 Key' : '修改模型 ID'}
+                      </Button>
+                    )}
+                    <small>
+                      测试只发送固定测试文本，可能产生少量 API 费用。不会发送任务或模板业务数据。
+                    </small>
+                  </>
+                )}
+                <Button
+                  className="ai-source-return"
+                  disabled={checkingSource || undefined}
+                  onClick={returnToSource}
+                >
+                  {checkingSource
+                    ? '正在核对来源…'
+                    : fromTemplate
+                      ? '返回' + sourceLabel
+                      : entry.source
+                        ? '继续原任务'
+                        : '返回本地设置'}
+                </Button>
+                <small>
+                  {fromTemplate
+                    ? '业务提示、上下文与输出规则由模板定义。返回后保留本次输入。'
+                    : '本页配置仅用于已授权的任务。'}
+                </small>
+              </Card>
             </section>
           </div>
         )}
