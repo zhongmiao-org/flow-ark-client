@@ -42,20 +42,21 @@
 .script-editor-toolbar > button {
   min-width: 144px;
 }
-.script-editor-code {
-  display: block;
+.script-editor-card {
+  min-height: 708px;
+  height: 100%;
 }
 .script-editor-code .monaco-editor {
   border-radius: 8px;
   overflow: hidden;
 }
-.script-editor-settings {
+.script-editor-settings > .script-editor-card > .ant-card-body {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 12px;
 }
-.script-editor-settings > h2,
+.script-editor-settings > .script-editor-card > .ant-card-body > h2,
 .script-preview h2 {
   margin: 0;
   font-size: 18px;
@@ -110,14 +111,7 @@
   border-radius: 8px;
   background: var(--fa-bg-canvas);
 }
-.script-editor-note {
-  border: 1px solid var(--fa-border-default);
-  border-radius: 8px;
-  padding: 16px;
-  background: var(--fa-action-subtle);
-  color: var(--fa-action-primary);
-}
-.script-editor-settings > .ant-btn-primary {
+.script-editor-settings > .script-editor-card > .ant-card-body > .ant-btn-primary {
   margin-top: 0;
 }
 .script-syntax {
@@ -133,7 +127,8 @@
   .script-editor-columns {
     grid-template-columns: minmax(0, 1fr);
   }
-  .script-editor-columns > * {
+  .script-editor-columns > *,
+  .script-editor-card {
     min-height: 0;
   }
 }
@@ -150,7 +145,7 @@
   border: 1px solid var(--fa-border-default);
   background: var(--fa-bg-surface);
 }
-.script-editor-settings > .field-error {
+.script-editor-settings > .script-editor-card > .ant-card-body > .field-error {
   margin: 0;
   font-size: 12px;
   overflow-wrap: anywhere;

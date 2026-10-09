@@ -1,4 +1,6 @@
 import {
+  Alert,
+  Card,
   ConfigProvider,
   Select,
   Button,
@@ -262,9 +264,9 @@ export default function ExcelMappingPage({
         <p>写入普通工作簿 · 修改草稿，不自动修改源文件</p>
       </header>
       {error && (
-        <p className="alert error" role="alert" data-excel-error tabIndex={-1}>
-          {error}
-        </p>
+        <div role="alert" data-excel-error tabIndex={-1}>
+          <Alert type="error" role="presentation" showIcon description={error} />
+        </div>
       )}
       <ConfigProvider componentDisabled={busy}>
         <fieldset disabled={busy}>
@@ -309,264 +311,272 @@ export default function ExcelMappingPage({
             </label>
           </div>
           <div className="excel-mapping-columns">
-            <section className="ai-task-card excel-mapping-list" aria-label="字段映射配置">
-              <h2>字段映射</h2>
-              <div className="excel-mapping-rows">
-                {node.mappings.map((item, i) => (
-                  <div className="excel-mapping-row" key={i} data-mapping={i}>
-                    <label>
-                      来源
-                      <Input
-                        aria-label={`映射 ${i + 1} 来源`}
-                        {...fieldProps('source', i)}
-                        status={invalid('source', i) ? 'error' : undefined}
-                        value={item.source}
-                        placeholder="记录字段名，或数组索引 0"
-                        onChange={(event) => patchMapping(i, { source: event.target.value })}
-                      />
-                      {fieldError('source', i)}
-                    </label>
-                    <label>
-                      目标列
-                      <Input
-                        aria-label={`映射 ${i + 1} 目标列`}
-                        {...fieldProps('column', i)}
-                        status={invalid('column', i) ? 'error' : undefined}
-                        value={item.column}
-                        onChange={(event) =>
-                          patchMapping(i, { column: event.target.value.toUpperCase() })
-                        }
-                      />
-                      {fieldError('column', i)}
-                    </label>
-                    <Collapse
-                      className="excel-column-options"
-                      size="small"
-                      activeKey={expandedColumns.includes(i) ? ['options'] : []}
-                      onChange={(keys) =>
-                        setExpandedColumns((current) =>
-                          keys.length
-                            ? [...current.filter((index) => index !== i), i]
-                            : current.filter((index) => index !== i),
-                        )
-                      }
-                      items={[
-                        {
-                          key: 'options',
-                          onKeyDown: activateCollapseWithSpace,
-                          label: `${item.header || '无表头'} · ${{ text: '文本', number: '数字', boolean: '布尔' }[item.type]}`,
-                          forceRender: true,
-                          children: (
-                            <Space orientation="vertical" size={8} style={{ width: '100%' }}>
-                              <label>
-                                表头
-                                <Input
-                                  aria-label={`映射 ${i + 1} 表头`}
-                                  {...fieldProps('header', i)}
-                                  status={invalid('header', i) ? 'error' : undefined}
-                                  value={item.header}
-                                  onChange={(event) =>
-                                    patchMapping(i, { header: event.target.value })
-                                  }
-                                />
-                                {fieldError('header', i)}
-                              </label>
-                              <label>
-                                类型
-                                <Select<string>
-                                  aria-label={`映射 ${i + 1} 类型`}
-                                  {...fieldProps('type', i)}
-                                  status={invalid('type', i) ? 'error' : undefined}
-                                  value={item.type}
-                                  onChange={(value) =>
-                                    patchMapping(i, { type: value as ExcelMapping['type'] })
-                                  }
-                                  options={[
-                                    { value: 'text', label: '文本' },
-                                    { value: 'number', label: '数字' },
-                                    { value: 'boolean', label: '布尔' },
-                                  ]}
-                                />
-                                {fieldError('type', i)}
-                              </label>
-                              <Button
-                                onClick={() => {
-                                  focusRequest.current =
-                                    node.mappings.length > 1
-                                      ? `[data-mapping="${Math.min(i, node.mappings.length - 2)}"] [data-excel-field="source"]`
-                                      : '[data-excel-field="mappings"]';
-                                  setExpandedColumns((current) =>
-                                    current
-                                      .filter((index) => index !== i)
-                                      .map((index) => (index > i ? index - 1 : index)),
-                                  );
-                                  change({
-                                    ...node,
-                                    mappings: node.mappings.filter(
-                                      (_, j) => j !== i,
-                                    ) as MappedExcel['mappings'],
-                                  });
-                                }}
-                              >
-                                删除映射 {i + 1}
-                              </Button>
-                            </Space>
-                          ),
-                        },
-                      ]}
-                    />
-                  </div>
-                ))}
-              </div>
-              <div className="excel-actions">
-                <Button
-                  {...fieldProps('mappings')}
-                  disabled={node.mappings.length >= 256 || undefined}
-                  onClick={() => {
-                    let i = 0;
-                    while (node.mappings.some((item) => item.column === columnName(i))) i++;
-                    focusRequest.current = `[data-mapping="${node.mappings.length}"] [data-excel-field="source"]`;
-                    change({
-                      ...node,
-                      mappings: [
-                        ...node.mappings,
-                        { source: '', column: columnName(i), header: '', type: 'text' },
-                      ],
-                    });
-                  }}
-                >
-                  添加映射
-                </Button>
-                <Button
-                  type="primary"
-                  onClick={() => {
-                    try {
-                      setPreview(validate());
-                      setError('');
-                      setIssue(undefined);
-                      focusRequest.current = '[data-excel-preview]';
-                      setFocusRevision((revision) => revision + 1);
-                    } catch (error) {
-                      report(error);
-                    }
-                  }}
-                >
-                  预览 3 行
-                </Button>
-              </div>
-              {fieldError('mappings')}
-              <Collapse
-                className="excel-source-settings"
-                size="small"
-                activeKey={sourceExpanded ? ['source'] : []}
-                onChange={(keys) => setSourceExpanded(keys.length > 0)}
-                items={[
-                  {
-                    key: 'source',
-                    onKeyDown: activateCollapseWithSpace,
-                    label: '来源数据、输出目录与表头',
-                    forceRender: true,
-                    children: (
-                      <Space orientation="vertical" size={12} style={{ width: '100%' }}>
-                        <div className="excel-source-value" {...fieldProps('rows')} tabIndex={-1}>
-                          <ValueField
-                            label="来源记录"
-                            value={node.rows}
-                            choices={choices}
-                            defaultValue={[]}
-                            change={(rows) => change({ ...node, rows })}
-                            onIncompleteChange={sourceInputChanged}
-                          />
-                          {fieldError('rows')}
-                        </div>
-                        <label>
-                          输出目录绑定
-                          <Input
-                            aria-label="映射目录绑定"
-                            {...fieldProps('binding')}
-                            status={invalid('binding') ? 'error' : undefined}
-                            value={node.binding}
-                            onChange={(event) => change({ ...node, binding: event.target.value })}
-                          />
-                          {fieldError('binding')}
-                        </label>
-                        <p className="path-text">
-                          {draft.bindings.files[node.binding] || '尚未绑定；运行前需要选择输出目录'}
-                        </p>
-                        <Button onClick={choose}>
-                          {selectingDirectory ? '正在选择目录…' : '选择输出目录'}
-                        </Button>
-                        <Checkbox
-                          checked={node.includeHeaders}
+            <section className="excel-mapping-list" aria-label="字段映射配置">
+              <Card className="excel-mapping-card">
+                <h2>字段映射</h2>
+                <div className="excel-mapping-rows">
+                  {node.mappings.map((item, i) => (
+                    <div className="excel-mapping-row" key={i} data-mapping={i}>
+                      <label>
+                        来源
+                        <Input
+                          aria-label={`映射 ${i + 1} 来源`}
+                          {...fieldProps('source', i)}
+                          status={invalid('source', i) ? 'error' : undefined}
+                          value={item.source}
+                          placeholder="记录字段名，或数组索引 0"
+                          onChange={(event) => patchMapping(i, { source: event.target.value })}
+                        />
+                        {fieldError('source', i)}
+                      </label>
+                      <label>
+                        目标列
+                        <Input
+                          aria-label={`映射 ${i + 1} 目标列`}
+                          {...fieldProps('column', i)}
+                          status={invalid('column', i) ? 'error' : undefined}
+                          value={item.column}
                           onChange={(event) =>
-                            change({ ...node, includeHeaders: event.target.checked })
+                            patchMapping(i, { column: event.target.value.toUpperCase() })
                           }
-                          className="check-label"
-                        >
-                          首行写入表头
-                        </Checkbox>
-                      </Space>
-                    ),
-                  },
-                ]}
-              />
-            </section>
-            <section className="ai-task-card excel-data-preview" aria-label="写入预览">
-              <h2
-                data-excel-preview
-                tabIndex={-1}
-                aria-describedby={`${issueId}-preview-description`}
-              >
-                写入预览{preview?.available ? ` · ${rows.length} 行` : ''}
-              </h2>
-              {preview?.available ? (
-                <>
-                  <div
-                    className="excel-preview-scroll"
-                    tabIndex={0}
-                    role="region"
-                    aria-label="映射结果表格，可滚动查看"
+                        />
+                        {fieldError('column', i)}
+                      </label>
+                      <Collapse
+                        className="excel-column-options"
+                        size="small"
+                        activeKey={expandedColumns.includes(i) ? ['options'] : []}
+                        onChange={(keys) =>
+                          setExpandedColumns((current) =>
+                            keys.length
+                              ? [...current.filter((index) => index !== i), i]
+                              : current.filter((index) => index !== i),
+                          )
+                        }
+                        items={[
+                          {
+                            key: 'options',
+                            onKeyDown: activateCollapseWithSpace,
+                            label: `${item.header || '无表头'} · ${{ text: '文本', number: '数字', boolean: '布尔' }[item.type]}`,
+                            forceRender: true,
+                            children: (
+                              <Space orientation="vertical" size={8} style={{ width: '100%' }}>
+                                <label>
+                                  表头
+                                  <Input
+                                    aria-label={`映射 ${i + 1} 表头`}
+                                    {...fieldProps('header', i)}
+                                    status={invalid('header', i) ? 'error' : undefined}
+                                    value={item.header}
+                                    onChange={(event) =>
+                                      patchMapping(i, { header: event.target.value })
+                                    }
+                                  />
+                                  {fieldError('header', i)}
+                                </label>
+                                <label>
+                                  类型
+                                  <Select<string>
+                                    aria-label={`映射 ${i + 1} 类型`}
+                                    {...fieldProps('type', i)}
+                                    status={invalid('type', i) ? 'error' : undefined}
+                                    value={item.type}
+                                    onChange={(value) =>
+                                      patchMapping(i, { type: value as ExcelMapping['type'] })
+                                    }
+                                    options={[
+                                      { value: 'text', label: '文本' },
+                                      { value: 'number', label: '数字' },
+                                      { value: 'boolean', label: '布尔' },
+                                    ]}
+                                  />
+                                  {fieldError('type', i)}
+                                </label>
+                                <Button
+                                  onClick={() => {
+                                    focusRequest.current =
+                                      node.mappings.length > 1
+                                        ? `[data-mapping="${Math.min(i, node.mappings.length - 2)}"] [data-excel-field="source"]`
+                                        : '[data-excel-field="mappings"]';
+                                    setExpandedColumns((current) =>
+                                      current
+                                        .filter((index) => index !== i)
+                                        .map((index) => (index > i ? index - 1 : index)),
+                                    );
+                                    change({
+                                      ...node,
+                                      mappings: node.mappings.filter(
+                                        (_, j) => j !== i,
+                                      ) as MappedExcel['mappings'],
+                                    });
+                                  }}
+                                >
+                                  删除映射 {i + 1}
+                                </Button>
+                              </Space>
+                            ),
+                          },
+                        ]}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="excel-actions">
+                  <Button
+                    {...fieldProps('mappings')}
+                    disabled={node.mappings.length >= 256 || undefined}
+                    onClick={() => {
+                      let i = 0;
+                      while (node.mappings.some((item) => item.column === columnName(i))) i++;
+                      focusRequest.current = `[data-mapping="${node.mappings.length}"] [data-excel-field="source"]`;
+                      change({
+                        ...node,
+                        mappings: [
+                          ...node.mappings,
+                          { source: '', column: columnName(i), header: '', type: 'text' },
+                        ],
+                      });
+                    }}
                   >
-                    <Table<{ index: number; values: (typeof rows)[number] }>
-                      aria-label="Excel 映射预览"
-                      size="small"
-                      pagination={false}
-                      rowKey="index"
-                      scroll={{ x: 'max-content' }}
-                      dataSource={rows.map((values, index) => ({ index, values }))}
-                      locale={{ emptyText: '来源记录为空；当前预览没有数据行。' }}
-                      columns={columns.map((item) => ({
-                        key: item.column,
-                        title: item.column + (node.includeHeaders ? ` · ${item.header}` : ''),
-                        width: 200,
-                        render: (_, row) =>
-                          row.values[columnIndex(item.column)] === null ? (
-                            <span className="muted">空</span>
-                          ) : (
-                            String(row.values[columnIndex(item.column)])
-                          ),
-                      }))}
-                    />
-                  </div>
-                </>
-              ) : (
-                <p id={`${issueId}-preview-description`} role="status">
-                  {incompleteSource
-                    ? '来源记录输入尚未完成。修正后重新预览。'
-                    : preview && !preview.available
-                      ? preview.reason
-                      : '点击「预览 3 行」核对来源及映射。修改配置后需要重新预览。'}
-                </p>
-              )}
-              <div className="excel-mapping-note">
-                空值策略：保留空单元格。类型冲突时阻止保存并定位字段；公式和宏不在本次能力范围。
-              </div>
-              {preview?.available && (
-                <p className="note" id={`${issueId}-preview-description`}>
-                  已核对全部 {preview.count} 条记录。预览显示前 {rows.length} 条，未写入文件。
-                  未映射的列保留空白，预览仅展示选定列。
-                </p>
-              )}
+                    添加映射
+                  </Button>
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      try {
+                        setPreview(validate());
+                        setError('');
+                        setIssue(undefined);
+                        focusRequest.current = '[data-excel-preview]';
+                        setFocusRevision((revision) => revision + 1);
+                      } catch (error) {
+                        report(error);
+                      }
+                    }}
+                  >
+                    预览 3 行
+                  </Button>
+                </div>
+                {fieldError('mappings')}
+                <Collapse
+                  className="excel-source-settings"
+                  size="small"
+                  activeKey={sourceExpanded ? ['source'] : []}
+                  onChange={(keys) => setSourceExpanded(keys.length > 0)}
+                  items={[
+                    {
+                      key: 'source',
+                      onKeyDown: activateCollapseWithSpace,
+                      label: '来源数据、输出目录与表头',
+                      forceRender: true,
+                      children: (
+                        <Space orientation="vertical" size={12} style={{ width: '100%' }}>
+                          <div className="excel-source-value" {...fieldProps('rows')} tabIndex={-1}>
+                            <ValueField
+                              label="来源记录"
+                              value={node.rows}
+                              choices={choices}
+                              defaultValue={[]}
+                              change={(rows) => change({ ...node, rows })}
+                              onIncompleteChange={sourceInputChanged}
+                            />
+                            {fieldError('rows')}
+                          </div>
+                          <label>
+                            输出目录绑定
+                            <Input
+                              aria-label="映射目录绑定"
+                              {...fieldProps('binding')}
+                              status={invalid('binding') ? 'error' : undefined}
+                              value={node.binding}
+                              onChange={(event) => change({ ...node, binding: event.target.value })}
+                            />
+                            {fieldError('binding')}
+                          </label>
+                          <p className="path-text">
+                            {draft.bindings.files[node.binding] ||
+                              '尚未绑定；运行前需要选择输出目录'}
+                          </p>
+                          <Button onClick={choose}>
+                            {selectingDirectory ? '正在选择目录…' : '选择输出目录'}
+                          </Button>
+                          <Checkbox
+                            checked={node.includeHeaders}
+                            onChange={(event) =>
+                              change({ ...node, includeHeaders: event.target.checked })
+                            }
+                            className="check-label"
+                          >
+                            首行写入表头
+                          </Checkbox>
+                        </Space>
+                      ),
+                    },
+                  ]}
+                />
+              </Card>
+            </section>
+            <section className="excel-data-preview" aria-label="写入预览">
+              <Card className="excel-mapping-card">
+                <h2
+                  data-excel-preview
+                  tabIndex={-1}
+                  aria-describedby={`${issueId}-preview-description`}
+                >
+                  写入预览{preview?.available ? ` · ${rows.length} 行` : ''}
+                </h2>
+                {preview?.available ? (
+                  <>
+                    <div
+                      className="excel-preview-scroll"
+                      tabIndex={0}
+                      role="region"
+                      aria-label="映射结果表格，可滚动查看"
+                    >
+                      <Table<{ index: number; values: (typeof rows)[number] }>
+                        aria-label="Excel 映射预览"
+                        size="small"
+                        pagination={false}
+                        rowKey="index"
+                        scroll={{ x: 'max-content' }}
+                        dataSource={rows.map((values, index) => ({ index, values }))}
+                        locale={{ emptyText: '来源记录为空；当前预览没有数据行。' }}
+                        columns={columns.map((item) => ({
+                          key: item.column,
+                          title: item.column + (node.includeHeaders ? ` · ${item.header}` : ''),
+                          width: 200,
+                          render: (_, row) =>
+                            row.values[columnIndex(item.column)] === null ? (
+                              <span className="muted">空</span>
+                            ) : (
+                              String(row.values[columnIndex(item.column)])
+                            ),
+                        }))}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <p id={`${issueId}-preview-description`} role="status">
+                    {incompleteSource
+                      ? '来源记录输入尚未完成。修正后重新预览。'
+                      : preview && !preview.available
+                        ? preview.reason
+                        : '点击「预览 3 行」核对来源及映射。修改配置后需要重新预览。'}
+                  </p>
+                )}
+                <Alert
+                  type="info"
+                  role="note"
+                  showIcon
+                  description="空值策略：保留空单元格。类型冲突时阻止保存并定位字段；公式和宏不在本次能力范围。"
+                />
+                {preview?.available && (
+                  <p className="note" id={`${issueId}-preview-description`}>
+                    已核对全部 {preview.count} 条记录。预览显示前 {rows.length} 条，未写入文件。
+                    未映射的列保留空白，预览仅展示选定列。
+                  </p>
+                )}
+              </Card>
             </section>
           </div>
           <footer className="excel-actions">
