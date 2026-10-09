@@ -24,22 +24,6 @@
 .mcp-run-receipts h3 {
   overflow-wrap: anywhere;
 }
-.mcp-receipt-status {
-  border-radius: var(--fa-radius-8);
-  padding: 4px 10px;
-  font-size: 12px;
-  background: var(--fa-bg-subtle);
-  color: var(--fa-text-secondary);
-}
-.mcp-receipt-status.is-received {
-  background: var(--fa-status-success-bg);
-  color: var(--fa-status-success);
-}
-.mcp-receipt-status.is-unknown,
-.mcp-receipt-status.is-tool-error {
-  background: var(--fa-status-error-bg);
-  color: var(--fa-status-error);
-}
 .mcp-run-receipts pre {
   max-height: 280px;
   overflow: auto;

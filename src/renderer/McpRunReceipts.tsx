@@ -1,3 +1,5 @@
+import { Alert, Tag } from 'antd';
+import { mcpReceiptColors } from './theme';
 import { mcpReceiptsForRun } from './mcp-run-presentation';
 import type { McpReceipt } from '../shared/mcp-run';
 import type { Flow } from '../shared/types';
@@ -41,19 +43,26 @@ export default function McpRunReceipts({
           <article key={receipt.nodeInstance + ':' + index} data-mcp-result={status}>
             <div className="mcp-receipt-heading">
               <h3>{typeof node?.name === 'string' ? node.name : receipt.tool}</h3>
-              <span className={'mcp-receipt-status is-' + (waiting ? 'waiting' : status)}>
+              <Tag className="run-state-tag" color={mcpReceiptColors[waiting ? 'waiting' : status]}>
                 {waiting ? '正在等待服务回复' : titles[status]}
-              </span>
+              </Tag>
             </div>
             <p>
               {receipt.connectionName} · <code>{receipt.tool}</code>
             </p>
-            <p role={status === 'unknown' && !waiting ? 'alert' : 'status'}>
-              {waiting ? '调用尝试已保存，等待服务回复和会话关闭；未自动重试。' : receipt.message}
-            </p>
-            {status === 'unknown' && !waiting && (
-              <p>操作可能已经发生。请先到原服务核对，再决定是否从头创建新的运行。</p>
-            )}
+            <Alert
+              type={waiting || status === 'received' || status === 'not-sent' ? 'info' : 'error'}
+              role={status === 'unknown' && !waiting ? 'alert' : 'status'}
+              showIcon
+              title={
+                waiting ? '调用尝试已保存，等待服务回复和会话关闭；未自动重试。' : receipt.message
+              }
+              description={
+                status === 'unknown' && !waiting
+                  ? '操作可能已经发生。请先到原服务核对，再决定是否从头创建新的运行。'
+                  : undefined
+              }
+            />
             {result && <p>以下回复已脱敏；文本字段最多展示 4000 个字符，较长内容为节选。</p>}
             {texts.map((item, i) => (
               <pre key={i} tabIndex={0} aria-label={`服务文本 ${i + 1}`}>

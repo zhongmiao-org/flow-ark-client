@@ -1,6 +1,8 @@
 import { ConfigProvider, theme, type ThemeConfig } from 'antd';
 import type { RunState } from '../shared/types';
 import type { ToolConnection } from '../shared/tool-connections';
+import type { McpArgumentReview } from '../shared/mcp-argument-review';
+import type { McpReceipt } from '../shared/mcp-run';
 import zhCN from 'antd/locale/zh_CN';
 import { useLayoutEffect, type ReactNode } from 'react';
 
@@ -44,6 +46,27 @@ export const toolCapabilityColors: Record<
   changed: 'warning',
   removed: 'warning',
   unchanged: 'default',
+};
+
+export const mcpArgumentColors: Record<
+  McpArgumentReview['status'],
+  (typeof runStateColors)[string]
+> = {
+  valid: 'processing',
+  invalid: 'warning',
+  deferred: 'default',
+  unsupported: 'warning',
+  unavailable: 'default',
+};
+export const mcpReceiptColors: Record<
+  McpReceipt['status'] | 'waiting',
+  (typeof runStateColors)[string]
+> = {
+  received: 'success',
+  'tool-error': 'error',
+  'not-sent': 'default',
+  unknown: 'error',
+  waiting: 'processing',
 };
 
 // Figma semantic tokens. All shared controls and workspace colours derive from this theme.

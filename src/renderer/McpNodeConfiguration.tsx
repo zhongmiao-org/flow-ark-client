@@ -1,4 +1,4 @@
-import { Select } from 'antd';
+import { Alert, Select } from 'antd';
 import type { Step } from '../shared/types';
 import type { TaskMcpTarget } from '../shared/task-mcp-targets';
 import type { ReferenceChoice } from './value-references';
@@ -106,15 +106,22 @@ export default function McpNodeConfiguration({
       {tool && (
         <>
           <p>{tool.description || '服务未提供用途说明'}</p>
-          <p className="ai-task-note">
-            只读：
-            {tool.annotations?.readOnlyHint === undefined
-              ? '未声明'
-              : tool.annotations.readOnlyHint
-                ? '服务声明为是'
-                : '服务声明为否'}
-            。服务声明不证明没有外部影响；账号与具体读写范围仍需核对。
-          </p>
+          <Alert
+            type="info"
+            role="note"
+            showIcon
+            title={
+              <>
+                只读：
+                {tool.annotations?.readOnlyHint === undefined
+                  ? '未声明'
+                  : tool.annotations.readOnlyHint
+                    ? '服务声明为是'
+                    : '服务声明为否'}
+                。服务声明不证明没有外部影响；账号与具体读写范围仍需核对。
+              </>
+            }
+          />
           {!!properties.length && (
             <details>
               <summary>参数说明 · {properties.length} 项</summary>
@@ -181,10 +188,17 @@ export default function McpNodeConfiguration({
           ))}
         </dl>
       )}
-      <p className="ai-task-note">
-        保存、编辑与采纳不会调用服务。执行需从原任务检查并确认试运行；成功回复可通过
-        structuredContent 或 content 引用。
-      </p>
+      <Alert
+        type="info"
+        role="note"
+        showIcon
+        title={
+          <>
+            保存、编辑与采纳不会调用服务。执行需从原任务检查并确认试运行；成功回复可通过
+            structuredContent 或 content 引用。
+          </>
+        }
+      />
     </section>
   );
 }

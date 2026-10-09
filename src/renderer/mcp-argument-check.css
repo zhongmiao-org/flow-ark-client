@@ -1,15 +1,6 @@
 .mcp-argument-check {
-  padding: 20px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-  background: var(--fa-bg-subtle);
+  min-width: 0;
   margin: 16px 0;
-}
-.mcp-argument-check.is-valid {
-  background: var(--fa-action-subtle);
-}
-.mcp-argument-check:is(.is-invalid, .is-unsupported) {
-  background: var(--fa-status-warning-bg);
 }
 .mcp-argument-check-heading {
   display: flex;
@@ -20,13 +11,6 @@
 }
 .mcp-argument-check-heading h3 {
   margin: 0;
-}
-.mcp-argument-check-heading span {
-  font-weight: 600;
-  font-size: 13px;
-}
-.mcp-argument-check p {
-  line-height: 1.7;
 }
 .mcp-argument-check ul {
   list-style: none;
