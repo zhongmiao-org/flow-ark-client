@@ -125,6 +125,8 @@ export default function ParameterConfiguration({
             )}
             <Button
               htmlType="button"
+              type={columns ? 'text' : 'default'}
+              size={columns ? 'small' : 'middle'}
               aria-label={'删除参数 ' + key}
               onClick={() => {
                 try {
@@ -298,10 +300,10 @@ function ParameterName({
             {error || '同步更新变量引用；代码和普通文本请自行核对。'}
           </p>
           <div>
-            <Button htmlType="button" onClick={apply}>
+            <Button size="small" htmlType="button" onClick={apply}>
               确认改名
             </Button>
-            <Button htmlType="button" onClick={cancel}>
+            <Button size="small" htmlType="button" onClick={cancel}>
               取消改名
             </Button>
           </div>
