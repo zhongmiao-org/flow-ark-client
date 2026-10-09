@@ -54,6 +54,26 @@
   color: var(--fa-text-primary);
   font-size: 13px;
 }
+.template-entry-fields .template-field > input:not([type='checkbox']),
+.template-entry-fields .template-field > select {
+  width: 100%;
+  height: 40px;
+  min-width: 0;
+  padding: 8px 12px;
+  border-color: var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-bg-surface);
+  color: var(--fa-text-primary);
+  font-size: 13px;
+  line-height: 22px;
+}
+.template-entry-fields .template-field > input[aria-invalid='true'],
+.template-entry-fields .template-field > select[aria-invalid='true'] {
+  border-color: var(--fa-status-error);
+}
+.template-entry-fields .template-boolean-field > input[type='checkbox'] {
+  accent-color: var(--fa-action-primary);
+}
 .template-entry-ai-resource {
   display: flex;
   flex-direction: column;
