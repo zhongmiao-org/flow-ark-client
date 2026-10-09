@@ -20,29 +20,8 @@
 .ai-settings-page .page-heading p {
   overflow-wrap: anywhere;
 }
-.ai-settings-tabs {
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 24px;
-  height: 32px;
+.ai-settings-menu {
   margin: 0 0 32px;
-  font-size: 13px;
-  color: var(--fa-text-secondary);
-}
-.ai-settings-tabs > * {
-  flex: 0 0 auto;
-}
-.ai-settings-tabs button {
-  padding: 0;
-  border: 0;
-  background: none;
-  min-height: auto;
-  color: inherit;
-}
-.ai-settings-tabs [aria-current] {
-  color: var(--fa-action-primary);
 }
 .ai-settings-columns {
   display: grid;

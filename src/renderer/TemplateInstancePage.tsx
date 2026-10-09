@@ -1,4 +1,4 @@
-import { ConfigProvider, Select, Button, Input, Modal, Flex, Tag, Badge, Alert } from 'antd';
+import { ConfigProvider, Select, Button, Input, Modal, Flex, Tag, Badge, Alert, Tabs } from 'antd';
 import { usePageBack } from './use-page-back';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
 import {
@@ -81,7 +81,6 @@ export default function TemplateInstancePage({
   const [entryDetail, setEntryDetail] = useState(false);
   const entryHeading = useRef<HTMLHeadingElement>(null);
   const adoptionHeading = useRef<HTMLHeadingElement>(null);
-  const resourceTab = useRef<HTMLButtonElement>(null);
   const entered = useRef(false);
   useLayoutEffect(() => {
     if (!active || entered.current) return;
@@ -426,6 +425,304 @@ export default function TemplateInstancePage({
         : `新版实例 · v${target?.manifest.version}`,
     );
   };
+  const instancePanels: Record<Tab, ReactNode> = {
+    configuration: (
+      <div data-instance-tab="configuration" hidden={tab !== 'configuration'}>
+        <div className="template-instance-columns">
+          <section
+            className="ai-task-card template-instance-form template-shared-configuration"
+            aria-busy={busy}
+          >
+            <h2>共享配置</h2>
+            <ConfigProvider
+              componentDisabled={busy || undefined}
+              key={'config-' + generation + ':' + configurationGeneration}
+            >
+              <fieldset disabled={busy} className="template-entry-fields">
+                <label className="template-field">
+                  <span>实例名称</span>
+                  <Input
+                    status={!!nameError ? 'error' : undefined}
+                    value={instance.name}
+                    maxLength={100}
+                    aria-label="实例名称"
+                    aria-required="true"
+                    aria-invalid={!!nameError}
+                    aria-describedby={nameError ? 'template-instance-name-error' : undefined}
+                    data-value-invalid={!!nameError || undefined}
+                    onChange={(event) =>
+                      setDraft({ ...draft, instance: { ...instance, name: event.target.value } })
+                    }
+                  />
+                  {nameError && (
+                    <small className="template-field-error" id="template-instance-name-error">
+                      {nameError}
+                    </small>
+                  )}
+                </label>
+                <Field
+                  schema={draft.configurationSchema}
+                  value={instance.configuration}
+                  change={(configuration: unknown) =>
+                    setDraft({ ...draft, instance: { ...instance, configuration } })
+                  }
+                />
+              </fieldset>
+            </ConfigProvider>
+            <p className="ai-task-note">字段由模板提供；打开表单不会执行模板代码。</p>
+            {error && !leaving && (
+              <div
+                className="template-configuration-error"
+                role="alert"
+                tabIndex={-1}
+                ref={configurationError}
+              >
+                <Alert
+                  type="error"
+                  role="presentation"
+                  showIcon
+                  title="配置保存未完成"
+                  description={
+                    <div className="feedback-body">
+                      <p>{error}</p>
+                      <p>当前输入仍保留，请核对后重试；不会自动开始或重放运行。</p>
+                    </div>
+                  }
+                />
+              </div>
+            )}
+            <div className="ai-task-actions">
+              <Button
+                type="primary"
+                disabled={blocked || undefined}
+                onClick={(event) =>
+                  void save('configuration', undefined, event.currentTarget as HTMLButtonElement)
+                }
+              >
+                {busy ? '正在保存…' : error ? '重试保存配置' : '保存配置'}
+              </Button>
+              <Button disabled={busy || undefined} onClick={() => reset('configuration')}>
+                取消更改
+              </Button>
+            </div>
+          </section>
+          <aside className="ai-task-card template-instance-guide">
+            <h2>实例与入口</h2>
+            <p>共享配置适用于本实例所有入口；每次运行仍有独立的入口输入。</p>
+            <p>另一个实例保留自己的配置、状态、资源和授权。</p>
+            <Button disabled={busy || undefined} onClick={() => setOthers((value) => !value)}>
+              查看其他实例
+            </Button>
+            {others && (
+              <div className="template-other-instances">
+                {data.instances
+                  .filter((other) => other.id !== instance.id)
+                  .map((other) => (
+                    <Button
+                      key={other.id}
+                      disabled={busy || undefined}
+                      onClick={() => go(() => choose(other.id), `实例 · ${other.name}`)}
+                    >
+                      {other.name} · {other.id.slice(0, 8)}
+                    </Button>
+                  ))}
+                {data.instances.every((other) => other.id === instance.id) && <p>尚无其他实例。</p>}
+              </div>
+            )}
+          </aside>
+        </div>
+      </div>
+    ),
+    resources: (
+      <div data-instance-tab="resources" hidden={tab !== 'resources'}>
+        <TemplateResources
+          detail={draft}
+          saved={saved.instance}
+          data={data}
+          busy={busy}
+          blocked={blocked}
+          change={setDraft}
+          work={work}
+          openAI={openAI}
+          save={(control) => void save('resources', undefined, control)}
+          cancel={() => reset('resources')}
+          openEntry={(id) => {
+            setEntryId(id);
+            switchTab('entry', true);
+          }}
+        />
+      </div>
+    ),
+    entry: (
+      <div data-instance-tab="entry" hidden={tab !== 'entry'}>
+        {draft.entries.map((entry) => (
+          <div
+            key={entry.id + ':' + generation}
+            data-entry-id={entry.id}
+            hidden={entryId !== entry.id}
+          >
+            <TemplateEntry
+              inspection={entryDetail}
+              openDetail={(id) => {
+                setError('');
+                setEntryId(id);
+                setEntryDetail(true);
+              }}
+              closeDetail={back}
+              active={active && tab === 'entry' && entryId === entry.id}
+              detail={draft}
+              saved={saved}
+              browsers={data.browsers}
+              entryId={entry.id}
+              selectEntry={(id) => {
+                setError('');
+                setEntryId(id);
+              }}
+              showRun={showRun}
+              schedule={schedule}
+              savedAt={
+                data.flows.find((flow) => flow.id === instance.entryFlows[entry.id])?.updatedAt ??
+                ''
+              }
+              change={setDraft}
+              save={save}
+              work={work}
+              busy={busy}
+              sourceError={sourceError}
+              sourceChecking={checking}
+              configure={() => {
+                switchTab('resources', true);
+              }}
+              settings={settings}
+            />
+          </div>
+        ))}
+      </div>
+    ),
+    source: (
+      <div data-instance-tab="source" hidden={tab !== 'source'}>
+        <div className="template-instance-columns">
+          <section className="ai-task-card template-instance-form">
+            <h2>来源与版本</h2>
+            <dl className="template-source-details">
+              <dt>模板</dt>
+              <dd>{draft.manifest.name}</dd>
+              <dt>固定版本</dt>
+              <dd>{draft.manifest.version}</dd>
+              <dt>来源声明</dt>
+              <dd>{draft.manifest.source}</dd>
+              <dt>作者声明</dt>
+              <dd>{draft.manifest.author}</dd>
+              <dt>实例</dt>
+              <dd>{instance.id}</dd>
+              <dt>内容摘要</dt>
+              <dd>{draft.manifest.contentDigest}</dd>
+            </dl>
+            <div className="template-version-adoption">
+              <Tag
+                className="run-state-tag"
+                variant="filled"
+                color="default"
+                icon={<Badge status="default" />}
+              >
+                创建新实例
+              </Tag>
+              <h3>采用模板新版</h3>
+              <p>
+                创建独立实例，复制符合新模板字段规则的已保存普通配置，资源和权限重新核对，不迁移业务状态。
+              </p>
+              {alternatives.length ? (
+                <label className="ai-settings-field">
+                  已安装的其他版本
+                  <Select<string>
+                    aria-label="采用模板版本"
+                    disabled={blocked || !!createdVersion || undefined}
+                    value={version}
+                    onChange={(value) => setVersion(value)}
+                    options={[
+                      { value: '', label: '选择版本' },
+                      ...alternatives.map((item) => ({
+                        value: item.key,
+                        label: <>v{item.manifest.version}</>,
+                      })),
+                    ]}
+                  />
+                </label>
+              ) : (
+                <p>本机尚未安装其他版本。</p>
+              )}
+              {selectedVersion && !createdVersion && (
+                <Alert
+                  className="template-version-summary"
+                  type="info"
+                  role="status"
+                  showIcon
+                  title={<>将创建 v{selectedVersion.manifest.version} 的独立实例</>}
+                  description={
+                    <div className="feedback-body">
+                      <p>
+                        当前实例继续使用 v{draft.manifest.version}
+                        。只复制已保存且符合目标字段规则的普通配置。
+                      </p>
+                      <p>新实例的资源绑定、动作权限和业务状态均需重新配置。</p>
+                    </div>
+                  }
+                />
+              )}
+              {createdVersion && (
+                <Alert
+                  className="template-version-summary"
+                  type="success"
+                  role="status"
+                  showIcon
+                  title={<>v{createdVersion.version} 的新实例已创建</>}
+                  description="暂时无法打开时，可以继续打开这个实例；原实例仍保留。"
+                />
+              )}
+              <Button
+                type="primary"
+                disabled={blocked || (!createdVersion && !selectedVersion) || undefined}
+                onClick={adoptVersion}
+              >
+                {adopting
+                  ? createdVersion
+                    ? '正在打开…'
+                    : '正在创建…'
+                  : createdVersion
+                    ? '打开已创建实例'
+                    : '创建新版实例'}
+              </Button>
+            </div>
+          </section>
+          <aside className="ai-task-card template-instance-guide">
+            <h2>导出原模板定义</h2>
+            <p>保留原版本与身份；不包含配置值、密钥、本机路径或历史。</p>
+            <Button
+              type="primary"
+              disabled={blocked || !originalPackage || undefined}
+              onClick={() => {
+                if (!blocked && originalPackage) exportTemplate(originalPackage, '来源与版本');
+              }}
+            >
+              导出 ZIP
+            </Button>
+            {!originalPackage && <p role="status">原模板包不可用，请先恢复此版本后再导出。</p>}
+            <h3>原实例保持原样</h3>
+            <p>新旧版本并存。模板更新不会覆盖本实例、计划或正在运行的快照。</p>
+            <Tag
+              className="run-state-tag"
+              variant="filled"
+              color="warning"
+              icon={<Badge status="warning" />}
+            >
+              该版本仍被引用
+            </Tag>
+            <p>当前实例正在引用此包，不能卸载。</p>
+          </aside>
+        </div>
+      </div>
+    ),
+  };
   return (
     <div
       ref={root}
@@ -520,7 +817,14 @@ export default function TemplateInstancePage({
                         disabled={busy || undefined}
                         onClick={() => {
                           switchTab('resources');
-                          resourceTab.current?.focus();
+                          requestAnimationFrame(() => {
+                            const panel = root.current
+                              ?.querySelector('[data-instance-tab="resources"]')
+                              ?.closest('[role="tabpanel"]');
+                            const tabId = panel?.getAttribute('aria-labelledby');
+                            if (tabId)
+                              document.getElementById(tabId)?.focus({ preventScroll: true });
+                          });
                         }}
                       >
                         核对资源与动作授权
@@ -549,368 +853,87 @@ export default function TemplateInstancePage({
             />
           </section>
         )}
-        <nav className="ai-settings-tabs" aria-label="实例分类" hidden={entryDetail}>
-          {tabs.map(([id, label]) => (
-            <Button
-              key={id}
-              ref={id === 'resources' ? resourceTab : undefined}
-              disabled={busy || undefined}
-              aria-current={tab === id ? 'page' : undefined}
-              onClick={() => switchTab(id)}
-            >
-              {label}
-            </Button>
-          ))}
-        </nav>
-        {sourceError && (
-          <div className="template-source-error" role="alert">
-            <Alert
-              type="error"
-              role="presentation"
-              showIcon
-              title="来源核对未完成"
-              description={
-                <div className="feedback-body">
-                  <p>{sourceError}</p>
-                  <div className="ai-task-actions">
-                    <Button
-                      disabled={busy || checking || undefined}
-                      onClick={() => setReload((v) => v + 1)}
-                    >
-                      重新读取状态
-                    </Button>
-                    <Button
-                      disabled={busy || undefined}
-                      onClick={() =>
-                        void work(async () => {
-                          const fresh: TemplateDetail = await api('template.detail', {
-                            id: instance.id,
-                          });
-                          setSaved(structuredClone(fresh));
-                          setDraft(fresh);
-                          setSourceError('');
-                          setGeneration((v) => v + 1);
-                          if (!fresh.entries.some((entry) => entry.id === entryId))
-                            setEntryId(fresh.entries[0]?.id ?? '');
-                          return true;
-                        })
-                      }
-                    >
-                      放弃未保存内容并重新读取实例
-                    </Button>
-                    <Button onClick={() => go(home, '模板库')}>返回模板库</Button>
-                  </div>
-                </div>
-              }
-            />
-          </div>
-        )}
-        {error && !leaving && tab !== 'configuration' && (
-          <div
-            className="template-operation-feedback"
-            role="alert"
-            ref={resourceError}
-            tabIndex={-1}
-          >
-            <Alert
-              type="error"
-              role="presentation"
-              showIcon
-              title="操作未完成"
-              description={error}
-            />
-          </div>
-        )}
-        <div data-instance-tab="configuration" hidden={tab !== 'configuration'}>
-          <div className="template-instance-columns">
-            <section
-              className="ai-task-card template-instance-form template-shared-configuration"
-              aria-busy={busy}
-            >
-              <h2>共享配置</h2>
-              <ConfigProvider
-                componentDisabled={busy || undefined}
-                key={'config-' + generation + ':' + configurationGeneration}
-              >
-                <fieldset disabled={busy} className="template-entry-fields">
-                  <label className="template-field">
-                    <span>实例名称</span>
-                    <Input
-                      status={!!nameError ? 'error' : undefined}
-                      value={instance.name}
-                      maxLength={100}
-                      aria-label="实例名称"
-                      aria-required="true"
-                      aria-invalid={!!nameError}
-                      aria-describedby={nameError ? 'template-instance-name-error' : undefined}
-                      data-value-invalid={!!nameError || undefined}
-                      onChange={(event) =>
-                        setDraft({ ...draft, instance: { ...instance, name: event.target.value } })
-                      }
-                    />
-                    {nameError && (
-                      <small className="template-field-error" id="template-instance-name-error">
-                        {nameError}
-                      </small>
-                    )}
-                  </label>
-                  <Field
-                    schema={draft.configurationSchema}
-                    value={instance.configuration}
-                    change={(configuration: unknown) =>
-                      setDraft({ ...draft, instance: { ...instance, configuration } })
+        <Tabs
+          id={`template-instance-${instance.id}`}
+          className="template-instance-tabs"
+          aria-label="实例分类"
+          activeKey={tab}
+          animated={false}
+          destroyOnHidden={false}
+          styles={{ header: entryDetail ? { display: 'none' } : undefined }}
+          onChange={(key) => switchTab(key as Tab)}
+          renderTabBar={(props, DefaultTabBar) => (
+            <>
+              <DefaultTabBar {...props} />
+              {sourceError && (
+                <div className="template-source-error" role="alert">
+                  <Alert
+                    type="error"
+                    role="presentation"
+                    showIcon
+                    title="来源核对未完成"
+                    description={
+                      <div className="feedback-body">
+                        <p>{sourceError}</p>
+                        <div className="ai-task-actions">
+                          <Button
+                            disabled={busy || checking || undefined}
+                            onClick={() => setReload((v) => v + 1)}
+                          >
+                            重新读取状态
+                          </Button>
+                          <Button
+                            disabled={busy || undefined}
+                            onClick={() =>
+                              void work(async () => {
+                                const fresh: TemplateDetail = await api('template.detail', {
+                                  id: instance.id,
+                                });
+                                setSaved(structuredClone(fresh));
+                                setDraft(fresh);
+                                setSourceError('');
+                                setGeneration((v) => v + 1);
+                                if (!fresh.entries.some((entry) => entry.id === entryId))
+                                  setEntryId(fresh.entries[0]?.id ?? '');
+                                return true;
+                              })
+                            }
+                          >
+                            放弃未保存内容并重新读取实例
+                          </Button>
+                          <Button onClick={() => go(home, '模板库')}>返回模板库</Button>
+                        </div>
+                      </div>
                     }
                   />
-                </fieldset>
-              </ConfigProvider>
-              <p className="ai-task-note">字段由模板提供；打开表单不会执行模板代码。</p>
-              {error && !leaving && (
+                </div>
+              )}
+              {error && !leaving && tab !== 'configuration' && (
                 <div
-                  className="template-configuration-error"
+                  className="template-operation-feedback"
                   role="alert"
+                  ref={resourceError}
                   tabIndex={-1}
-                  ref={configurationError}
                 >
                   <Alert
                     type="error"
                     role="presentation"
                     showIcon
-                    title="配置保存未完成"
-                    description={
-                      <div className="feedback-body">
-                        <p>{error}</p>
-                        <p>当前输入仍保留，请核对后重试；不会自动开始或重放运行。</p>
-                      </div>
-                    }
+                    title="操作未完成"
+                    description={error}
                   />
                 </div>
               )}
-              <div className="ai-task-actions">
-                <Button
-                  type="primary"
-                  disabled={blocked || undefined}
-                  onClick={(event) =>
-                    void save('configuration', undefined, event.currentTarget as HTMLButtonElement)
-                  }
-                >
-                  {busy ? '正在保存…' : error ? '重试保存配置' : '保存配置'}
-                </Button>
-                <Button disabled={busy || undefined} onClick={() => reset('configuration')}>
-                  取消更改
-                </Button>
-              </div>
-            </section>
-            <aside className="ai-task-card template-instance-guide">
-              <h2>实例与入口</h2>
-              <p>共享配置适用于本实例所有入口；每次运行仍有独立的入口输入。</p>
-              <p>另一个实例保留自己的配置、状态、资源和授权。</p>
-              <Button disabled={busy || undefined} onClick={() => setOthers((value) => !value)}>
-                查看其他实例
-              </Button>
-              {others && (
-                <div className="template-other-instances">
-                  {data.instances
-                    .filter((other) => other.id !== instance.id)
-                    .map((other) => (
-                      <Button
-                        key={other.id}
-                        disabled={busy || undefined}
-                        onClick={() => go(() => choose(other.id), `实例 · ${other.name}`)}
-                      >
-                        {other.name} · {other.id.slice(0, 8)}
-                      </Button>
-                    ))}
-                  {data.instances.every((other) => other.id === instance.id) && (
-                    <p>尚无其他实例。</p>
-                  )}
-                </div>
-              )}
-            </aside>
-          </div>
-        </div>
-        <div data-instance-tab="resources" hidden={tab !== 'resources'}>
-          <TemplateResources
-            detail={draft}
-            saved={saved.instance}
-            data={data}
-            busy={busy}
-            blocked={blocked}
-            change={setDraft}
-            work={work}
-            openAI={openAI}
-            save={(control) => void save('resources', undefined, control)}
-            cancel={() => reset('resources')}
-            openEntry={(id) => {
-              setEntryId(id);
-              switchTab('entry', true);
-            }}
-          />
-        </div>
-        <div data-instance-tab="entry" hidden={tab !== 'entry'}>
-          {draft.entries.map((entry) => (
-            <div
-              key={entry.id + ':' + generation}
-              data-entry-id={entry.id}
-              hidden={entryId !== entry.id}
-            >
-              <TemplateEntry
-                inspection={entryDetail}
-                openDetail={(id) => {
-                  setError('');
-                  setEntryId(id);
-                  setEntryDetail(true);
-                }}
-                closeDetail={back}
-                active={active && tab === 'entry' && entryId === entry.id}
-                detail={draft}
-                saved={saved}
-                browsers={data.browsers}
-                entryId={entry.id}
-                selectEntry={(id) => {
-                  setError('');
-                  setEntryId(id);
-                }}
-                showRun={showRun}
-                schedule={schedule}
-                savedAt={
-                  data.flows.find((flow) => flow.id === instance.entryFlows[entry.id])?.updatedAt ??
-                  ''
-                }
-                change={setDraft}
-                save={save}
-                work={work}
-                busy={busy}
-                sourceError={sourceError}
-                sourceChecking={checking}
-                configure={() => {
-                  switchTab('resources', true);
-                }}
-                settings={settings}
-              />
-            </div>
-          ))}
-        </div>
-        <div data-instance-tab="source" hidden={tab !== 'source'}>
-          <div className="template-instance-columns">
-            <section className="ai-task-card template-instance-form">
-              <h2>来源与版本</h2>
-              <dl className="template-source-details">
-                <dt>模板</dt>
-                <dd>{draft.manifest.name}</dd>
-                <dt>固定版本</dt>
-                <dd>{draft.manifest.version}</dd>
-                <dt>来源声明</dt>
-                <dd>{draft.manifest.source}</dd>
-                <dt>作者声明</dt>
-                <dd>{draft.manifest.author}</dd>
-                <dt>实例</dt>
-                <dd>{instance.id}</dd>
-                <dt>内容摘要</dt>
-                <dd>{draft.manifest.contentDigest}</dd>
-              </dl>
-              <div className="template-version-adoption">
-                <Tag
-                  className="run-state-tag"
-                  variant="filled"
-                  color="default"
-                  icon={<Badge status="default" />}
-                >
-                  创建新实例
-                </Tag>
-                <h3>采用模板新版</h3>
-                <p>
-                  创建独立实例，复制符合新模板字段规则的已保存普通配置，资源和权限重新核对，不迁移业务状态。
-                </p>
-                {alternatives.length ? (
-                  <label className="ai-settings-field">
-                    已安装的其他版本
-                    <Select<string>
-                      aria-label="采用模板版本"
-                      disabled={blocked || !!createdVersion || undefined}
-                      value={version}
-                      onChange={(value) => setVersion(value)}
-                      options={[
-                        { value: '', label: '选择版本' },
-                        ...alternatives.map((item) => ({
-                          value: item.key,
-                          label: <>v{item.manifest.version}</>,
-                        })),
-                      ]}
-                    />
-                  </label>
-                ) : (
-                  <p>本机尚未安装其他版本。</p>
-                )}
-                {selectedVersion && !createdVersion && (
-                  <Alert
-                    className="template-version-summary"
-                    type="info"
-                    role="status"
-                    showIcon
-                    title={<>将创建 v{selectedVersion.manifest.version} 的独立实例</>}
-                    description={
-                      <div className="feedback-body">
-                        <p>
-                          当前实例继续使用 v{draft.manifest.version}
-                          。只复制已保存且符合目标字段规则的普通配置。
-                        </p>
-                        <p>新实例的资源绑定、动作权限和业务状态均需重新配置。</p>
-                      </div>
-                    }
-                  />
-                )}
-                {createdVersion && (
-                  <Alert
-                    className="template-version-summary"
-                    type="success"
-                    role="status"
-                    showIcon
-                    title={<>v{createdVersion.version} 的新实例已创建</>}
-                    description="暂时无法打开时，可以继续打开这个实例；原实例仍保留。"
-                  />
-                )}
-                <Button
-                  type="primary"
-                  disabled={blocked || (!createdVersion && !selectedVersion) || undefined}
-                  onClick={adoptVersion}
-                >
-                  {adopting
-                    ? createdVersion
-                      ? '正在打开…'
-                      : '正在创建…'
-                    : createdVersion
-                      ? '打开已创建实例'
-                      : '创建新版实例'}
-                </Button>
-              </div>
-            </section>
-            <aside className="ai-task-card template-instance-guide">
-              <h2>导出原模板定义</h2>
-              <p>保留原版本与身份；不包含配置值、密钥、本机路径或历史。</p>
-              <Button
-                type="primary"
-                disabled={blocked || !originalPackage || undefined}
-                onClick={() => {
-                  if (!blocked && originalPackage) exportTemplate(originalPackage, '来源与版本');
-                }}
-              >
-                导出 ZIP
-              </Button>
-              {!originalPackage && <p role="status">原模板包不可用，请先恢复此版本后再导出。</p>}
-              <h3>原实例保持原样</h3>
-              <p>新旧版本并存。模板更新不会覆盖本实例、计划或正在运行的快照。</p>
-              <Tag
-                className="run-state-tag"
-                variant="filled"
-                color="warning"
-                icon={<Badge status="warning" />}
-              >
-                该版本仍被引用
-              </Tag>
-              <p>当前实例正在引用此包，不能卸载。</p>
-            </aside>
-          </div>
-        </div>
+            </>
+          )}
+          items={tabs.map(([key, label]) => ({
+            key,
+            label,
+            disabled: busy,
+            forceRender: true,
+            children: instancePanels[key],
+          }))}
+        />
       </section>
       {leaving && (
         <Modal

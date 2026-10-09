@@ -274,3 +274,7 @@
 .template-operation-feedback {
   overflow-wrap: anywhere;
 }
+
+.template-instance-tabs > .ant-tabs-nav {
+  margin-bottom: 32px;
+}

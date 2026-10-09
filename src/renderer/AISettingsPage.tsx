@@ -1,4 +1,4 @@
-import { Select, Button, Input, Modal, Flex, Tag, Badge, Alert } from 'antd';
+import { Select, Button, Input, Modal, Flex, Tag, Badge, Alert, Menu } from 'antd';
 import { usePageBack } from './use-page-back';
 import type { SettingsDestination } from './LocalSettingsPage';
 import type { TemplateDetail } from './template-draft';
@@ -703,20 +703,29 @@ export default function AISettingsPage({
           </div>
         </div>
         {(!entry.source || fromTemplate) && (
-          <nav className="ai-settings-tabs" aria-label="设置分类">
-            <Button onClick={() => go(() => home('browser'), '浏览器设置')}>浏览器</Button>
-            {fromTemplate ? (
-              <Button aria-current="page" onClick={() => go(() => home('ai'), 'AI 服务配置')}>
-                AI 服务
-              </Button>
-            ) : (
-              <span aria-current="page">AI 服务</span>
-            )}
-            <Button onClick={() => go(() => home('resources'), '凭据与本机资源')}>
-              凭据与文件
-            </Button>
-            <Button onClick={() => go(() => home('scripts'), '脚本包配置')}>脚本</Button>
-          </nav>
+          <Menu
+            className="ai-settings-menu"
+            aria-label="设置分类"
+            mode="horizontal"
+            selectedKeys={['ai']}
+            items={[
+              { key: 'browser', label: '浏览器' },
+              { key: 'ai', label: <span aria-current="page">AI 服务</span> },
+              { key: 'resources', label: '凭据与文件' },
+              { key: 'scripts', label: '脚本' },
+            ]}
+            onClick={({ key }) => {
+              if (key === 'ai' && !fromTemplate) return;
+              const destinations: Record<SettingsDestination, string> = {
+                browser: '浏览器设置',
+                ai: 'AI 服务配置',
+                resources: '凭据与本机资源',
+                scripts: '脚本包配置',
+              };
+              const destination = key as SettingsDestination;
+              go(() => home(destination), destinations[destination]);
+            }}
+          />
         )}
         {error && !removing && !editing && (
           <div
