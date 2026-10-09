@@ -709,23 +709,9 @@
   overflow-wrap: anywhere;
   border-radius: var(--fa-radius-12);
 }
-.task-target-connection[aria-pressed='true'] {
-  border-color: var(--fa-action-primary);
-  background: var(--fa-action-subtle);
-}
-.task-target-connection > span {
+.task-target-connection > span:not(.ant-tag) {
   font-weight: 400;
   color: var(--fa-text-secondary);
-}
-.task-target-status {
-  font-size: 12px;
-  line-height: 18px;
-}
-.task-target-status.is-verified {
-  color: var(--fa-status-success);
-}
-.task-target-status.is-failed {
-  color: var(--fa-status-error);
 }
 .task-target-capabilities ul {
   list-style: none;

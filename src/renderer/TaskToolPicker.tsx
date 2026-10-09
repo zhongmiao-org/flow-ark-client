@@ -1,4 +1,5 @@
-import { Button, Checkbox, Input } from 'antd';
+import { Button, Checkbox, Collapse, Input, Segmented } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useId, useRef, useState } from 'react';
 import type { ToolDefinition } from '../shared/tool-connections';
 import { ToolDefinitionDetails } from './ToolCapabilityReview';
@@ -46,12 +47,16 @@ export default function TaskToolPicker({
         onChange={(event) => setQuery(event.target.value)}
       />
       <div className="ai-task-actions" role="group" aria-label="工具选择筛选">
-        <Button aria-pressed={!onlySelected} onClick={() => setOnlySelected(false)}>
-          全部工具 · {tools.length}
-        </Button>
-        <Button aria-pressed={onlySelected} onClick={() => setOnlySelected(true)}>
-          已选工具 · {names.length}
-        </Button>
+        <Segmented
+          name={`${id}-filter`}
+          aria-label="工具选择范围"
+          value={onlySelected ? 'selected' : 'all'}
+          onChange={(value) => setOnlySelected(value === 'selected')}
+          options={[
+            { value: 'all', label: `全部工具 · ${tools.length}` },
+            { value: 'selected', label: `已选工具 · ${names.length}` },
+          ]}
+        />
         {!!(query || onlySelected) && <Button onClick={clear}>清除工具筛选</Button>}
       </div>
       <p role="status">
@@ -82,18 +87,26 @@ export default function TaskToolPicker({
                 <p>{tool.description || '尚无用途说明'}</p>
               </span>
             </Checkbox>
-            <Button
-              aria-expanded={expanded === tool.name}
-              onClick={() => setExpanded(expanded === tool.name ? undefined : tool.name)}
-            >
-              查看 {tool.title || tool.name} 的参数与声明
-            </Button>
-            {expanded === tool.name && (
-              <div className="task-tool-definition">
-                <ToolDefinitionDetails tool={tool} />
-                <p>以上是服务声明，不表示已授予任务权限。查看不会调用工具。</p>
-              </div>
-            )}
+            <Collapse
+              className="task-tool-disclosure"
+              activeKey={expanded === tool.name ? [tool.name] : []}
+              onChange={(keys) => setExpanded(keys.includes(tool.name) ? tool.name : undefined)}
+              items={[
+                {
+                  key: tool.name,
+                  label: `查看 ${tool.title || tool.name} 的参数与声明`,
+                  forceRender: true,
+                  onKeyDown: activateCollapseWithSpace,
+                  children:
+                    expanded === tool.name ? (
+                      <div className="feedback-body task-tool-definition">
+                        <ToolDefinitionDetails tool={tool} />
+                        <p>以上是服务声明，不表示已授予任务权限。查看不会调用工具。</p>
+                      </div>
+                    ) : null,
+                },
+              ]}
+            />
           </div>
         ))}
       </fieldset>

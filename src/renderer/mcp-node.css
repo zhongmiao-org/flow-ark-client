@@ -13,20 +13,6 @@
 .mcp-step-facts {
   margin: 12px 0;
 }
-.mcp-step-facts > div {
-  display: grid;
-  grid-template-columns: minmax(90px, 1fr) minmax(0, 2fr);
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--fa-border-default);
-}
-.mcp-step-facts dt {
-  font-weight: 600;
-}
-.mcp-step-facts dd {
-  margin: 0;
-  min-width: 0;
-}
 .mcp-node pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -34,6 +20,10 @@
   overflow: auto;
   margin: 0;
 }
-.mcp-node details {
+.mcp-step-disclosure {
   margin: 12px 0;
+}
+
+.mcp-node .feedback-body {
+  align-items: stretch;
 }
