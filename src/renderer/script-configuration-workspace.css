@@ -1,9 +1,6 @@
 .script-configuration-workspace .resource-workspace-card {
   padding-bottom: 50px;
 }
-.script-configuration-workspace .resource-workspace-card > dl {
-  gap: 16px;
-}
 .script-configuration-workspace .resource-workspace-card > button:last-child,
 .script-configuration-packages,
 .script-configuration-source,
@@ -13,19 +10,6 @@
 .script-configuration-field {
   display: flex;
   flex-direction: column;
-}
-.script-configuration-packages > summary,
-.script-configuration-source > summary {
-  cursor: pointer;
-  font-size: 13px;
-  line-height: 22px;
-}
-.script-configuration-packages > summary {
-  min-height: 40px;
-  padding: 9px 12px;
-  background: var(--fa-action-primary);
-  color: var(--fa-text-inverse);
-  border-radius: 8px;
 }
 .script-configuration-workspace .script-packages {
   margin: 16px 0 0;
@@ -39,8 +23,7 @@
   font-size: 12px;
   margin: 8px 0;
 }
-.script-configuration-workspace .script-configuration-source dd {
-  white-space: normal;
+.script-configuration-summary .ant-descriptions-item-content {
   overflow-wrap: anywhere;
 }
 .script-configuration-workspace .script-package-dialog dd {
@@ -67,8 +50,4 @@
 }
 .script-configuration-workspace .resource-workspace-page > header p {
   font-size: 14px;
-}
-.script-configuration-workspace .resource-workspace-card[aria-label='依赖检查'] dd {
-  white-space: normal;
-  overflow-wrap: anywhere;
 }
