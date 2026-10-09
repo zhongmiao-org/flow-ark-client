@@ -268,6 +268,8 @@ export default function AttentionWorkspace({
   const locked = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const answerFocus = useRef<string | undefined>(undefined);
+  const actionFocus = useRef<{ visit: number; trigger: HTMLButtonElement } | null>(null);
+  const noticePanel = useRef<HTMLDivElement>(null);
   const listScroll = useRef(0);
   const listFocus = useRef('');
   const runReturn = useRef<{ focus: HTMLElement; scroll: number } | null>(null);
@@ -382,8 +384,27 @@ export default function AttentionWorkspace({
     )
       heading.current?.focus({ preventScroll: true });
   }, [active, busy, error, selectedId, state]);
+  useEffect(() => {
+    if (busy || !actionFocus.current) return;
+    const origin = actionFocus.current;
+    actionFocus.current = null;
+    if (
+      !active ||
+      error ||
+      origin.visit !== visit.current ||
+      document.activeElement !== document.body
+    )
+      return;
+    const target =
+      origin.trigger.isConnected && !origin.trigger.disabled ? origin.trigger : noticePanel.current;
+    target?.focus({ preventScroll: true });
+  }, [active, busy, error, notice, selectedId]);
   const act = async (operation: () => Promise<void>, message = '', acknowledgedMessage = '') => {
     if (locked.current) return;
+    actionFocus.current =
+      document.activeElement instanceof HTMLButtonElement
+        ? { visit: visit.current, trigger: document.activeElement }
+        : null;
     locked.current = true;
     setBusy(true);
     setError('');
@@ -532,7 +553,7 @@ export default function AttentionWorkspace({
         </div>
       )}
       {notice && (
-        <div className="attention-banner is-success" role="status">
+        <div ref={noticePanel} tabIndex={-1} className="attention-banner is-success" role="status">
           {notice}
         </div>
       )}
