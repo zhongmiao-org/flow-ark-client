@@ -92,6 +92,7 @@ import ReadStepInspector from './ReadStepInspector';
 import type { ElementPickerControls } from './ElementPicker';
 import { browserActions } from './browser-actions';
 import LogicNodeConfiguration from './LogicNodeConfiguration';
+import { revealDraftInput } from './revealDraftInput';
 import ResourceNodeConfiguration from './ResourceNodeConfiguration';
 import McpNodeConfiguration from './McpNodeConfiguration';
 import FlowParametersPage from './FlowParametersPage';
@@ -616,8 +617,7 @@ function WorkspaceApp() {
     if (r) void openFlow(r);
   }
   function focusInvalidInput(invalid: HTMLElement) {
-    const details = invalid.closest('details');
-    if (details) details.open = true;
+    const revealed = revealDraftInput(invalid);
     const input = invalid.matches('textarea,input,select')
       ? invalid
       : (invalid.querySelector<HTMLElement>('[aria-invalid="true"]') ??
@@ -625,7 +625,8 @@ function WorkspaceApp() {
     if (compactEditor && invalid.closest('.inspector')) {
       setEditorPanel('node');
       requestAnimationFrame(() => input?.isConnected && input.focus());
-    } else input?.focus();
+    } else if (revealed) requestAnimationFrame(() => input?.isConnected && input.focus());
+    else input?.focus();
   }
   function guardNodeInput(includeValues = true) {
     // Field edits may complete their own pending value. Navigation and structure

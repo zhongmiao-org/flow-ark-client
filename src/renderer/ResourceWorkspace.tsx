@@ -1,4 +1,4 @@
-import { Drawer, Select, Button } from 'antd';
+import { Drawer, Select, Button, Descriptions } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef } from 'react';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
 import type { FlowRecord, Step } from '../shared/types';
@@ -252,14 +252,21 @@ export default function ResourceWorkspace(props: Props) {
                     </>
                   ) : (
                     <>
-                      <dl>
-                        {fields(node, props.record).map(([label, text]) => (
-                          <div key={label}>
-                            <dt>{label}</dt>
-                            <dd title={text}>{text}</dd>
-                          </div>
-                        ))}
-                      </dl>
+                      <Descriptions
+                        layout="vertical"
+                        column={1}
+                        size="small"
+                        colon={false}
+                        items={fields(node, props.record).map(([label, text]) => ({
+                          key: label,
+                          label,
+                          children: (
+                            <span title={text} style={{ overflowWrap: 'anywhere' }}>
+                              {text}
+                            </span>
+                          ),
+                        }))}
+                      />
                       <Button type="primary" onClick={() => select(node.id)}>
                         配置此步骤
                       </Button>
