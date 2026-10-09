@@ -1,4 +1,5 @@
-import { Alert, Badge, ConfigProvider, Button, Checkbox, Input, Modal, Tag } from 'antd';
+import { Alert, Badge, Collapse, ConfigProvider, Button, Checkbox, Input, Modal, Tag } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import './antd-layout.css';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { Bootstrap, FlowRecord } from '../shared/types';
@@ -291,6 +292,7 @@ export default function LocalCredentialsPanel({
 }) {
   const [entries, setEntries] = useState<LocalCredentialState[]>();
   const [query, setQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const [error, setError] = useState('');
   const [listError, setListError] = useState('');
   const listIssue = useRef<HTMLDivElement>(null);
@@ -379,6 +381,29 @@ export default function LocalCredentialsPanel({
       setOpening('');
     }
   };
+  const searchControls = (
+    <>
+      <label className="local-settings-search">
+        搜索凭据
+        <Input
+          ref={(instance) => {
+            search.current = instance?.input ?? null;
+          }}
+          size={compact ? 'small' : undefined}
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="名称、标识或引用流程"
+        />
+      </label>
+      <div className="local-settings-row">
+        <span>{entries ? `${shown?.length} / ${entries.length} 个凭据` : '尚未读取凭据清单'}</span>
+        <Button disabled={loading || undefined} onClick={() => void read()}>
+          {loading ? '正在读取…' : '刷新列表'}
+        </Button>
+      </div>
+    </>
+  );
   return (
     <div className={`local-credentials-layout${compact ? ' is-compact' : ''}`}>
       <section
@@ -399,29 +424,25 @@ export default function LocalCredentialsPanel({
           </Button>
         </div>
         <p>名称便于识别，保存值只供明确绑定的流程读取。</p>
-        <details className="local-resource-search-controls" open={compact ? undefined : true}>
-          <summary hidden={!compact}>查找与刷新凭据{entries ? ` · ${entries.length}` : ''}</summary>
-          <label className="local-settings-search">
-            搜索凭据
-            <Input
-              ref={(instance) => {
-                search.current = instance?.input ?? null;
-              }}
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="名称、标识或引用流程"
-            />
-          </label>
-          <div className="local-settings-row">
-            <span>
-              {entries ? `${shown?.length} / ${entries.length} 个凭据` : '尚未读取凭据清单'}
-            </span>
-            <Button disabled={loading || undefined} onClick={() => void read()}>
-              {loading ? '正在读取…' : '刷新列表'}
-            </Button>
-          </div>
-        </details>
+        {compact ? (
+          <Collapse
+            className="local-resource-search-controls"
+            size="small"
+            activeKey={searchOpen ? ['search'] : []}
+            onChange={(keys) => setSearchOpen(keys.includes('search'))}
+            items={[
+              {
+                key: 'search',
+                label: `查找与刷新凭据${entries ? ` · ${entries.length}` : ''}`,
+                forceRender: true,
+                onKeyDown: activateCollapseWithSpace,
+                children: searchControls,
+              },
+            ]}
+          />
+        ) : (
+          searchControls
+        )}
         {loading && <p role="status">正在读取凭据清单…</p>}
         {listError && (
           <div className="local-resource-feedback" role="alert" ref={listIssue} tabIndex={-1}>
@@ -476,7 +497,7 @@ export default function LocalCredentialsPanel({
               <>
                 <label className="local-resource-field-label">
                   名称
-                  <Input readOnly value={entry.name} />
+                  <Input size="small" readOnly value={entry.name} />
                 </label>
                 <div className="local-resource-field-label">
                   值 · {entry.inUse ? '运行正在使用' : '已保存'}
@@ -511,23 +532,39 @@ export default function LocalCredentialsPanel({
                 移除凭据
               </Button>
             </div>
-            <details>
-              <summary>引用流程 · {entry.boundFlows.length}</summary>
-              {compact && <code>{entry.id}</code>}
-              {entry.boundFlows.length ? (
-                <ul>
-                  {entry.boundFlows.map((flow) => (
-                    <li key={flow.id}>
-                      <Button disabled={!!opening || undefined} onClick={() => void open(flow.id)}>
-                        {flow.name} · 打开绑定
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p>没有已保存流程绑定；保存凭据不会自动授权。</p>
-              )}
-            </details>
+            <Collapse
+              className="local-credential-references"
+              size="small"
+              items={[
+                {
+                  key: 'references',
+                  label: `引用流程 · ${entry.boundFlows.length}`,
+                  forceRender: true,
+                  onKeyDown: activateCollapseWithSpace,
+                  children: (
+                    <>
+                      {compact && <code>{entry.id}</code>}
+                      {entry.boundFlows.length ? (
+                        <ul>
+                          {entry.boundFlows.map((flow) => (
+                            <li key={flow.id}>
+                              <Button
+                                disabled={!!opening || undefined}
+                                onClick={() => void open(flow.id)}
+                              >
+                                {flow.name} · 打开绑定
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p>没有已保存流程绑定；保存凭据不会自动授权。</p>
+                      )}
+                    </>
+                  ),
+                },
+              ]}
+            />
           </article>
         ))}
         {entries && !listError && !shown?.length && (
@@ -538,7 +575,8 @@ export default function LocalCredentialsPanel({
                 <Button
                   onClick={() => {
                     setQuery('');
-                    search.current?.focus();
+                    setSearchOpen(true);
+                    requestAnimationFrame(() => search.current?.focus());
                   }}
                 >
                   清除搜索
@@ -553,24 +591,38 @@ export default function LocalCredentialsPanel({
           <p className="local-credential-protection">系统保护不可用时拒绝保存，不降级为明文。</p>
         )}
       </section>
-      <details
-        className={compact ? 'local-credential-help' : 'local-settings-card'}
-        open={compact ? undefined : true}
-      >
-        <summary>绑定与保护说明</summary>
-
-        <p>
-          在流程参数与资源中勾选要使用的凭据。替换不改变 ID，旧运行继续受固定快照和在用保护约束。
-        </p>
-        <p>活动或排队运行使用期间不能替换或移除。删除前需先解除已保存流程的绑定。</p>
-        <p>已保存值不回显，不随流程 ZIP 导出。</p>
-        <h3>AI 与工具认证</h3>
-        <p>供应商密钥和工具认证在各自的设置中管理。</p>
-        <div className="local-credential-actions">
-          <Button onClick={openAI}>管理 AI 密钥</Button>
-          <Button onClick={openTools}>管理工具认证</Button>
-        </div>
-      </details>
+      <section className={compact ? undefined : 'local-settings-card'}>
+        <Collapse
+          className="local-credential-help"
+          key={compact ? 'compact' : 'full'}
+          size="small"
+          defaultActiveKey={compact ? [] : ['help']}
+          items={[
+            {
+              key: 'help',
+              label: '绑定与保护说明',
+              forceRender: true,
+              onKeyDown: activateCollapseWithSpace,
+              children: (
+                <>
+                  <p>
+                    在流程参数与资源中勾选要使用的凭据。替换不改变
+                    ID，旧运行继续受固定快照和在用保护约束。
+                  </p>
+                  <p>活动或排队运行使用期间不能替换或移除。删除前需先解除已保存流程的绑定。</p>
+                  <p>已保存值不回显，不随流程 ZIP 导出。</p>
+                  <h3>AI 与工具认证</h3>
+                  <p>供应商密钥和工具认证在各自的设置中管理。</p>
+                  <div className="local-credential-actions">
+                    <Button onClick={openAI}>管理 AI 密钥</Button>
+                    <Button onClick={openTools}>管理工具认证</Button>
+                  </div>
+                </>
+              ),
+            },
+          ]}
+        />
+      </section>
       {editor && (
         <CredentialDialog
           key={`${editor.kind}:${editor.id}`}
