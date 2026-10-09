@@ -1,4 +1,5 @@
-import { ConfigProvider, Button, Input, Radio } from 'antd';
+import { Alert, Collapse, ConfigProvider, Button, Input, Radio, Tag } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { PlanningTask, PlanningResult, PlanningContext } from '../shared/planning';
 import { learningPrompt } from '../shared/learning';
@@ -54,7 +55,7 @@ export default function TaskUnderstandingPage({
   const outputErrorId = useId();
   const outputFeedbackId = useId();
   const directoryButton = useRef<HTMLButtonElement>(null);
-  const feedbackElement = useRef<HTMLParagraphElement>(null);
+  const feedbackElement = useRef<HTMLDivElement>(null);
   const handledFeedback = useRef<OutputFeedback | undefined>(outputFeedback);
   const outputPending = outputFeedback?.kind === 'choosing' || outputFeedback?.kind === 'clearing';
   useLayoutEffect(() => {
@@ -114,19 +115,25 @@ export default function TaskUnderstandingPage({
                 : '选择本机输出目录'}
           </Button>
           {outputFeedback && (
-            <p
+            <div
               id={outputFeedbackId}
               ref={feedbackElement}
               tabIndex={-1}
-              role={outputFeedback.kind === 'error' ? 'alert' : 'status'}
-              className={
-                outputFeedback.kind === 'error'
-                  ? 'task-output-feedback is-error'
-                  : 'task-output-feedback'
-              }
+              className="task-output-feedback"
             >
-              {outputFeedback.message}
-            </p>
+              <Alert
+                role={outputFeedback.kind === 'error' ? 'alert' : 'status'}
+                type={
+                  outputFeedback.kind === 'error'
+                    ? 'error'
+                    : outputFeedback.kind === 'chosen' || outputFeedback.kind === 'cleared'
+                      ? 'success'
+                      : 'info'
+                }
+                showIcon
+                title={outputFeedback.message}
+              />
+            </div>
           )}
           {!requiredOutput && !output && (
             <small>需要保存文本时选择目录；其他需求可先生成方案。</small>
@@ -152,18 +159,23 @@ export default function TaskUnderstandingPage({
           </fieldset>
         </ConfigProvider>
         {outputNameError && (
-          <div className="ai-task-note" role="alert">
-            <p>输出文件名需要修改，暂不能选择目录{output ? '、保存或生成方案' : ''}。</p>
-            <Button
-              disabled={busy || undefined}
-              onClick={() => {
-                setOptionsOpen(true);
-                requestAnimationFrame(() => outputInput.current?.focus());
-              }}
-            >
-              修改输出文件名
-            </Button>
-          </div>
+          <Alert
+            type="error"
+            role="alert"
+            showIcon
+            title={`输出文件名需要修改，暂不能选择目录${output ? '、保存或生成方案' : ''}。`}
+            description={
+              <Button
+                disabled={busy || undefined}
+                onClick={() => {
+                  setOptionsOpen(true);
+                  requestAnimationFrame(() => outputInput.current?.focus());
+                }}
+              >
+                修改输出文件名
+              </Button>
+            }
+          />
         )}
         <div className="task-understanding-controls">{controls}</div>
       </section>
@@ -181,40 +193,53 @@ export default function TaskUnderstandingPage({
                 : '你填写的需求'}
             {sources.length ? `；另有 ${sources.join('、')}` : ''}
           </p>
-          <details className="task-understanding-extra">
-            <summary>资料与发送范围</summary>
-            {web && (
-              <>
-                <p>网页来源：{web.page.title || '未命名网页'}</p>
-                <p className="task-understanding-url">{web.page.url}</p>
-                <p>
-                  {web.element
-                    ? `读取范围：${web.element.target.label || web.element.target.tag}（${web.element.target.framePath.length ? `${web.element.target.framePath.length} 层框架` : '主页面'}）。`
-                    : '读取范围：已确认网页中的只读操作。'}
-                  这是已保存的选择；执行前仍需核对对象是否有效。
-                </p>
-              </>
-            )}
-            {!!context.length && (
-              <ul className="task-understanding-input-list" aria-label="当前资料">
-                {context.map((entry) => (
-                  <li key={entry.id}>
-                    {entry.label || '未命名资料'} · {entry.text.length} 字符
-                  </li>
-                ))}
-              </ul>
-            )}
-            {!!task.attachments?.length && (
-              <ul className="task-understanding-input-list" aria-label="已选附件">
-                {task.attachments.map((attachment) => (
-                  <li key={attachment.id}>
-                    {attachment.name} · {attachment.kind === 'image' ? '图片副本' : '文本副本'}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <p>可展开“查看本次发送给…的内容”核对完整范围。</p>
-          </details>
+          <Collapse
+            className="task-understanding-extra"
+            items={[
+              {
+                key: 'context',
+                label: <>资料与发送范围</>,
+                forceRender: true,
+                onKeyDown: activateCollapseWithSpace,
+                children: (
+                  <div className="feedback-body">
+                    {web && (
+                      <>
+                        <p>网页来源：{web.page.title || '未命名网页'}</p>
+                        <p className="task-understanding-url">{web.page.url}</p>
+                        <p>
+                          {web.element
+                            ? `读取范围：${web.element.target.label || web.element.target.tag}（${web.element.target.framePath.length ? `${web.element.target.framePath.length} 层框架` : '主页面'}）。`
+                            : '读取范围：已确认网页中的只读操作。'}
+                          这是已保存的选择；执行前仍需核对对象是否有效。
+                        </p>
+                      </>
+                    )}
+                    {!!context.length && (
+                      <ul className="task-understanding-input-list" aria-label="当前资料">
+                        {context.map((entry) => (
+                          <li key={entry.id}>
+                            {entry.label || '未命名资料'} · {entry.text.length} 字符
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {!!task.attachments?.length && (
+                      <ul className="task-understanding-input-list" aria-label="已选附件">
+                        {task.attachments.map((attachment) => (
+                          <li key={attachment.id}>
+                            {attachment.name} ·{' '}
+                            {attachment.kind === 'image' ? '图片副本' : '文本副本'}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <p>可展开“查看本次发送给…的内容”核对完整范围。</p>
+                  </div>
+                ),
+              },
+            ]}
+          />
         </div>
         <div className="task-understanding-fact" aria-label="已选操作对象">
           <div className="task-understanding-fact-heading">
@@ -240,17 +265,29 @@ export default function TaskUnderstandingPage({
             </p>
           )}
           {!!task.toolTargets?.length && (
-            <details className="task-understanding-tools">
-              <summary>核对已选工具 · {task.toolTargets.length} 个对象</summary>
-              <ul>
-                {task.toolTargets.map((target) => (
-                  <li key={target.selectionId}>
-                    {target.displayName} · {target.tools.length} 项工具
-                  </li>
-                ))}
-              </ul>
-              <p>账号、工作区和读写影响尚未核对，所选定义将在你核对并生成时发送给模型。</p>
-            </details>
+            <Collapse
+              className="task-understanding-tools"
+              items={[
+                {
+                  key: 'tools',
+                  label: <>核对已选工具 · {task.toolTargets.length} 个对象</>,
+                  forceRender: true,
+                  onKeyDown: activateCollapseWithSpace,
+                  children: (
+                    <div className="feedback-body">
+                      <ul>
+                        {task.toolTargets.map((target) => (
+                          <li key={target.selectionId}>
+                            {target.displayName} · {target.tools.length} 项工具
+                          </li>
+                        ))}
+                      </ul>
+                      <p>账号、工作区和读写影响尚未核对，所选定义将在你核对并生成时发送给模型。</p>
+                    </div>
+                  ),
+                },
+              ]}
+            />
           )}
         </div>
         <div className="task-understanding-fact">
@@ -263,51 +300,69 @@ export default function TaskUnderstandingPage({
               : '生成方案后核对实际修改范围与所需资源。'}
             {web ? ' 不改变网页内容。' : ''}
           </p>
-          <details className="task-understanding-extra">
-            <summary>核对修改范围</summary>
-            <p>以上是你选定的范围；方案生成后还需核对全部读写步骤。</p>
-          </details>
+          <Collapse
+            className="task-understanding-extra"
+            items={[
+              {
+                key: 'scope',
+                label: <>核对修改范围</>,
+                forceRender: true,
+                onKeyDown: activateCollapseWithSpace,
+                children: (
+                  <div className="feedback-body">
+                    <p>以上是你选定的范围；方案生成后还需核对全部读写步骤。</p>
+                  </div>
+                ),
+              },
+            ]}
+          />
         </div>
         <div className="task-understanding-fact" aria-label="输出结果">
           <h3>输出结果</h3>
           <p>{output ? `任务输出 / ${options.name}（${policy}）` : '尚未选择输出目录'}</p>
-          {outputDirty && (
-            <span className="task-understanding-output-state">输出偏好已修改 · 待保存</span>
-          )}
-          <details
+          {outputDirty && <Tag color="warning">输出偏好已修改 · 待保存</Tag>}
+          <Collapse
             className="task-understanding-output-options"
-            open={optionsOpen}
-            onToggle={(event) => setOptionsOpen(event.currentTarget.open)}
-          >
-            <summary>文件名与输出目录</summary>
-            <p className="task-understanding-path">
-              {output?.directory || '尚未选择目录；文件名可先填写。'}
-            </p>
-            <label>
-              输出文件名
-              <Input
-                status={!!outputNameError ? 'error' : undefined}
-                disabled={busy || undefined}
-                ref={(instance) => {
-                  outputInput.current = instance?.input ?? null;
-                }}
-                aria-invalid={!!outputNameError}
-                aria-describedby={outputNameError ? outputErrorId : undefined}
-                value={options.name}
-                maxLength={255}
-                onChange={(e) => changed({ ...options, name: e.target.value })}
-              />
-            </label>
-            {output && (
-              <Button disabled={busy || undefined} onClick={clear}>
-                {outputFeedback?.kind === 'clearing' ? '正在移除…' : '移除输出目录'}
-              </Button>
-            )}
-          </details>
+            activeKey={optionsOpen ? ['output'] : []}
+            onChange={(keys) => setOptionsOpen(keys.includes('output'))}
+            items={[
+              {
+                key: 'output',
+                label: <>文件名与输出目录</>,
+                forceRender: true,
+                onKeyDown: activateCollapseWithSpace,
+                children: (
+                  <div className="feedback-body">
+                    <p className="task-understanding-path">
+                      {output?.directory || '尚未选择目录；文件名可先填写。'}
+                    </p>
+                    <label>
+                      输出文件名
+                      <Input
+                        status={!!outputNameError ? 'error' : undefined}
+                        disabled={busy || undefined}
+                        ref={(instance) => {
+                          outputInput.current = instance?.input ?? null;
+                        }}
+                        aria-invalid={!!outputNameError}
+                        aria-describedby={outputNameError ? outputErrorId : undefined}
+                        value={options.name}
+                        maxLength={255}
+                        onChange={(e) => changed({ ...options, name: e.target.value })}
+                      />
+                    </label>
+                    {output && (
+                      <Button disabled={busy || undefined} onClick={clear}>
+                        {outputFeedback?.kind === 'clearing' ? '正在移除…' : '移除输出目录'}
+                      </Button>
+                    )}
+                  </div>
+                ),
+              },
+            ]}
+          />
           {outputNameError && (
-            <p id={outputErrorId} className="task-output-name-error">
-              {outputNameError}
-            </p>
+            <Alert id={outputErrorId} type="error" showIcon title={outputNameError} />
           )}
         </div>
         <Button
@@ -318,9 +373,7 @@ export default function TaskUnderstandingPage({
           理解不对，重新描述
         </Button>
         {result?.limitations.map((limitation, i) => (
-          <p className="ai-task-note" key={i}>
-            {limitation}
-          </p>
+          <Alert type="info" showIcon title={limitation} key={i} />
         ))}
       </section>
     </div>

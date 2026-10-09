@@ -229,11 +229,9 @@ button.ai-remove-button {
 }
 .ai-missing-context {
   margin-top: 16px;
-  font-size: 12px;
-  color: var(--fa-text-secondary);
 }
-.ai-missing-context summary {
-  cursor: pointer;
+.ai-missing-context .feedback-body {
+  align-items: stretch;
 }
 .ai-missing-context ul {
   list-style: none;
