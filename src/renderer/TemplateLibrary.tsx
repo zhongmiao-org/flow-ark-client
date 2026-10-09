@@ -6,7 +6,10 @@ import type { Bootstrap } from '../shared/types';
 import type { AISettingsEntry } from './AISettingsPage';
 import type { TemplateDetail } from './template-draft';
 import type { InstalledPackage } from '../templates/archive';
-import TemplateInstancePage, { type TemplateNavigation } from './TemplateInstancePage';
+import TemplateInstancePage, {
+  type TemplateAdoptionOrigin,
+  type TemplateNavigation,
+} from './TemplateInstancePage';
 import TemplateManifestOverview, {
   capabilityLabel,
   type TemplateManifest,
@@ -51,6 +54,10 @@ export default function TemplateLibrary({
   const [installed, setInstalled] = useState<InstalledPackage>();
   const [selectedKey, setSelectedKey] = useState('');
   const [detail, setDetail] = useState<TemplateDetail>();
+  const [adoption, setAdoption] = useState<{
+    instanceId: string;
+    from: TemplateAdoptionOrigin;
+  }>();
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [failedOperation, setFailedOperation] = useState('');
@@ -222,16 +229,19 @@ export default function TemplateLibrary({
         throw reason;
       }
     });
-  const openInstance = (id: string) =>
+  const openInstance = (id: string, adoptedFrom?: TemplateAdoptionOrigin) =>
     work('detail', async () => {
       const next = await api('template.detail', { id });
       setDetail(next);
+      setAdoption(adoptedFrom ? { instanceId: id, from: adoptedFrom } : undefined);
       setResumeInstance(undefined);
       return true;
     });
   const create = (p: InstalledPackage, copy?: string) =>
     work('create', async () => {
       remember();
+      const original = data.instances.find((item) => item.id === copy);
+      const originalPackage = data.templates.find((item) => item.key === original?.packageKey);
       const instance = await api('template.create', {
         key: p.key,
         ...(copy ? { copyFrom: copy } : {}),
@@ -240,6 +250,14 @@ export default function TemplateLibrary({
       await refresh();
       const next = await api('template.detail', { id: instance.id });
       setDetail(next);
+      setAdoption(
+        original && originalPackage
+          ? {
+              instanceId: instance.id,
+              from: { id: original.id, version: originalPackage.manifest.version },
+            }
+          : undefined,
+      );
       setResumeInstance(undefined);
     });
   useEffect(() => {
@@ -264,6 +282,7 @@ export default function TemplateLibrary({
       <TemplateInstancePage
         key={detail.instance.id}
         initial={detail}
+        adoptedFrom={adoption?.instanceId === detail.instance.id ? adoption.from : undefined}
         active={active}
         data={data}
         action={action}
@@ -278,7 +297,7 @@ export default function TemplateLibrary({
           home();
         }}
         close={() => setDetail(undefined)}
-        choose={async (id) => (await openInstance(id)) === true}
+        choose={async (id, adoptedFrom) => (await openInstance(id, adoptedFrom)) === true}
       />
     );
   navigation.current = (next) => {

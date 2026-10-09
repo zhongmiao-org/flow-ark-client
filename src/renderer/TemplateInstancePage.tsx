@@ -19,6 +19,7 @@ import {
 import './template-instance.css';
 import './editor-leave.css';
 export type TemplateNavigation = (next: () => void, destination?: string) => void;
+export type TemplateAdoptionOrigin = { id: string; version: string };
 type Tab = 'configuration' | 'resources' | 'entry' | 'source';
 const tabs: [Tab, string][] = [
   ['configuration', '共享配置'],
@@ -47,6 +48,7 @@ export default function TemplateInstancePage({
   home,
   close,
   choose,
+  adoptedFrom,
 }: {
   initial: TemplateDetail;
   active: boolean;
@@ -60,7 +62,8 @@ export default function TemplateInstancePage({
   exportTemplate: (pkg: InstalledPackage, returnLabel?: string) => void;
   home: () => void;
   close: () => void;
-  choose: (id: string) => Promise<boolean>;
+  choose: (id: string, adoptedFrom?: TemplateAdoptionOrigin) => Promise<boolean>;
+  adoptedFrom?: TemplateAdoptionOrigin;
 }) {
   const [draft, setDraft] = useState(initial),
     [saved, setSaved] = useState(structuredClone(initial));
@@ -68,6 +71,15 @@ export default function TemplateInstancePage({
   const [entryId, setEntryId] = useState(initial.entries[0]?.id ?? '');
   const [entryDetail, setEntryDetail] = useState(false);
   const entryHeading = useRef<HTMLHeadingElement>(null);
+  const adoptionHeading = useRef<HTMLHeadingElement>(null);
+  const resourceTab = useRef<HTMLButtonElement>(null);
+  const entered = useRef(false);
+  useLayoutEffect(() => {
+    if (!active || entered.current) return;
+    entered.current = true;
+    document.querySelector('main')?.scrollTo({ top: 0 });
+    (adoptedFrom ? adoptionHeading.current : entryHeading.current)?.focus({ preventScroll: true });
+  }, [active, adoptedFrom]);
   useLayoutEffect(() => {
     if (entryDetail) {
       document.querySelector('main')?.scrollTo({ top: 0 });
@@ -115,7 +127,7 @@ export default function TemplateInstancePage({
   useLayoutEffect(() => {
     if (busy || !focusResourceError.current) return;
     focusResourceError.current = false;
-    if (active && error && !leaving && tab === 'resources') resourceError.current?.focus();
+    if (active && error && !leaving && tab !== 'configuration') resourceError.current?.focus();
   }, [active, busy, error, leaving, tab]);
   const rawInvalid = (scope: TemplateSaveScope = 'all', inputId?: string) => {
     const containers =
@@ -180,7 +192,8 @@ export default function TemplateInstancePage({
         try {
           return await fn();
         } catch (error) {
-          focusResourceError.current = tab === 'resources';
+          focusConfigurationError.current = tab === 'configuration';
+          focusResourceError.current = tab !== 'configuration';
           setError(message(error));
           if (/实例已变化|实例不存在|原入口流程/.test(message(error)))
             setSourceError('原实例的已保存内容已变化。当前输入仍保留，请核对后重新读取。');
@@ -327,7 +340,10 @@ export default function TemplateInstancePage({
             created = { id: next.id, version: target.manifest.version };
             setCreatedVersion(created);
           }
-          if (created && !(await choose(created.id)))
+          if (
+            created &&
+            !(await choose(created.id, { id: instance.id, version: draft.manifest.version }))
+          )
             throw new Error('实例已创建，但暂时无法打开。请重试打开已创建实例，无需再次创建。');
         }).finally(() => setAdopting(false));
       },
@@ -394,10 +410,55 @@ export default function TemplateInstancePage({
             </p>
           </div>
         </div>
+        {adoptedFrom && !entryDetail && (
+          <section className="template-adoption-result" aria-labelledby="template-adoption-title">
+            <span className="ai-config-status success">新旧版本并存</span>
+            <h2 id="template-adoption-title" ref={adoptionHeading} tabIndex={-1}>
+              v{draft.manifest.version} 的新实例已创建
+            </h2>
+            <p>
+              原实例 {adoptedFrom.id.slice(0, 8)} 继续使用 v{adoptedFrom.version}
+              ，原有计划与运行快照保持不变。
+            </p>
+            <p>
+              请核对按此版本字段规则准备的普通配置。资源绑定、动作权限和业务状态不会从原实例复制。
+            </p>
+            <div className="ai-task-actions">
+              {tab !== 'resources' && (
+                <button
+                  className="primary"
+                  disabled={busy}
+                  onClick={() => {
+                    switchTab('resources');
+                    resourceTab.current?.focus();
+                  }}
+                >
+                  核对资源与动作授权
+                </button>
+              )}
+              <button
+                disabled={busy}
+                onClick={() =>
+                  go(
+                    () =>
+                      void work(async () => {
+                        if (!(await choose(adoptedFrom.id)))
+                          throw new Error('暂时无法打开原实例；新实例和当前输入仍保留，请重试。');
+                      }),
+                    '原实例',
+                  )
+                }
+              >
+                打开原实例 · v{adoptedFrom.version}
+              </button>
+            </div>
+          </section>
+        )}
         <nav className="ai-settings-tabs" aria-label="实例分类" hidden={entryDetail}>
           {tabs.map(([id, label]) => (
             <button
               key={id}
+              ref={id === 'resources' ? resourceTab : undefined}
               disabled={busy}
               aria-current={tab === id ? 'page' : undefined}
               onClick={() => switchTab(id)}
