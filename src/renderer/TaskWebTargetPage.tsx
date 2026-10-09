@@ -1,4 +1,4 @@
-import { Button, Checkbox, Input, Tabs } from 'antd';
+import { Alert, Card, Button, Checkbox, Input, Tabs } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { PlanningTask, TaskDetail } from '../shared/planning';
 import { sameWebPage, type TaskWebPreview } from '../shared/task-web-target';
@@ -76,7 +76,7 @@ export default function TaskWebTargetPage({
   const [invalidUrl, setInvalidUrl] = useState(false);
   const urlInput = useRef<HTMLInputElement>(null);
   const webHeading = useRef<HTMLHeadingElement>(null);
-  const previewReason = useRef<HTMLParagraphElement>(null);
+  const previewReason = useRef<HTMLDivElement>(null);
   const operationError = useRef<HTMLDivElement>(null);
   const focusPreview = useRef(false);
   const connectionsButton = useRef<HTMLButtonElement>(null);
@@ -242,7 +242,7 @@ export default function TaskWebTargetPage({
   const targetPanels = {
     web: (
       <div className="task-target-tab-panel">
-        <div className="task-web-object task-web-current">
+        <Card className="task-web-object task-web-current" size="small">
           <h2>
             {webReady && <span aria-hidden="true">✓ </span>}
             {current?.title || (current ? '未命名网页' : '尚未取得网页')}
@@ -255,20 +255,25 @@ export default function TaskWebTargetPage({
           <Button disabled={busy || undefined} onClick={inspectBrowser}>
             扩大查看
           </Button>
-        </div>
+        </Card>
         {task.webTarget && (
-          <p className="ai-task-note" role="status">
-            {savedCurrent
-              ? task.webTarget.element
-                ? `上次选择的元素：${task.webTarget.element.target.label || task.webTarget.element.target.tag}。可重新选取元素或改用整个网页。`
-                : '已保存此网页选择；执行前仍会再次核对。'
-              : '上次选择的网页已变化或尚未打开，请重新检查并确认。'}
-          </p>
+          <Alert
+            type="info"
+            showIcon
+            role="status"
+            title={
+              savedCurrent
+                ? task.webTarget.element
+                  ? `上次选择的元素：${task.webTarget.element.target.label || task.webTarget.element.target.tag}。可重新选取元素或改用整个网页。`
+                  : '已保存此网页选择；执行前仍会再次核对。'
+                : '上次选择的网页已变化或尚未打开，请重新检查并确认。'
+            }
+          />
         )}
-        <div className="task-web-object">
+        <Card className="task-web-object" size="small">
           <h2>其他网页</h2>
           <p>输入网址，打开后检查 FlowArk 的当前网页。</p>
-        </div>
+        </Card>
         <form
           className="task-target-address-form"
           noValidate
@@ -308,7 +313,11 @@ export default function TaskWebTargetPage({
             </Button>
           </div>
         </form>
-        <p className="ai-task-note">切换目标后重新核对方案与能力，不沿用旧对象的执行授权。</p>
+        <Alert
+          type="info"
+          showIcon
+          title="切换目标后重新核对方案与能力，不沿用旧对象的执行授权。"
+        />
       </div>
     ),
     window: (
@@ -351,182 +360,189 @@ export default function TaskWebTargetPage({
     >
       {error && (
         <div
-          className="alert error"
+          className="workspace-feedback"
           role="alert"
           id="task-web-error"
           ref={operationError}
           tabIndex={-1}
         >
-          {error}
+          <Alert type="error" showIcon title={error} />
         </div>
       )}
       <div className={`task-web-columns${tab === 'window' ? ' is-desktop' : ''}`}>
-        <section className="ai-task-card">
-          <Tabs
-            id={tabId}
-            className={
-              'task-web-tabs' +
-              (tab === 'window' && !!desktop.selected && !desktop.expired
-                ? ' is-window-selection'
-                : '')
-            }
-            aria-label="对象类型"
-            activeKey={tab}
-            animated={false}
-            destroyOnHidden={false}
-            onChange={(key) => {
-              if (!busy) setTab(key as typeof tab);
-            }}
-            items={tabs.map(({ id: key, label }) => ({
-              key,
-              label,
-              disabled: busy,
-              forceRender: true,
-              children: targetPanels[key],
-            }))}
-          />
-        </section>
-        <section className="ai-task-card">
-          <div ref={setToolDetails} className="task-tools-detail-slot" hidden={tab !== 'tools'} />
-          {tab === 'window' ? (
-            <DesktopWindowCapabilities
-              state={desktop}
-              back={back}
-              backLabel={backLabel}
-              chooseWeb={() => setTab('web')}
-              plan={() => setDesktopPlan(true)}
+        <section>
+          <Card className="task-web-card">
+            <Tabs
+              id={tabId}
+              className={
+                'task-web-tabs' +
+                (tab === 'window' && !!desktop.selected && !desktop.expired
+                  ? ' is-window-selection'
+                  : '')
+              }
+              aria-label="对象类型"
+              activeKey={tab}
+              animated={false}
+              destroyOnHidden={false}
+              onChange={(key) => {
+                if (!busy) setTab(key as typeof tab);
+              }}
+              items={tabs.map(({ id: key, label }) => ({
+                key,
+                label,
+                disabled: busy,
+                forceRender: true,
+                children: targetPanels[key],
+              }))}
             />
-          ) : tab === 'tools' ? (
-            <>
-              <Button disabled={busy || undefined} onClick={back}>
-                {backLabel}
-              </Button>
-            </>
-          ) : (
-            <>
-              <h2 ref={webHeading} tabIndex={-1}>
-                当前将操作的对象
-              </h2>
-              <div className="task-web-object task-web-summary">
-                <h2>
-                  {current?.title || '等待选择网页'}
-                  {elementCandidate && ` · ${elementCandidate.label || elementCandidate.tag}`}
-                </h2>
-                <p>
-                  本机内置浏览器 / 同一受控会话
-                  {elementCandidate && (
-                    <>
-                      {' · 待确认 · '}
-                      {/^h[1-6]$/.test(elementCandidate.tag) ? '页面标题' : '网页元素'} ·{' '}
-                      {elementCandidate.framePath.length
-                        ? `${elementCandidate.framePath.length} 层框架`
-                        : '主页面'}
-                    </>
-                  )}
-                </p>
-                <p className="task-web-url">{current?.url}</p>
-              </div>
-              <h2>{webReady ? '本次可用能力' : '网页就绪后可用'}</h2>
-              {[
-                elementCandidate ? '读取已选元素文字' : '读取页面文字',
-                '定位页面元素',
-                '新建本地输出文件',
-              ].map((label) => (
-                <Checkbox checked={webReady} disabled className="ai-task-checkbox" key={label}>
-                  {label}
-                </Checkbox>
-              ))}
-              <Checkbox checked={false} disabled className="ai-task-checkbox">
-                提交表单或发送消息 · 未授权
-              </Checkbox>
-              <p className="task-web-scope">
-                仅将网页标题、地址与能力范围加入任务；不读取账号或 Cookie，不收集整页内容。
-                {elementCandidate
-                  ? '同时保存所选元素的名称与定位，只允许读取此元素。'
-                  : '选择具体元素后，可将读取范围限定到该元素。'}
-                发送给 AI 前可完整核对。
-              </p>
-              {!webReady && (
-                <p
-                  className="ai-task-note ai-task-failure"
-                  role="status"
-                  ref={previewReason}
-                  tabIndex={-1}
-                >
-                  {checkingWeb
-                    ? '正在检查当前网页…'
-                    : preview.reason || '尚未取得可确认的网页，请重新检查。'}
-                </p>
-              )}
-              <ElementPicker
-                purpose="task"
-                active={active && tab === 'web'}
-                disabled={busy || !webReady}
-                selector={task.webTarget?.element?.target.selector ?? ''}
-                framePath={task.webTarget?.element?.target.framePath ?? []}
-                pickLabel={
-                  task.webTarget?.element || elementCandidate ? '重新选择页面元素' : '选择页面元素'
-                }
-                confirmBeforeApply
-                allowInspect={false}
-                onInspect={() => {}}
-                onSelect={(_, requestId) => selectElement(requestId)}
-                onCandidateChange={setElementCandidate}
-                sourceKey={pageSource.current}
+          </Card>
+        </section>
+        <section>
+          <Card className="task-web-card">
+            <div ref={setToolDetails} className="task-tools-detail-slot" hidden={tab !== 'tools'} />
+            {tab === 'window' ? (
+              <DesktopWindowCapabilities
+                state={desktop}
+                back={back}
+                backLabel={backLabel}
+                chooseWeb={() => setTab('web')}
+                plan={() => setDesktopPlan(true)}
               />
-              <div className="ai-task-actions task-web-selection-actions">
-                {!elementCandidate && (
+            ) : tab === 'tools' ? (
+              <>
+                <Button disabled={busy || undefined} onClick={back}>
+                  {backLabel}
+                </Button>
+              </>
+            ) : (
+              <>
+                <h2 ref={webHeading} tabIndex={-1}>
+                  当前将操作的对象
+                </h2>
+                <Card className="task-web-object task-web-summary" size="small">
+                  <h2>
+                    {current?.title || '等待选择网页'}
+                    {elementCandidate && ` · ${elementCandidate.label || elementCandidate.tag}`}
+                  </h2>
+                  <p>
+                    本机内置浏览器 / 同一受控会话
+                    {elementCandidate && (
+                      <>
+                        {' · 待确认 · '}
+                        {/^h[1-6]$/.test(elementCandidate.tag) ? '页面标题' : '网页元素'} ·{' '}
+                        {elementCandidate.framePath.length
+                          ? `${elementCandidate.framePath.length} 层框架`
+                          : '主页面'}
+                      </>
+                    )}
+                  </p>
+                  <p className="task-web-url">{current?.url}</p>
+                </Card>
+                <h2>{webReady ? '本次可用能力' : '网页就绪后可用'}</h2>
+                {[
+                  elementCandidate ? '读取已选元素文字' : '读取页面文字',
+                  '定位页面元素',
+                  '新建本地输出文件',
+                ].map((label) => (
+                  <Checkbox checked={webReady} disabled className="ai-task-checkbox" key={label}>
+                    {label}
+                  </Checkbox>
+                ))}
+                <Checkbox checked={false} disabled className="ai-task-checkbox">
+                  提交表单或发送消息 · 未授权
+                </Checkbox>
+                <p className="task-web-scope">
+                  仅将网页标题、地址与能力范围加入任务；不读取账号或 Cookie，不收集整页内容。
+                  {elementCandidate
+                    ? '同时保存所选元素的名称与定位，只允许读取此元素。'
+                    : '选择具体元素后，可将读取范围限定到该元素。'}
+                  发送给 AI 前可完整核对。
+                </p>
+                {!webReady && (
+                  <div
+                    className="task-web-preview-feedback"
+                    role="status"
+                    ref={previewReason}
+                    tabIndex={-1}
+                  >
+                    <Alert
+                      type={checkingWeb ? 'info' : 'warning'}
+                      showIcon
+                      title={
+                        checkingWeb
+                          ? '正在检查当前网页…'
+                          : preview.reason || '尚未取得可确认的网页，请重新检查。'
+                      }
+                    />
+                  </div>
+                )}
+                <ElementPicker
+                  purpose="task"
+                  active={active && tab === 'web'}
+                  disabled={busy || !webReady}
+                  selector={task.webTarget?.element?.target.selector ?? ''}
+                  framePath={task.webTarget?.element?.target.framePath ?? []}
+                  pickLabel={
+                    task.webTarget?.element || elementCandidate
+                      ? '重新选择页面元素'
+                      : '选择页面元素'
+                  }
+                  confirmBeforeApply
+                  allowInspect={false}
+                  onInspect={() => {}}
+                  onSelect={(_, requestId) => selectElement(requestId)}
+                  onCandidateChange={setElementCandidate}
+                  sourceKey={pageSource.current}
+                />
+                <div className="ai-task-actions task-web-selection-actions">
+                  {!elementCandidate && (
+                    <Button
+                      type="primary"
+                      disabled={busy || !webReady || undefined}
+                      onClick={() =>
+                        void act(async (isCurrent) => {
+                          const next = await api('task.web.select', {
+                            ...identity,
+                            token: preview.token,
+                          });
+                          if (isCurrent()) selected(next);
+                        }, 'select')
+                      }
+                    >
+                      {webAction === 'select'
+                        ? '正在确认…'
+                        : task.webTarget?.element
+                          ? '改用整个网页'
+                          : '使用整个网页'}
+                    </Button>
+                  )}
                   <Button
-                    type="primary"
-                    disabled={busy || !webReady || undefined}
+                    ref={connectionsButton}
+                    disabled={busy || undefined}
+                    onClick={() => {
+                      returningConnections.current = true;
+                      openTools();
+                    }}
+                  >
+                    连接其他应用
+                  </Button>
+                </div>
+                {task.webTarget && (
+                  <Button
+                    disabled={busy || undefined}
                     onClick={() =>
                       void act(async (isCurrent) => {
-                        const next = await api('task.web.select', {
-                          ...identity,
-                          token: preview.token,
-                        });
+                        const next = await api('task.web.clear', identity);
                         if (isCurrent()) selected(next);
-                      }, 'select')
+                      }, 'clear')
                     }
                   >
-                    {webAction === 'select'
-                      ? '正在确认…'
-                      : task.webTarget?.element
-                        ? '改用整个网页'
-                        : '使用整个网页'}
+                    {webAction === 'clear' ? '正在移除…' : '移除网页目标'}
                   </Button>
                 )}
-                <Button
-                  ref={connectionsButton}
-                  disabled={busy || undefined}
-                  onClick={() => {
-                    returningConnections.current = true;
-                    openTools();
-                  }}
-                >
-                  连接其他应用
-                </Button>
-              </div>
-              {tab !== 'web' && (
-                <p className="ai-task-note" role="status">
-                  右侧保留当前网页信息。返回“网页”后可确认，浏览连接不会更改已选对象。
-                </p>
-              )}
-              {task.webTarget && (
-                <Button
-                  disabled={busy || undefined}
-                  onClick={() =>
-                    void act(async (isCurrent) => {
-                      const next = await api('task.web.clear', identity);
-                      if (isCurrent()) selected(next);
-                    }, 'clear')
-                  }
-                >
-                  {webAction === 'clear' ? '正在移除…' : '移除网页目标'}
-                </Button>
-              )}
-            </>
-          )}
+              </>
+            )}
+          </Card>
         </section>
       </div>
     </section>
