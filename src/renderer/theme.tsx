@@ -3,6 +3,7 @@ import type { RunState } from '../shared/types';
 import type { ToolConnection } from '../shared/tool-connections';
 import type { McpArgumentReview } from '../shared/mcp-argument-review';
 import type { McpReceipt } from '../shared/mcp-run';
+import type { PlanningTask } from '../shared/planning';
 import zhCN from 'antd/locale/zh_CN';
 import { useLayoutEffect, type ReactNode } from 'react';
 
@@ -67,6 +68,16 @@ export const mcpReceiptColors: Record<
   'not-sent': 'default',
   unknown: 'error',
   waiting: 'processing',
+};
+
+export const planningTaskColors: Record<PlanningTask['status'], (typeof runStateColors)[string]> = {
+  draft: 'default',
+  generating: 'processing',
+  plan: 'processing',
+  clarify: 'warning',
+  unsupported: 'warning',
+  failed: 'error',
+  cancelled: 'default',
 };
 
 // Figma semantic tokens. All shared controls and workspace colours derive from this theme.

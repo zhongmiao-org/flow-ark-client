@@ -1,8 +1,24 @@
-import { Button } from 'antd';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Alert, Button, Collapse, Tag } from 'antd';
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { PlanningTask, PlanningResult } from '../shared/planning';
+import { planningTaskColors } from './theme';
 import './task-generation.css';
 const runningIndicator = new URL('./assets/status/running.svg?no-inline', import.meta.url).href;
+
+// Collapse handles Enter; retain the former summary's Space activation too.
+function activateCollapseWithSpace(event: KeyboardEvent<HTMLDivElement>) {
+  const target = event.target;
+  if (
+    event.key === ' ' &&
+    !event.repeat &&
+    target instanceof HTMLElement &&
+    target.getAttribute('role') === 'button' &&
+    target.hasAttribute('aria-expanded')
+  ) {
+    event.preventDefault();
+    target.click();
+  }
+}
 
 export default function TaskGenerationPage({
   task,
@@ -53,13 +69,14 @@ export default function TaskGenerationPage({
       data-generation-state={generating ? 'generating' : unsupported ? 'unsupported' : 'failed'}
       aria-labelledby="generation-heading"
     >
-      <span
-        className={`badge${generating ? ' task-generation-status' : ''} state-${generating ? 'RUNNING' : unsupported ? 'WAITING_INPUT' : 'FAILED'}`}
+      <Tag
+        className="run-state-tag"
+        color={planningTaskColors[task.status]}
         role="status"
+        icon={generating ? <img src={runningIndicator} alt="" /> : undefined}
       >
-        {generating && <img src={runningIndicator} alt="" />}
         {generating ? '正在生成' : unsupported ? '缺少可用能力' : '生成未完成'}
-      </span>
+      </Tag>
       <h2 id="generation-heading" tabIndex={unsupported ? 0 : -1} ref={heading}>
         {generating
           ? task.webTarget && task.outputTarget && !task.scope
@@ -94,12 +111,18 @@ export default function TaskGenerationPage({
         </>
       ) : (
         <>
-          <article className="task-generation-failure" aria-labelledby="generation-failure-title">
-            <h3 id="generation-failure-title">请求未完成</h3>
-            <p className="task-generation-reason" role="alert" tabIndex={0} aria-label="失败原因">
-              {task.error || '没有取得完整方案，请重新核对需求后生成。'}
-            </p>
-          </article>
+          <Alert
+            className="task-generation-failure"
+            type="error"
+            role="alert"
+            showIcon
+            title={<h3 id="generation-failure-title">请求未完成</h3>}
+            description={
+              <p className="task-generation-reason" tabIndex={0} aria-label="失败原因">
+                {task.error || '没有取得完整方案，请重新核对需求后生成。'}
+              </p>
+            }
+          />
           <p>
             本次不完整的结果不会替换已采纳的草稿。
             <br />
@@ -108,9 +131,13 @@ export default function TaskGenerationPage({
         </>
       )}
       {savedFlow && (
-        <p className="task-generation-preserved">
-          已保留草稿 · {savedFlow}；本次规划没有启动新的运行。
-        </p>
+        <Alert
+          className="task-generation-preserved"
+          type="info"
+          role="note"
+          showIcon
+          title={`已保留草稿 · ${savedFlow}；本次规划没有启动新的运行。`}
+        />
       )}
       <div className="ai-task-actions">
         {generating ? (
@@ -155,17 +182,24 @@ export default function TaskGenerationPage({
         )}
       </div>
       {unsupported && !!result?.limitations.length && (
-        <details
+        <Collapse
           className="task-generation-limitations"
           key={`${task.id}:${task.requestId ?? ''}:${task.status}`}
-        >
-          <summary>查看能力限制 · {result.limitations.length} 项</summary>
-          <ul aria-label="当前能力限制" tabIndex={0}>
-            {result.limitations.map((item, index) => (
-              <li key={index}>{item}</li>
-            ))}
-          </ul>
-        </details>
+          items={[
+            {
+              key: 'limitations',
+              onKeyDown: activateCollapseWithSpace,
+              label: `查看能力限制 · ${result.limitations.length} 项`,
+              children: (
+                <ul aria-label="当前能力限制" tabIndex={0}>
+                  {result.limitations.map((item, index) => (
+                    <li key={index}>{item}</li>
+                  ))}
+                </ul>
+              ),
+            },
+          ]}
+        />
       )}
       {retry && !generating && !unsupported && (
         <div
@@ -190,45 +224,54 @@ export default function TaskGenerationPage({
         </div>
       )}
       {!generating && !unsupported && (
-        <details
+        <Collapse
           className="task-generation-record"
           key={`${task.id}:${task.requestId ?? ''}:${task.status}`}
-        >
-          <summary>查看本次请求记录</summary>
-          <dl>
-            <div>
-              <dt>AI 服务</dt>
-              <dd>
-                {task.provider === 'deepseek'
-                  ? 'DeepSeek'
-                  : task.provider === 'openai-codex'
-                    ? 'OpenAI · Codex'
-                    : '未记录'}
-              </dd>
-            </div>
-            <div>
-              <dt>模型</dt>
-              <dd>{task.model || '未记录'}</dd>
-            </div>
-            <div>
-              <dt>本地请求标识</dt>
-              <dd>{task.requestId || '未记录'}</dd>
-            </div>
-            <div>
-              <dt>状态更新时间</dt>
-              <dd>
-                {Number.isFinite(updatedAt) ? (
-                  <time dateTime={task.updatedAt}>
-                    {new Date(updatedAt).toLocaleString('zh-CN')}
-                  </time>
-                ) : (
-                  '时间待核对'
-                )}
-              </dd>
-            </div>
-          </dl>
-          <p>这里显示本次生成留下的记录；重新生成前，可在核对区检查要使用的服务与模型。</p>
-        </details>
+          items={[
+            {
+              key: 'request',
+              onKeyDown: activateCollapseWithSpace,
+              label: '查看本次请求记录',
+              children: (
+                <>
+                  <dl>
+                    <div>
+                      <dt>AI 服务</dt>
+                      <dd>
+                        {task.provider === 'deepseek'
+                          ? 'DeepSeek'
+                          : task.provider === 'openai-codex'
+                            ? 'OpenAI · Codex'
+                            : '未记录'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>模型</dt>
+                      <dd>{task.model || '未记录'}</dd>
+                    </div>
+                    <div>
+                      <dt>本地请求标识</dt>
+                      <dd>{task.requestId || '未记录'}</dd>
+                    </div>
+                    <div>
+                      <dt>状态更新时间</dt>
+                      <dd>
+                        {Number.isFinite(updatedAt) ? (
+                          <time dateTime={task.updatedAt}>
+                            {new Date(updatedAt).toLocaleString('zh-CN')}
+                          </time>
+                        ) : (
+                          '时间待核对'
+                        )}
+                      </dd>
+                    </div>
+                  </dl>
+                  <p>这里显示本次生成留下的记录；重新生成前，可在核对区检查要使用的服务与模型。</p>
+                </>
+              ),
+            },
+          ]}
+        />
       )}
     </section>
   );
