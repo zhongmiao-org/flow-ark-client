@@ -25,6 +25,7 @@ export const flowArkTheme = {
     colorFillQuaternary: '#EFF2F7',
     colorBorder: '#DFE4ED',
     colorBgSpotlight: '#121A2A',
+    colorBgMask: 'rgba(18, 26, 42, 0.42)',
     fontFamily: "'Noto Sans SC Variable', sans-serif",
     fontSize: 14,
     lineHeight: 22 / 14,
@@ -35,6 +36,8 @@ export const flowArkTheme = {
   },
   components: {
     Menu: { darkItemColor: '#A8B4CA' },
+    Modal: { titleFontSize: 28, titleLineHeight: 40 / 28, borderRadiusLG: 12 },
+    Tag: { borderRadiusSM: 999 },
     Button: { fontWeight: 500, primaryShadow: 'none', defaultShadow: 'none' },
   },
 } satisfies ThemeConfig;
@@ -88,6 +91,13 @@ export function ApplicationTheme({ children }: { children: ReactNode }) {
       locale={zhCN}
       theme={flowArkTheme}
       button={{ autoInsertSpace: false }}
+      modal={{
+        styles: {
+          container: { padding: 28 },
+          header: { marginBottom: 16 },
+          footer: { marginTop: 16 },
+        },
+      }}
       getPopupContainer={(trigger) => trigger?.closest('dialog') ?? document.body}
     >
       <WorkspaceTokens>{children}</WorkspaceTokens>

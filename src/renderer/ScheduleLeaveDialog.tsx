@@ -1,10 +1,8 @@
-import { Button } from 'antd';
-import { useEffect, useId, useRef, type RefObject } from 'react';
-import './editor-leave.css';
-import './schedule-leave.css';
+import { Alert, Badge, Button, Flex, Modal, Tag } from 'antd';
+import { useEffect, useId, useRef } from 'react';
+import './antd-layout.css';
 
 export default function ScheduleLeaveDialog({
-  dialogRef,
   destination,
   creating,
   busy,
@@ -15,7 +13,6 @@ export default function ScheduleLeaveDialog({
   discard,
   save,
 }: {
-  dialogRef: RefObject<HTMLDialogElement | null>;
   destination: string;
   creating: boolean;
   busy: boolean;
@@ -26,65 +23,82 @@ export default function ScheduleLeaveDialog({
   discard: () => void;
   save: () => void;
 }) {
-  const titleId = useId(),
-    descriptionId = useId();
+  const descriptionId = useId();
   const heading = useRef<HTMLHeadingElement>(null);
   const continueButton = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    dialogRef.current?.showModal();
-    continueButton.current?.focus();
-  }, [dialogRef]);
   useEffect(() => {
     if (error) heading.current?.focus();
   }, [error]);
   return (
-    <dialog
-      ref={dialogRef}
-      className="editor-leave-dialog schedule-leave-dialog"
-      aria-labelledby={titleId}
+    <Modal
+      open
+      width={640}
+      centered
+      closable={false}
+      mask={{ closable: false }}
+      keyboard={!busy}
+      focusable={{ focusTriggerAfterClose: false }}
+      className="flowark-leave-modal"
       aria-describedby={descriptionId}
-      onCancel={(event) => {
-        event.preventDefault();
-        stay();
+      aria-busy={busy}
+      onCancel={() => {
+        if (!busy) stay();
       }}
+      afterOpenChange={(open) => {
+        if (open) (error ? heading.current : continueButton.current)?.focus();
+      }}
+      title={
+        <Flex vertical gap={16} align="flex-start">
+          <Tag
+            color={error ? 'error' : 'warning'}
+            variant="filled"
+            className="flowark-leave-status"
+            icon={<Badge status={error ? 'error' : 'warning'} />}
+          >
+            {error ? '保存未完成' : '存在未保存更改'}
+          </Tag>
+          <h2 ref={heading} tabIndex={-1}>
+            保存计划更改再离开？
+          </h2>
+        </Flex>
+      }
+      footer={
+        <Flex gap={12} wrap className="flowark-leave-actions">
+          <Button ref={continueButton} disabled={busy || undefined} onClick={stay}>
+            继续编辑
+          </Button>
+          <Button color="danger" variant="filled" disabled={busy || undefined} onClick={discard}>
+            不保存离开
+          </Button>
+          <Button
+            type="primary"
+            loading={busy}
+            disabled={busy || blocked || unconfirmed || undefined}
+            onClick={save}
+          >
+            {busy
+              ? creating
+                ? '正在创建…'
+                : '正在保存…'
+              : error
+                ? '重试保存并离开'
+                : '保存并离开'}
+          </Button>
+        </Flex>
+      }
     >
-      <span className={`editor-leave-status${error ? ' is-error' : ''}`}>
-        {error ? '保存未完成' : '存在未保存更改'}
-      </span>
-      <h2 id={titleId} ref={heading} tabIndex={-1}>
-        保存计划更改再离开？
-      </h2>
       <p id={descriptionId}>
         {creating
           ? '保存会创建并启用一个固定版本的计划'
           : '保存仅修改未来触发的计划，保留原启停状态'}
         ，成功后前往“{destination}”。不保存将放弃本次计划更改。
       </p>
-      <p className="editor-leave-note">
+      <p className="flowark-leave-note">
         {unconfirmed
           ? '请先继续编辑，选择来源并确认固定当前已保存版本与入口。'
           : '已排队和正在执行的运行保持原状，不追赶错过的触发。'}
       </p>
-      {error && (
-        <p role="alert" className="editor-leave-error">
-          {error}
-        </p>
-      )}
-      <div className="editor-leave-actions">
-        <Button ref={continueButton} autoFocus disabled={busy || undefined} onClick={stay}>
-          继续编辑
-        </Button>
-        <Button className="editor-leave-discard" disabled={busy || undefined} onClick={discard}>
-          不保存离开
-        </Button>
-        <Button
-          type="primary"
-          disabled={busy || blocked || unconfirmed || undefined}
-          onClick={save}
-        >
-          {busy ? (creating ? '正在创建…' : '正在保存…') : error ? '重试保存并离开' : '保存并离开'}
-        </Button>
-      </div>
-    </dialog>
+      {error && <Alert type="error" title="保存未完成" description={error} role="alert" />}
+    </Modal>
   );
 }

@@ -274,7 +274,7 @@
   input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   flex-shrink: 0;
 }
-.flow-parameters-credential span {
+.flow-parameters-credential > .ant-checkbox-label {
   overflow-wrap: anywhere;
 }
 .flow-parameters-actions {
@@ -315,7 +315,7 @@
   min-height: 16px;
   margin: 2px 0 0;
 }
-.flow-parameters-credential span {
+.flow-parameters-credential > .ant-checkbox-label {
   min-width: 0;
   flex: 1;
 }
@@ -326,25 +326,4 @@
   height: 32px;
   min-height: 32px;
   resize: vertical;
-}
-.flow-parameters-leave {
-  min-height: 320px;
-}
-.flow-parameters-leave h2 {
-  font-size: 28px;
-  line-height: 40px;
-}
-.flow-parameters-leave .editor-leave-status::before {
-  content: '';
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 8px;
-  border-radius: 50%;
-  background: currentColor;
-  vertical-align: middle;
-}
-.flow-parameters-leave .editor-leave-discard {
-  border-color: transparent;
-  background: var(--fa-status-error-bg);
 }

@@ -81,8 +81,7 @@ export default function ScheduleWorkbench({
   const runToken = useRef(0);
   const historyError = useRef<HTMLParagraphElement>(null);
   const focusHistoryError = useRef(false);
-  const historyRef = useRef<HTMLDialogElement>(null),
-    leaveRef = useRef<HTMLDialogElement>(null);
+  const historyRef = useRef<HTMLDialogElement>(null);
   const fields = useRef<HTMLFieldSetElement>(null),
     draftFocus = useRef<HTMLElement | null>(null);
   const historyFocus = useRef<HTMLElement | null>(null),
@@ -254,7 +253,6 @@ export default function ScheduleWorkbench({
   };
   const stay = () => {
     if (lock.current) return;
-    leaveRef.current?.close();
     setLeaving(undefined);
     destination.current = false;
     requestAnimationFrame(() => draftFocus.current?.focus({ preventScroll: true }));
@@ -746,7 +744,6 @@ export default function ScheduleWorkbench({
         </div>
         {leaving && (
           <ScheduleLeaveDialog
-            dialogRef={leaveRef}
             destination={leaving.destination}
             creating={draft?.mode === 'create'}
             busy={busy}
@@ -756,7 +753,6 @@ export default function ScheduleWorkbench({
             stay={stay}
             discard={() => {
               const next = leaving.next;
-              leaveRef.current?.close();
               setLeaving(undefined);
               destination.current = false;
               assign();
@@ -766,7 +762,6 @@ export default function ScheduleWorkbench({
               const next = leaving.next;
               void save().then((ok) => {
                 if (ok) {
-                  leaveRef.current?.close();
                   setLeaving(undefined);
                   destination.current = false;
                   next();

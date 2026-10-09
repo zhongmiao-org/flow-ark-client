@@ -1,5 +1,5 @@
-import { Alert, Button, Flex, Modal } from 'antd';
-import { useEffect, useRef, useState } from 'react';
+import { Alert, Badge, Button, Flex, Modal, Tag } from 'antd';
+import { useEffect, useId, useRef, useState } from 'react';
 
 export default function EditorLeaveDialog({
   name,
@@ -14,6 +14,7 @@ export default function EditorLeaveDialog({
   discard: () => void;
   stay: () => void;
 }) {
+  const descriptionId = useId();
   const heading = useRef<HTMLHeadingElement>(null);
   const continueButton = useRef<HTMLButtonElement>(null);
   const locked = useRef(false);
@@ -54,6 +55,10 @@ export default function EditorLeaveDialog({
       open
       width={640}
       centered
+      className="flowark-leave-modal"
+      aria-describedby={descriptionId}
+      aria-busy={busy}
+      focusable={{ focusTriggerAfterClose: false }}
       closable={false}
       keyboard={!busy}
       mask={{ closable: false }}
@@ -61,19 +66,29 @@ export default function EditorLeaveDialog({
         if (!locked.current) stay();
       }}
       afterOpenChange={(open) => {
-        if (open) continueButton.current?.focus();
+        if (open) (error ? heading.current : continueButton.current)?.focus();
       }}
       title={
-        <h2 ref={heading} tabIndex={-1}>
-          {error ? '保存未完成，尚未离开' : '离开前保存更改？'}
-        </h2>
+        <Flex vertical gap={16} align="flex-start">
+          <Tag
+            color={error ? 'error' : 'warning'}
+            variant="filled"
+            className="flowark-leave-status"
+            icon={<Badge status={error ? 'error' : 'warning'} />}
+          >
+            {error ? '未保存 · 留在当前页' : '存在未保存更改'}
+          </Tag>
+          <h2 ref={heading} tabIndex={-1}>
+            {error ? '保存未完成，尚未离开' : '离开前保存更改？'}
+          </h2>
+        </Flex>
       }
       footer={
-        <Flex gap={12} wrap justify="flex-end">
+        <Flex gap={12} wrap className="flowark-leave-actions">
           <Button ref={continueButton} disabled={busy || undefined} onClick={stay}>
             继续编辑
           </Button>
-          <Button danger disabled={busy || undefined} onClick={discard}>
+          <Button color="danger" variant="filled" disabled={busy || undefined} onClick={discard}>
             不保存离开
           </Button>
           <Button
@@ -87,10 +102,10 @@ export default function EditorLeaveDialog({
         </Flex>
       }
     >
-      <p>
+      <p id={descriptionId}>
         “{name}”的当前输入尚未保存。保存成功后前往“{destination}”；不保存将放弃本次草稿更改。
       </p>
-      <p>已开始的运行和固定计划保持原版本。</p>
+      <p className="flowark-leave-note">已开始的运行和固定计划保持原版本。</p>
       {error && <Alert type="error" title="保存错误详情" description={error} role="alert" />}
     </Modal>
   );

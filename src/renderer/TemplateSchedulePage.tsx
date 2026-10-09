@@ -54,8 +54,7 @@ export default function TemplateSchedulePage({
   const toggleFocus = useRef<HTMLButtonElement | null>(null);
   const [leaving, setLeaving] = useState<{ next: () => void; destination: string }>();
   const lock = useRef(false),
-    pending = useRef(false),
-    dialog = useRef<HTMLDialogElement>(null);
+    pending = useRef(false);
   const form = useRef<HTMLFormElement>(null),
     focus = useRef<HTMLElement | null>(null);
   const dirty =
@@ -158,7 +157,6 @@ export default function TemplateSchedulePage({
   navigation.current = go;
   const stay = () => {
     if (lock.current) return;
-    dialog.current?.close();
     pending.current = false;
     setLeaving(undefined);
     requestAnimationFrame(() => focus.current?.focus({ preventScroll: true }));
@@ -366,7 +364,6 @@ export default function TemplateSchedulePage({
       </section>
       {leaving && (
         <ScheduleLeaveDialog
-          dialogRef={dialog}
           destination={leaving.destination}
           creating
           busy={busy}
@@ -376,7 +373,6 @@ export default function TemplateSchedulePage({
           stay={stay}
           discard={() => {
             const next = leaving.next;
-            dialog.current?.close();
             pending.current = false;
             setLeaving(undefined);
             next();
@@ -385,7 +381,6 @@ export default function TemplateSchedulePage({
             const next = leaving.next;
             void create().then((ok) => {
               if (ok) {
-                dialog.current?.close();
                 pending.current = false;
                 setLeaving(undefined);
                 next();

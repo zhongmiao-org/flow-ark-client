@@ -1,4 +1,4 @@
-import { ConfigProvider, Select, Button, Checkbox, Input } from 'antd';
+import { ConfigProvider, Select, Button, Checkbox, Input, Modal, Flex, Tag, Badge } from 'antd';
 import {
   useCallback,
   useEffect,
@@ -56,7 +56,8 @@ export default function ExcelMappingPage({
   }, []);
   const [pending, setPending] = useState<{ next?: () => void }>();
   const root = useRef<HTMLElement>(null),
-    dialog = useRef<HTMLDialogElement>(null);
+    leaveOrigin = useRef<HTMLElement | null>(null),
+    continueButton = useRef<HTMLButtonElement>(null);
   const alive = useRef(true),
     persisting = useRef(false),
     choosing = useRef(false);
@@ -89,10 +90,16 @@ export default function ExcelMappingPage({
       navigation.current = undefined;
     };
   });
-  useEffect(() => {
-    if (pending) dialog.current?.showModal();
-    else dialog.current?.close();
+  useLayoutEffect(() => {
+    if (pending) leaveOrigin.current = document.activeElement as HTMLElement | null;
   }, [pending]);
+  const stayInEditor = () => {
+    if (persisting.current) return;
+    setPending(undefined);
+    requestAnimationFrame(() => {
+      if (leaveOrigin.current?.isConnected) leaveOrigin.current.focus({ preventScroll: true });
+    });
+  };
   useEffect(() => {
     if (pending || !focusRequest.current) return;
     const element = root.current?.querySelector<HTMLElement>(focusRequest.current);
@@ -500,34 +507,62 @@ export default function ExcelMappingPage({
           </footer>
         </fieldset>
       </ConfigProvider>
-      <dialog
-        ref={dialog}
-        className="script-leave-dialog"
-        aria-labelledby={`${issueId}-leave-title`}
-        aria-describedby={`${issueId}-leave-description`}
-        onCancel={(event) => {
-          event.preventDefault();
-          if (!persisting.current) setPending(undefined);
-        }}
-      >
-        <h2 id={`${issueId}-leave-title`}>映射有未保存的修改</h2>
-        <p id={`${issueId}-leave-description`}>保存后离开，或放弃本次映射编辑。</p>
-        <div>
-          <Button
-            type="primary"
-            disabled={saving || undefined}
-            onClick={() => void persist(pending?.next)}
-          >
-            {saving ? '正在保存…' : '保存并离开'}
-          </Button>
-          <Button disabled={saving || undefined} onClick={() => close(pending?.next)}>
-            放弃修改
-          </Button>
-          <Button disabled={saving || undefined} onClick={() => setPending(undefined)}>
-            继续编辑
-          </Button>
-        </div>
-      </dialog>
+      {pending && (
+        <Modal
+          open
+          width={640}
+          centered
+          closable={false}
+          mask={{ closable: false }}
+          keyboard={!saving}
+          focusable={{ focusTriggerAfterClose: false }}
+          className="flowark-leave-modal"
+          aria-describedby={`${issueId}-leave-description`}
+          aria-busy={saving}
+          onCancel={stayInEditor}
+          afterOpenChange={(open) => {
+            if (open) continueButton.current?.focus();
+          }}
+          title={
+            <Flex vertical gap={16} align="flex-start">
+              <Tag
+                color="warning"
+                variant="filled"
+                className="flowark-leave-status"
+                icon={<Badge status="warning" />}
+              >
+                存在未保存更改
+              </Tag>
+              <h2>映射有未保存的修改</h2>
+            </Flex>
+          }
+          footer={
+            <Flex gap={12} wrap className="flowark-leave-actions">
+              <Button ref={continueButton} disabled={saving || undefined} onClick={stayInEditor}>
+                继续编辑
+              </Button>
+              <Button
+                color="danger"
+                variant="filled"
+                disabled={saving || undefined}
+                onClick={() => close(pending?.next)}
+              >
+                不保存离开
+              </Button>
+              <Button
+                type="primary"
+                loading={saving}
+                disabled={saving || undefined}
+                onClick={() => void persist(pending?.next)}
+              >
+                {saving ? '正在保存…' : '保存并离开'}
+              </Button>
+            </Flex>
+          }
+        >
+          <p id={`${issueId}-leave-description`}>保存后离开，或放弃本次映射编辑。</p>
+        </Modal>
+      )}
     </section>
   );
 }

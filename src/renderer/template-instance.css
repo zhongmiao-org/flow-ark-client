@@ -243,28 +243,6 @@
   }
 }
 
-.template-instance-leave {
-  min-height: 320px;
-}
-.template-instance-leave h2 {
-  font-size: 28px;
-  line-height: 40px;
-}
-.template-instance-leave .editor-leave-status::before {
-  content: '';
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 8px;
-  border-radius: 50%;
-  background: currentColor;
-  vertical-align: middle;
-}
-.template-instance-leave .editor-leave-discard {
-  border-color: transparent;
-  background: var(--fa-status-error-bg);
-}
-
 .template-version-adoption {
   display: flex;
   flex-direction: column;

@@ -1,4 +1,4 @@
-import { Select, Button, Input } from 'antd';
+import { Select, Button, Input, Modal, Flex, Tag, Badge, Alert } from 'antd';
 import { usePageBack } from './use-page-back';
 import type { SettingsDestination } from './LocalSettingsPage';
 import type { TemplateDetail } from './template-draft';
@@ -157,7 +157,6 @@ export default function AISettingsPage({
     epoch = useRef(0),
     request = useRef<string | undefined>(undefined);
   const title = useRef<HTMLHeadingElement>(null),
-    dialog = useRef<HTMLDialogElement>(null),
     dialogHeading = useRef<HTMLHeadingElement>(null),
     continueButton = useRef<HTMLButtonElement>(null),
     lastInput = useRef<HTMLElement | null>(null);
@@ -268,8 +267,6 @@ export default function AISettingsPage({
     if (leaving) {
       if (!lastInput.current?.isConnected)
         lastInput.current = document.activeElement as HTMLElement;
-      dialog.current?.showModal();
-      continueButton.current?.focus();
     }
   }, [leaving]);
   useEffect(() => {
@@ -1127,37 +1124,114 @@ export default function AISettingsPage({
         )}
       </section>
       {leaving && (
-        <dialog
-          ref={dialog}
-          className="editor-leave-dialog ai-settings-leave"
-          aria-labelledby="ai-settings-dialog-title"
+        <Modal
+          open
+          width={640}
+          centered
+          closable={false}
+          mask={{ closable: false }}
+          keyboard={!cancelling && busy !== 'save' && busy !== 'remove'}
+          focusable={{ focusTriggerAfterClose: false }}
+          className="flowark-leave-modal"
           aria-describedby="ai-settings-dialog-description"
           aria-busy={cancelling || busy === 'save'}
-          onCancel={(e) => {
-            e.preventDefault();
-            stay();
+          onCancel={stay}
+          afterOpenChange={(open) => {
+            if (open) (error ? dialogHeading.current : continueButton.current)?.focus();
           }}
+          title={
+            <Flex vertical gap={16} align="flex-start">
+              <Tag
+                color={error ? 'error' : 'warning'}
+                variant="filled"
+                className="flowark-leave-status"
+                icon={<Badge status={error ? 'error' : 'warning'} />}
+              >
+                {cancelling
+                  ? '正在取消连接测试'
+                  : testing
+                    ? '连接测试尚未结束'
+                    : !dirty
+                      ? '连接测试已结束'
+                      : error
+                        ? '未保存 · 留在当前页'
+                        : '存在未保存更改'}
+              </Tag>
+              <h2 ref={dialogHeading} tabIndex={-1}>
+                {cancelling
+                  ? '正在取消测试，请稍候'
+                  : testing
+                    ? '取消测试并离开？'
+                    : dirty
+                      ? '离开前保存更改？'
+                      : '测试已结束，继续离开？'}
+              </h2>
+            </Flex>
+          }
+          footer={
+            <Flex gap={12} wrap className="flowark-leave-actions">
+              <Button
+                ref={continueButton}
+                disabled={cancelling || busy === 'save' || busy === 'remove' || undefined}
+                onClick={stay}
+              >
+                {testing ? '继续等待' : dirty ? '继续编辑' : '查看测试结果'}
+              </Button>
+              <Button
+                type={testing || dirty ? 'default' : 'primary'}
+                color={testing || dirty ? 'danger' : undefined}
+                variant={testing || dirty ? 'filled' : undefined}
+                disabled={cancelling || busy === 'save' || busy === 'remove' || undefined}
+                onClick={() => {
+                  const next = leaving!.next;
+                  void (testing ? cancelTest() : Promise.resolve(true))
+                    .then((cancelled) => {
+                      if (!cancelled) return;
+                      setKey('');
+                      if (dirty) {
+                        setModel(state?.model ?? entry.model);
+                        setEditing(!state?.configured);
+                        setInvalid(undefined);
+                        setError('');
+                      }
+                      setDirty(false);
+                      setLeaving(undefined);
+                      lastInput.current = null;
+                      next();
+                    })
+                    .catch((e) => setError(message(e)));
+                }}
+              >
+                {cancelling
+                  ? '正在取消…'
+                  : testing
+                    ? '取消测试并离开'
+                    : dirty
+                      ? '不保存离开'
+                      : '继续离开'}
+              </Button>
+              {!testing && dirty && (
+                <Button
+                  type="primary"
+                  loading={busy === 'save'}
+                  disabled={!!busy || undefined}
+                  onClick={() => {
+                    const next = leaving!.next;
+                    void save().then((saved) => {
+                      if (saved) {
+                        setLeaving(undefined);
+                        lastInput.current = null;
+                        next(saved);
+                      }
+                    });
+                  }}
+                >
+                  {busy === 'save' ? '正在保存…' : error ? '重试保存并离开' : '保存并离开'}
+                </Button>
+              )}
+            </Flex>
+          }
         >
-          <span className={`editor-leave-status${error ? ' is-error' : ''}`}>
-            {cancelling
-              ? '正在取消连接测试'
-              : testing
-                ? '连接测试尚未结束'
-                : !dirty
-                  ? '连接测试已结束'
-                  : error
-                    ? '未保存 · 留在当前页'
-                    : '存在未保存更改'}
-          </span>
-          <h2 id="ai-settings-dialog-title" ref={dialogHeading} tabIndex={-1}>
-            {cancelling
-              ? '正在取消测试，请稍候'
-              : testing
-                ? '取消测试并离开？'
-                : dirty
-                  ? '离开前保存更改？'
-                  : '测试已结束，继续离开？'}
-          </h2>
           <p id="ai-settings-dialog-description">
             {testing
               ? `测试尚未完成。取消后前往“${leaving?.destination}”，已保存配置保持不变。`
@@ -1165,72 +1239,8 @@ export default function AISettingsPage({
                 ? `当前配置尚未保存。保存成功后前往“${leaving?.destination}”；${state?.configured ? '不保存只放弃本次编辑，原 Key 和验证状态保持不变。' : '不保存将放弃本次输入，不会保存 Key。'}`
                 : `连接测试已结束，配置与测试记录已保留。继续前往“${leaving.destination}”，或留在当前页查看结果。`}
           </p>
-          {error && (
-            <p className="editor-leave-error" role="alert">
-              {error}
-            </p>
-          )}
-          <div className="editor-leave-actions">
-            <Button
-              autoFocus
-              ref={continueButton}
-              disabled={cancelling || busy === 'save' || busy === 'remove' || undefined}
-              onClick={stay}
-            >
-              {testing ? '继续等待' : dirty ? '继续编辑' : '查看测试结果'}
-            </Button>
-            <Button
-              type={testing || dirty ? 'default' : 'primary'}
-              className={testing || dirty ? 'editor-leave-discard' : ''}
-              disabled={cancelling || busy === 'save' || busy === 'remove' || undefined}
-              onClick={() => {
-                const next = leaving!.next;
-                void (testing ? cancelTest() : Promise.resolve(true))
-                  .then((cancelled) => {
-                    if (!cancelled) return;
-                    setKey('');
-                    if (dirty) {
-                      setModel(state?.model ?? entry.model);
-                      setEditing(!state?.configured);
-                      setInvalid(undefined);
-                      setError('');
-                    }
-                    setDirty(false);
-                    setLeaving(undefined);
-                    lastInput.current = null;
-                    next();
-                  })
-                  .catch((e) => setError(message(e)));
-              }}
-            >
-              {cancelling
-                ? '正在取消…'
-                : testing
-                  ? '取消测试并离开'
-                  : dirty
-                    ? '不保存离开'
-                    : '继续离开'}
-            </Button>
-            {!testing && dirty && (
-              <Button
-                type="primary"
-                disabled={!!busy || undefined}
-                onClick={() => {
-                  const next = leaving!.next;
-                  void save().then((saved) => {
-                    if (saved) {
-                      setLeaving(undefined);
-                      lastInput.current = null;
-                      next(saved);
-                    }
-                  });
-                }}
-              >
-                {busy === 'save' ? '正在保存…' : error ? '重试保存并离开' : '保存并离开'}
-              </Button>
-            )}
-          </div>
-        </dialog>
+          {error && <Alert type="error" title="操作未完成" description={error} role="alert" />}
+        </Modal>
       )}
     </div>
   );

@@ -350,27 +350,6 @@ button.ai-remove-button {
   )[aria-invalid='true'] {
   border-color: var(--fa-status-error);
 }
-.ai-settings-leave {
-  min-height: 320px;
-}
-.ai-settings-leave h2 {
-  font-size: 28px;
-  line-height: 40px;
-}
-.ai-settings-leave .editor-leave-status::before {
-  content: '';
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 8px;
-  border-radius: 50%;
-  background: currentColor;
-  vertical-align: middle;
-}
-.ai-settings-leave .editor-leave-discard {
-  border-color: transparent;
-  background: var(--fa-status-error-bg);
-}
 
 .ai-settings-page .ai-remove-confirmation {
   width: min(728px, 100%);

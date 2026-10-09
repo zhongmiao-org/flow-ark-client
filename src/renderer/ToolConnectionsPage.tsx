@@ -1,4 +1,4 @@
-import { Select, Button, Checkbox, Input } from 'antd';
+import { Select, Button, Checkbox, Input, Modal, Flex, Alert } from 'antd';
 import ToolConnectionUsage, { type ConnectionTaskReference } from './ToolConnectionUsage';
 import DesktopAssistantConnection, { type AssistantPhase } from './DesktopAssistantConnection';
 import { usePageBack } from './use-page-back';
@@ -56,39 +56,6 @@ const labels = {
   disconnected: '已断开',
   failed: '需要重新连接',
 };
-function ToolDialog({
-  titleId,
-  children,
-  cancel,
-}: {
-  titleId: string;
-  children: ReactNode;
-  cancel: () => void;
-}) {
-  const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const trigger = document.activeElement as HTMLElement | null;
-    const element = ref.current;
-    element?.showModal();
-    return () => {
-      element?.close();
-      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
-    };
-  }, []);
-  return (
-    <dialog
-      ref={ref}
-      className="script-leave-dialog tool-dialog"
-      aria-labelledby={titleId}
-      onCancel={(event) => {
-        event.preventDefault();
-        cancel();
-      }}
-    >
-      {children}
-    </dialog>
-  );
-}
 const when = (value: string) => new Date(value).toLocaleString('zh-CN');
 const address = (config: ConnectionConfig) =>
   config.transport.type === 'http'
@@ -129,6 +96,8 @@ export default function ToolConnectionsPage({
   openDetails: MutableRefObject<((id: string) => void) | undefined>;
   openAssistant?: MutableRefObject<(() => void) | undefined>;
 }) {
+  const confirmationCancel = useRef<HTMLButtonElement>(null);
+  const confirmationOrigin = useRef<HTMLElement | null>(null);
   const [view, setView] = useState<'catalog' | 'config' | 'review' | 'saved' | 'assistant'>(
     'catalog',
   );
@@ -704,6 +673,18 @@ export default function ToolConnectionsPage({
       </Button>
     </div>
   );
+  const stayWithConnection = () => {
+    setPendingLeave(undefined);
+    setConfirm(undefined);
+    requestAnimationFrame(() => {
+      if (confirmationOrigin.current?.isConnected)
+        confirmationOrigin.current.focus({ preventScroll: true });
+    });
+  };
+  useLayoutEffect(() => {
+    if (pendingLeave || confirm)
+      confirmationOrigin.current = document.activeElement as HTMLElement | null;
+  }, [pendingLeave, confirm]);
   return (
     <div className="tools-host" hidden={!active}>
       <header className="topbar">
@@ -1371,44 +1352,90 @@ export default function ToolConnectionsPage({
         )}
       </section>
       {pendingLeave && (
-        <ToolDialog titleId="tool-leave-title" cancel={() => setPendingLeave(undefined)}>
-          <h2 id="tool-leave-title">离开尚未保存的连接？</h2>
+        <Modal
+          open
+          width={640}
+          centered
+          closable={false}
+          mask={{ closable: false }}
+          className="flowark-leave-modal"
+          focusable={{ focusTriggerAfterClose: false }}
+          keyboard={!busy || busy === 'discover' || busy === 'authorize'}
+          onCancel={() => {
+            if (!busy || busy === 'discover' || busy === 'authorize') stayWithConnection();
+          }}
+          afterOpenChange={(open) => {
+            if (open) confirmationCancel.current?.focus();
+          }}
+          title="离开尚未保存的连接？"
+          footer={
+            <Flex gap={12} wrap className="flowark-leave-actions">
+              <Button ref={confirmationCancel} onClick={stayWithConnection}>
+                继续编辑
+              </Button>
+              <Button
+                color="danger"
+                variant="filled"
+                disabled={(!!busy && busy !== 'discover' && busy !== 'authorize') || undefined}
+                onClick={() => {
+                  const next = pendingLeave.next;
+                  void cancel()
+                    .then(() => {
+                      setDirty(false);
+                      setForm({ ...empty });
+                      setSourceReviewed(false);
+                      setPendingLeave(undefined);
+                      setView('catalog');
+                      next();
+                    })
+                    .catch((e) => setError(connectionError(e)));
+                }}
+              >
+                放弃连接并离开
+              </Button>
+            </Flex>
+          }
+        >
           <p>将取消这次检查并丢弃未保存的配置和凭据输入；已保存连接保持不变。</p>
-          <div className="ai-task-actions">
-            <Button autoFocus onClick={() => setPendingLeave(undefined)}>
-              继续编辑
-            </Button>
-            <Button
-              disabled={(!!busy && busy !== 'discover' && busy !== 'authorize') || undefined}
-              onClick={() => {
-                const next = pendingLeave.next;
-                void cancel()
-                  .then(() => {
-                    setDirty(false);
-                    setForm({ ...empty });
-                    setSourceReviewed(false);
-                    setPendingLeave(undefined);
-                    setView('catalog');
-                    next();
-                  })
-                  .catch((e) => setError(connectionError(e)));
-              }}
-            >
-              放弃连接并离开
-            </Button>
-          </div>
-        </ToolDialog>
+          {error && <Alert type="error" title="操作未完成" description={error} role="alert" />}
+        </Modal>
       )}
       {confirm && selected && (
-        <ToolDialog
-          titleId="tool-remove-title"
-          cancel={() => {
-            if (!busy) setConfirm(undefined);
+        <Modal
+          open
+          width={640}
+          centered
+          closable={false}
+          mask={{ closable: false }}
+          keyboard={!busy}
+          focusable={{ focusTriggerAfterClose: false }}
+          onCancel={() => {
+            if (!busy) stayWithConnection();
           }}
+          afterOpenChange={(open) => {
+            if (open) confirmationCancel.current?.focus();
+          }}
+          title={`${confirm === 'remove' ? '删除' : '断开'}“${selected.config.displayName}”？`}
+          footer={
+            <Flex gap={12} wrap justify="flex-end">
+              <Button
+                ref={confirmationCancel}
+                disabled={!!busy || undefined}
+                onClick={stayWithConnection}
+              >
+                取消
+              </Button>
+              <Button
+                danger
+                loading={!!busy}
+                disabled={!!busy || undefined}
+                onClick={() => void manage(confirm)}
+              >
+                确认{confirm === 'remove' ? '删除' : '断开'}
+              </Button>
+            </Flex>
+          }
         >
-          <h2 id="tool-remove-title">
-            {confirm === 'remove' ? '删除' : '断开'}“{selected.config.displayName}”？
-          </h2>
           <p>
             {confirm === 'remove'
               ? '删除本机连接记录和其专属凭据。不会删除任务、运行历史或产物。'
@@ -1416,15 +1443,8 @@ export default function ToolConnectionsPage({
           </p>
           <ToolConnectionUsage connection={selected} />
           <p>以上为刚读取的引用。本操作不会新增运行或重放任务；已完成的外部操作不会回滚。</p>
-          <div className="ai-task-actions">
-            <Button autoFocus disabled={!!busy || undefined} onClick={() => setConfirm(undefined)}>
-              取消
-            </Button>
-            <Button disabled={!!busy || undefined} onClick={() => void manage(confirm)}>
-              确认{confirm === 'remove' ? '删除' : '断开'}
-            </Button>
-          </div>
-        </ToolDialog>
+          {error && <Alert type="error" title="操作未完成" description={error} role="alert" />}
+        </Modal>
       )}
     </div>
   );
