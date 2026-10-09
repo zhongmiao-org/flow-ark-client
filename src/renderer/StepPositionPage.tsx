@@ -1,4 +1,4 @@
-import { Drawer, ConfigProvider, Select, Button } from 'antd';
+import { Drawer, ConfigProvider, Select, Button, Alert } from 'antd';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
 import './editor-workspace-dialog.css';
@@ -34,10 +34,10 @@ export default function StepPositionPage(props: Props) {
   const dialog = useRef<HTMLDivElement>(null);
   const origin = useRef(document.activeElement as HTMLElement | null);
   const heading = useRef<HTMLHeadingElement>(null);
-  const errorRef = useRef<HTMLParagraphElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
   const saveButton = useRef<HTMLButtonElement>(null);
   const wasSaving = useRef(false);
-  const noticeRef = useRef<HTMLParagraphElement>(null);
+  const noticeRef = useRef<HTMLDivElement>(null);
   const [notice, setNotice] = useState('');
   const titleId = useId();
   const [attempted, setAttempted] = useState(false);
@@ -59,7 +59,8 @@ export default function StepPositionPage(props: Props) {
     wasSaving.current = props.busy;
   }, [error, props.busy]);
   useEffect(() => {
-    heading.current?.focus();
+    if (error) errorRef.current?.focus();
+    else heading.current?.focus();
     setNotice('');
   }, [props.revision]);
   const applyStructure = (operation: () => boolean, message: string) => {
@@ -81,7 +82,8 @@ export default function StepPositionPage(props: Props) {
       rootClassName="editor-workspace-overlay"
       keyboard={!props.busy}
       afterOpenChange={(opened) => {
-        if (opened) heading.current?.focus();
+        if (opened)
+          (error ? errorRef.current : notice ? noticeRef.current : heading.current)?.focus();
       }}
       className="editor-workspace-dialog step-position-dialog"
       aria-labelledby={titleId}
@@ -115,17 +117,22 @@ export default function StepPositionPage(props: Props) {
           <p>所有操作只修改草稿，不撤销已执行的网页或文件动作。</p>
         </header>
         {error && (
-          <p ref={errorRef} tabIndex={-1} role="alert" className="step-position-error">
-            {error}
-          </p>
+          <div ref={errorRef} tabIndex={-1} role="alert">
+            <Alert type="error" showIcon role="presentation" title={error} />
+          </div>
         )}
         {notice && !error && (
-          <p ref={noticeRef} tabIndex={-1} role="status" className="step-position-note">
-            {notice} {props.saved ? '草稿与已保存内容一致。' : '尚未保存。'}没有启动运行。
-          </p>
+          <div ref={noticeRef} tabIndex={-1} role="status">
+            <Alert
+              type="success"
+              showIcon
+              role="presentation"
+              title={`${notice} ${props.saved ? '草稿与已保存内容一致。' : '尚未保存。'}没有启动运行。`}
+            />
+          </div>
         )}
         {props.referenceRecovery}
-        <ConfigProvider componentDisabled={props.busy || undefined}>
+        <ConfigProvider componentDisabled={props.busy}>
           <fieldset disabled={props.busy} className="step-position-columns">
             <section className="step-position-card" aria-label="当前步骤与位置">
               <h2>{props.title ? `当前步骤 · ${props.title}` : '当前未选择步骤'}</h2>
@@ -162,9 +169,12 @@ export default function StepPositionPage(props: Props) {
                     </span>
                   </label>
                   {!addTarget && (
-                    <p id={targetErrorId} className="step-position-error" role="alert">
-                      添加位置已失效，请先重新选择位置。
-                    </p>
+                    <Alert
+                      id={targetErrorId}
+                      type="error"
+                      showIcon
+                      title="添加位置已失效，请先重新选择位置。"
+                    />
                   )}
                   <label>
                     移动到
@@ -207,7 +217,8 @@ export default function StepPositionPage(props: Props) {
                       移动步骤
                     </Button>
                     <Button
-                      className="step-position-delete"
+                      color="danger"
+                      variant="filled"
                       onClick={() =>
                         applyStructure(
                           props.remove,
@@ -222,9 +233,11 @@ export default function StepPositionPage(props: Props) {
               ) : (
                 <p>步骤已删除或不再可用。可撤销恢复，或返回画布选择其他步骤。</p>
               )}
-              <p className="step-position-note">
-                删除或移动导致引用失效时，保留草稿并指出受影响字段。
-              </p>
+              <Alert
+                type="info"
+                showIcon
+                title="删除或移动导致引用失效时，保留草稿并指出受影响字段。"
+              />
             </section>
             <section className="step-position-card step-position-draft" aria-label="草稿与视图">
               <h2>草稿与视图</h2>
@@ -251,6 +264,7 @@ export default function StepPositionPage(props: Props) {
               <Button
                 ref={saveButton}
                 type="primary"
+                loading={props.busy}
                 onClick={() => {
                   setNotice('');
                   setAttempted(true);

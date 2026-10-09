@@ -66,32 +66,9 @@
 }
 .step-position-actions button {
   min-width: 150px;
-  min-height: 40px;
-}
-.step-position-draft button {
-  min-height: 40px;
 }
 .step-position-draft .step-position-actions button {
   min-width: 130px;
-}
-.step-position-delete {
-  color: var(--fa-status-error);
-  background: var(--fa-status-error-bg);
-  border-color: transparent;
-}
-.step-position-page .step-position-note {
-  min-height: 72px;
-  padding: 16px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: 12px;
-  background: var(--fa-action-subtle);
-  color: var(--fa-action-primary);
-}
-.step-position-page .step-position-error {
-  padding: 16px;
-  border-radius: 8px;
-  color: var(--fa-status-error);
-  background: var(--fa-status-error-bg);
 }
 @container (max-width:1000px) {
   .step-position-columns {
@@ -112,6 +89,4 @@
 }
 .step-position-add-target button {
   flex-shrink: 0;
-  min-height: 32px;
-  padding: 4px 10px;
 }
