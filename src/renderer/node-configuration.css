@@ -87,29 +87,6 @@
   background: var(--fa-action-subtle);
   border-radius: 8px;
 }
-.node-control-summary {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  background: var(--fa-bg-canvas);
-  border-radius: 8px;
-}
-.node-control-summary div {
-  display: flex;
-  gap: 12px;
-  justify-content: space-between;
-  font-size: 12px;
-  line-height: 20px;
-}
-.node-control-summary dt {
-  color: var(--fa-text-secondary);
-}
-.node-control-summary dd {
-  margin: 0;
-  color: var(--fa-text-primary);
-}
 .node-configuration .node-target-summary:has(.node-target-observation) .compact-target-selector {
   margin-bottom: 6px;
 }

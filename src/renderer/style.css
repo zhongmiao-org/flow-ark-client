@@ -1647,13 +1647,12 @@ main {
 }
 .node-advanced {
   margin-top: 14px;
-  border-top: 1px solid var(--border);
-  padding-top: 12px;
 }
-.node-advanced summary {
-  color: #667c72;
-  cursor: pointer;
-  font-size: 12px;
+.node-advanced-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
 }
 /* Keep the editor, inspector and native page usable together at laptop widths. */
 .with-browser .browser-sidebar {

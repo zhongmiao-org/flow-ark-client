@@ -1,4 +1,4 @@
-import { Select, Input } from 'antd';
+import { Select, Input, Descriptions } from 'antd';
 import { useId } from 'react';
 import type { Json, Step } from '../shared/types';
 import ValueField from './ValueField';
@@ -71,16 +71,15 @@ export default function LogicNodeConfiguration({
         />
         {node.operator !== 'exists' && field('expected', '比较值', node.expected)}
         {node.type === 'condition' && (
-          <dl className="node-control-summary">
-            <div>
-              <dt>成立分支</dt>
-              <dd>{node.then.length} 个直接子步骤</dd>
-            </div>
-            <div>
-              <dt>否则分支</dt>
-              <dd>{node.else.length} 个直接子步骤</dd>
-            </div>
-          </dl>
+          <Descriptions
+            className="node-control-summary"
+            size="small"
+            column={1}
+            items={[
+              { key: 'then', label: '成立分支', children: `${node.then.length} 个直接子步骤` },
+              { key: 'else', label: '否则分支', children: `${node.else.length} 个直接子步骤` },
+            ]}
+          />
         )}
         <p className="note">
           {node.type === 'assert' ? '不满足时停止运行并报错。' : '满足走成立分支，否则走另一分支。'}
@@ -95,16 +94,15 @@ export default function LogicNodeConfiguration({
           <h4>串行循环</h4>
         </header>
         {field('items', '循环集合', node.items, [])}
-        <dl className="node-control-summary">
-          <div>
-            <dt>循环体</dt>
-            <dd>{node.body.length} 个直接子步骤</dd>
-          </div>
-          <div>
-            <dt>体内变量</dt>
-            <dd>item / index</dd>
-          </div>
-        </dl>
+        <Descriptions
+          className="node-control-summary"
+          size="small"
+          column={1}
+          items={[
+            { key: 'body', label: '循环体', children: `${node.body.length} 个直接子步骤` },
+            { key: 'variables', label: '体内变量', children: 'item / index' },
+          ]}
+        />
         <p className="note">
           输入数组，按顺序逐项执行，最多 1000 项。循环内可选择当前项和从 0 开始的序号。
         </p>
