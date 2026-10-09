@@ -339,16 +339,6 @@ export default function ScriptPackages(props: Props) {
       {candidate && (
         <Modal
           open
-          getContainer={() => root.current?.closest('dialog[open]') ?? document.body}
-          modalRender={(content) => (
-            <div
-              onKeyDown={(event) => {
-                if (event.key === 'Escape') event.preventDefault();
-              }}
-            >
-              {content}
-            </div>
-          )}
           width={640}
           centered
           closable={false}

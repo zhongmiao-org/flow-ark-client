@@ -12,9 +12,9 @@ const browserErrorMessage = (reason: unknown) =>
     '',
   );
 const workbenchDialogOpen = () =>
-  [...document.querySelectorAll('dialog[open], .ant-modal[role="dialog"]')].some(
-    (element) => element.getClientRects().length > 0,
-  );
+  [
+    ...document.querySelectorAll('.ant-modal[role="dialog"], .ant-drawer-open [role="dialog"]'),
+  ].some((element) => element.getClientRects().length > 0);
 export default function BrowserSidebar({
   close,
   running,

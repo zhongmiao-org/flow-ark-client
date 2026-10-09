@@ -1,7 +1,3 @@
-.control-workspace-dialog {
-  left: 72px;
-  width: calc(100vw - 72px);
-}
 .control-workspace-page {
   container-type: inline-size;
   padding: 32px;

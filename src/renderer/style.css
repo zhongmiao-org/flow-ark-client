@@ -59,11 +59,6 @@ label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   margin: 16px 0 8px;
   color: #677970;
 }
-label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) .ant-select {
-  display: block;
-  width: 100%;
-  margin-top: 8px;
-}
 label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper)
   input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   display: block;

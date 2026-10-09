@@ -1,6 +1,5 @@
-import { Button, Input } from 'antd';
+import { Drawer, Button, Input } from 'antd';
 import { useContext, useEffect, useId, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { composeReference, type ReferenceChoice } from './value-references';
 import { VariableNavigationContext } from './variable-navigation';
 import './variable-picker.css';
@@ -42,7 +41,8 @@ export default function VariablePicker({
   );
   const [search, setSearch] = useState('');
   const [failure, setFailure] = useState('');
-  const dialog = useRef<HTMLDialogElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
+  const origin = useRef(document.activeElement as HTMLElement | null);
   const searchInput = useRef<HTMLInputElement>(null);
   const titleId = useId();
   const failureRef = useRef<HTMLParagraphElement>(null);
@@ -65,13 +65,11 @@ export default function VariablePicker({
     invalid = error instanceof Error ? error.message : '此引用不可用';
   }
   useEffect(() => {
-    const trigger = document.activeElement as HTMLElement | null;
-    const element = dialog.current!;
-    element.showModal();
-    searchInput.current?.focus();
+    const trigger = origin.current;
     return () => {
-      element.close();
-      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+      requestAnimationFrame(() => {
+        if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+      });
     };
   }, []);
   const apply = (operation: () => void) => {
@@ -82,14 +80,22 @@ export default function VariablePicker({
       setFailure(error instanceof Error ? error.message : '字段尚未更新，请重试');
     }
   };
-  return createPortal(
-    <dialog
-      ref={dialog}
+  return (
+    <Drawer
+      open
+      panelRef={dialog}
+      size="calc(100vw - var(--fa-workspace-navigation-width))"
+      closable={false}
+      mask={{ closable: false }}
+      push={false}
+      focusable={{ focusTriggerAfterClose: false, trap: true }}
+      rootClassName="editor-workspace-overlay variable-picker-overlay"
+      afterOpenChange={(opened) => {
+        if (opened) searchInput.current?.focus();
+      }}
       className="editor-workspace-dialog variable-picker-dialog"
       aria-labelledby={titleId}
-      onCancel={(event) => {
-        event.preventDefault();
-        event.stopPropagation();
+      onClose={() => {
         closeRef.current();
       }}
       onKeyDown={(event) => {
@@ -291,7 +297,6 @@ export default function VariablePicker({
           </section>
         </div>
       </div>
-    </dialog>,
-    document.body,
+    </Drawer>
   );
 }

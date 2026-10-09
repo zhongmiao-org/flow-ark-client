@@ -44,7 +44,10 @@ export default function ValueField({
             className="value-source-button"
             aria-label={'选择变量 · ' + label}
             aria-expanded={open}
-            onClick={() => setOpen(true)}
+            onClick={(event) => {
+              event.currentTarget.focus();
+              setOpen(true);
+            }}
             title={current}
           >
             {source ? `${source.group} → ${source.label}` : current}
@@ -86,7 +89,10 @@ export default function ValueField({
           htmlType="button"
           aria-expanded={open}
           aria-label={'选择变量 · ' + label}
-          onClick={() => setOpen(true)}
+          onClick={(event) => {
+            event.currentTarget.focus();
+            setOpen(true);
+          }}
         >
           ↳ {current !== undefined ? '更换变量' : '选择变量'}
         </Button>
