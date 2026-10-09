@@ -16,10 +16,6 @@
   font-size: 13px;
   color: var(--fa-text-secondary);
 }
-.task-plan-scope summary {
-  color: var(--fa-action-primary);
-  cursor: pointer;
-}
 .task-plan-scope-list {
   display: flex;
   flex-direction: column;

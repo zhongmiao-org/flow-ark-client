@@ -1415,7 +1415,7 @@
 .task-plan-answers ol {
   display: grid;
   gap: 8px;
-  margin: 12px 0 0;
+  margin: 0;
   padding-left: 24px;
 }
 .task-plan-answers li {
@@ -1524,14 +1524,13 @@
   gap: 4px;
   border-color: var(--fa-border-default);
 }
-.ai-task-readable-plan .task-plan-scope-compact p,
-.ai-task-readable-plan .task-plan-scope-compact summary {
+.ai-task-readable-plan .task-plan-scope-compact p {
   margin: 0;
   font-size: 13px;
   line-height: 20px;
   color: var(--fa-action-primary);
 }
-.ai-task-readable-plan .task-plan-scope-compact details[open] > p {
+.ai-task-readable-plan .task-plan-scope-compact .ant-collapse-body > p {
   margin-top: 12px;
   color: var(--fa-text-secondary);
 }
