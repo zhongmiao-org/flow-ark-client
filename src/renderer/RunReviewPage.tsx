@@ -1,4 +1,5 @@
-import { Alert, Button, Checkbox } from 'antd';
+import { Alert, Button, Checkbox, Collapse, Descriptions } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { TaskDetail } from '../shared/planning';
 import DesktopRunBinding from './DesktopRunBinding';
@@ -174,19 +175,50 @@ function Contents({
               ? '采用已检查的固定方案，运行中修改草稿不影响此次执行。'
               : '当前显示已保存方案；检查尚未通过，还没有创建运行或固定执行版本。'}
         </p>
-        <details>
-          <summary>查看版本与参数</summary>
-          <p className="run-review-version">{preview.flow.versionId || '检查通过后固定版本'}</p>
-          <p>参数：{preview.flow.parameterNames.join('、') || '无'}</p>
-          <p>声明能力：{preview.flow.capabilities.join('、') || '无'}</p>
-          {compact && preview.rerun && (
-            <div className="run-review-rerun-origin">
-              <p>关联原运行：{preview.rerun.name}</p>
-              <p className="run-review-version">{preview.rerun.runId}</p>
-              <p>已核对原输出与外部结果；新运行从第 1 步开始，不恢复旧脚本内部现场。</p>
-            </div>
-          )}
-        </details>
+        <Collapse
+          items={[
+            {
+              key: 'version',
+              forceRender: true,
+              onKeyDown: activateCollapseWithSpace,
+              label: <>查看版本与参数</>,
+              children: (
+                <>
+                  <Descriptions
+                    className="metadata-facts"
+                    column={1}
+                    bordered
+                    size="small"
+                    items={[
+                      {
+                        key: 'version',
+                        label: '版本',
+                        children: preview.flow.versionId || '检查通过后固定版本',
+                      },
+                      {
+                        key: 'parameters',
+                        label: '参数',
+                        children: preview.flow.parameterNames.join('、') || '无',
+                      },
+                      {
+                        key: 'capabilities',
+                        label: '声明能力',
+                        children: preview.flow.capabilities.join('、') || '无',
+                      },
+                    ]}
+                  />
+                  {compact && preview.rerun && (
+                    <div className="run-review-rerun-origin">
+                      <p>关联原运行：{preview.rerun.name}</p>
+                      <p className="run-review-version">{preview.rerun.runId}</p>
+                      <p>已核对原输出与外部结果；新运行从第 1 步开始，不恢复旧脚本内部现场。</p>
+                    </div>
+                  )}
+                </>
+              ),
+            },
+          ]}
+        />
       </section>
     </>
   );
@@ -526,27 +558,51 @@ export default function RunReviewPage(props: Props) {
           {desktopReview ? (
             <>
               {!preview?.ready && !state.loading && rebindButton}
-              <details className="run-review-options desktop-review-options">
-                <summary>窗口绑定、检查与试运行选项</summary>
-                <p aria-live="polite">{title}</p>
-                {!attempt &&
-                  preview?.checks
-                    .filter((check) => check.passed)
-                    .map((check, i) => (
-                      <RunReviewCheck key={`${i}:${check.detail}`} check={check} compact />
-                    ))}
-                {debugToggle}
-                {(preview?.ready || state.loading) && rebindButton}
-                {reviewUtilities}
-              </details>
+              <Collapse
+                className="run-review-options"
+                items={[
+                  {
+                    key: 'desktop-options',
+                    forceRender: true,
+                    onKeyDown: activateCollapseWithSpace,
+                    label: <>窗口绑定、检查与试运行选项</>,
+                    children: (
+                      <div className="run-review-option-content">
+                        <p aria-live="polite">{title}</p>
+                        {!attempt &&
+                          preview?.checks
+                            .filter((check) => check.passed)
+                            .map((check, i) => (
+                              <RunReviewCheck key={`${i}:${check.detail}`} check={check} compact />
+                            ))}
+                        {debugToggle}
+                        {(preview?.ready || state.loading) && rebindButton}
+                        {reviewUtilities}
+                      </div>
+                    ),
+                  },
+                ]}
+              />
             </>
           ) : compactReview && !attempt ? (
             <>
-              <details className="run-review-options">
-                <summary>试运行选项与重新检查</summary>
-                {debugToggle}
-                {(preview?.ready || state.loading) && reviewUtilities}
-              </details>
+              <Collapse
+                className="run-review-options"
+                items={[
+                  {
+                    key: 'options',
+                    forceRender: true,
+                    onKeyDown: activateCollapseWithSpace,
+                    label: <>试运行选项与重新检查</>,
+                    children: (
+                      <div className="run-review-option-content">
+                        {debugToggle}
+                        {(preview?.ready || state.loading) && reviewUtilities}
+                      </div>
+                    ),
+                  },
+                ]}
+              />
               {!preview?.ready && !state.loading && reviewUtilities}
             </>
           ) : (
@@ -562,14 +618,26 @@ export default function RunReviewPage(props: Props) {
             </>
           )}
           {preview && (
-            <details className="run-review-limitations">
-              <summary>检查范围与限制</summary>
-              <ul>
-                {preview.limitations.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </details>
+            <Collapse
+              className="run-review-limitations"
+              items={[
+                {
+                  key: 'limitations',
+                  forceRender: true,
+                  onKeyDown: activateCollapseWithSpace,
+                  label: <>检查范围与限制</>,
+                  children: (
+                    <>
+                      <ul>
+                        {preview.limitations.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </>
+                  ),
+                },
+              ]}
+            />
           )}
         </section>
       </div>
