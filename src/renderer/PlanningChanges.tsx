@@ -1,5 +1,6 @@
-import { Button, Input } from 'antd';
+import { Button, Collapse, Descriptions, Input, Tag } from 'antd';
 import { useId, useRef, useState } from 'react';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { PlanningChange } from '../shared/planning';
 import type { Flow, Step } from '../shared/types';
 import { flatten } from './flow-editing';
@@ -209,24 +210,24 @@ export default function PlanningChanges({
               ) : node && typeof node === 'object' ? (
                 <>
                   <p>{position((value as { position?: unknown }).position, side)}</p>
-                  <dl>
-                    {Object.entries(node).map(([field, item]) => (
-                      <div key={field}>
-                        <dt>
-                          {field === 'id'
-                            ? '步骤标识'
-                            : field === 'name' &&
-                                'type' in node &&
-                                (node.type === 'file' || node.type === 'excel')
-                              ? '文件名'
-                              : (labels[field] ?? field)}
-                        </dt>
-                        <dd>
-                          <pre>{displayValue(field, item, change, side)}</pre>
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
+                  <Descriptions
+                    className="metadata-facts"
+                    bordered
+                    size="small"
+                    column={1}
+                    items={Object.entries(node).map(([field, item]) => ({
+                      key: field,
+                      label:
+                        field === 'id'
+                          ? '步骤标识'
+                          : field === 'name' &&
+                              'type' in node &&
+                              (node.type === 'file' || node.type === 'excel')
+                            ? '文件名'
+                            : (labels[field] ?? field),
+                      children: <pre>{displayValue(field, item, change, side)}</pre>,
+                    }))}
+                  />
                 </>
               ) : (
                 <pre>
@@ -239,11 +240,22 @@ export default function PlanningChanges({
           );
         })}
       </div>
-      <details>
-        <summary>查看完整原始差异</summary>
-        <p>{change.path}</p>
-        <pre>{raw({ before: change.before, after: change.after })}</pre>
-      </details>
+      <Collapse
+        items={[
+          {
+            key: 'raw',
+            forceRender: true,
+            onKeyDown: activateCollapseWithSpace,
+            label: <>查看完整原始差异</>,
+            children: (
+              <>
+                <p>{change.path}</p>
+                <pre>{raw({ before: change.before, after: change.after })}</pre>
+              </>
+            ),
+          },
+        ]}
+      />
     </div>
   );
   return (
@@ -289,6 +301,7 @@ export default function PlanningChanges({
               <Button
                 htmlType="button"
                 key={kind}
+                type={filter === kind ? 'primary' : 'default'}
                 aria-pressed={filter === kind}
                 onClick={() => setFilter(kind)}
               >
@@ -307,6 +320,8 @@ export default function PlanningChanges({
               <Button
                 htmlType="button"
                 key={index}
+                color={active?.index === index ? 'primary' : undefined}
+                variant={active?.index === index ? 'outlined' : 'filled'}
                 aria-pressed={active?.index === index}
                 onClick={() => {
                   setSelected(index);
@@ -322,9 +337,17 @@ export default function PlanningChanges({
                   <strong>{title(change)}</strong>
                   <small>{stepPosition(change)}</small>
                 </span>
-                <span className={`planning-change-kind ${change.kind}`}>
+                <Tag
+                  color={
+                    change.kind === 'added'
+                      ? 'success'
+                      : change.kind === 'removed'
+                        ? 'error'
+                        : 'default'
+                  }
+                >
                   {categories[change.kind]}
-                </span>
+                </Tag>
               </Button>
             ))}
           </div>

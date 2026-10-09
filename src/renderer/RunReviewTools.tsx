@@ -1,4 +1,6 @@
-import { Alert, Badge } from 'antd';
+import { Alert, Badge, Collapse, Descriptions } from 'antd';
+import { useEffect, useState } from 'react';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { ReviewToolCall } from '../shared/run-review';
 import { referenceOf } from './value-references';
 import './run-review-tools.css';
@@ -44,131 +46,172 @@ function references(value: unknown) {
 function Call({ call }: { call: ReviewToolCall }) {
   const { step, target, definition } = call;
   const refs = references(step.arguments);
+  const needsReview =
+    !!call.argumentCheck &&
+    ['invalid', 'unsupported', 'unavailable'].includes(call.argumentCheck.status);
+  const [expanded, setExpanded] = useState(needsReview);
+  useEffect(() => {
+    setExpanded(needsReview);
+  }, [needsReview]);
   return (
-    <details
+    <Collapse
       className="run-review-tool"
-      open={
-        !!call.argumentCheck &&
-        ['invalid', 'unsupported', 'unavailable'].includes(call.argumentCheck.status)
-      }
-    >
-      <summary>
-        <span>
-          第 {call.ordinal} 步 · {step.name || definition?.title || step.tool}
-        </span>
-        <small>
-          {target?.displayName || '工具对象未绑定'} · {step.tool}
-        </small>
-        <span className="run-review-tool-status">
-          <Badge
-            status={call.current ? 'default' : 'error'}
-            text={call.current ? '本机记录一致 · 执行前复核服务' : '工具对象需要处理'}
-          />
-        </span>
-        <small>参数：{argumentStatusLabels[call.argumentCheck?.status ?? 'unavailable']}</small>
-      </summary>
-      <div className="run-review-tool-body">
-        <p>{call.reason}</p>
-        <p>
-          执行条件：{call.context.length ? call.context.join(' → ') : '执行到此步骤时'}。
-          {call.context.length > 0 && '分支是否进入、循环实际次数在运行时确定。'}
-        </p>
-        <dl className="run-review-tool-facts">
-          <div>
-            <dt>连接对象</dt>
-            <dd>{target?.displayName || '尚未绑定'}</dd>
-          </div>
-          <div>
-            <dt>工具原名</dt>
-            <dd>
-              <code>{step.tool}</code>
-            </dd>
-          </div>
-          <div>
-            <dt>来源说明</dt>
-            <dd>{target?.source || '没有保存的来源说明'}</dd>
-          </div>
-          <div>
-            <dt>账号与权限</dt>
-            <dd>未核对，不能从连接名称或服务说明推断</dd>
-          </div>
-          <div>
-            <dt>步骤期限</dt>
-            <dd>{step.timeoutMs === undefined ? '未单独设置' : `${step.timeoutMs} 毫秒`}</dd>
-          </div>
-        </dl>
-        {definition && (
-          <>
-            <h3>服务说明与行为声明</h3>
-            <p>{definition.description || '服务没有提供用途说明。'}</p>
-            <dl className="run-review-tool-facts">
-              {hints.map(([key, label]) => (
-                <div key={key}>
-                  <dt>{label}</dt>
-                  <dd>
-                    {definition.annotations?.[key] === undefined
-                      ? '未声明'
-                      : definition.annotations[key]
-                        ? '服务声明为是'
-                        : '服务声明为否'}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-            <Alert
-              type="info"
-              role="note"
-              showIcon
-              title="服务声明不能证明没有外部影响，也不代表已经授权。读取范围、外发、覆盖和删除仍需核对。"
-            />
-          </>
-        )}
-        <McpArgumentCheck result={call.argumentCheck} />
-        <h3>拟发送参数</h3>
-        <p>以下是已保存方案中的原始配置；动态引用未求值，固定值的核对结果见上方。</p>
-        <pre tabIndex={0} aria-label={`第 ${call.ordinal} 步完整参数`}>
-          {JSON.stringify(step.arguments, null, 2)}
-        </pre>
-        {refs.found.length ? (
-          <>
-            <h3>参数来源</h3>
-            <ul>
-              {refs.found.map((entry) => (
-                <li key={entry.path}>
-                  <code>{entry.path}</code> · {referenceLabel(entry.reference)}
-                  <code>{entry.reference}</code>
-                </li>
-              ))}
-            </ul>
-            <p>
-              引用值要到执行时才能确定；成功工具回复包含 structuredContent 与 content。字段路径使用
-              / 分隔，~1 表示字段名中的 /，~0 表示 ~。
-            </p>
-            {refs.remaining > 0 && <p>另有 {refs.remaining} 项引用，请在上方完整参数中查看。</p>}
-          </>
-        ) : (
-          <p>参数全部来自方案中保存的固定值，没有动态引用。</p>
-        )}
-        <details>
-          <summary>查看保存的选择与完整工具定义</summary>
-          <p>逻辑目标：{step.target}</p>
-          {target && (
-            <p>
-              连接修订 {target.connectionRevision} ·{' '}
-              {target.transport === 'stdio' ? '本机程序' : 'HTTP 服务'} · 协议{' '}
-              {target.protocolVersion} · 选择时间 {new Date(target.selectedAt).toLocaleString()}
-            </p>
-          )}
-          {definition ? (
-            <pre tabIndex={0} aria-label={`第 ${call.ordinal} 步完整工具定义`}>
-              {JSON.stringify(definition, null, 2)}
-            </pre>
-          ) : (
-            <p>没有匹配的已选工具定义。</p>
-          )}
-        </details>
-      </div>
-    </details>
+      activeKey={expanded ? ['call'] : []}
+      onChange={(keys) => setExpanded(keys.includes('call'))}
+      items={[
+        {
+          key: 'call',
+          forceRender: true,
+          onKeyDown: activateCollapseWithSpace,
+          label: (
+            <div className="run-review-tool-label">
+              <span>
+                第 {call.ordinal} 步 · {step.name || definition?.title || step.tool}
+              </span>
+              <small>
+                {target?.displayName || '工具对象未绑定'} · {step.tool}
+              </small>
+              <span className="run-review-tool-status">
+                <Badge
+                  status={call.current ? 'default' : 'error'}
+                  text={call.current ? '本机记录一致 · 执行前复核服务' : '工具对象需要处理'}
+                />
+              </span>
+              <small>
+                参数：{argumentStatusLabels[call.argumentCheck?.status ?? 'unavailable']}
+              </small>
+            </div>
+          ),
+          children: (
+            <>
+              <div className="run-review-tool-body">
+                <p>{call.reason}</p>
+                <p>
+                  执行条件：{call.context.length ? call.context.join(' → ') : '执行到此步骤时'}。
+                  {call.context.length > 0 && '分支是否进入、循环实际次数在运行时确定。'}
+                </p>
+                <Descriptions
+                  className="metadata-facts"
+                  bordered
+                  size="small"
+                  column={1}
+                  items={[
+                    {
+                      key: 'target',
+                      label: '连接对象',
+                      children: target?.displayName || '尚未绑定',
+                    },
+                    { key: 'tool', label: '工具原名', children: <code>{step.tool}</code> },
+                    {
+                      key: 'source',
+                      label: '来源说明',
+                      children: target?.source || '没有保存的来源说明',
+                    },
+                    {
+                      key: 'account',
+                      label: '账号与权限',
+                      children: '未核对，不能从连接名称或服务说明推断',
+                    },
+                    {
+                      key: 'timeout',
+                      label: '步骤期限',
+                      children:
+                        step.timeoutMs === undefined ? '未单独设置' : `${step.timeoutMs} 毫秒`,
+                    },
+                  ]}
+                />
+                {definition && (
+                  <>
+                    <h3>服务说明与行为声明</h3>
+                    <p>{definition.description || '服务没有提供用途说明。'}</p>
+                    <Descriptions
+                      className="metadata-facts"
+                      bordered
+                      size="small"
+                      column={1}
+                      items={hints.map(([key, label]) => ({
+                        key,
+                        label,
+                        children:
+                          definition.annotations?.[key] === undefined
+                            ? '未声明'
+                            : definition.annotations[key]
+                              ? '服务声明为是'
+                              : '服务声明为否',
+                      }))}
+                    />
+                    <Alert
+                      type="info"
+                      role="note"
+                      showIcon
+                      title="服务声明不能证明没有外部影响，也不代表已经授权。读取范围、外发、覆盖和删除仍需核对。"
+                    />
+                  </>
+                )}
+                <McpArgumentCheck result={call.argumentCheck} />
+                <h3>拟发送参数</h3>
+                <p>以下是已保存方案中的原始配置；动态引用未求值，固定值的核对结果见上方。</p>
+                <pre tabIndex={0} aria-label={`第 ${call.ordinal} 步完整参数`}>
+                  {JSON.stringify(step.arguments, null, 2)}
+                </pre>
+                {refs.found.length ? (
+                  <>
+                    <h3>参数来源</h3>
+                    <ul>
+                      {refs.found.map((entry) => (
+                        <li key={entry.path}>
+                          <code>{entry.path}</code> · {referenceLabel(entry.reference)}
+                          <code>{entry.reference}</code>
+                        </li>
+                      ))}
+                    </ul>
+                    <p>
+                      引用值要到执行时才能确定；成功工具回复包含 structuredContent 与
+                      content。字段路径使用 / 分隔，~1 表示字段名中的 /，~0 表示 ~。
+                    </p>
+                    {refs.remaining > 0 && (
+                      <p>另有 {refs.remaining} 项引用，请在上方完整参数中查看。</p>
+                    )}
+                  </>
+                ) : (
+                  <p>参数全部来自方案中保存的固定值，没有动态引用。</p>
+                )}
+                <Collapse
+                  items={[
+                    {
+                      key: 'definition',
+                      forceRender: true,
+                      onKeyDown: activateCollapseWithSpace,
+                      label: <>查看保存的选择与完整工具定义</>,
+                      children: (
+                        <>
+                          <p>逻辑目标：{step.target}</p>
+                          {target && (
+                            <p>
+                              连接修订 {target.connectionRevision} ·{' '}
+                              {target.transport === 'stdio' ? '本机程序' : 'HTTP 服务'} · 协议{' '}
+                              {target.protocolVersion} · 选择时间{' '}
+                              {new Date(target.selectedAt).toLocaleString()}
+                            </p>
+                          )}
+                          {definition ? (
+                            <pre tabIndex={0} aria-label={`第 ${call.ordinal} 步完整工具定义`}>
+                              {JSON.stringify(definition, null, 2)}
+                            </pre>
+                          ) : (
+                            <p>没有匹配的已选工具定义。</p>
+                          )}
+                        </>
+                      ),
+                    },
+                  ]}
+                />
+              </div>
+            </>
+          ),
+        },
+      ]}
+    />
   );
 }
 

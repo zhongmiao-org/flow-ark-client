@@ -1,4 +1,6 @@
-import type { ReactNode } from 'react';
+import { Collapse, Descriptions } from 'antd';
+import { useEffect, useState, type ReactNode } from 'react';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { TaskDetail } from '../shared/planning';
 import { flatten } from './flow-editing';
 import PlanningChanges from './PlanningChanges';
@@ -14,9 +16,9 @@ export default function TaskProposalReview({
   actions?: ReactNode;
 }) {
   const proposal = detail.proposal;
-  if (!proposal?.baseFlow || proposal.result.kind !== 'plan' || !proposal.result.flow) return null;
-  const before = proposal.baseFlow;
-  const after = proposal.result.flow;
+  const before = proposal?.baseFlow;
+  const after = proposal?.result.kind === 'plan' ? proposal.result.flow : null;
+
   const affected = new Set(
     detail.changes.flatMap((change) => (change.nodeId ? [change.nodeId] : [])),
   );
@@ -31,14 +33,14 @@ export default function TaskProposalReview({
       .filter((change) => change.kind === 'removed' && change.nodeId)
       .map((change) => change.nodeId),
   ).size;
-  const added = after.requiredCapabilities.filter(
-    (name) => !before.requiredCapabilities.includes(name),
-  );
-  const removed = before.requiredCapabilities.filter(
-    (name) => !after.requiredCapabilities.includes(name),
-  );
-  const oldSteps = flatten(before.steps);
-  const newSteps = flatten(after.steps);
+  const added =
+    after?.requiredCapabilities.filter((name) => !before?.requiredCapabilities.includes(name)) ??
+    [];
+  const removed =
+    before?.requiredCapabilities.filter((name) => !after?.requiredCapabilities.includes(name)) ??
+    [];
+  const oldSteps = flatten(before?.steps ?? []);
+  const newSteps = flatten(after?.steps ?? []);
   const affectedId = [...affected][0];
   const oldIndex = oldSteps.findIndex((step) => step.id === affectedId);
   const newIndex = newSteps.findIndex((step) => step.id === affectedId);
@@ -58,6 +60,12 @@ export default function TaskProposalReview({
         change.kind === 'changed' &&
         ['actual', 'operator', 'expected', 'name'].includes(change.path.split('/').at(-1)!),
     );
+  const defaultCapabilitiesExpanded = !conditionOnly;
+  const [capabilitiesExpanded, setCapabilitiesExpanded] = useState(defaultCapabilitiesExpanded);
+  useEffect(() => {
+    setCapabilitiesExpanded(defaultCapabilitiesExpanded);
+  }, [defaultCapabilitiesExpanded]);
+  if (!proposal || !before || !after) return null;
   const changes = (
     <PlanningChanges
       prioritizeDetail
@@ -95,10 +103,18 @@ export default function TaskProposalReview({
           </div>
           <p>保持原配置：其余 {newSteps.length - 1} 个步骤。对象与权限请展开核对。</p>
           {actions}
-          <details className="task-proposal-condition-details">
-            <summary>展开逐项差异 · {detail.changes.length} 项</summary>
-            {changes}
-          </details>
+          <Collapse
+            className="task-proposal-condition-details"
+            items={[
+              {
+                key: 'changes',
+                forceRender: true,
+                onKeyDown: activateCollapseWithSpace,
+                label: <>展开逐项差异 · {detail.changes.length} 项</>,
+                children: <>{changes}</>,
+              },
+            ]}
+          />
         </>
       ) : (
         <>
@@ -115,41 +131,88 @@ export default function TaskProposalReview({
           {changes}
         </>
       )}
-      <details className="task-proposal-capability-details" open={conditionOnly ? undefined : true}>
-        <summary>核对资源与能力</summary>
-        <section className="task-proposal-permissions" aria-label="方案资源与能力变化">
-          <h3>资源与能力变化</h3>
-          {added.length || removed.length ? (
-            <ul>
-              {!!added.length && <li>新增声明能力：{added.join('、')}</li>}
-              {!!removed.length && <li>移除声明能力：{removed.join('、')}</li>}
-            </ul>
-          ) : (
-            <p>声明的能力集合没有变化；步骤参数和实际影响仍需逐项核对。</p>
-          )}
-          <p>能力声明不等于授权。采纳不会替你授予新权限，试运行前还需检查对象与实际读写范围。</p>
-          <details>
-            <summary>查看新方案需要的全部资源</summary>
-            <ul>
-              {detail.resources.map((resource, index) => (
-                <li key={index}>{resource}</li>
-              ))}
-              {!detail.resources.length && <li>没有文件、浏览器、HTTP、脚本或工具资源操作。</li>}
-            </ul>
-            <p>声明的能力：{after.requiredCapabilities.join('、') || '无'}</p>
-          </details>
-        </section>
-      </details>
-      <details className="task-proposal-source">
-        <summary>查看提案来源与基线</summary>
-        <p>
-          任务基线修订 {proposal.baseRevision} · 提案 {proposal.id}
-        </p>
-        <p>基线摘要：{proposal.baseFlowHash}</p>
-        <p>
-          原草稿：{before.name} · 新方案：{after.name}
-        </p>
-      </details>
+      <Collapse
+        className="task-proposal-capability-details"
+        activeKey={capabilitiesExpanded ? ['capabilities'] : []}
+        onChange={(keys) => setCapabilitiesExpanded(keys.includes('capabilities'))}
+        items={[
+          {
+            key: 'capabilities',
+            forceRender: true,
+            onKeyDown: activateCollapseWithSpace,
+            label: <>核对资源与能力</>,
+            children: (
+              <>
+                <section className="task-proposal-permissions" aria-label="方案资源与能力变化">
+                  <h3>资源与能力变化</h3>
+                  {added.length || removed.length ? (
+                    <ul>
+                      {!!added.length && <li>新增声明能力：{added.join('、')}</li>}
+                      {!!removed.length && <li>移除声明能力：{removed.join('、')}</li>}
+                    </ul>
+                  ) : (
+                    <p>声明的能力集合没有变化；步骤参数和实际影响仍需逐项核对。</p>
+                  )}
+                  <p>
+                    能力声明不等于授权。采纳不会替你授予新权限，试运行前还需检查对象与实际读写范围。
+                  </p>
+                  <Collapse
+                    items={[
+                      {
+                        key: 'resources',
+                        forceRender: true,
+                        onKeyDown: activateCollapseWithSpace,
+                        label: <>查看新方案需要的全部资源</>,
+                        children: (
+                          <>
+                            <ul>
+                              {detail.resources.map((resource, index) => (
+                                <li key={index}>{resource}</li>
+                              ))}
+                              {!detail.resources.length && (
+                                <li>没有文件、浏览器、HTTP、脚本或工具资源操作。</li>
+                              )}
+                            </ul>
+                            <p>声明的能力：{after?.requiredCapabilities.join('、') || '无'}</p>
+                          </>
+                        ),
+                      },
+                    ]}
+                  />
+                </section>
+              </>
+            ),
+          },
+        ]}
+      />
+      <Collapse
+        className="task-proposal-source"
+        items={[
+          {
+            key: 'source',
+            forceRender: true,
+            onKeyDown: activateCollapseWithSpace,
+            label: <>查看提案来源与基线</>,
+            children: (
+              <>
+                <Descriptions
+                  className="metadata-facts"
+                  bordered
+                  size="small"
+                  column={1}
+                  items={[
+                    { key: 'revision', label: '任务基线修订', children: proposal.baseRevision },
+                    { key: 'proposal', label: '提案', children: proposal.id },
+                    { key: 'hash', label: '基线摘要', children: proposal.baseFlowHash },
+                    { key: 'before', label: '原草稿', children: before.name },
+                    { key: 'after', label: '新方案', children: after.name },
+                  ]}
+                />
+              </>
+            ),
+          },
+        ]}
+      />
       {!conditionOnly && actions}
     </div>
   );
