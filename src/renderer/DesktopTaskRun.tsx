@@ -1,4 +1,5 @@
-import { Button } from 'antd';
+import { runStateColors } from './theme';
+import { Button, Tag, Badge } from 'antd';
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { TaskRunIntent, TaskRunView, taskRunPresentation } from './task-run-presentation';
 import { runDisplayLabels } from '../shared/run-history';
@@ -87,14 +88,19 @@ export default function DesktopTaskRun({
       )}
       <section className="ai-task-card desktop-task-run-panel" aria-label="应用执行与结果">
         <div className="desktop-task-run-status">
-          <span className={'badge state-' + (model.uncertain ? 'INTERRUPTED' : run.state)}>
+          <Tag
+            className="run-state-tag"
+            variant="filled"
+            color={runStateColors[model.uncertain ? 'INTERRUPTED' : run.state]}
+            icon={<Badge status={runStateColors[model.uncertain ? 'INTERRUPTED' : run.state]} />}
+          >
             {model.uncertain
               ? '结果待核对'
               : model.view.closing
                 ? '正在收尾'
                 : (runDisplayLabels[run.state as keyof typeof runDisplayLabels] ?? run.state)}
             {currentStep && ` · ${currentStep}`}
-          </span>
+          </Tag>
         </div>
         <h2>
           {verified

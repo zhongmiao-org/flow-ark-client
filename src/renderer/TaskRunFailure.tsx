@@ -1,3 +1,4 @@
+import { Tag, Badge } from 'antd';
 import type { ReactNode } from 'react';
 import type { taskRunPresentation } from './task-run-presentation';
 
@@ -66,7 +67,14 @@ export default function TaskRunFailure({
   const reason = failureReason(model, error);
   return (
     <>
-      <span className="badge state-WAITING_INPUT">需要处理</span>
+      <Tag
+        className="run-state-tag"
+        color="warning"
+        variant="filled"
+        icon={<Badge status="warning" />}
+      >
+        需要处理
+      </Tag>
       <h2 className="task-run-current">{reason.title}</h2>
       <p role="status">{reason.explanation}</p>
       {model.current?.ended && (

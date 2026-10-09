@@ -1,4 +1,5 @@
-import { Button } from 'antd';
+import { runStateColors } from './theme';
+import { Button, Tag, Badge } from 'antd';
 import { useId, useState, type ReactNode, type RefObject } from 'react';
 import type { Event } from '../shared/types';
 import type { RunPresentation, RunPresentationInput } from '../shared/run-presentation';
@@ -97,10 +98,15 @@ export default function DebugRunWorkspace(props: Props) {
           )}
         </aside>
         <section className="debug-run-current" aria-label="调试控制与结果">
-          <span className={'badge state-' + (props.lastSaved ? 'INTERRUPTED' : run.state)}>
+          <Tag
+            className="run-state-tag"
+            variant="filled"
+            color={runStateColors[props.lastSaved ? 'INTERRUPTED' : run.state]}
+            icon={<Badge status={runStateColors[props.lastSaved ? 'INTERRUPTED' : run.state]} />}
+          >
             {props.lastSaved ? '最后保存：' : ''}
             {runDisplayLabels[run.state]}
-          </span>
+          </Tag>
           <h2>{currentLabel}</h2>
           <p>
             {props.results.length

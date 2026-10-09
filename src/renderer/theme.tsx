@@ -1,6 +1,22 @@
 import { ConfigProvider, theme, type ThemeConfig } from 'antd';
+import type { RunState } from '../shared/types';
 import zhCN from 'antd/locale/zh_CN';
 import { useLayoutEffect, type ReactNode } from 'react';
+
+export const runStateColors: Record<
+  string,
+  'default' | 'processing' | 'success' | 'warning' | 'error'
+> = {
+  QUEUED: 'processing',
+  RUNNING: 'processing',
+  PAUSED: 'warning',
+  WAITING_INPUT: 'warning',
+  CANCELLING: 'default',
+  CANCELLED: 'default',
+  INTERRUPTED: 'warning',
+  SUCCEEDED: 'success',
+  FAILED: 'error',
+} as const satisfies Record<RunState, string>;
 
 // Figma semantic tokens. All shared controls and workspace colours derive from this theme.
 export const flowArkTheme = {
@@ -37,7 +53,7 @@ export const flowArkTheme = {
   components: {
     Menu: { darkItemColor: '#A8B4CA' },
     Modal: { titleFontSize: 28, titleLineHeight: 40 / 28, borderRadiusLG: 12 },
-    Tag: { borderRadiusSM: 999 },
+    Tag: { borderRadiusSM: 999, lineHeightSM: 26 / 12 },
     Button: { fontWeight: 500, primaryShadow: 'none', defaultShadow: 'none' },
   },
 } satisfies ThemeConfig;

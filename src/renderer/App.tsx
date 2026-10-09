@@ -1,4 +1,4 @@
-import { ConfigProvider, Button, Input, Segmented } from 'antd';
+import { Alert, ConfigProvider, Button, Input, Segmented, Tag } from 'antd';
 import { VariableNavigationContext } from './variable-navigation';
 import StructureReferenceRecovery from './StructureReferenceRecovery';
 import type { ReferenceIssue } from '../shared/flow-references';
@@ -100,7 +100,6 @@ import RunHistory from './RunHistory';
 import RunDetail, { type RunTab, type RunDetailReturnContext } from './RunDetail';
 import TaskRunPage, { type TaskRunReturnContext } from './TaskRunPage';
 import { taskRunPresentation, type TaskRunIntent, type TaskRunView } from './task-run-presentation';
-import { runStateLabels } from '../shared/run-history';
 import { referenceChoices } from './value-references';
 const CodeEditor = lazy(() => import('./CodeEditor'));
 const initial: Bootstrap = {
@@ -116,12 +115,8 @@ const initial: Bootstrap = {
   dataPath: '',
 };
 const api = (method: string, args: any = {}) => window.flowark.request(method, args);
-const status: Record<string, string> = runStateLabels;
 const uid = () => crypto.randomUUID();
 
-function badge(s: string) {
-  return <span className={'badge state-' + s}>{status[s] ?? s}</span>;
-}
 function format(t: string) {
   return new Date(t).toLocaleString('zh-CN', {
     month: '2-digit',
@@ -570,7 +565,19 @@ function WorkspaceApp() {
     }
     leaveTemplateContext(next, destination);
   }
+  const feedbackOrigin = useRef<HTMLElement | null>(null);
+  function dismissFeedback(clear: () => void) {
+    clear();
+    requestAnimationFrame(() => {
+      const origin = feedbackOrigin.current;
+      if (origin?.isConnected && !origin.closest('[hidden]') && !origin.matches(':disabled'))
+        origin.focus();
+      else document.querySelector<HTMLElement>('main h1, [aria-label="流程名称"]')?.focus();
+    });
+  }
   async function action(fn: () => Promise<any>, message?: string) {
+    feedbackOrigin.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setBusy(true);
     setError('');
     try {
@@ -579,6 +586,11 @@ function WorkspaceApp() {
       await refresh();
       return r;
     } catch (e: any) {
+      if (
+        document.activeElement instanceof HTMLElement &&
+        document.activeElement.matches('[aria-invalid="true"]')
+      )
+        feedbackOrigin.current = document.activeElement;
       setError(e.message);
     } finally {
       setBusy(false);
@@ -1621,23 +1633,40 @@ function WorkspaceApp() {
             />
           )}
           {data.runtimeBlock && (
-            <div className="alert error" role="alert">
-              <b>资源回收未确认</b>
-              <span>{data.runtimeBlock}</span>
-            </div>
+            <Alert
+              className="workspace-feedback"
+              type="error"
+              showIcon
+              title="资源回收未确认"
+              description={data.runtimeBlock}
+            />
           )}
           {error && (
-            <div className="alert error" role="alert">
-              <b>{error === dataRefreshError.current ? '工作区信息读取失败' : '操作未完成'}</b>
-              <span>{error}</span>
-              <Button onClick={() => setError('')}>关闭</Button>
-            </div>
+            <Alert
+              className="workspace-feedback"
+              type="error"
+              showIcon
+              title={error === dataRefreshError.current ? '工作区信息读取失败' : '操作未完成'}
+              description={error}
+              action={<Button onClick={() => dismissFeedback(() => setError(''))}>关闭</Button>}
+            />
           )}
           {notice && (
-            <div className="notice" role="status">
-              {notice}
-              <Button onClick={() => setNotice('')}>×</Button>
-            </div>
+            <Alert
+              className="workspace-notice"
+              type="success"
+              role="status"
+              showIcon
+              title={notice}
+              action={
+                <Button
+                  aria-label="关闭操作提示"
+                  onClick={() => dismissFeedback(() => setNotice(''))}
+                >
+                  关闭
+                </Button>
+              }
+            />
           )}
           {loaded && (
             <AITaskWorkspace
@@ -2922,28 +2951,43 @@ function Editor({
         }}
       />
       {invalid && (
-        <section className="editor-feedback is-error" id="node-json-feedback" role="alert">
-          <span className="editor-feedback-badge">无法提交</span>
-          <h3>高级输入尚未完成</h3>
-          <p>这段 JSON 尚未应用。请修正输入，或恢复上次有效的节点配置后继续。</p>
-          <pre tabIndex={0} aria-label="节点配置错误详情">
-            {invalid}
-          </pre>
-          <div className="editor-feedback-actions">
-            <Button htmlType="button" type="primary" onClick={() => advancedField.current?.focus()}>
-              修正输入
-            </Button>
-            <Button
-              htmlType="button"
-              onClick={() => {
-                setRaw(JSON.stringify(selectedNode, null, 2));
-                setInvalid('');
-                advancedField.current?.focus();
-              }}
-            >
-              恢复节点配置
-            </Button>
-          </div>
+        <section className="editor-feedback" id="node-json-feedback" role="alert">
+          <Alert
+            type="error"
+            role="presentation"
+            showIcon
+            title="高级输入尚未完成"
+            description={
+              <div className="editor-feedback-body">
+                <Tag color="error" variant="filled">
+                  无法提交
+                </Tag>
+                <p>这段 JSON 尚未应用。请修正输入，或恢复上次有效的节点配置后继续。</p>
+                <pre tabIndex={0} aria-label="节点配置错误详情">
+                  {invalid}
+                </pre>
+                <div className="editor-feedback-actions">
+                  <Button
+                    htmlType="button"
+                    type="primary"
+                    onClick={() => advancedField.current?.focus()}
+                  >
+                    修正输入
+                  </Button>
+                  <Button
+                    htmlType="button"
+                    onClick={() => {
+                      setRaw(JSON.stringify(selectedNode, null, 2));
+                      setInvalid('');
+                      advancedField.current?.focus();
+                    }}
+                  >
+                    恢复节点配置
+                  </Button>
+                </div>
+              </div>
+            }
+          />
         </section>
       )}
       <p className="note">
@@ -3413,20 +3457,33 @@ function Editor({
                     tabIndex={-1}
                     aria-label="复制完成"
                   >
-                    <span className="editor-feedback-badge">草稿已更改</span>
-                    <h3>复制完成</h3>
-                    <p>已复制 {copiedStep.count} 个步骤并重建内部引用；尚未保存，没有启动运行。</p>
-                    <Button
-                      type="primary"
-                      onClick={() => {
-                        setCopiedStep(undefined);
-                        setTab('node');
-                        setPanel('node');
-                        requestAnimationFrame(() => inspectorHeading.current?.focus());
-                      }}
-                    >
-                      查看草稿
-                    </Button>
+                    <Alert
+                      type="info"
+                      role="presentation"
+                      showIcon
+                      title="复制完成"
+                      description={
+                        <div className="editor-feedback-body">
+                          <Tag color="processing" variant="filled">
+                            草稿已更改
+                          </Tag>
+                          <p>
+                            已复制 {copiedStep.count} 个步骤并重建内部引用；尚未保存，没有启动运行。
+                          </p>
+                          <Button
+                            type="primary"
+                            onClick={() => {
+                              setCopiedStep(undefined);
+                              setTab('node');
+                              setPanel('node');
+                              requestAnimationFrame(() => inspectorHeading.current?.focus());
+                            }}
+                          >
+                            查看草稿
+                          </Button>
+                        </div>
+                      }
+                    />
                   </section>
                 )}
                 {tab === 'node' &&

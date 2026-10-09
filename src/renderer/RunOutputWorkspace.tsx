@@ -1,4 +1,5 @@
-import { Button } from 'antd';
+import { runStateColors } from './theme';
+import { Button, Tag, Badge } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { RunOutput } from './RunObservation';
 import ArtifactCleanupPanel from './ArtifactCleanupPanel';
@@ -122,10 +123,15 @@ export default function RunOutputWorkspace({
     <div className="run-output-workspace">
       <div className="run-output-columns">
         <section className="run-output-result" aria-label="已保存结果">
-          <span className={'badge state-' + (lastSaved ? 'INTERRUPTED' : detail.run.state)}>
+          <Tag
+            className="run-state-tag"
+            variant="filled"
+            color={runStateColors[lastSaved ? 'INTERRUPTED' : detail.run.state]}
+            icon={<Badge status={runStateColors[lastSaved ? 'INTERRUPTED' : detail.run.state]} />}
+          >
             {lastSaved && '最后保存：'}
             {runDisplayLabels[detail.run.state as RunState] ?? detail.run.state}
-          </span>
+          </Tag>
           {view.statusNote && (
             <p className="run-output-boundary" role="status">
               {view.statusNote}

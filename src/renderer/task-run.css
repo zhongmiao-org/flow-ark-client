@@ -551,6 +551,7 @@
   }
 }
 
+.task-run-page .run-state-tag,
 .task-run-page .badge {
   align-self: flex-start;
 }

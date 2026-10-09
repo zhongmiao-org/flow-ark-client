@@ -1,4 +1,5 @@
-import { Button, Tabs } from 'antd';
+import { runStateColors } from './theme';
+import { Button, Tabs, Tag, Badge } from 'antd';
 import McpRunReceipts from './McpRunReceipts';
 import DebugRunWorkspace from './DebugRunWorkspace';
 import { useRunControl, RunControlFeedback } from './useRunControl';
@@ -315,14 +316,17 @@ export default function RunDetail({
               hidden={tab !== 'current'}
             >
               <div className="run-runtime-line">
-                <span
+                <Tag
                   role="status"
-                  className={'badge state-' + (lastSaved ? 'INTERRUPTED' : r.state)}
+                  className="run-state-tag"
+                  variant="filled"
+                  color={runStateColors[lastSaved ? 'INTERRUPTED' : r.state]}
+                  icon={<Badge status={runStateColors[lastSaved ? 'INTERRUPTED' : r.state]} />}
                 >
                   {command?.action === 'pause' && command.accepted && !lastSaved
                     ? '暂停请求中'
                     : `${lastSaved ? '最后保存：' : ''}${runStateLabels[r.state]}`}
-                </span>
+                </Tag>
                 <strong>
                   {r.state === 'QUEUED'
                     ? '正在等待执行'

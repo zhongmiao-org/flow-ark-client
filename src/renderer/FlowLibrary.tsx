@@ -1,4 +1,5 @@
-import { Button, Input, Segmented } from 'antd';
+import { runStateColors } from './theme';
+import { Button, Input, Segmented, Tag, Badge } from 'antd';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { FileText, Folder, Globe, Search, Workflow } from 'lucide-react';
 import type { Bootstrap, FlowRecord, Run } from '../shared/types';
@@ -223,11 +224,22 @@ export default function FlowLibrary({
                 <article className="flow-card" key={record.id} aria-label={record.flow.name}>
                   <div className="card-top">
                     <Icon size={28} strokeWidth={1.6} aria-hidden="true" />
-                    <span
-                      className={`badge ${historicalActive ? 'state-INTERRUPTED' : state ? `state-${state}` : ''}`}
+                    <Tag
+                      className="run-state-tag"
+                      variant="filled"
+                      color={
+                        historicalActive ? 'warning' : state ? runStateColors[state] : 'default'
+                      }
+                      icon={
+                        <Badge
+                          status={
+                            historicalActive ? 'warning' : state ? runStateColors[state] : 'default'
+                          }
+                        />
+                      }
                     >
                       {historicalActive ? '待核对' : state ? runStateLabels[state] : '未运行'}
-                    </span>
+                    </Tag>
                   </div>
                   <h2 title={record.flow.name}>{record.flow.name}</h2>
                   <p title={record.flow.description}>
