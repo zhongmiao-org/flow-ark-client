@@ -1,8 +1,36 @@
+import './generate-node-validator.mjs';
 import { build } from 'esbuild';
 import { build as viteBuild } from 'vite';
-import { rm, mkdir } from 'node:fs/promises';
+import { rm, mkdir, copyFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 await rm('dist', { recursive: true, force: true });
 await mkdir('dist', { recursive: true });
+if (process.platform === 'darwin') {
+  await mkdir('dist/native', { recursive: true });
+  await mkdir('dist/native-module-cache', { recursive: true });
+  await promisify(execFile)(
+    '/usr/bin/xcrun',
+    [
+      'swiftc',
+      '-O',
+      '-module-cache-path',
+      'dist/native-module-cache',
+      'native/WindowDiscovery.swift',
+      '-o',
+      'dist/native/flowark-window-discovery',
+    ],
+    { timeout: 120000, maxBuffer: 2 * 1024 * 1024 },
+  );
+  await rm('dist/native-module-cache', { recursive: true, force: true });
+}
+await mkdir('dist/licenses', { recursive: true });
+for (const font of ['inter', 'noto-sans-sc']) {
+  await copyFile(
+    `node_modules/@fontsource-variable/${font}/LICENSE`,
+    `dist/licenses/${font}-OFL.txt`,
+  );
+}
 await build({
   entryPoints: {
     main: 'src/main/main.ts',

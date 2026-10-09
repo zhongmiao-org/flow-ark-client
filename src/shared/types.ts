@@ -23,6 +23,10 @@ export type Bindings = {
   configuration?: { adapter: string; schema: Json; values: Json };
 };
 export type FlowRecord = {
+  desktopTarget?: import('./desktop-planning').DesktopTaskTarget;
+  toolTargets?: import('./task-mcp-targets').TaskMcpTarget[];
+  outputTarget?: import('./task-output').TaskOutputTarget;
+  webTarget?: import('./task-web-target').TaskWebTarget;
   id: string;
   flow: Flow;
   bindings: Bindings;
@@ -30,6 +34,7 @@ export type FlowRecord = {
   versionId?: string;
 };
 export type Run = {
+  task?: { id: string; revision: number };
   id: string;
   flowId: string;
   versionId: string;
@@ -41,6 +46,7 @@ export type Run = {
   debug?: boolean;
   scheduleId?: string;
   rerun?: { runId: string; mode: RunRerunMode; reviewedAt: string };
+  review?: { reviewedAt: string; desktopReviewed?: true; toolsReviewed?: true };
   error?: string;
   business: string;
 };

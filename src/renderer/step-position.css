@@ -1,0 +1,123 @@
+.step-position-page {
+  container-type: inline-size;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.step-position-page h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 40px;
+}
+.step-position-page p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.step-position-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 672fr) minmax(0, 456fr);
+  gap: 24px;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  border: 0;
+}
+.step-position-card {
+  padding: 24px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-surface);
+  min-width: 0;
+  min-height: 682px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.step-position-card h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 28px;
+  overflow-wrap: anywhere;
+}
+.step-position-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 58px;
+  margin: 0;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.step-position-card select {
+  margin: 0;
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 4px 6px;
+  font-size: 13px;
+  line-height: 20px;
+  background: var(--fa-bg-canvas);
+  border-color: transparent;
+}
+.step-position-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.step-position-actions button {
+  min-width: 150px;
+  min-height: 40px;
+}
+.step-position-draft button {
+  min-height: 40px;
+}
+.step-position-draft .step-position-actions button {
+  min-width: 130px;
+}
+.step-position-delete {
+  color: var(--fa-status-error);
+  background: var(--fa-status-error-bg);
+  border-color: transparent;
+}
+.step-position-page .step-position-note {
+  min-height: 72px;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-action-subtle);
+  color: var(--fa-action-primary);
+}
+.step-position-page .step-position-error {
+  padding: 16px;
+  border-radius: 8px;
+  color: var(--fa-status-error);
+  background: var(--fa-status-error-bg);
+}
+@container (max-width:1000px) {
+  .step-position-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .step-position-card {
+    min-height: 0;
+  }
+}
+
+.step-position-add-target {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.step-position-add-target select {
+  flex: 1;
+}
+.step-position-add-target button {
+  flex-shrink: 0;
+  min-height: 32px;
+  padding: 4px 10px;
+}

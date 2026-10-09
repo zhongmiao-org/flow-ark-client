@@ -1,0 +1,42 @@
+.task-latest-run {
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-canvas);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.task-latest-run h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.task-latest-run h3 button {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--fa-action-primary);
+  min-height: 24px;
+  font: inherit;
+}
+.task-latest-run-body:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.task-latest-run p {
+  margin: 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.task-latest-run summary {
+  cursor: pointer;
+  color: var(--fa-action-primary);
+}
+.task-latest-run details p {
+  margin-top: 8px;
+  font-size: 12px;
+}

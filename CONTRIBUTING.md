@@ -7,6 +7,7 @@
 - 不提交 API Key、账号资料、浏览器 Profile、数据库、测试产物或安装包。
 - 执行 `pnpm check`；涉及运行、取消、调度时补充 `pnpm test:runtime`。涉及桌面或浏览器时按改动执行 `pnpm test:desktop`、`pnpm test:browser` 或 `pnpm test:scenario`。
 - 修改凭据保护时执行 `pnpm test:vault`；它使用临时目录、虚构凭据与进程内故障注入，不应更改真实系统凭据。
+- macOS 桌面测试统一使用 `scripts/desktop-session.mjs` 的启动器，已有 FlowArk/Electron 主程序时停止测试，不关闭用户实例。测试串行执行，清理自己的任务后等待主进程实际退出；退出超时即测试失败。遗留测试锁须先核对记录的进程及桌面主进程，不能直接抢占。
 - 每次提交使用功能分支并创建或更新本仓库 PR，添加固定的 `automerge` PR 标签；不直接推送默认分支。当前最新提交的必需 CI 检查通过且满足合并规则后，由 CI 自动合并。
 - 核对 PR 实际合并状态、CI 结果及合并提交，再从最新默认分支继续开发。CI 失败、冲突、权限不足或自动合并未配置时如实报告，不手工合并或绕过检查。
 - `CI` 工作流在 PR 上执行 `pnpm install --frozen-lockfile`、`pnpm check` 和 `pnpm test:runtime`；`Validate` 为 main 的必需检查。同仓库非草稿 PR 带有 `automerge` 标签且满足分支规则时，`Auto Merge` 核对已验证的 head/base 后 squash 合并。外部 fork 的 PR 只运行检查。

@@ -1,0 +1,568 @@
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from 'react';
+import type { FlowRecord, Run } from '../shared/types';
+import { runDisplayLabels } from '../shared/run-history';
+import { changeSteps, flatten } from './flow-editing';
+import { referenceChoices } from './value-references';
+import ValueField from './ValueField';
+import ScriptPackages from './ScriptPackages';
+import type { CodeLocation } from './CodeEditor';
+import {
+  editScriptPackage,
+  scriptInputPreview,
+  scriptOutputs,
+  type ScriptNode,
+} from './script-editor';
+const CodeEditor = lazy(() => import('./CodeEditor'));
+export type ScriptNavigation = (next?: () => void, destination?: string) => void;
+type Diagnostic = { lineNumber: number; column: number; message: string };
+const incompleteInputMessage = '请先修正未完成的输入配置';
+const json = (value: unknown) => {
+  const text = JSON.stringify(value, null, 2) ?? '没有输出';
+  return text.length > 65536 ? text.slice(0, 65536) + '\n…仅显示前 65536 个字符' : text;
+};
+
+export default function ScriptEditorPage({
+  record,
+  nodeId,
+  save,
+  close,
+  navigation,
+  initialPreview = false,
+}: {
+  record: FlowRecord;
+  nodeId: string;
+  initialPreview?: boolean;
+  save: (record: FlowRecord) => Promise<void>;
+  close: (next?: () => void) => void;
+  navigation: MutableRefObject<ScriptNavigation | undefined>;
+}) {
+  const [draft, setDraft] = useState(() => structuredClone(record));
+  const node = flatten(draft.flow.steps).find((step) => step.id === nodeId) as ScriptNode;
+  const [timeout, setTimeoutValue] = useState(String(node.timeoutMs ?? 60000));
+  const [error, setError] = useState(''),
+    [saving, setSaving] = useState(false);
+  const [timeoutError, setTimeoutError] = useState('');
+  const [location, setLocation] = useState<CodeLocation>();
+  const [focusRequest, setFocusRequest] = useState<{ selector: string }>();
+  const [syntax, setSyntax] = useState<{
+    checking?: boolean;
+    issues?: Diagnostic[];
+    error?: string;
+  }>({});
+  const [preview, setPreview] = useState(initialPreview),
+    [runs, setRuns] = useState<Run[]>([]);
+  const [previewRevision, setPreviewRevision] = useState(0);
+  const [runId, setRunId] = useState(''),
+    [detail, setDetail] = useState<any>();
+  const [historyLoading, setHistoryLoading] = useState(false),
+    [historyError, setHistoryError] = useState(''),
+    [detailLoading, setDetailLoading] = useState(false),
+    [detailError, setDetailError] = useState('');
+  const [inputIncomplete, setInputIncomplete] = useState(false);
+  const [pendingLeave, setPendingLeave] = useState<{ next?: () => void }>();
+  const root = useRef<HTMLElement>(null),
+    dialog = useRef<HTMLDialogElement>(null),
+    resultFocus = useRef<HTMLElement | null>(null);
+  const inputStateChanged = useCallback((_label: string, incomplete: boolean) => {
+    setInputIncomplete(incomplete);
+    if (!incomplete && !root.current?.querySelector('[data-value-invalid]'))
+      setError((current) => (current === incompleteInputMessage ? '' : current));
+  }, []);
+  const generation = useRef(0),
+    alive = useRef(true);
+  const persisting = useRef(false);
+  const changed =
+    JSON.stringify(draft) !== JSON.stringify(record) ||
+    timeout !==
+      String(
+        (flatten(record.flow.steps).find((step) => step.id === nodeId) as ScriptNode).timeoutMs ??
+          60000,
+      );
+  const incomplete = () => !!root.current?.querySelector('[data-value-invalid]');
+  const change = (next: ScriptNode) =>
+    setDraft((current) => ({
+      ...current,
+      flow: { ...current.flow, steps: changeSteps(current.flow.steps, nodeId, () => next) },
+    }));
+  useEffect(() => {
+    alive.current = true;
+    root.current
+      ?.querySelector<HTMLElement>(initialPreview ? '[aria-label="输入与输出预览"]' : 'h1')
+      ?.focus();
+    return () => {
+      alive.current = false;
+      generation.current++;
+    };
+  }, []);
+  useEffect(() => {
+    generation.current++;
+    setSyntax({});
+    setLocation(undefined);
+  }, [node.code, node.language]);
+  useLayoutEffect(() => {
+    navigation.current = (next) => {
+      if (persisting.current) return;
+      if (changed || incomplete()) setPendingLeave({ next });
+      else close(next);
+    };
+    return () => {
+      navigation.current = undefined;
+    };
+  });
+  useEffect(() => {
+    if (pendingLeave) dialog.current?.showModal();
+    else dialog.current?.close();
+  }, [pendingLeave]);
+  useEffect(() => {
+    if (pendingLeave || saving || !focusRequest) return;
+    const element = root.current?.querySelector<HTMLElement>(focusRequest.selector);
+    if (!element) return;
+    let ancestor = element.parentElement;
+    while (ancestor && ancestor !== root.current) {
+      if (ancestor instanceof HTMLDetailsElement) ancestor.open = true;
+      ancestor = ancestor.parentElement;
+    }
+    const target = element.matches('input,textarea,select,button,[data-script-preview]')
+      ? element
+      : (element.querySelector<HTMLElement>('textarea') ??
+        element.querySelector<HTMLElement>('input,select') ??
+        element);
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ block: 'nearest' });
+    setFocusRequest(undefined);
+  }, [pendingLeave, saving, focusRequest]);
+  const persist = async (next?: () => void) => {
+    if (persisting.current) return;
+    setError('');
+    if (incomplete()) {
+      setPendingLeave(undefined);
+      setFocusRequest({ selector: '[data-value-invalid]' });
+      setError(incompleteInputMessage);
+      return;
+    }
+    const milliseconds = Number(timeout);
+    if (
+      !/^\d+$/.test(timeout) ||
+      !Number.isSafeInteger(milliseconds) ||
+      milliseconds < 100 ||
+      milliseconds > 3600000
+    ) {
+      setPendingLeave(undefined);
+      setError('超时须为 100 至 3600000 毫秒的整数');
+      setTimeoutError('超时须为 100 至 3600000 毫秒的整数');
+      setFocusRequest({ selector: '#script-timeout' });
+      return;
+    }
+    persisting.current = true;
+    setSaving(true);
+    try {
+      const nextNode = { ...node, timeoutMs: milliseconds };
+      const updated = {
+        ...draft,
+        flow: { ...draft.flow, steps: changeSteps(draft.flow.steps, nodeId, () => nextNode) },
+      };
+      await save(updated);
+      if (alive.current) close(next);
+    } catch (e) {
+      if (alive.current) {
+        setPendingLeave(undefined);
+        setError((e as Error).message);
+        setFocusRequest({ selector: '[data-script-error]' });
+      }
+    } finally {
+      persisting.current = false;
+      if (alive.current) setSaving(false);
+    }
+  };
+  const check = async () => {
+    const request = ++generation.current;
+    setSyntax({ checking: true });
+    try {
+      const { checkScriptSyntax } = await import('./CodeEditor');
+      const issues = await checkScriptSyntax(node.code, node.language);
+      if (alive.current && request === generation.current) setSyntax({ issues });
+    } catch (e) {
+      if (alive.current && request === generation.current)
+        setSyntax({ error: (e as Error).message });
+    }
+  };
+  useEffect(() => {
+    if (!preview) return;
+    let live = true;
+    setHistoryLoading(true);
+    setHistoryError('');
+    window.flowark
+      .request('run.list', { flowId: record.id, limit: 20 })
+      .then((result) => {
+        if (!live) return;
+        setRuns(result.runs);
+        setRunId((selected) =>
+          result.runs.some((run: Run) => run.id === selected) ? selected : '',
+        );
+      })
+      .catch((e) => {
+        if (live) setHistoryError(e instanceof Error ? e.message : '运行列表暂时不可用');
+      })
+      .finally(() => {
+        if (live) setHistoryLoading(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, [preview, record.id, previewRevision]);
+  useEffect(() => {
+    setDetail(undefined);
+    setDetailError('');
+    setDetailLoading(false);
+    if (!preview || !runId) return;
+    let live = true;
+    setDetailLoading(true);
+    window.flowark
+      .request('run.detail', { id: runId })
+      .then((result) => {
+        if (!live) return;
+        if (
+          result.run?.id !== runId ||
+          result.run?.flowId !== record.id ||
+          result.snapshot?.id !== record.id
+        )
+          throw new Error('运行来源不匹配');
+        setDetail(result);
+      })
+      .catch((e) => {
+        if (live) setDetailError(e instanceof Error ? e.message : '运行结果暂时不可用');
+      })
+      .finally(() => {
+        if (live) setDetailLoading(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, [preview, runId, record.id, previewRevision]);
+  const input = scriptInputPreview(node.input, draft.flow.parameters);
+  const currentDetail = detail?.run.id === runId ? detail : undefined;
+  const outputs = currentDetail
+    ? scriptOutputs(currentDetail.snapshot.steps, currentDetail.output, nodeId)
+    : [];
+  const snapshotNode =
+    currentDetail && flatten(currentDetail.snapshot.steps).find((step) => step.id === nodeId);
+  useEffect(() => {
+    if (!runId) {
+      resultFocus.current = null;
+      return;
+    }
+    if (detailLoading || (!currentDetail && !detailError) || !resultFocus.current) return;
+    const origin = resultFocus.current;
+    resultFocus.current = null;
+    const active = document.activeElement;
+    if (
+      saving ||
+      document.querySelector('dialog[open],[role="dialog"][aria-modal="true"]') ||
+      (active !== origin &&
+        active !== document.body &&
+        active !== root.current?.querySelector('[data-script-preview]'))
+    )
+      return;
+    const target = root.current?.querySelector<HTMLElement>(
+      detailError ? '[data-script-detail-error]' : '[data-script-run]',
+    );
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: 'nearest' });
+  }, [runId, detailLoading, currentDetail, detailError, saving]);
+  const refreshPreview = () => {
+    resultFocus.current = document.activeElement as HTMLElement;
+    setDetail(undefined);
+    setDetailError('');
+    setPreview(true);
+    setPreviewRevision((revision) => revision + 1);
+    setFocusRequest({ selector: '[data-script-preview]' });
+  };
+  return (
+    <section className="script-editor-page page" ref={root} aria-label="脚本编辑">
+      <header className="script-editor-heading">
+        <h1 tabIndex={-1}>脚本：编辑、检查、再试运行</h1>
+        <p>可信 JS/TS · 独立进程执行 · 不是安全沙箱</p>
+      </header>
+      {error && (
+        <p className="alert error" role="alert" tabIndex={-1} data-script-error>
+          {error}
+        </p>
+      )}
+      <fieldset className="script-editor-columns" disabled={saving}>
+        <section className="script-editor-code ai-task-card">
+          <div className="script-editor-toolbar">
+            <span className="badge" title={node.id}>
+              {node.name || node.id}.{node.language}
+            </span>
+            <button disabled={syntax.checking} onClick={check}>
+              {syntax.checking ? '正在检查…' : '检查语法'}
+            </button>
+            <button aria-expanded={preview} onClick={refreshPreview}>
+              预览输入输出
+            </button>
+          </div>
+          <Suspense fallback={<p>加载代码编辑器…</p>}>
+            <CodeEditor
+              value={node.code}
+              language={node.language === 'ts' ? 'typescript' : 'javascript'}
+              label="脚本代码"
+              theme="vs-dark"
+              readOnly={saving}
+              height="390px"
+              location={location}
+              onChange={(code) => change({ ...node, code })}
+            />
+          </Suspense>
+          <div className="script-syntax" role="status" aria-live="polite">
+            {syntax.error && <p className="field-error">检查未完成：{syntax.error}</p>}
+            {syntax.issues &&
+              (syntax.issues.length ? (
+                <>
+                  <p className="field-error">
+                    发现 {syntax.issues.length} 个语法问题，选择一项定位到代码。
+                  </p>
+                  <ul>
+                    {syntax.issues.map((issue, index) => (
+                      <li key={index}>
+                        <button
+                          className="script-diagnostic"
+                          onClick={() =>
+                            setLocation((current) => ({
+                              lineNumber: issue.lineNumber,
+                              column: issue.column,
+                              request: (current?.request ?? 0) + 1,
+                            }))
+                          }
+                        >
+                          第 {issue.lineNumber} 行，{issue.column} 列：{issue.message}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p>语法检查通过；依赖解析、入口函数和实际结果仍需运行前检查及试运行。</p>
+              ))}
+          </div>
+          <p className="note">入口为 default export 的函数，参数为 ctx；返回值成为步骤输出。</p>
+          <section
+            className="script-preview"
+            aria-label="输入与输出预览"
+            data-script-preview
+            tabIndex={-1}
+          >
+            <h2>输入与输出预览</h2>
+            {preview ? (
+              <>
+                <h3>当前草稿输入</h3>
+                {inputIncomplete ? (
+                  <p role="status">输入尚未完成，修正后才能预览当前值。</p>
+                ) : (
+                  <>
+                    <p>
+                      {input.available
+                        ? '按当前参数解析；执行前仍会固定本次输入。'
+                        : '此输入当前无法解析；以下显示来源配置。'}
+                    </p>
+                    <pre tabIndex={0} aria-label="当前草稿输入内容">
+                      {json(input.available ? input.value : node.input)}
+                    </pre>
+                    {!input.available && <p className="note">{input.reason}</p>}
+                  </>
+                )}
+                <h3>历史运行输出</h3>
+                <label htmlFor="script-history">最近 20 次运行</label>
+                <select
+                  id="script-history"
+                  value={runId}
+                  disabled={historyLoading || !runs.length}
+                  onChange={(e) => {
+                    resultFocus.current = e.currentTarget;
+                    setDetail(undefined);
+                    setDetailError('');
+                    setRunId(e.target.value);
+                  }}
+                >
+                  <option value="">选择运行…</option>
+                  {runs.map((run) => (
+                    <option value={run.id} key={run.id}>
+                      {new Date(run.createdAt).toLocaleString('zh-CN')} · {run.id.slice(0, 8)} ·{' '}
+                      {runDisplayLabels[run.state]}
+                    </option>
+                  ))}
+                </select>
+                <p role="status">
+                  {historyLoading
+                    ? '正在读取最近 20 次运行…'
+                    : historyError
+                      ? runs.length
+                        ? '运行列表未更新，保留上次读取的选项。'
+                        : '运行列表尚未取得，请重新读取。'
+                      : !runs.length
+                        ? '尚无运行记录；预览不会运行脚本'
+                        : !runId
+                          ? '选择历史运行查看实际输出'
+                          : ''}
+                </p>
+                {historyError && (
+                  <p className="field-error" role="alert">
+                    运行列表读取失败：{historyError}
+                  </p>
+                )}
+                {runId && detailLoading && <p role="status">正在读取所选运行结果…</p>}
+                {runId && detailError && (
+                  <p className="field-error" role="alert" data-script-detail-error tabIndex={-1}>
+                    运行结果读取失败：{detailError}
+                  </p>
+                )}
+                {(historyError || detailError) && (
+                  <button disabled={historyLoading || detailLoading} onClick={refreshPreview}>
+                    重新读取历史结果
+                  </button>
+                )}
+                {currentDetail && (
+                  <div
+                    data-script-run={currentDetail.run.id}
+                    tabIndex={-1}
+                    aria-label="所选运行的历史输出"
+                  >
+                    <p>
+                      固定版本 {currentDetail.run.versionId} · 运行 {currentDetail.run.id}
+                    </p>
+                    <p>
+                      {JSON.stringify(snapshotNode) === JSON.stringify(node)
+                        ? '步骤配置与当前草稿相同；历史结果不保证下一次结果。'
+                        : '历史步骤配置与当前草稿不同，以下不是本次编辑的结果。'}
+                    </p>
+                    {outputs.length ? (
+                      outputs.map((output) => (
+                        <div key={output.instance}>
+                          <strong>{output.instance}</strong>
+                          <pre tabIndex={0} aria-label={`历史输出 ${output.instance}`}>
+                            {json(output.value)}
+                          </pre>
+                        </div>
+                      ))
+                    ) : (
+                      <p>此运行没有该步骤的已保存输出；不能据此判定成功，也不会自动重跑。</p>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              <p>点击“预览输入输出”查看当前输入来源与已有运行结果，不执行脚本。</p>
+            )}
+          </section>
+        </section>
+        <aside className="script-editor-settings ai-task-card">
+          <h2>配置</h2>
+          <label htmlFor="script-language">语言</label>
+          <select
+            id="script-language"
+            value={node.language}
+            onChange={(e) => change({ ...node, language: e.target.value as 'js' | 'ts' })}
+          >
+            <option value="ts">TypeScript</option>
+            <option value="js">JavaScript</option>
+          </select>
+          <details className="script-input-settings">
+            <summary>输入 · 配置来源</summary>
+            <ValueField
+              label="脚本输入"
+              value={node.input}
+              choices={referenceChoices(draft.flow, nodeId)}
+              defaultValue={{}}
+              change={(input) => change({ ...node, input })}
+              onIncompleteChange={inputStateChanged}
+            />
+          </details>
+          <label htmlFor="script-timeout">超时（毫秒）</label>
+          <input
+            id="script-timeout"
+            inputMode="numeric"
+            aria-invalid={!!timeoutError}
+            aria-describedby={
+              timeoutError ? 'script-timeout-error script-timeout-help' : 'script-timeout-help'
+            }
+            value={timeout}
+            onChange={(e) => {
+              setTimeoutValue(e.target.value);
+              setTimeoutError('');
+              setError('');
+            }}
+          />
+          {timeoutError && (
+            <p className="field-error" id="script-timeout-error">
+              {timeoutError}
+            </p>
+          )}
+          <p className="note" id="script-timeout-help">
+            100–3600000 毫秒；未配置时为 60000 毫秒，外层步骤可能先到期。
+          </p>
+          <details className="script-dependency-settings">
+            <summary>
+              依赖 ·{' '}
+              {node.dependencies.length ? `${node.dependencies.length} 个本地包` : '仅内置 SDK'}
+            </summary>
+            <ScriptPackages
+              flowId={record.id}
+              node={node}
+              bindings={draft.bindings}
+              bind={(info) => setDraft(editScriptPackage(draft, node, info.name, info))}
+              remove={(name) => setDraft(editScriptPackage(draft, node, name))}
+            />
+          </details>
+          <details className="script-access">
+            <summary>
+              文件与凭据 · {Object.keys(draft.bindings.files).length} 个目录 ·{' '}
+              {draft.bindings.credentials.length} 个凭据引用
+            </summary>
+            <p className="note">
+              可信脚本可使用 Node 能力；这些绑定不是文件或网络安全隔离。模板 SDK
+              另按当前入口授权检查。
+            </p>
+          </details>
+          <p className="script-editor-note">
+            保存会更新当前流程草稿。代码和依赖在运行前固定，不自动安装依赖；语法检查不代表业务结果通过。
+          </p>
+          <button className="primary" onClick={() => persist()}>
+            {saving ? '正在保存…' : '保存并返回'}
+          </button>
+          <button onClick={() => navigation.current?.()}>取消</button>
+        </aside>
+      </fieldset>
+      <dialog
+        ref={dialog}
+        className="script-leave-dialog"
+        aria-labelledby="script-leave-title"
+        onCancel={(e) => {
+          e.preventDefault();
+          if (!persisting.current) setPendingLeave(undefined);
+        }}
+      >
+        <h2 id="script-leave-title">保存脚本修改？</h2>
+        <p>代码、输入、超时和依赖将一起保存。放弃只撤销本次脚本编辑。</p>
+        <div>
+          <button className="primary" disabled={saving} onClick={() => persist(pendingLeave?.next)}>
+            保存并离开
+          </button>
+          <button disabled={saving} onClick={() => close(pendingLeave?.next)}>
+            放弃修改
+          </button>
+          <button disabled={saving} onClick={() => setPendingLeave(undefined)}>
+            继续编辑
+          </button>
+        </div>
+      </dialog>
+    </section>
+  );
+}

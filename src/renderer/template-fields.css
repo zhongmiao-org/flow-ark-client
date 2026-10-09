@@ -1,0 +1,21 @@
+.template-field .template-required {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  font-weight: normal;
+}
+.template-field > .template-field-error {
+  color: var(--fa-status-error);
+  font-size: 12px;
+  line-height: 18px;
+}
+.template-field > input[aria-invalid='true'],
+.template-field > textarea[aria-invalid='true'],
+.template-field > select[aria-invalid='true'] {
+  border-color: var(--fa-status-error);
+}
+.template-fieldset.template-array-field legend {
+  color: var(--fa-text-primary);
+}
+.template-array-row > :first-child {
+  min-width: 0;
+}

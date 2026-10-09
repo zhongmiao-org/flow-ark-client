@@ -409,6 +409,13 @@ test(
       Buffer.from(key),
       async (method, args) => {
         if (method === 'credentials.list') return available ? [missing] : [];
+        if (method === 'ai.configuration.read')
+          return {
+            provider: 'deepseek',
+            configured: true,
+            revision: 'a'.repeat(64),
+            model: 'deepseek-chat',
+          };
         if (method === 'credentials.get') {
           assert.equal(args.id, 'deepseek');
           return providerKey;
@@ -434,17 +441,20 @@ test(
       throw new Error('fictional provider failure: ' + providerKey);
     };
     try {
-      await assert.rejects(
-        runtime.request('ai.test', { provider: 'deepseek', model: 'deepseek-chat' }),
-        (error) => {
-          assert.ok(error instanceof Error);
-          noPlaintext(error.message, 'local provider key must be hidden in ai.test rejection', [
-            providerKey,
-          ]);
-          assert.match(error.message, /fictional provider failure: \[REDACTED\]/);
-          return true;
-        },
+      const result = await runtime.request('ai.configuration.test', {
+        provider: 'deepseek',
+        revision: 'a'.repeat(64),
+        requestId: 'redaction-test',
+        reviewedCost: true,
+      });
+      assert.equal(result.test.status, 'failed');
+      assert.equal(result.test.code, 'network');
+      noPlaintext(
+        JSON.stringify(result),
+        'local provider key must be absent from classified test result',
+        [providerKey],
       );
+      assert.ok(!JSON.stringify(result).includes('fictional provider failure'));
     } finally {
       globalThis.fetch = originalFetch;
     }

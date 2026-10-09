@@ -1,5 +1,17 @@
 import type { Step } from '../shared/types';
-import { nodeReferenceValues, referenceIssues } from '../shared/flow-references';
+import {
+  nodeReferenceValues,
+  referenceIssues,
+  type ReferenceIssue,
+} from '../shared/flow-references';
+export class StructureReferenceError extends Error {
+  constructor(public readonly issues: ReferenceIssue[]) {
+    super(
+      `无法调整：${issues.map((issue) => `${issue.nodeId} 的 ${issue.reference} ${issue.message}`).join('；')}。请先调整引用。`,
+    );
+    this.name = 'StructureReferenceError';
+  }
+}
 export type Branch = 'then' | 'else' | 'body';
 export type Destination = {
   owner?: string;
@@ -155,7 +167,8 @@ export function duplicateStep(
   };
   const cloned = refs(original) as Step;
   for (const node of flatten([cloned])) node.id = ids.get(node.id)!;
-  if (original.name) cloned.name = original.name + ' 副本';
+  if (original.name && !['file', 'excel'].includes(original.type))
+    cloned.name = original.name + ' 副本';
   return { steps: insertStep(steps, cloned, { anchor: id, side: 'after' }), id: cloned.id };
 }
 // Outputs from conditions and loops contain child IDs. Moving a child can leave
@@ -163,7 +176,7 @@ export function duplicateStep(
 function outputReferenceIssues(steps: Step[]) {
   const nodes = flatten(steps),
     byId = new Map(nodes.map((node) => [node.id, node]));
-  const issues: string[] = [];
+  const issues: ReferenceIssue[] = [];
   function values(value: any, owner: string) {
     if (!value || typeof value !== 'object') return;
     if (Object.keys(value).length === 1 && typeof value.$ref === 'string') {
@@ -182,7 +195,11 @@ function outputReferenceIssues(steps: Step[]) {
           source.type === 'condition' ? [...source.then, ...source.else] : source.body;
         const child = children.find((node) => node.id === tail[index]);
         if (!child) {
-          issues.push(`${owner} 的 ${value.$ref} 引用的子步骤已不在该输出中`);
+          issues.push({
+            nodeId: owner,
+            reference: value.$ref,
+            message: '引用的子步骤已不在该输出中',
+          });
           break;
         }
         source = child;
@@ -201,16 +218,21 @@ export function checkStructure(before: Step[], after: Step[], parameters: Record
   const existing = new Set(
     referenceIssues(before, parameters).map((issue) => JSON.stringify(issue)),
   );
-  const added = referenceIssues(after, parameters).find(
+  const added = referenceIssues(after, parameters).filter(
     (issue) => !existing.has(JSON.stringify(issue)),
   );
-  if (added)
-    throw new Error(
-      `无法调整：${added.nodeId} 的 ${added.reference} ${added.message}。请先调整引用。`,
-    );
-  const previousOutputs = new Set(outputReferenceIssues(before));
-  const missingOutput = outputReferenceIssues(after).find((issue) => !previousOutputs.has(issue));
-  if (missingOutput) throw new Error(`无法调整：${missingOutput}。请先调整引用。`);
+  const previousOutputs = new Set(
+    outputReferenceIssues(before).map((issue) => JSON.stringify(issue)),
+  );
+  const missingOutputs = outputReferenceIssues(after).filter(
+    (issue) => !previousOutputs.has(JSON.stringify(issue)),
+  );
+  const affected = [
+    ...new Map(
+      [...added, ...missingOutputs].map((issue) => [JSON.stringify(issue), issue]),
+    ).values(),
+  ];
+  if (affected.length) throw new StructureReferenceError(affected);
   let count = 0;
   function depth(nodes: Step[], level: number) {
     if (level > 16) throw new Error('流程嵌套超过 16 层');

@@ -1,0 +1,121 @@
+/* Figma 2:2367: fixed local dependencies and preparation states. */
+.script-packages {
+  margin: 20px 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--fa-border-default);
+}
+.script-packages-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+.script-packages-heading h3 {
+  font-size: 16px;
+  margin: 0;
+}
+.script-packages-heading span {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.script-package-card {
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  padding: 16px;
+  margin: 16px 0;
+  background: var(--fa-bg-surface);
+}
+.script-package-card h4 {
+  margin: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.script-package-card p,
+.script-package-dialog p {
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+.script-package-version {
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+  margin: 8px 0;
+}
+.script-package-state {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: var(--fa-radius-6);
+  font-size: 12px;
+  background: var(--fa-bg-subtle);
+  color: var(--fa-text-secondary);
+}
+.script-package-state.warning {
+  background: var(--fa-status-warning-bg);
+  color: var(--fa-status-warning);
+}
+.script-package-state.success {
+  background: var(--fa-status-success-bg);
+  color: var(--fa-status-success);
+}
+.script-package-card details {
+  margin-top: 12px;
+}
+.script-package-card summary {
+  cursor: pointer;
+  font-size: 12px;
+}
+.script-package-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.script-package-actions button {
+  min-height: 40px;
+}
+.script-package-empty,
+.script-package-feedback {
+  padding: 12px;
+  background: var(--fa-bg-subtle);
+  border-radius: var(--fa-radius-8);
+  line-height: 22px;
+}
+.script-package-dialog {
+  width: min(640px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 32px;
+  background: var(--fa-bg-surface);
+  color: var(--fa-text-primary);
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-16);
+}
+.script-package-dialog::backdrop {
+  background: rgb(18 26 42 / 48%);
+}
+.script-package-dialog h2 {
+  margin: 0 0 12px;
+  font-size: 24px;
+  line-height: 36px;
+}
+.script-package-dialog h2:focus {
+  outline: none;
+}
+.script-package-dialog h3 {
+  overflow-wrap: anywhere;
+  margin-top: 24px;
+}
+.script-package-dialog dt {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  margin-top: 16px;
+}
+.script-package-dialog dd {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+.script-package-warning {
+  padding: 16px;
+  background: var(--fa-status-warning-bg);
+  color: var(--fa-status-warning);
+  border-radius: var(--fa-radius-8);
+}

@@ -1,0 +1,282 @@
+.run-observation-layout.is-output {
+  grid-template-columns: minmax(0, 1fr);
+}
+.run-observation-layout.is-output > .run-observation-content {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.run-observation-layout.is-output .run-detail-tabs {
+  margin: 0 0 24px;
+}
+.run-output-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  container-type: inline-size;
+  min-width: 0;
+}
+.run-output-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 28fr) minmax(0, 19fr);
+  align-items: start;
+  gap: 24px;
+}
+.run-output-result,
+.run-output-files {
+  padding: 24px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-surface);
+  min-width: 0;
+}
+.run-output-result {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.run-output-result .run-output pre {
+  background: var(--fa-bg-canvas);
+  border-color: var(--fa-border-default);
+  color: var(--fa-text-primary);
+  border-radius: 8px;
+}
+.run-output-files {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.run-output-files > header,
+.run-artifact-card > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.run-output-files h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+}
+.run-artifact-card h4,
+.run-artifact-empty h4 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+.run-output-files p,
+.run-output-files header span,
+.run-output-boundary {
+  margin: 0;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.run-artifact-card,
+.run-artifact-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+}
+.run-artifact-card > button {
+  align-self: flex-start;
+}
+.run-artifact-card .run-artifact-status {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--fa-bg-canvas);
+  align-self: flex-start;
+}
+.run-artifact-card .is-verified {
+  color: var(--fa-status-success);
+}
+.run-artifact-card .is-unavailable {
+  color: var(--fa-status-warning);
+}
+.run-artifact-card .field-error {
+  color: var(--fa-status-error);
+}
+.run-artifact-card summary {
+  cursor: pointer;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 20px;
+}
+.run-artifact-card summary:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 2px;
+}
+.run-artifact-card details[open] summary {
+  margin-bottom: 8px;
+}
+.run-artifact-empty {
+  background: var(--fa-bg-canvas);
+}
+@container (max-width: 760px) {
+  .run-output-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.run-detail.is-output-page .run-runtime-summary[hidden],
+.run-detail .run-rerun-entry[hidden] {
+  display: none;
+}
+.run-output-result,
+.run-output-files {
+  min-height: 646px;
+}
+.run-output-result > .badge {
+  align-self: flex-start;
+}
+.run-result-review > button {
+  min-height: 40px;
+  width: min(260px, 100%);
+}
+.run-result-review > section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+.run-result-review article {
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 8px;
+  background: var(--fa-bg-canvas);
+  min-width: 0;
+}
+.run-result-review h3,
+.run-result-review h4,
+.run-result-review p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.run-result-review p {
+  color: var(--fa-text-secondary);
+  font-size: 13px;
+  line-height: 22px;
+}
+.run-result-review .field-error {
+  color: var(--fa-status-error);
+}
+.run-result-review article > p {
+  margin: 8px 0 16px;
+}
+.run-result-review h3:focus-visible,
+.run-result-review .field-error:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 4px;
+}
+.run-output-result .run-output {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.run-output-result .run-output h3,
+.run-output-files h3 {
+  font-size: 18px;
+  line-height: 28px;
+}
+.run-output-result .run-output pre {
+  min-height: 140px;
+}
+.run-artifact-card .run-artifact-status {
+  border-radius: 999px;
+}
+.run-artifact-status::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 6px;
+  background: currentColor;
+}
+.run-artifact-card .is-verified {
+  background: var(--fa-status-success-bg);
+}
+.run-artifact-card .is-unavailable {
+  color: var(--fa-status-error);
+  background: var(--fa-status-error-bg);
+}
+.run-artifact-card .is-unverified {
+  color: var(--fa-status-warning);
+  background: var(--fa-status-warning-bg);
+}
+.run-artifact-card .is-cleared {
+  color: var(--fa-text-secondary);
+}
+.run-artifact-card > button {
+  min-width: 180px;
+  min-height: 40px;
+}
+.run-artifact-card .field-error:focus-visible {
+  outline: 2px solid var(--fa-status-error);
+  outline-offset: 4px;
+}
+.run-output-files .artifact-cleanup.is-compact {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.run-output-files .artifact-cleanup.is-compact .section-row {
+  margin: 0;
+}
+.run-output-files .artifact-cleanup.is-compact button,
+.run-output-files > button {
+  width: 100%;
+  min-height: 40px;
+}
+@container (max-width: 760px) {
+  .run-output-result,
+  .run-output-files {
+    min-height: 0;
+  }
+}
+
+.run-output-result .result-output {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+}
+.run-output-result .result-output > .section-row,
+.run-output-result .result-output > p,
+.run-output-result .result-output > pre {
+  margin: 0;
+}
+.run-output-result .result-output > pre {
+  min-height: 140px;
+  max-height: 140px;
+  padding: 16px;
+  font-size: 14px;
+  line-height: 22px;
+}
+.run-output-result .result-output > pre[data-expanded='true'] {
+  max-height: 420px;
+}
+.run-output-result .result-output > .run-output-boundary {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 22px;
+}
+.run-result-output-toggle {
+  align-self: flex-start;
+  width: min(260px, 100%);
+  min-height: 40px;
+}
+.run-output-result:has(.result-output) {
+  gap: 16px;
+}
+.run-detail.is-output-page .runs-heading h1 {
+  font-weight: 700;
+}

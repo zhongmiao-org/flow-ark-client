@@ -1,6 +1,7 @@
 import type { MouseInputEvent, WebContents } from 'electron';
 import type { ElementTarget, PickerState } from '../shared/element-picker';
 import { describeElement } from './element-description';
+import { embeddedPointTarget, type PointIdentity, type PointHit } from './embedded-point-target';
 type Send = (method: string, params?: any, session?: string) => Promise<any>;
 type Frame = { id: string; parent?: string; session?: string; context?: number };
 const highlight = {
@@ -10,11 +11,24 @@ const highlight = {
 };
 export class EmbeddedPicker {
   private state?: PickerState;
+  private selectedIdentity?: { state: PickerState; point: PointIdentity };
+  identity(requestId: string) {
+    const selected = this.selectedIdentity;
+    if (
+      !selected ||
+      selected.state !== this.state ||
+      this.state.phase !== 'selected' ||
+      this.state.requestId !== requestId
+    )
+      throw new Error('没有此请求的已选网页目标，请重新选取');
+    return { ...selected.point };
+  }
   private timer?: NodeJS.Timeout;
   private queue: Promise<void> = Promise.resolve();
   private selecting?: PickerState;
   private processing: Promise<void> = Promise.resolve();
   private pointAbort?: () => void;
+  private selectionSequence = 0;
   private pointMove?: { state: PickerState; x: number; y: number };
   private pressed = new Set<string | undefined>();
   private serialize(task: () => Promise<void>) {
@@ -26,18 +40,17 @@ export class EmbeddedPicker {
     private contents: WebContents,
     private send: Send,
     private sessions: Map<string, string>,
-    private validate: (selector: string, path: string[]) => Promise<ElementTarget>,
+    private validate: (
+      selector: string,
+      path: string[],
+      expected?: PointIdentity,
+    ) => Promise<ElementTarget>,
     private coordinates: (mouse: MouseInputEvent) => { x: number; y: number },
   ) {
     contents.debugger.on('message', (_event, method, params, session) => {
       const state = this.state;
       if (state?.phase !== 'picking') return;
-      if (method === 'Overlay.inspectNodeRequested' && this.selecting !== state) {
-        this.processing = this.select(state, async () => ({
-          backendNodeId: params.backendNodeId,
-          session: session || undefined,
-        }));
-      } else if (method === 'Overlay.inspectModeCanceled' && this.selecting !== state) {
+      if (method === 'Overlay.inspectModeCanceled' && this.selecting !== state) {
         void this.cancel(state.requestId);
       } else if (method === 'Target.attachedToTarget' && params.targetInfo.type === 'iframe') {
         void this.serialize(async () => {
@@ -65,11 +78,13 @@ export class EmbeddedPicker {
         if (mouse.button === 'left' && this.selecting !== state) {
           const point = this.coordinates(mouse);
           this.pointMove = { state, ...point };
-          this.processing = this.select(state, () =>
+          this.processing = this.select(state, (signal, send) =>
             this.pointTarget(
               state,
               point.x / contents.getZoomFactor(),
               point.y / contents.getZoomFactor(),
+              signal,
+              send,
             ),
           );
         }
@@ -113,6 +128,7 @@ export class EmbeddedPicker {
   }
   async cancel(requestId?: string) {
     if (requestId && this.state?.requestId !== requestId) return true;
+    this.selectedIdentity = undefined;
     const cancelled: PickerState = { requestId: this.state?.requestId ?? '', phase: 'cancelled' };
     this.state = cancelled;
     this.pointAbort?.();
@@ -125,6 +141,7 @@ export class EmbeddedPicker {
     return true;
   }
   async start(requestId: string) {
+    this.selectedIdentity = undefined;
     this.pointAbort?.();
     clearTimeout(this.timer);
     const state: PickerState = { requestId, phase: 'picking' };
@@ -153,7 +170,7 @@ export class EmbeddedPicker {
     });
     return this.status(requestId);
   }
-  private async allFrames() {
+  private async allFrames(send: Send = this.send) {
     const frames = new Map<string, Frame>();
     const visit = (tree: any, session?: string, parent?: string) => {
       const id = tree.frame.id;
@@ -166,18 +183,18 @@ export class EmbeddedPicker {
       frames.set(id, current);
       for (const child of tree.childFrames ?? []) visit(child, current.session, id);
     };
-    const root = await this.send('Page.getFrameTree');
+    const root = await send('Page.getFrameTree');
     visit(root.frameTree);
     for (const session of new Set(this.sessions.values())) {
-      const tree = await this.send('Page.getFrameTree', {}, session);
+      const tree = await send('Page.getFrameTree', {}, session);
       visit(tree.frameTree, session);
     }
     return frames;
   }
-  private async world(frame: Frame) {
+  private async world(frame: Frame, send: Send = this.send) {
     if (!frame.context)
       frame.context = (
-        await this.send(
+        await send(
           'Page.createIsolatedWorld',
           { frameId: frame.id, worldName: 'flowark-browser-driver', grantUniveralAccess: false },
           frame.session,
@@ -185,13 +202,18 @@ export class EmbeddedPicker {
       ).executionContextId;
     return frame.context;
   }
-  private async inspectNode(backendNodeId: number, frame: Frame, group: string) {
-    const { object } = await this.send(
+  private async inspectNode(
+    backendNodeId: number,
+    frame: Frame,
+    group: string,
+    send: Send = this.send,
+  ) {
+    const { object } = await send(
       'DOM.resolveNode',
-      { backendNodeId, executionContextId: await this.world(frame), objectGroup: group },
+      { backendNodeId, executionContextId: await this.world(frame, send), objectGroup: group },
       frame.session,
     );
-    const result = await this.send(
+    const result = await send(
       'Runtime.callFunctionOn',
       {
         objectId: object.objectId,
@@ -204,61 +226,58 @@ export class EmbeddedPicker {
       throw new Error(result.exceptionDetails.exception?.description ?? '目标定位失败');
     return result.result.value;
   }
-  private async pointTarget(state: PickerState, x: number, y: number) {
-    type Hit = { backendNodeId: number; session?: string };
-    let resolve!: (hit: Hit) => void, reject!: (error: Error) => void;
-    const result = new Promise<Hit>((yes, no) => {
-      resolve = yes;
-      reject = no;
-    });
-    void result.catch(() => {});
-    const abort = () => reject(new Error('选取已取消'));
-    this.pointAbort = abort;
-    let listening = false,
-      resolving = false;
-    const listener = (_event: unknown, method: string, params: any, session?: string) => {
-      if (method !== 'Overlay.nodeHighlightRequested' || resolving || this.state !== state) return;
-      resolving = true;
-      void this.send('DOM.describeNode', { nodeId: params.nodeId }, session || undefined).then(
-        ({ node }) => resolve({ backendNodeId: node.backendNodeId, session: session || undefined }),
-        reject,
-      );
-    };
-    const timer = setTimeout(() => reject(new Error('未取得点击位置的元素，请重新选取')), 3000);
-    try {
-      // Reset stale hover targets, then let Chromium route one move through nested
-      // and cross-process frames. No mouse press/release is replayed to the site.
-      await this.serialize(async () => {
-        await this.clear();
-        if (this.state !== state) throw new Error('选取已取消');
-        await Promise.all(
-          [undefined, ...new Set(this.sessions.values())].map(async (session) => {
-            await this.enable(session);
-            // Register only the document root so hover notifications carry a node ID.
-            await this.send('DOM.getDocument', { depth: 0 }, session);
-          }),
-        );
-      });
+  private async pointTarget(
+    state: PickerState,
+    x: number,
+    y: number,
+    signal: AbortSignal,
+    send: Send,
+  ) {
+    await this.serialize(async () => {
       if (this.state !== state) throw new Error('选取已取消');
-      this.contents.debugger.on('message', listener);
-      listening = true;
-      await this.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
-      return await result;
-    } finally {
-      clearTimeout(timer);
-      if (listening) this.contents.debugger.removeListener('message', listener);
-      if (this.pointAbort === abort) this.pointAbort = undefined;
-    }
+      await this.clear();
+    });
+    return embeddedPointTarget(send, this.sessions, { x, y }, signal, () => this.state === state);
   }
   private async select(
     state: PickerState,
-    resolve: () => Promise<{ backendNodeId: number; session?: string }>,
+    resolve: (
+      signal: AbortSignal,
+      send: Send,
+    ) => Promise<PointIdentity & { verify?: PointHit['verify'] }>,
   ) {
     // Leave inspect mode before inspecting metadata; suppress a second selection event.
     if (this.state !== state || this.selecting === state) return;
     this.selecting = state;
     const pending = state;
-    const group = 'flowark-picker:' + state.requestId;
+    const group = 'flowark-picker:' + ++this.selectionSequence;
+    const controller = new AbortController();
+    const abort = () => controller.abort(new Error('选取已取消'));
+    this.pointAbort = abort;
+    const wait = <T>(operation: () => Promise<T>): Promise<T> =>
+      new Promise((yes, no) => {
+        if (controller.signal.aborted || this.state !== state) {
+          no(new Error('选取已取消'));
+          return;
+        }
+        const cancelled = () => {
+          controller.signal.removeEventListener('abort', cancelled);
+          no(controller.signal.reason);
+        };
+        controller.signal.addEventListener('abort', cancelled, { once: true });
+        Promise.resolve()
+          .then(() => {
+            controller.signal.throwIfAborted();
+            return operation();
+          })
+          .then((value) => {
+            if (this.state !== state) throw new Error('选取已取消');
+            return value;
+          })
+          .then(yes, no)
+          .finally(() => controller.signal.removeEventListener('abort', cancelled));
+      });
+    const send: Send = (method, args, session) => wait(() => this.send(method, args, session));
     clearTimeout(this.timer);
     const timeout = setTimeout(() => {
       if (this.state !== pending) return;
@@ -267,19 +286,21 @@ export class EmbeddedPicker {
         phase: 'error',
         error: '目标解析超时，请重新选取',
       };
+      controller.abort(new Error('目标解析超时，请重新选取'));
       void this.serialize(() => this.clear());
     }, 15000);
     timeout.unref();
     try {
-      const { backendNodeId, session } = await resolve();
+      const hit = await resolve(controller.signal, send);
+      const { backendNodeId, session } = hit;
       await this.serialize(() => this.clear());
       if (this.state !== pending) return;
-      const { object } = await this.send(
+      const { object } = await send(
         'DOM.resolveNode',
         { backendNodeId, objectGroup: group },
         session,
       );
-      const document = await this.send(
+      const document = await send(
         'Runtime.callFunctionOn',
         {
           objectId: object.objectId,
@@ -288,22 +309,18 @@ export class EmbeddedPicker {
         },
         session,
       );
-      const owner = await this.send(
-        'DOM.describeNode',
-        { objectId: document.result.objectId },
-        session,
-      );
-      const frames = await this.allFrames();
+      const owner = await send('DOM.describeNode', { objectId: document.result.objectId }, session);
+      const frames = await this.allFrames(send);
       let selected: Frame | undefined;
       for (const frame of frames.values()) {
         if (this.state !== pending) return;
         if (frame.session !== session) continue;
-        const result = await this.send(
+        const result = await send(
           'Runtime.evaluate',
-          { expression: 'document', contextId: await this.world(frame), objectGroup: group },
+          { expression: 'document', contextId: await this.world(frame, send), objectGroup: group },
           frame.session,
         );
-        const doc = await this.send(
+        const doc = await send(
           'DOM.describeNode',
           { objectId: result.result.objectId },
           frame.session,
@@ -314,27 +331,30 @@ export class EmbeddedPicker {
         }
       }
       if (!selected) throw new Error('页面框架已变化，请重新选取');
-      const target = await this.inspectNode(backendNodeId, selected, group);
+      const target = await this.inspectNode(backendNodeId, selected, group, send);
       const path: string[] = [];
       let child = selected;
       while (child.parent) {
         if (path.length >= 8) throw new Error('框架嵌套超过 8 层');
         const parent = frames.get(child.parent);
         if (!parent) throw new Error('无法定位父框架');
-        const owner = await this.send('DOM.getFrameOwner', { frameId: child.id }, parent.session);
-        const described = await this.inspectNode(owner.backendNodeId, parent, group);
+        const owner = await send('DOM.getFrameOwner', { frameId: child.id }, parent.session);
+        const described = await this.inspectNode(owner.backendNodeId, parent, group, send);
         path.unshift(described.selector);
         target.structural ||= described.structural;
         child = parent;
       }
       if (this.state !== pending) return;
-      await this.validate(target.selector, path);
-      if (this.state === pending)
+      await wait(() => this.validate(target.selector, path, { backendNodeId, session }));
+      await hit.verify?.();
+      if (this.state === pending) {
         this.state = {
           requestId: state.requestId,
           phase: 'selected',
           target: { ...target, framePath: path },
         };
+        this.selectedIdentity = { state: this.state, point: { backendNodeId, session } };
+      }
     } catch (e) {
       if (this.state === pending) {
         await this.serialize(() => this.clear());
@@ -347,15 +367,28 @@ export class EmbeddedPicker {
         };
     } finally {
       clearTimeout(timeout);
+      if (this.pointAbort === abort) this.pointAbort = undefined;
       if (this.pointMove?.state === state) this.pointMove = undefined;
-      await Promise.all(
+      const release = Promise.all(
         [undefined, ...new Set(this.sessions.values())].map((s) =>
           this.send('Runtime.releaseObjectGroup', { objectGroup: group }, s).catch(() => {}),
         ),
       );
+      let cleanupTimer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        await Promise.race([
+          release,
+          new Promise<void>((done) => {
+            cleanupTimer = setTimeout(done, 1000);
+          }),
+        ]);
+      } finally {
+        clearTimeout(cleanupTimer);
+      }
     }
   }
   dispose() {
+    this.selectedIdentity = undefined;
     clearTimeout(this.timer);
     this.pointAbort?.();
     if (this.state) this.state = { requestId: this.state.requestId, phase: 'cancelled' };

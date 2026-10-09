@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { _electron as electron, type ElectronApplication, type Page } from 'playwright-core';
+import { desktopElectron as electron } from './desktop-session.mjs';
+import { type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
 import type { Run, Step } from '../src/shared/types';
 import { startFormLab } from './fixtures/platform-page';
@@ -328,7 +329,12 @@ try {
 
   // Prevent Renderer bootstrap polling from consuming the credential gate. Any
   // already-started Vault list must settle before arming the target flow.run.
-  await call('credentials.set', { id: 'deepseek', value: 'fictional-suspend-credential' });
+  await call('ai.configuration.save', {
+    provider: 'deepseek',
+    revision: null,
+    model: 'deepseek-flash',
+    apiKey: 'fictional-suspend-credential',
+  });
   const delayedId = await create('挂起：旧准入不得复活', [http('delayed_admission')], false, [
     'deepseek',
   ]);

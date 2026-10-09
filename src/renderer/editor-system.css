@@ -1,0 +1,500 @@
+/* Figma 1:394, 1:2229, 2:5152 and 2:5253. */
+.editor-page .muted,
+.editor-page .eyebrow {
+  color: var(--fa-text-secondary);
+}
+.editor-region .tabs button {
+  color: var(--fa-text-secondary);
+}
+.editor-region .tabs button.selected {
+  color: var(--fa-action-primary);
+  border-color: var(--fa-action-primary);
+}
+.editor-region .canvas-label {
+  color: var(--fa-text-secondary);
+}
+.editor-region .canvas-legend {
+  color: var(--fa-text-secondary);
+  background: var(--fa-bg-canvas);
+  border-color: var(--fa-border-default);
+}
+.editor-region .canvas-legend span {
+  background: var(--fa-text-secondary);
+}
+.editing-workspace > main {
+  overflow: hidden;
+}
+.editor-page {
+  height: calc(100vh - 96px);
+  min-height: 0;
+  padding: 32px;
+  gap: 16px;
+}
+.app .editor-toolbar {
+  height: auto;
+  min-height: 58px;
+  flex: 0 0 auto;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.editor-flow-name {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 390px;
+  min-height: 58px;
+  flex-shrink: 0;
+}
+.editor-compact-toolbar {
+  display: flex;
+  gap: 12px;
+  height: 40px;
+  flex: 0 0 40px;
+}
+.editor-compact-toolbar button {
+  width: 164px;
+}
+.editor-compact-toolbar button:nth-child(2) {
+  width: 88px;
+}
+.editor-compact-toolbar button:nth-child(3) {
+  width: 136px;
+}
+.editor-compact-toolbar button:nth-child(4) {
+  width: 120px;
+}
+.app .editor-toolbar .title-input {
+  width: 100%;
+  height: 28px;
+  border: 0;
+  padding: 0;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+.editor-flow-name > span {
+  font-size: 12px;
+  line-height: 18px;
+}
+.app .editor-toolbar > button {
+  width: 136px;
+  flex-shrink: 0;
+}
+.app .editor-toolbar > .primary {
+  width: 100px;
+}
+.editor-toolbar .draft-history {
+  width: 136px;
+  gap: 0;
+}
+.editor-toolbar .draft-history button {
+  flex: 1;
+  border: 1px solid var(--fa-border-default);
+  background: var(--fa-bg-surface);
+}
+.editor-region {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  min-width: 0;
+}
+.editor-region .editor-views {
+  display: flex;
+  flex-shrink: 0;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.editor-views button[aria-pressed='true'] {
+  color: var(--fa-action-primary);
+  border-color: var(--fa-action-primary);
+}
+.editor-region:not(.has-browser):not(.is-compact) .editor-views {
+  display: none;
+}
+.editor-region .editor-workspace {
+  display: flex;
+  flex: 1;
+  gap: 16px;
+  min-height: 0;
+  min-width: 0;
+}
+.editor-region .editor-layout {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  gap: 16px;
+  min-height: 0;
+  min-width: 0;
+}
+.editor-region .node-library {
+  width: 224px;
+  flex: 0 0 224px;
+  min-width: 0;
+  padding: 16px;
+  gap: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-surface);
+}
+.editor-region .action-library-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.editor-region .action-destination {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.editor-region .action-list {
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.editor-region .action-list button {
+  white-space: normal;
+}
+.editor-region .canvas {
+  min-width: 0;
+  min-height: 0;
+  background: var(--fa-bg-canvas);
+}
+.editor-region .inspector {
+  width: 336px;
+  flex: 0 0 336px;
+  min-width: 0;
+  padding: 24px;
+  overflow: auto;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-surface);
+}
+.editor-region .inspector .tabs {
+  margin: -24px -24px 16px;
+  padding-inline: 16px;
+}
+.editor-region .selected-step-summary {
+  display: none;
+}
+.editor-region .browser-sidebar {
+  width: calc(50% - 12px);
+  flex: 0 0 calc(50% - 12px);
+  /* Keep 480 px of native viewport after the card padding and border. */
+  min-width: 522px;
+  min-height: 0;
+  padding: 20px;
+  gap: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  box-shadow: none;
+}
+.editor-region .browser-sidebar > header {
+  height: 40px;
+  padding: 0;
+  border: 0;
+}
+.editor-region .browser-sidebar > header strong {
+  color: var(--fa-text-primary);
+}
+.editor-region .browser-address {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.editor-region .browser-address input {
+  height: 40px;
+  background: var(--fa-bg-canvas);
+}
+.editor-region .browser-viewport {
+  border: 1px solid var(--fa-border-default);
+}
+.editor-region .browser-sidebar footer {
+  padding: 0;
+  border: 0;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  flex-wrap: wrap;
+}
+.editor-region.has-browser:not(.is-compact) .editor-layout {
+  gap: 0;
+}
+.editor-region.has-browser:not(.is-compact) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) calc(50% - 12px);
+  grid-template-rows: 57px minmax(0, 1fr);
+  gap: 0 16px;
+}
+.editor-region.has-browser:not(.is-compact) .editor-workspace {
+  display: contents;
+}
+.editor-region.has-browser:not(.is-compact) .editor-views {
+  grid-area: 1 / 1;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid var(--fa-border-default);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  background: var(--fa-bg-surface);
+}
+.editor-region.has-browser:not(.is-compact) .editor-views button {
+  padding: 6px 0;
+  min-height: 32px;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+}
+.editor-region.has-browser:not(.is-compact) .editor-layout {
+  grid-area: 2 / 1;
+  border: 1px solid var(--fa-border-default);
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+}
+.editor-region.has-browser:not(.is-compact) .inspector {
+  padding: 20px;
+}
+.editor-region.has-browser:not(.is-compact) .browser-sidebar:not(.browser-observation-expanded) {
+  grid-area: 1 / 2 / 3;
+  width: 100%;
+  min-width: 0;
+}
+.editor-region.has-browser:not(.is-compact) .node-library {
+  display: none;
+}
+.editor-region.has-browser:not(.is-compact)[data-panel='actions'] .node-library {
+  display: flex;
+}
+.editor-region.has-browser:not(.is-compact)[data-panel='actions'] .canvas {
+  display: none;
+}
+.editor-region.has-browser:not(.is-compact)[data-panel='actions'] .inspector {
+  flex: 1;
+}
+.editor-region.is-compact .editor-workspace {
+  gap: 12px;
+}
+.editor-region.is-compact.has-browser .editor-views {
+  display: none;
+}
+.editor-region.is-compact .editor-layout {
+  gap: 0;
+}
+.editor-region.is-compact .node-library,
+.editor-region.is-compact .inspector {
+  display: none;
+  width: 100%;
+  flex: 1;
+}
+.editor-region.is-compact .canvas {
+  flex: 1;
+}
+.editor-region.is-compact[data-panel='actions'] .node-library {
+  display: flex;
+}
+.editor-region.is-compact[data-panel='node'] .inspector,
+.editor-region.is-compact[data-panel='params'] .inspector {
+  display: block;
+}
+.editor-region.is-compact[data-panel='actions'] .canvas,
+.editor-region.is-compact[data-panel='node'] .canvas,
+.editor-region.is-compact[data-panel='params'] .canvas {
+  display: none;
+}
+.editor-region.is-compact.has-browser .browser-sidebar {
+  width: 60.25%;
+  flex-basis: 60.25%;
+}
+.editor-region.is-compact.has-browser[data-panel='canvas'][data-selected='true'] .canvas {
+  display: none;
+}
+.editor-region.is-compact.has-browser[data-panel='canvas'][data-selected='true']
+  .selected-step-summary {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 16px;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-surface);
+  overflow: auto;
+}
+.selected-step-summary p {
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+.selected-step-summary h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+.selected-step-target {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.selected-step-target > span {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.selected-step-target p {
+  padding: 6px;
+  border-radius: 6px;
+  background: var(--fa-bg-canvas);
+  font-size: 13px;
+  line-height: 20px;
+}
+.selected-step-summary > p {
+  color: var(--fa-text-secondary);
+}
+.editor-region .drawer-footer {
+  position: sticky;
+  bottom: -24px;
+  margin-top: 16px;
+  padding-block: 12px 24px;
+  background: var(--fa-bg-surface);
+}
+.editor-region .drawer-footer button {
+  width: 100%;
+}
+@media (max-width: 1439px) {
+  .editing-workspace .topbar {
+    height: 44px;
+    min-height: 44px;
+    padding: 6px;
+  }
+  .editing-workspace .topbar button {
+    height: 32px;
+    min-height: 32px;
+    padding-block: 5px;
+  }
+  .editing-workspace .editor-page {
+    height: calc(100vh - 84px);
+    padding: 16px;
+    gap: 12px;
+  }
+  .editing-workspace .editor-flow-name {
+    width: 240px;
+  }
+  .editing-workspace .editor-toolbar {
+    flex-wrap: wrap;
+  }
+  .editing-workspace .editor-region {
+    gap: 12px;
+  }
+}
+
+/* Keep the primary editor operations on one row where space permits. */
+.app .editor-toolbar > button {
+  width: auto;
+  min-width: 88px;
+}
+.editor-toolbar .editor-flow-name {
+  flex: 1 1 260px;
+  width: auto;
+  min-width: 240px;
+}
+.app .editor-toolbar .draft-history {
+  width: 80px;
+}
+.editor-toolbar .editor-history-label {
+  display: none;
+}
+@media (min-width: 1740px) {
+  .editor-toolbar .editor-flow-name {
+    flex: 0 0 390px;
+  }
+  .app .editor-toolbar > button,
+  .app .editor-toolbar .draft-history {
+    width: 136px;
+  }
+  .app .editor-toolbar > .primary {
+    width: 100px;
+  }
+  .app .editor-toolbar > .editor-more-trigger {
+    width: 40px;
+    min-width: 40px;
+  }
+  .editor-toolbar .editor-more-label,
+  .editor-toolbar .draft-history svg {
+    display: none;
+  }
+  .editor-toolbar .editor-history-label {
+    display: inline;
+  }
+  .editor-toolbar .draft-history button:first-child {
+    border-radius: 8px 0 0 8px;
+  }
+  .editor-toolbar .draft-history button:last-child {
+    border-radius: 0 8px 8px 0;
+    border-left: 0;
+  }
+}
+
+/* Figma 2:5253 keeps the current target ahead of general step settings. */
+.step-settings-expanded,
+.inspector-content {
+  display: contents;
+}
+.editor-region.is-compact[data-panel='node'] .compact-browser-inspector,
+.editor-region.is-compact[data-panel='params'] .compact-browser-inspector {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+.compact-browser-inspector .inspector-content {
+  display: block;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  scroll-padding-block: 12px;
+  padding: 20px;
+}
+.editor-region .compact-browser-inspector .tabs {
+  margin: -20px -20px 16px;
+}
+.editor-region .compact-config-heading {
+  margin: 0 0 16px;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+.compact-browser-inspector .node-configuration {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+.compact-browser-inspector .compact-target-selector {
+  margin: 0 0 12px;
+  padding: 6px;
+  border-radius: 6px;
+  background: var(--fa-bg-canvas);
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.compact-step-settings {
+  margin-top: 16px;
+}
+.compact-step-settings > summary {
+  cursor: pointer;
+  color: var(--fa-text-secondary);
+}
+.editor-region .compact-browser-inspector .drawer-footer {
+  position: static;
+  flex: 0 0 auto;
+  margin-top: 0;
+  padding: 12px 20px 20px;
+}

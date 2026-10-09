@@ -1,0 +1,161 @@
+.control-workspace-dialog {
+  left: 72px;
+  width: calc(100vw - 72px);
+}
+.control-workspace-page {
+  container-type: inline-size;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.control-workspace-page h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 40px;
+}
+.control-workspace-page p {
+  margin: 0;
+  color: var(--fa-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+.control-workspace-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1120fr) minmax(0, 640fr);
+  gap: 24px;
+}
+.control-workspace-canvas {
+  min-width: 0;
+  height: 790px;
+  position: relative;
+}
+.control-workspace-canvas .flow-route-label.is-returning {
+  color: var(--fa-action-primary);
+}
+.control-workspace-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-self: start;
+  min-height: 790px;
+  min-width: 0;
+  margin: 0;
+  padding: 24px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-surface);
+}
+.control-workspace-card h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 28px;
+}
+.control-workspace-card .node-configuration {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.control-workspace-card .node-configuration > header {
+  display: none;
+}
+.control-workspace-card label {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--fa-text-secondary);
+}
+.control-workspace-card input:not([type='checkbox']),
+.control-workspace-card select,
+.control-workspace-card textarea {
+  margin: 0;
+  min-width: 0;
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 6px;
+  font-size: 13px;
+  line-height: 20px;
+  background: var(--fa-bg-canvas);
+}
+.control-workspace-card .reference-value {
+  padding: 12px;
+  background: var(--fa-bg-canvas);
+}
+.control-workspace-card .node-control-summary {
+  margin: 0;
+}
+.control-workspace-card button {
+  min-height: 40px;
+}
+.control-workspace-add {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: -10px;
+}
+.control-workspace-add select {
+  flex: 1;
+}
+.control-workspace-add button {
+  flex-shrink: 0;
+  min-height: 32px;
+  padding: 4px 10px;
+}
+.control-workspace-page .control-workspace-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--fa-status-error-bg);
+  color: var(--fa-status-error);
+}
+.control-workspace-error p {
+  color: inherit;
+}
+.control-workspace-error button {
+  flex-shrink: 0;
+}
+.control-workspace-card .field-error {
+  color: var(--fa-status-error);
+}
+@container (max-width:1250px) {
+  .control-workspace-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .control-workspace-canvas {
+    height: 560px;
+  }
+  .control-workspace-card {
+    min-height: 0;
+  }
+}
+
+.control-workspace-card > .value-field {
+  border: 0;
+  padding: 0;
+}
+.control-workspace-card .reference-value-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.control-workspace-card .reference-value-compact .value-field-label {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--fa-text-secondary);
+}
+.control-workspace-card .reference-value-compact button {
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 6px;
+  background: var(--fa-bg-canvas);
+  border-color: transparent;
+  justify-content: flex-start;
+  color: var(--fa-text-primary);
+  font-size: 13px;
+  line-height: 20px;
+}

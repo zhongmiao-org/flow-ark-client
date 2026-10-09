@@ -1,0 +1,175 @@
+.desktop-run-binding fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.desktop-run-texts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.desktop-run-texts > div {
+  min-width: 0;
+}
+.desktop-run-texts pre {
+  max-height: 280px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+}
+.desktop-run-receipt {
+  margin: 20px 0;
+}
+@media (max-width: 1200px) {
+  .desktop-run-texts {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Application confirmation/execution/result: Figma taskappcheck/taskapprun/taskappresult. */
+.run-review-page.is-desktop .run-review-columns {
+  grid-template-columns: minmax(0, 650fr) minmax(0, 478fr);
+}
+.run-review-page.is-desktop .run-review-columns > .ai-task-card {
+  min-height: 720px;
+}
+.desktop-run-confirmation {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.desktop-run-confirmation section {
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  padding: 16px;
+  min-height: 120px;
+}
+.desktop-run-confirmation section > p {
+  margin-top: 8px;
+}
+.run-review-page .desktop-confirm-notice {
+  min-height: 72px;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-action-subtle);
+  color: var(--fa-action-primary);
+}
+.desktop-confirm-authorization {
+  color: var(--fa-text-secondary);
+}
+.desktop-review-options[open] {
+  display: grid;
+  gap: 16px;
+}
+.desktop-review-options > :not(summary) {
+  margin-top: 0;
+}
+.desktop-review-options > button {
+  width: 100%;
+}
+.desktop-confirm-original {
+  background: var(--fa-status-error-bg);
+}
+.desktop-run-confirmation .desktop-confirm-replacement {
+  background: var(--fa-status-success-bg);
+  min-height: 140px;
+}
+.desktop-run-confirmation pre,
+.desktop-task-readback pre {
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow: auto;
+  max-height: 280px;
+  margin: 12px 0 0;
+}
+.desktop-run-confirmation pre {
+  margin-top: 8px;
+  color: var(--fa-text-secondary);
+}
+.desktop-task-run .desktop-task-run-panel {
+  min-height: 560px;
+  padding: 31px;
+}
+.desktop-task-run[data-task-run-mode='success'] .desktop-task-run-panel {
+  min-height: 600px;
+}
+.desktop-task-run .desktop-task-run-panel > h2 {
+  font-size: 28px;
+  line-height: 40px;
+  font-weight: 700;
+}
+.desktop-task-run-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: var(--fa-text-secondary);
+}
+.desktop-task-progress {
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.desktop-task-progress p {
+  margin: 0;
+}
+.desktop-task-object {
+  min-height: 120px;
+}
+.desktop-task-run .desktop-task-object h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+.desktop-task-run .desktop-task-readback h3 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 400;
+  color: var(--fa-text-secondary);
+}
+.desktop-task-run .desktop-task-readback pre {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  min-height: 140px;
+  background: var(--fa-bg-canvas);
+  font-size: 14px;
+  line-height: 22px;
+}
+.desktop-task-record {
+  display: grid;
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+.desktop-task-run-panel > h2 {
+  overflow-wrap: anywhere;
+}
+.desktop-task-run-panel > .ai-task-actions > button {
+  min-width: 144px;
+}
+.desktop-task-details {
+  align-self: flex-start;
+}
+@container (max-width: 1000px) {
+  .run-review-page.is-desktop .run-review-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .run-review-page.is-desktop .run-review-columns > .ai-task-card {
+    min-height: 0;
+  }
+  .desktop-task-run .desktop-task-run-panel,
+  .desktop-task-run[data-task-run-mode='success'] .desktop-task-run-panel {
+    padding: 24px;
+    min-height: 0;
+  }
+}

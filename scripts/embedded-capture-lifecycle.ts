@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { _electron as electron } from 'playwright-core';
+import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
 import { startFormLab } from './fixtures/platform-page';
 import { formBrowser, formLabFlow } from './fixtures/platform-flow';

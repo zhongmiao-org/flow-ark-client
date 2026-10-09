@@ -1,4 +1,4 @@
-import { _electron as electron } from 'playwright-core';
+import { desktopElectron as electron } from './desktop-session.mjs';
 import assert from 'node:assert/strict';
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -24,7 +24,12 @@ for (let phase = 0; phase < 2; phase++) {
     if (phase === 0) {
       assert.equal(boot.flows.length, 0);
       assert.equal(boot.templates.length, 0);
-      await call('credentials.set', { id: 'deepseek', value: 'fictional-install-key' });
+      await call('ai.configuration.save', {
+        provider: 'deepseek',
+        revision: null,
+        model: 'deepseek-flash',
+        apiKey: 'fictional-install-key',
+      });
       const record = await call('flow.create');
       await call('flow.save', {
         flow: {

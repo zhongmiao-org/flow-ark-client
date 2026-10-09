@@ -1,0 +1,124 @@
+.run-step-details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  border-top: 1px solid var(--fa-border-default);
+  padding-top: 20px;
+}
+.run-step-details header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.run-step-details h3 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+}
+.run-step-details header span {
+  border-radius: 6px;
+  padding: 4px 8px;
+  background: var(--fa-bg-canvas);
+}
+.run-step-details p,
+.run-step-details header span {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--fa-text-secondary);
+}
+.run-step-details dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--fa-bg-canvas);
+}
+.run-step-details dt {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  margin-bottom: 6px;
+}
+.run-step-details dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 22px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.run-step-events {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.run-step-events ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.run-step-events li {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  font-size: 12px;
+  line-height: 20px;
+}
+.run-step-events time {
+  color: var(--fa-text-secondary);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.run-step-events li span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.run-file-operation {
+  container-type: inline-size;
+}
+.run-file-operation dl {
+  display: grid;
+  grid-template-columns: minmax(0, 210px) minmax(0, 1fr);
+  gap: 24px;
+  margin: 0;
+}
+.run-file-operation dt {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--fa-text-secondary);
+  margin-bottom: 8px;
+}
+.run-file-operation dd {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.run-file-operation p {
+  margin: 20px 0 0;
+  color: var(--fa-text-secondary);
+  font-size: 13px;
+  line-height: 22px;
+}
+@media (max-width: 1100px) {
+  .run-file-operation dl {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+}
+@container (max-width: 420px) {
+  .run-file-operation dl {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+}

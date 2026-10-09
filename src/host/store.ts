@@ -195,6 +195,14 @@ export class Store {
           this.put('template-effect', a.id, { ...a, state: 'unknown' });
           this.attention('unknown-result', '操作结果待核对', { effectId: a.id }, 'unknown:' + a.id);
         }
+      for (const receipt of this.list<any>('desktop-effect'))
+        if (receipt.status === 'unknown')
+          this.attention(
+            'unknown-result',
+            '应用修改结果待核对',
+            { runId: receipt.runId, nodeId: receipt.nodeId },
+            'desktop:' + receipt.runId + ':' + receipt.nodeId,
+          );
     });
   }
   attention(kind: string, title: string, detail: any, key: string) {

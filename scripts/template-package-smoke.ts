@@ -1,4 +1,4 @@
-import { _electron as electron } from 'playwright-core';
+import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, readFile } from 'node:fs/promises';
@@ -56,7 +56,7 @@ try {
     .getByRole('button', { name: new RegExp('Generic fixture · ' + instance.id.slice(0, 8)) })
     .click();
   await page.getByLabel('Fixture title', { exact: true }).fill('Changed');
-  await page.getByRole('button', { name: '保存实例配置', exact: true }).click();
+  await page.getByRole('button', { name: '保存配置', exact: true }).click();
   await page.waitForFunction(
     () =>
       document.querySelector('[role=alert]') ||
@@ -112,6 +112,7 @@ try {
   ];
   await call('flow.save', { flow: custom.flow, bindings: custom.bindings });
   await page.reload();
+  await page.getByRole('button', { name: '我的流程', exact: true }).click();
   await page.getByRole('button', { name: '编辑 Custom ZIP workflow', exact: true }).click();
   const customPath = join(data, 'custom-export');
   await app.evaluate(({ dialog }: any, path: string) => {
@@ -148,14 +149,19 @@ try {
       name: new RegExp('Custom ZIP workflow · ' + customInstance.id.slice(0, 8)),
     })
     .click();
+  await page.getByRole('button', { name: '操作入口', exact: true }).click();
   await page.getByRole('textbox', { name: 'text', exact: true }).fill('roundtrip works');
   await page.getByRole('button', { name: '保存入口参数', exact: true }).click();
   await page.getByRole('status').filter({ hasText: '入口参数已保存' }).waitFor();
   await assert.rejects(call('flow.run', { id: customInstance.entryFlows.run }), /授权/);
   const output = join(data, 'output');
   await mkdir(output);
-  await call('template.configure', {
+  const customDetail = await call('template.detail', { id: customInstance.id });
+  await call('template.save', {
     id: customInstance.id,
+    revision: customDetail.revision,
+    name: customDetail.instance.name,
+    inputs: {},
     configuration: {},
     resources: { output: { path: output } },
     grants: { 'workflow-write': 'auto' },

@@ -5,7 +5,9 @@ import { commandBudget } from './browser-scope';
 import { framePathOf, validateFormCommand, formKeys } from '../core/browser-command';
 import { EmbeddedPicker } from './embedded-picker';
 import { describeElement } from './element-description';
+import type { PointIdentity } from './embedded-point-target';
 import type { ElementTarget } from '../shared/element-picker';
+import type { ObservationPan } from '../shared/browser-observation';
 type Scope = {
   context: number;
   session?: string;
@@ -33,7 +35,7 @@ export class EmbeddedPage {
       contents,
       (m, p, s) => this.send(m, p, s),
       this.frames,
-      (selector, path) => this.inspectTarget(selector, path, false),
+      (selector, path, expected) => this.inspectTarget(selector, path, false, expected),
       coordinates,
     );
     contents.debugger.on('message', (_event, method, params) => {
@@ -65,6 +67,36 @@ export class EmbeddedPage {
       waitForDebuggerOnStart: false,
       flatten: true,
     });
+  }
+  async observationScale(scale: number) {
+    this.abort.signal.throwIfAborted();
+    await this.contents.setVisualZoomLevelLimits(scale, scale);
+    await this.send('Emulation.setPageScaleFactor', { pageScaleFactor: scale });
+    const { cssVisualViewport } = await this.send('Page.getLayoutMetrics');
+    if (!cssVisualViewport || Math.abs(cssVisualViewport.scale - scale) > 0.01)
+      throw new Error('网页显示比例尚未确认，请重新选择查看模式');
+    return this.contents.getZoomFactor() * cssVisualViewport.scale * 100;
+  }
+  async panObservation(direction: ObservationPan['direction']) {
+    const { cssVisualViewport: before } = await this.send('Page.getLayoutMetrics');
+    if (!before || before.scale <= 1) throw new Error('请先切换为原字号查看');
+    const horizontal = direction === 'left' || direction === 'right';
+    const distance = Math.min(300, (horizontal ? before.clientWidth : before.clientHeight) / 2);
+    // Gesture coordinates are visible CSS points, without the visual offset.
+    // A short touch scroll moves the visual viewport without replaying clicks.
+    await this.send('Input.synthesizeScrollGesture', {
+      x: before.clientWidth / 2,
+      y: Math.min(24, before.clientHeight / 2),
+      xDistance: horizontal ? distance * (direction === 'left' ? 1 : -1) : 0,
+      yDistance: horizontal ? 0 : distance * (direction === 'up' ? 1 : -1),
+      gestureSourceType: 'touch',
+      preventFling: true,
+      speed: 1200,
+    });
+    const { cssVisualViewport: after } = await this.send('Page.getLayoutMetrics');
+    if (!after || Math.abs(after.scale - before.scale) > 0.01)
+      throw new Error('网页显示比例已改变，请重新选择查看模式');
+    return this.contents.getZoomFactor() * after.scale * 100;
   }
   private async evaluate(scope: Scope, expression: string, byValue = true) {
     const result = await this.send(
@@ -124,7 +156,7 @@ export class EmbeddedPage {
       );
     return result.result.value;
   }
-  private async scope(path: string[], remaining: () => number) {
+  private async scope(path: string[], remaining: () => number, scroll = true) {
     const { frameTree } = await this.send('Page.getFrameTree');
     let scope = await this.world(frameTree.frame.id);
     for (const selector of path) {
@@ -134,7 +166,8 @@ export class EmbeddedPage {
         const box = await this.call(
           scope,
           element,
-          `function() { this.scrollIntoView({block:'center',inline:'center'}); const r=this.getBoundingClientRect(); return {x:r.x+this.clientLeft,y:r.y+this.clientTop}; }`,
+          `function(scroll) { if(scroll) this.scrollIntoView({block:'center',inline:'center',behavior:'instant'}); const r=this.getBoundingClientRect(); return {x:r.x+this.clientLeft,y:r.y+this.clientTop}; }`,
+          scroll,
         );
         const { node } = await this.send('DOM.describeNode', { objectId: element }, scope.session);
         if (!node.frameId) throw new Error('目标不是可用框架：' + selector);
@@ -151,52 +184,143 @@ export class EmbeddedPage {
     }
     return scope;
   }
-  private async visible(scope: Scope, objectId: string, remaining: () => number, enabled = false) {
+  private async visible(
+    scope: Scope,
+    objectId: string,
+    remaining: () => number,
+    enabled = false,
+    scroll = true,
+  ) {
     while (true) {
       remaining();
       const box = await this.call(
         scope,
         objectId,
-        `function(enabled) {
+        `function(enabled, scroll) {
         if (!this.isConnected) throw new Error('目标元素已离开页面');
-        this.scrollIntoView({block:'center', inline:'center'});
+        if(scroll) this.scrollIntoView({block:'center', inline:'center', behavior:'instant'});
         const r=this.getBoundingClientRect(), s=getComputedStyle(this);
         if (!r.width || !r.height || s.visibility==='hidden' || s.display==='none' || (enabled && this.matches(':disabled'))) return null;
         const x=r.x+r.width/2,y=r.y+r.height/2;
         return {x,y};
       }`,
         enabled,
+        scroll,
       );
       if (box) return box;
       await new Promise((resolve) => setTimeout(resolve, Math.min(30, remaining())));
     }
   }
-  private async click(scope: Scope, objectId: string, remaining: () => number) {
-    const box = await this.visible(scope, objectId, remaining, true);
-    const hit = await this.call(
+  private async pointerGuard(scope: Scope, objectId: string) {
+    const result = await this.send(
+      'Runtime.callFunctionOn',
+      {
+        objectId,
+        functionDeclaration: `function() {
+        const target=this, state={hovered:false,pressed:false,blocked:false};
+        const listen=e=>{
+          if(!e.isTrusted) return;
+          const hit=target.isConnected && !target.matches(':disabled') && e.composedPath().includes(target);
+          if(e.type==='mousemove') { state.hovered=hit; return; }
+          if(!hit) { state.blocked=true; e.preventDefault(); e.stopImmediatePropagation(); }
+          else if(e.type==='mousedown') state.pressed=true;
+        };
+        const types=['mousemove','mousedown','mouseup','click'];
+        for(const type of types) window.addEventListener(type,listen,true);
+        return {
+          reset(){state.hovered=false;},
+          read(){return {...state};},
+          dispose(){for(const type of types) window.removeEventListener(type,listen,true);}
+        };
+      }`,
+        returnByValue: false,
+      },
+      scope.session,
+    );
+    if (result.exceptionDetails || !result.result.objectId) throw new Error('无法核对点击目标');
+    return result.result.objectId as string;
+  }
+  private async pointerPoint(scope: Scope, objectId: string) {
+    const box = await this.call(
       scope,
       objectId,
-      `function(x,y) { const hit=this.getRootNode().elementFromPoint(x,y); return hit===this || this.contains(hit); }`,
-      box.x,
-      box.y,
+      `function() {
+        if (!this.isConnected || this.matches(':disabled')) throw new Error('点击目标已失效');
+        const r=this.getBoundingClientRect(), x=r.x+r.width/2, y=r.y+r.height/2;
+        const hit=this.getRootNode().elementFromPoint(x,y);
+        if (!r.width || !r.height || (hit!==this && !this.contains(hit))) throw new Error('点击目标被其他元素遮挡');
+        return {x,y};
+      }`,
     );
-    if (!hit) throw new Error('点击目标被其他元素遮挡');
     let x = box.x,
       y = box.y;
     // Child scrolling can move every ancestor viewport; measure after scrollIntoView.
-    for (const ancestor of scope.ancestors) {
+    for (const ancestor of [...scope.ancestors].reverse()) {
       const offset = await this.evaluate(
         ancestor.scope,
-        `(() => { const el=(${query})(${JSON.stringify(ancestor.selector)}); if(!el) throw new Error('框架已离开页面'); const r=el.getBoundingClientRect(); return {x:r.x+el.clientLeft,y:r.y+el.clientTop}; })()`,
+        `(() => {
+          const el=(${query})(${JSON.stringify(ancestor.selector)}); if(!el) throw new Error('框架已离开页面');
+          const r=el.getBoundingClientRect(), x=r.x+el.clientLeft, y=r.y+el.clientTop;
+          if(el.getRootNode().elementFromPoint(x+${x},y+${y})!==el) throw new Error('点击框架被其他元素遮挡');
+          return {x,y};
+        })()`,
       );
       x += offset.x;
       y += offset.y;
     }
-    const point = { x, y, button: 'left', clickCount: 1 };
-    await this.send('Input.dispatchMouseEvent', { ...point, type: 'mouseMoved' });
-    await this.send('Input.dispatchMouseEvent', { ...point, type: 'mousePressed' });
-    await this.send('Input.dispatchMouseEvent', { ...point, type: 'mouseReleased' });
+    const viewport = await this.evaluate(
+      scope.ancestors[0]?.scope ?? scope,
+      '({x:visualViewport.offsetLeft,y:visualViewport.offsetTop})',
+    );
+    // CDP pointer input is in CSS pixels relative to the visual viewport.
+    // Rectangles above use the layout viewport; native and visual zoom do not
+    // require another multiplication, but observation panning adds this offset.
+    return { x: x - viewport.x, y: y - viewport.y };
   }
+  private async click(scope: Scope, objectId: string, remaining: () => number) {
+    await this.visible(scope, objectId, remaining, true);
+    const guard = await this.pointerGuard(scope, objectId);
+    let navigated = false;
+    const navigation = () => {
+      navigated = true;
+    };
+    this.contents.on('did-start-navigation', navigation);
+    try {
+      let point: { x: number; y: number };
+      for (;;) {
+        remaining();
+        point = await this.pointerPoint(scope, objectId);
+        await this.call(scope, guard, 'function(){this.reset();}');
+        // A trusted hover proves that Chromium has routed input into the target
+        // frame after scrolling. Unlike rAF, this works in hidden native views.
+        // Only moves repeat; a press/release is never retried.
+        await this.send('Input.dispatchMouseEvent', { ...point, type: 'mouseMoved' });
+        const state = await this.call(scope, guard, 'function(){return this.read();}');
+        if (state.hovered) {
+          const current = await this.pointerPoint(scope, objectId);
+          if (Math.abs(current.x - point.x) < 0.5 && Math.abs(current.y - point.y) < 0.5) break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, Math.min(20, remaining())));
+      }
+      remaining();
+      const input = { ...point, button: 'left', clickCount: 1 };
+      await this.send('Input.dispatchMouseEvent', { ...input, type: 'mousePressed' });
+      await this.send('Input.dispatchMouseEvent', { ...input, type: 'mouseReleased' });
+      let state;
+      try {
+        state = await this.call(scope, guard, 'function(){return this.read();}');
+      } catch (error) {
+        if (!navigated) throw error;
+      }
+      if (state && (state.blocked || !state.pressed))
+        throw new Error('点击期间目标发生变化，未确认点击结果');
+    } finally {
+      this.contents.removeListener('did-start-navigation', navigation);
+      await this.call(scope, guard, 'function(){this.dispose();}').catch(() => {});
+      await this.send('Runtime.releaseObject', { objectId: guard }, scope.session).catch(() => {});
+    }
+  }
+
   async perform(command: BrowserCommand): Promise<any> {
     validateFormCommand(command);
     const path = framePathOf(command),
@@ -361,11 +485,92 @@ export class EmbeddedPage {
       );
     }
   }
-  async inspectTarget(selector: string, path: string[], highlight = true): Promise<ElementTarget> {
-    const scope = await this.scope(path, commandBudget(3000));
+  private async revealTarget(scope: Scope, element: string) {
+    const root = scope.ancestors[0]?.scope ?? scope;
+    const viewport = await this.evaluate(
+      root,
+      '({width:visualViewport.width,height:visualViewport.height})',
+    );
+    const region = await this.call(
+      scope,
+      element,
+      `function(width, height) {
+        const box=this.getBoundingClientRect();
+        let content=box;
+        if(this.matches('h1,h2,h3,h4,h5,h6,[role="heading"]')) {
+          const range=document.createRange(); range.selectNodeContents(this);
+          const text=range.getBoundingClientRect();
+          if(text.width && text.height) content=text;
+        }
+        return {
+          x:Math.max(0,content.x-box.x), y:Math.max(0,content.y-box.y),
+          width:Math.max(1,Math.min(content.width,width-4,innerWidth-4)),
+          height:Math.max(1,Math.min(content.height,height-4,innerHeight-4))
+        };
+      }`,
+      viewport.width,
+      viewport.height,
+    );
+    // A wide block's center can be blank at native text size. Ask Chromium to
+    // reveal the content region, including its visual viewport and frame chain.
+    await this.send(
+      'DOM.scrollIntoViewIfNeeded',
+      { objectId: element, rect: region },
+      scope.session,
+    );
+    const box = await this.call(
+      scope,
+      element,
+      `function(region) {
+        if(!this.isConnected) throw new Error('目标元素已离开页面');
+        const r=this.getBoundingClientRect();
+        return {x:r.x+region.x,y:r.y+region.y,width:region.width,height:region.height};
+      }`,
+      region,
+    );
+    const fits = (bounds: { x: number; y: number; width: number; height: number }) =>
+      box.x >= bounds.x - 2 &&
+      box.y >= bounds.y - 2 &&
+      box.x + box.width <= bounds.x + bounds.width + 2 &&
+      box.y + box.height <= bounds.y + bounds.height + 2;
+    for (const ancestor of [...scope.ancestors].reverse()) {
+      const frame = await this.evaluate(
+        ancestor.scope,
+        `(() => {
+          const el=(${query})(${JSON.stringify(ancestor.selector)});
+          if(!el) throw new Error('框架已离开页面');
+          const r=el.getBoundingClientRect();
+          return {x:r.x+el.clientLeft,y:r.y+el.clientTop,width:el.clientWidth,height:el.clientHeight};
+        })()`,
+      );
+      if (!fits({ x: 0, y: 0, width: frame.width, height: frame.height }))
+        throw new Error('目标尚未完整进入框架可见区域，请重新聚焦');
+      box.x += frame.x;
+      box.y += frame.y;
+    }
+    const visible = await this.evaluate(
+      root,
+      '({x:visualViewport.offsetLeft,y:visualViewport.offsetTop,width:visualViewport.width,height:visualViewport.height})',
+    );
+    if (!fits(visible)) throw new Error('目标尚未进入原字号可见区域，请重新聚焦');
+  }
+  async inspectTarget(
+    selector: string,
+    path: string[],
+    highlight = true,
+    expected?: PointIdentity,
+    reveal = false,
+  ): Promise<ElementTarget> {
+    const scope = await this.scope(path, commandBudget(3000), !expected);
     const element = await this.element(scope, selector, commandBudget(3000));
     try {
-      await this.visible(scope, element, commandBudget(3000));
+      if (expected) {
+        const { node } = await this.send('DOM.describeNode', { objectId: element }, scope.session);
+        if (node.backendNodeId !== expected.backendNodeId || scope.session !== expected.session)
+          throw new Error('目标在选取期间已被替换，请重新选取');
+      }
+      await this.visible(scope, element, commandBudget(3000), false, !expected);
+      if (reveal) await this.revealTarget(scope, element);
       const target = await this.call(scope, element, describeElement.toString(), false);
       if (highlight) {
         await this.send('DOM.enable', {}, scope.session);

@@ -1,0 +1,117 @@
+.task-execution-steps input {
+  width: 100%;
+  min-width: 0;
+}
+.task-execution-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.task-execution-actions button {
+  min-height: 40px;
+}
+.task-execution-actions button[aria-pressed='true'] {
+  color: var(--fa-action-primary);
+  border-color: var(--fa-action-primary);
+  background: var(--fa-action-subtle);
+}
+.task-execution-steps > ol {
+  max-height: 480px;
+  overflow: auto;
+  padding: 2px;
+}
+.task-execution-steps > ol > li {
+  flex-shrink: 0;
+  scroll-margin-block: 8px;
+}
+.task-execution-steps > ol > li:focus {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: -2px;
+}
+.task-execution-steps small {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.task-execution-empty {
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+}
+
+.task-execution-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.task-execution-filters[hidden] {
+  display: none;
+}
+.task-execution-filter-toggle {
+  align-self: flex-start;
+}
+
+.task-execution-steps.is-compact > ol {
+  padding: 0;
+  max-height: 520px;
+  margin-right: -2px;
+}
+.task-execution-steps.is-compact > ol > li {
+  min-height: 88px;
+}
+.task-execution-steps.is-compact > ol > li > div {
+  flex: 1;
+}
+.task-execution-steps.is-compact .task-execution-row-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+.task-execution-steps.is-compact strong {
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 28px;
+}
+.task-execution-steps.is-compact .task-run-index {
+  flex: 0 0 28px;
+  line-height: 28px;
+}
+.task-execution-steps.is-compact .task-execution-summary {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.task-execution-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task-execution-steps.is-compact > ol > li[aria-current] {
+  outline-offset: -1px;
+}
+
+.task-execution-record-toggle {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.task-execution-record-toggle:hover {
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.task-execution-record-toggle[aria-expanded='true'] {
+  color: var(--fa-action-primary);
+}
+.task-execution-steps .run-step-details {
+  margin-top: 16px;
+}

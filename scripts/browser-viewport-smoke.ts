@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { _electron as electron } from 'playwright-core';
+import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -48,7 +48,7 @@ try {
           id: view.webContents.id,
           ...(await view.webContents.executeJavaScript(`({
           width:innerWidth, height:innerHeight, desktop:matchMedia('(min-width: 1600px)').matches,
-          origin:performance.timeOrigin, value:document.querySelector('#full-name')?.value
+          origin:performance.timeOrigin, value:document.querySelector('#fullName')?.value
         })`)),
         };
       });
@@ -93,16 +93,16 @@ try {
       wc.sendInputEvent({ type: 'mouseDown', ...input });
       wc.sendInputEvent({ type: 'mouseUp', ...input });
     }, selector);
-  await click('#full-name');
-  await wait(async () => assert.equal(await site('document.activeElement.id'), 'full-name'));
+  await click('#fullName');
+  await wait(async () => assert.equal(await site('document.activeElement.id'), 'fullName'));
   await app.evaluate(async ({ BrowserWindow }) => {
     await (BrowserWindow.getAllWindows()[0].contentView.children[0] as any).webContents.insertText(
       '桌面宽度测试',
     );
   });
-  await click('#channel-email');
+  await click('#option-a');
   await wait(async () =>
-    assert.equal(await site("document.querySelector('#channel-email').checked"), true),
+    assert.equal(await site("document.querySelector('#option-a').checked"), true),
   );
   const retained = await viewport('native-input');
   const preserve = async (name: string) => {
@@ -138,8 +138,8 @@ try {
     await preserve(`${width}x${height}-closed`);
     await page.getByRole('button', { name: '打开网页面板', exact: true }).click();
     await preserve(`${width}x${height}-reopened`);
-    await click('#full-name');
-    await wait(async () => assert.equal(await site('document.activeElement.id'), 'full-name'));
+    await click('#fullName');
+    await wait(async () => assert.equal(await site('document.activeElement.id'), 'fullName'));
   }
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].minimize());
   await wait(async () =>
@@ -162,8 +162,8 @@ try {
   const navigated = await viewport('second-navigation');
   assert.notEqual(navigated.origin, retained.origin);
   assert.equal(navigated.value, '');
-  await click('#full-name');
-  await wait(async () => assert.equal(await site('document.activeElement.id'), 'full-name'));
+  await click('#fullName');
+  await wait(async () => assert.equal(await site('document.activeElement.id'), 'fullName'));
   await mkdir('test-results', { recursive: true });
   const screenshot = await app.evaluate(async ({ BrowserWindow }) => {
     const wc = (BrowserWindow.getAllWindows()[0].contentView.children[0] as any).webContents;

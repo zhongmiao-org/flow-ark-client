@@ -1,0 +1,308 @@
+/* Figma 2:973 and 2:1083; shared tokens and field components. */
+.template-instance-host [hidden] {
+  display: none !important;
+}
+.template-instance-host .topbar .context-back > span {
+  display: block;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.template-instance-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 728fr) minmax(0, 400fr);
+  gap: 24px;
+}
+.template-instance-columns > .ai-task-card {
+  min-height: 652px;
+  gap: 16px;
+}
+.template-instance-columns .template-instance-form {
+  padding: 28px;
+}
+.template-instance-columns .template-instance-guide {
+  padding: 24px;
+}
+.template-instance-form > .template-entry-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.template-instance-form h2,
+.template-instance-guide h2 {
+  font-size: 18px;
+  line-height: 28px;
+}
+.template-instance-form h3,
+.template-instance-guide h3 {
+  font-size: 16px;
+  line-height: 24px;
+}
+.template-instance-columns p {
+  font-size: 13px;
+  line-height: 22px;
+  color: var(--fa-text-secondary);
+  margin: 0;
+}
+.template-instance-columns p.ai-task-note {
+  color: var(--fa-action-primary);
+}
+.template-instance-guide > button {
+  width: 100%;
+}
+.template-instance-form .template-field input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  align-self: flex-start;
+}
+.template-shared-configuration > .template-entry-fields,
+.template-shared-configuration .template-fieldset {
+  gap: 32px;
+}
+.template-shared-configuration .template-field {
+  font-size: 13px;
+  line-height: 20px;
+}
+.template-shared-configuration .template-field > input:not([type='checkbox']) {
+  line-height: 20px;
+}
+.template-entry-fields .template-boolean-field {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+.template-entry-fields .template-boolean-field > input[type='checkbox'] {
+  grid-column: 1;
+  grid-row: 1;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  align-self: center;
+}
+.template-entry-fields .template-boolean-field > span,
+.template-entry-fields .template-boolean-field > small {
+  grid-column: 2;
+}
+.template-shared-configuration > .ai-task-note {
+  padding: 18px 16px;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+}
+.template-configuration-error {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--fa-status-error-bg);
+  color: var(--fa-status-error);
+  font-size: 13px;
+  line-height: 22px;
+}
+.template-configuration-error p {
+  color: inherit;
+}
+.template-source-error {
+  margin-bottom: 24px;
+}
+.template-resource-fields {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.template-resource {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.template-resource > button {
+  align-self: flex-start;
+}
+.template-resource-file {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px;
+}
+.template-resource-file > .ai-settings-field {
+  display: contents;
+}
+.template-resource-file > .ai-settings-field > span {
+  grid-column: 1 / -1;
+}
+.template-resource-file-actions {
+  display: flex;
+  gap: 8px;
+}
+.template-resource-file-actions > button {
+  align-self: stretch;
+  white-space: nowrap;
+}
+.template-resource-file > .template-resource-cleared {
+  grid-column: 1 / -1;
+}
+.template-resources-columns .template-resource-fields {
+  gap: 20px;
+}
+.template-resources-columns .ai-settings-field {
+  gap: 4px;
+}
+.template-resources-columns .template-resource input,
+.template-resources-columns .template-resource select,
+.template-resources-columns .template-action-grant select {
+  padding: 5px 6px;
+  line-height: 20px;
+}
+.template-resources-columns .template-resource-file-actions > button {
+  min-height: 32px;
+  padding: 5px 12px;
+  line-height: 20px;
+}
+.template-resource-actions > button:last-child {
+  min-width: 120px;
+}
+.template-resource input,
+.template-resource select,
+.template-action-grant select {
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  font-size: 13px;
+  color: var(--fa-text-primary);
+  background: var(--fa-bg-canvas);
+}
+.template-action-grant {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.template-action-grant strong {
+  font-size: 13px;
+}
+.template-grant-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.template-grant-options > button {
+  flex: 1;
+}
+.template-entry-check {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 8px;
+}
+.template-other-instances {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.template-source-details {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 12px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 22px;
+}
+.template-source-details dt {
+  color: var(--fa-text-secondary);
+}
+.template-source-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+@container (max-width: 1000px) {
+  .template-instance-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .template-instance-columns > .ai-task-card {
+    min-height: 0;
+  }
+}
+
+.template-instance-leave {
+  min-height: 320px;
+}
+.template-instance-leave h2 {
+  font-size: 28px;
+  line-height: 40px;
+}
+.template-instance-leave .editor-leave-status::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: middle;
+}
+.template-instance-leave .editor-leave-discard {
+  border-color: transparent;
+  background: var(--fa-status-error-bg);
+}
+
+.template-version-adoption {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  margin-top: 8px;
+  padding-top: 24px;
+  border-top: 1px solid var(--fa-border-default);
+}
+.template-version-adoption > h3 {
+  font-size: 18px;
+  line-height: 28px;
+}
+.template-version-adoption > label,
+.template-version-summary {
+  width: 100%;
+}
+.template-version-adoption > button {
+  width: min(230px, 100%);
+  min-height: 40px;
+}
+.template-version-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--fa-bg-canvas);
+  font-size: 13px;
+  line-height: 22px;
+}
+
+.template-adoption-result {
+  margin-bottom: 24px;
+  padding: 24px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-surface);
+}
+.template-adoption-result h2 {
+  margin: 16px 0 12px;
+  font-size: 18px;
+  line-height: 28px;
+  overflow-wrap: anywhere;
+}
+.template-adoption-result h2:focus {
+  outline: none;
+}
+.template-adoption-result p {
+  margin: 8px 0;
+  color: var(--fa-text-secondary);
+  font-size: 13px;
+  line-height: 22px;
+}

@@ -1,0 +1,52 @@
+/* Figma taskeditnext 27:13212. */
+.ai-task-columns.task-modification {
+  grid-template-columns: minmax(320px, 440px) minmax(0, 1fr);
+}
+.ai-task-columns.task-modification > .ai-task-card {
+  min-height: 720px;
+}
+.task-modification > .ai-task-card > label {
+  margin-bottom: -8px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.task-modification h2 {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.ai-task-page .task-modification textarea {
+  min-height: 132px;
+  background: var(--fa-bg-canvas);
+}
+.task-modification .ai-task-step > span {
+  gap: 4px;
+}
+.task-modification .ai-task-note {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+}
+.task-modification > .ai-task-card > button {
+  align-self: flex-start;
+  min-width: 200px;
+}
+.task-modification-review {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.task-modification-review:focus {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 6px;
+}
+@container (max-width: 1000px) {
+  .ai-task-columns.task-modification {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ai-task-columns.task-modification > .ai-task-card {
+    min-height: auto;
+  }
+}

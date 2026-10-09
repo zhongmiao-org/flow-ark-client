@@ -17,7 +17,7 @@ const click = async () =>
   h.app.evaluate(async () => {
     const wc = (globalThis as any).embeddedFixture.resource.view.webContents;
     let point = await wc.executeJavaScript(
-      `(()=>{const e=document.querySelector('#full-name'); e.scrollIntoView({block:'center'}); const r=e.getBoundingClientRect(); return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()`,
+      `(()=>{const e=document.querySelector('#fullName'); e.scrollIntoView({block:'center'}); const r=e.getBoundingClientRect(); return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()`,
     );
     const scale = (globalThis as any).embeddedFixture.resource.view.getBounds().width / 1920;
     point = { x: Math.round(point.x * scale), y: Math.round(point.y * scale) };
@@ -83,12 +83,12 @@ try {
   );
   assert.equal(
     (await h.system('browser.embedded.pick.status', { requestId: 'after-close' })).target.selector,
-    '#full-name',
+    '#fullName',
   );
   assert.equal(lab.state.attempts, 0);
   evidence.checks.push('close-during-selection-and-reopen');
   // A successful validation schedules a later highlight cleanup. Close before it fires.
-  await h.system('browser.embedded.pick.validate', { selector: '#full-name', framePath: [] });
+  await h.system('browser.embedded.pick.validate', { selector: '#fullName', framePath: [] });
   await h.close();
   await new Promise((resolve) => setTimeout(resolve, 1700));
   assert.deepEqual(await h.app.evaluate(() => (globalThis as any).lifecycleErrors), []);
@@ -167,10 +167,10 @@ try {
       );
       const selected = await h.system('browser.embedded.pick.status', { requestId: recovered });
       assert.equal(selected.phase, 'selected', JSON.stringify(selected));
-      assert.equal(selected.target.selector, '#full-name');
+      assert.equal(selected.target.selector, '#fullName');
       await h.perform({ operation: 'fill', selector: selected.target.selector, value: recovered });
       assert.equal(
-        await h.perform({ operation: 'inputValue', selector: '#full-name', value: null }),
+        await h.perform({ operation: 'inputValue', selector: '#fullName', value: null }),
         recovered,
       );
       const paint = await h.app.evaluate(async () => {

@@ -1,0 +1,69 @@
+.run-review-tool {
+  border-top: 1px solid var(--fa-border-default);
+  padding-top: 12px;
+}
+.run-review-tool > summary {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.run-review-tool > summary small {
+  display: block;
+  margin: 4px 0 0 18px;
+  font-weight: 400;
+  color: var(--fa-text-secondary);
+}
+.run-review-tool > summary .run-review-error {
+  color: var(--fa-status-error);
+}
+.run-review-tool-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 16px;
+  min-width: 0;
+}
+.run-review-tool-body h3 {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+.run-review-tool-facts {
+  margin: 0;
+}
+.run-review-tool-facts > div {
+  display: grid;
+  grid-template-columns: minmax(80px, 1fr) minmax(0, 3fr);
+  gap: 12px;
+  padding: 8px 0;
+}
+.run-review-tool-facts dt {
+  color: var(--fa-text-secondary);
+}
+.run-review-tool-facts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.run-review-tool pre {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-bg-subtle);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 280px;
+  overflow: auto;
+  font: 12px/20px var(--fa-font-latin);
+}
+.run-review-tool code {
+  overflow-wrap: anywhere;
+  font: 12px/20px var(--fa-font-latin);
+}
+.run-review-tool li > code {
+  display: block;
+}
+.run-review-tool details > p,
+.run-review-tool details > pre {
+  margin-top: 12px;
+}

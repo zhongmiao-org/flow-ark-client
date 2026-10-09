@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { _electron as electron, type ElectronApplication, type Page } from 'playwright-core';
+import { desktopElectron as electron } from './desktop-session.mjs';
+import { type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';

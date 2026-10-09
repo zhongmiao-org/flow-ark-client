@@ -1,0 +1,22 @@
+{
+  "formatVersion": "1.0",
+  "id": "selected-text-example",
+  "name": "整理选中段落",
+  "description": "虚构示例；逻辑目标不是本机窗口授权",
+  "parameters": {},
+  "requiredCapabilities": [
+    "desktop-selection-v1"
+  ],
+  "steps": [
+    {
+      "id": "replace-selection",
+      "type": "desktop",
+      "version": 1,
+      "name": "替换选中段落并回读",
+      "target": "selected-text",
+      "operation": "replace-selection",
+      "text": "周三：复核资料\n周五：归档结果",
+      "timeoutMs": 15000
+    }
+  ]
+}

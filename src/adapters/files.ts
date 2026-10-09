@@ -9,6 +9,7 @@ import {
   rename,
   rm,
   access,
+  link,
 } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { resolve, relative, dirname, join, basename, sep } from 'node:path';
@@ -16,6 +17,9 @@ import { randomUUID } from 'node:crypto';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import type { Bindings } from '../shared/types';
+import { mappedRows, validateMappedFilename } from '../shared/excel-mapping';
+import { validateCreatedName, validateCreatedText } from '../shared/file-create';
+import { createText } from './create-text';
 export async function scopedPath(root: string, name: string, writing = false) {
   if (!root) throw new Error('文件目录尚未绑定');
   const base = await realpath(root);
@@ -45,13 +49,18 @@ export async function uploadPath(root: string, name: string) {
   await access(path, constants.R_OK);
   return path;
 }
-async function atomicWrite(path: string, write: (temporary: string) => Promise<unknown>) {
+async function atomicWrite(
+  path: string,
+  write: (temporary: string) => Promise<unknown>,
+  createOnly = false,
+) {
   const temporary = join(dirname(path), '.flowark-' + randomUUID() + '.tmp');
   const file = await open(temporary, 'wx', 0o600);
   await file.close();
   try {
     await write(temporary);
-    await rename(temporary, path);
+    if (createOnly) await link(temporary, path);
+    else await rename(temporary, path);
   } finally {
     await rm(temporary, { force: true });
   }
@@ -118,7 +127,29 @@ export async function fileOperation(
   n: any,
   bindings: Bindings,
   artifact: (path: string) => Promise<any>,
+  signal?: AbortSignal,
 ) {
+  if (n.type === 'file' && n.operation === 'create') {
+    validateCreatedName(n.name);
+    validateCreatedText(n.content);
+    if (n.version !== 3 && (n.version !== 4 || n.onConflict !== 'number'))
+      throw new Error('文本新建版本或同名策略无效');
+    const root = bindings.files[n.binding];
+    if (!root) throw new Error('文件目录尚未绑定');
+    const base = await realpath(root);
+    const target = scopedTarget(base, n.name);
+    const parent = await realpath(dirname(target));
+    if (parent !== base && !parent.startsWith(base + sep))
+      throw new Error('符号链接超出文件授权目录');
+    const path = await createText(
+      join(parent, basename(target)),
+      n.content,
+      n.version === 4,
+      signal,
+    );
+    return artifact(path);
+  }
+  if (n.type === 'excel' && n.operation === 'map') validateMappedFilename(n.name);
   if (n.version === 2) {
     assertRelativeName(n.name);
     if (n.operation === 'fill') assertRelativeName(n.templateName);
@@ -126,6 +157,18 @@ export async function fileOperation(
   const path = await scopedPath(bindings.files[n.binding], String(n.name), n.operation !== 'read');
   if (n.type === 'excel') {
     const workbook = new ExcelJS.Workbook();
+    if (n.operation === 'map') {
+      const rows = mappedRows(n, n.rows);
+      workbook.addWorksheet(n.sheet).addRows(rows);
+      try {
+        await atomicWrite(path, (temporary) => workbook.xlsx.writeFile(temporary), true);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'EEXIST')
+          throw new Error('输出文件已存在，请更换文件名；原文件未覆盖');
+        throw error;
+      }
+      return artifact(path);
+    }
     if (n.operation === 'read') {
       await workbook.xlsx.readFile(path);
       const sheet = workbook.worksheets[0];

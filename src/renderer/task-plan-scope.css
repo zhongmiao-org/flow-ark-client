@@ -1,0 +1,47 @@
+.task-plan-scope {
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-action-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.task-plan-scope h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.task-plan-scope p {
+  font-size: 13px;
+  color: var(--fa-text-secondary);
+}
+.task-plan-scope summary {
+  color: var(--fa-action-primary);
+  cursor: pointer;
+}
+.task-plan-scope-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  max-height: 320px;
+  overflow: auto;
+  padding: 2px;
+}
+.task-plan-scope-list button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 8px;
+  padding: 12px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.task-plan-scope-list span {
+  color: var(--fa-text-secondary);
+}
+.task-plan-scope-list small {
+  color: var(--fa-action-primary);
+}

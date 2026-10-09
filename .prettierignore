@@ -4,3 +4,5 @@ node_modules
 src/shared/contracts.generated.ts
 pnpm-lock.yaml
 contracts
+src/shared/node-schema.generated.js
+src/shared/node-schema.generated.d.ts

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { _electron as electron } from 'playwright-core';
+import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
 import { mkdtemp, mkdir, readFile, writeFile, access } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -16,9 +16,21 @@ const launch = () =>
     timeout: 30000,
   });
 let app = await launch();
+const testWindow = async () => {
+  const page = await app.firstWindow();
+  await app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows()[0].setTitle('FlowArk · 运行记录隔离测试（自动退出）'),
+  );
+  await page.waitForFunction(() => !!document.querySelector('.window-titlebar'));
+  await page.evaluate(() => {
+    document.querySelector('.window-titlebar')!.textContent =
+      'FlowArk · 运行记录隔离测试（自动退出）';
+  });
+  return page;
+};
 const evidence: any = { passed: false, data, checks: [] };
 try {
-  let page = await app.firstWindow();
+  let page = await testWindow();
   await page.waitForFunction(() => !!(window as any).flowark);
   const call = (method: string, args: any = {}): Promise<any> =>
     page.evaluate(({ method, args }) => (window as any).flowark.request(method, args), {
@@ -26,6 +38,14 @@ try {
       args,
     });
   const button = (name: string) => page.getByRole('button', { name, exact: true });
+  const back = () => page.getByRole('button', { name: /^← 返回记录第 \d+ 页$/ });
+  const search = async (query: string, state?: string, source?: string) => {
+    await button('触发来源筛选').click();
+    await page.getByLabel('搜索运行记录').fill(query);
+    if (state !== undefined) await page.getByLabel('运行状态筛选').selectOption(state);
+    if (source !== undefined) await page.getByLabel('运行来源筛选').selectOption(source);
+    await button('应用筛选').click();
+  };
   const wait = async (predicate: () => Promise<boolean>) => {
     const end = Date.now() + 30000;
     while (!(await predicate())) {
@@ -89,7 +109,7 @@ try {
     store.close();
   }
   app = await launch();
-  page = await app.firstWindow();
+  page = await testWindow();
   await page.waitForFunction(() => !!(window as any).flowark);
   await page
     .locator('.flow-card')
@@ -98,8 +118,29 @@ try {
     .waitFor();
   await button('运行记录').click();
   const table = () => page.locator('.run-history tbody tr');
-  await wait(async () => (await table().count()) === 50);
+  await page.getByLabel('运行时间范围').selectOption('all');
+  await wait(async () => (await table().count()) === 6);
+  await mkdir('test-results/figma', { recursive: true });
+  for (const [width, height] of [
+    [1440, 960],
+    [1920, 1080],
+    [1040, 700],
+  ]) {
+    await app.evaluate(
+      ({ BrowserWindow }, size) => BrowserWindow.getAllWindows()[0].setSize(size[0], size[1]),
+      [width, height],
+    );
+    await page.waitForFunction((w) => innerWidth === w, width);
+    assert.equal(
+      await page.locator('.run-history').evaluate((e) => e.scrollWidth > e.clientWidth + 1),
+      false,
+    );
+    await page.screenshot({ path: `test-results/figma/runs-${width}.png`, scale: 'css' });
+  }
+  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1440, 960));
+  await button('触发来源筛选').click();
   await page.getByLabel('每页运行条数').selectOption('100');
+  await button('应用筛选').click();
   await wait(async () => (await table().count()) === 100);
   const ids = () =>
     table()
@@ -108,7 +149,7 @@ try {
   const firstNames = await ids();
   assert.equal(firstNames.length, 100);
   await button('下一页').click();
-  await page.getByText('第 2 页', { exact: true }).waitFor();
+  await page.locator('.history-pagination').getByText('第 2 页', { exact: true }).waitFor();
   await wait(async () => (await ids())[0] === 'fixture-0156');
   const secondNames = await ids();
   assert.equal(new Set([...firstNames, ...secondNames]).size, 200);
@@ -118,16 +159,49 @@ try {
   await page.getByText('新增 1 条记录，可查看最新', { exact: true }).waitFor();
   assert.deepEqual(await ids(), secondNames);
   await button('下一页').click();
-  await page.getByText('第 3 页', { exact: true }).waitFor();
+  await page.locator('.history-pagination').getByText('第 3 页', { exact: true }).waitFor();
   await wait(async () => (await table().count()) === 58);
   assert.equal(await button('下一页').isDisabled(), true);
   const row = page.getByRole('row').filter({ hasText: old.id.slice(0, 8) });
   await row.getByRole('button', { name: '查看', exact: true }).click();
-  await button('全部记录').waitFor();
+  await back().waitFor();
+  await page.screenshot({ path: 'test-results/figma/run-detail.png', scale: 'css' });
   assert.equal((await call('run.detail', { id: old.id })).artifacts[0].integrity, 'verified');
-  await button('全部记录').click();
-  await page.getByText('第 3 页', { exact: true }).waitFor();
+  await page.getByRole('link', { name: /^第 \d+ 页$/ }).click();
+  await page.locator('.history-pagination').getByText('第 3 页', { exact: true }).waitFor();
+  await wait(
+    async () =>
+      await row
+        .getByRole('button', { name: '查看', exact: true })
+        .evaluate((e) => document.activeElement === e),
+  );
   await row.getByRole('button', { name: '查看', exact: true }).click();
+  const currentTab = page.getByRole('tab', { name: '当前步骤', exact: true });
+  const outputTab = page.getByRole('tab', { name: '输出与产物', exact: true });
+  const logsTab = page.getByRole('tab', { name: '运行日志', exact: true });
+  await currentTab.focus();
+  await currentTab.press('ArrowRight');
+  assert.equal(await outputTab.getAttribute('aria-selected'), 'true');
+  assert.equal(await outputTab.evaluate((e) => document.activeElement === e), true);
+  await outputTab.press('End');
+  assert.equal(await logsTab.getAttribute('aria-selected'), 'true');
+  await logsTab.press('Home');
+  assert.equal(await currentTab.getAttribute('aria-selected'), 'true');
+  await currentTab.press('ArrowLeft');
+  assert.equal(await logsTab.getAttribute('aria-selected'), 'true');
+  await logsTab.press('ArrowLeft');
+  assert.equal(await outputTab.getAttribute('aria-selected'), 'true');
+  evidence.checks.push('detail-tabs-keyboard-arrows-home-end-and-focus');
+  await page.screenshot({ path: 'test-results/figma/run-output.png', scale: 'css' });
+  await button('← 返回运行详情').click();
+  await page.getByRole('tab', { name: '运行日志', exact: true }).click();
+  assert.ok(
+    await page
+      .getByRole('tabpanel', { name: '运行日志' })
+      .getByText('node-end', { exact: true })
+      .count(),
+  );
+  await page.getByRole('tab', { name: '输出与产物', exact: true }).click();
   await button('预览产物清理').click();
   await page.getByRole('form', { name: '产物清理预览' }).waitFor();
   await page.getByLabel('已核对结果并保存需要保留的文件', { exact: true }).check();
@@ -135,18 +209,15 @@ try {
   await page.getByRole('status').filter({ hasText: '已清理' }).waitFor();
   assert.equal(await readFile(join(data, 'result.txt'), 'utf8'), 'historical artifact');
   await access((await call('run.detail', { id: newer.id })).artifacts[0].path);
-  await button('全部记录').click();
-  await page.getByText('第 3 页', { exact: true }).waitFor();
+  await page.getByRole('link', { name: /^第 \d+ 页$/ }).click();
+  await page.locator('.history-pagination').getByText('第 3 页', { exact: true }).waitFor();
   evidence.checks.push(
     'older-than-200-page-and-detail',
     'new-run-keeps-old-page-boundary',
     'detail-back-keeps-page',
     'old-artifact-clear-keeps-new-run-and-original',
   );
-  await page.getByLabel('搜索运行记录').fill('  ALPHA %_[x]  ');
-  await button('查询').click();
-  await page.getByLabel('运行状态筛选').selectOption('SUCCEEDED');
-  await page.getByLabel('运行来源筛选').selectOption('schedule');
+  await search('  ALPHA %_[x]  ', 'SUCCEEDED', 'schedule');
   await wait(async () => (await table().count()) === 9);
   const expected = Array.from({ length: 257 }, (_, i) => 256 - i)
     .filter((i) => i % 30 === 0)
@@ -158,17 +229,15 @@ try {
     expected,
   );
   await table().first().getByRole('button', { name: '查看', exact: true }).click();
-  await button('全部记录').click();
-  assert.equal(await page.getByLabel('搜索运行记录').inputValue(), '  ALPHA %_[x]  ');
+  await page.getByRole('link', { name: /^第 \d+ 页$/ }).click();
+  await button('触发来源筛选').click();
+  assert.equal(await page.getByLabel('搜索运行记录').inputValue(), 'ALPHA %_[x]');
+  await button('取消').click();
   await wait(async () => (await table().count()) === 9);
-  await page.getByLabel('搜索运行记录').fill('不存在的虚构记录');
-  await button('查询').click();
+  await search('不存在的虚构记录');
   await page.getByText('没有符合筛选条件的运行记录。', { exact: true }).waitFor();
   assert.equal(await button('下一页').isDisabled(), true);
-  await page.getByLabel('搜索运行记录').fill('');
-  await button('查询').click();
-  await page.getByLabel('运行状态筛选').selectOption('');
-  await page.getByLabel('运行来源筛选').selectOption('');
+  await search('', '', '');
   await button('查看最新').click();
   await wait(
     async () => (await table().locator('small').first().getAttribute('title')) === newer.id,
@@ -197,7 +266,7 @@ try {
   await page.screenshot({ path: 'test-results/run-history-small.png' });
   const native = await app.evaluate(async ({ BrowserWindow }) =>
     (BrowserWindow.getAllWindows()[0].contentView.children[0] as any).webContents.executeJavaScript(
-      '({ width: innerWidth, url: location.href, input: !!document.querySelector("#full-name") })',
+      '({ width: innerWidth, url: location.href, input: !!document.querySelector("#fullName") })',
     ),
   );
   assert.equal(native.width, 1920);
@@ -212,14 +281,15 @@ try {
   );
   await app.close();
   app = await launch();
-  page = await app.firstWindow();
+  page = await testWindow();
   await page.waitForFunction(() => !!(window as any).flowark);
   await button('运行记录').click();
-  await page.getByLabel('搜索运行记录').fill(old.id);
-  await button('查询').click();
+  await search(old.id);
   await wait(async () => (await table().count()) === 1);
   await table().getByRole('button', { name: '查看', exact: true }).click();
+  await page.getByRole('tab', { name: '输出与产物', exact: true }).click();
   await page.getByRole('status').filter({ hasText: '已清理' }).waitFor();
+  await page.getByRole('tab', { name: '当前步骤', exact: true }).click();
   assert.equal((await call('run.detail', { id: old.id })).artifacts[0].integrity, 'cleared');
   evidence.checks.push('reopen-and-find-old-run-with-cleanup-status');
   // Delay only replies in this isolated app. Production handlers and persisted data remain real.
@@ -276,27 +346,24 @@ try {
   };
   await delay('run.detail', old.id);
   await pending();
-  await button('全部记录').click();
-  await page.getByLabel('搜索运行记录').waitFor();
+  await page.getByRole('link', { name: /^第 \d+ 页$/ }).click();
+  await button('触发来源筛选').waitFor();
   await release();
-  assert.equal(await button('全部记录').count(), 0);
+  assert.equal(await back().count(), 0);
   await delay('run.list', 'delayed-query');
-  await page.getByLabel('搜索运行记录').fill('delayed-query');
-  await button('查询').click();
+  await search('delayed-query');
   await pending();
-  await page.getByLabel('搜索运行记录').fill(old.id);
-  await button('查询').click();
+  await search(old.id);
   await wait(async () => (await ids())[0] === old.id);
   await release();
   assert.deepEqual(await ids(), [old.id]);
   await delay('run.detail', old.id);
   await table().getByRole('button', { name: '查看', exact: true }).click();
   await pending();
-  await page.getByLabel('搜索运行记录').fill(newer.id);
-  await button('查询').click();
+  await search(newer.id);
   await wait(async () => (await ids())[0] === newer.id);
   await release();
-  assert.equal(await button('全部记录').count(), 0);
+  assert.equal(await back().count(), 0);
   assert.deepEqual(await ids(), [newer.id]);
   evidence.checks.push(
     'late-detail-poll-cannot-reopen',
@@ -307,7 +374,32 @@ try {
   evidence.old = old.id;
   evidence.newer = newer.id;
 } finally {
-  await app.close();
+  const ownedProcess = app.process();
+  const guard = setTimeout(() => ownedProcess.kill('SIGKILL'), 20000);
+  try {
+    // A failed UI assertion can leave the real test Run waiting for input.
+    // Cancel only this isolated app's tasks before requesting native quit.
+    await app.evaluate(() => (globalThis as any).__historyReply?.release?.());
+    const page = await app.firstWindow();
+    await page.evaluate(async () => {
+      const api = (window as any).flowark;
+      const boot = await api.request('bootstrap', {});
+      for (const run of boot.runs)
+        if (['QUEUED', 'RUNNING', 'PAUSED', 'WAITING_INPUT', 'CANCELLING'].includes(run.state))
+          await api.request('run.control', { id: run.id, action: 'cancel' });
+    });
+    await page.waitForFunction(
+      async () => !(await (window as any).flowark.request('bootstrap', {})).execution?.active,
+      undefined,
+      { timeout: 15000 },
+    );
+    await app.close();
+  } catch (error) {
+    evidence.cleanupError = String(error);
+    ownedProcess.kill('SIGKILL');
+  } finally {
+    clearTimeout(guard);
+  }
   await lab.close();
   await mkdir('test-results', { recursive: true });
   await writeFile('test-results/run-history.json', JSON.stringify(evidence, null, 2));

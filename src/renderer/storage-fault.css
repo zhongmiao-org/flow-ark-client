@@ -1,0 +1,164 @@
+.storage-fault-notice {
+  margin: 16px 32px;
+  border: 1px solid var(--fa-status-error);
+  border-radius: var(--fa-radius-16);
+  background: var(--fa-bg-surface);
+  overflow: hidden;
+  container-type: inline-size;
+}
+.storage-fault-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px;
+  background: var(--fa-status-error-bg);
+}
+.storage-fault-notice h2 {
+  margin: 8px 0;
+  font-size: 20px;
+}
+.storage-fault-notice h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+.storage-fault-notice p {
+  margin: 8px 0 16px;
+  line-height: 1.65;
+}
+.storage-fault-badge {
+  color: var(--fa-status-error);
+  font-size: 13px;
+  font-weight: 600;
+}
+.storage-fault-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.storage-fault-details {
+  padding: 24px;
+}
+.storage-fault-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 24px;
+  margin-bottom: 20px;
+}
+.storage-fault-columns > section {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+}
+.storage-fault-muted {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.storage-fault-notice :is(p, strong, code, li) {
+  overflow-wrap: anywhere;
+}
+.storage-fault-notice pre {
+  background: var(--fa-bg-subtle);
+  border-radius: var(--fa-radius-8);
+  padding: 16px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 180px;
+  overflow: auto;
+  margin: 0 0 24px;
+  font: inherit;
+  font-size: 13px;
+}
+.storage-fault-notice ol {
+  padding-left: 22px;
+  line-height: 1.8;
+}
+.storage-fault-runs {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+}
+.storage-fault-runs li,
+.storage-fault-run {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--fa-border-default);
+}
+.storage-fault-runs li > div {
+  display: grid;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.storage-fault-runs code,
+.storage-fault-run code {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.storage-fault-runs li span {
+  font-size: 13px;
+}
+.storage-fault-run {
+  flex-direction: column;
+}
+.storage-fault-runs button {
+  flex-shrink: 0;
+}
+@container (max-width: 1000px) {
+  .storage-fault-summary {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .storage-fault-columns {
+    grid-template-columns: 1fr;
+  }
+}
+@container (max-width: 500px) {
+  .storage-fault-summary,
+  .storage-fault-details {
+    padding: 16px;
+  }
+  .storage-fault-runs li {
+    flex-direction: column;
+  }
+}
+
+/* State catalog 2:4732 uses a surface card and a colored status marker. */
+.storage-fault-notice {
+  border-color: var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+}
+.storage-fault-summary {
+  background: var(--fa-bg-surface);
+}
+.storage-fault-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: var(--fa-radius-999);
+  background: var(--fa-status-error-bg);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 400;
+}
+.storage-fault-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.storage-fault-notice h2 {
+  margin: 16px 0 12px;
+  font-size: 18px;
+  line-height: 28px;
+}
+.storage-fault-actions button {
+  width: min(230px, 100%);
+  min-height: 40px;
+}

@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "content": [
+    {
+      "type": "text",
+      "text": "已返回示例记录"
+    }
+  ],
+  "structuredContent": {
+    "name": "示例记录"
+  },
+  "isError": false
+}

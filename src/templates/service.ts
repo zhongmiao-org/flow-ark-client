@@ -1,9 +1,11 @@
+import type { TemplateSource } from '../shared/template-source';
 import { join, dirname, resolve, relative } from 'node:path';
 import { readFile, writeFile, realpath, stat, mkdir } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { Store } from '../host/store';
 import { PackageLibrary, type InstalledPackage } from './archive';
 import {
+  canonical,
   jsonFile,
   materializeFlow,
   validateData,
@@ -12,10 +14,12 @@ import {
   type Entry,
 } from '../../contracts/package-format';
 import { schemaDefaults, validateConfigurationSchema } from '../shared/template-config';
-import { capabilities, validateFlow } from '../core/validate';
+import { capabilities, validateFlow, validateObject } from '../core/validate';
 import { generate } from '../ai/providers';
 import type { Bindings, FlowRecord, Run } from '../shared/types';
+import type { TemplateHumanReview } from '../shared/contracts.generated';
 import type { TemplateInstance } from './types';
+import { templateSaveSchema, type TemplateSave } from '../shared/ipc';
 export class Templates {
   readonly library: PackageLibrary;
   private mutations: Promise<unknown> = Promise.resolve();
@@ -89,7 +93,7 @@ export class Templates {
     const instance: TemplateInstance = {
       id: randomUUID(),
       packageKey: key,
-      name: m.name,
+      name: m.name.slice(0, 100),
       configuration,
       resources: {},
       grants: Object.fromEntries(m.actions.map((a) => [a.id, 'deny'])),
@@ -107,11 +111,15 @@ export class Templates {
     });
     return instance;
   }
-  private writeFlows(pkg: PackageData, instance: TemplateInstance) {
+  private writeFlows(
+    pkg: PackageData,
+    instance: TemplateInstance,
+    inputs: Record<string, unknown> = {},
+  ) {
     for (const entry of pkg.manifest.entries) {
       const flow = materializeFlow(pkg, entry.id);
       flow.id = instance.entryFlows[entry.id];
-      flow.name = instance.name + ' · ' + entry.name;
+      flow.name = (instance.name + ' · ' + entry.name).slice(0, 200);
       flow.sourceTemplate = {
         id: pkg.manifest.id,
         version: pkg.manifest.version,
@@ -147,73 +155,130 @@ export class Templates {
           values: structuredClone(instance.configuration),
         },
       };
+      const next = { ...(previous?.flow ?? flow), name: flow.name };
+      if (Object.hasOwn(inputs, entry.id)) {
+        next.parameters = structuredClone(inputs[entry.id]) as any;
+        validateFlow(next);
+      }
       this.store.put('flow', flow.id, {
         id: flow.id,
-        flow: previous?.flow ?? flow,
+        flow: next,
         bindings,
         updatedAt: new Date().toISOString(),
       });
     }
   }
-  async detail(id: string) {
+  // Read synchronously so the revision and returned values describe one Store state.
+  private snapshot(id: string) {
     const instance = this.store.get<TemplateInstance>('template-instance', id);
     if (!instance) throw new Error('实例不存在');
-    const pkg = await this.library.load(instance.packageKey);
+    const records = Object.fromEntries(
+      Object.entries(instance.entryFlows).map(([entryId, flowId]) => [
+        entryId,
+        this.store.get<FlowRecord>('flow', flowId) ?? null,
+      ]),
+    );
+    const revision = sha256(canonical({ instance, records }));
+    return { instance, records, revision };
+  }
+  assertSource(flowId: string, source: TemplateSource) {
+    const { instance, records, revision } = this.snapshot(source.instanceId);
+    if (revision !== source.revision) throw new Error('实例已变化，请返回原入口重新核对');
+    const record = records[source.entryId],
+      ref = record?.bindings.template;
+    if (
+      instance.entryFlows[source.entryId] !== flowId ||
+      record?.id !== flowId ||
+      ref?.instanceId !== instance.id ||
+      ref?.entryId !== source.entryId ||
+      ref?.packageKey !== instance.packageKey
+    )
+      throw new Error('原入口流程不存在或来源已变化，请返回原入口重新核对');
+  }
+  private describe(pkg: PackageData, snapshot: ReturnType<Templates['snapshot']>) {
+    const { instance, records, revision } = snapshot;
     return {
       instance,
+      revision,
       manifest: pkg.manifest,
       configurationSchema: jsonFile(pkg.files, pkg.manifest.configurationSchema),
       entries: pkg.manifest.entries.map((e) => ({
         ...e,
         input: jsonFile(pkg.files, e.inputSchema),
-        values: this.store.get<FlowRecord>('flow', instance.entryFlows[e.id])?.flow.parameters,
+        values: records[e.id]?.flow.parameters,
         unavailable: e.capabilities.filter((c) => !capabilities.includes(c)),
       })),
     };
   }
-  async input(id: string, entryId: string, value: any) {
-    const { instance } = await this.detail(id);
-    const pkg = await this.library.load(instance.packageKey);
-    const entry = pkg.manifest.entries.find((e) => e.id === entryId);
-    if (!entry) throw new Error('入口不存在');
-    validateData(jsonFile(pkg.files, entry.inputSchema), value);
-    const record = this.store.get<FlowRecord>('flow', instance.entryFlows[entryId])!;
-    record.flow.parameters = value;
-    validateFlow(record.flow);
-    this.store.put('flow', record.id, record);
-    return true;
+  async detail(id: string) {
+    const before = this.snapshot(id);
+    const pkg = await this.library.load(before.instance.packageKey);
+    const current = this.snapshot(id);
+    if (current.instance.packageKey !== before.instance.packageKey)
+      throw new Error('实例来源已变化，请重新读取');
+    return this.describe(pkg, current);
   }
-  async configure(
-    id: string,
-    configuration: any,
-    resources: TemplateInstance['resources'],
-    grants: TemplateInstance['grants'],
-  ) {
-    const { instance, manifest } = await this.detail(id),
-      pkg = await this.library.load(instance.packageKey);
-    validateData(jsonFile(pkg.files, manifest.configurationSchema), configuration);
-    for (const key of Object.keys(resources))
-      if (!manifest.resources.some((r) => r.id === key)) throw new Error('未知资源绑定');
-    for (const key of Object.keys(grants))
-      if (
-        !manifest.actions.some((a) => a.id === key) ||
-        !['deny', 'confirm', 'auto'].includes(grants[key])
-      )
-        throw new Error('未知动作或授权');
-    const next: TemplateInstance = {
-      ...instance,
-      configuration,
-      resources,
-      grants: {
-        ...Object.fromEntries(manifest.actions.map((a) => [a.id, 'deny' as const])),
-        ...grants,
-      },
-    };
-    this.store.tx(() => {
-      this.store.put('template-instance', id, next);
-      this.writeFlows(pkg, next);
+  save(request: TemplateSave) {
+    // Validate and copy at enqueue time, before another caller can alter the draft.
+    const args = structuredClone(templateSaveSchema.parse(request));
+    return this.exclusive(() => this.saveOne(args));
+  }
+  private async saveOne(args: TemplateSave) {
+    const before = this.snapshot(args.id);
+    if (before.revision !== args.revision) throw new Error('实例已变化，请重新读取后保存');
+    const pkg = await this.library.load(before.instance.packageKey),
+      manifest = pkg.manifest;
+    validateData(jsonFile(pkg.files, manifest.configurationSchema), args.configuration);
+    for (const [key, value] of Object.entries(args.resources)) {
+      const declaration = manifest.resources.find((r) => r.id === key);
+      if (!declaration) throw new Error('未知资源绑定');
+      const fields =
+        declaration.kind === 'ai'
+          ? ['provider', 'model']
+          : declaration.kind === 'browser'
+            ? ['browserId']
+            : ['path'];
+      if (Object.keys(value).some((field) => !fields.includes(field)))
+        throw new Error('资源绑定类型不符');
+    }
+    for (const key of Object.keys(args.grants))
+      if (!manifest.actions.some((a) => a.id === key)) throw new Error('未知动作或授权');
+    for (const [id, value] of Object.entries(args.inputs)) {
+      const entry = manifest.entries.find((e) => e.id === id);
+      if (!entry) throw new Error('入口不存在');
+      validateData(jsonFile(pkg.files, entry.inputSchema), value);
+    }
+    return this.store.tx(() => {
+      // Package loading is asynchronous; other editor writes can occur while it runs.
+      const current = this.snapshot(args.id);
+      if (current.revision !== args.revision) throw new Error('实例已变化，请重新读取后保存');
+      for (const entry of manifest.entries) {
+        const record = current.records[entry.id],
+          ref = record?.bindings.template;
+        if (
+          !record ||
+          !ref ||
+          ref.instanceId !== args.id ||
+          ref.entryId !== entry.id ||
+          ref.packageKey !== current.instance.packageKey ||
+          ref.digest !== manifest.contentDigest
+        )
+          throw new Error('原入口流程不存在或来源已变化，请重新读取');
+      }
+      const next: TemplateInstance = {
+        ...current.instance,
+        name: args.name,
+        configuration: args.configuration,
+        resources: args.resources,
+        grants: {
+          ...Object.fromEntries(manifest.actions.map((a) => [a.id, 'deny' as const])),
+          ...args.grants,
+        },
+      };
+      this.store.put('template-instance', args.id, next);
+      this.writeFlows(pkg, next, args.inputs);
+      return this.describe(pkg, this.snapshot(args.id));
     });
-    return next;
   }
   async context(record: FlowRecord) {
     const ref = record.bindings.template;
@@ -305,10 +370,20 @@ export class Templates {
     if (typeof request.title !== 'string' || request.title.length > 200)
       throw new Error('人工请求标题无效');
     const schema = request.schema ?? { type: 'boolean' };
+    const review =
+      request.review === undefined
+        ? undefined
+        : validateObject<TemplateHumanReview>('TemplateHumanReview', request.review);
     const item = this.store.attention(
       'template-input',
       request.title,
-      { runId, schema, description: request.description ?? '', answered: false },
+      {
+        runId,
+        schema,
+        description: request.description ?? '',
+        answered: false,
+        ...(review ? { review } : {}),
+      },
       runId + ':' + randomUUID(),
     );
     this.store.state(runId, 'WAITING_INPUT');
@@ -480,6 +555,7 @@ export class Templates {
       }
       case 'human':
         need('human');
+        if (args.request?.review !== undefined) need('human-review-v1');
         return this.human(runId, args.request, signal);
       case 'attention': {
         need('attention');
@@ -498,6 +574,10 @@ export class Templates {
       case 'effect.prepare': {
         need('effect');
         const q = args.request;
+        if (q.review !== undefined) {
+          need('human-review-v1');
+          validateObject<TemplateHumanReview>('TemplateHumanReview', q.review);
+        }
         if (!entry.actions.includes(q.action) || typeof q.key !== 'string' || !q.key)
           throw new Error('动作未声明或缺少去重键');
         const grant = record.bindings.grants?.[q.action];
@@ -511,6 +591,7 @@ export class Templates {
             {
               title: '确认：' + q.action,
               description: q.description ?? '',
+              ...(q.review !== undefined ? { review: q.review } : {}),
               schema: { type: 'boolean' },
             },
             signal,

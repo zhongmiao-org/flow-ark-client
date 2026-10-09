@@ -4,6 +4,8 @@ import type { Flow, Step } from '../shared/types';
 import { framePathOf, validateFormCommand } from './browser-command';
 import { declaredDependencies } from './script-dependencies';
 import { referenceIssues } from '../shared/flow-references';
+import { mappingPreview } from '../shared/excel-mapping';
+import { validateFileCreate } from '../shared/file-create';
 const ajv = new Ajv2020({ strict: false, allErrors: true });
 ajv.addSchema(schema);
 export function validateObject<T>(name: string, value: unknown): T {
@@ -15,16 +17,22 @@ export function validateObject<T>(name: string, value: unknown): T {
   return value as T;
 }
 export const capabilities = [
+  'desktop-selection-v1',
+  'mcp-tool-v1',
   'value',
   'assert',
   'http',
   'script',
   'file',
+  'file-create-v1',
+  'file-create-numbered-v1',
   'excel',
+  'excel-mapping-v1',
   'browser',
   'browser-frames-v1',
   'browser-forms-v1',
   'human',
+  'human-review-v1',
   'condition',
   'loop',
   'openai-codex',
@@ -46,6 +54,29 @@ export function validateFlow(value: unknown): Flow {
     for (const n of steps) {
       if (++count > 1000 || all.has(n.id)) throw new Error('节点数量过多或 ID 重复：' + n.id);
       all.add(n.id);
+      if (n.type === 'desktop') {
+        if (!flow.requiredCapabilities.includes('desktop-selection-v1'))
+          throw new Error('应用选区步骤需要声明 desktop-selection-v1 能力');
+        if (!n.text.trim() || n.text.length > 20000)
+          throw new Error('替换文字必须为 1 至 20000 个 UTF-16 单元的非空纯文本');
+      }
+      if (n.type === 'mcp') {
+        if (!flow.requiredCapabilities.includes('mcp-tool-v1'))
+          throw new Error('工具步骤需要声明 mcp-tool-v1 能力');
+        if (!n.arguments || typeof n.arguments !== 'object' || Array.isArray(n.arguments))
+          throw new Error('工具参数必须为对象或对象引用');
+      }
+      if (n.type === 'file' && n.operation === 'create') {
+        const capability = n.version === 4 ? 'file-create-numbered-v1' : 'file-create-v1';
+        if (!flow.requiredCapabilities.includes(capability))
+          throw new Error('新建文本文件需要声明 ' + capability + ' 能力');
+        validateFileCreate(n, flow.parameters);
+      }
+      if (n.type === 'excel' && n.operation === 'map') {
+        if (!flow.requiredCapabilities.includes('excel-mapping-v1'))
+          throw new Error('Excel 字段映射需要声明 excel-mapping-v1 能力');
+        mappingPreview(n, flow.parameters);
+      }
       if (n.type === 'browser') {
         framePathOf(n);
         validateFormCommand(n, true);

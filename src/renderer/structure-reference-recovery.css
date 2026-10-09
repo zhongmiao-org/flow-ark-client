@@ -1,0 +1,39 @@
+.structure-reference-recovery {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-surface);
+  min-width: 0;
+}
+.structure-reference-recovery h3,
+.structure-reference-recovery p {
+  margin: 0;
+}
+.structure-reference-recovery p {
+  color: var(--fa-text-secondary);
+  font-size: 13px;
+  line-height: 22px;
+}
+.structure-reference-recovery ul {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.structure-reference-recovery li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.structure-reference-recovery code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

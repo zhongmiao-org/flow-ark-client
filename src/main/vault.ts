@@ -1,9 +1,52 @@
 import { safeStorage } from 'electron';
-import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
-import { randomBytes } from 'node:crypto';
+import { readFile, writeFile, mkdir, rename, rm, readdir } from 'node:fs/promises';
+import { createHash, randomBytes } from 'node:crypto';
 import { join } from 'node:path';
+import { localCredentialId } from '../shared/local-credentials';
 export class Vault {
   constructor(private dir: string) {}
+  async readEntry(id: string) {
+    await this.available();
+    let encrypted: Buffer;
+    try {
+      encrypted = await readFile(this.path(id));
+    } catch (error: any) {
+      if (error.code === 'ENOENT') return null;
+      throw error;
+    }
+    return {
+      value: (await safeStorage.decryptStringAsync(encrypted)).result,
+      revision: createHash('sha256').update(encrypted).digest('hex'),
+    };
+  }
+  async removeProvider(id: string) {
+    if (!['deepseek', 'openai-codex'].includes(id)) throw new Error('AI 供应商无效');
+    await this.available();
+    await rm(this.path(id), { force: true });
+  }
+  async removeToolCredential(id: string) {
+    if (!/^mcp-[a-zA-Z0-9_-]{1,80}$/.test(id)) throw new Error('工具凭据 ID 无效');
+    await this.available();
+    await rm(this.path(id), { force: true });
+  }
+  async localIds() {
+    let names: string[];
+    try {
+      names = await readdir(this.dir);
+    } catch (error: any) {
+      if (error.code === 'ENOENT') return [];
+      throw error;
+    }
+    return names
+      .filter((name) => name.endsWith('.enc'))
+      .map((name) => name.slice(0, -4))
+      .filter((id) => localCredentialId.safeParse(id).success);
+  }
+  async removeLocalCredential(id: string) {
+    localCredentialId.parse(id);
+    await this.available();
+    await rm(this.path(id));
+  }
   private async available() {
     if (
       !(await safeStorage.isAsyncEncryptionAvailable()) ||
@@ -19,8 +62,10 @@ export class Vault {
   async set(id: string, value: string) {
     await this.available();
     const path = this.path(id);
-    await writeFile(path + '.tmp', await safeStorage.encryptStringAsync(value), { mode: 0o600 });
+    const encrypted = await safeStorage.encryptStringAsync(value);
+    await writeFile(path + '.tmp', encrypted, { mode: 0o600 });
     await rename(path + '.tmp', path);
+    return createHash('sha256').update(encrypted).digest('hex');
   }
   async get(id: string) {
     await this.available();
@@ -48,6 +93,6 @@ export class Vault {
         await readFile(this.path(id));
         found.push(id);
       } catch {}
-    return found;
+    return [...found, ...(await this.localIds())];
   }
 }

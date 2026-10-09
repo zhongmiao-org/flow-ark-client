@@ -1,0 +1,161 @@
+/* Figma 23:10659 / 23:10802 / 23:10940; AI request feedback 2:4629. */
+.ai-task-card.task-generation {
+  min-height: 500px;
+  padding: 31px;
+  gap: 16px;
+  align-items: flex-start;
+}
+.task-generation h2 {
+  font-size: 28px;
+  line-height: 40px;
+  font-weight: 700;
+}
+.task-generation h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+.ai-task-card.task-generation[data-generation-state='generating'] {
+  min-height: 550px;
+}
+.task-generation .task-generation-status::before {
+  content: none;
+}
+.task-generation-status img {
+  flex: 0 0 auto;
+}
+.ai-task-card.task-generation[data-generation-state='unsupported'] {
+  min-height: 520px;
+}
+.task-generation[data-generation-state='unsupported'] h2 {
+  max-height: 160px;
+  overflow: auto;
+  width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.task-generation .task-generation-limitations ul {
+  margin-top: 16px;
+  white-space: pre-wrap;
+}
+.task-generation-limitations li + li {
+  margin-top: 8px;
+}
+.task-generation-current,
+.task-generation-review {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.task-generation-current {
+  min-height: 116px;
+  padding: 15px;
+  gap: 8px;
+}
+.task-generation-current p,
+.task-generation-reason,
+.task-generation ul {
+  max-height: 240px;
+  overflow: auto;
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+.task-generation > p,
+.task-generation-current p,
+.task-generation small {
+  color: var(--fa-text-secondary);
+}
+.task-generation ul {
+  margin: 0;
+  padding-left: 24px;
+}
+.task-generation .ai-task-actions button {
+  min-width: 184px;
+}
+.task-generation[data-generation-state='generating'] .ai-task-actions button {
+  min-width: 144px;
+}
+.task-generation[data-generation-state='unsupported'] .ai-task-actions button.primary {
+  min-width: 208px;
+}
+.task-generation-review > button {
+  align-self: flex-start;
+}
+.task-generation-preserved {
+  font-size: 13px;
+}
+.task-generation-failure .task-generation-reason {
+  max-height: 88px;
+  white-space: pre-wrap;
+}
+.task-generation-failure {
+  width: 100%;
+  min-width: 0;
+  padding: 16px;
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-status-error-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.task-generation-failure h3 {
+  color: var(--fa-status-error);
+}
+.task-generation-limitations,
+.task-generation-record {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  padding: 16px 24px;
+}
+.task-generation-limitations summary,
+.task-generation-record summary {
+  cursor: pointer;
+  color: var(--fa-text-primary);
+  min-height: 24px;
+}
+.task-generation-record dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+  margin: 16px 0;
+}
+.task-generation-record dl > div {
+  min-width: 0;
+}
+.task-generation-record dt,
+.task-generation-record > p {
+  color: var(--fa-text-secondary);
+  font-size: 13px;
+}
+.task-generation-record dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+@container (max-width: 760px) {
+  .ai-task-card.task-generation,
+  .ai-task-card.task-generation[data-generation-state] {
+    padding: 24px;
+    min-height: 420px;
+  }
+  .task-generation h2 {
+    font-size: 24px;
+  }
+  .task-generation-current,
+  .task-generation-review,
+  .task-generation-failure,
+  .task-generation-limitations,
+  .task-generation-record {
+    padding: 16px;
+  }
+  .task-generation-record dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

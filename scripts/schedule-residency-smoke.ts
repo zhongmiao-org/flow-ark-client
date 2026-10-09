@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { _electron as electron, type ElectronApplication, type Page } from 'playwright-core';
+import { desktopElectron as electron } from './desktop-session.mjs';
+import { type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
 import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -98,9 +99,9 @@ const verifyBackground = async (mode: 'minimized' | 'tray') => {
       shown: (globalThis as any).__scheduleShown,
       form: await view.webContents.executeJavaScript(`({
         width: innerWidth,
-        name: document.querySelector('#full-name').value,
-        email: document.querySelector('#channel-email').checked,
-        department: document.querySelector('#department').value
+        name: document.querySelector('#fullName').value,
+        optionSelected: document.querySelector('#option-a').checked,
+        choice: document.querySelector('#choice').value
       })`),
     };
   });
@@ -112,8 +113,8 @@ const verifyBackground = async (mode: 'minimized' | 'tray') => {
   assert.deepEqual(state.form, {
     width: 1920,
     name: '虚构定时用户',
-    email: true,
-    department: 'engineering',
+    optionSelected: true,
+    choice: 'b',
   });
   assert.equal((await call('browser.embedded.status')).visible, false);
   note(mode + '-form', state);
@@ -163,17 +164,22 @@ try {
     name: '虚构表单真实计时',
     steps: [
       formBrowser('open', 'navigate', '', lab.url),
-      formBrowser('name', 'fill', '#full-name', '虚构定时用户'),
-      formBrowser('email', 'check', '#channel-email', true),
-      formBrowser('department', 'select', '#department', 'engineering'),
+      formBrowser('name', 'fill', '#fullName', '虚构定时用户'),
+      formBrowser('option', 'check', '#option-a', true),
+      formBrowser('choice', 'select', '#choice', 'b'),
       { id: 'wait', type: 'human', version: 1, message: '隔离验收等待下一次真实分钟周期' },
     ],
   };
   const bindings = { files: {}, browserId: browser.id, credentials: [] };
   await call('flow.save', { flow, bindings });
   await page!.getByRole('button', { name: '本机计划', exact: true }).click();
-  await page!.locator('.page .panel select').selectOption(record.id);
+  await page!
+    .getByLabel('计划流程', { exact: true })
+    .getByRole('option', { name: /虚构表单真实计时/ })
+    .waitFor({ state: 'attached' });
+  await page!.getByLabel('计划流程', { exact: true }).selectOption(record.id);
   await page!.getByRole('spinbutton').fill('1');
+  await page!.getByLabel('固定当前已保存版本与入口', { exact: true }).check();
   const creatingAt = Date.now();
   await page!.getByRole('button', { name: '创建计划', exact: true }).click();
   await wait(async () => (await boot()).schedules.length === 1, '从界面创建计划');
@@ -221,6 +227,9 @@ try {
     Math.max(0, occupiedDue - Date.now()) + 10000,
   );
   note('occupied-deadline-passed', { runs: (await runs()).length });
+  const occupiedInspection = await call('schedule.inspect', { id: scheduleId });
+  assert.equal(occupiedInspection.records[0].kind, 'occupied');
+  assert.equal(occupiedInspection.activeRun.id, first.id);
   await finish(first.id);
   // Close through the real handler: the process must stay resident in the tray.
   await app!.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close());
@@ -248,6 +257,17 @@ try {
   await page!.getByRole('button', { name: '本机计划', exact: true }).click();
   await page!.getByRole('button', { name: '暂停计划', exact: true }).click();
   await wait(async () => !(await schedule()).enabled, '界面停用计划');
+  await page!.getByRole('button', { name: '编辑计划', exact: true }).click();
+  await page!.getByRole('button', { name: '查看错过 / 占用跳过', exact: true }).click();
+  const recordDialog = page!.getByRole('dialog', { name: /计划记录/ });
+  await recordDialog.getByRole('heading', { name: '错过的计划', exact: true }).waitFor();
+  await recordDialog.getByRole('heading', { name: '本次触发已跳过', exact: true }).waitFor();
+  const inspected = await call('schedule.inspect', { id: scheduleId });
+  assert.equal(inspected.records.length, 2);
+  assert.equal(inspected.records[0].kind, 'missed');
+  assert.equal(inspected.activeRun, null);
+  await recordDialog.getByRole('button', { name: '返回计划', exact: true }).click();
+  await page!.getByRole('button', { name: '取消编辑', exact: true }).click();
   assert.deepEqual(
     (await runs()).map((r) => r.state),
     ['SUCCEEDED', 'SUCCEEDED'],

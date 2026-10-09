@@ -1,5 +1,6 @@
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
 import type { Step } from '../shared/types';
+import { kinds } from './node-kinds';
 
 export type FlowShape =
   | 'process'
@@ -19,9 +20,16 @@ export type DiagramData = {
   height: number;
   step?: Step;
   label?: string;
+  task?: { ordinal: number; title: string; summary: string };
+  presentation?: 'editor' | 'task' | 'control';
 };
 export type DiagramNode = Node<DiagramData, 'semantic'>;
-export type DiagramEdge = Edge<{ routeX?: number; returning?: boolean }>;
+export type DiagramEdge = Edge<{
+  routeX?: number;
+  returning?: boolean;
+  labelY?: number;
+  labelX?: number;
+}>;
 type Pin = { id: string; handle: string };
 const GAP = 64;
 const LANE_GAP = 96;
@@ -46,7 +54,22 @@ export function shapeOf(step: Step): FlowShape {
       return 'process';
   }
 }
-export function dimensions(shape: FlowShape) {
+export function dimensions(
+  shape: FlowShape,
+  presentation: 'editor' | 'task' | 'control' = 'editor',
+) {
+  if (presentation === 'control') {
+    if (shape === 'data' || shape === 'subprocess') return { width: 260, height: 64 };
+    if (shape === 'loop' || shape === 'manual') return { width: 260, height: 72 };
+  }
+  if (presentation !== 'editor') {
+    if (shape === 'decision') return { width: 220, height: 100 };
+    if (shape === 'terminal' || shape === 'empty') return { width: 88, height: 30 };
+    if (shape === 'join') return { width: 8, height: 8 };
+    if (shape === 'document') return { width: 240, height: 78 };
+    // Shapes without a task-board design retain the semantic editor geometry.
+    if (shape === 'process') return { width: 260, height: 64 };
+  }
   if (shape === 'decision') return { width: 280, height: 168 };
   if (shape === 'terminal' || shape === 'empty') return { width: 120, height: 40 };
   if (shape === 'join') return { width: 12, height: 12 };
@@ -54,32 +77,42 @@ export function dimensions(shape: FlowShape) {
 }
 
 /** Projection only. Synthetic IDs cannot be valid persisted node IDs. */
-export function buildDiagram(steps: Step[], selected = '') {
+export function buildDiagram(
+  steps: Step[],
+  selected = '',
+  presentation: 'editor' | 'task' | 'control' = 'editor',
+) {
+  const task = presentation !== 'editor';
+  // Figma 23:7158 uses compact task geometry; editor projection stays unchanged.
+  const gap = task ? 26 : GAP;
+  const laneGap = task ? 20 : LANE_GAP;
+  const baseWidth = task ? 260 : 280;
+  const sizeOf = (shape: FlowShape) => dimensions(shape, presentation);
   const nodes: DiagramNode[] = [];
   const edges: DiagramEdge[] = [];
   const widths = new Map<Step[], number>();
   function blockWidth(block: Step[]): number {
     if (widths.has(block)) return widths.get(block)!;
     const value = Math.max(
-      280,
+      baseWidth,
       ...block.map((n) =>
         n.type === 'condition'
-          ? blockWidth(n.then) + LANE_GAP + blockWidth(n.else)
+          ? blockWidth(n.then) + laneGap + blockWidth(n.else)
           : n.type === 'loop'
             ? blockWidth(n.body) + 200
-            : 280,
+            : sizeOf(shapeOf(n)).width,
       ),
     );
     widths.set(block, value);
     return value;
   }
   function add(id: string, shape: FlowShape, x: number, y: number, step?: Step, label?: string) {
-    const size = dimensions(shape);
+    const size = sizeOf(shape);
     nodes.push({
       id,
       type: 'semantic',
       position: { x: x - size.width / 2, y },
-      data: { shape, ...size, step, label },
+      data: { shape, ...size, step, label, presentation },
       ...size,
       selected: id === selected,
       selectable: Boolean(step),
@@ -87,8 +120,10 @@ export function buildDiagram(steps: Step[], selected = '') {
       draggable: false,
       deletable: false,
       ariaLabel: step
-        ? `${step.type} ${typeof step.name === 'string' ? step.name : step.id}`
+        ? `${kinds[step.type]?.label ?? step.type} · ${typeof step.name === 'string' ? step.name : step.id}`
         : label,
+      ariaRole: step ? 'button' : undefined,
+      domAttributes: step ? { 'aria-pressed': id === selected } : undefined,
     });
     return { id, handle: 'out' };
   }
@@ -96,7 +131,7 @@ export function buildDiagram(steps: Step[], selected = '') {
     from: Pin,
     to: Pin,
     label?: string,
-    route?: { routeX: number; returning?: boolean },
+    route?: { routeX: number; returning?: boolean; labelY?: number; labelX?: number },
   ) {
     edges.push({
       id: `@edge:${edges.length}`,
@@ -107,10 +142,32 @@ export function buildDiagram(steps: Step[], selected = '') {
       label,
       type: route ? 'routed' : 'smoothstep',
       data: route,
-      markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
-      style: { stroke: route?.returning ? '#a37b40' : '#8fa69e', strokeWidth: 1.5 },
-      labelStyle: { fill: '#50655b', fontSize: 11, fontWeight: 500 },
-      labelBgStyle: { fill: '#f5f8f6' },
+      markerEnd: task
+        ? undefined
+        : {
+            type: MarkerType.ArrowClosed,
+            width: 16,
+            height: 16,
+            color: route?.returning ? 'var(--fa-status-warning)' : 'var(--fa-border-default)',
+          },
+      style: {
+        stroke:
+          route?.returning && presentation !== 'control'
+            ? 'var(--fa-status-warning)'
+            : 'var(--fa-border-default)',
+        strokeWidth: 1.5,
+      },
+      labelStyle: {
+        fill:
+          label === '成立'
+            ? 'var(--fa-status-success)'
+            : presentation === 'control' && route?.returning
+              ? 'var(--fa-action-primary)'
+              : 'var(--fa-text-secondary)',
+        fontSize: task ? 12 : 11,
+        fontWeight: task ? 400 : 500,
+      },
+      labelBgStyle: { fill: 'var(--fa-bg-canvas)' },
       labelBgPadding: [7, 4],
       labelBgBorderRadius: 4,
       selectable: false,
@@ -124,28 +181,70 @@ export function buildDiagram(steps: Step[], selected = '') {
     for (const n of list) {
       const shape = shapeOf(n);
       const start = add(n.id, shape, x, y, n);
-      connect(exit, { id: n.id, handle: 'in' }, label);
+      connect(
+        exit,
+        { id: n.id, handle: 'in' },
+        label,
+        task && label && ['yes', 'no'].includes(exit.handle)
+          ? { routeX: x, labelY: y - 40, labelX: x + (label === '成立' ? -43 : 2) }
+          : undefined,
+      );
       label = undefined;
-      y += dimensions(shape).height + GAP;
+      y += sizeOf(shape).height + (task && n.type === 'condition' ? 44 : gap);
       exit = start;
       if (n.type === 'condition') {
         const leftWidth = blockWidth(n.then),
           rightWidth = blockWidth(n.else);
-        const span = leftWidth + rightWidth + LANE_GAP;
-        const branch = (children: Step[], cx: number, side: 'yes' | 'no', text: string) => {
+        const span = leftWidth + rightWidth + laneGap;
+        const branch = (
+          children: Step[],
+          cx: number,
+          side: 'yes' | 'no',
+          text: string,
+        ): {
+          exit: Pin;
+          bottom: number;
+          routeX?: number;
+          label?: string;
+          labelY?: number;
+          labelX?: number;
+        } => {
           const from = { id: n.id, handle: side };
           if (children.length) return block(children, cx, y, from, text);
+          if (task)
+            return {
+              exit: from,
+              bottom: y,
+              routeX: cx,
+              label: text,
+              labelY: y - 40,
+              labelX: cx + (text === '成立' ? -43 : 2),
+            };
           const empty = add(`@empty:${n.id}:${side}`, 'empty', cx, y, undefined, '直接汇合');
           connect(from, { id: empty.id, handle: 'in' }, text);
           return { exit: empty, bottom: y + 40 };
         };
         const left = branch(n.then, x - span / 2 + leftWidth / 2, 'yes', '成立');
         const right = branch(n.else, x + span / 2 - rightWidth / 2, 'no', '否则');
-        const joinY = Math.max(left.bottom, right.bottom) + GAP;
+        const joinY = Math.max(left.bottom, right.bottom) + (task ? 36 : gap);
         exit = add(`@join:${n.id}`, 'join', x, joinY, undefined, '条件汇合');
-        connect(left.exit, { id: exit.id, handle: 'left-in' });
-        connect(right.exit, { id: exit.id, handle: 'right-in' });
-        y = joinY + 12 + GAP;
+        connect(
+          left.exit,
+          { id: exit.id, handle: 'left-in' },
+          left.label,
+          left.routeX !== undefined
+            ? { routeX: left.routeX, labelY: left.labelY, labelX: left.labelX }
+            : undefined,
+        );
+        connect(
+          right.exit,
+          { id: exit.id, handle: 'right-in' },
+          right.label,
+          right.routeX !== undefined
+            ? { routeX: right.routeX, labelY: right.labelY, labelX: right.labelX }
+            : undefined,
+        );
+        y = joinY + sizeOf('join').height + (task ? 34 : gap);
       } else if (n.type === 'loop') {
         const bodyWidth = blockWidth(n.body);
         const bodyX = x - 20;
@@ -160,20 +259,21 @@ export function buildDiagram(steps: Step[], selected = '') {
           routeX: bodyX - bodyWidth / 2 - 60,
           returning: true,
         });
-        const joinY = body.bottom + GAP;
+        const joinY = body.bottom + gap;
         exit = add(`@join:${n.id}`, 'join', x, joinY, undefined, '循环完成');
         connect({ id: n.id, handle: 'done' }, { id: exit.id, handle: 'right-in' }, '完成', {
           routeX: x + (bodyWidth + 200) / 2 - 20,
         });
-        y = joinY + 12 + GAP;
+        y = joinY + sizeOf('join').height + gap;
       }
     }
-    return { exit, bottom: y - GAP };
+    return { exit, bottom: y - gap, next: y };
   }
   const center = blockWidth(steps) / 2 + 60;
-  const start = add('@start', 'terminal', center, 24, undefined, '开始');
-  const result = block(steps, center, 24 + 40 + GAP, start);
-  const end = add('@end', 'terminal', center, result.bottom + GAP, undefined, '结束');
+  const top = task ? 16 : 24;
+  const start = add('@start', 'terminal', center, top, undefined, '开始');
+  const result = block(steps, center, top + sizeOf('terminal').height + (task ? 24 : gap), start);
+  const end = add('@end', 'terminal', center, result.next, undefined, '结束');
   connect(result.exit, { id: end.id, handle: 'in' });
   return { nodes, edges, stepCount: nodes.filter((n) => n.data.step).length };
 }

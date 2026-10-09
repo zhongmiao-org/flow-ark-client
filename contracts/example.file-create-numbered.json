@@ -1,0 +1,26 @@
+{
+  "formatVersion": "1.0",
+  "id": "numbered-text-example",
+  "name": "新建文本并保留同名原文件",
+  "description": "使用虚构文字演示不覆盖的文件创建",
+  "parameters": {
+    "title": "示例资料页"
+  },
+  "requiredCapabilities": [
+    "file-create-numbered-v1"
+  ],
+  "steps": [
+    {
+      "id": "save",
+      "type": "file",
+      "version": 4,
+      "operation": "create",
+      "binding": "output",
+      "name": "title.txt",
+      "content": {
+        "$ref": "params.title"
+      },
+      "onConflict": "number"
+    }
+  ]
+}

@@ -1,0 +1,1669 @@
+/* Figma taskhome 23:1941, taskbrief 23:2280, taskplan 23:2928, taskdiff 23:3467. */
+.ai-task-page[hidden] {
+  display: none;
+}
+.ai-task-page {
+  container-type: inline-size;
+}
+.ai-task-heading {
+  display: flex;
+  justify-content: space-between;
+}
+.ai-task-page p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ai-task-page h2 {
+  margin: 0;
+}
+.ai-task-composer,
+.ai-task-card {
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  padding: 24px;
+  background: var(--fa-bg-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.ai-task-composer {
+  background: var(--fa-action-subtle);
+  min-height: 256px;
+  margin-bottom: 24px;
+  gap: 12px;
+}
+.ai-task-page .ai-task-composer textarea {
+  min-height: 36px;
+  height: 36px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 28px;
+  resize: vertical;
+}
+.ai-task-composer > .ai-task-actions:last-child {
+  margin-top: 4px;
+  gap: 16px;
+}
+.ai-task-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.ai-task-actions button[aria-pressed='true'],
+.ai-task-options button[aria-pressed='true'] {
+  color: var(--fa-action-primary);
+  border-color: var(--fa-action-primary);
+  background: var(--fa-action-subtle);
+}
+.ai-task-examples {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.ai-task-examples > button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+  padding: 16px;
+  min-height: 132px;
+  gap: 8px;
+  border-radius: var(--fa-radius-12);
+}
+.ai-task-examples > button p {
+  font-weight: 400;
+}
+.ai-task-page > .ai-task-actions {
+  margin-top: 24px;
+}
+.ai-task-recents {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.ai-task-recents > button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  min-width: 0;
+  padding: 16px;
+}
+.ai-task-recents span {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ai-task-recents small {
+  color: var(--fa-text-secondary);
+}
+.task-home-recents-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.task-home-recents-error {
+  color: var(--fa-status-error);
+}
+.task-home-recents-heading button[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: default;
+}
+.ai-task-state {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin: -8px 0 16px;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.ai-task-columns {
+  display: grid;
+  grid-template-columns: minmax(340px, 470px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.ai-task-columns > .ai-task-card {
+  min-height: 700px;
+}
+.ai-task-columns.ai-task-review {
+  grid-template-columns: minmax(320px, 408px) minmax(0, 1fr);
+}
+.ai-task-page textarea {
+  width: 100%;
+  min-height: 116px;
+  resize: vertical;
+}
+.ai-task-input > textarea {
+  background: var(--fa-bg-canvas);
+}
+.ai-task-input > label {
+  margin-bottom: -8px;
+}
+.ai-task-page fieldset {
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  border: 0;
+}
+.ai-task-page label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+.ai-task-page label input,
+.ai-task-page label select {
+  margin-top: 0;
+}
+.ai-task-page > .ai-task-note {
+  margin-bottom: 16px;
+}
+.ai-task-page fieldset.ai-task-context {
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ai-task-page .ai-task-provider {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.ai-task-page .ai-task-provider input,
+.ai-task-provider select {
+  width: 100%;
+}
+.ai-task-note {
+  padding: 16px;
+  background: var(--fa-action-subtle);
+  color: var(--fa-action-primary);
+  border-radius: var(--fa-radius-12);
+  border: 1px solid var(--fa-border-default);
+}
+.ai-task-note p {
+  margin-top: 8px;
+  color: var(--fa-text-primary);
+}
+.ai-task-note > button {
+  margin-top: 12px;
+}
+.ai-task-failure {
+  background: var(--fa-status-error-bg);
+  color: var(--fa-status-error);
+}
+.ai-task-page .ai-task-checkbox {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  color: var(--fa-text-primary);
+  margin: 0;
+}
+.ai-task-checkbox input {
+  width: 16px;
+  height: 16px;
+  margin: 3px 0 0;
+  flex: 0 0 16px;
+  accent-color: var(--fa-action-primary);
+}
+.ai-task-disclosure,
+.ai-task-diff {
+  border: 1px solid var(--fa-border-default);
+  padding: 12px;
+  border-radius: var(--fa-radius-8);
+  min-width: 0;
+}
+.ai-task-disclosure summary,
+.ai-task-diff summary {
+  cursor: pointer;
+  color: var(--fa-action-primary);
+  overflow-wrap: anywhere;
+}
+.ai-task-page pre {
+  font: 12px/20px var(--fa-font-body);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 320px;
+  overflow: auto;
+  margin: 8px 0;
+  padding: 8px;
+  background: var(--fa-bg-canvas);
+  color: var(--fa-text-primary);
+}
+.ai-task-disclosure h3,
+.ai-task-change h3 {
+  margin: 12px 0 8px;
+  font-size: 14px;
+  line-height: 22px;
+}
+.ai-task-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+.ai-task-question legend {
+  color: var(--fa-text-primary);
+  font-size: 16px;
+}
+.ai-task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.ai-task-meta h2 {
+  overflow-wrap: anywhere;
+}
+.ai-task-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ai-task-step {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  text-align: left;
+  background: var(--fa-bg-canvas);
+  border: 1px solid transparent;
+  border-radius: var(--fa-radius-8);
+  padding: 16px;
+  min-height: 88px;
+  gap: 24px;
+}
+.ai-task-step[aria-pressed='true'] {
+  border-color: var(--fa-action-primary);
+  background: var(--fa-action-subtle);
+}
+.ai-task-step > b {
+  color: var(--fa-action-primary);
+  font: 500 18px/28px var(--fa-font-latin);
+}
+.ai-task-step > span {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.ai-task-step strong {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.ai-task-step small {
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.ai-task-branches {
+  padding: 16px 0 0 16px;
+  margin-left: 24px;
+  border-left: 2px solid var(--fa-border-default);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ai-task-branches h3 {
+  font-size: 13px;
+  color: var(--fa-text-secondary);
+  margin: 0;
+}
+.ai-task-graph {
+  width: 100%;
+  height: 500px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  overflow: hidden;
+}
+.ai-task-change > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.ai-task-change section {
+  min-width: 0;
+}
+.ai-task-change pre {
+  max-height: 180px;
+}
+.ai-task-change small {
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.ai-task-resources {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.ai-task-empty {
+  padding: 48px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: center;
+}
+.ai-task-scope-source {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+.ai-task-scope-source small {
+  color: var(--fa-text-secondary);
+}
+.ai-step-user {
+  padding: 16px;
+  min-height: 116px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-canvas);
+}
+.ai-step-user p {
+  margin-top: 12px;
+}
+.ai-step-reply {
+  min-height: 152px;
+}
+.ai-task-scoped-diff .ai-task-result {
+  height: 700px;
+  overflow: auto;
+}
+.ai-step-diff-values > section > p {
+  margin-top: 12px;
+  color: var(--fa-text-secondary);
+}
+.ai-task-scoped-diff .ai-task-columns.ai-task-review {
+  grid-template-columns: minmax(0, 400fr) minmax(0, 728fr);
+}
+.ai-step-diff-values {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ai-step-diff-values > section {
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  padding: 16px;
+  min-height: 108px;
+}
+.ai-step-before {
+  background: var(--fa-status-error-bg);
+}
+.ai-step-after {
+  background: var(--fa-status-success-bg);
+}
+.ai-step-diff-values h3 {
+  font-size: 14px;
+  margin: 12px 0 4px;
+}
+.ai-step-diff-values pre {
+  background: transparent;
+  margin: 0;
+  padding: 0;
+  max-height: 240px;
+}
+.ai-task-scoped-diff .ai-task-result > .ai-task-actions .primary {
+  min-width: 168px;
+}
+.ai-task-scoped-diff .ai-task-result > .ai-task-actions button:not(.primary) {
+  min-width: 144px;
+}
+.ai-task-scoped-diff .ai-task-result > button {
+  align-self: flex-start;
+  min-width: 192px;
+}
+@container (max-width: 850px) {
+  .ai-task-columns,
+  .ai-task-columns.ai-task-review,
+  .ai-task-scoped-diff .ai-task-columns.ai-task-review {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ai-task-columns > .ai-task-card {
+    min-height: 0;
+  }
+  .ai-task-examples,
+  .ai-task-recents {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ai-task-examples > button {
+    min-height: 104px;
+  }
+}
+@media (max-width: 1199px) {
+  .ai-task-scoped .ai-task-columns,
+  .ai-task-scoped-diff .ai-task-columns.ai-task-review {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ai-task-scoped .ai-task-columns > .ai-task-card {
+    min-height: 0;
+    height: auto;
+  }
+}
+
+/* Figma taskcheck 23:3799: five content cards and a separate confirmation column. */
+.run-review-page[hidden] {
+  display: none;
+}
+.run-review-page {
+  container-type: inline-size;
+}
+.run-review-page.is-embedded-review {
+  padding: 0;
+}
+.task-run-page .run-review-page.is-embedded-review > .page-heading {
+  margin-bottom: 24px;
+}
+.run-review-rerun-origin {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.run-review-page .run-review-rerun-note {
+  color: var(--fa-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+}
+.run-review-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 680fr) minmax(0, 448fr);
+  gap: 24px;
+  align-items: start;
+}
+.run-review-columns > .ai-task-card {
+  min-height: 700px;
+}
+.run-review-card {
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  padding: 16px;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.run-review-resource-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.run-review-resource-group h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+.run-review-page h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+.run-review-page p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.run-review-page ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-wrap: anywhere;
+}
+.run-review-page li {
+  color: var(--fa-text-secondary);
+}
+.run-review-page li b {
+  color: var(--fa-text-primary);
+  font-weight: 500;
+}
+.run-review-page details {
+  color: var(--fa-text-secondary);
+  min-width: 0;
+}
+.run-review-page summary {
+  cursor: pointer;
+  color: var(--fa-action-primary);
+}
+.run-review-limitations ul {
+  margin-top: 12px;
+  font-size: 12px;
+  line-height: 20px;
+}
+.run-review-version {
+  font: 12px/20px var(--fa-font-latin);
+  overflow-wrap: anywhere;
+}
+.run-review-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.run-review-check > div {
+  min-width: 0;
+  flex: 1;
+}
+.run-review-check-detail {
+  margin-top: 12px;
+}
+.run-review-check-detail pre {
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 8px 0 0;
+  padding: 12px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-bg-subtle);
+  font: 12px/20px var(--fa-font-latin);
+}
+.run-review-check > span {
+  color: var(--fa-status-success);
+  width: 16px;
+  flex: 0 0 16px;
+}
+.run-review-check b {
+  font-weight: 500;
+}
+.run-review-check p {
+  margin-top: 8px;
+  color: var(--fa-text-secondary);
+}
+.run-review-check.failed > span,
+.run-review-error {
+  color: var(--fa-status-error);
+}
+.run-review-toggle {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--fa-text-primary);
+  margin: 0;
+}
+.run-review-toggle input {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin: 3px 0 0;
+  accent-color: var(--fa-action-primary);
+}
+.run-review-confirm > button {
+  width: 100%;
+}
+.run-review-receipt {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-status-success-bg);
+}
+.run-review-receipt > b {
+  overflow-wrap: anywhere;
+}
+.run-review-page.is-task-review .run-review-columns > .ai-task-card {
+  padding: 23px;
+}
+.run-review-page.is-task-review .run-review-card {
+  padding: 15px;
+}
+.run-review-page.is-task-review .run-review-card > p {
+  color: var(--fa-text-secondary);
+}
+.run-review-page.is-task-review .run-review-card > ul {
+  list-style: none;
+  padding-left: 0;
+}
+.run-review-check-compact {
+  min-height: 28px;
+  gap: 10px;
+}
+.run-review-check-compact > span {
+  color: var(--fa-action-primary);
+  flex-basis: 22px;
+  width: 22px;
+}
+.run-review-check-compact > details {
+  flex: 1;
+}
+.run-review-check-compact > details > summary {
+  color: var(--fa-text-primary);
+  font-size: 14px;
+  line-height: 22px;
+}
+.run-review-options > :not(summary) {
+  margin-top: 16px;
+}
+.run-review-options > button {
+  width: 100%;
+}
+@container (max-width: 950px) {
+  .run-review-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .run-review-columns > .ai-task-card {
+    min-height: 0;
+  }
+}
+
+/* Figma 23:2440: 420/708 columns, 24 gap, 700 minimum panel height. */
+.task-web-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 420fr) minmax(0, 708fr);
+  gap: 24px;
+  align-items: stretch;
+}
+.task-web-columns > .ai-task-card {
+  min-height: 700px;
+}
+.topbar .context-back.task-target-back {
+  width: 92px;
+}
+.task-web-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  color: var(--fa-text-secondary);
+}
+.task-web-tabs [role='tab'] {
+  min-width: 0;
+  padding: 0;
+  min-height: 40px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--fa-text-secondary);
+  white-space: nowrap;
+}
+.task-web-tabs [aria-selected='true'] {
+  color: var(--fa-action-primary);
+}
+.task-target-tab-panel:not([hidden]),
+.task-target-address-form,
+.task-target-connections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.task-target-address-form {
+  gap: 12px;
+}
+.task-target-tab-panel[hidden] {
+  display: none;
+}
+.task-target-address-form input[aria-invalid='true'] {
+  border-color: var(--fa-status-error);
+}
+.task-target-address-form input,
+.task-target-search input {
+  width: 100%;
+}
+.task-target-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 24px 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-subtle);
+}
+.task-target-empty h3,
+.task-target-empty p,
+.task-target-capabilities h3,
+.task-target-capabilities p {
+  margin: 0;
+}
+.task-target-empty p {
+  color: var(--fa-text-secondary);
+}
+.task-target-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.task-target-search {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.task-target-connection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 2px;
+}
+.task-target-connection {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  text-align: left;
+  padding: 16px;
+  overflow-wrap: anywhere;
+  border-radius: var(--fa-radius-12);
+}
+.task-target-connection[aria-pressed='true'] {
+  border-color: var(--fa-action-primary);
+  background: var(--fa-action-subtle);
+}
+.task-target-connection > span {
+  font-weight: 400;
+  color: var(--fa-text-secondary);
+}
+.task-target-status {
+  font-size: 12px;
+  line-height: 18px;
+}
+.task-target-status.is-verified {
+  color: var(--fa-status-success);
+}
+.task-target-status.is-failed {
+  color: var(--fa-status-error);
+}
+.task-target-capabilities ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.task-target-capabilities li {
+  padding: 12px 0;
+  border-top: 1px solid var(--fa-border-default);
+  overflow-wrap: anywhere;
+}
+.task-web-object {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  min-width: 0;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+}
+.task-web-object h2 {
+  font-size: 16px;
+  line-height: 24px;
+}
+.task-web-object p,
+.task-web-url {
+  color: var(--fa-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+.task-web-object button {
+  align-self: start;
+  min-width: 160px;
+}
+.task-web-current {
+  background: var(--fa-action-subtle);
+  gap: 8px;
+}
+.task-web-summary {
+  gap: 8px;
+}
+.task-web-scope {
+  color: var(--fa-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+}
+.task-web-columns > .ai-task-card > label[for] {
+  margin-bottom: -8px;
+}
+.task-web-columns > .ai-task-card > input {
+  width: 100%;
+}
+.task-web-selection-actions > .primary {
+  min-width: 184px;
+}
+.task-web-selection-actions > button:not(.primary) {
+  min-width: 144px;
+}
+.task-web-columns .ai-task-checkbox {
+  margin: 0;
+}
+@container (max-width: 950px) {
+  .task-web-columns {
+    grid-template-columns: 1fr;
+  }
+  .task-web-columns > .ai-task-card {
+    min-height: auto;
+  }
+}
+
+/* Figma first-task 23:2106: 400/728 columns, 24 gap, 690 high at 1440. */
+.learning-columns {
+  display: grid;
+  grid-template-columns: 400px minmax(0, 1fr);
+  gap: 24px;
+}
+.learning-columns > .ai-task-card {
+  min-height: 690px;
+}
+.learning-intro > h2 {
+  font-size: 28px;
+  line-height: 36px;
+  margin-bottom: 4px;
+}
+.learning-intro > p {
+  margin-bottom: 0;
+}
+.learning-topic {
+  min-height: 90px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.learning-topic-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+.learning-topic-heading > span {
+  margin-left: auto;
+  color: var(--fa-action-primary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.learning-read-error {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.learning-read-error button {
+  align-self: flex-start;
+  min-height: 40px;
+}
+.learning-columns h3 {
+  font-size: 18px;
+  line-height: 26px;
+  margin: 0;
+  font-weight: 600;
+}
+.learning-topic p,
+.learning-step p {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--fa-text-secondary);
+}
+.learning-step {
+  display: flex;
+  min-height: 88px;
+  padding: 16px;
+  gap: 16px;
+  border-radius: 8px;
+  background: var(--fa-bg-canvas);
+}
+.learning-step > span {
+  color: var(--fa-action-primary);
+  font-size: 18px;
+  line-height: 26px;
+  width: 28px;
+  flex-shrink: 0;
+}
+.learning-step > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.learning-practice > .ai-task-actions > .primary {
+  min-width: 180px;
+}
+.learning-practice > .ai-task-note {
+  min-height: 72px;
+}
+.learning-home {
+  margin-bottom: 24px;
+}
+.task-home-attachments button {
+  min-width: 144px;
+}
+.task-home-status {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.task-home-status > :only-child {
+  grid-column: 1 / -1;
+}
+.task-home-status .learning-home {
+  margin-bottom: 0;
+}
+.task-home-status > .ai-task-card {
+  min-height: 160px;
+  padding: 16px;
+  gap: 8px;
+}
+.task-home-status .ai-task-actions button {
+  min-width: 144px;
+}
+@container (max-width: 760px) {
+  .task-home-status {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+}
+.learning-progress {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0 0 24px;
+  padding: 16px 24px;
+  background: var(--fa-action-subtle);
+  border-radius: var(--fa-radius-12);
+}
+.learning-progress span {
+  color: var(--fa-text-secondary);
+}
+.learning-progress span[data-done='true'] {
+  color: var(--fa-action-primary);
+}
+@container (max-width: 850px) {
+  .learning-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .learning-columns > .ai-task-card {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 1199px) {
+  .learning-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .learning-columns > .ai-task-card {
+    min-height: 0;
+  }
+}
+
+.learning-practice > .ai-task-actions > button:not(.primary) {
+  min-width: 144px;
+}
+
+/* Figma 23:2766: 420/708 columns, 24 gap and 710 minimum panel height. */
+.task-understanding-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 420fr) minmax(0, 708fr);
+  gap: 24px;
+  align-items: stretch;
+}
+.task-understanding-columns > .ai-task-card {
+  min-height: 710px;
+}
+.task-understanding-reply {
+  min-height: 152px;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-canvas);
+  font-size: 13px;
+  line-height: 22px;
+}
+.task-understanding-reply > b {
+  color: var(--fa-action-primary);
+  font-weight: 500;
+}
+.task-understanding-reply > p {
+  color: var(--fa-text-primary);
+  margin-top: 8px;
+}
+.task-understanding-directory {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.task-understanding-directory > label {
+  font-size: 13px;
+  line-height: 20px;
+}
+.task-understanding-directory > button {
+  width: 100%;
+  min-height: 40px;
+  justify-content: flex-start;
+  text-align: left;
+  color: var(--fa-text-secondary);
+  padding: 8px 12px;
+}
+.task-understanding-directory > small {
+  color: var(--fa-text-secondary);
+}
+.ai-task-page .task-output-policy {
+  margin: 12px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.task-output-policy > legend {
+  margin-bottom: 16px;
+  font-size: 13px;
+  line-height: 20px;
+}
+.ai-task-page .task-output-policy label {
+  flex-direction: row;
+  align-items: center;
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 20px;
+  gap: 10px;
+}
+.task-output-policy input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--fa-action-primary);
+}
+.task-understanding-fact {
+  min-height: 108px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  padding: 16px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.task-understanding-fact h3 {
+  font-size: 16px;
+  line-height: 24px;
+  margin: 0;
+}
+.task-understanding-fact p {
+  color: var(--fa-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+}
+.task-understanding-fact button {
+  align-self: flex-start;
+}
+.task-understanding-fact .task-understanding-url,
+.task-understanding-fact .task-understanding-path {
+  font-size: 12px;
+  line-height: 18px;
+}
+.task-understanding-fact details {
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+}
+.task-understanding-fact details > label {
+  margin: 12px 0;
+}
+.task-understanding-fact details input {
+  width: 100%;
+}
+.task-understanding-fact details > button {
+  margin-top: 8px;
+}
+.task-understanding-describe {
+  align-self: flex-start;
+  width: 228px;
+}
+.task-understanding-provider {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.task-understanding-provider .ai-task-provider {
+  margin-top: 12px;
+}
+.task-understanding-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.task-understanding-controls > .ai-task-disclosure {
+  border: 0;
+  padding: 0;
+  font-size: 12px;
+  line-height: 20px;
+}
+.task-understanding-controls > .ai-task-note {
+  padding: 12px;
+  font-size: 12px;
+  line-height: 20px;
+}
+.task-understanding-controls > .ai-task-note p {
+  margin-top: 0;
+}
+.task-understanding-controls > .ai-task-note > button {
+  margin-top: 8px;
+  font-size: 12px;
+}
+.task-understanding-controls > .ai-task-checkbox {
+  font-size: 12px;
+  line-height: 18px;
+}
+.task-understanding-controls > .ai-task-actions > .primary {
+  min-width: 212px;
+}
+.task-understanding-controls > .ai-task-actions > button:not(.primary) {
+  font-size: 12px;
+}
+.task-answer-review {
+  margin-top: 12px;
+  padding-left: 12px;
+  border-left: 2px solid var(--fa-border-default);
+}
+.task-answer-review > h4 {
+  margin: 0 0 4px;
+  font-size: 12px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.task-answer-review > p {
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--fa-text-secondary);
+}
+@container (max-width: 950px) {
+  .task-understanding-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .task-understanding-columns > .ai-task-card {
+    min-height: auto;
+  }
+}
+.task-understanding-fact-heading > button {
+  min-height: 28px;
+  height: 28px;
+  padding: 3px 10px;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.task-understanding-fact-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.task-understanding-fact:has(> .task-understanding-extra),
+.task-understanding-fact:has(> .task-understanding-output-options) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: start;
+}
+.task-understanding-fact > h3 {
+  grid-column: 1;
+  grid-row: 1;
+}
+.task-understanding-fact > p,
+.task-understanding-output-state {
+  grid-column: 1 / -1;
+}
+.task-understanding-extra:not([open]),
+.task-understanding-output-options:not([open]) {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+}
+.task-understanding-extra[open],
+.task-understanding-output-options[open] {
+  grid-column: 1 / -1;
+}
+.task-understanding-extra > p,
+.task-understanding-extra > ul,
+.task-understanding-tools > p,
+.task-understanding-tools > ul,
+.task-understanding-output-options[open] .task-understanding-path {
+  margin: 12px 0 0;
+}
+.task-understanding-fact summary {
+  overflow-wrap: anywhere;
+}
+@container (max-width: 550px) {
+  .task-understanding-fact-heading {
+    flex-wrap: wrap;
+  }
+  .task-understanding-extra:not([open]),
+  .task-understanding-output-options:not([open]) {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+}
+
+/* Figma 23:2280: selected context is real local data, never sample items. */
+.task-brief-columns {
+  align-items: stretch;
+}
+.task-brief-input > label {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  margin-bottom: -8px;
+}
+.task-brief-input > textarea {
+  min-height: 116px;
+  background: var(--fa-bg-canvas);
+}
+.task-brief-add {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 124px));
+  gap: 12px;
+  margin-top: 2px;
+}
+.task-brief-add button {
+  padding: 0 6px;
+}
+.task-brief-context {
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  padding: 16px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.task-brief-context > button {
+  align-self: flex-start;
+  min-height: 28px;
+  padding: 4px 8px;
+}
+.task-context-budget {
+  font-size: 12px;
+}
+.task-brief-tool-context {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.task-brief-tool-context small {
+  color: var(--fa-text-secondary);
+}
+.task-brief-text-context {
+  border-top: 1px solid var(--fa-border-default);
+  min-width: 0;
+}
+.task-brief-text-context > summary {
+  padding: 8px 0;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.task-brief-text-context > summary small {
+  color: var(--fa-text-secondary);
+  margin-left: 8px;
+}
+.task-brief-text-summary {
+  display: block;
+  color: var(--fa-text-secondary);
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ai-task-page .task-brief-text-context > fieldset.ai-task-context {
+  border: 0;
+  border-radius: 0;
+  padding: 4px 0 12px;
+}
+.task-brief-format > summary {
+  cursor: pointer;
+  color: var(--fa-text-secondary);
+}
+.task-brief-format > p {
+  margin-top: 8px;
+}
+.task-attachment-preview h2 {
+  overflow-wrap: anywhere;
+  min-width: 0;
+  scroll-margin-top: 24px;
+}
+.task-brief-context p,
+.task-brief-disclosure,
+.task-brief-explainer p {
+  color: var(--fa-text-secondary);
+}
+.task-brief-attachment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.task-attachment-feedback {
+  min-width: 0;
+  font-size: 12px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+  scroll-margin-block: 16px;
+}
+.task-attachment-feedback p {
+  margin: 0;
+  color: inherit;
+}
+.task-attachment-feedback button {
+  margin-top: 8px;
+  min-height: 28px;
+  padding: 4px 8px;
+}
+.task-brief-attachment-item > .task-attachment-feedback {
+  margin-top: 8px;
+}
+.task-brief-attachment span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.task-brief-attachment small {
+  display: block;
+  color: var(--fa-text-secondary);
+}
+.task-brief-attachment button {
+  padding: 4px 8px;
+  min-height: 28px;
+  flex: 0 0 auto;
+}
+.task-brief-explainer > div {
+  min-height: 104px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.task-brief-explainer > div:first-of-type {
+  min-height: 124px;
+  background: var(--fa-action-subtle);
+}
+.task-brief-explainer h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 28px;
+}
+.task-brief-explainer > .ai-task-note {
+  min-height: 72px;
+  color: var(--fa-action-primary);
+}
+.task-attachment-preview {
+  margin-bottom: 24px;
+}
+.task-attachment-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+  align-self: flex-start;
+}
+.task-attachment-preview pre {
+  max-height: 360px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@container (max-width: 950px) {
+  .task-brief-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .task-brief-columns > .ai-task-card {
+    min-height: auto;
+  }
+}
+
+/* Figma taskplan/taskwork/taskv2: 408 px conversation beside one shared flow. */
+.task-plan-conversation {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.task-plan-conversation article {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+.task-plan-conversation article h2 {
+  font-size: 12px;
+  line-height: 20px;
+}
+.task-plan-conversation article p {
+  margin: 0;
+  color: var(--fa-text-primary);
+}
+.task-plan-conversation .ai-step-reply h2 {
+  color: var(--fa-action-primary);
+}
+.task-plan-answers ol {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding-left: 24px;
+}
+.task-plan-answers li {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.task-plan-conversation > button {
+  align-self: flex-start;
+  min-width: 240px;
+  max-width: 100%;
+}
+.task-plan-approval-note {
+  color: var(--fa-text-secondary);
+}
+.ai-task-columns.ai-task-plan-review > .ai-task-card {
+  min-height: 730px;
+}
+@container (max-width: 950px) {
+  .ai-task-columns.ai-task-plan-review {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ai-task-columns.ai-task-plan-review > .ai-task-card {
+    min-height: auto;
+  }
+}
+
+.ai-task-composer > .ai-task-actions > .primary {
+  min-width: 180px;
+}
+.ai-task-page > .task-home-navigation {
+  margin: 0 0 24px;
+}
+.task-home-navigation button {
+  min-width: 144px;
+}
+
+/* Figma taskv2/list: saved identity and confirmation follow the readable plan. */
+.ai-task-readable-plan > .ai-task-card {
+  padding: 23px;
+}
+.task-plan-identity {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.task-plan-identity h2,
+.task-plan-identity > span {
+  margin: 0;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: var(--fa-bg-subtle);
+  color: var(--fa-text-secondary);
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.task-plan-identity img {
+  flex: 0 0 auto;
+}
+.task-plan-identity > .task-plan-saved {
+  color: var(--fa-status-success);
+  background: var(--fa-status-success-bg);
+}
+.ai-task-readable-plan .task-plan-tabs {
+  gap: 24px;
+  min-height: 40px;
+}
+.ai-task-readable-plan .task-plan-tabs > button {
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--fa-text-secondary);
+}
+.ai-task-readable-plan .task-plan-tabs > button[aria-pressed='true'] {
+  color: var(--fa-action-primary);
+}
+.ai-task-readable-plan .task-plan-tabs > .task-plan-more {
+  margin-left: auto;
+}
+.ai-task-readable-plan .task-plan-conversation article h2 {
+  font-size: 13px;
+  font-weight: 500;
+}
+.ai-task-readable-plan .ai-step-user {
+  min-height: 116px;
+}
+.ai-task-readable-plan .ai-step-reply {
+  min-height: 152px;
+}
+.ai-task-readable-plan .ai-task-step {
+  gap: 16px;
+}
+.ai-task-readable-plan .ai-task-step > span {
+  gap: 6px;
+}
+.ai-task-readable-plan .task-plan-scope-compact {
+  min-height: 72px;
+  gap: 4px;
+  border-color: var(--fa-border-default);
+}
+.ai-task-readable-plan .task-plan-scope-compact p,
+.ai-task-readable-plan .task-plan-scope-compact summary {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--fa-action-primary);
+}
+.ai-task-readable-plan .task-plan-scope-compact details[open] > p {
+  margin-top: 12px;
+  color: var(--fa-text-secondary);
+}
+.ai-task-readable-plan .task-plan-confirm > .primary {
+  min-width: 200px;
+}
+.ai-task-readable-plan .task-plan-confirm > button:not(.primary) {
+  min-width: 144px;
+}
+
+/* Figma 2:4732: blocked resource checks retain their specific recovery action. */
+.run-review-resource-issue {
+  margin: 16px 0;
+  padding: 24px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-surface);
+  min-width: 0;
+}
+.run-review-resource-issue h3 {
+  margin: 16px 0 12px;
+  font-size: 18px;
+  line-height: 28px;
+}
+.run-review-resource-issue p {
+  margin: 8px 0 16px;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.run-review-resource-reason {
+  white-space: pre-wrap;
+}
+.run-review-resource-issue button {
+  width: min(230px, 100%);
+  min-height: 40px;
+}
+
+.task-step-list[hidden] {
+  display: none;
+}
+.task-step-list,
+.ai-task-step-branch {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.ai-task-branch-toggle {
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 4px 8px;
+  color: var(--fa-text-secondary);
+  background: transparent;
+  border-color: transparent;
+  height: auto;
+  min-height: 32px;
+  white-space: normal;
+  text-align: left;
+}
+.task-step-search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+}
+.task-step-search > label {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.task-step-search > p {
+  flex-basis: 100%;
+}
+.task-step-search > p,
+.task-step-search-location {
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.task-step-search-location {
+  margin-bottom: 8px;
+}
+
+.task-understanding-directory > .task-output-feedback {
+  margin: 0;
+  color: var(--fa-text-secondary);
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.task-understanding-directory > .task-output-feedback.is-error {
+  color: var(--fa-status-error);
+}

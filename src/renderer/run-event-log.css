@@ -1,0 +1,274 @@
+.run-event-log {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.run-log-heading,
+.run-log-entry header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px;
+}
+.run-log-heading {
+  justify-content: space-between;
+}
+.run-event-log > .note {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  font-size: 12px;
+  line-height: 20px;
+}
+.run-log-heading h3,
+.run-log-empty h4,
+.run-log-output h4 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+}
+.run-log-heading span,
+.run-log-entry header,
+.run-log-source,
+.run-log-text p,
+.run-log-output > p,
+.run-log-more p,
+.run-log-empty p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.run-event-log > ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.run-log-entry {
+  padding: 16px 0;
+  border-top: 1px solid var(--fa-border-default);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.run-log-entry header strong {
+  color: var(--fa-text-primary);
+  font-weight: 500;
+  font-size: 13px;
+}
+.run-log-entry header time {
+  font-variant-numeric: tabular-nums;
+}
+.run-log-entry header > span {
+  margin-left: auto;
+}
+.run-log-entry .run-log-source {
+  white-space: pre-wrap;
+}
+.run-log-entry .run-log-source b {
+  font-weight: 500;
+}
+.run-log-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.run-log-text pre {
+  margin: 0;
+  padding: 12px;
+  width: 100%;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 8px;
+  background: var(--fa-bg-canvas);
+  color: var(--fa-text-primary);
+  font-size: 12px;
+  line-height: 20px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.run-log-text pre:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 2px;
+}
+.run-log-output {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.run-log-entry details summary {
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.run-log-entry details[open] summary {
+  margin-bottom: 12px;
+}
+.run-log-entry details summary:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.run-log-more,
+.run-log-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 12px;
+  background: var(--fa-bg-canvas);
+}
+
+.run-event-log:has(.run-log-context) {
+  container-type: inline-size;
+  gap: 24px;
+}
+.run-log-context {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px 16px;
+}
+.run-log-context > section {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-surface);
+}
+.run-log-context h3 {
+  margin: 0 0 16px;
+  font-size: 18px;
+  line-height: 28px;
+}
+.run-log-context dl {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+.run-log-context dt,
+.run-log-context label,
+.run-log-context p {
+  margin: 0 0 4px;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.run-log-context dd,
+.run-log-context select {
+  margin: 0;
+  padding: 6px;
+  min-height: 32px;
+  background: var(--fa-bg-canvas);
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.run-log-context select {
+  width: 100%;
+  margin-bottom: 14px;
+}
+.run-log-context .run-log-selected-instance {
+  margin: 0 0 14px;
+  color: var(--fa-text-primary);
+}
+.run-log-selected-instance code {
+  display: block;
+  margin-top: 4px;
+  color: var(--fa-text-secondary);
+}
+.run-log-context button {
+  width: 100%;
+  margin: 14px 0 8px;
+}
+.run-log-context p {
+  margin-top: 8px;
+}
+.run-event-log:has(.run-log-context) > ol,
+.run-event-log:has(.run-log-context) > .run-log-empty {
+  padding: 20px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-surface);
+}
+.run-event-log:has(.run-log-context) > ol > li:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+@container (max-width: 760px) {
+  .run-log-context {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.run-detail.is-logs .run-runtime-summary[hidden],
+.run-detail.is-logs .run-detail-tabs[hidden] {
+  display: none;
+}
+.run-detail.is-logs .run-log-context > section {
+  min-height: 362px;
+}
+
+.run-log-context .run-log-output-card .log-output {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.run-log-context .log-output .section-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.run-log-context .log-output h3 {
+  margin-bottom: 0;
+}
+.run-log-context .log-output pre {
+  max-height: 140px;
+  min-height: 64px;
+  margin: 12px 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.run-log-context .log-output pre[data-expanded='true'] {
+  max-height: 360px;
+}
+.run-log-relations button code {
+  display: block;
+  font-size: 12px;
+  line-height: 20px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.run-log-relations button:has(code) {
+  flex-direction: column;
+  gap: 4px;
+}
+.run-log-relations ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.run-log-relations li > span {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.run-log-relations details {
+  margin-top: 16px;
+}
+.run-log-relations summary {
+  cursor: pointer;
+}
+.run-log-context .run-log-relations .field-error {
+  color: var(--fa-status-error);
+}

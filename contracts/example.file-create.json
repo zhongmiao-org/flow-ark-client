@@ -1,0 +1,25 @@
+{
+  "formatVersion": "1.0",
+  "id": "create-text",
+  "name": "新建文本文件",
+  "description": "使用虚构文字演示不覆盖的文件创建",
+  "parameters": {
+    "title": "示例资料页"
+  },
+  "requiredCapabilities": [
+    "file-create-v1"
+  ],
+  "steps": [
+    {
+      "id": "save",
+      "type": "file",
+      "version": 3,
+      "operation": "create",
+      "binding": "output",
+      "name": "title.txt",
+      "content": {
+        "$ref": "params.title"
+      }
+    }
+  ]
+}

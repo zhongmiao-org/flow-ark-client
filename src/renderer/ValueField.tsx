@@ -1,6 +1,7 @@
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { Json } from '../shared/types';
-import { composeReference, referenceOf, type ReferenceChoice } from './value-references';
+import { referenceOf, type ReferenceChoice } from './value-references';
+import VariablePicker from './VariablePicker';
 
 type Props = {
   label: string;
@@ -8,7 +9,10 @@ type Props = {
   change: (value: Json) => void;
   choices?: ReferenceChoice[];
   defaultValue?: Json;
+  jsonDefault?: Json;
+  compactReference?: boolean;
   children?: ReactNode;
+  onIncompleteChange?: (label: string, incomplete: boolean) => void;
 };
 export default function ValueField({
   label,
@@ -16,38 +20,37 @@ export default function ValueField({
   change,
   choices,
   defaultValue = '',
+  jsonDefault,
+  compactReference = false,
   children,
+  onIncompleteChange,
 }: Props) {
   const current = referenceOf(value);
-  const [open, setOpen] = useState(false),
-    [search, setSearch] = useState('');
-  const [base, setBase] = useState(''),
-    [suffix, setSuffix] = useState('');
+  const [open, setOpen] = useState(false);
   const available = choices ?? [];
   const source =
     available.find((choice) => choice.path === current) ??
     available
       .filter((choice) => current?.startsWith(choice.path + '.'))
       .sort((a, b) => b.path.length - a.path.length)[0];
-  const filtered = available.filter((choice) =>
-    `${choice.label} ${choice.path} ${choice.group}`.toLowerCase().includes(search.toLowerCase()),
-  );
-  let preview = '',
-    error = '';
-  try {
-    preview = composeReference(available, base, suffix);
-  } catch (e: any) {
-    error = e.message;
-  }
-  const show = () => {
-    setBase(source?.path ?? '');
-    setSuffix(source && current ? current.slice(source.path.length + 1) : '');
-    setSearch('');
-    setOpen(true);
-  };
   return (
     <section className="value-field" aria-label={label + '配置'}>
-      {current !== undefined ? (
+      {current !== undefined && compactReference ? (
+        <div className="reference-value-compact">
+          <span className="value-field-label">{label}</span>
+          <button
+            type="button"
+            className="value-source-button"
+            aria-label={'选择变量 · ' + label}
+            aria-expanded={open}
+            onClick={() => setOpen(true)}
+            title={current}
+          >
+            {source ? `${source.group} → ${source.label}` : current}
+          </button>
+          {!source && <p className="field-error">来源已缺失或不在当前作用域，请重新选择。</p>}
+        </div>
+      ) : current !== undefined ? (
         <div className="reference-value">
           <span className="value-field-label">{label}</span>
           <span className="eyebrow">{source?.group ?? '已有引用'}</span>
@@ -66,128 +69,111 @@ export default function ValueField({
           </button>
         </div>
       ) : (
-        (children ?? <LiteralValue label={label} value={value} change={change} />)
+        (children ?? (
+          <LiteralValue
+            label={label}
+            value={value}
+            change={change}
+            jsonDefault={jsonDefault}
+            onIncompleteChange={onIncompleteChange}
+          />
+        ))
       )}
-      {choices && (
+      {choices && !(compactReference && current !== undefined) && (
         <button
           className="value-source-button"
           type="button"
           aria-expanded={open}
           aria-label={'选择变量 · ' + label}
-          onClick={show}
+          onClick={() => setOpen(true)}
         >
           ↳ {current !== undefined ? '更换变量' : '选择变量'}
         </button>
       )}
       {open && (
-        <div className="reference-picker" role="group" aria-label={label + '变量选择'}>
-          <input
-            autoFocus
-            aria-label={label + '变量搜索'}
-            placeholder="搜索名称或路径"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <select
-            aria-label={label + '变量来源'}
-            value={base}
-            onChange={(e) => {
-              setBase(e.target.value);
-              setSuffix('');
-            }}
-          >
-            <option value="">选择参数或前序输出…</option>
-            {base && !filtered.some((c) => c.path === base) && (
-              <option value={base}>{available.find((c) => c.path === base)?.label ?? base}</option>
-            )}
-            {(['流程参数', '前序步骤', '当前循环'] as const).map((group) => (
-              <optgroup key={group} label={group}>
-                {filtered
-                  .filter((c) => c.group === group)
-                  .map((c) => (
-                    <option key={c.path} value={c.path}>
-                      {c.label} · {c.path}
-                    </option>
-                  ))}
-              </optgroup>
-            ))}
-          </select>
-          {!filtered.length && <p className="note">没有匹配的可用变量。</p>}
-          {base && <p className="note">{available.find((c) => c.path === base)?.hint}</p>}
-          <details>
-            <summary>子路径 · 高级</summary>
-            <input
-              aria-label={label + '变量子路径'}
-              placeholder="例如 rows.0.name（可留空）"
-              value={suffix}
-              onChange={(e) => setSuffix(e.target.value)}
-            />
-            <p className="note">子字段在执行时核对；缺失将报错。不会执行表达式。</p>
-          </details>
-          {preview && <code className="reference-preview">{preview}</code>}
-          {base && error && (
-            <p className="field-error" role="alert">
-              {error}
-            </p>
-          )}
-          <div className="value-picker-actions">
-            <button type="button" onClick={() => setOpen(false)} aria-label={'取消选择 · ' + label}>
-              取消
-            </button>
-            <button
-              type="button"
-              className="primary"
-              disabled={!preview}
-              aria-label={'使用变量 · ' + label}
-              onClick={() => {
-                change({ $ref: preview });
-                setOpen(false);
-              }}
-            >
-              使用变量
-            </button>
-          </div>
-        </div>
+        <VariablePicker
+          label={label}
+          choices={available}
+          current={current}
+          choose={(path) => change({ $ref: path })}
+          fixed={() => {
+            if (current !== undefined) change(structuredClone(defaultValue));
+          }}
+          close={() => setOpen(false)}
+        />
       )}
     </section>
   );
 }
 const valueType = (value: Json) =>
   value === null ? 'null' : typeof value === 'object' ? 'json' : typeof value;
+export type LiteralValueDraftSlot = {
+  literal?: { source: string; text: string; error: string };
+};
 export function LiteralValue({
   label,
   value,
   change,
+  compact = false,
+  displayLabels,
+  onIncompleteChange,
+  draft,
+  jsonDefault,
 }: {
   label: string;
   value: Json;
   change: (value: Json) => void;
+  compact?: boolean;
+  displayLabels?: { type: string; value: string };
+  onIncompleteChange?: (label: string, incomplete: boolean) => void;
+  draft?: LiteralValueDraftSlot;
+  jsonDefault?: Json;
 }) {
   const id = useId(),
     type = valueType(value);
-  const format = () => (type === 'json' ? JSON.stringify(value, null, 2) : String(value ?? ''));
-  const [text, setText] = useState(format),
-    [error, setError] = useState('');
+  const format = () =>
+    type === 'json' ? JSON.stringify(value, null, compact ? undefined : 2) : String(value ?? '');
+  const source = JSON.stringify(value);
+  const restored = draft?.literal && draft.literal.source === source ? draft.literal : undefined;
+  const [text, setText] = useState(() => restored?.text ?? format()),
+    [error, setError] = useState(() => restored?.error ?? '');
+  const previousSource = useRef(source);
+  const sourceChanged = previousSource.current !== source;
+  const input = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    onIncompleteChange?.(label, !!error);
+    return () => onIncompleteChange?.(label, false);
+  }, [label, error, onIncompleteChange]);
   useEffect(() => {
+    if (previousSource.current === source) return;
+    previousSource.current = source;
     setText(format());
     setError('');
-  }, [JSON.stringify(value)]);
+  }, [source]);
+  useEffect(() => {
+    if (draft && !sourceChanged) draft.literal = { source, text, error };
+  }, [draft, source, text, error, sourceChanged]);
   const defaults: Record<string, Json> = {
     string: '',
     number: 0,
     boolean: true,
     null: null,
-    json: {},
+    json: jsonDefault ?? {},
   };
   return (
     <div className="literal-value" data-value-invalid={error || undefined}>
-      <label htmlFor={id + '-type'}>{label}类型</label>
+      <label htmlFor={id + '-type'}>{displayLabels?.type ?? `${label}类型`}</label>
       <select
         id={id + '-type'}
+        aria-label={displayLabels ? `${label}类型` : undefined}
         value={type}
         onChange={(e) => {
-          setError('');
-          change(defaults[e.target.value]);
+          try {
+            change(defaults[e.target.value]);
+            setError('');
+          } catch (reason) {
+            setError(reason instanceof Error ? reason.message : '类型未修改，请检查引用');
+          }
         }}
       >
         <option value="string">文本</option>
@@ -196,9 +182,23 @@ export function LiteralValue({
         <option value="null">空值</option>
         <option value="json">数组 / 对象</option>
       </select>
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id}>{displayLabels?.value ?? label}</label>
       {type === 'boolean' ? (
-        <select id={id} value={String(value)} onChange={(e) => change(e.target.value === 'true')}>
+        <select
+          id={id}
+          aria-label={displayLabels ? label : undefined}
+          value={String(value)}
+          aria-invalid={!!error}
+          aria-describedby={error ? id + '-error' : undefined}
+          onChange={(e) => {
+            try {
+              change(e.target.value === 'true');
+              setError('');
+            } catch (reason) {
+              setError(reason instanceof Error ? reason.message : '值未修改，请检查输入');
+            }
+          }}
+        >
           <option value="true">true</option>
           <option value="false">false</option>
         </select>
@@ -206,11 +206,14 @@ export function LiteralValue({
         <p className="note">null · 空值</p>
       ) : (
         <textarea
+          ref={input}
           id={id}
-          rows={type === 'json' ? 5 : 2}
+          aria-label={displayLabels ? label : undefined}
+          rows={compact ? 1 : type === 'json' ? 5 : 2}
           className={type === 'json' ? 'code-input small' : ''}
           value={text}
           aria-invalid={!!error}
+          aria-describedby={error ? id + '-error' : undefined}
           onChange={(e) => {
             setText(e.target.value);
             try {
@@ -228,15 +231,29 @@ export function LiteralValue({
               change(parsed);
               setError('');
             } catch (e: any) {
-              setError(type === 'json' ? '数组 / 对象 JSON 尚未完成' : e.message);
+              setError(e instanceof SyntaxError ? '数组 / 对象 JSON 尚未完成' : e.message);
             }
           }}
         />
       )}
       {error && (
-        <p className="field-error" role="alert">
-          {error}；修正后才能保存或运行。
-        </p>
+        <>
+          <p id={id + '-error'} className="field-error" role="alert">
+            {error}；修正后才能保存、运行或切换步骤。
+          </p>
+          <button
+            type="button"
+            className="literal-value-restore"
+            aria-label={'恢复已应用值 · ' + label}
+            onClick={() => {
+              setText(format());
+              setError('');
+              input.current?.focus({ preventScroll: true });
+            }}
+          >
+            恢复已应用值
+          </button>
+        </>
       )}
     </div>
   );

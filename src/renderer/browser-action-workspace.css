@@ -1,0 +1,176 @@
+.browser-action-page {
+  container-type: inline-size;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.browser-action-page h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 40px;
+}
+.browser-action-page > header p {
+  font-size: 14px;
+}
+.browser-action-page p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 22px;
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.browser-action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px 16px;
+  align-items: start;
+}
+.browser-action-card {
+  min-width: 0;
+  min-height: 362px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-surface);
+}
+.browser-action-card h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  line-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.browser-action-card h2 span {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--fa-action-primary);
+}
+.browser-action-card label,
+.browser-action-target > span {
+  margin: 0;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.browser-action-card label:not(:first-of-type) {
+  margin-top: 8px;
+}
+.browser-action-card input:not([type='checkbox']),
+.browser-action-card select,
+.browser-action-card textarea {
+  margin: 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  padding: 4px 6px;
+  font-size: 13px;
+  line-height: 20px;
+  background: var(--fa-bg-canvas);
+}
+.browser-action-card button {
+  min-height: 40px;
+}
+.browser-action-card > .primary {
+  margin-top: 6px;
+}
+.browser-action-description {
+  min-height: 70px;
+  padding-top: 8px;
+}
+.browser-action-target {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.browser-action-target button {
+  min-height: 32px;
+  padding: 4px 6px;
+  text-align: left;
+  justify-content: flex-start;
+  overflow-wrap: anywhere;
+  background: var(--fa-bg-canvas);
+}
+.browser-action-card .node-configuration,
+.browser-action-card .value-field,
+.browser-action-card .node-timing {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+}
+.browser-action-card .node-configuration:empty {
+  display: none;
+}
+.browser-action-card .value-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.browser-action-card .node-timing {
+  margin-top: 8px;
+}
+.browser-action-card .node-timing h4 {
+  font-size: 12px;
+}
+.browser-action-card .node-timing p {
+  font-size: 12px;
+  line-height: 18px;
+}
+.browser-action-card .reference-value {
+  padding: 8px;
+}
+.browser-action-card .field-error,
+.browser-action-error p {
+  color: var(--fa-status-error);
+}
+.browser-action-error {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--fa-status-error-bg);
+  border-radius: 8px;
+}
+.browser-action-error button {
+  flex-shrink: 0;
+}
+@container (max-width:1050px) {
+  .browser-action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container (max-width:720px) {
+  .browser-action-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .browser-action-card {
+    min-height: 0;
+  }
+}
+
+.browser-action-card .reference-value-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.browser-action-card .reference-value-compact .value-field-label {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.browser-action-card .reference-value-compact button {
+  min-height: 32px;
+  padding: 4px 6px;
+  justify-content: flex-start;
+  text-align: left;
+  background: var(--fa-bg-canvas);
+}

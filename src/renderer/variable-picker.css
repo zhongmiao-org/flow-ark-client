@@ -1,0 +1,205 @@
+.variable-picker-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-height: 56px;
+  padding: 8px;
+  background: var(--fa-bg-surface);
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+.variable-picker-toolbar > button {
+  min-width: 168px;
+  min-height: 40px;
+}
+.variable-picker-toolbar nav {
+  overflow-wrap: anywhere;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+body:has(.variable-picker-dialog[open])
+  .editor-workspace-dialog[open]:not(.variable-picker-dialog) {
+  visibility: hidden;
+}
+.variable-picker-toolbar nav button {
+  padding: 4px 0;
+  min-width: 0;
+  min-height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--fa-action-primary);
+  font-size: inherit;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+.variable-picker-toolbar > .variable-picker-browser {
+  margin-left: auto;
+  min-width: 136px;
+}
+.variable-picker-page {
+  container-type: inline-size;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.variable-picker-heading h2 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 40px;
+}
+.variable-picker-heading p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--fa-text-secondary);
+}
+.variable-picker-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 400fr) minmax(0, 728fr);
+  gap: 24px;
+}
+.variable-picker-sources,
+.variable-picker-detail {
+  border: 1px solid var(--fa-border-default);
+  background: var(--fa-bg-surface);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  min-height: 670px;
+}
+.variable-picker-detail {
+  padding: 28px;
+}
+.variable-picker-dialog label,
+.variable-picker-dialog dt {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  margin: 0;
+}
+.variable-picker-dialog input {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  height: 32px;
+  padding: 4px 6px;
+  border-color: transparent;
+  background: var(--fa-bg-canvas);
+  font-size: 13px;
+  line-height: 20px;
+}
+.variable-picker-dialog input[aria-invalid='true'] {
+  border-color: var(--fa-status-error);
+}
+.variable-picker-search,
+.variable-picker-path {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 58px;
+}
+.variable-picker-source-list,
+.variable-picker-source-list section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.variable-picker-dialog h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 28px;
+  overflow-wrap: anywhere;
+}
+.variable-picker-source-list button {
+  min-height: 40px;
+  padding: 8px 12px;
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+.variable-picker-source-list button[aria-pressed='true'] {
+  background: var(--fa-action-subtle);
+  border-color: var(--fa-action-primary);
+}
+.variable-picker-dialog code {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-size: 12px;
+  line-height: 20px;
+}
+.variable-picker-dialog dl {
+  margin: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.variable-picker-dialog dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.variable-picker-note,
+.variable-picker-empty p {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--fa-text-secondary);
+  margin: 0;
+}
+.variable-picker-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+.variable-picker-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+}
+.variable-picker-actions button {
+  min-width: 180px;
+  min-height: 40px;
+}
+.variable-picker-actions button:last-child {
+  min-width: 120px;
+}
+.variable-picker-advanced {
+  font-size: 13px;
+  line-height: 22px;
+}
+.variable-picker-advanced summary {
+  cursor: pointer;
+}
+.variable-picker-advanced label {
+  display: block;
+  margin: 16px 0 4px;
+}
+.variable-picker-advanced p {
+  margin-top: 8px;
+}
+@container (max-width: 1000px) {
+  .variable-picker-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .variable-picker-sources,
+  .variable-picker-detail {
+    min-height: 0;
+  }
+  .variable-picker-source-list {
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 4px;
+    margin: -4px;
+  }
+}

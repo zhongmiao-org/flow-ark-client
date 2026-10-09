@@ -1,3 +1,10 @@
+import { toolSecretValues } from '../shared/mcp-oauth-grant';
+import { redactMcpReceipt } from './mcp-redaction';
+import { McpRuns } from './mcp-runs';
+import { templateSourceSchema, type TemplateSource } from '../shared/template-source';
+import { inspectSchedule } from './schedule-inspection';
+import { Learning } from './learning';
+import { learningPrompt } from '../shared/learning';
 import { exportDefinition } from '../templates/export';
 import { writeArchive } from '../templates/archive';
 import { join, dirname } from 'node:path';
@@ -9,13 +16,23 @@ import { flowExportSchema, templateContentLimit } from '../shared/flow-export';
 import { listRuns, runOverview } from './run-history';
 import { ArtifactCleanup } from './artifact-cleanup';
 import { RunRerun, executionVersion } from './run-rerun';
+import { RunReview } from './run-review';
+import { runTargetContext } from './run-target-context';
 import { Sessions } from './sessions';
 import { ScriptProcesses } from './script-processes';
 import { ScriptProcessInterruptedError, type ScriptOwner } from '../shared/script-supervision';
 import type { CleanupResult } from '../shared/embedded-lifecycle';
 import { child, killOwnedTree } from './processes';
 import { Rpc } from '../shared/rpc';
-import { uid, now, digest, errorText, redact, redactedErrorText } from '../shared/utils';
+import {
+  uid,
+  now,
+  digest,
+  errorText,
+  redact,
+  redactArtifactText,
+  redactedErrorText,
+} from '../shared/utils';
 import { validateFlow, validateObject, walk } from '../core/validate';
 import { assertBrowserOperations } from '../adapters/browser-scope';
 import { discoverBrowsers, inspectBrowser, validateBinding } from '../adapters/browsers';
@@ -26,7 +43,6 @@ import { staticUploadFields, uploadSource, uploadText } from '../shared/upload-s
 import { Templates } from '../templates/service';
 import { version as clientVersion } from '../../package.json';
 import { normalizeBindings, validateConfiguration } from './configuration';
-import { generate } from '../ai/providers';
 const example = {
   formatVersion: '1.0',
   id: 'empty',
@@ -48,6 +64,11 @@ import type {
   PreparedScripts,
   ExecutionObservation,
 } from '../shared/types';
+import { DesktopPlanning } from './desktop-planning';
+import { DesktopRuns } from './desktop-runs';
+import { Planning } from './planning';
+import { PlanningRepair } from './planning-repair';
+import { TaskWebTargets } from './task-web-target';
 const terminal = new Set(['SUCCEEDED', 'FAILED', 'INTERRUPTED', 'CANCELLED']);
 type Active = {
   id: string;
@@ -64,16 +85,36 @@ type Active = {
   done: Promise<void>;
   abort: AbortController;
 };
+import { TaskOutputs } from './task-output';
+import { TaskAttachments } from './task-attachments';
+import { TaskMcpTargets } from './task-mcp-targets';
+import { ToolConnections } from './tool-connections';
+import { AISettings } from './ai-settings';
+import { LocalCredentialSettings } from './local-credentials';
+
 export class Runtime {
   readonly store: Store;
   readonly sessions: Sessions;
   readonly scripts: ScriptProcesses;
   readonly ready: Promise<void>;
   readonly templates: Templates;
+  readonly planning: Planning;
+  readonly desktopPlanning: DesktopPlanning;
+  readonly desktopRuns: DesktopRuns;
+  readonly mcpRuns: McpRuns;
+  readonly learning: Learning;
+  readonly webTargets: TaskWebTargets;
+  readonly outputs: TaskOutputs;
+  readonly toolConnections: ToolConnections;
+  readonly toolTargets: TaskMcpTargets;
+  readonly aiSettings: AISettings;
+  readonly localCredentials: LocalCredentialSettings;
+  private credentialChecks = new WeakMap<PreparedScripts, () => void>();
   private active?: Active;
   private artifactFiles: ArtifactFiles;
   private artifactCleanup: ArtifactCleanup;
   private reruns: RunRerun;
+  private runReview: RunReview;
   private pendingCapabilities = new Map<string, number>();
   private stopping = false;
   private suspended = false;
@@ -96,6 +137,182 @@ export class Runtime {
     this.artifactFiles = new ArtifactFiles(dataPath);
     this.store = new Store(join(dataPath, 'flowark.sqlite'), key);
     this.store.recover();
+    this.aiSettings = new AISettings(this.store, {
+      assertAvailable: () => {
+        if (this.stopping || this.suspended) throw new Error('应用正在退出或休眠');
+        if (this.store.fault) throw new Error(this.store.fault);
+      },
+      inUse: (provider) =>
+        this.planning?.usesProvider(provider) ||
+        this.desktopPlanning?.usesProvider(provider) ||
+        this.store
+          .list<Run>('run')
+          .some(
+            (run) =>
+              (run.id === this.active?.id || run.state === 'QUEUED') &&
+              this.store
+                .get<FlowRecord>('snapshot', run.id)
+                ?.bindings.credentials.includes(provider),
+          ),
+      get: (provider) => this.system('ai.configuration.read', { provider }),
+      change: (provider, revision, update) =>
+        this.system('ai.configuration.write', { provider, revision, update }),
+      key: (provider, revision) => this.system('credentials.get', { id: provider, revision }),
+    });
+    this.localCredentials = new LocalCredentialSettings({
+      assertAvailable: () => {
+        if (this.stopping || this.suspended) throw new Error('应用正在退出或休眠');
+        if (this.store.fault || this.executionBlock())
+          throw new Error('本地存储或运行资源尚未就绪，请先处理故障');
+      },
+      inUse: (id) =>
+        this.store
+          .list<Run>('run')
+          .some(
+            (run) =>
+              (run.id === this.active?.id || run.state === 'QUEUED') &&
+              this.store.get<FlowRecord>('snapshot', run.id)?.bindings.credentials.includes(id),
+          ),
+      boundFlows: (id) =>
+        this.store
+          .list<FlowRecord>('flow')
+          .filter((flow) => flow.bindings.credentials.includes(id))
+          .map((flow) => ({ id: flow.id, name: flow.flow.name })),
+      list: () => this.system('credential.local.read', {}),
+      change: (id, revision, update) =>
+        this.system('credential.local.write', { id, revision, update }),
+    });
+    this.toolConnections = new ToolConnections(this.store, {
+      openOAuth: (url) => this.system('tool.oauth.open', { url }),
+      assertAvailable: () => {
+        if (this.stopping || this.suspended) throw new Error('应用正在退出或休眠');
+        if (this.store.fault) throw new Error(this.store.fault);
+      },
+      credentials: {
+        get: async (id) => {
+          const secret = await this.system('tool.credentials.get', { id });
+          if (typeof secret === 'string' && secret) this.secrets.push(...toolSecretValues(secret));
+          return secret;
+        },
+        set: (id, value) => {
+          this.secrets.push(...toolSecretValues(value));
+          return this.system('tool.credentials.set', { id, value });
+        },
+        remove: (id) => this.system('tool.credentials.remove', { id }),
+      },
+    });
+    this.webTargets = new TaskWebTargets(this.store, {
+      page: () => this.system('browser.embedded.review', {}),
+      captureElement: (requestId) =>
+        this.system('browser.embedded.task-element.capture', { requestId }),
+      verifyElement: (page, element) =>
+        this.system('browser.embedded.task-element.verify', { page, element }),
+      assertSelectable: () => {
+        this.assertAdmitting();
+        if (this.active || this.store.list<Run>('run').some((r) => r.state === 'QUEUED'))
+          throw new Error('请等待当前运行和收尾结束后，再选择网页对象');
+      },
+    });
+    this.outputs = new TaskOutputs(this.store, {
+      choose: () => this.system('task.output.directory', {}),
+      assertSelectable: (task) => {
+        this.assertAdmitting();
+        const active = this.active && this.store.get<Run>('run', this.active.id);
+        if (
+          (active && active.flowId === task.flowId) ||
+          this.store.list<Run>('run').some((r) => r.flowId === task.flowId && r.state === 'QUEUED')
+        )
+          throw new Error('请等待本任务运行和收尾结束，再更换输出');
+      },
+    });
+    this.toolTargets = new TaskMcpTargets(this.store, this.toolConnections, (task) => {
+      this.assertAdmitting();
+      const active = this.active && this.store.get<Run>('run', this.active.id);
+      if (
+        (active && active.flowId === task.flowId) ||
+        this.store
+          .list<Run>('run')
+          .some((run) => run.flowId === task.flowId && run.state === 'QUEUED')
+      )
+        throw new Error('请等待本任务运行和收尾结束，再更换工具对象');
+    });
+    this.mcpRuns = new McpRuns(this.store, this.toolConnections, this.toolTargets, (value) =>
+      redactMcpReceipt(value, this.secrets),
+    );
+    this.learning = new Learning(this.store, {
+      busy: (id) => {
+        const task = this.store.get('ai-task', id);
+        const active = this.active && this.store.get<Run>('run', this.active.id);
+        return !!active && (active.task?.id === id || active.flowId === task?.flowId);
+      },
+      create: () => this.planning.create(undefined, learningPrompt),
+      detail: (id) => this.planning.detail(id),
+      assertAvailable: () => {
+        if (this.stopping || this.suspended) throw new Error('应用正在退出或休眠');
+        if (this.store.fault) throw new Error(this.store.fault);
+      },
+    });
+    this.planning = new Planning(this.store, {
+      tools: this.toolTargets,
+      attachments: new TaskAttachments(this.store, {
+        choose: (kind) => this.system('task.attachment.file', { kind }),
+        decodeImage: (data) => this.system('task.attachment.image.validate', { data }),
+      }),
+      learning: this.learning,
+      web: this.webTargets,
+      output: this.outputs,
+      repair: new PlanningRepair(this.store, {
+        epoch: () => this.admissionEpoch,
+        assertAvailable: () => {
+          if (this.executionBlock()) throw new Error(this.executionBlock());
+          if (
+            this.stopping ||
+            this.suspended ||
+            this.active ||
+            this.store.list<Run>('run').some((r) => r.state === 'QUEUED')
+          )
+            throw new Error('请等待当前运行和收尾结束后，再检查目标修复');
+        },
+        capture: (requestId) => this.system('browser.embedded.pick.capture', { requestId }),
+      }),
+      key: async (provider) => {
+        this.aiSettings.assertReadable(provider);
+        const key = await this.system('credentials.get', { id: provider });
+        this.aiSettings.assertReadable(provider);
+        return key;
+      },
+      save: (flow, bindings) => this.saveFlow(flow, bindings),
+      assertAvailable: () => {
+        if (this.stopping || this.suspended)
+          throw new Error('应用正在退出或休眠，不能开始新的规划操作');
+        if (this.store.fault) throw new Error(this.store.fault);
+      },
+    });
+    this.desktopPlanning = new DesktopPlanning({
+      task: (id) => this.planning.detail(id).task,
+      assertAvailable: () => {
+        if (this.stopping || this.suspended || this.store.fault)
+          throw new Error('应用或存储尚未就绪');
+      },
+      configuration: (provider) => this.system('ai.configuration.read', { provider }),
+      key: (provider, revision) => this.system('credentials.get', { id: provider, revision }),
+      captureConfiguration: (provider) => this.aiSettings.capture([provider]),
+      selection: (reference) => this.system('desktop.selection.resolve', reference),
+      inspect: (reference) => this.system('desktop.selection.inspect', reference),
+      adopt: (candidate, original) => this.planning.adoptDesktop(candidate, original),
+    });
+    this.desktopRuns = new DesktopRuns(this.store, {
+      system: (method, args) => this.system(method, args),
+      detail: (id) => this.planning.detail(id),
+      available: () => {
+        if (this.stopping || this.suspended || this.store.fault)
+          throw new Error('应用或存储尚未就绪');
+      },
+      idle: () => {
+        if (this.active || this.store.list<Run>('run').some((run) => run.state === 'QUEUED'))
+          throw new Error('请等待当前运行结束后重新绑定应用窗口');
+      },
+    });
     this.scripts = new ScriptProcesses({
       store: this.store,
       dir,
@@ -126,6 +343,30 @@ export class Runtime {
       this.system('notification', { title: 'FlowArk 有新的待办' }),
     );
     this.sessions = new Sessions(dir, executable, dataPath, system);
+    this.runReview = new RunReview(this.store, {
+      desktop: this.desktopRuns,
+      tools: (record) => this.toolTargets.reviewStates(record),
+      learnedTrial: (run) => this.learning.trial(run),
+      busy: (id) =>
+        this.active?.id === id ||
+        this.scripts.hasRun(id) ||
+        (this.pendingCapabilities.get(id) ?? 0) > 0,
+      target: (selection) => this.system('browser.embedded.target.verify', { selection }),
+      assertAdmitting: () => this.assertAdmitting(),
+      epoch: () => this.admissionEpoch,
+      preflight: (record) => this.preflight(record, true),
+      version: (record, prepared) => this.version(record, prepared),
+      dispatch: () => this.dispatch(),
+      embedded: () => this.system('browser.embedded.review', {}),
+      template: async (record) => {
+        const { pkg, entry } = await this.templates.context(record);
+        return {
+          resources: pkg.manifest.resources.filter((r) => entry.resources.includes(r.id)),
+          actions: pkg.manifest.actions.filter((a) => entry.actions.includes(a.id)),
+        };
+      },
+      error: (error) => this.redactError(error),
+    });
     this.ready = Promise.all([this.scripts.ready, this.templates.library.cleanStaging()]).then(
       () => {
         // A recovery probe can take several seconds. Plans missed during that
@@ -163,15 +404,20 @@ export class Runtime {
       flow = { ...flow, parameters: bindings.configuration.values as any };
     validateFlow(flow);
     const record = {
+      ...(previous?.webTarget ? { webTarget: previous.webTarget } : {}),
+      ...(previous?.outputTarget ? { outputTarget: previous.outputTarget } : {}),
+      ...(previous?.toolTargets ? { toolTargets: previous.toolTargets } : {}),
       id: flow.id,
       flow: structuredClone(flow),
       bindings: structuredClone(bindings),
       updatedAt: now(),
     };
+    for (const id of bindings.credentials) this.localCredentials.assertReadable(id);
     this.store.put('flow', flow.id, record);
     return record;
   }
   private version(record: FlowRecord, prepared: PreparedScripts) {
+    this.credentialChecks.get(prepared)?.();
     const id = executionVersion(record, prepared);
     if (!this.store.get('version', id))
       this.store.put('version', id, { ...record, ...prepared, versionId: id });
@@ -219,8 +465,43 @@ export class Runtime {
       execution: this.observeExecution(),
     };
   }
-  async preflight(record: FlowRecord & Partial<PreparedScripts>): Promise<PreparedScripts> {
+  async preflight(
+    record: FlowRecord & Partial<PreparedScripts>,
+    desktopRun?: string | true,
+  ): Promise<PreparedScripts> {
+    const checkAI = this.aiSettings.capture(record.bindings.credentials);
+    const checkLocal = this.localCredentials.capture(record.bindings.credentials);
+    const checkCredentials = () => {
+      this.toolTargets.assertExecutable(record.id, record, !!desktopRun);
+      checkAI();
+      checkLocal();
+    };
+    const checked = (prepared: PreparedScripts) => {
+      checkCredentials();
+      this.credentialChecks.set(prepared, checkCredentials);
+      return prepared;
+    };
+    this.toolTargets.assertExecutable(record.id, record, !!desktopRun);
     const flow = validateFlow(record.flow);
+    if (walk(flow.steps).some((node) => node.type === 'desktop')) {
+      if (!desktopRun) throw new Error('应用选区只能从原任务重新绑定窗口并明确确认单次试运行');
+      await this.desktopRuns.verify(
+        record,
+        typeof desktopRun === 'string' ? desktopRun : undefined,
+      );
+    }
+    if (walk(flow.steps).some((node) => node.type === 'mcp')) {
+      if (!desktopRun) throw new Error('请从原任务核对工具并明确确认本次试运行');
+      const run =
+        typeof desktopRun === 'string' ? this.store.get<Run>('run', desktopRun) : undefined;
+      if (typeof desktopRun === 'string' && !run) throw new Error('工具运行授权不存在');
+      this.mcpRuns.verify(record, run);
+    }
+    const localIds = record.bindings.credentials.filter((id) => id.startsWith('local-'));
+    if (localIds.length) await this.system('credential.local.check', { ids: localIds });
+    this.toolTargets.assertExecutable(record.id, record, !!desktopRun);
+    await this.webTargets.record(record);
+    await this.outputs.record(record);
     await this.templates.preflight(record);
     const steps = walk(flow.steps);
     if (steps.some((n) => n.type === 'browser')) {
@@ -271,7 +552,10 @@ export class Runtime {
         validateObject('ScriptBundle', bundle);
         await verifyScriptBundle(record.scripts[n.id], bundle.sha256);
       }
-      return { scripts: record.scripts, scriptBundles: record.scriptBundles };
+      this.toolTargets.assertExecutable(record.id, record, !!desktopRun);
+      await this.webTargets.record(record);
+      await this.outputs.record(record);
+      return checked({ scripts: record.scripts, scriptBundles: record.scriptBundles });
     }
     if (record.versionId && scriptNodes.some((n) => n.dependencies.length))
       throw new Error('旧计划没有固定脚本依赖，请重新保存计划');
@@ -292,7 +576,10 @@ export class Runtime {
           dependencies: bundle.dependencies,
         });
       }
-    return prepared;
+    this.toolTargets.assertExecutable(record.id, record, !!desktopRun);
+    await this.webTargets.record(record);
+    await this.outputs.record(record);
+    return checked(prepared);
   }
   private assertAdmitting() {
     const blocked = this.executionBlock();
@@ -496,7 +783,12 @@ export class Runtime {
     triggerId?: string,
     scheduleRevision?: string,
     debug = false,
+    templateSource?: TemplateSource,
   ) {
+    templateSource = templateSource
+      ? structuredClone(templateSourceSchema.parse(templateSource))
+      : undefined;
+    if (templateSource) this.templates.assertSource(flowId, templateSource);
     const epoch = this.admissionEpoch;
     if (this.suspended) throw new Error('系统正在休眠，恢复后请重新开始运行');
     if (!this.recovering) this.assertAdmitting();
@@ -516,6 +808,7 @@ export class Runtime {
         triggerId,
         scheduleRevision,
         debug,
+        templateSource,
       );
     });
     this.admissions = pending.then(
@@ -533,9 +826,11 @@ export class Runtime {
     triggerId?: string,
     scheduleRevision?: string,
     debug = false,
+    templateSource?: TemplateSource,
   ) {
     const check = () => {
       this.assertAdmission(epoch);
+      if (templateSource) this.templates.assertSource(flowId, templateSource);
       if (scheduleId) {
         const schedule = this.store.get<Schedule>('schedule', scheduleId);
         if (
@@ -549,6 +844,7 @@ export class Runtime {
     check();
     const prepared = await this.preflight(record);
     check();
+    this.credentialChecks.get(prepared)?.();
     const id = uid();
     const version = versionId ?? this.version(record, prepared);
     const run: Run = {
@@ -623,9 +919,12 @@ export class Runtime {
         this.store.state(run.id, 'RUNNING');
         const s = this.store.get<FlowRecord & PreparedScripts>('snapshot', run.id)!;
         this.reruns.checkExecution(run, s);
-        const prepared = await this.waitActive(active, this.preflight(s)); // Never recompile a fixed bundle.
+        await this.waitActive(active, this.runReview.checkExecution(run, s));
+        const prepared = await this.waitActive(active, this.preflight(s, run.id)); // Never recompile a fixed bundle.
         this.checkActive(active);
         this.reruns.checkExecution(run, s);
+        await this.waitActive(active, this.runReview.checkExecution(run, s));
+        this.checkActive(active);
         outputs = await rpc.call(
           'execute',
           {
@@ -657,6 +956,10 @@ export class Runtime {
         active.abort.abort(new Error('运行已停止'));
         results.push(await this.releaseSession(active, true));
       }
+      results.push(await this.mcpRuns.release(run.id));
+      const desktopSnapshot = this.store.get<FlowRecord>('snapshot', run.id);
+      if (desktopSnapshot?.desktopTarget?.binding)
+        results.push(await this.desktopRuns.release(desktopSnapshot, run.id));
       const blocked = this.executionBlock();
       const state: RunState =
         blocked || active.interruption || results.some((r) => !r.confirmed)
@@ -693,6 +996,8 @@ export class Runtime {
       }
       this.recordExecutionBlock(run.id);
     } finally {
+      active.abort.abort(new Error('运行正在收尾'));
+      await this.mcpRuns.release(run.id);
       clearTimeout(active.cancelTimer);
       this.sessions.finishRun(run.id);
       rpc.close();
@@ -717,10 +1022,37 @@ export class Runtime {
     // A cancellation can overtake execute or arrive after the Run was revoked.
     // Its exact invocation tombstone must be recorded before normal owner checks.
     if (method === 'script.cancel') return this.scripts.cancel(id, args.invocationId);
+    if (method === 'mcp.cancel') return this.mcpRuns.cancel(id, args.nodeInstance);
     if (this.active?.id !== id) throw new Error('运行已停止');
     this.checkActive(this.active);
     const runSignal = this.active.abort.signal;
     const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', id)!;
+    if (method === 'mcp.call') {
+      const active = this.active;
+      const run = this.store.get<Run>('run', id);
+      if (!run) throw new Error('运行不存在');
+      return this.mcpRuns.perform(run, snapshot, args, runSignal, () => this.checkActive(active!));
+    }
+    if (method === 'desktop.replace') {
+      const active = this.active;
+      const run = this.store.get<Run>('run', id);
+      if (!run) throw new Error('运行不存在');
+      return this.desktopRuns.perform(run, snapshot, args.nodeId, args.nodeInstance, () =>
+        this.checkActive(active!),
+      );
+    }
+    if (method === 'output-target.boundary') {
+      if (!snapshot.outputTarget) throw new Error('运行没有所选输出');
+      await this.outputs.record(snapshot);
+      this.checkActive(this.active!);
+      return true;
+    }
+    if (method === 'web-target.boundary') {
+      if (!snapshot.webTarget) throw new Error('运行没有所选网页');
+      await this.webTargets.record(snapshot, this.sessions.selectedPage(id));
+      this.checkActive(this.active!);
+      return true;
+    }
     if (method === 'script.execute') {
       const active = this.active;
       const node = walk(snapshot.flow.steps).find((step) => step.id === args.nodeId);
@@ -816,7 +1148,7 @@ export class Runtime {
           id,
           args.operation === 'screenshot' ? uid() + '.png' : String(args.value),
         );
-      const result = await this.sessions.use(binding, id, command, runSignal);
+      const result = await this.sessions.use(binding, id, command, runSignal, snapshot.webTarget);
       if (args.operation === 'screenshot' || args.operation === 'download')
         return this.registerArtifact(id, command.value, runSignal);
       return result;
@@ -829,6 +1161,7 @@ export class Runtime {
     }
     if (method === 'credential') {
       if (!snapshot.bindings.credentials.includes(args.id)) throw new Error('凭据未授权给此流程');
+      this.localCredentials.assertReadable(args.id);
       const secret = await this.system('credentials.get', { id: args.id });
       this.secrets.push(secret);
       return secret;
@@ -861,12 +1194,31 @@ export class Runtime {
     }
     return { artifactId, runId };
   }
+  private async cancelQueued(run: Run) {
+    try {
+      this.store.state(run.id, 'CANCELLED');
+    } finally {
+      const snapshot = this.store.get<FlowRecord>('snapshot', run.id);
+      if (snapshot?.desktopTarget?.binding) {
+        const cleanup = await this.desktopRuns.release(snapshot, run.id);
+        if (!cleanup.confirmed) {
+          this.store.state(run.id, 'INTERRUPTED', { error: cleanup.error });
+          this.store.attention(
+            'limitation',
+            '应用助手退出待核对',
+            { runId: run.id },
+            'desktop-cleanup:' + run.id,
+          );
+        }
+      }
+    }
+  }
   async control(id: string, action: 'pause' | 'resume' | 'step' | 'cancel') {
     const run = this.store.get<Run>('run', id);
     if (!run) throw new Error('运行不存在');
     if (terminal.has(run.state)) return false;
     if (action === 'cancel' && run.state === 'QUEUED') {
-      this.store.state(id, 'CANCELLED');
+      await this.cancelQueued(run);
       return true;
     }
     const a = this.active;
@@ -979,6 +1331,19 @@ export class Runtime {
   }
   private async finishSuspend(active: Active | undefined): Promise<boolean> {
     const errors: unknown[] = [];
+    const aiCleanup = this.aiSettings.cancelAll().catch((error) => {
+      errors.push(error);
+    });
+    const toolCleanup = this.toolConnections.cancelAll().catch((error) => {
+      errors.push(error);
+    });
+    try {
+      this.desktopPlanning.invalidate();
+      this.desktopRuns.cancelAll();
+      this.planning.cancelAll();
+    } catch (error) {
+      errors.push(error);
+    }
     const ids = new Set<string>(active ? [active.id] : []);
     if (active) {
       try {
@@ -1007,7 +1372,7 @@ export class Runtime {
     for (const run of runs) {
       if (run.state !== 'QUEUED') continue;
       try {
-        this.store.state(run.id, 'CANCELLED');
+        await this.cancelQueued(run);
       } catch (error) {
         errors.push(error);
       }
@@ -1015,6 +1380,8 @@ export class Runtime {
     // Use the existing cooperative cancellation, timeout and cleanup result.
     // A rejected diagnostic must not return before the actual owner finishes.
     if (active) await active.done;
+    await toolCleanup;
+    await aiCleanup;
     if (this.store.fault && !errors.length) errors.push(new Error(this.store.fault));
     if (ids.size) {
       try {
@@ -1036,6 +1403,43 @@ export class Runtime {
     return true;
   }
   async request(method: string, args: any = {}): Promise<any> {
+    if (method.startsWith('credential.local.')) {
+      await this.ready;
+      return this.localCredentials.request(method, args);
+    }
+    if (method.startsWith('ai.configuration.')) {
+      await this.ready;
+      return this.aiSettings.request(method, args);
+    }
+    if (method.startsWith('tool.connection.')) {
+      await this.ready;
+      return this.toolConnections.request(method, args);
+    }
+    if (method.startsWith('learning.')) {
+      await this.ready;
+      return this.learning.request(method, args);
+    }
+    if (method === 'system.desktop.invalidate')
+      return this.desktopPlanning.invalidate(args.observationId);
+    if (method.startsWith('desktop.plan.')) {
+      await this.ready;
+      return this.desktopPlanning.request(method, args);
+    }
+    if (method.startsWith('desktop.run.')) {
+      await this.ready;
+      return this.desktopRuns.request(method, args);
+    }
+    if (method.startsWith('task.')) {
+      await this.ready;
+      if (
+        ['task.generate', 'task.repair.generate'].includes(method) &&
+        this.desktopPlanning.hasTask(args.id)
+      )
+        throw new Error('应用选区仍在生成，请先取消或等待完成');
+      if (['task.save', 'task.adopt', 'task.undo', 'task.cancel'].includes(method))
+        this.desktopPlanning.cancelTask(args.id);
+      return this.planning.request(method, args);
+    }
     switch (method) {
       case 'system.suspend':
         return this.suspend();
@@ -1049,38 +1453,6 @@ export class Runtime {
         this.suspended = false;
         return true;
       }
-      case 'ai.test': {
-        const input = {
-          provider: args.provider,
-          model: args.model,
-          instructions: '仅返回输入中的 value，不添加内容。输出 JSON。',
-          input: { value: 'fictional-check' },
-          schema: {
-            type: 'object',
-            properties: { value: { type: 'string', const: 'fictional-check' } },
-            required: ['value'],
-            additionalProperties: false,
-          },
-        };
-        const key = await this.system('credentials.get', { id: args.provider });
-        try {
-          const result = await generate(input, key, new AbortController().signal);
-          this.store.put('ai-validation', args.provider, {
-            provider: result.provider,
-            model: result.model,
-            time: now(),
-            requestId: result.requestId,
-            status: 'passed',
-          });
-          return {
-            provider: result.provider,
-            model: result.model,
-            usage: result.usage,
-          };
-        } catch (error) {
-          throw new Error(redactedErrorText(error, [key]));
-        }
-      }
       case 'bootstrap':
         return this.bootstrap();
       case 'flow.save':
@@ -1093,6 +1465,7 @@ export class Runtime {
           undefined,
           undefined,
           args.debug === true,
+          args.templateSource,
         );
       case 'flow.create': {
         return this.saveFlow(
@@ -1103,19 +1476,29 @@ export class Runtime {
       case 'run.control':
         return this.control(args.id, args.action);
       case 'run.list':
-        return listRuns(this.store, args);
+        return listRuns(this.store, args, () => ({
+          execution: this.observeExecution(),
+          fault: this.store.fault,
+        }));
+      case 'flow.run.preview':
+        await this.ready;
+        return this.runReview.preview(args);
       case 'run.rerun.preview':
         await this.ready;
         return this.reruns.preview(args);
+      case 'flow.run.confirm':
       case 'run.rerun.confirm': {
         const epoch = this.admissionEpoch;
         const suspended = this.suspended;
         const pending = this.admissions.then(async () => {
           await this.ready;
-          return this.reruns.confirm(args, () => {
+          const check = () => {
             if (suspended) throw new Error('系统正在休眠，恢复后请重新开始运行');
             this.assertAdmission(epoch);
-          });
+          };
+          return method === 'flow.run.confirm'
+            ? this.runReview.confirmOutcome(args, check)
+            : this.reruns.confirm(args, check);
         });
         this.admissions = pending.then(
           () => {},
@@ -1140,8 +1523,14 @@ export class Runtime {
         const snapshot = this.store.get('snapshot', id);
         const rerun = this.reruns.details(id);
         const artifactCleanup = this.artifactCleanup.status(id);
+        const run = this.store.get<Run>('run', id);
         return {
-          run: this.store.get('run', id),
+          run,
+          desktopReceipts: redact(this.desktopRuns.receipts(id), this.secrets),
+          mcpReceipts: this.mcpRuns
+            .receipts(id)
+            .map((receipt) => redactMcpReceipt(receipt, this.secrets)),
+          targetContext: runTargetContext(run, snapshot, this.secrets),
           rerun: {
             ...rerun,
             ...(rerun.reason ? { reason: redact(rerun.reason, this.secrets) } : {}),
@@ -1161,6 +1550,23 @@ export class Runtime {
           scriptBundles: snapshot?.scriptBundles ?? [],
           fault: this.store.fault ? redact(this.store.fault, this.secrets) : undefined,
           execution: this.observeExecution(),
+        };
+      }
+      case 'artifact.preview': {
+        const attemptId = this.learning.status().attemptId;
+        const item = this.store.get<any>('artifact', args.id);
+        if (!item) throw new Error('产物不存在');
+        const result = await this.artifactFiles.preview(item);
+        const base = { artifactId: args.id, name: item.name, size: item.size };
+        const latest = this.store.get<any>('artifact', args.id);
+        if (!latest || digest(latest) !== digest(item))
+          return { ...base, status: 'unavailable', reason: '产物记录已经变化，请重新读取' };
+        if ('reason' in result) return { ...base, status: 'unavailable', reason: result.reason };
+        this.learning.result(attemptId, { runId: item.runId, artifactId: args.id }, result.text);
+        return {
+          ...base,
+          status: 'text',
+          ...redactArtifactText(result.text, [...this.secrets, ...(args.redactionSecrets ?? [])]),
         };
       }
       case 'artifact.resolve': {
@@ -1186,6 +1592,10 @@ export class Runtime {
         if (args.visible && this.executionBlock()) throw new Error(this.executionBlock());
         return this.sessions.embeddedVisibility(args.visible);
       case 'browser.embedded.pick.start':
+      case 'browser.embedded.pick.confirm':
+      case 'browser.embedded.pick.focus':
+      case 'browser.embedded.observation':
+      case 'browser.embedded.pan':
       case 'browser.embedded.pick.validate': {
         if (this.executionBlock()) throw new Error(this.executionBlock());
         if (this.active) {
@@ -1195,7 +1605,11 @@ export class Runtime {
             !['PAUSED', 'WAITING_INPUT'].includes(run.state) ||
             this.active.controlPending
           )
-            throw new Error('请先暂停当前任务，再选取或验证元素');
+            throw new Error(
+              method === 'browser.embedded.observation' || method === 'browser.embedded.pan'
+                ? '请先暂停当前任务，再调整网页查看'
+                : '请先暂停当前任务，再选取或验证元素',
+            );
         }
         return this.system(method, args);
       }
@@ -1245,28 +1659,42 @@ export class Runtime {
         this.store.put('browser', b.id, b);
         return b;
       }
+      case 'schedule.inspect': {
+        await this.ready;
+        return inspectSchedule(this.store, args, (reason) => redact(reason, this.secrets));
+      }
       case 'schedule.save': {
         args = scheduleCreateSchema.parse(args);
         await this.ready;
         this.assertAdmitting();
         const r = this.store.get<FlowRecord>('flow', args.flowId);
         if (!r) throw new Error('流程不存在');
+        if (args.flowUpdatedAt && r.updatedAt !== args.flowUpdatedAt)
+          throw new Error('已保存的流程已改变，请重新选择并核对');
+        const sourceDigest = args.flowUpdatedAt ? digest(r) : undefined;
+        if (args.templateSource) this.templates.assertSource(r.id, args.templateSource);
         await this.templates.preflight(r, true);
         const prepared = await this.preflight(r);
         this.assertAdmitting();
         new Intl.DateTimeFormat('en', { timeZone: args.timezone });
-        const s = {
-          id: uid(),
-          flowId: r.id,
-          versionId: this.version(r, prepared),
-          intervalMinutes: args.intervalMinutes,
-          timezone: args.timezone,
-          enabled: true,
-          nextAt: Date.now() + args.intervalMinutes * 60000,
-          revision: uid(),
-        };
-        this.store.put('schedule', s.id, s);
-        return s;
+        if (args.templateSource) this.templates.assertSource(r.id, args.templateSource);
+        const currentSource = this.store.get('flow', r.id);
+        if (sourceDigest && (!currentSource || digest(currentSource) !== sourceDigest))
+          throw new Error('已保存的流程已改变，请重新选择并核对');
+        return this.store.tx(() => {
+          const s = {
+            id: uid(),
+            flowId: r.id,
+            versionId: this.version(r, prepared),
+            intervalMinutes: args.intervalMinutes,
+            timezone: args.timezone,
+            enabled: true,
+            nextAt: Date.now() + args.intervalMinutes * 60000,
+            revision: uid(),
+          };
+          this.store.put('schedule', s.id, s);
+          return s;
+        });
       }
       case 'schedule.update': {
         const update = scheduleUpdateSchema.parse(args);
@@ -1343,10 +1771,8 @@ export class Runtime {
         return this.templates.create(args.key, args.copyFrom);
       case 'template.detail':
         return this.templates.detail(args.id);
-      case 'template.configure':
-        return this.templates.configure(args.id, args.configuration, args.resources, args.grants);
-      case 'template.input':
-        return this.templates.input(args.id, args.entryId, args.value);
+      case 'template.save':
+        return this.templates.save(args);
       case 'template.answer':
         return this.templates.answer(args.id, args.value);
       case 'flow.export': {
@@ -1381,9 +1807,25 @@ export class Runtime {
   }
   async shutdown() {
     this.stopping = true;
+    const toolErrors: unknown[] = [];
+    const aiCleanup = this.aiSettings.cancelAll().catch((error) => {
+      toolErrors.push(error);
+    });
+    const toolCleanup = this.toolConnections.cancelAll().catch((error) => {
+      toolErrors.push(error);
+    });
+    let planningError: unknown;
+    try {
+      this.desktopPlanning.invalidate();
+      this.desktopRuns.cancelAll();
+      this.planning.cancelAll();
+    } catch (error) {
+      planningError = error;
+    }
     await this.templates.library.dispose();
     clearInterval(this.timer);
     const errors: unknown[] = [];
+    if (planningError) errors.push(planningError);
     // Revoke every script immediately, even if SQLite rejects a subsequent
     // cancellation record or there is no longer an active Worker.
     const scriptCleanup = this.scripts.shutdown().catch(
@@ -1396,7 +1838,7 @@ export class Runtime {
       for (const r of this.store.list<Run>('run'))
         if (r.state === 'QUEUED') {
           try {
-            this.store.state(r.id, 'CANCELLED');
+            await this.cancelQueued(r);
           } catch (error) {
             errors.push(error);
           }
@@ -1424,6 +1866,9 @@ export class Runtime {
     if (!cleanup.confirmed) this.blockExecution(cleanup.error ?? '退出时资源回收未确认');
     const scripts = await scriptCleanup;
     if (!scripts.confirmed) this.blockExecution(scripts.error ?? '退出时脚本回收未确认');
+    await toolCleanup;
+    await aiCleanup;
+    errors.push(...toolErrors);
     try {
       await this.ready;
     } catch (error) {

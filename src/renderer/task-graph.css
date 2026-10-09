@@ -1,0 +1,288 @@
+/* Figma 23:3290: one flow, a full-width graph, and its current-step inspector. */
+.ai-task-columns.ai-task-review.ai-task-full-graph {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ai-task-full-graph > .ai-task-card.ai-task-result {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  min-height: 0;
+  gap: 24px;
+}
+.ai-task-full-graph .task-graph-toolbar {
+  gap: 16px;
+}
+.ai-task-full-graph .task-graph-toolbar > button {
+  min-width: 144px;
+}
+.ai-task-full-graph .task-graph-toolbar > button[aria-pressed='true'] {
+  color: var(--fa-text-inverse);
+  background: var(--fa-action-primary);
+}
+.task-graph-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 760fr) minmax(280px, 368fr);
+  gap: 24px;
+  align-items: start;
+}
+.task-graph-workspace > .ai-task-graph {
+  height: 710px;
+  padding: 15px;
+  border: 1px solid var(--fa-border-default);
+  background: var(--fa-bg-surface);
+  border-radius: 12px;
+}
+.task-graph-workspace > .ai-task-graph > .react-flow {
+  height: calc(100% - 14px) !important;
+}
+.task-step-inspector {
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.task-graph-workspace > .task-step-inspector {
+  min-height: 710px;
+}
+.task-step-inspector h2 {
+  font-size: 18px;
+  line-height: 28px;
+  overflow-wrap: anywhere;
+}
+.task-step-inspector h3 {
+  font-size: 14px;
+  line-height: 22px;
+  margin: 0;
+}
+.task-step-inspector .task-step-position {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--fa-text-secondary);
+}
+.task-step-summary {
+  padding: 12px;
+  background: var(--fa-action-subtle);
+  border-radius: 8px;
+  line-height: 22px;
+}
+.task-step-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+}
+.task-step-facts dt {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--fa-text-secondary);
+  margin-bottom: 4px;
+}
+.task-step-facts dd {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 22px;
+}
+.task-step-value {
+  min-width: 0;
+}
+.task-step-value > summary {
+  cursor: pointer;
+}
+.task-step-value[open] > :not(summary) {
+  margin-top: 8px;
+}
+.task-step-inspector .task-step-value pre {
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.task-step-branch,
+.task-step-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.task-step-branch button,
+.task-step-actions button {
+  height: auto;
+  min-height: 40px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.task-step-browse {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.task-step-browse button {
+  flex: 1;
+  white-space: nowrap;
+}
+.task-step-original {
+  font-size: 12px;
+}
+.task-step-original pre {
+  max-height: 260px;
+  overflow: auto;
+}
+.task-step-empty {
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+}
+.task-step-actions {
+  margin-top: auto;
+}
+.task-step-graph {
+  padding: 23px;
+}
+.task-step-graph .task-step-actions {
+  margin-top: 0;
+  gap: 16px;
+}
+.task-step-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.task-step-field h3 {
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+}
+.task-step-field > p {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  color: var(--fa-text-secondary);
+}
+.task-step-graph-details {
+  min-width: 0;
+  font-size: 13px;
+}
+.task-step-graph-details > summary {
+  cursor: pointer;
+  color: var(--fa-text-secondary);
+}
+.task-step-graph-details[open] > :not(summary) {
+  margin-top: 16px;
+}
+.task-graph-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.task-node-art {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.task-node-art img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: block;
+  max-width: none;
+}
+.task-node-art--document img {
+  top: -1px;
+  left: -1px;
+  transform: none;
+}
+.task-node-art--terminal {
+  border-radius: 999px;
+  background: var(--fa-bg-subtle);
+}
+.flow-task-node.is-selected .task-node-art,
+.react-flow__node-semantic:focus-visible .flow-task-node .task-node-art {
+  filter: drop-shadow(0 0 1px var(--fa-action-primary));
+}
+.flow-task-node .react-flow__handle {
+  opacity: 0;
+}
+.task-node-copy {
+  position: absolute;
+  top: 17px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+}
+.task-node-copy b {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+}
+.task-branch-label {
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 400;
+}
+.task-branch-label.is-positive {
+  color: var(--fa-status-success);
+}
+.task-node-copy small {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.task-node-copy b,
+.task-node-copy small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.flow-task-node.flow-shape--decision .task-node-copy {
+  top: 39px;
+  left: 32px;
+  right: 32px;
+}
+.flow-task-node.flow-shape--data .task-node-copy,
+.flow-task-node.flow-shape--manual .task-node-copy,
+.flow-task-node.flow-shape--loop .task-node-copy {
+  left: 36px;
+  right: 36px;
+}
+@container (max-width: 900px) {
+  .task-graph-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .task-graph-workspace > .ai-task-graph {
+    height: 480px;
+  }
+  .task-graph-workspace > .task-step-inspector {
+    min-height: 0;
+  }
+}
+
+.task-step-graph-navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--fa-border-default);
+  min-width: 0;
+}
+.task-step-graph-navigation > label,
+.task-step-graph-navigation select {
+  min-width: 0;
+  max-width: 100%;
+}
+.task-step-graph-navigation > p {
+  margin: 0;
+}

@@ -1,0 +1,91 @@
+.planning-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+.planning-questions-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.planning-questions-heading h2 {
+  font-size: 18px;
+  line-height: 28px;
+  margin: 0;
+}
+.planning-questions-heading p,
+.planning-answer-footer small,
+.planning-questions-note {
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--fa-text-secondary);
+  margin: 0;
+}
+.planning-questions fieldset {
+  min-width: 0;
+  margin: 0;
+}
+.planning-questions legend {
+  overflow-wrap: anywhere;
+}
+.planning-questions textarea {
+  min-height: 104px;
+  resize: vertical;
+}
+.planning-questions .ai-task-options button {
+  min-height: 40px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+.planning-answer-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.planning-answer-footer button {
+  min-height: 40px;
+  font-size: 12px;
+  padding: 8px 12px;
+}
+.task-understanding-fact .task-output-name-error {
+  color: var(--fa-status-error);
+  font-size: 12px;
+  line-height: 20px;
+}
+.task-understanding-fact input[aria-invalid='true'] {
+  border-color: var(--fa-status-error);
+}
+.task-understanding-input-list {
+  padding-left: 20px;
+  margin: 0;
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 22px;
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.task-understanding-output-state {
+  font-size: 12px;
+  color: var(--fa-status-warning);
+}
+
+.planning-previous-answers summary {
+  cursor: pointer;
+  padding: 8px 0;
+  font-size: 14px;
+  line-height: 24px;
+  color: var(--fa-text-primary);
+}
+.planning-previous-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 8px;
+}

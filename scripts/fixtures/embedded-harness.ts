@@ -1,5 +1,5 @@
 import { build } from 'esbuild';
-import { _electron as electron } from 'playwright-core';
+import { desktopElectron as electron } from '../desktop-session.mjs';
 import electronPath from 'electron';
 import { join, resolve } from 'node:path';
 import type { BrowserCommand } from '../../src/shared/types';

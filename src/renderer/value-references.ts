@@ -1,4 +1,6 @@
 import type { Flow, Step } from '../shared/types';
+import { flowOutline } from './flow-outline';
+import { taskStepTitle } from './task-step-title';
 
 export type ReferenceChoice = {
   path: string;
@@ -45,6 +47,7 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
   const scope = referenceScope(flow.steps, selected);
   if (!scope) return [];
   const result: ReferenceChoice[] = [];
+  const outline = flowOutline(flow.steps);
   function add(path: string, label: string, group: ReferenceChoice['group'], hint: string) {
     result.push({ path, label, group, hint });
   }
@@ -71,8 +74,8 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
     fields(value, 'params.' + key, key, '流程参数');
   }
   for (const node of scope.steps) {
-    const label =
-      typeof node.name === 'string' && !['file', 'excel'].includes(node.type) ? node.name : node.id;
+    const ordinal = outline.byId.get(node.id)!.ordinal;
+    const label = `${String(ordinal).padStart(2, '0')} ${taskStepTitle(node)}`;
     const path = 'steps.' + node.id;
     add(
       path,

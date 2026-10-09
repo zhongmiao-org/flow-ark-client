@@ -1,0 +1,385 @@
+/* Figma 23:5921 full-width observation; selected-target focus remains separate. */
+.browser-sidebar.browser-observation-expanded,
+.with-browser .browser-sidebar.browser-observation-expanded,
+.editor-region.is-compact.has-browser .browser-sidebar.browser-observation-expanded {
+  position: fixed;
+  inset: 40px 0 0 72px;
+  z-index: 80;
+  width: auto;
+  min-width: 0;
+  height: auto;
+  flex: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  gap: 0;
+  background: var(--fa-bg-canvas);
+}
+.browser-sidebar.browser-observation > .browser-observation-header {
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  height: auto;
+  min-height: 62px;
+  padding: 12px 16px;
+}
+.browser-sidebar.browser-observation > header > .browser-observation-actions {
+  display: flex;
+  margin-left: auto;
+  gap: 8px;
+}
+.browser-observation-actions button {
+  min-height: 40px;
+  white-space: nowrap;
+}
+.browser-observation-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 8px 16px;
+  background: var(--fa-bg-subtle);
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  border-bottom: 1px solid var(--fa-border-default);
+}
+.browser-observation-expanded .browser-address {
+  max-width: none;
+}
+.browser-observation-modes {
+  display: flex;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  gap: 8px;
+}
+.browser-observation-modes button {
+  min-height: 40px;
+  padding: 8px 16px;
+  white-space: nowrap;
+}
+.browser-observation-modes button[aria-pressed='true'] {
+  border-color: var(--fa-action-primary);
+  color: var(--fa-action-primary);
+  background: var(--fa-action-subtle);
+}
+.browser-observation-expanded .browser-viewport {
+  min-width: 0;
+}
+.browser-page-area {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.browser-observation-workspace {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+.browser-sidebar.browser-observation-expanded > .browser-observation-header {
+  min-height: 56px;
+  padding: 8px 12px;
+  justify-content: flex-start;
+  background: var(--fa-bg-surface);
+  border-bottom: 0;
+}
+.browser-observation-expanded .browser-observation-workspace {
+  padding: 32px;
+  gap: 16px;
+}
+.browser-observation-heading h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  line-height: 40px;
+  color: var(--fa-text-primary);
+}
+.browser-observation-heading p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--fa-text-secondary);
+}
+.browser-observation-expanded .browser-observation-summary {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.browser-observation-expanded .browser-address {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.browser-observation-expanded .browser-address input {
+  height: 40px;
+  background: var(--fa-bg-surface);
+}
+.browser-observation .browser-error {
+  flex-shrink: 0;
+  max-height: 120px;
+  overflow: auto;
+}
+.browser-status-error p {
+  margin: 0 0 8px;
+}
+.browser-status-error button {
+  min-height: 32px;
+}
+.browser-observation-expanded .browser-viewport {
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+}
+.browser-sidebar.browser-observation.browser-observation-expanded footer {
+  flex-wrap: wrap;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  color: var(--fa-action-primary);
+  background: var(--fa-action-subtle);
+  font-size: 12px;
+  line-height: 20px;
+}
+.browser-sidebar.browser-observation.browser-observation-expanded footer > span:last-child {
+  margin-left: 0;
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+}
+.browser-sidebar.browser-observation.browser-observation-expanded footer {
+  overflow-wrap: anywhere;
+}
+@media (min-width: 1440px) {
+  .browser-sidebar.browser-observation-expanded,
+  .with-browser .browser-sidebar.browser-observation-expanded,
+  .editor-region.is-compact.has-browser .browser-sidebar.browser-observation-expanded {
+    left: 224px;
+  }
+  .application-shell .app:has(.browser-observation-expanded) .sidebar {
+    width: 224px;
+    flex-basis: 224px;
+    padding: 24px;
+  }
+  .application-shell
+    .app:has(.browser-observation-expanded)
+    :is(.brand-name, .workspace-label, .nav-label, .sidebar-bottom) {
+    display: revert;
+  }
+  .application-shell .app:has(.browser-observation-expanded) .sidebar nav button {
+    width: 100%;
+    padding: 10px;
+    font-size: 13px;
+    gap: 10px;
+    justify-content: flex-start;
+  }
+  .application-shell .app:has(.browser-observation-expanded) .sidebar nav button b {
+    position: static;
+    font-size: 10px;
+  }
+  .application-shell .app:has(.browser-observation-expanded) .brand {
+    justify-content: flex-start;
+  }
+  .application-shell
+    .app:has(.browser-observation-expanded)
+    :is(.workspace-label, .sidebar-bottom) {
+    display: flex;
+  }
+}
+@media (max-width: 1100px) {
+  .browser-observation-expanded .browser-observation-workspace {
+    padding: 16px;
+    gap: 12px;
+  }
+}
+
+.editor-region .browser-observation-workspace {
+  gap: 16px;
+}
+
+.editor-region .browser-editor-panel:not(.browser-observation-expanded) > header {
+  padding: 0;
+  min-height: 40px;
+}
+.browser-editor-panel:not(.browser-observation-expanded) > header strong {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+.browser-editor-panel .browser-pick-current {
+  min-width: 128px;
+  height: 40px;
+}
+.browser-editor-panel .browser-address {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px 32px;
+  gap: 6px;
+}
+.browser-editor-panel .browser-address > label {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--fa-text-secondary);
+}
+.editor-region .browser-editor-panel:not(.browser-observation-expanded) .browser-address input {
+  height: 32px;
+  padding: 6px;
+  border: 0;
+  font-size: 13px;
+}
+.browser-editor-panel .browser-address button {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 6px;
+}
+.browser-pick-guidance {
+  flex-shrink: 0;
+  min-height: 72px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-action-subtle);
+  color: var(--fa-action-primary);
+  font-size: 14px;
+  line-height: 22px;
+}
+.browser-editor-panel .browser-viewport {
+  border-radius: 12px;
+  min-height: 1px;
+}
+.browser-editor-scale {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.browser-session-disclosure > button {
+  width: 100%;
+  min-height: 40px;
+}
+.browser-session-disclosure {
+  flex-shrink: 0;
+}
+.browser-session-details {
+  max-height: 200px;
+  overflow: auto;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.browser-session-details dl {
+  margin: 0 0 12px;
+}
+.browser-session-details dl > div {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.browser-session-details dt {
+  color: var(--fa-text-secondary);
+}
+.browser-session-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 1100px) {
+  .editor-region .browser-editor-panel:not(.browser-observation-expanded) > header {
+    gap: 8px;
+  }
+  .browser-editor-panel .browser-pick-guidance {
+    display: none;
+  }
+  .editor-region .browser-editor-panel .browser-observation-workspace {
+    gap: 8px;
+  }
+  .browser-session-details {
+    max-height: 140px;
+  }
+}
+
+.browser-target-focus .browser-observation-heading h1 {
+  margin-bottom: 0;
+  overflow-wrap: anywhere;
+}
+.browser-sidebar.browser-target-focus .browser-observation-workspace {
+  padding: 24px 32px 24px 16px;
+  gap: 8px;
+}
+.browser-sidebar.browser-target-focus > .browser-observation-header {
+  gap: 12px;
+}
+.browser-target-focus > header > button {
+  min-width: 92px;
+}
+.browser-target-focus button,
+.browser-target-focus .breadcrumbs {
+  font-size: 14px;
+  line-height: 22px;
+}
+.browser-target-focus .browser-observation-heading {
+  margin-bottom: 2px;
+}
+.browser-sidebar.browser-target-focus .browser-observation-actions[hidden] {
+  display: none;
+}
+.browser-focus-actions {
+  gap: 12px;
+}
+.browser-focus-actions button {
+  min-width: 144px;
+}
+.browser-focus-actions button:nth-child(n + 2) {
+  min-width: 180px;
+}
+.browser-focus-card {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  height: clamp(236px, calc(100dvh - 466px), 520px);
+  gap: 12px;
+  padding: 24px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-surface);
+}
+.browser-sidebar.browser-target-focus .browser-focus-card .browser-viewport {
+  min-height: 40px;
+  border: 0;
+  border-radius: 0;
+}
+.browser-focus-caption {
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--fa-text-secondary);
+}
+.browser-focus-target {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--fa-border-default);
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+  color: var(--fa-text-primary);
+}
+.browser-focus-page {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.browser-sidebar.browser-observation.browser-target-focus footer {
+  margin-top: 2px;
+  min-height: 72px;
+  font-size: 14px;
+  line-height: 22px;
+  align-items: flex-start;
+}

@@ -1,0 +1,596 @@
+/* Figma 1:3794 (inbox), 2:2911 (human request), and human request state boards. */
+.attention-page[hidden] {
+  display: none;
+}
+.attention-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+.attention-heading h1 {
+  font-size: 28px;
+  line-height: 40px;
+  margin: 0 0 8px;
+}
+.attention-heading h1:focus {
+  outline: none;
+}
+.attention-heading p {
+  margin: 0;
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.attention-toolbar {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.attention-tabs {
+  display: flex;
+  gap: 8px;
+  margin-right: auto;
+}
+.attention-tabs button {
+  border-color: transparent;
+  gap: 8px;
+}
+.attention-tabs button[aria-selected='true'] {
+  background: var(--fa-action-subtle);
+  color: var(--fa-action-primary);
+}
+.attention-tabs span {
+  font-size: 12px;
+}
+.attention-search,
+.attention-filter {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+}
+.attention-search input {
+  width: 240px;
+}
+.attention-list {
+  display: grid;
+  gap: 24px;
+}
+.attention-card,
+.attention-detail-card {
+  min-width: 0;
+  background: var(--fa-bg-surface);
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  padding: 24px;
+}
+.attention-card.is-expanded.is-warning {
+  border-color: var(--fa-status-warning);
+}
+.attention-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.attention-card time {
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+}
+.attention-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--fa-radius-999);
+  font-size: 12px;
+  line-height: 18px;
+  background: var(--fa-bg-subtle);
+  color: var(--fa-text-secondary);
+}
+.attention-status.is-warning {
+  background: var(--fa-status-warning-bg);
+  color: var(--fa-status-warning);
+}
+.attention-status.is-error {
+  background: var(--fa-status-error-bg);
+  color: var(--fa-status-error);
+}
+.attention-card h2,
+.attention-detail-card h2 {
+  font-size: 18px;
+  line-height: 28px;
+  margin: 16px 0 8px;
+  overflow-wrap: anywhere;
+}
+.attention-card p,
+.attention-detail-card p {
+  margin: 8px 0 16px;
+  line-height: 24px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.attention-muted {
+  color: var(--fa-text-secondary);
+  font-size: 13px;
+}
+.attention-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+.attention-actions button {
+  min-width: 132px;
+}
+.attention-empty {
+  padding: 64px 24px;
+  text-align: center;
+  background: var(--fa-bg-surface);
+  border: 1px dashed var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+}
+.attention-empty h2 {
+  font-size: 20px;
+}
+.attention-empty p {
+  color: var(--fa-text-secondary);
+}
+.attention-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 728fr) minmax(280px, 400fr);
+  gap: 24px;
+  align-items: start;
+}
+.attention-detail-card {
+  padding: 28px;
+}
+.attention-context {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.attention-context h2 {
+  margin-top: 0;
+}
+.attention-context p {
+  margin: 0;
+}
+.attention-context > button {
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+.attention-related-runs h3 {
+  margin: 8px 0 12px;
+  font-size: 14px;
+  line-height: 24px;
+}
+.attention-related-runs ul {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  max-height: 480px;
+  overflow-y: auto;
+  scroll-padding: 12px;
+}
+.attention-related-runs li {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  overflow-wrap: anywhere;
+}
+.attention-related-runs strong {
+  font-size: 14px;
+  line-height: 24px;
+}
+.attention-related-runs code {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 20px;
+}
+.attention-related-runs button {
+  width: 100%;
+  white-space: normal;
+}
+.attention-facts {
+  display: grid;
+  gap: 16px;
+  margin: 24px 0;
+}
+.attention-facts dt {
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+  margin-bottom: 6px;
+}
+.attention-facts dd {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 24px;
+}
+.attention-raw {
+  padding: 12px 16px;
+  background: var(--fa-bg-subtle);
+  border-radius: var(--fa-radius-8);
+}
+.attention-raw summary {
+  cursor: pointer;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+}
+.attention-page pre {
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 20px;
+}
+.attention-answer {
+  margin-top: 24px;
+  border-top: 1px solid var(--fa-border-default);
+  padding-top: 24px;
+}
+.attention-fields {
+  margin: 0 0 20px;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  min-width: 0;
+}
+.attention-fields legend {
+  padding: 0 6px;
+  font-size: 13px;
+}
+.attention-fields label {
+  display: grid;
+  gap: 8px;
+}
+.attention-fields textarea {
+  width: 100%;
+  resize: vertical;
+}
+.attention-review-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  cursor: pointer;
+  line-height: 24px;
+}
+.attention-review-check input {
+  width: 16px;
+  height: 16px;
+  margin: 4px 0;
+  accent-color: var(--fa-action-primary);
+  flex: 0 0 auto;
+}
+.attention-banner {
+  border-radius: var(--fa-radius-8);
+  padding: 16px;
+  margin-bottom: 20px;
+  line-height: 24px;
+  overflow-wrap: anywhere;
+}
+.attention-banner.is-error {
+  background: var(--fa-status-error-bg);
+  color: var(--fa-status-error);
+}
+.attention-banner.is-warning {
+  background: var(--fa-status-warning-bg);
+  color: var(--fa-status-warning);
+}
+.attention-banner.is-success {
+  background: var(--fa-status-success-bg);
+  color: var(--fa-status-success);
+}
+.attention-error {
+  color: var(--fa-status-error);
+}
+.attention-page {
+  container-type: inline-size;
+}
+@container (max-width: 850px) {
+  .attention-detail-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .attention-detail-card {
+    padding: 24px;
+  }
+  .attention-heading {
+    flex-wrap: wrap;
+  }
+}
+@container (max-width: 550px) {
+  .attention-toolbar {
+    align-items: stretch;
+  }
+  .attention-tabs {
+    width: 100%;
+  }
+  .attention-search {
+    flex: 1;
+    min-width: 160px;
+  }
+  .attention-search input {
+    width: 100%;
+  }
+}
+
+.attention-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 8px;
+  background: currentColor;
+}
+.attention-status.is-success {
+  background: var(--fa-status-success-bg);
+  color: var(--fa-status-success);
+}
+.attention-card.is-compact {
+  padding-bottom: 12px;
+}
+.attention-card.is-compact .attention-card-heading {
+  justify-content: flex-start;
+  gap: 12px 16px;
+}
+.attention-card.is-compact h2 {
+  flex: 1;
+  margin: 0;
+  min-width: min(240px, 100%);
+}
+.attention-card.is-compact .attention-actions {
+  margin-top: 16px;
+}
+.attention-card.is-compact .attention-actions button {
+  min-width: 120px;
+}
+.attention-card.is-expanded > .attention-actions > .primary {
+  min-width: 180px;
+}
+.attention-card.is-expanded > .attention-actions > button:not(.primary) {
+  min-width: 152px;
+}
+.attention-card.is-expanded {
+  padding-bottom: 16px;
+}
+.attention-card > p {
+  font-size: 14px;
+  line-height: 22px;
+  margin: 16px 0 0;
+}
+.attention-card > .attention-actions {
+  margin-top: 16px;
+}
+.attention-status {
+  padding: 5px 12px;
+}
+
+.attention-toolbar label,
+.attention-toolbar input,
+.attention-toolbar select {
+  margin: 0;
+}
+.attention-toolbar input,
+.attention-toolbar select {
+  height: 40px;
+}
+.attention-tabs {
+  gap: 24px;
+}
+.attention-tabs button {
+  padding-inline: 0;
+  background: transparent;
+}
+.attention-tabs button[aria-selected='true'] {
+  background: transparent;
+}
+
+/* 2:2911: request content and schema fields stay in the 728/400 split. */
+.attention-detail-layout > .attention-detail-card {
+  min-height: 676px;
+}
+.attention-detail-layout > .attention-context {
+  padding: 24px;
+  gap: 16px;
+}
+.attention-context p,
+.attention-request-content > div {
+  font-size: 14px;
+  line-height: 22px;
+}
+.attention-request-content {
+  margin: 20px 0;
+}
+.attention-request-content > span,
+.attention-source-facts dt {
+  display: block;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--fa-text-secondary);
+  margin-bottom: 8px;
+}
+.attention-request-content > div {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 12px;
+  min-height: 108px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-subtle);
+}
+.attention-request-card .attention-answer {
+  border: 0;
+  margin-top: 20px;
+  padding: 0;
+}
+.attention-request-card .attention-fields {
+  border: 0;
+  padding: 0;
+  margin-bottom: 28px;
+}
+.attention-request-card .attention-fields > legend {
+  padding: 0;
+  margin-bottom: 12px;
+}
+.attention-request-card .attention-fields input:not([type='checkbox']),
+.attention-request-card .attention-fields select {
+  min-height: 40px;
+  margin: 0;
+}
+.attention-request-card .attention-answer .attention-actions {
+  margin-top: 20px;
+}
+.attention-request-card .attention-actions button {
+  min-width: 180px;
+}
+.attention-stop-confirm {
+  margin-top: 20px;
+}
+.attention-request-technical {
+  margin-top: 28px;
+  border-top: 1px solid var(--fa-border-default);
+  padding-top: 16px;
+}
+.attention-request-technical > summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--fa-text-secondary);
+}
+.attention-source-facts {
+  margin: 4px 0;
+}
+.attention-source-facts dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.attention-banner > strong {
+  font-size: 16px;
+  line-height: 24px;
+}
+.attention-banner > p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 22px;
+}
+.attention-banner > button {
+  margin-top: 12px;
+}
+@container (max-width: 850px) {
+  .attention-detail-layout > .attention-detail-card {
+    min-height: 0;
+  }
+}
+
+.attention-request-card .attention-fields > .template-field {
+  margin: 0;
+}
+.attention-request-card .attention-fields input:not([type='checkbox']),
+.attention-request-card .attention-fields select {
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 22px;
+  height: 40px;
+}
+
+/* Human request context uses the two disclosure actions in 2:2911. */
+.attention-human-context > h2 {
+  margin: 0;
+}
+.attention-context-links {
+  display: grid;
+  gap: 16px;
+}
+.attention-context-disclosure {
+  min-width: 0;
+}
+.attention-context-disclosure > summary {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-bg-surface);
+  font-size: 13px;
+  line-height: 22px;
+  text-align: center;
+  cursor: pointer;
+  list-style: none;
+}
+.attention-context-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.attention-context-disclosure > summary:hover,
+.attention-context-disclosure[open] > summary {
+  border-color: var(--fa-action-primary);
+  color: var(--fa-action-primary);
+  background: var(--fa-action-subtle);
+}
+.attention-context-disclosure > summary:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 2px;
+}
+.attention-context-body {
+  display: grid;
+  gap: 16px;
+  padding-top: 16px;
+}
+.attention-context-body > h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+}
+.attention-context-body > button {
+  width: 100%;
+}
+.attention-context-body .attention-source-facts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.attention-context-body .attention-source-facts dt {
+  margin: 0;
+}
+.attention-context-body .attention-source-facts dd + dt {
+  margin-top: 8px;
+}
+
+/* 2:2911: template-supplied target and proposed content remain separate. */
+.attention-review-content {
+  display: grid;
+  gap: 26px;
+  margin: 20px 0;
+}
+.attention-review-content dt {
+  margin-bottom: 8px;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.attention-review-content dd {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.attention-review-preview {
+  min-height: 108px;
+  padding: 12px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-12);
+  background: var(--fa-bg-subtle);
+}

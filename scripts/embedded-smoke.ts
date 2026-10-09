@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { _electron as electron } from 'playwright-core';
+import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
 import { mkdtemp, mkdir, writeFile, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -22,6 +22,7 @@ const app = await electron.launch({
   timeout: 30000,
 });
 const evidence: any = { passed: false, data, screenshots: [] };
+let request: ((method: string, args?: any) => Promise<any>) | undefined;
 try {
   const page = await app.firstWindow();
   await page.waitForFunction(() => Boolean((window as any).flowark));
@@ -30,7 +31,9 @@ try {
       method,
       args,
     });
+  request = call;
   evidence.version = await app.evaluate(({ app, BrowserWindow }) => {
+    BrowserWindow.getAllWindows()[0].setTitle('FlowArk 内置网页隔离测试（自动退出）');
     (globalThis as any).unexpectedShown = [];
     const main = BrowserWindow.getAllWindows()[0].id;
     app.on('browser-window-created', (_event, win) =>
@@ -71,7 +74,35 @@ try {
   const browser = (await call('bootstrap')).browsers.find((b: any) => b.product === 'embedded');
   assert.equal(browser.product, 'embedded');
   const record = await call('flow.create');
-  const flow = { ...formLabFlow(lab.url), id: record.id };
+  const flow = {
+    ...formLabFlow(lab.url),
+    id: record.id,
+    name: '内置网页生命周期验证',
+    steps: [
+      formBrowser('open', 'navigate', '', lab.url),
+      formBrowser('fill_name', 'fill', '#fullName', formExpected.fullName),
+      formBrowser('read_name', 'inputValue', '#fullName'),
+      {
+        id: 'verify_name',
+        type: 'assert',
+        version: 1,
+        actual: { $ref: 'steps.read_name' },
+        operator: 'equals',
+        expected: formExpected.fullName,
+      },
+      formBrowser('submit', 'click', '#submit'),
+      formBrowser('receipt', 'wait', '#receipt:not(:empty)'),
+      {
+        id: 'read_file',
+        type: 'file',
+        version: 1,
+        operation: 'read',
+        binding: 'work',
+        name: 'fictional.txt',
+        content: '',
+      },
+    ],
+  };
   const bindings = { files: { work: data }, browserId: browser.id, credentials: [] };
   await call('flow.save', {
     flow,
@@ -79,7 +110,7 @@ try {
   });
   await page.getByRole('button', { name: '本地设置', exact: true }).click();
   await page.getByRole('button', { name: '我的流程', exact: true }).click();
-  await page.getByRole('button', { name: '编辑 复杂表单功能验证', exact: true }).click();
+  await page.getByRole('button', { name: `编辑 ${flow.name}`, exact: true }).click();
   // Exercise the actual binding UI; a non-workspace imported name must be configurable.
   await page.getByRole('button', { name: '参数与绑定', exact: true }).click();
   await app.evaluate(({ dialog }, path) => {
@@ -126,7 +157,7 @@ try {
   assert.equal(
     detail.events.find((e: any) => e.type === 'node-end' && e.nodeInstance === 'read_name').data
       .outputPreview,
-    '"测试用户甲"',
+    JSON.stringify(formExpected.fullName),
   );
   assert.equal(lab.state.attempts, 0);
   await mkdir('test-results', { recursive: true });
@@ -140,7 +171,7 @@ try {
     if (['FAILED', 'INTERRUPTED'].includes(detail.run.state))
       throw new Error(JSON.stringify({ run: detail.run, events: detail.events.slice(-5) }));
     return detail.run.state === 'SUCCEEDED';
-  }, '完整表单');
+  }, '平台夹具字段与提交回执');
   assert.deepEqual(lab.state.accepted[0].fields, formExpected);
   assert.equal((await call('browser.embedded.status')).visible, false);
   assert.equal(
@@ -183,7 +214,7 @@ try {
     if (['FAILED', 'INTERRUPTED'].includes(detail.run.state))
       throw new Error(JSON.stringify({ run: detail.run, events: detail.events.slice(-5) }));
     return detail.run.state === 'SUCCEEDED';
-  }, '取消后重开上传');
+  }, '取消后重开提交');
   assert.equal(lab.state.attempts, 2);
   assert.deepEqual(lab.state.accepted[1].fields, formExpected);
   evidence.cancelled = cancellation.id;
@@ -259,12 +290,30 @@ try {
   assert.deepEqual(await app.evaluate(() => (globalThis as any).unexpectedShown), []);
   evidence.noExtraVisibleWindow = true;
   evidence.passed = true;
-  console.log('Desktop debug, field receipt, cancellation and fresh browser upload passed');
+  console.log(
+    'Desktop debug, platform field receipt, cancellation, download and session loss passed',
+  );
 } finally {
   const child = app.process();
   const exited = new Promise((resolve) =>
     child.once('exit', (code, signal) => resolve({ code, signal })),
   );
+  // Cancel only this isolated profile's work, including a paused run left by a
+  // failed assertion, so the normal quit confirmation cannot leave an old app.
+  if (request) {
+    try {
+      for (const run of (await request('bootstrap')).runs)
+        if (['QUEUED', 'RUNNING', 'PAUSED', 'WAITING_INPUT', 'CANCELLING'].includes(run.state))
+          await request('run.control', { id: run.id, action: 'cancel' });
+      const until = Date.now() + 10000;
+      while ((await request('bootstrap')).execution?.active) {
+        if (Date.now() > until) throw new Error('隔离运行尚未结束');
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+    } catch (error) {
+      evidence.cleanupError = String(error);
+    }
+  }
   await app.evaluate(({ Menu }) => {
     setTimeout(
       () =>
