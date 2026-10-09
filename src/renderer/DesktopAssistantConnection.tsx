@@ -1,6 +1,7 @@
-import { Alert, Badge, Button, Tag, type AlertRef } from 'antd';
+import { Alert, Badge, Button, Collapse, Descriptions, Tag, type AlertRef } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import useDesktopWindows from './useDesktopWindows';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 
 export type AssistantPhase = 'setup' | 'connected' | 'recovery';
 
@@ -112,20 +113,21 @@ export default function DesktopAssistantConnection({
         <h3>FlowArk 本机应用助手</h3>
         <p>随客户端提供，在这台 Mac 上运行，无需安装其他连接程序。</p>
       </div>
-      <dl className="tool-assistant-facts">
-        <div>
-          <dt>工作区</dt>
-          <dd>本机桌面 · TextEdit（文本编辑）</dd>
-        </div>
-        <div>
-          <dt>账号</dt>
-          <dd>此助手不连接云端账号；文档归属需在任务中核对</dd>
-        </div>
-        <div>
-          <dt>操作范围</dt>
-          <dd>本次任务明确选择的窗口与原选区</dd>
-        </div>
-      </dl>
+      <Descriptions
+        className="tool-connection-facts"
+        column={1}
+        bordered
+        size="small"
+        items={[
+          { key: 'workspace', label: '工作区', children: '本机桌面 · TextEdit（文本编辑）' },
+          {
+            key: 'account',
+            label: '账号',
+            children: '此助手不连接云端账号；文档归属需在任务中核对',
+          },
+          { key: 'scope', label: '操作范围', children: '本次任务明确选择的窗口与原选区' },
+        ]}
+      />
     </>
   );
   const capabilities = (
@@ -146,34 +148,40 @@ export default function DesktopAssistantConnection({
   );
   const records = (
     <>
-      <dl className="tool-assistant-facts">
-        <div>
-          <dt>系统权限</dt>
-          <dd>
-            {permission === 'granted'
-              ? '本次检查已授予'
-              : permission === 'not-granted'
-                ? '尚未授予'
-                : '尚未核对'}
-          </dd>
-        </div>
-        <div>
-          <dt>本次任务授权</dt>
-          <dd>尚未选择窗口，未授予读取或修改授权</dd>
-        </div>
-        <div>
-          <dt>最近检查</dt>
-          <dd>
-            {snapshot
+      <Descriptions
+        className="tool-connection-facts"
+        column={1}
+        bordered
+        size="small"
+        items={[
+          {
+            key: 'permission',
+            label: '系统权限',
+            children:
+              permission === 'granted'
+                ? '本次检查已授予'
+                : permission === 'not-granted'
+                  ? '尚未授予'
+                  : '尚未核对',
+          },
+          {
+            key: 'authorization',
+            label: '本次任务授权',
+            children: '尚未选择窗口，未授予读取或修改授权',
+          },
+          {
+            key: 'checked',
+            label: '最近检查',
+            children: snapshot
               ? new Date(snapshot.observedAt).toLocaleString('zh-CN')
               : loading
                 ? '检查中'
                 : error
                   ? '本次检查未完成'
-                  : '尚未检查'}
-          </dd>
-        </div>
-      </dl>
+                  : '尚未检查',
+          },
+        ]}
+      />
       {snapshot?.expiresAt && !expired && !loading && !settingsChanged && (
         <p className="tool-disclaimer">
           本次观察有效至 {new Date(snapshot.expiresAt).toLocaleTimeString('zh-CN')}
@@ -262,10 +270,16 @@ export default function DesktopAssistantConnection({
                   </div>
                 </>
               )}
-              <details className="tool-assistant-records">
-                <summary>来源与操作范围</summary>
-                {source}
-              </details>
+              <Collapse
+                items={[
+                  {
+                    key: 'source',
+                    onKeyDown: activateCollapseWithSpace,
+                    label: '来源与操作范围',
+                    children: source,
+                  },
+                ]}
+              />
               <Alert
                 type="info"
                 showIcon
@@ -357,10 +371,16 @@ export default function DesktopAssistantConnection({
           </div>
 
           {!managed && (
-            <details className="tool-assistant-records">
-              <summary>权限与检查记录</summary>
-              {records}
-            </details>
+            <Collapse
+              items={[
+                {
+                  key: 'records',
+                  onKeyDown: activateCollapseWithSpace,
+                  label: '权限与检查记录',
+                  children: records,
+                },
+              ]}
+            />
           )}
           <Alert
             type="info"

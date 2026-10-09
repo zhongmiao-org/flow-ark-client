@@ -1,6 +1,17 @@
-import { Alert, ConfigProvider, Button, Checkbox, Input, Radio } from 'antd';
+import {
+  Alert,
+  Card,
+  Collapse,
+  ConfigProvider,
+  Button,
+  Checkbox,
+  Descriptions,
+  Input,
+  Radio,
+} from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { OAuthInspection } from '../shared/tool-connections';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 
 export default function ToolOAuthInspection({
   result,
@@ -50,30 +61,31 @@ export default function ToolOAuthInspection({
               : '仅完成配置读取。选择认证站点并登录后，还需核对工具能力才能保存。'
         }
       />
-      <dl>
-        <div>
-          <dt>所选服务</dt>
-          <dd>{result.url}</dd>
-        </div>
-        <div>
-          <dt>声明的资源</dt>
-          <dd>{result.resource}</dd>
-        </div>
-        <div>
-          <dt>检查时间</dt>
-          <dd>{new Date(result.checkedAt).toLocaleString('zh-CN')} · 有效 5 分钟</dd>
-        </div>
-        <div>
-          <dt>权限范围来源</dt>
-          <dd>
-            {result.scopeSource === 'challenge'
-              ? '服务本次认证要求'
-              : result.scopeSource === 'resource'
-                ? '服务资源声明'
-                : '未声明'}
-          </dd>
-        </div>
-      </dl>
+      <Descriptions
+        className="tool-connection-facts"
+        column={1}
+        bordered
+        size="small"
+        items={[
+          { key: 'service', label: '所选服务', children: result.url },
+          { key: 'resource', label: '声明的资源', children: result.resource },
+          {
+            key: 'checked',
+            label: '检查时间',
+            children: `${new Date(result.checkedAt).toLocaleString('zh-CN')} · 有效 5 分钟`,
+          },
+          {
+            key: 'source',
+            label: '权限范围来源',
+            children:
+              result.scopeSource === 'challenge'
+                ? '服务本次认证要求'
+                : result.scopeSource === 'resource'
+                  ? '服务资源声明'
+                  : '未声明',
+          },
+        ]}
+      />
       <h3>
         {result.scopeSource === 'challenge'
           ? '本次请求的范围'
@@ -94,8 +106,12 @@ export default function ToolOAuthInspection({
       )}
       <h3>认证站点 · {result.servers.length}</h3>
       {result.servers.map((server) => (
-        <article className="tool-oauth-server" key={server.issuer}>
-          <h4>{server.issuer}</h4>
+        <Card
+          className="tool-oauth-server"
+          key={server.issuer}
+          size="small"
+          title={<h4>{server.issuer}</h4>}
+        >
           <p>
             {server.status === 'ready'
               ? '声明满足授权码与 S256 要求'
@@ -131,38 +147,65 @@ export default function ToolOAuthInspection({
             </ul>
           )}
           {server.status !== 'failed' && (
-            <details>
-              <summary>查看站点声明</summary>
-              <dl>
-                <div>
-                  <dt>授权地址</dt>
-                  <dd>{server.authorizationEndpoint ?? '未声明'}</dd>
-                </div>
-                <div>
-                  <dt>令牌地址</dt>
-                  <dd>{server.tokenEndpoint ?? '未声明'}</dd>
-                </div>
-                <div>
-                  <dt>客户端元数据文档</dt>
-                  <dd>{server.clientIdMetadataSupported ? '声明支持' : '未声明支持'}</dd>
-                </div>
-                <div>
-                  <dt>动态注册</dt>
-                  <dd>{server.registrationEndpoint ?? '未声明，需向服务提供者核对预注册方式'}</dd>
-                </div>
-              </dl>
-            </details>
+            <Collapse
+              items={[
+                {
+                  key: 'metadata',
+                  onKeyDown: activateCollapseWithSpace,
+                  label: '查看站点声明',
+                  children: (
+                    <Descriptions
+                      className="tool-connection-facts"
+                      column={1}
+                      bordered
+                      size="small"
+                      items={[
+                        {
+                          key: 'authorization',
+                          label: '授权地址',
+                          children: server.authorizationEndpoint ?? '未声明',
+                        },
+                        {
+                          key: 'token',
+                          label: '令牌地址',
+                          children: server.tokenEndpoint ?? '未声明',
+                        },
+                        {
+                          key: 'metadata',
+                          label: '客户端元数据文档',
+                          children: server.clientIdMetadataSupported ? '声明支持' : '未声明支持',
+                        },
+                        {
+                          key: 'registration',
+                          label: '动态注册',
+                          children:
+                            server.registrationEndpoint ?? '未声明，需向服务提供者核对预注册方式',
+                        },
+                      ]}
+                    />
+                  ),
+                },
+              ]}
+            />
           )}
-        </article>
+        </Card>
       ))}
-      <details>
-        <summary>本次访问的站点</summary>
-        <ul>
-          {result.contactedOrigins.map((origin) => (
-            <li key={origin}>{origin}</li>
-          ))}
-        </ul>
-      </details>
+      <Collapse
+        items={[
+          {
+            key: 'origins',
+            onKeyDown: activateCollapseWithSpace,
+            label: '本次访问的站点',
+            children: (
+              <ul>
+                {result.contactedOrigins.map((origin) => (
+                  <li key={origin}>{origin}</li>
+                ))}
+              </ul>
+            ),
+          },
+        ]}
+      />
       <p>
         以上信息由服务提供，不证明账号、工作区或发布者身份。配置检查不发送凭据、注册客户端或调用工具。
       </p>
