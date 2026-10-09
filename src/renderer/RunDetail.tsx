@@ -1,5 +1,6 @@
 import { runStateColors, runStepColors } from './theme';
-import { Button, Tabs, Tag, Badge } from 'antd';
+import { Alert, Button, Collapse, Tabs, Tag, Badge } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import McpRunReceipts from './McpRunReceipts';
 import DebugRunWorkspace from './DebugRunWorkspace';
 import { useRunControl, RunControlFeedback } from './useRunControl';
@@ -11,10 +12,10 @@ import {
   runSourceLabels,
   runDisplayLabels as runStateLabels,
 } from '../shared/run-history';
-import { RunObservation } from './RunObservation';
+import { RunObservation, RunStepOutput } from './RunObservation';
 import RunRerunPanel, { type RunRerunView } from './RunRerunPanel';
 import RunOutputWorkspace from './RunOutputWorkspace';
-import { runTimeline } from './run-timeline';
+import { runTimeline, runTimelineTitle } from './run-timeline';
 import RunEventLog, { type RunLogPosition } from './RunEventLog';
 import RunLogSummary from './RunLogSummary';
 import DesktopRunReceipt from './DesktopRunReceipt';
@@ -177,12 +178,18 @@ export default function RunDetail({
           <section aria-label="步骤输出">
             <h3>步骤输出</h3>
             <p className="note">已保存的脱敏预览；已执行步骤不会因暂停或失败自动重放。</p>
-            {results.map((event: Event) => (
-              <details key={event.sequence} open={event === results.at(-1)}>
-                <summary>{event.nodeInstance}</summary>
-                <pre>{event.data.outputPreview}</pre>
-              </details>
-            ))}
+            {results.map((event: Event) => {
+              const step = timeline.find((row) => row.instance === event.nodeInstance);
+              return (
+                <RunStepOutput
+                  key={event.sequence}
+                  event={event}
+                  latest={event === results.at(-1)}
+                  label={step ? runTimelineTitle(step) : event.nodeInstance || '运行输出'}
+                  instance={step && step.instance !== step.nodeId ? step.instance : undefined}
+                />
+              );
+            })}
           </section>
         )}
       </>
@@ -227,20 +234,31 @@ export default function RunDetail({
           }
         />
         {d.scriptBundles?.length > 0 && (
-          <details className="script-bundles">
-            <summary>已固定的脚本与依赖 · {d.scriptBundles.length} 个节点</summary>
-            {d.scriptBundles.map((bundle: any) => (
-              <div key={bundle.nodeId}>
-                <p>
-                  <b>{bundle.nodeId}</b> ·{' '}
-                  {bundle.dependencies.length
-                    ? bundle.dependencies.map((dep: any) => dep.name + '@' + dep.version).join('，')
-                    : '仅使用脚本及 Node 内置能力'}
-                </p>
-                <code className="path-text">SHA-256 {bundle.sha256}</code>
-              </div>
-            ))}
-          </details>
+          <Collapse
+            className="script-bundles"
+            size="small"
+            items={[
+              {
+                key: 'bundles',
+                label: `已固定的脚本与依赖 · ${d.scriptBundles.length} 个节点`,
+                forceRender: true,
+                onKeyDown: activateCollapseWithSpace,
+                children: d.scriptBundles.map((bundle: any) => (
+                  <div key={bundle.nodeId}>
+                    <p>
+                      <b>{bundle.nodeId}</b> ·{' '}
+                      {bundle.dependencies.length
+                        ? bundle.dependencies
+                            .map((dep: any) => dep.name + '@' + dep.version)
+                            .join('，')
+                        : '仅使用脚本及 Node 内置能力'}
+                    </p>
+                    <code className="path-text">SHA-256 {bundle.sha256}</code>
+                  </div>
+                )),
+              },
+            ]}
+          />
         )}
       </>
     ),
@@ -345,14 +363,12 @@ export default function RunDetail({
                   : formatRunDuration(view.elapsed.milliseconds)}{' '}
                 · 使用启动时的固定版本 <code title={r.versionId}>{r.versionId.slice(0, 12)}</code>
               </p>
-              {controlNote && <p role="status">{controlNote}</p>}
-              {view.statusNote && <p role="status">{view.statusNote}</p>}
-              {controlFeedbackContent}
-              {r.error && (
-                <p className="field-error" role="alert">
-                  {r.error}
-                </p>
+              {controlNote && <Alert type="info" showIcon title={controlNote} role="status" />}
+              {view.statusNote && (
+                <Alert type="warning" showIcon title={view.statusNote} role="status" />
               )}
+              {controlFeedbackContent}
+              {r.error && <Alert type="error" showIcon title={r.error} />}
             </section>
             <McpRunReceipts
               runId={r.id}

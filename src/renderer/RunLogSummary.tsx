@@ -1,3 +1,4 @@
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { Alert, Button, Collapse, Descriptions } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { presentRun } from '../shared/run-presentation';
@@ -154,6 +155,7 @@ export default function RunLogSummary({
               items={[
                 {
                   key: 'derived',
+                  onKeyDown: activateCollapseWithSpace,
                   label: `派生运行 · ${related.derived.length}`,
                   forceRender: true,
                   children: (

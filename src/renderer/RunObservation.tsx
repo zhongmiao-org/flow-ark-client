@@ -1,4 +1,6 @@
-import { Button } from 'antd';
+import { Button, Collapse } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
+import type { Event } from '../shared/types';
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Clock, ListChecks, Terminal } from 'lucide-react';
 import { formatRunDuration, presentRun } from '../shared/run-presentation';
@@ -207,5 +209,45 @@ export function RunOutput({
         </>
       )}
     </section>
+  );
+}
+
+// Each saved output follows latest-step changes while retaining manual expansion on ordinary refresh.
+export function RunStepOutput({
+  event,
+  latest,
+  label,
+  instance,
+}: {
+  event: Event;
+  latest: boolean;
+  label: string;
+  instance?: string;
+}) {
+  const [expanded, setExpanded] = useState(latest);
+  useEffect(() => setExpanded(latest), [latest, event.runId]);
+  return (
+    <Collapse
+      className="run-saved-step-output"
+      size="small"
+      activeKey={expanded ? ['output'] : []}
+      onChange={(keys) => setExpanded(keys.includes('output'))}
+      items={[
+        {
+          key: 'output',
+          label,
+          forceRender: true,
+          onKeyDown: activateCollapseWithSpace,
+          children: (
+            <>
+              {instance && <code className="path-text">{instance}</code>}
+              <pre tabIndex={0} aria-label={`${label} · 已保存步骤输出`}>
+                {event.data.outputPreview}
+              </pre>
+            </>
+          ),
+        },
+      ]}
+    />
   );
 }

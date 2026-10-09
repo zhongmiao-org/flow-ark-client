@@ -1,3 +1,4 @@
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { Select, Button, Collapse, Descriptions } from 'antd';
 import {
   useId,
@@ -106,6 +107,7 @@ function EventItem({ event, name }: { event: Event; name?: string }) {
         items={[
           {
             key: 'raw',
+            onKeyDown: activateCollapseWithSpace,
             label: `原始记录 · ${event.type}`,
             children: rawOpen ? (
               <LogText

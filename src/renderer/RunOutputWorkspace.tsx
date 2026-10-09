@@ -1,3 +1,4 @@
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { runStateColors } from './theme';
 import { Alert, Button, Collapse, Tag, Badge } from 'antd';
 import { useEffect, useRef, useState } from 'react';
@@ -70,6 +71,7 @@ function ArtifactCard({
         items={[
           {
             key: 'location',
+            onKeyDown: activateCollapseWithSpace,
             label: '查看保存位置',
             forceRender: true,
             children: (
