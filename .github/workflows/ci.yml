@@ -65,6 +65,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       checks: read
+      actions: read
       contents: write
       pull-requests: write
     steps:
@@ -90,11 +91,12 @@ jobs:
             echo 'PR changed or is not ready; leave it open for fresh checks.'
             exit 1
           fi
-          # Auto Merge itself is still running. Only required checks gate merging;
-          # GitHub's merge endpoint independently enforces the branch protection.
-          checks=$(gh pr checks "$PR_NUMBER" --repo "$GH_REPO" \
-            --required --json name,state,bucket)
-          jq -e 'length > 0 and all(.[]; .bucket == "pass")' <<< "$checks" > /dev/null
+          # This private repository's plan does not offer branch protection.
+          # Require this run's Validate result and every other reported PR check.
+          jobs=$(gh api "repos/$GH_REPO/actions/runs/$GITHUB_RUN_ID/jobs")
+          jq -e 'any(.jobs[]; .name == "Validate" and .conclusion == "success")' <<< "$jobs" > /dev/null
+          checks=$(gh pr checks "$PR_NUMBER" --repo "$GH_REPO" --json name,state,bucket)
+          jq -e '[.[] | select(.name != "Auto Merge")] | length > 0 and all(.[]; .bucket == "pass")' <<< "$checks" > /dev/null
           title=$(jq -r '.title' <<< "$pr")
           if [[ ! "$title" =~ ^(feat|fix|docs|chore|refactor|perf|test|style|build|revert|ci)(\([a-z0-9-]+\))?\!?:\ .+ ]]; then
             echo 'PR title must follow Conventional Commits.'
