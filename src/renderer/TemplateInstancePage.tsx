@@ -118,6 +118,7 @@ export default function TemplateInstancePage({
     continueButton = useRef<HTMLButtonElement>(null);
   const dialog = useRef<HTMLDialogElement>(null),
     focus = useRef<HTMLElement | null>(null);
+  const invalidField = useRef<HTMLElement | null>(null);
   const scrolls = useRef(new Map<string, number>());
   const aiReturn = useRef<{ trigger: HTMLButtonElement; scroll: number } | null>(null);
   const loadingSource = useRef(false);
@@ -217,8 +218,14 @@ export default function TemplateInstancePage({
   const save = async (scope: TemplateSaveScope, inputId?: string) => {
     if (lock.current || checking || sourceError) return false;
     const invalid = rawInvalid(scope, inputId);
+    invalidField.current = invalid ?? null;
     if (invalid) {
-      setError('请先修正未完成的字段值，其他草稿仍保留。');
+      const invalidEntry = invalid.closest<HTMLElement>('[data-entry-id]')?.dataset.entryId;
+      const invalidTab = invalid.closest<HTMLElement>('[data-instance-tab]')?.dataset.instanceTab;
+      const location = invalidEntry
+        ? draft.entries.find((entry) => entry.id === invalidEntry)?.name
+        : tabs.find(([id]) => id === invalidTab)?.[1];
+      setError(`请先修正${location ? `“${location}”中` : ''}未完成的字段值，其他草稿仍保留。`);
       if (!dialog.current?.open && !invalid.closest('[hidden]')) {
         const control = invalid.matches('input, select, textarea, button')
           ? invalid
@@ -250,6 +257,7 @@ export default function TemplateInstancePage({
     if (templateDirty(draft, saved) || rawInvalid()) {
       if (!focus.current?.offsetParent) focus.current = document.activeElement as HTMLElement;
       pending.current = true;
+      invalidField.current = null;
       setError('');
       setLeaving({ next, destination });
     } else next();
@@ -261,10 +269,27 @@ export default function TemplateInstancePage({
     }, destination);
   const stay = () => {
     if (lock.current) return;
+    const invalid = invalidField.current;
+    invalidField.current = null;
+    const repair = invalid?.isConnected && invalid.hasAttribute('data-value-invalid');
+    if (repair) {
+      const invalidTab = invalid.closest<HTMLElement>('[data-instance-tab]')?.dataset.instanceTab;
+      const invalidEntry = invalid.closest<HTMLElement>('[data-entry-id]')?.dataset.entryId;
+      if (tabs.some(([id]) => id === invalidTab)) setTab(invalidTab as Tab);
+      if (invalidEntry) setEntryId(invalidEntry);
+      setEntryDetail(false);
+    }
     dialog.current?.close();
     pending.current = false;
     setLeaving(undefined);
-    requestAnimationFrame(() => focus.current?.focus({ preventScroll: true }));
+    requestAnimationFrame(() => {
+      if (repair) {
+        const control = invalid.matches('input, select, textarea, button')
+          ? invalid
+          : invalid.querySelector<HTMLElement>('input, select, textarea, button');
+        control?.focus();
+      } else focus.current?.focus({ preventScroll: true });
+    });
   };
   useEffect(() => {
     if (leaving) {
@@ -792,7 +817,7 @@ export default function TemplateInstancePage({
           )}
           <div className="editor-leave-actions">
             <button autoFocus ref={continueButton} disabled={busy} onClick={stay}>
-              继续编辑
+              {error && invalidField.current ? '返回修正' : '继续编辑'}
             </button>
             <button
               className="editor-leave-discard"
