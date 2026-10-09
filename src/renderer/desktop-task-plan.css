@@ -7,27 +7,30 @@
 .desktop-plan-columns.is-changes {
   grid-template-columns: minmax(0, 650fr) minmax(0, 720fr);
 }
-.desktop-task-plan .desktop-plan-stack {
+.desktop-plan-columns > section {
+  min-width: 0;
+}
+.desktop-plan-columns > section > .desktop-plan-stack {
+  height: 100%;
+}
+.desktop-plan-stack > .ant-card-body {
   display: flex;
   flex-direction: column;
   gap: 16px;
   min-width: 0;
 }
-.desktop-plan-columns:not(.is-changes) > .desktop-plan-stack {
+.desktop-plan-columns:not(.is-changes) > section > .desktop-plan-stack {
   min-height: 720px;
 }
 .desktop-plan-description {
   min-height: 116px;
-  padding: 16px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
   background: var(--fa-bg-canvas);
 }
 .desktop-plan-description h2 {
   font-size: 14px;
   line-height: 22px;
 }
-.desktop-plan-description > button {
+.desktop-plan-description > .ant-card-body > button {
   margin-top: 12px;
 }
 .desktop-plan-columns:not(.is-changes) .desktop-plan-scope {
@@ -65,19 +68,14 @@
   margin: 12px 0 0;
 }
 .desktop-plan-scope,
-.desktop-plan-text,
-.desktop-plan-candidate {
-  padding: 16px;
-  background: var(--fa-bg-subtle);
-  border-radius: var(--fa-radius-12);
-  border: 1px solid var(--fa-border-default);
+.desktop-plan-text {
+  min-width: 0;
   overflow-wrap: anywhere;
 }
 .desktop-plan-scope {
   min-height: 120px;
 }
-.desktop-task-plan .desktop-plan-scope h2 + p,
-.desktop-plan-candidate p {
+.desktop-task-plan .desktop-plan-scope h2 + p {
   margin-top: 8px;
 }
 .desktop-task-plan .desktop-plan-text pre {
@@ -110,7 +108,7 @@
   font-size: 13px;
   line-height: 21px;
 }
-.desktop-plan-stack > button {
+.desktop-plan-stack > .ant-card-body > button {
   align-self: flex-start;
 }
 .desktop-plan-stack fieldset {
@@ -125,7 +123,7 @@
   .desktop-plan-columns.is-changes {
     grid-template-columns: 1fr;
   }
-  .desktop-plan-columns:not(.is-changes) > .desktop-plan-stack {
+  .desktop-plan-columns:not(.is-changes) > section > .desktop-plan-stack {
     min-height: 0;
   }
 }
