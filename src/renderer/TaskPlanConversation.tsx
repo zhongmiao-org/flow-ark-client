@@ -1,5 +1,6 @@
-import { Button } from 'antd';
+import { Button, Collapse } from 'antd';
 import type { ReactNode } from 'react';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 
 export default function TaskPlanConversation({
   request,
@@ -43,24 +44,39 @@ export default function TaskPlanConversation({
         <h2>你</h2>
         <p>{request}</p>
         {suppliedAnswers.length > 0 && (
-          <details className="ai-task-disclosure task-plan-answers">
-            <summary>补充信息 · {suppliedAnswers.length} 项</summary>
-            <ol aria-label="已保存的补充信息">
-              {suppliedAnswers.map(([id, value]) => (
-                <li key={id}>{value}</li>
-              ))}
-            </ol>
-          </details>
+          <Collapse
+            className="task-plan-answers"
+            items={[
+              {
+                key: 'answers',
+                onKeyDown: activateCollapseWithSpace,
+                label: `补充信息 · ${suppliedAnswers.length} 项`,
+                children: (
+                  <ol aria-label="已保存的补充信息">
+                    {suppliedAnswers.map(([id, value]) => (
+                      <li key={id}>{value}</li>
+                    ))}
+                  </ol>
+                ),
+              },
+            ]}
+          />
         )}
       </article>
       <article className="ai-task-note ai-step-reply">
         <h2>FlowArk</h2>
         <p>{reply}</p>
         {explanation && (
-          <details className="ai-task-disclosure">
-            <summary>查看 AI 的方案说明</summary>
-            <p>{explanation}</p>
-          </details>
+          <Collapse
+            items={[
+              {
+                key: 'explanation',
+                onKeyDown: activateCollapseWithSpace,
+                label: '查看 AI 的方案说明',
+                children: <p>{explanation}</p>,
+              },
+            ]}
+          />
         )}
       </article>
       {notice}

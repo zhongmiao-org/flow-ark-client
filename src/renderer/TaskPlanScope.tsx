@@ -1,4 +1,5 @@
-import { Button } from 'antd';
+import { Button, Collapse } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { Flow } from '../shared/types';
 import { flatten } from './flow-editing';
 import { taskStepSummary, taskStepTitle, type TaskStepContext } from './task-step-presentation';
@@ -42,30 +43,40 @@ export default function TaskPlanScope({
       </p>
       {!compact && branching && <p>包含条件或循环内的步骤；实际执行次数由运行时数据和分支决定。</p>}
       {(compact || operations.length > 0) && (
-        <details>
-          <summary>核对操作对象与影响 · {operations.length} 个步骤</summary>
-          {compact && (
-            <p>
-              这里展示方案定义，不代表已执行或已授权。试运行前仍需核对当前对象、参数和实际读写范围。
-            </p>
-          )}
-          {compact && <p>保存或采纳只更新草稿。当前运行和已建立的计划继续使用原快照。</p>}
-          {compact && branching && (
-            <p>包含条件或循环内的步骤；实际执行次数由运行时数据和分支决定。</p>
-          )}
-          <div className="task-plan-scope-list">
-            {operations.map((step) => (
-              <Button key={step.id} onClick={() => select(step.id)}>
-                <strong>
-                  第 {steps.findIndex((entry) => entry.id === step.id) + 1} 步 ·{' '}
-                  {taskStepTitle(step)}
-                </strong>
-                <span>{taskStepSummary(step, flow, context)}</span>
-                <small>查看完整参数</small>
-              </Button>
-            ))}
-          </div>
-        </details>
+        <Collapse
+          items={[
+            {
+              key: 'operations',
+              onKeyDown: activateCollapseWithSpace,
+              label: `核对操作对象与影响 · ${operations.length} 个步骤`,
+              children: (
+                <>
+                  {compact && (
+                    <p>
+                      这里展示方案定义，不代表已执行或已授权。试运行前仍需核对当前对象、参数和实际读写范围。
+                    </p>
+                  )}
+                  {compact && <p>保存或采纳只更新草稿。当前运行和已建立的计划继续使用原快照。</p>}
+                  {compact && branching && (
+                    <p>包含条件或循环内的步骤；实际执行次数由运行时数据和分支决定。</p>
+                  )}
+                  <div className="task-plan-scope-list">
+                    {operations.map((step) => (
+                      <Button key={step.id} onClick={() => select(step.id)}>
+                        <strong>
+                          第 {steps.findIndex((entry) => entry.id === step.id) + 1} 步 ·{' '}
+                          {taskStepTitle(step)}
+                        </strong>
+                        <span>{taskStepSummary(step, flow, context)}</span>
+                        <small>查看完整参数</small>
+                      </Button>
+                    ))}
+                  </div>
+                </>
+              ),
+            },
+          ]}
+        />
       )}
       {!compact && (
         <p>

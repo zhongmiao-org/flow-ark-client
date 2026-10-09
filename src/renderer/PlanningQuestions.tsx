@@ -1,4 +1,5 @@
-import { ConfigProvider, Button, Input } from 'antd';
+import { ConfigProvider, Button, Collapse, Input } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useId, useRef, useState } from 'react';
 import type { PlanningResult } from '../shared/planning';
 import './planning-questions.css';
@@ -101,50 +102,62 @@ export default function PlanningQuestions({
         );
       })}
       {!!previous.length && (
-        <details className="planning-previous-answers">
-          <summary>先前补充 · {previous.length} 项</summary>
-          <div className="planning-previous-content">
-            <p className="planning-questions-note">
-              这些回答没有对应的当前问题，仍会随下一次请求发送。请核对是否继续保留。
-            </p>
-            {previous.map(([id, value], index) => (
-              <ConfigProvider componentDisabled={busy || undefined} key={id}>
-                <fieldset className="ai-task-question" disabled={busy}>
-                  <legend>先前补充 {index + 1}</legend>
-                  <Input.TextArea
-                    ref={(instance) => {
-                      const element = instance?.resizableTextArea?.textArea ?? null;
-                      if (element) inputs.current.set(id, element);
-                      else inputs.current.delete(id);
-                    }}
-                    aria-label={`先前补充 ${index + 1}`}
-                    aria-describedby={`${prefix}-previous-${index}`}
-                    value={value}
-                    maxLength={3000}
-                    onChange={(event) => answer(id, event.target.value)}
-                  />
-                  <div className="planning-answer-footer">
-                    <small id={`${prefix}-previous-${index}`}>{value.length} / 3000 字符</small>
-                    <Button
-                      htmlType="button"
-                      onClick={() => {
-                        const next = previous[index + 1]?.[0] ?? previous[index - 1]?.[0];
-                        clear(id);
-                        setRemoved(true);
-                        requestAnimationFrame(() => {
-                          if (next) inputs.current.get(next)?.focus();
-                          else removalStatus.current?.focus();
-                        });
-                      }}
-                    >
-                      移除先前补充 {index + 1}
-                    </Button>
-                  </div>
-                </fieldset>
-              </ConfigProvider>
-            ))}
-          </div>
-        </details>
+        <Collapse
+          className="planning-previous-answers"
+          items={[
+            {
+              key: 'previous',
+              forceRender: true,
+              onKeyDown: activateCollapseWithSpace,
+              label: `先前补充 · ${previous.length} 项`,
+              children: (
+                <div className="planning-previous-content">
+                  <p className="planning-questions-note">
+                    这些回答没有对应的当前问题，仍会随下一次请求发送。请核对是否继续保留。
+                  </p>
+                  {previous.map(([id, value], index) => (
+                    <ConfigProvider componentDisabled={busy || undefined} key={id}>
+                      <fieldset className="ai-task-question" disabled={busy}>
+                        <legend>先前补充 {index + 1}</legend>
+                        <Input.TextArea
+                          ref={(instance) => {
+                            const element = instance?.resizableTextArea?.textArea ?? null;
+                            if (element) inputs.current.set(id, element);
+                            else inputs.current.delete(id);
+                          }}
+                          aria-label={`先前补充 ${index + 1}`}
+                          aria-describedby={`${prefix}-previous-${index}`}
+                          value={value}
+                          maxLength={3000}
+                          onChange={(event) => answer(id, event.target.value)}
+                        />
+                        <div className="planning-answer-footer">
+                          <small id={`${prefix}-previous-${index}`}>
+                            {value.length} / 3000 字符
+                          </small>
+                          <Button
+                            htmlType="button"
+                            onClick={() => {
+                              const next = previous[index + 1]?.[0] ?? previous[index - 1]?.[0];
+                              clear(id);
+                              setRemoved(true);
+                              requestAnimationFrame(() => {
+                                if (next) inputs.current.get(next)?.focus();
+                                else removalStatus.current?.focus();
+                              });
+                            }}
+                          >
+                            移除先前补充 {index + 1}
+                          </Button>
+                        </div>
+                      </fieldset>
+                    </ConfigProvider>
+                  ))}
+                </div>
+              ),
+            },
+          ]}
+        />
       )}
       {removed && (
         <p className="planning-questions-note" role="status" tabIndex={-1} ref={removalStatus}>
