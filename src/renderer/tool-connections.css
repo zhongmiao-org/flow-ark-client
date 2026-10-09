@@ -6,9 +6,6 @@
   width: auto;
   white-space: nowrap;
 }
-.tool-dialog {
-  width: min(600px, calc(100vw - 48px));
-}
 .tools-page .page-heading p {
   overflow-wrap: anywhere;
 }
@@ -174,24 +171,29 @@
   grid-template-columns: minmax(0, 650fr) minmax(0, 478fr);
   gap: 24px;
 }
-.tool-columns > section > .tool-surface,
-.tool-columns > .ai-task-card {
+.tool-columns > section > .tool-surface {
   min-height: 700px;
 }
 .tool-assistant-columns {
   grid-template-columns: minmax(0, 660fr) minmax(0, 468fr);
 }
-.tool-assistant-columns > .ai-task-card {
+.tool-assistant-columns > section > .tool-surface {
   min-height: 716px;
 }
-.tool-assistant-managed > .ai-task-card {
+.tool-assistant-managed > section > .tool-surface {
   min-height: 700px;
 }
-.tool-assistant-managed .tool-assistant-capabilities li {
+.tool-assistant-managed .tool-assistant-capability {
   min-height: 111px;
-  padding: 16px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
+}
+.tool-assistant-capability {
+  min-width: 0;
+}
+.tool-assistant-capability > .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 .tool-assistant-recovery {
   min-height: 120px;
@@ -207,7 +209,7 @@
   padding: 0;
 }
 .tool-assistant-capabilities h3 {
-  margin: 0 0 4px;
+  margin: 0;
   font-size: 14px;
 }
 .tool-assistant-actions,
@@ -290,12 +292,6 @@
   color: var(--fa-text-secondary);
   font-weight: 400;
 }
-.tool-definition:not(.ant-card) {
-  padding: 16px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-}
-.tool-definition:not(.ant-card),
 .tool-definition > .ant-card-body {
   display: flex;
   flex-direction: column;
@@ -318,9 +314,6 @@
   overflow: auto;
   padding: 12px;
   background: var(--fa-bg-subtle);
-  font-size: 12px;
-}
-.tool-definition details {
   font-size: 12px;
 }
 .tool-disclaimer {
@@ -373,8 +366,7 @@
   .tool-columns {
     grid-template-columns: minmax(0, 1fr);
   }
-  .tool-columns > section > .tool-surface,
-  .tool-columns > .ai-task-card {
+  .tool-columns > section > .tool-surface {
     min-height: auto;
   }
   .tool-presets {
