@@ -1,4 +1,4 @@
-import { Button } from 'antd';
+import { Badge, Button, Tag } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import useDesktopWindows from './useDesktopWindows';
 
@@ -182,6 +182,11 @@ export default function DesktopAssistantConnection({
       )}
     </>
   );
+  const statusColor = hasWindows
+    ? 'success'
+    : expired || failed || snapshot || hadWindows
+      ? 'warning'
+      : 'default';
   const status = (
     <div
       className="tool-assistant-result"
@@ -191,11 +196,9 @@ export default function DesktopAssistantConnection({
       aria-live="polite"
       aria-busy={loading || settingsPending}
     >
-      <span
-        className={`tool-status${hasWindows ? ' success' : expired || failed || snapshot || hadWindows ? ' warning' : ''}`}
-      >
+      <Tag className="run-state-tag" color={statusColor} icon={<Badge status={statusColor} />}>
         {heading}
-      </span>
+      </Tag>
       <p>
         {loading ? '正在进行只读检查，离开页面不会创建任务或修改文档。' : failed ? error : detail}
       </p>

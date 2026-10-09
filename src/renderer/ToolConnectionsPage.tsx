@@ -1,4 +1,6 @@
-import { Select, Button, Checkbox, Input, Modal, Flex, Alert } from 'antd';
+import { Select, Button, Checkbox, Input, Modal, Flex, Alert, Tag, Badge } from 'antd';
+import { toolConnectionColors } from './theme';
+import './antd-layout.css';
 import ToolConnectionUsage, { type ConnectionTaskReference } from './ToolConnectionUsage';
 import DesktopAssistantConnection, { type AssistantPhase } from './DesktopAssistantConnection';
 import { usePageBack } from './use-page-back';
@@ -731,22 +733,28 @@ export default function ToolConnectionsPage({
           </div>
         </div>
         {pageError && (
-          <div className="alert error" role="alert" tabIndex={-1} ref={operationError}>
-            {pageError}
+          <div className="workspace-feedback" role="alert" tabIndex={-1} ref={operationError}>
+            <Alert type="error" role="presentation" showIcon title={pageError} />
           </div>
         )}
         {view === 'saved' && loaded && !selected && (
-          <div className="alert error" role="alert">
-            原连接记录已不存在。任务与历史仍保留，请返回目录选择有效连接并重新核对。
-            <Button onClick={catalog}>返回连接目录</Button>
-          </div>
+          <Alert
+            className="workspace-feedback"
+            type="error"
+            role="alert"
+            showIcon
+            title="原连接记录已不存在。任务与历史仍保留，请返回目录选择有效连接并重新核对。"
+            description={<Button onClick={catalog}>返回连接目录</Button>}
+          />
         )}
         {view === 'catalog' && (
           <>
             <div className="tool-presets">
               <section className="ai-task-card">
                 <h2>内置浏览器</h2>
-                <span className="tool-status success">随应用提供</span>
+                <Tag className="run-state-tag" color="success" icon={<Badge status="success" />}>
+                  随应用提供
+                </Tag>
                 <p>
                   读取网页、定位与填写
                   <br />
@@ -756,7 +764,9 @@ export default function ToolConnectionsPage({
               </section>
               <section className="ai-task-card">
                 <h2>本机文件</h2>
-                <span className="tool-status success">按文件 / 目录授权</span>
+                <Tag className="run-state-tag" color="success" icon={<Badge status="success" />}>
+                  按文件 / 目录授权
+                </Tag>
                 <p>
                   读取选定文件、新建输出
                   <br />
@@ -766,7 +776,9 @@ export default function ToolConnectionsPage({
               </section>
               <section className="ai-task-card">
                 <h2>本机应用助手</h2>
-                <span className="tool-status">macOS · 按任务选择窗口</span>
+                <Tag className="run-state-tag" icon={<Badge status="default" />}>
+                  macOS · 按任务选择窗口
+                </Tag>
                 <p>
                   发现窗口、核对选区与改动
                   <br />
@@ -792,10 +804,15 @@ export default function ToolConnectionsPage({
                   </Button>
                 </div>
                 {listError && (
-                  <div role="alert" className="tool-list-error">
-                    <p>读取连接记录未完成：{listError}</p>
-                    {loaded && <p>下方保留上次读取的记录，当前状态需重新核对。</p>}
-                  </div>
+                  <Alert
+                    type="error"
+                    role="alert"
+                    showIcon
+                    title={`读取连接记录未完成：${listError}`}
+                    description={
+                      loaded ? '下方保留上次读取的记录，当前状态需重新核对。' : undefined
+                    }
+                  />
                 )}
                 {!loaded && !listError ? (
                   <p role="status">
@@ -866,11 +883,13 @@ export default function ToolConnectionsPage({
                           }}
                         >
                           <strong>{connection.config.displayName}</strong>
-                          <span
-                            className={`tool-status ${connection.status === 'verified' ? 'success' : 'warning'}`}
+                          <Tag
+                            className="run-state-tag"
+                            color={toolConnectionColors[connection.status]}
+                            icon={<Badge status={toolConnectionColors[connection.status]} />}
                           >
                             {labels[connection.status]}
-                          </span>
+                          </Tag>
                           <span className="tool-connection-source">
                             {connection.config.source} ·{' '}
                             {connection.config.transport.type === 'http' ? 'HTTP' : '本地程序'} ·{' '}
@@ -1144,15 +1163,33 @@ export default function ToolConnectionsPage({
         {content && (
           <div className="tool-columns tool-review-columns">
             <section className="ai-task-card">
-              <span
-                className={`tool-status ${view === 'review' || selected?.status === 'verified' ? 'success' : 'warning'}`}
+              <Tag
+                className="run-state-tag"
+                color={
+                  view === 'review'
+                    ? 'success'
+                    : selected
+                      ? toolConnectionColors[selected.status]
+                      : 'warning'
+                }
+                icon={
+                  <Badge
+                    status={
+                      view === 'review'
+                        ? 'success'
+                        : selected
+                          ? toolConnectionColors[selected.status]
+                          : 'warning'
+                    }
+                  />
+                }
               >
                 {view === 'review'
                   ? '发现通过 · 尚未保存'
                   : selected
                     ? `已保存 · ${labels[selected.status]}`
                     : ''}
-              </span>
+              </Tag>
               <article className="tool-definition">
                 <h2>身份与范围</h2>
                 <p>
@@ -1204,9 +1241,12 @@ export default function ToolConnectionsPage({
                 )}
               </article>
               {candidate?.changed && view === 'review' && (
-                <p className="ai-task-note tool-warning">
-                  服务身份或能力定义已变化，请重新核对以下完整清单。已有连接在保存前保持不变。
-                </p>
+                <Alert
+                  type="warning"
+                  role="note"
+                  showIcon
+                  title="服务身份或能力定义已变化，请重新核对以下完整清单。已有连接在保存前保持不变。"
+                />
               )}
               <ToolCapabilityReview
                 key={view === 'review' ? candidate?.token : `${selected?.id}:${selected?.revision}`}
@@ -1222,9 +1262,12 @@ export default function ToolConnectionsPage({
             </section>
             <section className="ai-task-card">
               <h2>使用规则</h2>
-              <p className="ai-task-note">
-                服务说明只提供上下文。任务授权、目标选择和参数校验由 FlowArk 宿主执行。
-              </p>
+              <Alert
+                type="info"
+                role="note"
+                showIcon
+                title="服务说明只提供上下文。任务授权、目标选择和参数校验由 FlowArk 宿主执行。"
+              />
               <p>
                 任务执行授权：每次试运行前明确核对
                 <br />
@@ -1233,14 +1276,19 @@ export default function ToolConnectionsPage({
               {view === 'saved' && selected && (
                 <>
                   {selected.status !== 'verified' && (
-                    <p className="ai-task-note tool-warning" role="status">
-                      {selected.status === 'disconnected'
-                        ? '连接已断开。'
-                        : selected.status === 'failed'
-                          ? '最近连接检查未通过。'
-                          : '连接需要重新核对。'}
-                      相关任务暂不能使用此连接；重新连接后仍需回到原任务核对工具选择，不会自动继续执行。
-                    </p>
+                    <Alert
+                      type="warning"
+                      role="status"
+                      showIcon
+                      title={
+                        selected.status === 'disconnected'
+                          ? '连接已断开。'
+                          : selected.status === 'failed'
+                            ? '最近连接检查未通过。'
+                            : '连接需要重新核对。'
+                      }
+                      description="相关任务暂不能使用此连接；重新连接后仍需回到原任务核对工具选择，不会自动继续执行。"
+                    />
                   )}
                 </>
               )}

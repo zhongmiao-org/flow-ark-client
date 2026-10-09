@@ -24,31 +24,6 @@
 .tool-presets button {
   width: 100%;
 }
-.tool-status {
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border-radius: var(--fa-radius-999);
-  padding: 5px 12px;
-  font-size: 12px;
-  line-height: 18px;
-}
-.tool-status::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.tool-status.success {
-  color: var(--fa-status-success);
-  background: var(--fa-status-success-bg);
-}
-.tool-status.warning {
-  color: var(--fa-status-warning);
-  background: var(--fa-status-warning-bg);
-}
 .tool-catalog-bottom {
   display: grid;
   grid-template-columns: minmax(0, 560fr) minmax(0, 568fr);
@@ -126,17 +101,14 @@
 .tools-page .tool-list-note {
   font-size: 12px;
 }
-.tool-list-error {
-  padding: 12px;
-  border-radius: var(--fa-radius-8);
-  background: var(--fa-status-error-bg);
-}
-.tools-page .tool-list-error p {
-  color: var(--fa-status-error);
-}
-.tool-connection-row span {
+.tool-connection-source,
+.tool-connection-address {
   color: var(--fa-text-secondary);
   font-size: 12px;
+}
+.tools-page .ant-alert-title,
+.tools-page .ant-alert-description {
+  overflow-wrap: anywhere;
 }
 .tool-usage {
   min-width: 0;
@@ -415,11 +387,6 @@
 }
 .tool-oauth-inspection details[open] > dl {
   margin-top: 12px;
-}
-.tool-warning,
-.ai-task-note.tool-warning {
-  color: var(--fa-status-warning);
-  background: var(--fa-status-warning-bg);
 }
 .tools-page .ai-task-checkbox {
   align-items: flex-start;
