@@ -387,7 +387,15 @@ export default function TemplateEntry({
           }
         >
           <section className="ai-task-card template-entry-input">
-            {!inspection && <h2>{aiResources.length ? '本次输入' : '选择操作入口'}</h2>}
+            {!inspection && (
+              <h2
+                tabIndex={-1}
+                data-navigation-heading
+                aria-label={`${entry.name} · ${aiResources.length ? '本次输入' : '选择操作入口'}`}
+              >
+                {aiResources.length ? '本次输入' : '选择操作入口'}
+              </h2>
+            )}
             {!inspection && !aiResources.length && entrySelector}
             {inspection && (
               <div

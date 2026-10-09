@@ -120,6 +120,23 @@ export default function TemplateInstancePage({
     focus = useRef<HTMLElement | null>(null);
   const invalidField = useRef<HTMLElement | null>(null);
   const scrolls = useRef(new Map<string, number>());
+  const contentDestination = useRef<Tab | null>(null);
+  useLayoutEffect(() => {
+    if (!active || entryDetail || contentDestination.current !== tab) return;
+    const frame = requestAnimationFrame(() => {
+      const panel = root.current?.querySelector<HTMLElement>(`[data-instance-tab="${tab}"]`);
+      const heading = panel
+        ? [...panel.querySelectorAll<HTMLElement>('[data-navigation-heading]')].find(
+            (element) => !element.closest('[hidden]'),
+          )
+        : undefined;
+      if (!heading) return;
+      heading.focus({ preventScroll: true });
+      heading.scrollIntoView({ block: 'start' });
+      contentDestination.current = null;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [active, entryDetail, entryId, tab]);
   const aiReturn = useRef<{ trigger: HTMLButtonElement; scroll: number } | null>(null);
   const loadingSource = useRef(false);
   const instance = draft.instance;
@@ -314,8 +331,9 @@ export default function TemplateInstancePage({
     } else go(close);
   };
   usePageBack(back, active);
-  const switchTab = (next: Tab) => {
+  const switchTab = (next: Tab, focusContent = false) => {
     if (lock.current) return;
+    contentDestination.current = focusContent ? next : null;
     setEntryDetail(false);
     scrolls.current.set(tab, document.querySelector('main')?.scrollTop ?? 0);
     setTab(next);
@@ -643,7 +661,7 @@ export default function TemplateInstancePage({
             cancel={() => reset('resources')}
             openEntry={(id) => {
               setEntryId(id);
-              switchTab('entry');
+              switchTab('entry', true);
             }}
           />
         </div>
@@ -684,8 +702,7 @@ export default function TemplateInstancePage({
                 sourceError={sourceError}
                 sourceChecking={checking}
                 configure={() => {
-                  switchTab('resources');
-                  requestAnimationFrame(() => resourceTab.current?.focus({ preventScroll: true }));
+                  switchTab('resources', true);
                 }}
                 settings={settings}
               />
