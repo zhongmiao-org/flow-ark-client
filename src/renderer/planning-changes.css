@@ -35,15 +35,6 @@
   flex: 1;
   min-width: 160px;
 }
-.planning-changes-filters button {
-  padding: 8px 12px;
-  min-height: 40px;
-}
-.planning-changes [aria-pressed='true'] {
-  background: var(--fa-action-subtle);
-  border-color: var(--fa-action-primary);
-  color: var(--fa-action-primary);
-}
 .planning-changes-list {
   display: grid;
   gap: 8px;
@@ -65,22 +56,6 @@
   gap: 4px;
   overflow-wrap: anywhere;
   min-width: 0;
-}
-.planning-change-kind {
-  flex-shrink: 0;
-  border-radius: var(--fa-radius-6);
-  padding: 4px 8px;
-  font-size: 12px;
-  background: var(--fa-bg-subtle);
-  color: var(--fa-text-secondary);
-}
-.planning-change-kind.added {
-  background: var(--fa-status-success-bg);
-  color: var(--fa-status-success);
-}
-.planning-change-kind.removed {
-  background: var(--fa-status-error-bg);
-  color: var(--fa-status-error);
 }
 .planning-change-detail {
   display: grid;
@@ -106,18 +81,6 @@
 .planning-change-after {
   background: var(--fa-status-success-bg);
 }
-.planning-change-values dl {
-  display: grid;
-  gap: 12px;
-  margin: 0;
-}
-.planning-change-values dt {
-  color: var(--fa-text-secondary);
-  font-size: 12px;
-}
-.planning-change-values dd {
-  margin: 4px 0 0;
-}
 .planning-changes .planning-change-detail pre {
   margin: 0;
   white-space: pre-wrap;
@@ -129,18 +92,6 @@
 .planning-changes .planning-change-values pre {
   background: transparent;
   padding: 0;
-}
-.planning-change-detail details {
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-8);
-  padding: 12px;
-}
-.planning-change-detail details[open] {
-  display: grid;
-  gap: 12px;
-}
-.planning-change-detail summary {
-  cursor: pointer;
 }
 .planning-changes-empty {
   padding: 20px;

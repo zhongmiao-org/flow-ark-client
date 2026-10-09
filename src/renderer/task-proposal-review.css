@@ -35,21 +35,9 @@
 .task-proposal-review .planning-change-values > section {
   min-height: 108px;
 }
-.task-proposal-permissions {
-  border-top: 1px solid var(--fa-border-default);
-  padding-top: 16px;
-}
 .task-proposal-review h3 {
   font-size: 16px;
   margin: 0 0 8px;
-}
-.task-proposal-review details p,
-.task-proposal-review details ul {
-  margin-top: 12px;
-}
-.task-proposal-review summary {
-  cursor: pointer;
-  color: var(--fa-action-primary);
 }
 .task-proposal-tabs {
   margin-bottom: 8px;
@@ -91,12 +79,6 @@
   font-size: 14px;
   line-height: 22px;
   color: var(--fa-text-secondary);
-}
-.task-proposal-condition-details > .planning-changes {
-  margin-top: 16px;
-}
-.task-proposal-capability-details > .task-proposal-permissions {
-  margin-top: 12px;
 }
 .is-condition-review > .ai-task-actions > .ant-btn-primary {
   min-width: 168px;
