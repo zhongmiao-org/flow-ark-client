@@ -2396,6 +2396,16 @@ function WorkspaceApp() {
               action={action}
               navigation={scheduleNavigation}
               back={returnTemplate}
+              browserControl={
+                <button
+                  className="embedded-show"
+                  aria-label={browserOpen ? '收起网页面板' : '打开网页面板'}
+                  aria-pressed={browserOpen}
+                  onClick={() => setBrowserOpen(!browserOpen)}
+                >
+                  {browserOpen ? '收起网页' : '显示网页'}
+                </button>
+              }
               manage={(planId) =>
                 leaveTemplateContext(
                   () => {

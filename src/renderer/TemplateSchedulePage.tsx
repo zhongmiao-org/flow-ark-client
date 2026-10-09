@@ -1,5 +1,12 @@
 import { usePageBack } from './use-page-back';
-import { useEffect, useRef, useState, type MutableRefObject } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type MutableRefObject,
+  type ReactNode,
+} from 'react';
 import type { Bootstrap, Schedule } from '../shared/types';
 import { scheduleCreateSchema } from '../shared/schedules';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
@@ -7,6 +14,7 @@ import type { TemplateNavigation } from './TemplateInstancePage';
 import { Timing, inZone } from './Schedules';
 import ScheduleLeaveDialog from './ScheduleLeaveDialog';
 import './template-schedule.css';
+import './schedule-workbench.css';
 const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
 export default function TemplateSchedulePage({
@@ -16,6 +24,7 @@ export default function TemplateSchedulePage({
   navigation,
   back,
   manage,
+  browserControl,
 }: {
   origin: TemplateEntryOrigin;
   data: Bootstrap;
@@ -23,6 +32,7 @@ export default function TemplateSchedulePage({
   navigation: MutableRefObject<TemplateNavigation | undefined>;
   back: () => void;
   manage: (planId?: string) => void;
+  browserControl?: ReactNode;
 }) {
   const [initial] = useState(() => ({
     minutes: '60',
@@ -33,8 +43,14 @@ export default function TemplateSchedulePage({
   const [checking, setChecking] = useState(true),
     [sourceError, setSourceError] = useState('');
   const [error, setError] = useState(''),
-    [busy, setBusy] = useState(false),
+    [operation, setOperation] = useState<'create' | 'enable' | 'pause'>(),
     [created, setCreated] = useState<Schedule>();
+  const busy = operation !== undefined;
+  const [notice, setNotice] = useState<{ title: string; detail: string }>();
+  const pageError = useRef<HTMLParagraphElement>(null);
+  const feedbackHeading = useRef<HTMLHeadingElement>(null);
+  const resultHeading = useRef<HTMLHeadingElement>(null);
+  const toggleFocus = useRef<HTMLButtonElement | null>(null);
   const [leaving, setLeaving] = useState<{ next: () => void; destination: string }>();
   const lock = useRef(false),
     pending = useRef(false),
@@ -46,6 +62,8 @@ export default function TemplateSchedulePage({
     (confirmed || timing.minutes !== initial.minutes || timing.timezone !== initial.timezone);
   useEffect(() => {
     let live = true;
+    setChecking(true);
+    setSourceError('');
     void api('template.detail', { id: origin.source.instanceId })
       .then((detail) => {
         if (!live) return;
@@ -69,11 +87,20 @@ export default function TemplateSchedulePage({
       live = false;
     };
   }, [origin]);
-  const perform = async (fn: () => Promise<any>) => {
+  useLayoutEffect(() => {
+    if (busy || checking || leaving) return;
+    if (sourceError || error) pageError.current?.focus();
+    else if (notice) feedbackHeading.current?.focus();
+  }, [busy, checking, leaving, sourceError, error, notice]);
+  useLayoutEffect(() => {
+    if (created && !leaving) resultHeading.current?.focus();
+  }, [created]);
+  const perform = async (fn: () => Promise<any>, kind: NonNullable<typeof operation>) => {
     if (lock.current) return;
     lock.current = true;
-    setBusy(true);
+    setOperation(kind);
     setError('');
+    setNotice(undefined);
     try {
       return await action(async () => {
         try {
@@ -91,12 +118,13 @@ export default function TemplateSchedulePage({
       });
     } finally {
       lock.current = false;
-      setBusy(false);
+      setOperation(undefined);
     }
   };
   const create = async () => {
     if (created) return true;
     if (lock.current || checking || sourceError) return false;
+    setNotice(undefined);
     if (!confirmed) {
       setError('请确认固定当前已保存版本与入口。');
       return false;
@@ -111,7 +139,7 @@ export default function TemplateSchedulePage({
       setError('请填写 1–525600 的整数分钟数和有效时区。');
       return false;
     }
-    const result = await perform(() => api('schedule.save', parsed.data));
+    const result = await perform(() => api('schedule.save', parsed.data), 'create');
     if (!result) return false;
     setCreated(result);
     return true;
@@ -166,6 +194,7 @@ export default function TemplateSchedulePage({
           <span aria-hidden="true">/</span>
           <span aria-current="page">创建计划</span>
         </nav>
+        {browserControl}
       </header>
       <section className="page ai-task-page template-schedule-page">
         <div className="page-heading">
@@ -174,6 +203,38 @@ export default function TemplateSchedulePage({
             <p>按分钟间隔执行固定内容，休眠或退出期间不补跑。</p>
           </div>
         </div>
+        {(checking || operation) && !leaving && (
+          <p className="schedule-operation" role="status">
+            {operation
+              ? { create: '正在创建计划…', enable: '正在启用计划…', pause: '正在暂停计划…' }[
+                  operation
+                ]
+              : '正在核对来源实例与入口…'}
+          </p>
+        )}
+        {(sourceError || error) && !leaving && (
+          <p ref={pageError} tabIndex={-1} role="alert" className="ai-task-error">
+            {sourceError || error}
+          </p>
+        )}
+        {notice && !leaving && (
+          <div className="schedule-feedback" role="status">
+            <span className="ai-config-status success">固定版本保持不变</span>
+            <h2 ref={feedbackHeading} tabIndex={-1}>
+              {notice.title}
+            </h2>
+            <p>{notice.detail}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setNotice(undefined);
+                requestAnimationFrame(() => toggleFocus.current?.focus());
+              }}
+            >
+              返回计划
+            </button>
+          </div>
+        )}
         <div className="template-schedule-columns">
           <section className="ai-task-card template-schedule-list">
             <h2>此入口的计划</h2>
@@ -200,11 +261,21 @@ export default function TemplateSchedulePage({
                   <div className="ai-task-actions">
                     <button
                       disabled={busy}
-                      onClick={() =>
-                        void perform(() =>
-                          api('schedule.toggle', { id: plan.id, enabled: !plan.enabled }),
-                        )
-                      }
+                      onClick={(event) => {
+                        toggleFocus.current = event.currentTarget;
+                        void perform(
+                          () => api('schedule.toggle', { id: plan.id, enabled: !plan.enabled }),
+                          plan.enabled ? 'pause' : 'enable',
+                        ).then((result) => {
+                          if (!result) return;
+                          setNotice({
+                            title: !plan.enabled ? '计划已启用' : '计划已暂停',
+                            detail: !plan.enabled
+                              ? '下次执行按当前间隔重新计算；不会补跑错过的计划。'
+                              : '暂停后不再触发新运行；已排队和正在执行的运行保持原样。',
+                          });
+                        });
+                      }}
                     >
                       {plan.enabled ? '暂停计划' : '启用计划'}
                     </button>
@@ -233,7 +304,9 @@ export default function TemplateSchedulePage({
               void create();
             }}
           >
-            <h2>{created ? '计划已创建' : '创建计划'}</h2>
+            <h2 ref={resultHeading} tabIndex={-1}>
+              {created ? '计划已创建' : '创建计划'}
+            </h2>
             <fieldset disabled={busy || !!created}>
               <label className="ai-settings-field">
                 <span>绑定入口</span>
@@ -263,16 +336,6 @@ export default function TemplateSchedulePage({
                 不采用未保存草稿。创建后启用，首次运行在所选间隔之后；已排队或活动运行保持原样。
               </p>
             </fieldset>
-            {sourceError && (
-              <p role="alert" className="ai-task-error">
-                {sourceError}
-              </p>
-            )}
-            {error && !leaving && (
-              <p role="alert" className="ai-task-error">
-                {error}
-              </p>
-            )}
             {created ? (
               <>
                 <p role="status">
@@ -288,7 +351,7 @@ export default function TemplateSchedulePage({
                   className="primary"
                   disabled={busy || checking || !!sourceError || !confirmed}
                 >
-                  创建计划
+                  {operation === 'create' ? '正在创建…' : '创建计划'}
                 </button>
                 <button type="button" disabled={busy} onClick={() => go(back)}>
                   取消

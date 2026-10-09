@@ -3,6 +3,18 @@
   grid-template-columns: minmax(0, 672fr) minmax(0, 456fr);
   gap: 24px;
 }
+.template-schedule-page > .schedule-feedback,
+.template-schedule-page > .schedule-operation,
+.template-schedule-page > .ai-task-error {
+  margin-bottom: 24px;
+}
+.template-schedule-page > .ai-task-error {
+  padding: 16px 20px;
+  border: 1px solid var(--fa-status-error);
+  border-radius: 12px;
+  color: var(--fa-status-error);
+  background: var(--fa-status-error-bg);
+}
 .template-schedule-columns > .ai-task-card {
   padding: 24px;
   min-height: 676px;
