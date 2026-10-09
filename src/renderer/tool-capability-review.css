@@ -89,9 +89,6 @@
   margin: 8px 0;
 }
 .tool-capability-empty {
-  border: 1px dashed var(--fa-border-default);
-  border-radius: var(--fa-radius-8);
-  padding: 24px;
   display: grid;
   gap: 16px;
 }
@@ -107,9 +104,11 @@
 
 .tool-capability-cards .tool-capability-card {
   min-height: 114px;
+}
+.tool-capability-card > .ant-card-body {
   gap: 4px;
 }
-.tool-capability-cards .tool-capability-card > h2 {
+.tool-capability-cards .tool-capability-card > .ant-card-body > h2 {
   font-size: 18px;
   line-height: 28px;
 }

@@ -1,4 +1,4 @@
-import { Alert, Button } from 'antd';
+import { Alert, Button, Card } from 'antd';
 import type { ToolConnection } from '../shared/tool-connections';
 
 export type ConnectionTaskReference = NonNullable<ToolConnection['taskReferences']>[number];
@@ -27,14 +27,16 @@ export default function ToolConnectionUsage({
           <ul className="tool-usage-list">
             {references.map((task) => (
               <li key={task.taskId}>
-                <strong>{task.description || '未命名任务'}</strong>
-                <small>流程 {task.flowId}</small>
-                {openTask && (
-                  <Button disabled={busy || undefined} onClick={() => openTask(task)}>
-                    查看任务
-                    <span className="sr-only">：{task.description || task.taskId}</span>
-                  </Button>
-                )}
+                <Card size="small" className="tool-usage-card">
+                  <strong>{task.description || '未命名任务'}</strong>
+                  <small>流程 {task.flowId}</small>
+                  {openTask && (
+                    <Button disabled={busy || undefined} onClick={() => openTask(task)}>
+                      查看任务
+                      <span className="sr-only">：{task.description || task.taskId}</span>
+                    </Button>
+                  )}
+                </Card>
               </li>
             ))}
           </ul>

@@ -1,4 +1,4 @@
-import { Alert, Button, Collapse, Descriptions, Input, Segmented, Tag } from 'antd';
+import { Alert, Button, Collapse, Descriptions, Input, Segmented, Tag, Card, Empty } from 'antd';
 import { useId, useMemo, useRef, useState } from 'react';
 import { toolCapabilityColors } from './theme';
 import { activateCollapseWithSpace } from './collapseKeyboard';
@@ -151,24 +151,26 @@ export default function ToolCapabilityReview({
     return (
       <section className="tool-capability-review tool-capability-cards" aria-label="工具能力核对">
         {current.tools.map((tool) => (
-          <article className="tool-definition tool-capability-card" key={tool.name}>
-            <h2>工具：{tool.title || tool.name}</h2>
-            <p>{tool.description || '服务未提供说明，请向提供者核对用途。'}</p>
-            <Collapse
-              items={[
-                {
-                  key: 'behavior',
-                  onKeyDown: activateCollapseWithSpace,
-                  label: '查看参数与行为声明',
-                  children: (
-                    <>
-                      <p className="tool-capability-name">{tool.name}</p>
-                      <ToolDefinitionDetails tool={tool} showDescription={false} />
-                    </>
-                  ),
-                },
-              ]}
-            />
+          <article key={tool.name}>
+            <Card size="small" className="tool-definition tool-capability-card">
+              <h2>工具：{tool.title || tool.name}</h2>
+              <p>{tool.description || '服务未提供说明，请向提供者核对用途。'}</p>
+              <Collapse
+                items={[
+                  {
+                    key: 'behavior',
+                    onKeyDown: activateCollapseWithSpace,
+                    label: '查看参数与行为声明',
+                    children: (
+                      <>
+                        <p className="tool-capability-name">{tool.name}</p>
+                        <ToolDefinitionDetails tool={tool} showDescription={false} />
+                      </>
+                    ),
+                  },
+                ]}
+              />
+            </Card>
           </article>
         ))}
         <p className="tool-disclaimer">
@@ -292,57 +294,57 @@ export default function ToolCapabilityReview({
             ))}
           </div>
           {chosen && (
-            <article
-              className="tool-definition tool-capability-detail"
-              aria-label={`工具详情：${chosen.name}`}
-              key={chosen.name}
-            >
-              <h3>{chosen.tool.title || chosen.name}</h3>
-              <p className="tool-capability-name">{chosen.name}</p>
-              {chosen.change === 'removed' && baseline && (
-                <Alert
-                  type="warning"
-                  role="note"
-                  showIcon
-                  title="本次发现已不包含该工具。以下为原保存定义。"
-                />
-              )}
-              <ToolDefinitionDetails tool={chosen.tool} />
-              {chosen.change === 'changed' && chosen.previous && chosen.next && (
-                <section aria-label="定义变化">
-                  <h3>定义变化</h3>
-                  <Collapse
-                    defaultActiveKey={['annotations']}
-                    items={fields
-                      .filter(([key]) => !same(chosen.previous?.[key], chosen.next?.[key]))
-                      .map(([key, label]) => ({
-                        key,
-                        onKeyDown: activateCollapseWithSpace,
-                        label: `${label}已变更`,
-                        children: (
-                          <div className="tool-capability-comparison">
-                            <div>
-                              <h4>原来</h4>
-                              <pre tabIndex={0}>{valueText(chosen.previous?.[key])}</pre>
-                            </div>
-                            <div>
-                              <h4>本次</h4>
-                              <pre tabIndex={0}>{valueText(chosen.next?.[key])}</pre>
-                            </div>
-                          </div>
-                        ),
-                      }))}
+            <article aria-label={`工具详情：${chosen.name}`} key={chosen.name}>
+              <Card size="small" className="tool-definition tool-capability-detail">
+                <h3>{chosen.tool.title || chosen.name}</h3>
+                <p className="tool-capability-name">{chosen.name}</p>
+                {chosen.change === 'removed' && baseline && (
+                  <Alert
+                    type="warning"
+                    role="note"
+                    showIcon
+                    title="本次发现已不包含该工具。以下为原保存定义。"
                   />
-                </section>
-              )}
+                )}
+                <ToolDefinitionDetails tool={chosen.tool} />
+                {chosen.change === 'changed' && chosen.previous && chosen.next && (
+                  <section aria-label="定义变化">
+                    <h3>定义变化</h3>
+                    <Collapse
+                      defaultActiveKey={['annotations']}
+                      items={fields
+                        .filter(([key]) => !same(chosen.previous?.[key], chosen.next?.[key]))
+                        .map(([key, label]) => ({
+                          key,
+                          onKeyDown: activateCollapseWithSpace,
+                          label: `${label}已变更`,
+                          children: (
+                            <div className="tool-capability-comparison">
+                              <div>
+                                <h4>原来</h4>
+                                <pre tabIndex={0}>{valueText(chosen.previous?.[key])}</pre>
+                              </div>
+                              <div>
+                                <h4>本次</h4>
+                                <pre tabIndex={0}>{valueText(chosen.next?.[key])}</pre>
+                              </div>
+                            </div>
+                          ),
+                        }))}
+                    />
+                  </section>
+                )}
+              </Card>
             </article>
           )}
         </>
       ) : (
         <div className="tool-capability-empty">
-          <p>
-            {rows.length ? '没有符合当前筛选的工具。' : '该服务未返回工具，不能据此提供执行能力。'}
-          </p>
+          <Empty
+            description={
+              rows.length ? '没有符合当前筛选的工具。' : '该服务未返回工具，不能据此提供执行能力。'
+            }
+          />
           {!!rows.length && (
             <Button
               onClick={() => {
