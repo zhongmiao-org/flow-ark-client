@@ -12,8 +12,9 @@
   font-weight: 400;
   color: var(--fa-text-secondary);
 }
-.run-review-tool > summary .run-review-error {
-  color: var(--fa-status-error);
+.run-review-tool-status {
+  display: block;
+  margin: 4px 0 0 18px;
 }
 .run-review-tool-body {
   display: flex;

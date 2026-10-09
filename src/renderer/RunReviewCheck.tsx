@@ -1,4 +1,5 @@
-import { Button } from 'antd';
+import { Alert, Badge, Button, Tag } from 'antd';
+import { runStateColors } from './theme';
 import type { RunReviewPreview } from '../shared/run-review';
 
 type Check = RunReviewPreview['checks'][number];
@@ -155,26 +156,38 @@ export default function RunReviewCheck({
   const recover = resourceIssue?.recovery === 'refresh' ? refresh : configure;
   if (resourceIssue)
     return (
-      <section className="run-review-resource-issue" aria-label={resourceIssue.title}>
-        <span className={`badge ${resourceIssue.warning ? 'state-INTERRUPTED' : 'state-FAILED'}`}>
-          {resourceIssue.status}
-        </span>
-        <h3>{resourceIssue.title}</h3>
-        <p className="run-review-resource-reason">{check.detail}</p>
-        <p>{resourceIssue.next}</p>
-        {recover && (
-          <Button type="primary" disabled={disabled || undefined} onClick={recover}>
-            {resourceIssue.action}
-          </Button>
-        )}
+      <section aria-label={resourceIssue.title}>
+        <Alert
+          type={resourceIssue.warning ? 'warning' : 'error'}
+          role="note"
+          showIcon
+          title={resourceIssue.title}
+          description={
+            <div className="feedback-body">
+              <Tag
+                className="run-state-tag"
+                color={runStateColors[resourceIssue.warning ? 'INTERRUPTED' : 'FAILED']}
+              >
+                {resourceIssue.status}
+              </Tag>
+              <p>{check.detail}</p>
+              <p>{resourceIssue.next}</p>
+              {recover && (
+                <Button type="primary" disabled={disabled || undefined} onClick={recover}>
+                  {resourceIssue.action}
+                </Button>
+              )}
+            </div>
+          }
+        />
       </section>
     );
   const issue = check.passed ? { summary: check.detail, next: '' } : explanation(check.detail);
   const expandedDetail = issue.summary !== check.detail && !!check.detail;
   if (compact && check.passed)
     return (
-      <div className="run-review-check run-review-check-compact">
-        <span aria-hidden="true">☑</span>
+      <div className="run-review-check-compact">
+        <Badge status="success" />
         <details>
           <summary>
             <span className="sr-only">通过：</span>
@@ -185,24 +198,30 @@ export default function RunReviewCheck({
       </div>
     );
   return (
-    <div className={`run-review-check ${check.passed ? '' : 'failed'}`}>
-      <span aria-hidden="true">{check.passed ? '✓' : '!'}</span>
-      <div>
-        <b>
+    <Alert
+      type={check.passed ? 'success' : 'error'}
+      role="note"
+      showIcon
+      title={
+        <>
           <span className="sr-only">{check.passed ? '通过：' : '未通过：'}</span>
           {check.name}
-        </b>
-        <p>{issue.summary}</p>
-        {issue.next && <p>{issue.next}</p>}
-        {expandedDetail && (
-          <details className="run-review-check-detail">
-            <summary>查看检查详情</summary>
-            <pre tabIndex={0} aria-label={`${check.name}的检查详情`}>
-              {check.detail}
-            </pre>
-          </details>
-        )}
-      </div>
-    </div>
+        </>
+      }
+      description={
+        <div className="feedback-body">
+          <p>{issue.summary}</p>
+          {issue.next && <p>{issue.next}</p>}
+          {expandedDetail && (
+            <details className="run-review-check-detail">
+              <summary>查看检查详情</summary>
+              <pre tabIndex={0} aria-label={`${check.name}的检查详情`}>
+                {check.detail}
+              </pre>
+            </details>
+          )}
+        </div>
+      }
+    />
   );
 }

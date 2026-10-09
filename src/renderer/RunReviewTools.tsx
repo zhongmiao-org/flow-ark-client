@@ -1,3 +1,4 @@
+import { Alert, Badge } from 'antd';
 import type { ReviewToolCall } from '../shared/run-review';
 import { referenceOf } from './value-references';
 import './run-review-tools.css';
@@ -58,9 +59,12 @@ function Call({ call }: { call: ReviewToolCall }) {
         <small>
           {target?.displayName || '工具对象未绑定'} · {step.tool}
         </small>
-        <small className={call.current ? '' : 'run-review-error'}>
-          {call.current ? '本机记录一致 · 执行前复核服务' : '工具对象需要处理'}
-        </small>
+        <span className="run-review-tool-status">
+          <Badge
+            status={call.current ? 'default' : 'error'}
+            text={call.current ? '本机记录一致 · 执行前复核服务' : '工具对象需要处理'}
+          />
+        </span>
         <small>参数：{argumentStatusLabels[call.argumentCheck?.status ?? 'unavailable']}</small>
       </summary>
       <div className="run-review-tool-body">
@@ -111,9 +115,12 @@ function Call({ call }: { call: ReviewToolCall }) {
                 </div>
               ))}
             </dl>
-            <p className="ai-task-note">
-              服务声明不能证明没有外部影响，也不代表已经授权。读取范围、外发、覆盖和删除仍需核对。
-            </p>
+            <Alert
+              type="info"
+              role="note"
+              showIcon
+              title="服务声明不能证明没有外部影响，也不代表已经授权。读取范围、外发、覆盖和删除仍需核对。"
+            />
           </>
         )}
         <McpArgumentCheck result={call.argumentCheck} />
@@ -172,9 +179,12 @@ export default function RunReviewTools({ calls }: { calls: ReviewToolCall[] }) {
       <p>
         展开核对每个工具的连接、参数与服务声明。查看或重新检查不会连接服务、启动程序或调用工具。
       </p>
-      <p className="ai-task-note">
-        确认试运行将按这些步骤执行真实调用；服务声明不能保证没有副作用，结果未知时不会自动重试。
-      </p>
+      <Alert
+        type="warning"
+        role="note"
+        showIcon
+        title="确认试运行将按这些步骤执行真实调用；服务声明不能保证没有副作用，结果未知时不会自动重试。"
+      />
       {calls.map((call) => (
         <Call key={call.step.id} call={call} />
       ))}

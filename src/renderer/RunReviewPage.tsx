@@ -1,4 +1,4 @@
-import { Button, Checkbox } from 'antd';
+import { Alert, Button, Checkbox } from 'antd';
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { TaskDetail } from '../shared/planning';
 import DesktopRunBinding from './DesktopRunBinding';
@@ -196,7 +196,7 @@ export default function RunReviewPage(props: Props) {
   const bindings = useRef(new Set<string>());
   const heading = useRef<HTMLHeadingElement>(null);
   const resultHeading = useRef<HTMLHeadingElement>(null);
-  const resultError = useRef<HTMLParagraphElement>(null);
+  const resultError = useRef<HTMLDivElement>(null);
   const focusGeneration = useRef(0);
   const focusOwner = useRef<HTMLElement | null>(null);
   const [resultFocus, setResultFocus] = useState<{
@@ -388,10 +388,13 @@ export default function RunReviewPage(props: Props) {
           ) : preview ? (
             <Contents preview={preview} compact={compactReview} repairRevision={repairRevision} />
           ) : (
-            <div role="status">
-              <h2>{state.loading ? '正在核对保存的流程与资源' : '尚未取得检查结果'}</h2>
-              <p>检查不会创建运行。目标、读取内容、可能更改和保存位置将在这里显示。</p>
-            </div>
+            <Alert
+              type="info"
+              role="status"
+              showIcon
+              title={<h2>{state.loading ? '正在核对保存的流程与资源' : '尚未取得检查结果'}</h2>}
+              description="检查不会创建运行。目标、读取内容、可能更改和保存位置将在这里显示。"
+            />
           )}
         </div>
         <section className="ai-task-card run-review-confirm" aria-label="执行前检查">
@@ -450,12 +453,22 @@ export default function RunReviewPage(props: Props) {
             </>
           )}
           {attempt?.phase === 'pending' && (
-            <p role="status">正在核对并提交本次确认。离开页面不会撤销已创建的运行。</p>
+            <Alert
+              type="info"
+              role="status"
+              showIcon
+              title="正在核对并提交本次确认。离开页面不会撤销已创建的运行。"
+            />
           )}
           {attempt?.phase === 'unknown' && (
             <>
-              <p role="alert">{attempt.message}</p>
-              <p>可能已经创建运行。查询会使用同一个请求编号，不会另建确认请求。</p>
+              <Alert
+                type="warning"
+                role="alert"
+                showIcon
+                title={attempt.message}
+                description="可能已经创建运行。查询会使用同一个请求编号，不会另建确认请求。"
+              />
               <Button type="primary" onClick={() => void reviewAction(() => session.confirm())}>
                 查询本次确认结果
               </Button>
@@ -473,25 +486,34 @@ export default function RunReviewPage(props: Props) {
           )}
           {attempt?.run && (
             <div className="run-review-receipt" role="status">
-              <p>运行已创建</p>
-              <b>{attempt.run.name}</b>
-              <p className="run-review-version" data-run-id={attempt.run.id}>
-                {attempt.run.id}
-              </p>
-              <p>返回或查看结果不会重复执行。</p>
-              <Button
-                type="primary"
-                disabled={state.opening || undefined}
-                onClick={() => void reviewAction(() => session.open())}
-              >
-                {state.opening ? '正在读取详情…' : '查看本次运行'}
-              </Button>
+              <Alert
+                type="success"
+                role="note"
+                showIcon
+                title="运行已创建"
+                description={
+                  <div className="feedback-body">
+                    <b>{attempt.run.name}</b>
+                    <p className="run-review-version" data-run-id={attempt.run.id}>
+                      {attempt.run.id}
+                    </p>
+                    <p>返回或查看结果不会重复执行。</p>
+                    <Button
+                      type="primary"
+                      disabled={state.opening || undefined}
+                      onClick={() => void reviewAction(() => session.open())}
+                    >
+                      {state.opening ? '正在读取详情…' : '查看本次运行'}
+                    </Button>
+                  </div>
+                }
+              />
             </div>
           )}
           {state.error && (
-            <p ref={resultError} tabIndex={-1} className="run-review-error" role="alert">
-              {state.error}
-            </p>
+            <div ref={resultError} tabIndex={-1} role="alert">
+              <Alert type="error" role="note" showIcon title={state.error} />
+            </div>
           )}
           {!compactReview && !desktopReview && refreshButton}
           <Button onClick={props.back}>
