@@ -298,27 +298,7 @@
 .task-run-target {
   min-height: 112px;
 }
-.task-run-target summary {
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--fa-text-secondary);
-}
-.task-run-target dl {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 12px 0;
-}
-.task-run-target dt {
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--fa-text-secondary);
-}
-.task-run-target dd {
-  margin: 4px 0 0;
-  font-size: 14px;
-  line-height: 22px;
-  overflow-wrap: anywhere;
+.task-run-target .ant-descriptions-item-content {
   white-space: pre-wrap;
 }
 .task-run-target .task-run-target-note {
@@ -576,21 +556,16 @@
   min-height: 100px;
   background: var(--fa-action-subtle);
 }
-.task-failure-details summary {
-  cursor: pointer;
-  color: var(--fa-text-secondary);
-  font-size: 12px;
-}
-.task-failure-details > p,
-.task-failure-details > section {
-  margin-top: 12px;
-}
 .task-run-page .task-failure-details pre {
+  align-self: stretch;
   max-height: 220px;
   padding: 12px;
   border: 1px solid var(--fa-border-default);
   border-radius: var(--fa-radius-8);
   background: var(--fa-bg-canvas);
+}
+.task-failure-details .feedback-body > .task-run-target {
+  align-self: stretch;
 }
 .task-failure-details pre:focus-visible {
   outline: 2px solid var(--fa-action-primary);
