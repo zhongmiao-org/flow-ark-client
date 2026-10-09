@@ -1,4 +1,4 @@
-import { Collapse, Descriptions } from 'antd';
+import { Collapse, Descriptions, Card } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { Flow, Run, Step } from '../shared/types';
 import type { RunTargetContext } from '../shared/run-target-context';
@@ -103,43 +103,49 @@ export default function TaskRunTarget({
     .map(([, text]) => text)
     .join(' · ');
   return (
-    <section className="task-run-file task-run-target" aria-label="运行对象说明">
-      <h3>{historical ? '记录中的对象' : next ? '下一步对象' : '当前对象'}</h3>
-      {node ? (
-        <>
-          <p>{summary}</p>
-          <Collapse
-            key={`${run.id}:${node.id}`}
-            items={[
-              {
-                key: 'target',
-                label: '查看快照中的对象与定位',
-                forceRender: true,
-                onKeyDown: activateCollapseWithSpace,
-                children: (
-                  <div className="feedback-body">
-                    <p>{taskStepTitle(node)}</p>
-                    <Descriptions
-                      className="metadata-facts"
-                      column={1}
-                      bordered
-                      size="small"
-                      items={facts.map(([label, text]) => ({ key: label, label, children: text }))}
-                    />
-                    <p className="task-run-target-note">{note}</p>
-                  </div>
-                ),
-              },
-            ]}
-          />
-        </>
-      ) : (
-        <p>
-          {run.state === 'QUEUED'
-            ? '尚未开始步骤，开始后显示对应对象。'
-            : '当前记录不足以确定对应步骤与对象。'}
-        </p>
-      )}
+    <section aria-label="运行对象说明">
+      <Card size="small" className="task-run-file task-run-target">
+        <h3>{historical ? '记录中的对象' : next ? '下一步对象' : '当前对象'}</h3>
+        {node ? (
+          <>
+            <p>{summary}</p>
+            <Collapse
+              key={`${run.id}:${node.id}`}
+              items={[
+                {
+                  key: 'target',
+                  label: '查看快照中的对象与定位',
+                  forceRender: true,
+                  onKeyDown: activateCollapseWithSpace,
+                  children: (
+                    <div className="feedback-body">
+                      <p>{taskStepTitle(node)}</p>
+                      <Descriptions
+                        className="metadata-facts"
+                        column={1}
+                        bordered
+                        size="small"
+                        items={facts.map(([label, text]) => ({
+                          key: label,
+                          label,
+                          children: text,
+                        }))}
+                      />
+                      <p className="task-run-target-note">{note}</p>
+                    </div>
+                  ),
+                },
+              ]}
+            />
+          </>
+        ) : (
+          <p>
+            {run.state === 'QUEUED'
+              ? '尚未开始步骤，开始后显示对应对象。'
+              : '当前记录不足以确定对应步骤与对象。'}
+          </p>
+        )}
+      </Card>
     </section>
   );
 }

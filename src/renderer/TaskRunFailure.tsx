@@ -1,4 +1,4 @@
-import { Alert, Collapse, Descriptions, Tag, Badge } from 'antd';
+import { Alert, Collapse, Descriptions, Tag, Badge, Card } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { ReactNode } from 'react';
 import type { taskRunPresentation } from './task-run-presentation';
@@ -81,22 +81,28 @@ export default function TaskRunFailure({
       {model.current?.ended && (
         <p>最后记录的“{model.current.name}”已确认完成；当前记录未确认后续执行位置。</p>
       )}
-      <section className="task-run-file task-failure-completed" aria-label="失败前已完成">
-        <h3>已完成</h3>
-        <p>{stepNames(model.completed, '尚无已确认完成的步骤记录')}</p>
+      <section aria-label="失败前已完成">
+        <Card size="small" className="task-run-file task-failure-completed">
+          <h3>已完成</h3>
+          <p>{stepNames(model.completed, '尚无已确认完成的步骤记录')}</p>
+        </Card>
       </section>
-      <section className="task-run-file task-failure-remaining" aria-label="失败时尚未完成">
-        <h3>尚未完成</h3>
-        <p>已开始但未确认完成：{stepNames(model.unresolved, '无此类记录')}</p>
-        <p>尚未执行：{stepNames(model.unvisited, '无此类记录')}。</p>
-        {!!model.unvisited.length && (
-          <p className="task-run-path">未执行清单可能包含未选择的分支。</p>
-        )}
+      <section aria-label="失败时尚未完成">
+        <Card size="small" className="task-run-file task-failure-remaining">
+          <h3>尚未完成</h3>
+          <p>已开始但未确认完成：{stepNames(model.unresolved, '无此类记录')}</p>
+          <p>尚未执行：{stepNames(model.unvisited, '无此类记录')}。</p>
+          {!!model.unvisited.length && (
+            <p className="task-run-path">未执行清单可能包含未选择的分支。</p>
+          )}
+        </Card>
       </section>
-      <section className="task-run-file task-failure-impact" aria-label="失败时已记录影响">
-        <h3>已记录的影响</h3>
-        <p>{model.summary}</p>
-        <p>{model.effectNote}</p>
+      <section aria-label="失败时已记录影响">
+        <Card size="small" className="task-run-file task-failure-impact">
+          <h3>已记录的影响</h3>
+          <p>{model.summary}</p>
+          <p>{model.effectNote}</p>
+        </Card>
       </section>
       <Collapse
         className="task-failure-details"
