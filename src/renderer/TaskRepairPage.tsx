@@ -1,4 +1,4 @@
-import { Alert, Collapse, Select, Button, Checkbox, Input } from 'antd';
+import { Alert, Card, Collapse, Select, Button, Checkbox, Input } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import TaskRepairTarget from './TaskRepairTarget';
 import TaskRepairRestart from './TaskRepairRestart';
@@ -286,36 +286,38 @@ export default function TaskRepairPage({
               </Button>
               <Button onClick={back}>返回失败详情</Button>
             </div>
-            <section className="ai-task-card task-repair-pick" aria-label="重新拾取的目标">
-              <h2>{picked ? picked.target.label || picked.target.tag : '从真实网页选择元素'}</h2>
-              <p>
-                {picked
-                  ? '这是所选元素的摘要；完整内容请在右侧网页核对。'
-                  : '在右侧网页打开要修复的页面，然后点选目标。选取不会点击、填写或提交网页。'}
-              </p>
-              <div className="task-repair-pick-meta">
-                {picked ? (
-                  <>
-                    <p>
-                      元素类型：{picked.target.tag}
-                      {picked.target.inputType ? ` · ${picked.target.inputType}` : ''}
-                    </p>
-                    <p>
-                      所在框架：
-                      {picked.target.framePath.length
-                        ? `${picked.target.framePath.length} 层嵌套框架`
-                        : '网页主框架'}
-                    </p>
-                    <p>
-                      {picked.target.structural
-                        ? '采用结构定位，网页布局变化后需要重新选择。'
-                        : '确认时会重新核对页面与目标是否仍唯一匹配。'}
-                    </p>
-                  </>
-                ) : (
-                  <p role="status">尚未选取修复目标，请使用下方“从网页选取”。</p>
-                )}
-              </div>
+            <section aria-label="重新拾取的目标">
+              <Card className="task-repair-card task-repair-pick">
+                <h2>{picked ? picked.target.label || picked.target.tag : '从真实网页选择元素'}</h2>
+                <p>
+                  {picked
+                    ? '这是所选元素的摘要；完整内容请在右侧网页核对。'
+                    : '在右侧网页打开要修复的页面，然后点选目标。选取不会点击、填写或提交网页。'}
+                </p>
+                <div className="task-repair-pick-meta">
+                  {picked ? (
+                    <>
+                      <p>
+                        元素类型：{picked.target.tag}
+                        {picked.target.inputType ? ` · ${picked.target.inputType}` : ''}
+                      </p>
+                      <p>
+                        所在框架：
+                        {picked.target.framePath.length
+                          ? `${picked.target.framePath.length} 层嵌套框架`
+                          : '网页主框架'}
+                      </p>
+                      <p>
+                        {picked.target.structural
+                          ? '采用结构定位，网页布局变化后需要重新选择。'
+                          : '确认时会重新核对页面与目标是否仍唯一匹配。'}
+                      </p>
+                    </>
+                  ) : (
+                    <p role="status">尚未选取修复目标，请使用下方“从网页选取”。</p>
+                  )}
+                </div>
+              </Card>
             </section>
             <p className="task-run-note task-repair-pick-note">
               定位来自选择的真实元素；无法唯一匹配时不会采用。返回保留任务草稿，修复不会自动重复执行。
@@ -368,322 +370,327 @@ export default function TaskRepairPage({
           </>
         ) : phase === 'review' ? (
           <div className="task-run-columns task-repair-columns">
-            <section className="ai-task-card">
-              <div className="task-repair-box task-repair-chat">
-                <span className="task-repair-speaker">FlowArk</span>
-                <p>
-                  {ours
-                    ? proposal!.result.summary
-                    : '已取得你确认的网页目标。核对下方发送范围，再让 AI 提议修改。'}
-                </p>
-              </div>
-              <div className="task-repair-box task-repair-new">
-                <h3>复核结果</h3>
-                <p>{preview ? '确认时唯一匹配 · 1 个元素' : '需要重新选取目标'}</p>
-                <p>
-                  目标描述：
-                  {preview?.selection.target.label || preview?.selection.target.tag || '尚无'}
-                </p>
-                <p>描述不是完整读取结果；生成与采纳时会再次核对。</p>
-                {task?.task.webTarget && preview && (
-                  <>
-                    <p>采纳后，任务的只读网页对象将更新为本次确认的网页。</p>
-                    <p>{preview.selection.title || '未命名网页'}</p>
-                    <p className="task-run-path">{preview.selection.url}</p>
-                    {task.task.webTarget.element && <p>仍只允许读取本次选中的元素。</p>}
-                  </>
-                )}
-                {preview && (
-                  <Collapse
-                    className="task-repair-location"
-                    items={[
-                      {
-                        key: 'evidence-2',
-                        label: <>核对选择时的网页与元素信息</>,
-                        forceRender: true,
-                        onKeyDown: activateCollapseWithSpace,
-                        children: (
-                          <div className="feedback-body">
-                            <p>网页：{preview.selection.title || '未命名网页'}</p>
-                            <p className="task-run-path">{preview.selection.url}</p>
-                            <p>
-                              元素类型：{preview.selection.target.tag}
-                              {preview.selection.target.inputType
-                                ? ` · ${preview.selection.target.inputType}`
-                                : ''}
-                            </p>
-                            {preview.selection.target.structural && (
-                              <p>使用结构定位，网页布局变化后需要重新选择。</p>
-                            )}
-                            <p>
-                              仅供本机核对，不表示网页当前仍未变化；网页地址和标题不会自动加入模型输入。
-                            </p>
-                          </div>
-                        ),
-                      },
-                    ]}
-                  />
-                )}
-              </div>
-              <p className="task-run-note">
-                如果原操作结果未知，请先核对；修复目标不会自动重复提交。
-              </p>
-              {!ours && !generating && (
-                <>
-                  <h3>本次使用的 AI</h3>
-                  <label>
-                    供应商
-                    <Select<string>
-                      value={provider}
-                      disabled={busy || undefined}
-                      onChange={(selection) => {
-                        const value = selection as typeof provider;
-                        setProvider(value);
-                        setModel(value === 'deepseek' ? 'deepseek-flash' : 'gpt-5.4');
-                        setReviewed(false);
-                      }}
-                      options={[
-                        { value: 'deepseek', label: 'DeepSeek' },
-                        { value: 'openai-codex', label: 'OpenAI' },
+            <section>
+              <Card className="task-repair-card">
+                <Card size="small" className="task-repair-box task-repair-chat">
+                  <span className="task-repair-speaker">FlowArk</span>
+                  <p>
+                    {ours
+                      ? proposal!.result.summary
+                      : '已取得你确认的网页目标。核对下方发送范围，再让 AI 提议修改。'}
+                  </p>
+                </Card>
+                <Card size="small" className="task-repair-box task-repair-new">
+                  <h3>复核结果</h3>
+                  <p>{preview ? '确认时唯一匹配 · 1 个元素' : '需要重新选取目标'}</p>
+                  <p>
+                    目标描述：
+                    {preview?.selection.target.label || preview?.selection.target.tag || '尚无'}
+                  </p>
+                  <p>描述不是完整读取结果；生成与采纳时会再次核对。</p>
+                  {task?.task.webTarget && preview && (
+                    <>
+                      <p>采纳后，任务的只读网页对象将更新为本次确认的网页。</p>
+                      <p>{preview.selection.title || '未命名网页'}</p>
+                      <p className="task-run-path">{preview.selection.url}</p>
+                      {task.task.webTarget.element && <p>仍只允许读取本次选中的元素。</p>}
+                    </>
+                  )}
+                  {preview && (
+                    <Collapse
+                      className="task-repair-location"
+                      items={[
+                        {
+                          key: 'evidence-2',
+                          label: <>核对选择时的网页与元素信息</>,
+                          forceRender: true,
+                          onKeyDown: activateCollapseWithSpace,
+                          children: (
+                            <div className="feedback-body">
+                              <p>网页：{preview.selection.title || '未命名网页'}</p>
+                              <p className="task-run-path">{preview.selection.url}</p>
+                              <p>
+                                元素类型：{preview.selection.target.tag}
+                                {preview.selection.target.inputType
+                                  ? ` · ${preview.selection.target.inputType}`
+                                  : ''}
+                              </p>
+                              {preview.selection.target.structural && (
+                                <p>使用结构定位，网页布局变化后需要重新选择。</p>
+                              )}
+                              <p>
+                                仅供本机核对，不表示网页当前仍未变化；网页地址和标题不会自动加入模型输入。
+                              </p>
+                            </div>
+                          ),
+                        },
                       ]}
                     />
-                  </label>
-                  <label>
-                    模型
-                    <Input
-                      value={model}
-                      disabled={busy || undefined}
-                      onChange={(e) => {
-                        setModel(e.target.value);
-                        setReviewed(false);
-                      }}
+                  )}
+                </Card>
+                <p className="task-run-note">
+                  如果原操作结果未知，请先核对；修复目标不会自动重复提交。
+                </p>
+                {!ours && !generating && (
+                  <>
+                    <h3>本次使用的 AI</h3>
+                    <label>
+                      供应商
+                      <Select<string>
+                        value={provider}
+                        disabled={busy || undefined}
+                        onChange={(selection) => {
+                          const value = selection as typeof provider;
+                          setProvider(value);
+                          setModel(value === 'deepseek' ? 'deepseek-flash' : 'gpt-5.4');
+                          setReviewed(false);
+                        }}
+                        options={[
+                          { value: 'deepseek', label: 'DeepSeek' },
+                          { value: 'openai-codex', label: 'OpenAI' },
+                        ]}
+                      />
+                    </label>
+                    <label>
+                      模型
+                      <Input
+                        value={model}
+                        disabled={busy || undefined}
+                        onChange={(e) => {
+                          setModel(e.target.value);
+                          setReviewed(false);
+                        }}
+                      />
+                    </label>
+                    <Collapse
+                      items={[
+                        {
+                          key: 'evidence-3',
+                          label: <>核对实际发送内容</>,
+                          forceRender: true,
+                          onKeyDown: activateCollapseWithSpace,
+                          children: (
+                            <div className="feedback-body">
+                              <p>
+                                发送任务描述、当前完整流程及本次目标修复说明。未选择的附件和历史输出不自动发送。
+                              </p>
+                              <pre tabIndex={0} aria-label="本次修复实际发送内容">
+                                {JSON.stringify(preview?.input, null, 2)}
+                              </pre>
+                            </div>
+                          ),
+                        },
+                      ]}
                     />
-                  </label>
-                  <Collapse
-                    items={[
-                      {
-                        key: 'evidence-3',
-                        label: <>核对实际发送内容</>,
-                        forceRender: true,
-                        onKeyDown: activateCollapseWithSpace,
-                        children: (
-                          <div className="feedback-body">
-                            <p>
-                              发送任务描述、当前完整流程及本次目标修复说明。未选择的附件和历史输出不自动发送。
-                            </p>
-                            <pre tabIndex={0} aria-label="本次修复实际发送内容">
-                              {JSON.stringify(preview?.input, null, 2)}
-                            </pre>
-                          </div>
-                        ),
-                      },
-                    ]}
-                  />
-                  <Checkbox
-                    checked={reviewed}
-                    disabled={
-                      busy || !preview || task?.task.revision !== selection?.revision || undefined
-                    }
-                    onChange={(e) => setReviewed(e.target.checked)}
-                    className="run-review-toggle"
-                  >
-                    我已核对发送内容、供应商和模型
-                  </Checkbox>
-                  <Button
-                    type="primary"
-                    disabled={
-                      busy ||
-                      !reviewed ||
-                      !model.trim() ||
-                      !preview ||
-                      selectionChanged ||
-                      undefined
-                    }
-                    onClick={(event) => {
-                      proposalOrigin.current = event.currentTarget as HTMLButtonElement;
-                      void act(generateRepair);
-                    }}
-                  >
-                    让 AI 提议修复
-                  </Button>
-                </>
-              )}
-              {generating && (
-                <>
-                  <p role="status">正在生成修复提议，尚未更改流程或执行。</p>
-                  <Button
-                    onClick={() =>
-                      void act(async (epoch) => {
-                        const next = await api('task.cancel', { id: taskId });
-                        if (current(epoch)) setTask(next);
-                      })
-                    }
-                  >
-                    取消生成
-                  </Button>
-                </>
-              )}
-              <Button
-                type={selectionChanged ? 'primary' : 'default'}
-                disabled={busy || generating || undefined}
-                onClick={() => {
-                  discardSelection();
-                  setPhase('pick');
-                  browser(true);
-                }}
-              >
-                重新选择目标
-              </Button>
-            </section>
-            <section className="ai-task-card">
-              <h2 ref={proposalHeading} tabIndex={-1}>
-                {canAdopt ? '只改变目标引用' : '待核对的目标变化'}
-              </h2>
-              <TaskRepairTarget
-                title="原目标"
-                label={preview?.source.nodeName || stepName}
-                selector={
-                  preview?.source.selector || (node?.type === 'browser' ? node.selector : undefined)
-                }
-                framePath={
-                  preview?.source.framePath ??
-                  (node?.type === 'browser' && 'framePath' in node ? node.framePath : undefined)
-                }
-                kind="old"
-                note="原运行停止于此，历史匹配数未记录"
-              />
-              <TaskRepairTarget
-                title="新目标"
-                label={preview?.selection.target.label || preview?.selection.target.tag}
-                selector={preview?.selection.target.selector}
-                framePath={preview?.selection.target.framePath}
-                kind="new"
-                note={preview ? '确认时唯一匹配，采纳前再次核对' : '需要重新选择'}
-              />
-              {ours && (
-                <>
-                  <p>
-                    {canAdopt
-                      ? '已核对：只改变所选步骤的目标；没有新增步骤、账号、工具或授权。旧运行保持不变。'
-                      : proposal!.result.kind === 'plan'
-                        ? '当前方案已有变化，请重新核对修复。'
-                        : '本次未产生可采纳的修复方案，请回到任务补充信息。'}
-                  </p>
-                  <Collapse
-                    items={[
-                      {
-                        key: 'evidence-4',
-                        label: <>查看完整差异 · {task?.changes.length} 项</>,
-                        forceRender: true,
-                        onKeyDown: activateCollapseWithSpace,
-                        children: (
-                          <div className="feedback-body">
-                            {task?.changes.map((c) => (
-                              <div key={c.path}>
-                                <b>
-                                  {c.label} · {c.path}
-                                </b>
-                                <pre tabIndex={0} aria-label={`${c.label}的完整差异`}>
-                                  {JSON.stringify({ 原值: c.before, 新值: c.after }, null, 2)}
-                                </pre>
-                              </div>
-                            ))}
-                          </div>
-                        ),
-                      },
-                    ]}
-                  />
-                  {proposal!.result.limitations.map((text, i) => (
-                    <p key={i}>{text}</p>
-                  ))}
-                  <div className="ai-task-actions task-repair-adoption">
+                    <Checkbox
+                      checked={reviewed}
+                      disabled={
+                        busy || !preview || task?.task.revision !== selection?.revision || undefined
+                      }
+                      onChange={(e) => setReviewed(e.target.checked)}
+                      className="run-review-toggle"
+                    >
+                      我已核对发送内容、供应商和模型
+                    </Checkbox>
                     <Button
                       type="primary"
-                      disabled={!canAdopt || busy || !!pendingAdoption || undefined}
+                      disabled={
+                        busy ||
+                        !reviewed ||
+                        !model.trim() ||
+                        !preview ||
+                        selectionChanged ||
+                        undefined
+                      }
+                      onClick={(event) => {
+                        proposalOrigin.current = event.currentTarget as HTMLButtonElement;
+                        void act(generateRepair);
+                      }}
+                    >
+                      让 AI 提议修复
+                    </Button>
+                  </>
+                )}
+                {generating && (
+                  <>
+                    <p role="status">正在生成修复提议，尚未更改流程或执行。</p>
+                    <Button
                       onClick={() =>
                         void act(async (epoch) => {
-                          const proposalId = proposal!.id;
-                          setPendingAdoption(proposalId);
-                          try {
-                            await api('task.adopt', {
+                          const next = await api('task.cancel', { id: taskId });
+                          if (current(epoch)) setTask(next);
+                        })
+                      }
+                    >
+                      取消生成
+                    </Button>
+                  </>
+                )}
+                <Button
+                  type={selectionChanged ? 'primary' : 'default'}
+                  disabled={busy || generating || undefined}
+                  onClick={() => {
+                    discardSelection();
+                    setPhase('pick');
+                    browser(true);
+                  }}
+                >
+                  重新选择目标
+                </Button>
+              </Card>
+            </section>
+            <section>
+              <Card className="task-repair-card">
+                <h2 ref={proposalHeading} tabIndex={-1}>
+                  {canAdopt ? '只改变目标引用' : '待核对的目标变化'}
+                </h2>
+                <TaskRepairTarget
+                  title="原目标"
+                  label={preview?.source.nodeName || stepName}
+                  selector={
+                    preview?.source.selector ||
+                    (node?.type === 'browser' ? node.selector : undefined)
+                  }
+                  framePath={
+                    preview?.source.framePath ??
+                    (node?.type === 'browser' && 'framePath' in node ? node.framePath : undefined)
+                  }
+                  kind="old"
+                  note="原运行停止于此，历史匹配数未记录"
+                />
+                <TaskRepairTarget
+                  title="新目标"
+                  label={preview?.selection.target.label || preview?.selection.target.tag}
+                  selector={preview?.selection.target.selector}
+                  framePath={preview?.selection.target.framePath}
+                  kind="new"
+                  note={preview ? '确认时唯一匹配，采纳前再次核对' : '需要重新选择'}
+                />
+                {ours && (
+                  <>
+                    <p>
+                      {canAdopt
+                        ? '已核对：只改变所选步骤的目标；没有新增步骤、账号、工具或授权。旧运行保持不变。'
+                        : proposal!.result.kind === 'plan'
+                          ? '当前方案已有变化，请重新核对修复。'
+                          : '本次未产生可采纳的修复方案，请回到任务补充信息。'}
+                    </p>
+                    <Collapse
+                      items={[
+                        {
+                          key: 'evidence-4',
+                          label: <>查看完整差异 · {task?.changes.length} 项</>,
+                          forceRender: true,
+                          onKeyDown: activateCollapseWithSpace,
+                          children: (
+                            <div className="feedback-body">
+                              {task?.changes.map((c) => (
+                                <div key={c.path}>
+                                  <b>
+                                    {c.label} · {c.path}
+                                  </b>
+                                  <pre tabIndex={0} aria-label={`${c.label}的完整差异`}>
+                                    {JSON.stringify({ 原值: c.before, 新值: c.after }, null, 2)}
+                                  </pre>
+                                </div>
+                              ))}
+                            </div>
+                          ),
+                        },
+                      ]}
+                    />
+                    {proposal!.result.limitations.map((text, i) => (
+                      <p key={i}>{text}</p>
+                    ))}
+                    <div className="ai-task-actions task-repair-adoption">
+                      <Button
+                        type="primary"
+                        disabled={!canAdopt || busy || !!pendingAdoption || undefined}
+                        onClick={() =>
+                          void act(async (epoch) => {
+                            const proposalId = proposal!.id;
+                            setPendingAdoption(proposalId);
+                            try {
+                              await api('task.adopt', {
+                                id: taskId,
+                                revision: task!.task.revision,
+                                proposalId,
+                              });
+                            } catch (e) {
+                              await queryAdoption(
+                                epoch,
+                                proposalId,
+                                e instanceof Error ? e.message : '采纳回复未取得',
+                              );
+                              return;
+                            }
+                            await queryAdoption(epoch, proposalId);
+                          })
+                        }
+                      >
+                        采纳并检查起点
+                      </Button>
+                      <Button
+                        disabled={busy || !!pendingAdoption || undefined}
+                        onClick={() =>
+                          void act(async (epoch) => {
+                            const next = await api('task.reject', {
                               id: taskId,
                               revision: task!.task.revision,
-                              proposalId,
+                              proposalId: proposal!.id,
                             });
-                          } catch (e) {
-                            await queryAdoption(
-                              epoch,
-                              proposalId,
-                              e instanceof Error ? e.message : '采纳回复未取得',
-                            );
-                            return;
-                          }
-                          await queryAdoption(epoch, proposalId);
-                        })
-                      }
+                            if (current(epoch)) {
+                              setTask(next);
+                              back();
+                            }
+                          })
+                        }
+                      >
+                        不采纳
+                      </Button>
+                    </div>
+                  </>
+                )}
+                {pendingAdoption && (
+                  <>
+                    <p role="status">采纳结果以任务记录为准，未自动重新提交。</p>
+                    <Button
+                      disabled={busy || undefined}
+                      onClick={() => void act((epoch) => queryAdoption(epoch, pendingAdoption))}
                     >
-                      采纳并检查起点
+                      核对采纳结果
                     </Button>
                     <Button
-                      disabled={busy || !!pendingAdoption || undefined}
+                      disabled={busy || undefined}
                       onClick={() =>
                         void act(async (epoch) => {
-                          const next = await api('task.reject', {
-                            id: taskId,
-                            revision: task!.task.revision,
-                            proposalId: proposal!.id,
-                          });
-                          if (current(epoch)) {
-                            setTask(next);
-                            back();
+                          // Stop an adoption still awaiting native verification, then read
+                          // the persisted receipt. A committed adoption is not undone.
+                          await api('task.cancel', { id: taskId });
+                          const next: TaskDetail = await api('task.detail', { id: taskId });
+                          if (!current(epoch)) return;
+                          setTask(next);
+                          setPendingAdoption(undefined);
+                          setPriorReviewed(false);
+                          setReviewed(false);
+                          if (next.task.appliedRepair?.proposalId === pendingAdoption) {
+                            setPhase('restart');
+                          } else {
+                            setPicked(undefined);
+                            setPreview(undefined);
+                            setSelection(undefined);
+                            setPhase('pick');
+                            browser(true);
                           }
                         })
                       }
                     >
-                      不采纳
+                      取消等待并核对当前方案
                     </Button>
-                  </div>
-                </>
-              )}
-              {pendingAdoption && (
-                <>
-                  <p role="status">采纳结果以任务记录为准，未自动重新提交。</p>
-                  <Button
-                    disabled={busy || undefined}
-                    onClick={() => void act((epoch) => queryAdoption(epoch, pendingAdoption))}
-                  >
-                    核对采纳结果
-                  </Button>
-                  <Button
-                    disabled={busy || undefined}
-                    onClick={() =>
-                      void act(async (epoch) => {
-                        // Stop an adoption still awaiting native verification, then read
-                        // the persisted receipt. A committed adoption is not undone.
-                        await api('task.cancel', { id: taskId });
-                        const next: TaskDetail = await api('task.detail', { id: taskId });
-                        if (!current(epoch)) return;
-                        setTask(next);
-                        setPendingAdoption(undefined);
-                        setPriorReviewed(false);
-                        setReviewed(false);
-                        if (next.task.appliedRepair?.proposalId === pendingAdoption) {
-                          setPhase('restart');
-                        } else {
-                          setPicked(undefined);
-                          setPreview(undefined);
-                          setSelection(undefined);
-                          setPhase('pick');
-                          browser(true);
-                        }
-                      })
-                    }
-                  >
-                    取消等待并核对当前方案
-                  </Button>
-                </>
-              )}
-              <Button onClick={modify}>回到任务修改</Button>
+                  </>
+                )}
+                <Button onClick={modify}>回到任务修改</Button>
+              </Card>
             </section>
           </div>
         ) : (

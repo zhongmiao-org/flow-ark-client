@@ -18,14 +18,24 @@
 .task-restart-columns {
   grid-template-columns: minmax(0, 650fr) minmax(0, 478fr);
 }
-.task-repair-columns > .ai-task-card,
-.task-restart-columns > .ai-task-card {
+.task-repair-columns .task-repair-card,
+.task-restart-columns .task-restart-card {
   min-height: 700px;
 }
+.task-repair-card,
+.task-restart-card {
+  min-width: 0;
+}
+.task-repair-card > .ant-card-body,
+.task-restart-card > .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  min-width: 0;
+}
 .task-repair-box {
-  padding: 16px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: 12px;
+  min-width: 0;
   background: var(--fa-bg-canvas);
 }
 .task-repair-box p {
@@ -458,8 +468,8 @@
     grid-template-columns: minmax(0, 1fr);
   }
   .task-run-live > .ai-task-card,
-  .task-repair-columns > .ai-task-card,
-  .task-restart-columns > .ai-task-card {
+  .task-repair-columns .task-repair-card,
+  .task-restart-columns .task-restart-card {
     min-height: auto;
   }
 }
