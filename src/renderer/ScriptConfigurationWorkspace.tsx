@@ -1,4 +1,4 @@
-import { Drawer, Collapse, Descriptions, Select, Button } from 'antd';
+import { Alert, Drawer, Collapse, Descriptions, Select, Button } from 'antd';
 import { useEffect, useId, useRef } from 'react';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
 import type { FlowRecord } from '../shared/types';
@@ -101,10 +101,12 @@ export default function ScriptConfigurationWorkspace(props: Props) {
           </p>
         </header>
         {props.error && (
-          <div role="alert" className="resource-workspace-error">
-            <p>{props.error}</p>
-            <Button onClick={props.clearError}>关闭提示</Button>
-          </div>
+          <Alert
+            type="error"
+            showIcon
+            title={props.error}
+            action={<Button onClick={props.clearError}>关闭提示</Button>}
+          />
         )}
         <div className="resource-workspace-grid">
           <section className="resource-workspace-card" aria-label="JS / TS 脚本">

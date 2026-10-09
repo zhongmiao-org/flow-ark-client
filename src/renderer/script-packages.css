@@ -19,11 +19,7 @@
   font-size: 12px;
 }
 .script-package-card {
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-8);
-  padding: 16px;
   margin: 16px 0;
-  background: var(--fa-bg-surface);
 }
 .script-package-card h4 {
   margin: 0;
@@ -40,44 +36,11 @@
   color: var(--fa-text-secondary);
   margin: 8px 0;
 }
-.script-package-state {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: var(--fa-radius-6);
-  font-size: 12px;
-  background: var(--fa-bg-subtle);
-  color: var(--fa-text-secondary);
-}
-.script-package-state.warning {
-  background: var(--fa-status-warning-bg);
-  color: var(--fa-status-warning);
-}
-.script-package-state.success {
-  background: var(--fa-status-success-bg);
-  color: var(--fa-status-success);
-}
-.script-package-card details {
-  margin-top: 12px;
-}
-.script-package-card summary {
-  cursor: pointer;
-  font-size: 12px;
-}
 .script-package-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   margin-top: 16px;
-}
-.script-package-actions button {
-  min-height: 40px;
-}
-.script-package-empty,
-.script-package-feedback {
-  padding: 12px;
-  background: var(--fa-bg-subtle);
-  border-radius: var(--fa-radius-8);
-  line-height: 22px;
 }
 .script-package-dialog h2 {
   margin: 0 0 12px;
@@ -91,18 +54,13 @@
   overflow-wrap: anywhere;
   margin-top: 24px;
 }
-.script-package-dialog dt {
-  color: var(--fa-text-secondary);
-  font-size: 12px;
-  margin-top: 16px;
+
+.script-package-directory {
+  margin-top: 12px;
 }
-.script-package-dialog dd {
-  margin: 6px 0 0;
+.script-package-review {
+  margin-bottom: 16px;
+}
+.script-packages .ant-descriptions-item-content {
   overflow-wrap: anywhere;
-}
-.script-package-warning {
-  padding: 16px;
-  background: var(--fa-status-warning-bg);
-  color: var(--fa-status-warning);
-  border-radius: var(--fa-radius-8);
 }
