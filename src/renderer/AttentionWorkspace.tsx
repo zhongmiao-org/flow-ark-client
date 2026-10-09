@@ -11,7 +11,8 @@ import type { Attention, Bootstrap, Json } from '../shared/types';
 import type { TemplateHumanReview } from '../shared/contracts.generated';
 import { template_human_review_v1 } from '../shared/node-schema.generated';
 import { runStateLabels } from '../shared/run-history';
-import { schemaDefaults, validateConfigurationSchema } from '../shared/template-config';
+import { schemaDefaults } from '../shared/template-config';
+import { validateHumanInputSchema } from './human-input-schema';
 import { Field, type ConfigurationFieldDraft } from './TemplateConfiguration';
 import './attention-workspace.css';
 import AttentionDetails from './AttentionDetails';
@@ -73,7 +74,7 @@ function AnswerForm({
   const schema = item.detail?.schema ?? { type: 'boolean' };
   let supported = true;
   try {
-    validateConfigurationSchema(schema);
+    validateHumanInputSchema(schema);
   } catch {
     supported = false;
   }
@@ -115,7 +116,7 @@ function AnswerForm({
         if (!enabled || !reviewed) return;
         const invalid = form.current?.querySelector<HTMLElement>('[data-value-invalid]');
         if (invalid) {
-          const input = invalid.matches('input, select, textarea, button')
+          const input = invalid.matches('input, select, textarea, button, fieldset')
             ? invalid
             : (invalid.querySelector<HTMLElement>('[aria-invalid="true"]') ??
               invalid.querySelector<HTMLElement>(
