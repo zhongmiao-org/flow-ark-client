@@ -1,4 +1,5 @@
-import { Badge, Button, Tag } from 'antd';
+import { Badge, Button, Collapse, Tag } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { PlanningContext } from '../shared/planning';
 
 const contextKinds: Record<PlanningContext['kind'], string> = {
@@ -49,18 +50,30 @@ export default function TaskMissingAI({
           {description || '尚未填写需求'}
         </p>
         {!!context.length && (
-          <details className="ai-missing-context">
-            <summary>已保留 {context.length} 项任务资料</summary>
-            <ul tabIndex={0} aria-label="已保留的任务资料">
-              {context.map((item) => (
-                <li key={item.id}>
-                  <span>{contextKinds[item.kind]}</span>
-                  <strong>{item.label}</strong>
-                </li>
-              ))}
-            </ul>
-            <p>这里仅列出草稿中的资料；配置或测试 AI 服务不会发送这些内容。</p>
-          </details>
+          <Collapse
+            className="ai-missing-context"
+            items={[
+              {
+                key: 'context',
+                label: `已保留 ${context.length} 项任务资料`,
+                forceRender: true,
+                onKeyDown: activateCollapseWithSpace,
+                children: (
+                  <div className="feedback-body">
+                    <ul tabIndex={0} aria-label="已保留的任务资料">
+                      {context.map((item) => (
+                        <li key={item.id}>
+                          <span>{contextKinds[item.kind]}</span>
+                          <strong>{item.label}</strong>
+                        </li>
+                      ))}
+                    </ul>
+                    <p>这里仅列出草稿中的资料；配置或测试 AI 服务不会发送这些内容。</p>
+                  </div>
+                ),
+              },
+            ]}
+          />
         )}
       </article>
       <div className="ai-task-actions">
