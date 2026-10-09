@@ -62,9 +62,9 @@ label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item
   color: #677970;
 }
 label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item)
-  input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-item-input):not(
-    [class*='ant-select']
-  ) {
+  input:not(.ant-input):not(.ant-checkbox-input):not(.ant-radio-input):not(
+    .ant-segmented-item-input
+  ):not([class*='ant-select']) {
   display: block;
   width: 100%;
   margin-top: 8px;
@@ -620,38 +620,6 @@ main {
 .action-library-tools .eyebrow {
   padding: 0 4px 4px;
 }
-.action-search {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0 7px;
-}
-.action-search
-  input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-item-input):not(
-    [class*='ant-select']
-  ) {
-  border: 0;
-  padding: 8px 0;
-  width: 100%;
-  min-width: 0;
-  font-size: 11px;
-}
-.action-search:focus-within {
-  outline: 2px solid #79a797;
-  outline-offset: 1px;
-}
-.action-search
-  input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-item-input):not(
-    [class*='ant-select']
-  ):focus {
-  outline: 0;
-}
-.action-search button {
-  padding: 3px;
-  border: 0;
-}
 .action-destination {
   display: flex;
   flex-direction: column;
@@ -671,36 +639,8 @@ main {
   flex-direction: column;
   gap: 3px;
 }
-.action-list button {
-  justify-content: flex-start;
-  border: 0;
-  padding: 9px 6px;
-  font-size: 11px;
-  flex-shrink: 0;
-  gap: 7px;
-  text-align: left;
-}
-.action-list button > svg {
-  flex-shrink: 0;
-}
-.action-list button > span {
-  flex: 1;
-}
-.action-list button:hover {
-  background: #edf5f0;
-  color: #286f58;
-}
-.action-list button:focus-visible {
-  outline: 2px solid #428574;
-  outline-offset: -2px;
-}
 .action-add-icon {
   opacity: 0.45;
-}
-.action-list p {
-  font-size: 11px;
-  line-height: 1.7;
-  margin: 6px;
 }
 .canvas {
   flex: 1;
