@@ -1,4 +1,4 @@
-import { Button } from 'antd';
+import { Badge, Button, Tag } from 'antd';
 import { useState } from 'react';
 import type { InstalledPackage } from '../templates/archive';
 export type TemplateManifest = InstalledPackage['manifest'];
@@ -42,9 +42,14 @@ export default function TemplateManifestOverview({
   const entry = manifest.entries.find((e) => e.id === entryId) ?? manifest.entries[0];
   return (
     <section className="template-catalog-card template-manifest">
-      <span className={`template-catalog-status${checked ? ' success' : ''}`}>
+      <Tag
+        className="run-state-tag"
+        variant="filled"
+        color={checked ? 'success' : 'default'}
+        icon={<Badge status={checked ? 'success' : 'default'} />}
+      >
         {checked ? '格式与内容摘要校验通过' : '本机已安装'}
-      </span>
+      </Tag>
       <h2>{manifest.name}</h2>
       <p>{manifest.description}</p>
       <p className="template-catalog-muted">
