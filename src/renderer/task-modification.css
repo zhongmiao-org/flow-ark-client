@@ -2,10 +2,22 @@
 .ai-task-columns.task-modification {
   grid-template-columns: minmax(320px, 440px) minmax(0, 1fr);
 }
-.ai-task-columns.task-modification > .ai-task-card {
-  min-height: 720px;
+.task-modification > section {
+  min-width: 0;
 }
-.task-modification > .ai-task-card > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.task-modification > section > .task-modification-card {
+  min-height: 720px;
+  height: 100%;
+}
+.task-modification-card > .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.task-modification-card
+  > .ant-card-body
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   margin-bottom: -8px;
   font-size: 12px;
   line-height: 18px;
@@ -28,7 +40,7 @@
   display: flex;
   align-items: center;
 }
-.task-modification > .ai-task-card > button {
+.task-modification-card > .ant-card-body > button {
   align-self: flex-start;
   min-width: 200px;
 }
@@ -46,7 +58,7 @@
   .ai-task-columns.task-modification {
     grid-template-columns: minmax(0, 1fr);
   }
-  .ai-task-columns.task-modification > .ai-task-card {
+  .task-modification > section > .task-modification-card {
     min-height: auto;
   }
 }
