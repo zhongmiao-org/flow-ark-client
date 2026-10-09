@@ -69,33 +69,14 @@
   border-radius: 8px;
   line-height: 22px;
 }
-.task-step-facts {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 0;
-}
-.task-step-facts dt {
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--fa-text-secondary);
-  margin-bottom: 4px;
-}
-.task-step-facts dd {
-  margin: 0;
+.task-step-facts .ant-descriptions-item-content {
   white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-size: 14px;
-  line-height: 22px;
 }
 .task-step-value {
   min-width: 0;
 }
-.task-step-value > summary {
-  cursor: pointer;
-}
-.task-step-value[open] > :not(summary) {
-  margin-top: 8px;
+.task-step-inspector .feedback-body {
+  align-items: stretch;
 }
 .task-step-inspector .task-step-value pre {
   max-height: 260px;
@@ -168,14 +149,6 @@
 }
 .task-step-graph-details {
   min-width: 0;
-  font-size: 13px;
-}
-.task-step-graph-details > summary {
-  cursor: pointer;
-  color: var(--fa-text-secondary);
-}
-.task-step-graph-details[open] > :not(summary) {
-  margin-top: 16px;
 }
 .task-graph-inline {
   display: flex;
