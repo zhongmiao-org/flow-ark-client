@@ -1642,13 +1642,14 @@ main {
   font-size: 11px;
   margin: 8px 0 0;
 }
-.locator-details,
+.locator-details {
+  margin-top: 14px;
+}
 .node-advanced {
   margin-top: 14px;
   border-top: 1px solid var(--border);
   padding-top: 12px;
 }
-.locator-details summary,
 .node-advanced summary {
   color: #667c72;
   cursor: pointer;

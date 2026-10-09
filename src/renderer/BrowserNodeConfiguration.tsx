@@ -1,4 +1,5 @@
-import { Select, Input } from 'antd';
+import { Select, Input, Collapse, Space } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { Fragment, useEffect, useId, useRef, useState, type ReactNode, type Ref } from 'react';
 import type { FramePath } from '../shared/contracts.generated';
 import type { Step } from '../shared/types';
@@ -35,7 +36,9 @@ export default function BrowserNodeConfiguration({
   change: (node: BrowserNode) => void;
 }) {
   const instanceId = useId();
-  const locator = useRef<HTMLDetailsElement>(null);
+  const [locatorExpanded, setLocatorExpanded] = useState(!node.selector);
+  const [locatorFocusRevision, setLocatorFocusRevision] = useState(0);
+  const focusLocator = useRef(false);
   const selectorInput = useRef<HTMLInputElement>(null);
   const fieldId = fieldsOnly ? instanceId + '-' : '';
   const [inspected, setInspected] = useState(false);
@@ -44,6 +47,21 @@ export default function BrowserNodeConfiguration({
     node.version >= 2 ? (node as Extract<BrowserNode, { version: 2 | 3 }>).framePath : [];
   const pathKey = JSON.stringify(path);
   const [frames, setFrames] = useState(path.join('\n'));
+  useEffect(() => {
+    setLocatorExpanded(!node.selector);
+  }, [node.id]);
+  useEffect(() => {
+    if (!node.selector) setLocatorExpanded(true);
+  }, [node.selector]);
+  useEffect(() => {
+    if (!locatorExpanded || !focusLocator.current) return;
+    const frame = requestAnimationFrame(() => {
+      selectorInput.current?.focus();
+      selectorInput.current?.scrollIntoView({ block: 'nearest' });
+      focusLocator.current = false;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [locatorExpanded, locatorFocusRevision]);
   const parseFrames = (text: string) =>
     text
       .split('\n')
@@ -85,8 +103,9 @@ export default function BrowserNodeConfiguration({
           setInspected(true);
         }}
         onAdjust={() => {
-          if (locator.current) locator.current.open = true;
-          selectorInput.current?.focus();
+          focusLocator.current = true;
+          setLocatorExpanded(true);
+          setLocatorFocusRevision((revision) => revision + 1);
         }}
         onSelect={(picked) => {
           setInspected(false);
@@ -136,44 +155,58 @@ export default function BrowserNodeConfiguration({
     </Fragment>
   );
   const locatorEditor = (
-    <details key="locator" ref={locator} className="locator-details" open={!node.selector}>
-      <summary>
-        {readInspector ? (compact ? '高级定位' : '高级定位与超时') : '定位信息 · 高级编辑'}
-      </summary>
-      <label htmlFor={fieldId + 'browser-selector'}>目标元素选择器</label>
-      <Input
-        ref={(instance) => {
-          selectorInput.current = instance?.input ?? null;
-        }}
-        id={fieldId + 'browser-selector'}
-        disabled={topLevel || undefined}
-        value={node.selector}
-        placeholder="#submit"
-        onChange={(e) => change({ ...node, selector: e.target.value })}
-      />
-      <label htmlFor={fieldId + 'browser-frame-path'}>iframe 路径</label>
-      <Input.TextArea
-        id={fieldId + 'browser-frame-path'}
-        value={frames}
-        disabled={topLevel || undefined}
-        rows={3}
-        aria-describedby={fieldId + 'browser-frame-help'}
-        placeholder={'iframe#outer\niframe[name="content"]'}
-        onChange={(e) => {
-          setFrames(e.target.value);
-          change({
-            ...node,
-            version: node.version === 3 ? 3 : 2,
-            framePath: parseFrames(e.target.value) as FramePath,
-          } as BrowserNode);
-        }}
-      />
-      <p id={fieldId + 'browser-frame-help'} className="note">
-        {topLevel
-          ? '打开网页和页面截图作用于顶层页面。'
-          : '留空表示顶层页面。每行一个 CSS 选择器，从外到内，最多 8 层；每层必须唯一匹配。'}
-      </p>
-    </details>
+    <Collapse
+      key="locator"
+      className="locator-details"
+      size="small"
+      activeKey={locatorExpanded ? ['locator'] : []}
+      onChange={(keys) => setLocatorExpanded(keys.length > 0)}
+      items={[
+        {
+          key: 'locator',
+          onKeyDown: activateCollapseWithSpace,
+          label: readInspector ? (compact ? '高级定位' : '高级定位与超时') : '定位信息 · 高级编辑',
+          forceRender: true,
+          children: (
+            <Space orientation="vertical" size={12} style={{ width: '100%' }}>
+              <label htmlFor={fieldId + 'browser-selector'}>目标元素选择器</label>
+              <Input
+                ref={(instance) => {
+                  selectorInput.current = instance?.input ?? null;
+                }}
+                id={fieldId + 'browser-selector'}
+                disabled={topLevel || undefined}
+                value={node.selector}
+                placeholder="#submit"
+                onChange={(e) => change({ ...node, selector: e.target.value })}
+              />
+              <label htmlFor={fieldId + 'browser-frame-path'}>iframe 路径</label>
+              <Input.TextArea
+                id={fieldId + 'browser-frame-path'}
+                value={frames}
+                disabled={topLevel || undefined}
+                rows={3}
+                aria-describedby={fieldId + 'browser-frame-help'}
+                placeholder={'iframe#outer\niframe[name="content"]'}
+                onChange={(e) => {
+                  setFrames(e.target.value);
+                  change({
+                    ...node,
+                    version: node.version === 3 ? 3 : 2,
+                    framePath: parseFrames(e.target.value) as FramePath,
+                  } as BrowserNode);
+                }}
+              />
+              <p id={fieldId + 'browser-frame-help'} className="note">
+                {topLevel
+                  ? '打开网页和页面截图作用于顶层页面。'
+                  : '留空表示顶层页面。每行一个 CSS 选择器，从外到内，最多 8 层；每层必须唯一匹配。'}
+              </p>
+            </Space>
+          ),
+        },
+      ]}
+    />
   );
   const inspectorOutput = readInspector ? (
     <Fragment key="output">{readInspector.output}</Fragment>
