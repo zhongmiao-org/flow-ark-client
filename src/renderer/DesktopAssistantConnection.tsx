@@ -1,4 +1,4 @@
-import { Badge, Button, Tag } from 'antd';
+import { Alert, Badge, Button, Tag, type AlertRef } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import useDesktopWindows from './useDesktopWindows';
 
@@ -19,7 +19,7 @@ export default function DesktopAssistantConnection({
   const { snapshot, loading, settingsPending, expired, error, notice } = state;
   const [settingsChanged, setSettingsChanged] = useState(false);
   const result = useRef<HTMLDivElement>(null);
-  const operationError = useRef<HTMLParagraphElement>(null);
+  const operationError = useRef<AlertRef>(null);
   const operationOrigin = useRef<Element | null | undefined>(undefined);
   useEffect(() => {
     if (!active) {
@@ -29,8 +29,13 @@ export default function DesktopAssistantConnection({
     if (loading || settingsPending || operationOrigin.current === undefined) return;
     const origin = operationOrigin.current;
     operationOrigin.current = undefined;
-    if (document.activeElement === origin || document.activeElement === document.body)
-      (operationError.current ?? result.current)?.focus();
+    if (document.activeElement === origin || document.activeElement === document.body) {
+      const target = operationError.current?.nativeElement ?? result.current;
+      if (target) {
+        target.tabIndex = -1;
+        target.focus();
+      }
+    }
   }, [active, loading, settingsPending, snapshot, error]);
   const available =
     !loading && !expired && !settingsChanged && snapshot?.availability === 'available';
@@ -175,11 +180,7 @@ export default function DesktopAssistantConnection({
           ，选择对象时会重新检查。
         </p>
       )}
-      {notice && !expired && (
-        <p className="ai-task-note" role="status">
-          {notice}
-        </p>
-      )}
+      {notice && !expired && <Alert type="info" showIcon role="status" title={notice} />}
     </>
   );
   const statusColor = hasWindows
@@ -199,13 +200,23 @@ export default function DesktopAssistantConnection({
       <Tag className="run-state-tag" color={statusColor} icon={<Badge status={statusColor} />}>
         {heading}
       </Tag>
-      <p>
-        {loading ? '正在进行只读检查，离开页面不会创建任务或修改文档。' : failed ? error : detail}
-      </p>
+      <Alert
+        type={
+          failed ? 'error' : hasWindows ? 'success' : statusColor === 'warning' ? 'warning' : 'info'
+        }
+        showIcon
+        role="status"
+        title={
+          loading ? '正在进行只读检查，离开页面不会创建任务或修改文档。' : failed ? error : detail
+        }
+      />
       {available && snapshot.truncated && hasWindows && (
-        <p className="ai-task-note">
-          清单可能不完整：部分窗口未能读取，或已达到本次显示上限。选择时请核对实际窗口。
-        </p>
+        <Alert
+          type="warning"
+          showIcon
+          role="status"
+          title="清单可能不完整：部分窗口未能读取，或已达到本次显示上限。选择时请核对实际窗口。"
+        />
       )}
     </div>
   );
@@ -255,11 +266,16 @@ export default function DesktopAssistantConnection({
                 <summary>来源与操作范围</summary>
                 {source}
               </details>
-              <p className="ai-task-note">
-                {hasWindows
-                  ? '能力由系统权限和具体窗口共同决定，选择对象后还需核对选区与本次任务授权。'
-                  : '重新检查不会恢复、重放或启动任何任务，也不会替已有任务重新授权。'}
-              </p>
+              <Alert
+                type="info"
+                showIcon
+                role="status"
+                title={
+                  hasWindows
+                    ? '能力由系统权限和具体窗口共同决定，选择对象后还需核对选区与本次任务授权。'
+                    : '重新检查不会恢复、重放或启动任何任务，也不会替已有任务重新授权。'
+                }
+              />
             </>
           ) : (
             <>
@@ -267,7 +283,12 @@ export default function DesktopAssistantConnection({
               {source}
               <h2>可使用的能力</h2>
               {capabilities}
-              <p className="ai-task-note">不支持后台读取所有窗口、任意点击应用或发送邮件。</p>
+              <Alert
+                type="info"
+                showIcon
+                role="status"
+                title="不支持后台读取所有窗口、任意点击应用或发送邮件。"
+              />
             </>
           )}
         </section>
@@ -288,14 +309,7 @@ export default function DesktopAssistantConnection({
             status
           )}
           {error && snapshot && (
-            <p
-              className="ai-task-note ai-task-failure"
-              role="alert"
-              ref={operationError}
-              tabIndex={-1}
-            >
-              {error}
-            </p>
+            <Alert type="error" showIcon role="alert" ref={operationError} title={error} />
           )}
           <div className="tool-assistant-actions">
             {hasWindows && (
@@ -348,9 +362,12 @@ export default function DesktopAssistantConnection({
               {records}
             </details>
           )}
-          <p className="ai-task-note">
-            系统权限与每次任务授权分别核对。此页不会启动任务，检查通过也不代表文档可修改；窗口、选区与读写能力在使用前再次检查。
-          </p>
+          <Alert
+            type="info"
+            showIcon
+            role="status"
+            title="系统权限与每次任务授权分别核对。此页不会启动任务，检查通过也不代表文档可修改；窗口、选区与读写能力在使用前再次检查。"
+          />
         </section>
       </div>
     </>

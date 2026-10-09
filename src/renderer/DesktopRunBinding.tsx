@@ -1,4 +1,4 @@
-import { ConfigProvider, Button } from 'antd';
+import { Alert, ConfigProvider, Button } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { TaskDetail } from '../shared/planning';
 import type { RunReviewInput } from '../shared/run-review';
@@ -106,16 +106,17 @@ export default function DesktopRunBinding({
             note="只绑定本次明确选择的原文；随后还需勾选授权并点击开始试运行。"
           />
           {windows.preview?.status === 'ready' && windows.preview.redacted && (
-            <p role="alert">原文含已遮盖内容，不能用于修改绑定。</p>
+            <Alert
+              type="warning"
+              showIcon
+              role="alert"
+              title="原文含已遮盖内容，不能用于修改绑定。"
+            />
           )}
         </fieldset>
       </ConfigProvider>
-      {busy && <p role="status">正在核对原文与可用能力…</p>}
-      {error && (
-        <p role="alert" className="field-error">
-          {error}
-        </p>
-      )}
+      {busy && <Alert type="info" showIcon role="status" title="正在核对原文与可用能力…" />}
+      {error && <Alert type="error" showIcon role="alert" title={error} />}
       <Button onClick={close}>取消选择，返回确认</Button>
     </section>
   );

@@ -1,4 +1,4 @@
-import { Button } from 'antd';
+import { Alert, Button, type AlertRef } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type useDesktopWindows from './useDesktopWindows';
 
@@ -18,13 +18,18 @@ export default function DesktopSelectionPreview({
   const titleId = useId(),
     heading = useRef<HTMLHeadingElement>(null),
     readButton = useRef<HTMLButtonElement>(null),
-    failure = useRef<HTMLParagraphElement>(null),
-    cleared = useRef<HTMLParagraphElement>(null),
+    failure = useRef<AlertRef>(null),
+    cleared = useRef<AlertRef>(null),
     restoreReadFocus = useRef(false);
   const [clearNotice, setClearNotice] = useState('');
   const { preview, reading, expired, selected } = state;
   useEffect(() => {
-    if (preview) (preview.status === 'ready' ? heading.current : failure.current)?.focus();
+    if (!preview) return;
+    const target = preview.status === 'ready' ? heading.current : failure.current?.nativeElement;
+    if (target) {
+      target.tabIndex = -1;
+      target.focus();
+    }
   }, [preview]);
   useEffect(() => {
     setClearNotice('');
@@ -34,7 +39,10 @@ export default function DesktopSelectionPreview({
     if (!restoreReadFocus.current || reading || preview) return;
     restoreReadFocus.current = false;
     if (readButton.current && !readButton.current.disabled) readButton.current.focus();
-    else cleared.current?.focus();
+    else if (cleared.current) {
+      cleared.current.nativeElement.tabIndex = -1;
+      cleared.current.nativeElement.focus();
+    }
   }, [reading, preview, clearNotice, expired]);
   if (!selected) return null;
   return (
@@ -71,11 +79,9 @@ export default function DesktopSelectionPreview({
           </Button>
         )}
       </div>
-      {reading && <p role="status">正在核对窗口与当前选区…</p>}
+      {reading && <Alert type="info" showIcon role="status" title="正在核对窗口与当前选区…" />}
       {clearNotice && !reading && !preview && !expired && (
-        <p role="status" ref={cleared} tabIndex={-1}>
-          {clearNotice}
-        </p>
+        <Alert type="info" showIcon role="status" ref={cleared} title={clearNotice} />
       )}
       {preview?.status === 'ready' && (
         <>
@@ -87,9 +93,12 @@ export default function DesktopSelectionPreview({
             {new Date(preview.readAt).toLocaleTimeString('zh-CN')} 读取
           </p>
           {preview.redacted && (
-            <p className="ai-task-note" role="status">
-              显示内容已遮盖敏感信息；此预览不能作为原文直接写回。
-            </p>
+            <Alert
+              type="warning"
+              showIcon
+              role="status"
+              title="显示内容已遮盖敏感信息；此预览不能作为原文直接写回。"
+            />
           )}
           <p>
             这是本次读取的快照，之后的选区变化不会自动更新。有效至{' '}
@@ -98,16 +107,18 @@ export default function DesktopSelectionPreview({
         </>
       )}
       {preview && preview.status !== 'ready' && (
-        <p className="ai-task-note ai-task-failure" role="alert" ref={failure} tabIndex={-1}>
-          {preview.reason}
-        </p>
+        <Alert type="error" showIcon role="alert" ref={failure} title={preview.reason} />
       )}
       {expired && (
         <>
           {!preview && (
-            <p className="ai-task-note" role="status" ref={cleared} tabIndex={-1}>
-              当前窗口检查已失效。请重新检查、选择窗口，再读取段落。
-            </p>
+            <Alert
+              type="warning"
+              showIcon
+              role="status"
+              ref={cleared}
+              title="当前窗口检查已失效。请重新检查、选择窗口，再读取段落。"
+            />
           )}
           <Button
             onClick={() => void state.refresh()}

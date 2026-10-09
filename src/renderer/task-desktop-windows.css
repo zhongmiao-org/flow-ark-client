@@ -52,23 +52,6 @@
   font-size: 12px;
   color: var(--fa-text-secondary);
 }
-.task-desktop-permission {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  min-height: 114px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-  background: var(--fa-bg-subtle);
-}
-.task-desktop-permission.is-warning {
-  background: var(--fa-status-warning-bg);
-}
-.task-desktop-permission.is-ready {
-  background: var(--fa-status-success-bg);
-}
 .task-desktop-capabilities > .ai-task-checkbox {
   font-size: 14px;
   line-height: 22px;
@@ -84,11 +67,6 @@
 .task-desktop-permission-settings p {
   margin: 12px 0;
 }
-.task-desktop-permission p {
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--fa-text-secondary);
-}
 .task-desktop-selection {
   display: flex;
   flex-direction: column;
@@ -103,8 +81,8 @@
   line-height: 21px;
   color: var(--fa-text-secondary);
 }
-.task-desktop-selection p.ai-task-failure {
-  color: var(--fa-status-error);
+.task-desktop-selection > .ant-alert {
+  width: 100%;
 }
 .task-web-columns .task-desktop-selection pre {
   white-space: pre-wrap;
