@@ -1,4 +1,5 @@
-import { Button, Checkbox, Input } from 'antd';
+import { Button, Checkbox, Input, Modal, Flex } from 'antd';
+import './antd-layout.css';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ToolConnection } from '../shared/tool-connections';
@@ -6,7 +7,6 @@ import type { PlanningTask, TaskDetail } from '../shared/planning';
 import { toolsExecutionNotice, type TaskMcpPreview } from '../shared/task-mcp-targets';
 import ToolCapabilityReview from './ToolCapabilityReview';
 import TaskToolPicker from './TaskToolPicker';
-import './editor-leave.css';
 import './task-tool-targets.css';
 const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
@@ -54,8 +54,7 @@ export default function TaskTargetConnections({
   const [candidate, setCandidate] = useState<{ preview: TaskMcpPreview; record: ToolConnection }>();
   const [reviewed, setReviewed] = useState(false);
   const [expired, setExpired] = useState(false);
-  const dialog = useRef<HTMLDialogElement>(null),
-    heading = useRef<HTMLHeadingElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
   const reviewButton = useRef<HTMLButtonElement>(null),
     search = useRef<HTMLInputElement>(null);
   const errorNotice = useRef<HTMLParagraphElement>(null);
@@ -115,9 +114,6 @@ export default function TaskTargetConnections({
   }, [active, task.id, task.revision, refresh]);
   useEffect(() => {
     if (!candidate || !active) return;
-    const element = dialog.current;
-    element?.showModal();
-    heading.current?.focus();
     setExpired(candidate.preview.expiresAt <= Date.now());
     const timer = setTimeout(
       () => setExpired(true),
@@ -125,7 +121,6 @@ export default function TaskTargetConnections({
     );
     return () => {
       clearTimeout(timer);
-      element?.close();
     };
   }, [candidate, active]);
   const act = async (operation: () => Promise<void>) => {
@@ -473,30 +468,33 @@ export default function TaskTargetConnections({
           detailsContainer,
         )}
       {candidate && (
-        <dialog
-          ref={dialog}
-          className="editor-leave-dialog task-tool-confirm"
+        <Modal
+          open={active}
+          width={800}
+          centered
+          closable={false}
+          mask={{ closable: false }}
+          keyboard={!busy}
+          footer={null}
+          className="flowark-content-modal task-tool-confirm"
+          title={
+            <h2 id={titleId} ref={heading} tabIndex={-1} style={{ margin: 0, font: 'inherit' }}>
+              确认本次工具对象
+            </h2>
+          }
           aria-labelledby={titleId}
-          onCancel={(event) => {
-            event.preventDefault();
+          aria-busy={busy}
+          focusable={{ focusTriggerAfterClose: false }}
+          onCancel={() => {
             if (!locked.current) {
               cancelCandidate();
               requestAnimationFrame(() => reviewButton.current?.focus());
             }
           }}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') {
-              event.preventDefault();
-              if (!locked.current) {
-                cancelCandidate();
-                requestAnimationFrame(() => reviewButton.current?.focus());
-              }
-            }
+          afterOpenChange={(open) => {
+            if (open) heading.current?.focus();
           }}
         >
-          <h2 id={titleId} ref={heading} tabIndex={-1}>
-            确认本次工具对象
-          </h2>
           <p>
             {candidate.preview.target.displayName} · 来源：{candidate.preview.target.source}
           </p>
@@ -527,7 +525,7 @@ export default function TaskTargetConnections({
           >
             我已核对来源与本次所选工具
           </Checkbox>
-          <div className="editor-leave-actions">
+          <Flex gap={12} wrap justify="flex-end" style={{ marginTop: 24 }}>
             <Button
               disabled={busy || undefined}
               onClick={() => {
@@ -555,8 +553,8 @@ export default function TaskTargetConnections({
             >
               {busy ? '正在保存…' : '确认工具对象'}
             </Button>
-          </div>
-        </dialog>
+          </Flex>
+        </Modal>
       )}
     </div>
   );

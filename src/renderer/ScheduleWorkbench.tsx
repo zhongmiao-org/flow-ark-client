@@ -1,4 +1,5 @@
-import { ConfigProvider, Select, Button, Checkbox, Input } from 'antd';
+import { ConfigProvider, Select, Button, Checkbox, Input, Modal } from 'antd';
+import './antd-layout.css';
 import { usePageBack } from './use-page-back';
 import {
   useEffect,
@@ -81,7 +82,7 @@ export default function ScheduleWorkbench({
   const runToken = useRef(0);
   const historyError = useRef<HTMLParagraphElement>(null);
   const focusHistoryError = useRef(false);
-  const historyRef = useRef<HTMLDialogElement>(null);
+  const historyHeading = useRef<HTMLHeadingElement>(null);
   const fields = useRef<HTMLFieldSetElement>(null),
     draftFocus = useRef<HTMLElement | null>(null);
   const historyFocus = useRef<HTMLElement | null>(null),
@@ -200,21 +201,14 @@ export default function ScheduleWorkbench({
   }, [active, busy, leaving, error, notice]);
   useLayoutEffect(() => {
     if (!active) {
-      historyRef.current?.close();
       cancelHistoryReads();
       return;
-    }
-    if (history) historyRef.current?.showModal();
-    if (focusAfter.current) {
-      document.querySelector('main')?.scrollTo({ top: scroll.current });
-      focusAfter.current.focus({ preventScroll: true });
-      focusAfter.current = null;
     }
   }, [active, history]);
   useLayoutEffect(() => {
     if (reading || openingRun || !focusHistoryError.current) return;
     focusHistoryError.current = false;
-    if (active && historyRef.current?.open) historyError.current?.focus();
+    if (active && history) historyError.current?.focus();
   }, [active, history, reading, openingRun, runError]);
   const go: TemplateNavigation = (next, target = '本机计划') => {
     if (lock.current || destination.current) return;
@@ -243,7 +237,6 @@ export default function ScheduleWorkbench({
   navigation.current = (next, target) => {
     if (lock.current || destination.current) return;
     cancelHistoryReads();
-    historyRef.current?.close();
     setHistory(undefined);
     go(() => {
       assign();
@@ -333,7 +326,6 @@ export default function ScheduleWorkbench({
   }
   const closeHistory = () => {
     cancelHistoryReads();
-    historyRef.current?.close();
     setHistory(undefined);
     requestAnimationFrame(() => historyFocus.current?.focus({ preventScroll: true }));
   };
@@ -351,7 +343,6 @@ export default function ScheduleWorkbench({
       if (result?.run?.id !== id || result.run.scheduleId !== from)
         throw new Error('运行与当前计划记录不一致，请刷新记录后重新查看。');
       scroll.current = document.querySelector('main')?.scrollTop ?? 0;
-      historyRef.current?.close();
       showRun(result, () => {
         focusAfter.current = focused;
       });
@@ -406,7 +397,7 @@ export default function ScheduleWorkbench({
         className="page ai-task-page schedules-page"
         onFocusCapture={(event) => {
           const target = event.target as HTMLElement;
-          if (target.matches('input,select') && !target.closest('dialog'))
+          if (target.matches('input,select') && !target.closest('dialog, .ant-modal'))
             draftFocus.current = target;
         }}
       >
@@ -771,16 +762,34 @@ export default function ScheduleWorkbench({
           />
         )}
         {history && (
-          <dialog
-            ref={historyRef}
-            className="script-leave-dialog schedule-history-dialog"
+          <Modal
+            open={active}
+            width={1040}
+            centered
+            closable={false}
+            mask={{ closable: false }}
+            keyboard={!busy}
+            footer={null}
+            className="flowark-content-modal schedule-history-dialog"
             aria-labelledby="plan-history-title"
-            onCancel={(event) => {
-              event.preventDefault();
+            aria-busy={reading || openingRun}
+            focusable={{ focusTriggerAfterClose: false }}
+            onCancel={() => {
               if (!busy) closeHistory();
             }}
+            afterOpenChange={(open) => {
+              if (!open) return;
+              if (focusAfter.current?.isConnected) {
+                document.querySelector('main')?.scrollTo({ top: scroll.current });
+                focusAfter.current.focus({ preventScroll: true });
+                focusAfter.current = null;
+              } else if (history.error || runError) historyError.current?.focus();
+              else historyHeading.current?.focus();
+            }}
           >
-            <h2 id="plan-history-title">计划记录 · {historyTitle}</h2>
+            <h2 id="plan-history-title" ref={historyHeading} tabIndex={-1}>
+              计划记录 · {historyTitle}
+            </h2>
             {history.result && (
               <div className="schedule-history-summary">
                 <span
@@ -894,7 +903,7 @@ export default function ScheduleWorkbench({
                 读取更早记录
               </Button>
             )}
-          </dialog>
+          </Modal>
         )}
       </div>
     </>

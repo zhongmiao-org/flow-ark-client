@@ -11,7 +11,6 @@ import { renameParameter } from './parameter-rename';
 import TemplateParameters from './TemplateParameters';
 import type { ScriptNavigation } from './ScriptEditorPage';
 import './flow-parameters.css';
-import './editor-leave.css';
 
 export default function FlowParametersPage({
   record,

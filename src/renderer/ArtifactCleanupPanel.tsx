@@ -1,4 +1,5 @@
-import { Button, Checkbox } from 'antd';
+import { Button, Checkbox, Modal } from 'antd';
+import './antd-layout.css';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ArtifactCleanupPreview, ArtifactCleanupRecord } from '../shared/artifact-cleanup';
 import type { Run } from '../shared/types';
@@ -26,7 +27,6 @@ function CleanupDialog({
   close: () => void;
 }) {
   const titleId = useId();
-  const dialog = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const live = useRef(false);
   const locked = useRef(false);
@@ -67,12 +67,9 @@ function CleanupDialog({
   useEffect(() => {
     live.current = true;
     const origin = document.activeElement as HTMLElement | null;
-    const element = dialog.current;
-    element?.showModal();
     void load();
     return () => {
       live.current = false;
-      element?.close();
       if (origin?.isConnected) origin.focus({ preventScroll: true });
     };
   }, []);
@@ -142,20 +139,21 @@ function CleanupDialog({
               ? '无需清理产物'
               : '清理本次运行产物？';
   return (
-    <dialog
-      ref={dialog}
-      className="artifact-cleanup-dialog"
+    <Modal
+      open
+      width={640}
+      centered
+      closable={false}
+      mask={{ closable: false }}
+      keyboard={!busy}
+      footer={null}
+      className="flowark-content-modal artifact-cleanup-dialog"
+      focusable={{ focusTriggerAfterClose: false }}
       aria-labelledby={titleId}
-      onCancel={(event) => {
-        event.preventDefault();
-        dismiss();
-      }}
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          event.stopPropagation();
-          dismiss();
-        }
+      aria-busy={busy}
+      onCancel={dismiss}
+      afterOpenChange={(open) => {
+        if (open) heading.current?.focus();
       }}
     >
       <header>
@@ -269,7 +267,7 @@ function CleanupDialog({
           </Button>
         )}
       </footer>
-    </dialog>
+    </Modal>
   );
 }
 

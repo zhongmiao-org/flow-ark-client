@@ -1,4 +1,5 @@
-import { Button } from 'antd';
+import { Button, Modal } from 'antd';
+import './antd-layout.css';
 import { useEffect, useRef, useState } from 'react';
 import type { Bindings, Step } from '../shared/types';
 import './script-packages.css';
@@ -39,7 +40,6 @@ export default function ScriptPackages(props: Props) {
   const addButton = useRef<HTMLButtonElement>(null);
   const review = useRef<HTMLHeadingElement>(null);
   const errorElement = useRef<HTMLParagraphElement>(null);
-  const dialog = useRef<HTMLDialogElement>(null);
   const origin = useRef<HTMLElement | null>(null);
   const restore = useRef(false);
   useEffect(() => {
@@ -55,16 +55,10 @@ export default function ScriptPackages(props: Props) {
     setCandidate(undefined);
   }, [props.flowId, props.node.id]);
   useEffect(() => {
-    if (candidate) {
-      dialog.current?.showModal();
-      review.current?.focus();
-    } else {
-      dialog.current?.close();
-      if (restore.current) {
-        restore.current = false;
-        if (origin.current?.isConnected) origin.current.focus();
-        else addButton.current?.focus();
-      }
+    if (!candidate && restore.current) {
+      restore.current = false;
+      if (origin.current?.isConnected) origin.current.focus();
+      else addButton.current?.focus();
     }
   }, [candidate]);
   useEffect(() => {
@@ -343,20 +337,29 @@ export default function ScriptPackages(props: Props) {
         </p>
       )}
       {candidate && (
-        <dialog
-          ref={dialog}
-          className="script-package-dialog"
+        <Modal
+          open
+          getContainer={() => root.current?.closest('dialog[open]') ?? document.body}
+          modalRender={(content) => (
+            <div
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') event.preventDefault();
+              }}
+            >
+              {content}
+            </div>
+          )}
+          width={640}
+          centered
+          closable={false}
+          mask={{ closable: false }}
+          footer={null}
+          className="flowark-content-modal script-package-dialog"
           aria-label="核对本地依赖变更"
-          onCancel={(event) => {
-            event.preventDefault();
-            cancel();
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') {
-              event.preventDefault();
-              event.stopPropagation();
-              cancel();
-            }
+          focusable={{ focusTriggerAfterClose: false }}
+          onCancel={cancel}
+          afterOpenChange={(open) => {
+            if (open) (error ? errorElement.current : review.current)?.focus();
           }}
         >
           <h2 ref={review} tabIndex={-1}>
@@ -398,7 +401,7 @@ export default function ScriptPackages(props: Props) {
               应用到草稿
             </Button>
           </footer>
-        </dialog>
+        </Modal>
       )}
     </section>
   );

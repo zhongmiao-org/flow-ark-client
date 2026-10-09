@@ -25,7 +25,6 @@ import {
   type TemplateSaveScope,
 } from './template-draft';
 import './template-instance.css';
-import './editor-leave.css';
 export type TemplateNavigation = (next: () => void, destination?: string) => void;
 export type TemplateAdoptionOrigin = { id: string; version: string };
 type Tab = 'configuration' | 'resources' | 'entry' | 'source';
