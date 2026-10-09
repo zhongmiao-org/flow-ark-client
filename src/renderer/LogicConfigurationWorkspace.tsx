@@ -1,4 +1,4 @@
-import { Drawer, ConfigProvider, Select, Button } from 'antd';
+import { Drawer, ConfigProvider, Select, Button, Descriptions, Alert } from 'antd';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
 import type { FlowRecord, Step } from '../shared/types';
@@ -152,10 +152,12 @@ export default function LogicConfigurationWorkspace(props: Props) {
           <p>配置当前流程的数据、判断、循环和人工等待。应用后返回编排页保存。</p>
         </header>
         {props.error && (
-          <div role="alert" className="resource-workspace-error">
-            <p>{props.error}</p>
-            <Button onClick={props.clearError}>关闭提示</Button>
-          </div>
+          <Alert
+            type="error"
+            showIcon
+            title={props.error}
+            action={<Button onClick={props.clearError}>关闭提示</Button>}
+          />
         )}
         <div className="resource-workspace-grid">
           {groups.map((group, index) => {
@@ -197,7 +199,7 @@ export default function LogicConfigurationWorkspace(props: Props) {
                 {node ? (
                   active ? (
                     <>
-                      <ConfigProvider componentDisabled={props.advancedInvalid || undefined}>
+                      <ConfigProvider componentDisabled={props.advancedInvalid}>
                         <fieldset
                           disabled={props.advancedInvalid}
                           className="logic-configuration-fields"
@@ -227,14 +229,17 @@ export default function LogicConfigurationWorkspace(props: Props) {
                     </>
                   ) : (
                     <>
-                      <dl>
-                        {fields(node, props.record).map(([label, text]) => (
-                          <div key={label}>
-                            <dt>{label}</dt>
-                            <dd title={text}>{text}</dd>
-                          </div>
-                        ))}
-                      </dl>
+                      <Descriptions
+                        className="logic-configuration-summary"
+                        size="small"
+                        column={1}
+                        layout="vertical"
+                        items={fields(node, props.record).map(([label, text]) => ({
+                          key: label,
+                          label,
+                          children: <span title={text}>{text}</span>,
+                        }))}
+                      />
                       <Button type="primary" onClick={() => select(node.id)}>
                         配置此步骤
                       </Button>
@@ -267,7 +272,7 @@ export default function LogicConfigurationWorkspace(props: Props) {
             {selected ? (
               <>
                 <p>当前步骤：{stepTitle(selected)}</p>
-                <ConfigProvider componentDisabled={props.advancedInvalid || undefined}>
+                <ConfigProvider componentDisabled={props.advancedInvalid}>
                   <fieldset disabled={props.advancedInvalid} className="logic-configuration-fields">
                     <NodeTiming
                       compact

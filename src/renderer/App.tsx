@@ -1,4 +1,4 @@
-import { Alert, ConfigProvider, Button, Input, Segmented, Tag } from 'antd';
+import { Alert, Collapse, ConfigProvider, Button, Input, Segmented, Tag } from 'antd';
 import { VariableNavigationContext } from './variable-navigation';
 import StructureReferenceRecovery from './StructureReferenceRecovery';
 import type { ReferenceIssue } from '../shared/flow-references';
@@ -16,6 +16,7 @@ import { taskStepSummary, taskStepTitle } from './task-step-presentation';
 import EditorLeaveDialog from './EditorLeaveDialog';
 import './editor-feedback.css';
 import { parseNodeDraft } from './node-json';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import EditorMorePage from './EditorMorePage';
 import NavigationIcon from './NavigationIcon';
 import ExportReviewDialog, { captureDraftExport, type ExportSource } from './ExportReviewDialog';
@@ -2923,82 +2924,94 @@ function Editor({
     return true;
   };
   const advancedInput = selectedNode ? (
-    <details
+    <Collapse
       className="node-advanced"
       data-value-invalid={invalid || undefined}
+      data-draft-collapse
       key={selectedNode.id + ':advanced'}
-    >
-      <summary>高级配置 JSON</summary>
-      <label>节点配置 JSON</label>
-      <Input.TextArea
-        status={!!invalid ? 'error' : undefined}
-        ref={(instance) => {
-          advancedField.current = instance?.resizableTextArea?.textArea ?? null;
-        }}
-        aria-label="节点配置 JSON"
-        aria-invalid={!!invalid}
-        aria-describedby={invalid ? 'node-json-feedback' : undefined}
-        className="code-input"
-        value={raw}
-        onChange={(e) => {
-          setRaw(e.target.value);
-          try {
-            const value = parseNodeDraft(e.target.value, selectedNode, r.flow);
-            patch(() => value);
-            setInvalid('');
-          } catch (e: any) {
-            setInvalid(e.message);
-          }
-        }}
-      />
-      {invalid && (
-        <section className="editor-feedback" id="node-json-feedback" role="alert">
-          <Alert
-            type="error"
-            role="presentation"
-            showIcon
-            title="高级输入尚未完成"
-            description={
-              <div className="editor-feedback-body">
-                <Tag color="error" variant="filled">
-                  无法提交
-                </Tag>
-                <p>这段 JSON 尚未应用。请修正输入，或恢复上次有效的节点配置后继续。</p>
-                <pre tabIndex={0} aria-label="节点配置错误详情">
-                  {invalid}
-                </pre>
-                <div className="editor-feedback-actions">
-                  <Button
-                    htmlType="button"
-                    type="primary"
-                    onClick={() => advancedField.current?.focus()}
-                  >
-                    修正输入
-                  </Button>
-                  <Button
-                    htmlType="button"
-                    onClick={() => {
-                      setRaw(JSON.stringify(selectedNode, null, 2));
-                      setInvalid('');
-                      advancedField.current?.focus();
-                    }}
-                  >
-                    恢复节点配置
-                  </Button>
-                </div>
-              </div>
-            }
-          />
-        </section>
-      )}
-      <p className="note">
-        显式设置容器 timeoutMs 时，超时包含内部等待和暂停；人工节点未配置时不设节点超时。
-      </p>
-      <p className="note">
-        引用示例：<code>{'{"$ref":"steps.greeting.message"}'}</code>
-        。循环体可引用 item 和 index。
-      </p>
-    </details>
+      size="small"
+      items={[
+        {
+          key: 'json',
+          label: '高级配置 JSON',
+          onKeyDown: activateCollapseWithSpace,
+          forceRender: true,
+          children: (
+            <div className="node-advanced-fields">
+              <label>节点配置 JSON</label>
+              <Input.TextArea
+                status={!!invalid ? 'error' : undefined}
+                ref={(instance) => {
+                  advancedField.current = instance?.resizableTextArea?.textArea ?? null;
+                }}
+                aria-label="节点配置 JSON"
+                aria-invalid={!!invalid}
+                aria-describedby={invalid ? 'node-json-feedback' : undefined}
+                className="code-input"
+                value={raw}
+                onChange={(e) => {
+                  setRaw(e.target.value);
+                  try {
+                    const value = parseNodeDraft(e.target.value, selectedNode, r.flow);
+                    patch(() => value);
+                    setInvalid('');
+                  } catch (e: any) {
+                    setInvalid(e.message);
+                  }
+                }}
+              />
+              {invalid && (
+                <section className="editor-feedback" id="node-json-feedback" role="alert">
+                  <Alert
+                    type="error"
+                    role="presentation"
+                    showIcon
+                    title="高级输入尚未完成"
+                    description={
+                      <div className="editor-feedback-body">
+                        <Tag color="error" variant="filled">
+                          无法提交
+                        </Tag>
+                        <p>这段 JSON 尚未应用。请修正输入，或恢复上次有效的节点配置后继续。</p>
+                        <pre tabIndex={0} aria-label="节点配置错误详情">
+                          {invalid}
+                        </pre>
+                        <div className="editor-feedback-actions">
+                          <Button
+                            htmlType="button"
+                            type="primary"
+                            onClick={() => advancedField.current?.focus()}
+                          >
+                            修正输入
+                          </Button>
+                          <Button
+                            htmlType="button"
+                            onClick={() => {
+                              setRaw(JSON.stringify(selectedNode, null, 2));
+                              setInvalid('');
+                              advancedField.current?.focus();
+                            }}
+                          >
+                            恢复节点配置
+                          </Button>
+                        </div>
+                      </div>
+                    }
+                  />
+                </section>
+              )}
+              <p className="note">
+                显式设置容器 timeoutMs 时，超时包含内部等待和暂停；人工节点未配置时不设节点超时。
+              </p>
+              <p className="note">
+                引用示例：<code>{'{"$ref":"steps.greeting.message"}'}</code>
+                。循环体可引用 item 和 index。
+              </p>
+            </div>
+          ),
+        },
+      ]}
+    />
   ) : null;
   const browserConfiguration =
     selectedNode?.type === 'browser' ? (
