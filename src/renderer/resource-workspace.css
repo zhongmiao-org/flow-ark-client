@@ -49,30 +49,11 @@
   font-weight: 400;
   color: var(--fa-action-primary);
 }
-.resource-workspace-card dl {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.resource-workspace-card dt,
 .resource-workspace-card label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   margin: 0 0 6px;
   color: var(--fa-text-secondary);
   font-size: 12px;
   line-height: 18px;
-}
-.resource-workspace-card dd {
-  margin: 0;
-  min-height: 32px;
-  padding: 6px;
-  background: var(--fa-bg-canvas);
-  border-radius: 6px;
-  font-size: 13px;
-  line-height: 20px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .resource-workspace-card .ant-select {
   margin: 0;
@@ -87,14 +68,6 @@
   margin: 0;
   min-width: 0;
   width: 100%;
-  min-height: 32px;
-  padding: 4px 6px;
-  font-size: 13px;
-  line-height: 20px;
-  background: var(--fa-bg-canvas);
-}
-.resource-workspace-card button {
-  min-height: 40px;
 }
 .resource-workspace-card .node-configuration {
   border: 0;

@@ -1,5 +1,6 @@
-import { Select, Button, Input } from 'antd';
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { Select, Button, Input, Collapse } from 'antd';
+import { useEffect, useId, useRef, useState } from 'react';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import ArchiveFileList from './ArchiveFileList';
 import type { Bindings, Json, Step } from '../shared/types';
 import ValueField from './ValueField';
@@ -7,24 +8,6 @@ import { MappingValues, MatrixValues } from './StructuredValues';
 import { resourceOperation, fileConflictPolicy } from './resource-form-model';
 import { type ReferenceChoice } from './value-references';
 import './node-configuration.css';
-function ResourceDetails({
-  compact,
-  title,
-  children,
-}: {
-  compact: boolean;
-  title: string;
-  children: ReactNode;
-}) {
-  return compact ? (
-    <details>
-      <summary>{title}</summary>
-      {children}
-    </details>
-  ) : (
-    children
-  );
-}
 export default function ResourceNodeConfiguration({
   node,
   choices,
@@ -43,6 +26,11 @@ export default function ResourceNodeConfiguration({
   choose: (binding: string) => void;
 }) {
   const instanceId = useId();
+  const [expandedConfiguration, setExpandedConfiguration] = useState(false);
+  const configurationKey = node.type + ('operation' in node ? ':' + node.operation : '');
+  useEffect(() => {
+    setExpandedConfiguration(false);
+  }, [node.id, configurationKey]);
   const appliedBinding = node.type === 'file' || node.type === 'excel' ? node.binding : '';
   const [bindingDraft, setBindingDraft] = useState(appliedBinding);
   const [bindingError, setBindingError] = useState('');
@@ -80,6 +68,83 @@ export default function ResourceNodeConfiguration({
       ) : undefined}
     </ValueField>
   );
+  const configurationInfo =
+    node.type === 'http'
+      ? {
+          key: 'headers',
+          title: '请求头',
+          content: (
+            <MappingValues
+              protectDraft={compact}
+              label="请求头"
+              kind="headers"
+              value={node.headers}
+              choices={choices}
+              change={(headers) => change({ ...node, headers })}
+            />
+          ),
+        }
+      : node.type === 'file' && node.operation === 'archive'
+        ? {
+            key: 'archive',
+            title: '编辑归档文件清单',
+            content: (
+              <ArchiveFileList
+                value={node.files}
+                choices={choices}
+                change={(files) => change({ ...node, files })}
+              />
+            ),
+          }
+        : node.type === 'excel' && node.operation === 'write'
+          ? {
+              key: 'matrix',
+              title: '编辑行列数据',
+              content: (
+                <MatrixValues
+                  value={node.rows}
+                  choices={choices}
+                  change={(rows) => change({ ...node, rows })}
+                />
+              ),
+            }
+          : node.type === 'excel' && node.operation === 'fill'
+            ? {
+                key: 'cells',
+                title: '单元格映射',
+                content: (
+                  <MappingValues
+                    protectDraft={compact}
+                    label="单元格映射"
+                    kind="cells"
+                    value={node.cells}
+                    choices={choices}
+                    change={(cells) => change({ ...node, cells })}
+                  />
+                ),
+              }
+            : null;
+  const configuration =
+    configurationInfo &&
+    (compact ? (
+      <Collapse
+        data-draft-collapse
+        size="small"
+        activeKey={expandedConfiguration ? [configurationInfo.key] : []}
+        onChange={(keys) => setExpandedConfiguration(keys.length > 0)}
+        items={[
+          {
+            key: configurationInfo.key,
+            label: configurationInfo.title,
+            onKeyDown: activateCollapseWithSpace,
+            forceRender: true,
+            children: configurationInfo.content,
+          },
+        ]}
+      />
+    ) : (
+      configurationInfo.content
+    ));
   if (node.type === 'http')
     return (
       <section
@@ -102,16 +167,7 @@ export default function ResourceNodeConfiguration({
           ]}
         />
         {field('url', '请求地址', node.url, '', true)}
-        <ResourceDetails compact={compact} title="请求头">
-          <MappingValues
-            protectDraft={compact}
-            label="请求头"
-            kind="headers"
-            value={node.headers}
-            choices={choices}
-            change={(headers) => change({ ...node, headers })}
-          />
-        </ResourceDetails>
+        {configuration}
         {node.method !== 'GET' ? (
           field('body', '请求体', node.body, null)
         ) : (
@@ -253,27 +309,11 @@ export default function ResourceNodeConfiguration({
       {node.type === 'file' &&
         node.operation === 'copy' &&
         field('content', '源文件名', node.content, '', true)}
-      {node.type === 'file' && node.operation === 'archive' && (
-        <ResourceDetails compact={compact} title="编辑归档文件清单">
-          <ArchiveFileList
-            value={node.files}
-            choices={choices}
-            change={(files) => change({ ...node, files })}
-          />
-        </ResourceDetails>
-      )}
+      {node.type === 'file' && node.operation === 'archive' && configuration}
       {node.type === 'excel' && node.operation === 'read' && (
         <p className="note">读取首个工作表，保留空行和原始行列位置；行内空单元格输出为 null。</p>
       )}
-      {node.type === 'excel' && node.operation === 'write' && (
-        <ResourceDetails compact={compact} title="编辑行列数据">
-          <MatrixValues
-            value={node.rows}
-            choices={choices}
-            change={(rows) => change({ ...node, rows })}
-          />
-        </ResourceDetails>
-      )}
+      {node.type === 'excel' && node.operation === 'write' && configuration}
       {node.type === 'excel' && node.operation === 'map' && (
         <p className="note">字段映射在完整编辑页配置；输出只新建，不覆盖同名文件。</p>
       )}
@@ -287,16 +327,7 @@ export default function ResourceNodeConfiguration({
             placeholder="留空使用首个工作表"
             onChange={(e) => change({ ...node, sheet: e.target.value })}
           />
-          <ResourceDetails compact={compact} title="单元格映射">
-            <MappingValues
-              protectDraft={compact}
-              label="单元格映射"
-              kind="cells"
-              value={node.cells}
-              choices={choices}
-              change={(cells) => change({ ...node, cells })}
-            />
-          </ResourceDetails>
+          {configuration}
           <p className="note">输出必须另存。未填写的单元格、样式和其他工作表沿用模板。</p>
         </>
       )}
