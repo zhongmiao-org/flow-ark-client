@@ -88,33 +88,10 @@
 .run-artifact-card > button {
   align-self: flex-start;
 }
-.run-artifact-card .run-artifact-status {
-  padding: 4px 8px;
-  border-radius: 6px;
-  background: var(--fa-bg-canvas);
+.run-artifact-card > .run-artifact-status {
   align-self: flex-start;
-}
-.run-artifact-card .is-verified {
-  color: var(--fa-status-success);
-}
-.run-artifact-card .is-unavailable {
-  color: var(--fa-status-warning);
-}
-.run-artifact-card .field-error {
-  color: var(--fa-status-error);
-}
-.run-artifact-card summary {
-  cursor: pointer;
-  color: var(--fa-text-secondary);
-  font-size: 12px;
-  line-height: 20px;
-}
-.run-artifact-card summary:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
-  outline-offset: 2px;
-}
-.run-artifact-card details[open] summary {
-  margin-bottom: 8px;
+  max-width: 100%;
+  white-space: normal;
 }
 .run-artifact-empty {
   background: var(--fa-bg-canvas);
@@ -189,37 +166,11 @@
 .run-output-result .run-output pre {
   min-height: 140px;
 }
-.run-artifact-card .run-artifact-status {
-  border-radius: 999px;
-}
-.run-artifact-status::before {
-  content: '';
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  margin-right: 6px;
-  background: currentColor;
-}
-.run-artifact-card .is-verified {
-  background: var(--fa-status-success-bg);
-}
-.run-artifact-card .is-unavailable {
-  color: var(--fa-status-error);
-  background: var(--fa-status-error-bg);
-}
-.run-artifact-card .is-unverified {
-  color: var(--fa-status-warning);
-  background: var(--fa-status-warning-bg);
-}
-.run-artifact-card .is-cleared {
-  color: var(--fa-text-secondary);
-}
 .run-artifact-card > button {
   min-width: 180px;
   min-height: 40px;
 }
-.run-artifact-card .field-error:focus-visible {
+.run-artifact-error:focus-visible {
   outline: 2px solid var(--fa-status-error);
   outline-offset: 4px;
 }
