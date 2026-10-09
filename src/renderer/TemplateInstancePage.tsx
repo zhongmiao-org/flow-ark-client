@@ -106,6 +106,30 @@ export default function TemplateInstancePage({
   const focusConfigurationError = useRef(false);
   const resourceError = useRef<HTMLParagraphElement>(null);
   const focusResourceError = useRef(false);
+  const [savedControl, setSavedControl] = useState<HTMLButtonElement | null>(null);
+  useLayoutEffect(() => {
+    if (!savedControl) return;
+    if (!active) {
+      setSavedControl(null);
+      return;
+    }
+    if (busy || checking) return;
+    // Saving starts a source refresh in a later layout effect. Defer focus until
+    // that commit settles; cleanup cancels this frame while controls are disabled.
+    const frame = requestAnimationFrame(() => {
+      if (
+        savedControl.isConnected &&
+        !savedControl.matches(':disabled') &&
+        !savedControl.closest('[hidden]') &&
+        document.activeElement === document.body
+      ) {
+        savedControl.focus({ preventScroll: true });
+        savedControl.scrollIntoView({ block: 'nearest' });
+      }
+      setSavedControl(null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [active, busy, checking, savedControl]);
   const [others, setOthers] = useState(false),
     [version, setVersion] = useState('');
   const [createdVersion, setCreatedVersion] = useState<{ id: string; version: string }>();
@@ -232,7 +256,11 @@ export default function TemplateInstancePage({
       setBusy(false);
     }
   };
-  const save = async (scope: TemplateSaveScope, inputId?: string) => {
+  const save = async (
+    scope: TemplateSaveScope,
+    inputId?: string,
+    saveControl: HTMLButtonElement | null = null,
+  ) => {
     if (lock.current || checking || sourceError) return false;
     const invalid = rawInvalid(scope, inputId);
     invalidField.current = invalid ?? null;
@@ -267,6 +295,7 @@ export default function TemplateInstancePage({
     focusConfigurationError.current = false;
     setSaved(structuredClone(next));
     setDraft((current) => acceptTemplateSave(current, submitted, next, request, scope));
+    setSavedControl(saveControl);
     return true;
   };
   const go: TemplateNavigation = (next, destination = returnLabel) => {
@@ -610,7 +639,7 @@ export default function TemplateInstancePage({
                 <button
                   className="primary"
                   disabled={blocked}
-                  onClick={() => void save('configuration')}
+                  onClick={(event) => void save('configuration', undefined, event.currentTarget)}
                 >
                   {busy ? '正在保存…' : error ? '重试保存配置' : '保存配置'}
                 </button>
@@ -657,7 +686,7 @@ export default function TemplateInstancePage({
             change={setDraft}
             work={work}
             openAI={openAI}
-            save={() => void save('resources')}
+            save={(control) => void save('resources', undefined, control)}
             cancel={() => reset('resources')}
             openEntry={(id) => {
               setEntryId(id);
