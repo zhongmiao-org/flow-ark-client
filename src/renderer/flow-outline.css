@@ -134,10 +134,17 @@
   gap: 24px;
   min-width: 0;
 }
-.outline-columns > .ai-task-card {
+.outline-columns > aside,
+.outline-columns > section {
   min-width: 0;
+}
+.outline-card {
   height: 700px;
-  padding: 20px;
+  overflow: hidden;
+}
+.outline-card > .ant-card-body {
+  height: 100%;
+  min-width: 0;
   overflow: auto;
   display: flex;
   flex-direction: column;
@@ -149,8 +156,7 @@
   line-height: 28px;
   margin: 0;
 }
-.outline-columns .outline-center {
-  padding: 24px;
+.outline-center > .outline-card > .ant-card-body {
   overflow: hidden;
 }
 .outline-group {
@@ -277,6 +283,8 @@
   }
   .outline-columns > .outline-inspector {
     grid-column: 1 / -1;
+  }
+  .outline-inspector > .outline-card {
     height: auto;
     min-height: 240px;
   }
