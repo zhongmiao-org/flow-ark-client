@@ -203,14 +203,6 @@
   flex-direction: column;
   gap: 16px;
 }
-.tool-assistant-records summary {
-  cursor: pointer;
-  color: var(--fa-text-secondary);
-  font-size: 12px;
-}
-.tool-assistant-records > *:not(summary) {
-  margin-top: 16px;
-}
 .tool-assistant-steps {
   display: flex;
   flex-wrap: wrap;
@@ -237,24 +229,6 @@
   height: 28px;
   border-radius: var(--fa-radius-999);
   background: var(--fa-bg-subtle);
-}
-.tool-assistant-facts {
-  display: grid;
-  gap: 12px;
-  margin: 0;
-}
-.tool-assistant-facts > div {
-  display: grid;
-  grid-template-columns: 6em minmax(0, 1fr);
-  gap: 12px;
-}
-.tool-assistant-facts dt {
-  color: var(--fa-text-secondary);
-  font-size: 12px;
-}
-.tool-assistant-facts dd {
-  margin: 0;
-  overflow-wrap: anywhere;
 }
 .tool-config > .ai-task-card {
   min-height: 730px;
@@ -346,7 +320,7 @@
   padding-top: 24px;
   border-top: 1px solid var(--fa-border-default);
 }
-.tool-oauth-inspection :is(h2, h3, h4, p, dl, ul) {
+.tool-oauth-inspection :is(h2, h3, h4, p, ul) {
   margin: 0;
   overflow-wrap: anywhere;
 }
@@ -354,39 +328,27 @@
   font-size: 14px;
   line-height: 22px;
 }
-.tool-oauth-inspection dl {
-  display: grid;
-  gap: 12px;
-  font-size: 12px;
-  line-height: 20px;
-}
-.tool-oauth-inspection dt {
-  color: var(--fa-text-secondary);
-}
-.tool-oauth-inspection dd {
-  margin: 4px 0 0;
-}
 .tool-oauth-inspection ul {
   padding-left: 20px;
   font-size: 13px;
   line-height: 22px;
 }
-.tool-oauth-server {
-  display: grid;
-  gap: 12px;
+/* Metadata is plain service-provided text, including long addresses. */
+.tool-connection-facts .ant-descriptions-item-label {
+  width: 160px;
+}
+.tool-connection-facts .ant-descriptions-item-content {
   min-width: 0;
-  padding: 16px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: 8px;
-  background: var(--fa-bg-canvas);
+  overflow-wrap: anywhere;
 }
-.tool-oauth-inspection summary {
-  cursor: pointer;
-  color: var(--fa-action-primary);
-  font-size: 12px;
+.tool-oauth-server .ant-card-head-title {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
-.tool-oauth-inspection details[open] > dl {
-  margin-top: 12px;
+.tool-oauth-server .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 .tools-page .ai-task-checkbox {
   align-items: flex-start;

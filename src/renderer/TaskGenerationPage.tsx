@@ -1,24 +1,10 @@
 import { Alert, Button, Collapse, Tag } from 'antd';
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { PlanningTask, PlanningResult } from '../shared/planning';
 import { planningTaskColors } from './theme';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import './task-generation.css';
 const runningIndicator = new URL('./assets/status/running.svg?no-inline', import.meta.url).href;
-
-// Collapse handles Enter; retain the former summary's Space activation too.
-function activateCollapseWithSpace(event: KeyboardEvent<HTMLDivElement>) {
-  const target = event.target;
-  if (
-    event.key === ' ' &&
-    !event.repeat &&
-    target instanceof HTMLElement &&
-    target.getAttribute('role') === 'button' &&
-    target.hasAttribute('aria-expanded')
-  ) {
-    event.preventDefault();
-    target.click();
-  }
-}
 
 export default function TaskGenerationPage({
   task,

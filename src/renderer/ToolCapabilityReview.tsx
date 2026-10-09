@@ -1,6 +1,7 @@
-import { Alert, Button, Input, Segmented, Tag } from 'antd';
+import { Alert, Button, Collapse, Descriptions, Input, Segmented, Tag } from 'antd';
 import { useId, useMemo, useRef, useState } from 'react';
 import { toolCapabilityColors } from './theme';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import type {
   ConnectionDiscovery,
   ConnectionConfig,
@@ -58,24 +59,36 @@ export function ToolDefinitionDetails({
   return (
     <>
       {showDescription && <p>{tool.description || '服务未提供说明，请向提供者核对用途。'}</p>}
-      <dl className="tool-capability-hints">
-        {hints.map(([key, label]) => (
-          <div key={key}>
-            <dt>{label}</dt>
-            <dd>
-              {tool.annotations?.[key] === undefined
-                ? '未声明'
-                : tool.annotations[key]
-                  ? '声明为是'
-                  : '声明为否'}
-            </dd>
-          </div>
-        ))}
-      </dl>
-      <details>
-        <summary>查看完整参数与能力声明</summary>
-        <pre>{JSON.stringify(tool, null, 2)}</pre>
-      </details>
+      <Descriptions
+        className="tool-connection-facts"
+        column={1}
+        bordered
+        size="small"
+        items={hints.map(([key, label]) => ({
+          key,
+          label,
+          children:
+            tool.annotations?.[key] === undefined
+              ? '未声明'
+              : tool.annotations[key]
+                ? '声明为是'
+                : '声明为否',
+        }))}
+      />
+      <Collapse
+        items={[
+          {
+            key: 'definition',
+            onKeyDown: activateCollapseWithSpace,
+            label: '查看完整参数与能力声明',
+            children: (
+              <pre tabIndex={0} aria-label={`完整工具定义：${tool.name}`}>
+                {JSON.stringify(tool, null, 2)}
+              </pre>
+            ),
+          },
+        ]}
+      />
     </>
   );
 }
@@ -141,11 +154,21 @@ export default function ToolCapabilityReview({
           <article className="tool-definition tool-capability-card" key={tool.name}>
             <h2>工具：{tool.title || tool.name}</h2>
             <p>{tool.description || '服务未提供说明，请向提供者核对用途。'}</p>
-            <details>
-              <summary>查看参数与行为声明</summary>
-              <p className="tool-capability-name">{tool.name}</p>
-              <ToolDefinitionDetails tool={tool} showDescription={false} />
-            </details>
+            <Collapse
+              items={[
+                {
+                  key: 'behavior',
+                  onKeyDown: activateCollapseWithSpace,
+                  label: '查看参数与行为声明',
+                  children: (
+                    <>
+                      <p className="tool-capability-name">{tool.name}</p>
+                      <ToolDefinitionDetails tool={tool} showDescription={false} />
+                    </>
+                  ),
+                },
+              ]}
+            />
           </article>
         ))}
         <p className="tool-disclaimer">
@@ -168,24 +191,31 @@ export default function ToolCapabilityReview({
             对照本次检查开始前保存的定义。新增能力不会自动授权给任务，移除的工具不在本次清单中。
           </p>
           {!!identity.length && (
-            <details className="tool-capability-identity" open>
-              <summary>连接身份或来源变化 · {identity.length} 项</summary>
-              {identity.map(([label, before, after]) => (
-                <div className="tool-capability-field" key={String(label)}>
-                  <h3>{String(label)}</h3>
-                  <div className="tool-capability-comparison">
-                    <div>
-                      <h4>原来</h4>
-                      <pre>{valueText(before)}</pre>
+            <Collapse
+              defaultActiveKey={['identity']}
+              items={[
+                {
+                  key: 'identity',
+                  onKeyDown: activateCollapseWithSpace,
+                  label: `连接身份或来源变化 · ${identity.length} 项`,
+                  children: identity.map(([label, before, after]) => (
+                    <div className="tool-capability-field" key={String(label)}>
+                      <h3>{String(label)}</h3>
+                      <div className="tool-capability-comparison">
+                        <div>
+                          <h4>原来</h4>
+                          <pre tabIndex={0}>{valueText(before)}</pre>
+                        </div>
+                        <div>
+                          <h4>本次</h4>
+                          <pre tabIndex={0}>{valueText(after)}</pre>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h4>本次</h4>
-                      <pre>{valueText(after)}</pre>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </details>
+                  )),
+                },
+              ]}
+            />
           )}
           <div className="tool-capability-filters">
             <Segmented
@@ -281,27 +311,28 @@ export default function ToolCapabilityReview({
               {chosen.change === 'changed' && chosen.previous && chosen.next && (
                 <section aria-label="定义变化">
                   <h3>定义变化</h3>
-                  {fields
-                    .filter(([key]) => !same(chosen.previous?.[key], chosen.next?.[key]))
-                    .map(([key, label]) => (
-                      <details
-                        className="tool-capability-field"
-                        key={key}
-                        open={key === 'annotations'}
-                      >
-                        <summary>{label}已变更</summary>
-                        <div className="tool-capability-comparison">
-                          <div>
-                            <h4>原来</h4>
-                            <pre>{valueText(chosen.previous?.[key])}</pre>
+                  <Collapse
+                    defaultActiveKey={['annotations']}
+                    items={fields
+                      .filter(([key]) => !same(chosen.previous?.[key], chosen.next?.[key]))
+                      .map(([key, label]) => ({
+                        key,
+                        onKeyDown: activateCollapseWithSpace,
+                        label: `${label}已变更`,
+                        children: (
+                          <div className="tool-capability-comparison">
+                            <div>
+                              <h4>原来</h4>
+                              <pre tabIndex={0}>{valueText(chosen.previous?.[key])}</pre>
+                            </div>
+                            <div>
+                              <h4>本次</h4>
+                              <pre tabIndex={0}>{valueText(chosen.next?.[key])}</pre>
+                            </div>
                           </div>
-                          <div>
-                            <h4>本次</h4>
-                            <pre>{valueText(chosen.next?.[key])}</pre>
-                          </div>
-                        </div>
-                      </details>
-                    ))}
+                        ),
+                      }))}
+                  />
                 </section>
               )}
             </article>
