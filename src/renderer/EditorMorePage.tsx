@@ -1,4 +1,4 @@
-import { Button, Checkbox, Input } from 'antd';
+import { Alert, Button, Checkbox, Input } from 'antd';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { FlowRecord } from '../shared/types';
 import { flatten } from './flow-editing';
@@ -42,7 +42,7 @@ export default function EditorMorePage(props: Props) {
   const previousPage = useRef<MorePage>('menu');
   const heading = useRef<HTMLHeadingElement>(null);
   const receiptHeading = useRef<HTMLHeadingElement>(null);
-  const copyError = useRef<HTMLParagraphElement>(null);
+  const copyError = useRef<HTMLDivElement>(null);
   const unavailable = busy || copying;
   const scripts = flatten(record.flow.steps).filter((step) => step.type === 'script');
   const openPage = (next: Exclude<MorePage, 'menu'>) => {
@@ -169,9 +169,11 @@ export default function EditorMorePage(props: Props) {
               返回任务
             </Button>
           </div>
-          <p className="note">
-            保存状态常驻任务顶部。显示网页只有一个入口，不在工具栏与属性区重复放置。
-          </p>
+          <Alert
+            type="info"
+            showIcon
+            title="保存状态常驻任务顶部。显示网页只有一个入口，不在工具栏与属性区重复放置。"
+          />
         </div>
       )}
       {page === 'scripts' && (
@@ -193,7 +195,11 @@ export default function EditorMorePage(props: Props) {
               ))}
             </div>
           ) : (
-            <p className="note">当前流程没有脚本步骤。返回编排页，从动作库添加脚本后即可编辑。</p>
+            <Alert
+              type="info"
+              showIcon
+              title="当前流程没有脚本步骤。返回编排页，从动作库添加脚本后即可编辑。"
+            />
           )}
           <Button disabled={busy || undefined} onClick={props.back}>
             返回任务
@@ -225,10 +231,17 @@ export default function EditorMorePage(props: Props) {
               <h2 ref={receiptHeading} tabIndex={-1}>
                 新流程已创建
               </h2>
-              <p role="status">{receipt.flow.name} 已保存。原流程及其未保存编辑仍保留。</p>
-              <p className="note">
-                新流程需要重新选择本机资源、凭据与授权。复制没有创建运行或计划。
-              </p>
+              <Alert
+                type="success"
+                showIcon
+                role="status"
+                title={`${receipt.flow.name} 已保存。原流程及其未保存编辑仍保留。`}
+              />
+              <Alert
+                type="info"
+                showIcon
+                title="新流程需要重新选择本机资源、凭据与授权。复制没有创建运行或计划。"
+              />
               <Button
                 htmlType="button"
                 disabled={busy || undefined}
@@ -254,9 +267,12 @@ export default function EditorMorePage(props: Props) {
                 />
               </label>
               <p>复制当前草稿的全部步骤、参数和配置值{saved ? '。' : '，包括尚未保存的修改。'}</p>
-              <p className="note">
-                副本是独立本地流程，不是模板实例。不复制凭据、本机路径绑定、浏览器与工具目标、动作授权、计划或运行历史；步骤中的字面量、脚本与参数内容会保留。
-              </p>
+              <Alert
+                type="info"
+                showIcon
+                title="副本是独立本地流程，不是模板实例。"
+                description="不复制凭据、本机路径绑定、浏览器与工具目标、动作授权、计划或运行历史；步骤中的字面量、脚本与参数内容会保留。"
+              />
               <Checkbox
                 checked={reviewed}
                 disabled={unavailable || undefined}
@@ -270,13 +286,18 @@ export default function EditorMorePage(props: Props) {
                 我已核对要保留的内容，创建后重新绑定资源
               </Checkbox>
               {reviewedSource && !reviewed && (
-                <p id="copy-source-changed" className="note" role="status">
-                  草稿已更新，请重新核对要保留的内容后再创建副本。
-                </p>
+                <Alert
+                  id="copy-source-changed"
+                  type="warning"
+                  showIcon
+                  role="status"
+                  title="草稿已更新，请重新核对要保留的内容后再创建副本。"
+                />
               )}
               <Button
                 htmlType="submit"
                 type="primary"
+                loading={copying}
                 disabled={unavailable || !reviewed || !name.trim() || undefined}
               >
                 {copying ? '正在创建…' : error ? '重新创建独立副本' : '创建独立副本'}
@@ -284,16 +305,19 @@ export default function EditorMorePage(props: Props) {
             </>
           )}
           {error && (
-            <p ref={copyError} tabIndex={-1} role="alert" className="field-error">
-              {error}
-            </p>
+            <div ref={copyError} tabIndex={-1} role="alert">
+              <Alert type="error" showIcon role="presentation" title={error} />
+            </div>
           )}
         </form>
       )}
       <div hidden={page !== 'history'}>
-        <p className="note">
-          这里只显示本流程的运行。每次运行使用固定版本；保存草稿不会改写既有运行。未运行的草稿不等同于执行版本。
-        </p>
+        <Alert
+          className="editor-more-history-note"
+          type="info"
+          showIcon
+          title="这里只显示本流程的运行。每次运行使用固定版本；保存草稿不会改写既有运行。未运行的草稿不等同于执行版本。"
+        />
         <RunHistory
           visible={active && page === 'history'}
           flows={[record]}
