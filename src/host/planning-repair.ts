@@ -10,6 +10,8 @@ import {
 } from '../shared/task-repair';
 import { capabilities, validateFlow, validateObject, walk } from '../core/validate';
 import { canonical, digest, uid } from '../shared/utils';
+import { assertWebFlow } from '../shared/task-web-target';
+import { repairedWebTarget } from './task-web-target';
 
 export class PlanningRepair {
   private readonly session = uid();
@@ -46,6 +48,8 @@ export class PlanningRepair {
       throw new Error('原运行快照或当前流程已不存在');
     validateFlow(snapshot.flow);
     validateFlow(flow.flow);
+    if (canonical(task.webTarget ?? null) !== canonical(flow.webTarget ?? null))
+      throw new Error('任务与流程的网页对象已变化，请回到任务重新核对');
     const browser =
       flow.bindings.browserId && this.store.get<BrowserBinding>('browser', flow.bindings.browserId);
     if (!browser || browser.product !== 'embedded')
@@ -112,6 +116,12 @@ export class PlanningRepair {
       );
     if (this.source(args).signature !== before.signature)
       throw new Error('修复依据已变化，请重新检查');
+    if (before.task.webTarget)
+      assertWebFlow(
+        this.replacement(before.flow.flow, args.nodeId, selection.target),
+        repairedWebTarget(before.task.webTarget, selection),
+        before.task.outputTarget,
+      );
     const source = {
       id: before.run.id,
       state: before.run.state,
@@ -167,6 +177,12 @@ export class PlanningRepair {
     target: RepairSelection['target'],
   ) {
     if (result.kind !== 'plan') return;
+    const expected = this.replacement(before, nodeId, target);
+    if (canonical(result.flow) !== canonical(expected))
+      throw new Error('AI 修改超出已确认的目标范围，提案已拒绝；原方案保持不变');
+  }
+
+  private replacement(before: Flow, nodeId: string, target: RepairSelection['target']) {
     const expected = structuredClone(before);
     const node = walk(expected.steps).find((n) => n.id === nodeId);
     if (!node || node.type !== 'browser' || ![1, 2, 3].includes(node.version))
@@ -177,7 +193,6 @@ export class PlanningRepair {
     } else {
       node.framePath = target.framePath as typeof node.framePath;
     }
-    if (canonical(result.flow) !== canonical(expected))
-      throw new Error('AI 修改超出已确认的目标范围，提案已拒绝；原方案保持不变');
+    return expected;
   }
 }

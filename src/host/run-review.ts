@@ -131,10 +131,7 @@ export class RunReview {
       if (!snapshot || snapshot.id !== record.id || snapshot.flow.id !== record.id)
         throw new Error('原运行快照不存在或来源不一致');
     }
-    if (
-      task?.appliedRepair &&
-      task.appliedRepair.flowHash !== digest({ flow: record.flow, bindings: record.bindings })
-    )
+    if (task?.appliedRepair && task.appliedRepair.flowHash !== planningFlowHash(record))
       throw new Error('修复后的草稿或绑定已改变，请回到任务重新核对');
     return {
       record,

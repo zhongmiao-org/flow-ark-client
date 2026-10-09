@@ -362,6 +362,14 @@ export default function TaskRepairPage({
                   {preview?.selection.target.label || preview?.selection.target.tag || '尚无'}
                 </p>
                 <p>描述不是完整读取结果；生成与采纳时会再次核对。</p>
+                {task?.task.webTarget && preview && (
+                  <>
+                    <p>采纳后，任务的只读网页对象将更新为本次确认的网页。</p>
+                    <p>{preview.selection.title || '未命名网页'}</p>
+                    <p className="task-run-path">{preview.selection.url}</p>
+                    {task.task.webTarget.element && <p>仍只允许读取本次选中的元素。</p>}
+                  </>
+                )}
                 {preview && (
                   <details className="task-repair-location">
                     <summary>核对选择时的网页与元素信息</summary>

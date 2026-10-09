@@ -16,7 +16,7 @@ import type { PlanningRepair } from './planning-repair';
 import type { RepairReference } from '../shared/task-repair';
 import { scopedDescription } from '../shared/planning-scope';
 import { checkScope, planningFlowHash as flowHash, validateScopedPlan } from './planning-scope';
-import type { TaskWebTargets } from './task-web-target';
+import { repairedWebTarget, type TaskWebTargets } from './task-web-target';
 import { assertWebFlow, assertWebContext } from '../shared/task-web-target';
 
 import type { TaskOutputs } from './task-output';
@@ -30,7 +30,12 @@ import type { DesktopPlanResponse } from '../shared/desktop-planning';
 type SavedTask = PlanningTask & {
   proposal?: PlanningProposal;
   rejected?: { revision: number; flowHash: string; requestId?: string };
-  undo?: { before: FlowRecord | null; afterHash: string; toolsRequirePlan?: boolean };
+  undo?: {
+    before: FlowRecord | null;
+    afterHash: string;
+    toolsRequirePlan?: boolean;
+    repairWebTarget?: PlanningTask['webTarget'];
+  };
 };
 type Job = { id: string; abort: AbortController; provider: string };
 type Dependencies = {
@@ -555,10 +560,8 @@ export class Planning {
           throw new Error('流程已变化，请重新生成');
       }
       let repair: RepairReference | undefined;
-      if (task.webTarget) {
+      if (task.webTarget && method !== 'task.repair.generate') {
         if (!this.deps.web) throw new Error('网页对象校验不可用');
-        if (method === 'task.repair.generate')
-          throw new Error('请从网页目标页重新核对当前只读对象，再修改方案');
         await this.deps.web.verify(task.webTarget);
         unchanged();
         if (flowHash(this.flow(task)) !== flowHash(baseline))
@@ -644,7 +647,8 @@ export class Planning {
         throw new Error('流程或资源绑定已修改，请基于当前版本重新生成；未覆盖手动编辑');
       this.validatePlan(proposal.result, task.flowId, proposal.baseFlow);
       this.verifyTools(task, proposal.result.flow);
-      if (task.webTarget) {
+      let webTarget = task.webTarget;
+      if (task.webTarget && !proposal.repair) {
         if (!this.deps.web) throw new Error('网页对象校验不可用');
         assertWebFlow(proposal.result.flow, task.webTarget, task.outputTarget);
         await this.deps.web.verify(task.webTarget);
@@ -682,6 +686,10 @@ export class Planning {
           proposal.repair.nodeId,
           verified.selection.target,
         );
+        if (task.webTarget) {
+          webTarget = repairedWebTarget(task.webTarget, verified.selection);
+          assertWebFlow(proposal.result.flow, webTarget, task.outputTarget);
+        }
         appliedRepair = {
           proposalId: proposal.id,
           runId: proposal.repair.runId,
@@ -709,21 +717,27 @@ export class Planning {
         saved.toolTargets = task.toolTargets?.length
           ? structuredClone(task.toolTargets)
           : undefined;
-        saved.webTarget = task.webTarget;
+        saved.webTarget = webTarget;
         saved.outputTarget = task.outputTarget;
         this.store.put('flow', saved.id, saved);
-        this.deps.learning?.plan(task, flowHash(saved));
+        this.deps.learning?.plan({ ...task, webTarget }, flowHash(saved));
         if (canonical(saved.flow) !== canonical(proposal.result.flow))
           throw new Error('实例配置与提案参数不一致，请先核对配置');
         this.put({
           ...task,
           revision: task.revision + 1,
+          webTarget,
           scope: undefined,
           proposal: undefined,
           status: 'draft',
           error: undefined,
           toolsRequirePlan: false,
-          undo: { before, afterHash: flowHash(saved), toolsRequirePlan: task.toolsRequirePlan },
+          undo: {
+            before,
+            afterHash: flowHash(saved),
+            toolsRequirePlan: task.toolsRequirePlan,
+            ...(appliedRepair && task.webTarget ? { repairWebTarget: task.webTarget } : {}),
+          },
           appliedRepair: appliedRepair
             ? { ...appliedRepair, flowHash: flowHash(saved) }
             : undefined,
@@ -747,6 +761,7 @@ export class Planning {
         this.put({
           ...task,
           revision: task.revision + 1,
+          ...(undo.repairWebTarget ? { webTarget: undo.repairWebTarget } : {}),
           undo: undefined,
           toolsRequirePlan: undo.toolsRequirePlan || !!undo.before?.toolTargets?.length,
           scope: undefined,
@@ -796,7 +811,7 @@ export class Planning {
       this.verifyTools(task);
       if (typeof key !== 'string' || !key) throw new Error('请先配置所选 AI 服务');
       if (task.scope) checkScope(task.scope, this.flow(task));
-      if (task.webTarget) await this.deps.web!.verify(task.webTarget);
+      if (task.webTarget && !repair) await this.deps.web!.verify(task.webTarget);
       if (task.outputTarget) await this.deps.output!.verify(task.outputTarget);
       if ((task.webTarget || task.outputTarget) && flowHash(this.flow(task)) !== baseline)
         throw new Error('凭据等待期间流程或绑定已变化，请重新生成');
@@ -819,7 +834,7 @@ export class Planning {
       if (Buffer.byteLength(serialized) > 1024 * 1024) throw new Error('AI 方案超过 1 MiB');
       if (serialized.includes(key)) throw new Error('AI 返回包含敏感凭据，结果已拒绝');
       this.validatePlan(result, task.flowId, input.baseFlow);
-      if (task.webTarget) {
+      if (task.webTarget && !repair) {
         if (result.kind === 'plan') assertWebFlow(result.flow!, task.webTarget, task.outputTarget);
         await this.deps.web!.verify(task.webTarget);
         if (!this.current(task, job)) return;

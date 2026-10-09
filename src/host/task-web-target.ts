@@ -2,6 +2,7 @@ import type { Store } from './store';
 import type { PlanningTask } from '../shared/planning';
 import type { FlowRecord } from '../shared/types';
 import type { EmbeddedReview } from '../shared/run-review';
+import type { RepairSelection } from '../shared/task-repair';
 import { digest, uid, now } from '../shared/utils';
 import {
   assertWebFlow,
@@ -14,6 +15,26 @@ import {
   type TaskWebElementCapture,
   type TaskWebElement,
 } from '../shared/task-web-target';
+
+export function repairedWebTarget(
+  previous: TaskWebTarget,
+  selection: RepairSelection,
+): TaskWebTarget {
+  return {
+    ...previous,
+    selectionId: selection.requestId,
+    selectedAt: now(),
+    page: {
+      resourceId: selection.resourceId,
+      documentRevision: selection.documentRevision,
+      url: selection.url,
+      title: selection.title,
+    },
+    ...(previous.element
+      ? { element: { requestId: selection.requestId, target: selection.target } }
+      : {}),
+  };
+}
 
 export class TaskWebTargets {
   private readonly session = uid();
