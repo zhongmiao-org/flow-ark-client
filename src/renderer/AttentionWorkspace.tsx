@@ -1,4 +1,17 @@
-import { Alert, Badge, ConfigProvider, Select, Button, Checkbox, Input, Tabs, Tag } from 'antd';
+import {
+  Alert,
+  Badge,
+  Collapse,
+  ConfigProvider,
+  Descriptions,
+  Select,
+  Button,
+  Checkbox,
+  Input,
+  Tabs,
+  Tag,
+} from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import {
   useEffect,
   useId,
@@ -185,10 +198,22 @@ function AnswerForm({
                     rows={7}
                   />
                 </label>
-                <details>
-                  <summary>查看所需格式</summary>
-                  <pre>{JSON.stringify(schema, null, 2)}</pre>
-                </details>
+                <Collapse
+                  size="small"
+                  items={[
+                    {
+                      key: 'schema',
+                      label: '查看所需格式',
+                      forceRender: true,
+                      onKeyDown: activateCollapseWithSpace,
+                      children: (
+                        <pre tabIndex={0} aria-label="本次请求所需格式">
+                          {JSON.stringify(schema, null, 2)}
+                        </pre>
+                      ),
+                    },
+                  ]}
+                />
               </>
             )}
           </fieldset>
@@ -761,22 +786,31 @@ export default function AttentionWorkspace({
                 />
               ) : review ? (
                 <>
-                  <dl className="attention-review-content">
-                    <div>
-                      <dt>目标</dt>
-                      <dd>{review.target}</dd>
-                    </div>
-                    <div>
-                      <dt>拟执行内容</dt>
-                      <dd className="attention-review-preview">
-                        {review.content === '' ? (
-                          <span className="attention-muted">空内容</span>
-                        ) : (
-                          review.content
-                        )}
-                      </dd>
-                    </div>
-                  </dl>
+                  <Descriptions
+                    className="attention-review-content"
+                    layout="vertical"
+                    column={1}
+                    items={[
+                      {
+                        key: 'target',
+                        label: '目标',
+                        children: <span className="attention-fact-value">{review.target}</span>,
+                      },
+                      {
+                        key: 'content',
+                        label: '拟执行内容',
+                        children: (
+                          <div className="attention-review-preview">
+                            {review.content === '' ? (
+                              <span className="attention-muted">空内容</span>
+                            ) : (
+                              review.content
+                            )}
+                          </div>
+                        ),
+                      },
+                    ]}
+                  />
                   {typeof selected.detail?.description === 'string' &&
                     selected.detail.description.trim() && (
                       <p className="attention-muted">{selected.detail.description}</p>
@@ -908,10 +942,19 @@ export default function AttentionWorkspace({
               </div>
             )}
             {human(selected) && (
-              <details className="attention-request-technical">
-                <summary>查看请求详情与格式</summary>
-                <AttentionDetails item={selected} />
-              </details>
+              <Collapse
+                className="attention-request-technical"
+                size="small"
+                items={[
+                  {
+                    key: 'technical',
+                    label: '查看请求详情与格式',
+                    forceRender: true,
+                    onKeyDown: activateCollapseWithSpace,
+                    children: <AttentionDetails item={selected} />,
+                  },
+                ]}
+              />
             )}
           </article>
           <aside
@@ -927,44 +970,64 @@ export default function AttentionWorkspace({
               超时、取消或宿主退出后，人工请求失效。结果未知的操作不会自动重放。
             </p>
             {human(selected) ? (
-              <div className="attention-context-links" key={selected.id}>
-                <details className="attention-context-disclosure">
-                  <summary>查看请求状态</summary>
-                  <div className="attention-context-body">
-                    <h3>{label(selected)}</h3>
-                    <p>
-                      {state === 'waiting'
-                        ? '来源运行正在等待本次回应。请核对左侧内容后再确认。'
-                        : state === 'answered'
-                          ? '本次请求已经回应，不会重复提交。后续结果请查看来源运行。'
-                          : state === 'expired'
-                            ? '请求已超时或来源运行已结束，无法继续回应。'
-                            : '当前无法核实来源运行是否仍在等待，暂时不能回应。'}
-                    </p>
-                    <dl className="attention-source-facts">
-                      <dt>创建时间</dt>
-                      <dd>{date(selected.time)}</dd>
-                      <dt>来源运行保存状态</dt>
-                      <dd>
-                        {sourceRun ? runStateLabels[sourceRun.state] : '当前摘要未包含来源运行'}
-                      </dd>
-                    </dl>
-                    <p className="attention-muted">
-                      请求最长等待 10 分钟；取消或宿主退出会提前失效。
-                    </p>
-                    <Button
-                      disabled={busy || undefined}
-                      onClick={() => void act(async () => {}, '已刷新当前处理状态')}
-                    >
-                      {busy ? '正在处理…' : '刷新状态'}
-                    </Button>
-                  </div>
-                </details>
-                <details className="attention-context-disclosure">
-                  <summary>查看动作来源和证据</summary>
-                  <div className="attention-context-body">{relatedRuns}</div>
-                </details>
-              </div>
+              <Collapse
+                className="attention-context-links"
+                key={selected.id}
+                items={[
+                  {
+                    key: 'state',
+                    label: '查看请求状态',
+                    forceRender: true,
+                    onKeyDown: activateCollapseWithSpace,
+                    children: (
+                      <div className="attention-context-body">
+                        <h3>{label(selected)}</h3>
+                        <p>
+                          {state === 'waiting'
+                            ? '来源运行正在等待本次回应。请核对左侧内容后再确认。'
+                            : state === 'answered'
+                              ? '本次请求已经回应，不会重复提交。后续结果请查看来源运行。'
+                              : state === 'expired'
+                                ? '请求已超时或来源运行已结束，无法继续回应。'
+                                : '当前无法核实来源运行是否仍在等待，暂时不能回应。'}
+                        </p>
+                        <Descriptions
+                          className="attention-source-facts"
+                          size="small"
+                          layout="vertical"
+                          column={1}
+                          items={[
+                            { key: 'created', label: '创建时间', children: date(selected.time) },
+                            {
+                              key: 'state',
+                              label: '来源运行保存状态',
+                              children: sourceRun
+                                ? runStateLabels[sourceRun.state]
+                                : '当前摘要未包含来源运行',
+                            },
+                          ]}
+                        />
+                        <p className="attention-muted">
+                          请求最长等待 10 分钟；取消或宿主退出会提前失效。
+                        </p>
+                        <Button
+                          disabled={busy || undefined}
+                          onClick={() => void act(async () => {}, '已刷新当前处理状态')}
+                        >
+                          {busy ? '正在处理…' : '刷新状态'}
+                        </Button>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'source',
+                    label: '查看动作来源和证据',
+                    forceRender: true,
+                    onKeyDown: activateCollapseWithSpace,
+                    children: <div className="attention-context-body">{relatedRuns}</div>,
+                  },
+                ]}
+              />
             ) : (
               <>
                 {relatedRuns}
