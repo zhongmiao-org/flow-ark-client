@@ -291,36 +291,6 @@
   color: var(--fa-text-secondary);
   font-size: 11px;
 }
-.run-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-radius: 999px;
-  padding: 4px 12px;
-  font-size: 12px;
-  line-height: 20px;
-  background: var(--fa-bg-subtle);
-  color: var(--fa-text-secondary);
-}
-.run-status::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.run-tone-success {
-  background: var(--fa-status-success-bg);
-  color: var(--fa-status-success);
-}
-.run-tone-running {
-  background: var(--fa-action-subtle);
-  color: var(--fa-action-primary);
-}
-.run-tone-warning {
-  background: var(--fa-status-warning-bg);
-  color: var(--fa-status-warning);
-}
 .run-detail-tabs > .ant-tabs-nav {
   margin-bottom: 16px;
 }

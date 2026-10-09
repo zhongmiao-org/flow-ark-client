@@ -1,4 +1,4 @@
-import { runStateColors } from './theme';
+import { runStateColors, runStepColors } from './theme';
 import { Button, Tabs, Tag, Badge } from 'antd';
 import McpRunReceipts from './McpRunReceipts';
 import DebugRunWorkspace from './DebugRunWorkspace';
@@ -378,7 +378,14 @@ export default function RunDetail({
                           <span>{step.name}</span>
                         </div>
                         {step.instance !== step.nodeId && <code>{step.instance}</code>}
-                        <span className={'run-status run-tone-' + step.tone}>{step.label}</span>
+                        <Tag
+                          className="run-state-tag"
+                          variant="filled"
+                          color={runStepColors[step.tone]}
+                          icon={<Badge status={runStepColors[step.tone]} />}
+                        >
+                          {step.label}
+                        </Tag>
                       </li>
                     ))}
                   </ol>

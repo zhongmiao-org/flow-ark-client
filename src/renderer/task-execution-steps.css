@@ -1,5 +1,7 @@
 .task-execution-steps
-  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-item-input):not(
+    [class*='ant-select']
+  ) {
   width: 100%;
   min-width: 0;
 }
@@ -7,14 +9,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-.task-execution-actions button {
-  min-height: 40px;
-}
-.task-execution-actions button[aria-pressed='true'] {
-  color: var(--fa-action-primary);
-  border-color: var(--fa-action-primary);
-  background: var(--fa-action-subtle);
 }
 .task-execution-steps > ol {
   max-height: 480px;
@@ -115,4 +109,9 @@
 }
 .task-execution-steps .run-step-details {
   margin-top: 16px;
+}
+
+.task-execution-status-filter {
+  max-width: 100%;
+  overflow-x: auto;
 }

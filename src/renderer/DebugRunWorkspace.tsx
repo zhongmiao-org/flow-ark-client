@@ -1,4 +1,4 @@
-import { runStateColors } from './theme';
+import { runStateColors, runStepColors } from './theme';
 import { Button, Tag, Badge } from 'antd';
 import { useId, useState, type ReactNode, type RefObject } from 'react';
 import type { Event } from '../shared/types';
@@ -83,13 +83,18 @@ export default function DebugRunWorkspace(props: Props) {
                 <li key={step.instance} aria-current={step.current ? 'step' : undefined}>
                   <h2>{runTimelineTitle(step)}</h2>
                   {step.instance !== step.nodeId && <code>{step.instance}</code>}
-                  <span
-                    className={
-                      'run-status run-tone-' + (step.label === '下一步' ? 'neutral' : step.tone)
+                  <Tag
+                    className="run-state-tag"
+                    variant="filled"
+                    color={runStepColors[step.label === '下一步' ? 'neutral' : step.tone]}
+                    icon={
+                      <Badge
+                        status={runStepColors[step.label === '下一步' ? 'neutral' : step.tone]}
+                      />
                     }
                   >
                     {step.label === '下一步' ? '下一步 · 未执行' : step.label}
-                  </span>
+                  </Tag>
                 </li>
               ))}
             </ol>

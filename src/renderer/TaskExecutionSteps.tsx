@@ -1,4 +1,5 @@
-import { Button, Input } from 'antd';
+import { Button, Input, Segmented, Tag, Badge } from 'antd';
+import { runStepColors } from './theme';
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import type { taskRunPresentation } from './task-run-presentation';
 import './task-execution-steps.css';
@@ -137,18 +138,18 @@ export default function TaskExecutionSteps({
           placeholder="步骤名称、编号或循环位置"
           onChange={(event) => update({ query: event.target.value, filter, scroll: 0 })}
         />
-        <div className="task-execution-actions" aria-label="执行步骤状态">
-          {(Object.keys(filters) as Filter[]).map((value) => (
-            <Button
-              htmlType="button"
-              key={value}
-              aria-pressed={value === filter}
-              onClick={() => update({ query, filter: value, scroll: 0 })}
-            >
-              {filters[value]} · {value === 'all' ? model.rows.length : model[value].length}
-            </Button>
-          ))}
-        </div>
+        <Segmented<Filter>
+          className="task-execution-status-filter"
+          aria-label="执行步骤状态"
+          name={`${id}-status`}
+          tabIndex={-1}
+          value={filter}
+          onChange={(value) => update({ query, filter: value, scroll: 0 })}
+          options={(Object.keys(filters) as Filter[]).map((value) => ({
+            value,
+            label: `${filters[value]} · ${value === 'all' ? model.rows.length : model[value].length}`,
+          }))}
+        />
       </div>
       <p role="status" hidden={!showFilters && !query && filter === 'all'}>
         显示 {visible.length} / {model.rows.length}{' '}
@@ -207,13 +208,27 @@ export default function TaskExecutionSteps({
                     <strong>{row.name}</strong>
                   </Button>
                   {compact && (
-                    <span className={'run-status run-tone-' + row.tone}>{row.label}</span>
+                    <Tag
+                      className="run-state-tag"
+                      variant="filled"
+                      color={runStepColors[row.tone]}
+                      icon={<Badge status={runStepColors[row.tone]} />}
+                    >
+                      {row.label}
+                    </Tag>
                   )}
                 </div>
                 {summary && <p className="task-execution-summary">配置：{summary}</p>}
                 {!compact && (
                   <p>
-                    <span className={'run-status run-tone-' + row.tone}>{row.label}</span>
+                    <Tag
+                      className="run-state-tag"
+                      variant="filled"
+                      color={runStepColors[row.tone]}
+                      icon={<Badge status={runStepColors[row.tone]} />}
+                    >
+                      {row.label}
+                    </Tag>
                   </p>
                 )}
                 {(!compact || row.instance !== row.nodeId) && (
