@@ -40,9 +40,6 @@
 .task-desktop-change {
   align-self: flex-start;
 }
-.task-web-tabs[hidden] {
-  display: none;
-}
 .task-desktop-list.is-selected .task-desktop-identity h3,
 .task-desktop-list.is-selected .task-desktop-account h3 {
   font-size: 18px;

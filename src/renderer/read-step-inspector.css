@@ -135,7 +135,7 @@
   width: 100%;
   margin-top: 8px;
 }
-.editor-region .inspector.has-read-inspector > .inspector-content > .tabs {
+.editor-region .inspector.has-read-inspector > .inspector-content > .inspector-navigation {
   display: none;
 }
 .read-step-view {

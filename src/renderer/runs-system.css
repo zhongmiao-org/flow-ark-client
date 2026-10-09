@@ -321,21 +321,22 @@
   background: var(--fa-status-warning-bg);
   color: var(--fa-status-warning);
 }
-.run-detail-tabs {
-  display: flex;
-  gap: 24px;
-  min-height: 40px;
+.run-detail-tabs > .ant-tabs-nav {
   margin-bottom: 16px;
 }
-.run-detail-tabs button {
-  border: 0;
-  background: transparent;
+/* Keep a measurable zero-width tab so Tabs does not offer it in the overflow menu. */
+.run-detail-tabs.is-output .ant-tabs-nav [data-node-key='current'] {
+  visibility: hidden;
+  width: 0;
   padding: 0;
-  color: var(--fa-text-secondary);
-  font-size: 13px;
+  margin: 0;
+  overflow: hidden;
 }
-.run-detail-tabs button[aria-selected='true'] {
-  color: var(--fa-action-primary);
+.run-detail-tabs.is-output .ant-tabs-nav [data-node-key='output'] {
+  margin-left: 0;
+}
+.run-detail.is-logs .run-detail-tabs > .ant-tabs-nav {
+  display: none;
 }
 .run-detail [hidden] {
   display: none;

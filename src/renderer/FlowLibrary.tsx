@@ -1,4 +1,4 @@
-import { Button, Input } from 'antd';
+import { Button, Input, Segmented } from 'antd';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { FileText, Folder, Globe, Search, Workflow } from 'lucide-react';
 import type { Bootstrap, FlowRecord, Run } from '../shared/types';
@@ -180,36 +180,28 @@ export default function FlowLibrary({
             </Button>
           </div>
           <div className="flow-filters">
-            <div className="flow-tabs" role="group" aria-label="流程筛选">
-              {(
-                [
-                  ['all', `全部流程  ${data.flows.length}`],
-                  ['recent', '最近编辑'],
-                  ['template', '来自模板'],
-                ] as const
-              ).map(([value, label]) => (
-                <Button
-                  key={value}
-                  aria-pressed={filter === value}
-                  title={value === 'recent' ? '最近七个日历日内编辑' : undefined}
-                  onClick={() => setFilter(value)}
-                >
-                  {label}
-                </Button>
-              ))}
-            </div>
-            <label className="search flow-search">
-              <Search size={20} strokeWidth={1.6} aria-hidden="true" />
-              <Input
-                ref={(instance) => {
-                  search.current = instance?.input ?? null;
-                }}
-                aria-label="搜索流程名称"
-                placeholder="搜索流程名称"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </label>
+            <Segmented<'all' | 'recent' | 'template'>
+              className="flow-filter-control"
+              aria-label="流程筛选"
+              value={filter}
+              onChange={setFilter}
+              options={[
+                { value: 'all', label: `全部流程 ${data.flows.length}` },
+                { value: 'recent', label: <span title="最近七个日历日内编辑">最近编辑</span> },
+                { value: 'template', label: '来自模板' },
+              ]}
+            />
+            <Input
+              className="flow-search"
+              prefix={<Search size={20} strokeWidth={1.6} aria-hidden="true" />}
+              ref={(instance) => {
+                search.current = instance?.input ?? null;
+              }}
+              aria-label="搜索流程名称"
+              placeholder="搜索流程名称"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
           </div>
           <div className="flow-grid">
             {records.map((record) => {

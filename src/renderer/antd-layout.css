@@ -5,7 +5,7 @@
 .ant-select {
   min-width: 0;
 }
-label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) > .ant-select,
+label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item) > .ant-select,
 .template-field > .ant-select {
   display: flex;
   width: 100%;
