@@ -1,6 +1,5 @@
-import { Select, Button, Input } from 'antd';
+import { Drawer, Select, Button, Input } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
 import type { FlowRecord } from '../shared/types';
 import type { FramePath } from '../shared/contracts.generated';
@@ -55,7 +54,8 @@ type Props = {
 export default function BrowserActionWorkspace(props: Props) {
   const { node } = props;
   const id = useId();
-  const dialog = useRef<HTMLDialogElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
+  const origin = useRef(document.activeElement as HTMLElement | null);
   const heading = useRef<HTMLHeadingElement>(null);
   const locator = useRef<HTMLInputElement>(null);
   const frameInput = useRef<HTMLTextAreaElement>(null);
@@ -81,13 +81,11 @@ export default function BrowserActionWorkspace(props: Props) {
     setFrameError('');
   }, [pathKey]);
   useEffect(() => {
-    const trigger = document.activeElement as HTMLElement | null;
-    const element = dialog.current!;
-    element.showModal();
-    heading.current?.focus();
+    const trigger = origin.current;
     return () => {
-      element.close();
-      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+      requestAnimationFrame(() => {
+        if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+      });
     };
   }, []);
   useEffect(() => {
@@ -110,13 +108,22 @@ export default function BrowserActionWorkspace(props: Props) {
   const showBrowser = () => {
     if (props.guard()) props.showBrowser();
   };
-  return createPortal(
-    <dialog
-      ref={dialog}
+  return (
+    <Drawer
+      open
+      panelRef={dialog}
+      size="calc(100vw - var(--fa-workspace-navigation-width))"
+      closable={false}
+      mask={{ closable: false }}
+      push={false}
+      focusable={{ focusTriggerAfterClose: false, trap: true }}
+      rootClassName="editor-workspace-overlay"
+      afterOpenChange={(opened) => {
+        if (opened) heading.current?.focus();
+      }}
       className="editor-workspace-dialog browser-action-workspace"
       aria-labelledby={id}
-      onCancel={(event) => {
-        event.preventDefault();
+      onClose={() => {
         finish();
       }}
       onKeyDown={(event) => {
@@ -300,7 +307,6 @@ export default function BrowserActionWorkspace(props: Props) {
           </section>
         </div>
       </div>
-    </dialog>,
-    document.body,
+    </Drawer>
   );
 }

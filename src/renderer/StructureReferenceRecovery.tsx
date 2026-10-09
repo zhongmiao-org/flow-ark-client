@@ -99,7 +99,10 @@ export default function StructureReferenceRecovery({
             <code>{field.reference}</code>
             <Button
               htmlType="button"
-              onClick={() => setTarget(field)}
+              onClick={(event) => {
+                event.currentTarget.focus();
+                setTarget(field);
+              }}
               aria-label={`查看引用来源 · ${field.label}`}
             >
               查看引用来源

@@ -21,10 +21,6 @@
   gap: 12px;
   min-width: 0;
 }
-body:has(.variable-picker-dialog[open])
-  .editor-workspace-dialog[open]:not(.variable-picker-dialog) {
-  visibility: hidden;
-}
 .variable-picker-toolbar nav button {
   padding: 4px 0;
   min-width: 0;

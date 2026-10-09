@@ -1,6 +1,5 @@
-import { ConfigProvider, Select, Button } from 'antd';
+import { Drawer, ConfigProvider, Select, Button } from 'antd';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
 import type { FlowRecord, Step } from '../shared/types';
 import { flatten } from './flow-editing';
@@ -82,18 +81,17 @@ type Props = {
 };
 export default function LogicConfigurationWorkspace(props: Props) {
   const id = useId();
-  const dialog = useRef<HTMLDialogElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
+  const origin = useRef(document.activeElement as HTMLElement | null);
   const heading = useRef<HTMLHeadingElement>(null);
   const steps = flatten(props.record.flow.steps);
   const selected = steps.find((node) => node.id === props.selected);
   useEffect(() => {
-    const trigger = document.activeElement as HTMLElement | null;
-    const element = dialog.current!;
-    element.showModal();
-    heading.current?.focus();
+    const trigger = origin.current;
     return () => {
-      element.close();
-      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+      requestAnimationFrame(() => {
+        if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+      });
     };
   }, []);
   const focusCurrent = () =>
@@ -109,13 +107,22 @@ export default function LogicConfigurationWorkspace(props: Props) {
       focusCurrent();
     }
   };
-  return createPortal(
-    <dialog
-      ref={dialog}
+  return (
+    <Drawer
+      open
+      panelRef={dialog}
+      size="calc(100vw - var(--fa-workspace-navigation-width))"
+      closable={false}
+      mask={{ closable: false }}
+      push={false}
+      focusable={{ focusTriggerAfterClose: false, trap: true }}
+      rootClassName="editor-workspace-overlay"
+      afterOpenChange={(opened) => {
+        if (opened) heading.current?.focus();
+      }}
       className="editor-workspace-dialog resource-workspace logic-configuration-workspace"
       aria-labelledby={id}
-      onCancel={(event) => {
-        event.preventDefault();
+      onClose={() => {
         finish();
       }}
       onKeyDown={(event) => {
@@ -281,7 +288,6 @@ export default function LogicConfigurationWorkspace(props: Props) {
           </section>
         </div>
       </div>
-    </dialog>,
-    document.body,
+    </Drawer>
   );
 }

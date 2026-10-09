@@ -1,6 +1,5 @@
-import { ConfigProvider, Select, Button } from 'antd';
+import { Drawer, ConfigProvider, Select, Button } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import type { FlowRecord, Step } from '../shared/types';
 import DiagramCanvas from './DiagramCanvas';
 import { buildTaskDiagram } from './task-diagram';
@@ -32,7 +31,8 @@ type Props = {
   clearError: () => void;
 };
 export default function ControlWorkspace(props: Props) {
-  const dialog = useRef<HTMLDialogElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
+  const origin = useRef(document.activeElement as HTMLElement | null);
   const heading = useRef<HTMLHeadingElement>(null);
   const currentHeading = useRef<HTMLHeadingElement>(null);
   const saveButton = useRef<HTMLButtonElement>(null);
@@ -50,13 +50,11 @@ export default function ControlWorkspace(props: Props) {
     'control',
   );
   useEffect(() => {
-    const trigger = document.activeElement as HTMLElement | null;
-    const element = dialog.current!;
-    element.showModal();
-    heading.current?.focus();
+    const trigger = origin.current;
     return () => {
-      element.close();
-      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+      requestAnimationFrame(() => {
+        if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+      });
     };
   }, []);
   useEffect(() => {
@@ -78,14 +76,23 @@ export default function ControlWorkspace(props: Props) {
         .at(-1)
     : undefined;
   const supported = node && ['value', 'condition', 'assert', 'loop', 'human'].includes(node.type);
-  return createPortal(
-    <dialog
-      ref={dialog}
+  return (
+    <Drawer
+      open
+      panelRef={dialog}
+      size="calc(100vw - var(--fa-workspace-navigation-width))"
+      closable={false}
+      mask={{ closable: false }}
+      push={false}
+      focusable={{ focusTriggerAfterClose: false, trap: true }}
+      rootClassName="editor-workspace-overlay compact-workspace-overlay"
+      keyboard={!props.busy}
+      afterOpenChange={(opened) => {
+        if (opened) heading.current?.focus();
+      }}
       className="editor-workspace-dialog control-workspace-dialog"
-      data-compact-navigation="true"
       aria-labelledby={titleId}
-      onCancel={(event) => {
-        event.preventDefault();
+      onClose={() => {
         if (!props.busy) props.close();
       }}
       onKeyDown={(event) => {
@@ -230,7 +237,6 @@ export default function ControlWorkspace(props: Props) {
           </ConfigProvider>
         </div>
       </div>
-    </dialog>,
-    document.body,
+    </Drawer>
   );
 }

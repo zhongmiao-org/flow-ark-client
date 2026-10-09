@@ -98,7 +98,7 @@ export function ApplicationTheme({ children }: { children: ReactNode }) {
           footer: { marginTop: 16 },
         },
       }}
-      getPopupContainer={(trigger) => trigger?.closest('dialog') ?? document.body}
+      getPopupContainer={(trigger) => trigger?.closest('.ant-drawer-body') ?? document.body}
     >
       <WorkspaceTokens>{children}</WorkspaceTokens>
     </ConfigProvider>
