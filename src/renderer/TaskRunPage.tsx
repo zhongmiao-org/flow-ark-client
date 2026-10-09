@@ -1,6 +1,6 @@
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { runStateColors } from './theme';
-import { Select, Button, Tag, Badge, Collapse, Descriptions } from 'antd';
+import { Select, Button, Tag, Badge, Collapse, Descriptions, Card, Alert } from 'antd';
 import TaskRunFailure from './TaskRunFailure';
 import McpRunReceipts from './McpRunReceipts';
 import type { LearningStatus } from '../shared/learning';
@@ -283,38 +283,42 @@ export default function TaskRunPage({
     <>
       {model.artifacts.map((a) => (
         <section
-          className={'task-run-file' + (singleResultFile ? ' task-run-single-file' : '')}
           aria-label={`文件产物：${a.name}`}
           key={a.artifactId}
           data-artifact-id={a.artifactId}
         >
-          <h3>{a.name}</h3>
-          <p>
-            {a.size.toLocaleString('zh-CN')} 字节 · {artifactLabel(a)}
-          </p>
-          {!singleResultFile && (
-            <Collapse
-              items={[
-                {
-                  key: 'evidence-0',
-                  label: '保存位置',
-                  forceRender: true,
-                  onKeyDown: activateCollapseWithSpace,
-                  children: (
-                    <div className="feedback-body">
-                      <p className="task-run-path">{a.path}</p>
-                      <TaskArtifactLocation
-                        key={JSON.stringify([a.artifactId, a.path, a.available, a.integrity])}
-                        artifact={a}
-                        reveal={reveal}
-                      />
-                    </div>
-                  ),
-                },
-              ]}
-            />
-          )}
-          {!singleResultFile && <div className="ai-task-actions">{previewButton(a)}</div>}
+          <Card
+            size="small"
+            className={'task-run-file' + (singleResultFile ? ' task-run-single-file' : '')}
+          >
+            <h3>{a.name}</h3>
+            <p>
+              {a.size.toLocaleString('zh-CN')} 字节 · {artifactLabel(a)}
+            </p>
+            {!singleResultFile && (
+              <Collapse
+                items={[
+                  {
+                    key: 'evidence-0',
+                    label: '保存位置',
+                    forceRender: true,
+                    onKeyDown: activateCollapseWithSpace,
+                    children: (
+                      <div className="feedback-body">
+                        <p className="task-run-path">{a.path}</p>
+                        <TaskArtifactLocation
+                          key={JSON.stringify([a.artifactId, a.path, a.available, a.integrity])}
+                          artifact={a}
+                          reveal={reveal}
+                        />
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+            )}
+            {!singleResultFile && <div className="ai-task-actions">{previewButton(a)}</div>}
+          </Card>
         </section>
       ))}
       {!model.artifacts.length && <p>本次尚无已登记的文件产物，可查看步骤输出。</p>}
@@ -435,11 +439,7 @@ export default function TaskRunPage({
               : '学习：已尝试运行。成功后预览文本文件，完成“找结果”；执行状态以下方记录为准。'}
           </p>
         )}
-        {error && (
-          <p className="alert error" role="alert">
-            {error}
-          </p>
-        )}
+        {error && <Alert type="error" role="alert" showIcon title={error} />}
         {model.view.statusNote && (
           <p className="task-run-note" role="status">
             {model.view.statusNote}
@@ -457,362 +457,376 @@ export default function TaskRunPage({
           snapshot={detail.snapshot}
         />
         {page === 'rerun' ? (
-          <section className="ai-task-card task-run-restart">
-            <h2>已完成操作不会被隐藏</h2>
-            <p>
-              {model.summary}。{model.effectNote}
-            </p>
-            <RunRerunPanel
-              key={run.id}
-              run={run}
-              related={detail.rerun}
-              open={open}
-              initialMode="saved"
-            />
-            <Button onClick={() => setPage('overview')}>先不运行，返回结果</Button>
+          <section>
+            <Card className="task-run-card task-run-restart">
+              <h2>已完成操作不会被隐藏</h2>
+              <p>
+                {model.summary}。{model.effectNote}
+              </p>
+              <RunRerunPanel
+                key={run.id}
+                run={run}
+                related={detail.rerun}
+                open={open}
+                initialMode="saved"
+              />
+              <Button onClick={() => setPage('overview')}>先不运行，返回结果</Button>
+            </Card>
           </section>
         ) : page === 'details' ? (
           <div className="task-run-columns task-run-details">
-            <section className="ai-task-card task-run-preview" aria-label="文件与结构化输出">
-              <h2>{item ? `${item.name} · 文件预览` : '文件预览'}</h2>
-              {model.artifacts.length > 1 && (
-                <>
-                  <label htmlFor="task-artifact">选择本次文件</label>
-                  <Select<string>
-                    id="task-artifact"
-                    value={selected ?? ''}
-                    onChange={(value) => {
-                      previewRetryOrigin.current = undefined;
-                      setSelected(value || undefined);
-                    }}
-                    options={[
-                      { value: '', label: '请选择文件' },
-                      ...model.artifacts.map((a) => ({
-                        value: a.artifactId,
-                        label: (
-                          <>
-                            {a.name} · {artifactLabel(a)}
-                          </>
-                        ),
-                      })),
-                    ]}
-                  />
-                </>
-              )}
-              <div className="task-file-content">
-                <p>
-                  文件内容
-                  {visiblePreview?.status === 'text' && visiblePreview.truncated
-                    ? ' · 内容已截断'
-                    : ''}
-                </p>
-                {!loading && visiblePreview?.status === 'text' ? (
+            <section aria-label="文件与结构化输出">
+              <Card className="task-run-card task-run-preview">
+                <h2>{item ? `${item.name} · 文件预览` : '文件预览'}</h2>
+                {model.artifacts.length > 1 && (
                   <>
-                    <pre
-                      ref={previewContent}
-                      className="task-file-preview"
-                      tabIndex={0}
-                      aria-label={`文件内容：${visiblePreview.name}`}
-                      data-artifact-preview={visiblePreview.artifactId}
-                    >
-                      {visiblePreview.text || '（空文件）'}
-                    </pre>
+                    <label htmlFor="task-artifact">选择本次文件</label>
+                    <Select<string>
+                      id="task-artifact"
+                      value={selected ?? ''}
+                      onChange={(value) => {
+                        previewRetryOrigin.current = undefined;
+                        setSelected(value || undefined);
+                      }}
+                      options={[
+                        { value: '', label: '请选择文件' },
+                        ...model.artifacts.map((a) => ({
+                          value: a.artifactId,
+                          label: (
+                            <>
+                              {a.name} · {artifactLabel(a)}
+                            </>
+                          ),
+                        })),
+                      ]}
+                    />
                   </>
-                ) : (
-                  <div
-                    ref={previewStatus}
-                    className="task-file-preview task-file-status"
-                    tabIndex={-1}
-                    aria-label="文件预览状态"
-                    aria-busy={loading}
-                  >
-                    <p
-                      role={!loading && previewError ? 'alert' : 'status'}
-                      className={!loading && previewError ? 'field-error' : undefined}
-                    >
-                      {loading
-                        ? '正在读取并核对文件副本…'
-                        : previewError ||
-                          (selected
-                            ? visiblePreview?.status === 'unavailable'
-                              ? visiblePreview.reason
-                              : item
-                                ? artifactLabel(item)
-                                : '该产物不在本次记录中'
-                            : model.artifacts.length
-                              ? '选择文件后只读预览，不会执行其中的内容。'
-                              : '本次没有登记的文件产物，可查看下方已保存的结构化输出。')}
-                    </p>
-                    {item?.available &&
-                      item.integrity === 'verified' &&
-                      (previewError || (loading && previewRetryOrigin.current)) && (
-                        <Button
-                          htmlType="button"
-                          disabled={loading || undefined}
-                          onClick={(event) =>
-                            retryPreview(event.currentTarget as HTMLButtonElement)
-                          }
-                        >
-                          {loading ? '正在重新读取…' : '重新读取预览'}
-                        </Button>
-                      )}
-                  </div>
                 )}
-              </div>
-              <RunOutput detail={detail} layout="task" />
+                <div className="task-file-content">
+                  <p>
+                    文件内容
+                    {visiblePreview?.status === 'text' && visiblePreview.truncated
+                      ? ' · 内容已截断'
+                      : ''}
+                  </p>
+                  {!loading && visiblePreview?.status === 'text' ? (
+                    <>
+                      <pre
+                        ref={previewContent}
+                        className="task-file-preview"
+                        tabIndex={0}
+                        aria-label={`文件内容：${visiblePreview.name}`}
+                        data-artifact-preview={visiblePreview.artifactId}
+                      >
+                        {visiblePreview.text || '（空文件）'}
+                      </pre>
+                    </>
+                  ) : (
+                    <div
+                      ref={previewStatus}
+                      className="task-file-preview task-file-status"
+                      tabIndex={-1}
+                      aria-label="文件预览状态"
+                      aria-busy={loading}
+                    >
+                      <p
+                        role={!loading && previewError ? 'alert' : 'status'}
+                        className={!loading && previewError ? 'field-error' : undefined}
+                      >
+                        {loading
+                          ? '正在读取并核对文件副本…'
+                          : previewError ||
+                            (selected
+                              ? visiblePreview?.status === 'unavailable'
+                                ? visiblePreview.reason
+                                : item
+                                  ? artifactLabel(item)
+                                  : '该产物不在本次记录中'
+                              : model.artifacts.length
+                                ? '选择文件后只读预览，不会执行其中的内容。'
+                                : '本次没有登记的文件产物，可查看下方已保存的结构化输出。')}
+                      </p>
+                      {item?.available &&
+                        item.integrity === 'verified' &&
+                        (previewError || (loading && previewRetryOrigin.current)) && (
+                          <Button
+                            htmlType="button"
+                            disabled={loading || undefined}
+                            onClick={(event) =>
+                              retryPreview(event.currentTarget as HTMLButtonElement)
+                            }
+                          >
+                            {loading ? '正在重新读取…' : '重新读取预览'}
+                          </Button>
+                        )}
+                    </div>
+                  )}
+                </div>
+                <RunOutput detail={detail} layout="task" />
+              </Card>
             </section>
-            <section className="ai-task-card task-run-evidence" aria-label="执行证据">
-              <h2>执行证据</h2>
-              <dl className="task-run-evidence-summary">
-                <div>
-                  <dt className="sr-only">运行标识</dt>
-                  <dd className="task-run-path">
-                    {run.id}
-                    {run.rerun && (
-                      <>
-                        {' · '}
-                        <TaskRunSource key={run.id} run={run} open={openSource} />
-                      </>
-                    )}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="sr-only">执行步骤</dt>
-                  <dd>{model.completed.length} 次步骤已确认完成</dd>
-                </div>
-                <div>
-                  <dt className="sr-only">文件产物</dt>
-                  <dd>
-                    {model.artifacts.length} 个文件产物 · {model.verified.length} 个副本已核对
-                  </dd>
-                </div>
-                <div>
-                  <dt className="sr-only">待核对步骤</dt>
-                  <dd>
-                    {model.unresolved.length} 次未确认完成 · {model.unvisited.length}{' '}
-                    个尚未执行（含未选分支）
-                  </dd>
-                </div>
-              </dl>
-              {run.error && <p className="field-error">{run.error}</p>}
-              <Button type="primary" onClick={() => setPage('overview')}>
-                返回结果摘要
-              </Button>
-              <Collapse
-                className="task-run-record-info"
-                items={[
-                  {
-                    key: 'evidence-2',
-                    label: '运行状态与耗时',
-                    forceRender: true,
-                    onKeyDown: activateCollapseWithSpace,
-                    children: (
-                      <div className="feedback-body">
-                        <Descriptions
-                          className="metadata-facts"
-                          bordered
-                          size="small"
-                          column={1}
-                          items={[
-                            {
-                              key: 'state',
-                              label: '记录状态',
-                              children:
-                                runDisplayLabels[run.state as keyof typeof runDisplayLabels],
-                            },
-                            {
-                              key: 'elapsed',
-                              label: '已记录耗时',
-                              children: model.view.elapsed.label,
-                            },
-                          ]}
-                        />
-                        <p>输出为已保存的脱敏内容；业务结果请结合回执核对。</p>
-                      </div>
-                    ),
-                  },
-                ]}
-              />
-              {selected && (
+            <section aria-label="执行证据">
+              <Card className="task-run-card task-run-evidence">
+                <h2>执行证据</h2>
+                <dl className="task-run-evidence-summary">
+                  <div>
+                    <dt className="sr-only">运行标识</dt>
+                    <dd className="task-run-path">
+                      {run.id}
+                      {run.rerun && (
+                        <>
+                          {' · '}
+                          <TaskRunSource key={run.id} run={run} open={openSource} />
+                        </>
+                      )}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="sr-only">执行步骤</dt>
+                    <dd>{model.completed.length} 次步骤已确认完成</dd>
+                  </div>
+                  <div>
+                    <dt className="sr-only">文件产物</dt>
+                    <dd>
+                      {model.artifacts.length} 个文件产物 · {model.verified.length} 个副本已核对
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="sr-only">待核对步骤</dt>
+                    <dd>
+                      {model.unresolved.length} 次未确认完成 · {model.unvisited.length}{' '}
+                      个尚未执行（含未选分支）
+                    </dd>
+                  </div>
+                </dl>
+                {run.error && <p className="field-error">{run.error}</p>}
+                <Button type="primary" onClick={() => setPage('overview')}>
+                  返回结果摘要
+                </Button>
                 <Collapse
-                  className="task-run-file-info"
+                  className="task-run-record-info"
                   items={[
                     {
-                      key: 'evidence-3',
-                      label: '文件信息与保存位置',
+                      key: 'evidence-2',
+                      label: '运行状态与耗时',
                       forceRender: true,
                       onKeyDown: activateCollapseWithSpace,
                       children: (
                         <div className="feedback-body">
-                          {visiblePreview?.status === 'text' && (
-                            <p>已核对保存的副本 · 纯文本预览，已按当前脱敏规则处理</p>
-                          )}
-                          {item && (
-                            <>
-                              <Descriptions
-                                className="metadata-facts"
-                                bordered
-                                size="small"
-                                column={1}
-                                items={[
-                                  {
-                                    key: 'size',
-                                    label: '文件大小',
-                                    children: `${item.size.toLocaleString('zh-CN')} 字节`,
-                                  },
-                                  {
-                                    key: 'integrity',
-                                    label: '副本状态',
-                                    children: artifactLabel(item),
-                                  },
-                                  {
-                                    key: 'path',
-                                    label: '保存位置',
-                                    children: <span className="task-run-path">{item.path}</span>,
-                                  },
-                                ]}
-                              />
-                            </>
-                          )}
-                          <div className="ai-task-actions">
-                            {!previewError && !(loading && previewRetryOrigin.current) && (
-                              <Button
-                                disabled={
-                                  loading ||
-                                  !item?.available ||
-                                  item.integrity !== 'verified' ||
-                                  undefined
-                                }
-                                onClick={(event) =>
-                                  retryPreview(event.currentTarget as HTMLButtonElement)
-                                }
-                              >
-                                重新读取预览
-                              </Button>
-                            )}
-                            {item && (
-                              <TaskArtifactLocation
-                                key={JSON.stringify([
-                                  item.artifactId,
-                                  item.path,
-                                  item.available,
-                                  item.integrity,
-                                ])}
-                                artifact={item}
-                                reveal={reveal}
-                              />
-                            )}
-                          </div>
+                          <Descriptions
+                            className="metadata-facts"
+                            bordered
+                            size="small"
+                            column={1}
+                            items={[
+                              {
+                                key: 'state',
+                                label: '记录状态',
+                                children:
+                                  runDisplayLabels[run.state as keyof typeof runDisplayLabels],
+                              },
+                              {
+                                key: 'elapsed',
+                                label: '已记录耗时',
+                                children: model.view.elapsed.label,
+                              },
+                            ]}
+                          />
+                          <p>输出为已保存的脱敏内容；业务结果请结合回执核对。</p>
                         </div>
                       ),
                     },
                   ]}
                 />
-              )}
-              <Collapse
-                className="task-run-fixed-evidence"
-                items={[
-                  {
-                    key: 'evidence-4',
-                    label: '固定版本与已记录影响',
-                    forceRender: true,
-                    onKeyDown: activateCollapseWithSpace,
-                    children: (
-                      <div className="feedback-body">
-                        <Descriptions
-                          className="metadata-facts"
-                          bordered
-                          size="small"
-                          column={1}
-                          items={[
-                            {
-                              key: 'version',
-                              label: '版本',
-                              children: <span className="task-run-path">{run.versionId}</span>,
-                            },
-                            { key: 'snapshot', label: '固定配置', children: versionLabel },
-                            ...(run.task
-                              ? [
-                                  {
-                                    key: 'revision',
-                                    label: '任务修订',
-                                    children: run.task.revision,
-                                  },
-                                ]
-                              : []),
-                          ]}
-                        />
-                        {run.rerun && <p>本次从第一步创建独立运行，原运行的结果与产物保持保留。</p>}
-                        <p>{model.effectNote}</p>
-                        {target}
-                      </div>
-                    ),
-                  },
-                ]}
-              />
-              <Collapse
-                items={[
-                  {
-                    key: 'evidence-5',
-                    label: '步骤回执与脱敏日志',
-                    forceRender: true,
-                    onKeyDown: activateCollapseWithSpace,
-                    children: (
-                      <div className="feedback-body">
-                        <RunEventLog
-                          key={run.id}
-                          runId={run.id}
-                          events={detail.events}
-                          snapshot={detail.snapshot}
-                        />
-                      </div>
-                    ),
-                  },
-                ]}
-              />
-              <Collapse
-                className="task-run-outline"
-                items={[
-                  {
-                    key: 'evidence-6',
-                    label: '查看本次执行步骤',
-                    forceRender: true,
-                    onKeyDown: activateCollapseWithSpace,
-                    children: <div className="feedback-body">{steps}</div>,
-                  },
-                ]}
-              />
+                {selected && (
+                  <Collapse
+                    className="task-run-file-info"
+                    items={[
+                      {
+                        key: 'evidence-3',
+                        label: '文件信息与保存位置',
+                        forceRender: true,
+                        onKeyDown: activateCollapseWithSpace,
+                        children: (
+                          <div className="feedback-body">
+                            {visiblePreview?.status === 'text' && (
+                              <p>已核对保存的副本 · 纯文本预览，已按当前脱敏规则处理</p>
+                            )}
+                            {item && (
+                              <>
+                                <Descriptions
+                                  className="metadata-facts"
+                                  bordered
+                                  size="small"
+                                  column={1}
+                                  items={[
+                                    {
+                                      key: 'size',
+                                      label: '文件大小',
+                                      children: `${item.size.toLocaleString('zh-CN')} 字节`,
+                                    },
+                                    {
+                                      key: 'integrity',
+                                      label: '副本状态',
+                                      children: artifactLabel(item),
+                                    },
+                                    {
+                                      key: 'path',
+                                      label: '保存位置',
+                                      children: <span className="task-run-path">{item.path}</span>,
+                                    },
+                                  ]}
+                                />
+                              </>
+                            )}
+                            <div className="ai-task-actions">
+                              {!previewError && !(loading && previewRetryOrigin.current) && (
+                                <Button
+                                  disabled={
+                                    loading ||
+                                    !item?.available ||
+                                    item.integrity !== 'verified' ||
+                                    undefined
+                                  }
+                                  onClick={(event) =>
+                                    retryPreview(event.currentTarget as HTMLButtonElement)
+                                  }
+                                >
+                                  重新读取预览
+                                </Button>
+                              )}
+                              {item && (
+                                <TaskArtifactLocation
+                                  key={JSON.stringify([
+                                    item.artifactId,
+                                    item.path,
+                                    item.available,
+                                    item.integrity,
+                                  ])}
+                                  artifact={item}
+                                  reveal={reveal}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        ),
+                      },
+                    ]}
+                  />
+                )}
+                <Collapse
+                  className="task-run-fixed-evidence"
+                  items={[
+                    {
+                      key: 'evidence-4',
+                      label: '固定版本与已记录影响',
+                      forceRender: true,
+                      onKeyDown: activateCollapseWithSpace,
+                      children: (
+                        <div className="feedback-body">
+                          <Descriptions
+                            className="metadata-facts"
+                            bordered
+                            size="small"
+                            column={1}
+                            items={[
+                              {
+                                key: 'version',
+                                label: '版本',
+                                children: <span className="task-run-path">{run.versionId}</span>,
+                              },
+                              { key: 'snapshot', label: '固定配置', children: versionLabel },
+                              ...(run.task
+                                ? [
+                                    {
+                                      key: 'revision',
+                                      label: '任务修订',
+                                      children: run.task.revision,
+                                    },
+                                  ]
+                                : []),
+                            ]}
+                          />
+                          {run.rerun && (
+                            <p>本次从第一步创建独立运行，原运行的结果与产物保持保留。</p>
+                          )}
+                          <p>{model.effectNote}</p>
+                          {target}
+                        </div>
+                      ),
+                    },
+                  ]}
+                />
+                <Collapse
+                  items={[
+                    {
+                      key: 'evidence-5',
+                      label: '步骤回执与脱敏日志',
+                      forceRender: true,
+                      onKeyDown: activateCollapseWithSpace,
+                      children: (
+                        <div className="feedback-body">
+                          <RunEventLog
+                            key={run.id}
+                            runId={run.id}
+                            events={detail.events}
+                            snapshot={detail.snapshot}
+                          />
+                        </div>
+                      ),
+                    },
+                  ]}
+                />
+                <Collapse
+                  className="task-run-outline"
+                  items={[
+                    {
+                      key: 'evidence-6',
+                      label: '查看本次执行步骤',
+                      forceRender: true,
+                      onKeyDown: activateCollapseWithSpace,
+                      children: <div className="feedback-body">{steps}</div>,
+                    },
+                  ]}
+                />
+              </Card>
             </section>
           </div>
         ) : model.success ? (
           <>
-            <section className="task-run-banner" aria-label="运行结果摘要">
-              <h2>
-                <span aria-hidden="true">✓ </span>
-                {model.summary}
-              </h2>
-              <p>{model.effectNote}</p>
+            <section aria-label="运行结果摘要">
+              <Card className="task-run-banner">
+                <h2>
+                  <span aria-hidden="true">✓ </span>
+                  {model.summary}
+                </h2>
+                <p>{model.effectNote}</p>
+              </Card>
             </section>
             <div className="task-run-columns task-run-result">
-              <section className="ai-task-card">
-                <h2>结果在哪里</h2>
-                {fileCards}
-                <div className="ai-task-actions task-run-result-actions">
-                  {singleResultFile && previewButton(model.artifacts[0])}
-                  <Button ref={detailsButton} onClick={() => inspect()}>
-                    详细信息
-                  </Button>
-                </div>
-                <p>
-                  未确认完成：{model.unresolved.length} 次。
-                  <br />
-                  尚未执行：{model.unvisited.length} 个（包含未选分支）。
-                </p>
+              <section>
+                <Card className="task-run-card">
+                  <h2>结果在哪里</h2>
+                  {fileCards}
+                  <div className="ai-task-actions task-run-result-actions">
+                    {singleResultFile && previewButton(model.artifacts[0])}
+                    <Button ref={detailsButton} onClick={() => inspect()}>
+                      详细信息
+                    </Button>
+                  </div>
+                  <p>
+                    未确认完成：{model.unresolved.length} 次。
+                    <br />
+                    尚未执行：{model.unvisited.length} 个（包含未选分支）。
+                  </p>
+                </Card>
               </section>
-              <section className="ai-task-card task-run-next">
-                <h2>继续完善这个任务</h2>
-                <p>描述你想调整的内容，先查看修改方案，再决定是否执行。</p>
-                {actions}
+              <section>
+                <Card className="task-run-card task-run-next">
+                  <h2>继续完善这个任务</h2>
+                  <p>描述你想调整的内容，先查看修改方案，再决定是否执行。</p>
+                  {actions}
+                </Card>
               </section>
             </div>
           </>
@@ -824,184 +838,190 @@ export default function TaskRunPage({
               (failed ? ' task-run-failed' : '')
             }
           >
-            <section className="ai-task-card">
-              {failed ? (
-                <TaskRunFailure model={model} error={run.error ?? ''} target={target} />
-              ) : (
-                <>
-                  <Tag
-                    className="run-state-tag"
-                    variant="filled"
-                    color={runStateColors[model.uncertain ? 'INTERRUPTED' : run.state]}
-                    icon={
-                      <Badge status={runStateColors[model.uncertain ? 'INTERRUPTED' : run.state]} />
-                    }
-                  >
-                    {model.uncertain
-                      ? '需要核对'
-                      : runDisplayLabels[run.state as keyof typeof runDisplayLabels]}
-                    {linearPosition && ` · ${linearPosition}`}
-                  </Tag>
-                  <h2 className="task-run-current">
-                    {model.current?.name ?? model.view.step.label}
-                  </h2>
-                  {target}
-                  {run.error && (
-                    <p className="field-error" role="alert">
-                      {run.error}
-                    </p>
-                  )}
-                  {compactLive ? (
-                    <div className="task-run-progress" aria-label="当前运行进度">
-                      <dl>
-                        <div>
-                          <dt>已完成</dt>
-                          <dd>{stepNames(model.completed, '尚无完成记录')}</dd>
-                        </div>
-                        <div>
-                          <dt>{model.view.step.kind === 'paused' ? '下一步' : '当前'}</dt>
-                          <dd>{model.current?.name ?? model.view.step.label}</dd>
-                        </div>
-                        <div>
-                          <dt>尚未执行</dt>
-                          <dd>{stepNames(model.unvisited, '无尚未执行的步骤记录')}</dd>
-                        </div>
-                      </dl>
-                      {model.node?.type === 'human' && (
-                        <p className="task-run-human-prompt">需要你确认：{model.node.message}</p>
-                      )}
-                      <p>已记录耗时：{model.view.elapsed.label}</p>
-                      {model.view.progress.kind === 'reported' && (
-                        <p>{model.view.progress.label}</p>
-                      )}
-                    </div>
-                  ) : (
-                    <>
-                      <div className="task-run-file">
-                        <h3>{model.node?.type === 'human' ? '需要你确认' : '当前步骤'}</h3>
-                        <p>
-                          {model.node?.type === 'human'
-                            ? model.node.message
-                            : model.view.step.label}
-                        </p>
+            <section>
+              <Card className="task-run-card">
+                {failed ? (
+                  <TaskRunFailure model={model} error={run.error ?? ''} target={target} />
+                ) : (
+                  <>
+                    <Tag
+                      className="run-state-tag"
+                      variant="filled"
+                      color={runStateColors[model.uncertain ? 'INTERRUPTED' : run.state]}
+                      icon={
+                        <Badge
+                          status={runStateColors[model.uncertain ? 'INTERRUPTED' : run.state]}
+                        />
+                      }
+                    >
+                      {model.uncertain
+                        ? '需要核对'
+                        : runDisplayLabels[run.state as keyof typeof runDisplayLabels]}
+                      {linearPosition && ` · ${linearPosition}`}
+                    </Tag>
+                    <h2 className="task-run-current">
+                      {model.current?.name ?? model.view.step.label}
+                    </h2>
+                    {target}
+                    {run.error && (
+                      <p className="field-error" role="alert">
+                        {run.error}
+                      </p>
+                    )}
+                    {compactLive ? (
+                      <div className="task-run-progress" aria-label="当前运行进度">
+                        <dl>
+                          <div>
+                            <dt>已完成</dt>
+                            <dd>{stepNames(model.completed, '尚无完成记录')}</dd>
+                          </div>
+                          <div>
+                            <dt>{model.view.step.kind === 'paused' ? '下一步' : '当前'}</dt>
+                            <dd>{model.current?.name ?? model.view.step.label}</dd>
+                          </div>
+                          <div>
+                            <dt>尚未执行</dt>
+                            <dd>{stepNames(model.unvisited, '无尚未执行的步骤记录')}</dd>
+                          </div>
+                        </dl>
+                        {model.node?.type === 'human' && (
+                          <p className="task-run-human-prompt">需要你确认：{model.node.message}</p>
+                        )}
                         <p>已记录耗时：{model.view.elapsed.label}</p>
                         {model.view.progress.kind === 'reported' && (
                           <p>{model.view.progress.label}</p>
                         )}
                       </div>
-                      <div className="task-run-file">
-                        <h3>已完成</h3>
-                        <p>
-                          {model.completed
-                            .slice(0, 6)
-                            .map((r) => r.name)
-                            .join('、') || '尚无完成记录'}
-                          {model.completed.length > 6 &&
-                            ` 等 ${model.completed.length} 次，完整记录见执行步骤。`}
-                        </p>
-                      </div>
-                      <div className="task-run-file">
-                        <h3>尚未完成或未执行</h3>
-                        <p>
-                          {[...model.unresolved, ...model.unvisited]
-                            .slice(0, 6)
-                            .map((r) => r.name)
-                            .join('、') || '无未完成步骤记录'}
-                          {model.unresolved.length + model.unvisited.length > 6 &&
-                            ` 等 ${model.unresolved.length + model.unvisited.length} 条，完整记录见执行步骤。`}
-                        </p>
-                      </div>
-                      <div className="task-run-file">
-                        <h3>影响范围</h3>
-                        <p>{model.summary}</p>
-                        <p>{model.effectNote}</p>
-                      </div>
-                    </>
-                  )}
-                </>
-              )}
-              <div className="ai-task-actions">
-                {allowed && run.state === 'RUNNING' && (
-                  <Button
-                    disabled={controlPending || undefined}
-                    onClick={() => void sendControl('pause')}
-                  >
-                    {command?.action === 'pause' ? '暂停请求中' : '请求暂停'}
-                  </Button>
-                )}
-                {allowed && ['PAUSED', 'WAITING_INPUT'].includes(run.state) && (
-                  <Button
-                    type="primary"
-                    disabled={controlPending || undefined}
-                    onClick={() => void sendControl('resume')}
-                  >
-                    继续
-                  </Button>
-                )}
-                {allowed && run.state === 'PAUSED' && (
-                  <Button
-                    disabled={controlPending || undefined}
-                    onClick={() => void sendControl('step')}
-                  >
-                    执行下一步
-                  </Button>
-                )}
-                {!model.terminal &&
-                  !model.view.closing &&
-                  !model.uncertain &&
-                  (allowed || run.state === 'QUEUED') && (
-                    <Button
-                      disabled={controlBusy || command?.action === 'cancel' || undefined}
-                      danger
-                      onClick={() => void sendControl('cancel')}
-                    >
-                      取消运行
-                    </Button>
-                  )}
-                {model.rows.some((r) => r.type === 'browser') && (
-                  <Button onClick={showBrowser}>查看当前网页</Button>
-                )}
-                <Button ref={detailsButton} onClick={() => inspect()}>
-                  详细信息
-                </Button>
-              </div>
-              {controlFeedback}
-              {compactLive && (
-                <Collapse
-                  className="task-run-live-impact"
-                  items={[
-                    {
-                      key: 'evidence-7',
-                      label: '已记录的操作与影响',
-                      forceRender: true,
-                      onKeyDown: activateCollapseWithSpace,
-                      children: (
-                        <div className="feedback-body">
+                    ) : (
+                      <>
+                        <Card size="small" className="task-run-file">
+                          <h3>{model.node?.type === 'human' ? '需要你确认' : '当前步骤'}</h3>
+                          <p>
+                            {model.node?.type === 'human'
+                              ? model.node.message
+                              : model.view.step.label}
+                          </p>
+                          <p>已记录耗时：{model.view.elapsed.label}</p>
+                          {model.view.progress.kind === 'reported' && (
+                            <p>{model.view.progress.label}</p>
+                          )}
+                        </Card>
+                        <Card size="small" className="task-run-file">
+                          <h3>已完成</h3>
+                          <p>
+                            {model.completed
+                              .slice(0, 6)
+                              .map((r) => r.name)
+                              .join('、') || '尚无完成记录'}
+                            {model.completed.length > 6 &&
+                              ` 等 ${model.completed.length} 次，完整记录见执行步骤。`}
+                          </p>
+                        </Card>
+                        <Card size="small" className="task-run-file">
+                          <h3>尚未完成或未执行</h3>
+                          <p>
+                            {[...model.unresolved, ...model.unvisited]
+                              .slice(0, 6)
+                              .map((r) => r.name)
+                              .join('、') || '无未完成步骤记录'}
+                            {model.unresolved.length + model.unvisited.length > 6 &&
+                              ` 等 ${model.unresolved.length + model.unvisited.length} 条，完整记录见执行步骤。`}
+                          </p>
+                        </Card>
+                        <Card size="small" className="task-run-file">
+                          <h3>影响范围</h3>
                           <p>{model.summary}</p>
                           <p>{model.effectNote}</p>
-                          <p>尚未执行的清单包含未选择的分支；循环次数由运行时数据决定。</p>
-                        </div>
-                      ),
-                    },
-                  ]}
-                />
-              )}
+                        </Card>
+                      </>
+                    )}
+                  </>
+                )}
+                <div className="ai-task-actions">
+                  {allowed && run.state === 'RUNNING' && (
+                    <Button
+                      disabled={controlPending || undefined}
+                      onClick={() => void sendControl('pause')}
+                    >
+                      {command?.action === 'pause' ? '暂停请求中' : '请求暂停'}
+                    </Button>
+                  )}
+                  {allowed && ['PAUSED', 'WAITING_INPUT'].includes(run.state) && (
+                    <Button
+                      type="primary"
+                      disabled={controlPending || undefined}
+                      onClick={() => void sendControl('resume')}
+                    >
+                      继续
+                    </Button>
+                  )}
+                  {allowed && run.state === 'PAUSED' && (
+                    <Button
+                      disabled={controlPending || undefined}
+                      onClick={() => void sendControl('step')}
+                    >
+                      执行下一步
+                    </Button>
+                  )}
+                  {!model.terminal &&
+                    !model.view.closing &&
+                    !model.uncertain &&
+                    (allowed || run.state === 'QUEUED') && (
+                      <Button
+                        disabled={controlBusy || command?.action === 'cancel' || undefined}
+                        danger
+                        onClick={() => void sendControl('cancel')}
+                      >
+                        取消运行
+                      </Button>
+                    )}
+                  {model.rows.some((r) => r.type === 'browser') && (
+                    <Button onClick={showBrowser}>查看当前网页</Button>
+                  )}
+                  <Button ref={detailsButton} onClick={() => inspect()}>
+                    详细信息
+                  </Button>
+                </div>
+                {controlFeedback}
+                {compactLive && (
+                  <Collapse
+                    className="task-run-live-impact"
+                    items={[
+                      {
+                        key: 'evidence-7',
+                        label: '已记录的操作与影响',
+                        forceRender: true,
+                        onKeyDown: activateCollapseWithSpace,
+                        children: (
+                          <div className="feedback-body">
+                            <p>{model.summary}</p>
+                            <p>{model.effectNote}</p>
+                            <p>尚未执行的清单包含未选择的分支；循环次数由运行时数据决定。</p>
+                          </div>
+                        ),
+                      },
+                    ]}
+                  />
+                )}
+              </Card>
             </section>
             {model.terminal || model.uncertain ? (
-              <section className="ai-task-card task-run-next">
-                <h2>下一步可以这样做</h2>
-                {actions}
-                <Collapse
-                  items={[
-                    {
-                      key: 'evidence-8',
-                      label: '查看执行步骤',
-                      forceRender: true,
-                      onKeyDown: activateCollapseWithSpace,
-                      children: <div className="feedback-body">{steps}</div>,
-                    },
-                  ]}
-                />
+              <section>
+                <Card className="task-run-card task-run-next">
+                  <h2>下一步可以这样做</h2>
+                  {actions}
+                  <Collapse
+                    items={[
+                      {
+                        key: 'evidence-8',
+                        label: '查看执行步骤',
+                        forceRender: true,
+                        onKeyDown: activateCollapseWithSpace,
+                        children: <div className="feedback-body">{steps}</div>,
+                      },
+                    ]}
+                  />
+                </Card>
               </section>
             ) : (
               steps
