@@ -1,4 +1,4 @@
-import { ConfigProvider, Select, Button, Input } from 'antd';
+import { ConfigProvider, Select, Button, Input, Modal, Flex, Tag, Badge, Alert } from 'antd';
 import { usePageBack } from './use-page-back';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
 import {
@@ -141,8 +141,7 @@ export default function TemplateInstancePage({
     root = useRef<HTMLDivElement>(null);
   const dialogHeading = useRef<HTMLHeadingElement>(null),
     continueButton = useRef<HTMLButtonElement>(null);
-  const dialog = useRef<HTMLDialogElement>(null),
-    focus = useRef<HTMLElement | null>(null);
+  const focus = useRef<HTMLElement | null>(null);
   const invalidField = useRef<HTMLElement | null>(null);
   const scrolls = useRef(new Map<string, number>());
   const contentDestination = useRef<Tab | null>(null);
@@ -272,7 +271,7 @@ export default function TemplateInstancePage({
         ? draft.entries.find((entry) => entry.id === invalidEntry)?.name
         : tabs.find(([id]) => id === invalidTab)?.[1];
       setError(`请先修正${location ? `“${location}”中` : ''}未完成的字段值，其他草稿仍保留。`);
-      if (!dialog.current?.open && !invalid.closest('[hidden]')) {
+      if (!leaving && !invalid.closest('[hidden]')) {
         const control = invalid.matches('input, select, textarea, button')
           ? invalid
           : invalid.querySelector<HTMLElement>('input, select, textarea, button');
@@ -326,7 +325,6 @@ export default function TemplateInstancePage({
       if (invalidEntry) setEntryId(invalidEntry);
       setEntryDetail(false);
     }
-    dialog.current?.close();
     pending.current = false;
     setLeaving(undefined);
     requestAnimationFrame(() => {
@@ -338,12 +336,7 @@ export default function TemplateInstancePage({
       } else focus.current?.focus({ preventScroll: true });
     });
   };
-  useEffect(() => {
-    if (leaving) {
-      dialog.current?.showModal();
-      continueButton.current?.focus();
-    }
-  }, [leaving]);
+
   useEffect(() => {
     if (leaving && (error || sourceError)) dialogHeading.current?.focus();
   }, [leaving, error, sourceError]);
@@ -843,70 +836,91 @@ export default function TemplateInstancePage({
         </div>
       </section>
       {leaving && (
-        <dialog
-          ref={dialog}
-          className="editor-leave-dialog template-instance-leave"
-          aria-labelledby="template-leave-title"
+        <Modal
+          open
+          width={640}
+          centered
+          closable={false}
+          mask={{ closable: false }}
+          keyboard={!busy}
+          focusable={{ focusTriggerAfterClose: false }}
+          className="flowark-leave-modal"
           aria-describedby="template-leave-description"
-          onCancel={(event) => {
-            event.preventDefault();
-            stay();
+          aria-busy={busy}
+          onCancel={stay}
+          afterOpenChange={(open) => {
+            if (open)
+              (error || sourceError ? dialogHeading.current : continueButton.current)?.focus();
           }}
+          title={
+            <Flex vertical gap={16} align="flex-start">
+              <Tag
+                color={error || sourceError ? 'error' : 'warning'}
+                variant="filled"
+                className="flowark-leave-status"
+                icon={<Badge status={error || sourceError ? 'error' : 'warning'} />}
+              >
+                {error || sourceError ? '更改仍保留' : '存在未保存更改'}
+              </Tag>
+              <h2 ref={dialogHeading} tabIndex={-1}>
+                {error || sourceError ? '保存未完成，尚未离开' : '保存实例更改再离开？'}
+              </h2>
+            </Flex>
+          }
+          footer={
+            <Flex gap={12} wrap className="flowark-leave-actions">
+              <Button ref={continueButton} disabled={busy || undefined} onClick={stay}>
+                {error && invalidField.current ? '返回修正' : '继续编辑'}
+              </Button>
+              <Button
+                color="danger"
+                variant="filled"
+                disabled={busy || undefined}
+                onClick={() => {
+                  const next = leaving.next;
+                  setDraft(structuredClone(saved));
+                  setGeneration((v) => v + 1);
+                  pending.current = false;
+                  setLeaving(undefined);
+                  next();
+                }}
+              >
+                不保存离开
+              </Button>
+              <Button
+                type="primary"
+                loading={busy}
+                disabled={blocked || undefined}
+                onClick={() => {
+                  const next = leaving.next;
+                  void save('all').then((ok) => {
+                    if (ok) {
+                      pending.current = false;
+                      setLeaving(undefined);
+                      next();
+                    }
+                  });
+                }}
+              >
+                {busy ? '正在保存…' : error ? '重试保存并离开' : '保存并离开'}
+              </Button>
+            </Flex>
+          }
         >
-          <span className={`editor-leave-status${error || sourceError ? ' is-error' : ''}`}>
-            {error || sourceError ? '更改仍保留' : '存在未保存更改'}
-          </span>
-          <h2 id="template-leave-title" ref={dialogHeading} tabIndex={-1}>
-            {error || sourceError ? '保存未完成，尚未离开' : '保存实例更改再离开？'}
-          </h2>
           <p id="template-leave-description">
             共享配置、资源授权和各入口输入将在一次保存成功后一起保留，再前往“{leaving.destination}
-            ”。 不保存只放弃本实例的未保存更改。
+            ”。不保存只放弃本实例的未保存更改。
           </p>
-          <p className="editor-leave-note">已保存的 AI 配置和已开始的运行保持原状。</p>
+          <p className="flowark-leave-note">已保存的 AI 配置和已开始的运行保持原状。</p>
           {(error || sourceError) && (
-            <p role="alert" className="editor-leave-error">
-              {error || sourceError}
-            </p>
+            <Alert
+              type="error"
+              title="保存未完成"
+              description={error || sourceError}
+              role="alert"
+            />
           )}
-          <div className="editor-leave-actions">
-            <Button autoFocus ref={continueButton} disabled={busy || undefined} onClick={stay}>
-              {error && invalidField.current ? '返回修正' : '继续编辑'}
-            </Button>
-            <Button
-              className="editor-leave-discard"
-              disabled={busy || undefined}
-              onClick={() => {
-                const next = leaving.next;
-                setDraft(structuredClone(saved));
-                setGeneration((v) => v + 1);
-                dialog.current?.close();
-                pending.current = false;
-                setLeaving(undefined);
-                next();
-              }}
-            >
-              不保存离开
-            </Button>
-            <Button
-              type="primary"
-              disabled={blocked || undefined}
-              onClick={() => {
-                const next = leaving.next;
-                void save('all').then((ok) => {
-                  if (ok) {
-                    dialog.current?.close();
-                    pending.current = false;
-                    setLeaving(undefined);
-                    next();
-                  }
-                });
-              }}
-            >
-              {busy ? '正在保存…' : error ? '重试保存并离开' : '保存并离开'}
-            </Button>
-          </div>
-        </dialog>
+        </Modal>
       )}
     </div>
   );

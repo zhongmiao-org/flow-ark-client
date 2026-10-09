@@ -26,3 +26,41 @@ label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) > .ant-select,
   height: auto;
   white-space: normal;
 }
+
+/* Figma shared leave guard: 640 px, 28 px padding, 16 px content gaps. */
+.flowark-leave-modal .ant-modal-container {
+  min-height: 320px;
+}
+.flowark-leave-modal h2 {
+  margin: 0;
+  font: inherit;
+}
+.flowark-leave-modal h2:focus {
+  outline: none;
+}
+.flowark-leave-modal .ant-modal-body > p {
+  margin: 0 0 16px;
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.flowark-leave-modal .flowark-leave-note {
+  font-size: 12px;
+  line-height: 20px;
+}
+.flowark-leave-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 4px 12px;
+  margin: 0;
+  font-weight: 400;
+  line-height: 18px;
+}
+.flowark-leave-actions > .ant-btn {
+  flex: 1;
+  min-width: 148px;
+}
+.flowark-leave-actions > .ant-btn:last-child {
+  flex: 1.14;
+}

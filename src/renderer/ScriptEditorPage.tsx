@@ -1,4 +1,4 @@
-import { ConfigProvider, Select, Button, Input } from 'antd';
+import { ConfigProvider, Select, Button, Input, Modal, Flex, Tag, Badge } from 'antd';
 import {
   lazy,
   Suspense,
@@ -71,7 +71,8 @@ export default function ScriptEditorPage({
   const [inputIncomplete, setInputIncomplete] = useState(false);
   const [pendingLeave, setPendingLeave] = useState<{ next?: () => void }>();
   const root = useRef<HTMLElement>(null),
-    dialog = useRef<HTMLDialogElement>(null),
+    leaveOrigin = useRef<HTMLElement | null>(null),
+    continueButton = useRef<HTMLButtonElement>(null),
     resultFocus = useRef<HTMLElement | null>(null);
   const inputStateChanged = useCallback((_label: string, incomplete: boolean) => {
     setInputIncomplete(incomplete);
@@ -119,10 +120,16 @@ export default function ScriptEditorPage({
       navigation.current = undefined;
     };
   });
-  useEffect(() => {
-    if (pendingLeave) dialog.current?.showModal();
-    else dialog.current?.close();
+  useLayoutEffect(() => {
+    if (pendingLeave) leaveOrigin.current = document.activeElement as HTMLElement | null;
   }, [pendingLeave]);
+  const stayInEditor = () => {
+    if (persisting.current) return;
+    setPendingLeave(undefined);
+    requestAnimationFrame(() => {
+      if (leaveOrigin.current?.isConnected) leaveOrigin.current.focus({ preventScroll: true });
+    });
+  };
   useEffect(() => {
     if (pendingLeave || saving || !focusRequest) return;
     const element = root.current?.querySelector<HTMLElement>(focusRequest.selector);
@@ -552,33 +559,64 @@ export default function ScriptEditorPage({
           </aside>
         </fieldset>
       </ConfigProvider>
-      <dialog
-        ref={dialog}
-        className="script-leave-dialog"
-        aria-labelledby="script-leave-title"
-        onCancel={(e) => {
-          e.preventDefault();
-          if (!persisting.current) setPendingLeave(undefined);
-        }}
-      >
-        <h2 id="script-leave-title">保存脚本修改？</h2>
-        <p>代码、输入、超时和依赖将一起保存。放弃只撤销本次脚本编辑。</p>
-        <div>
-          <Button
-            type="primary"
-            disabled={saving || undefined}
-            onClick={() => persist(pendingLeave?.next)}
-          >
-            保存并离开
-          </Button>
-          <Button disabled={saving || undefined} onClick={() => close(pendingLeave?.next)}>
-            放弃修改
-          </Button>
-          <Button disabled={saving || undefined} onClick={() => setPendingLeave(undefined)}>
-            继续编辑
-          </Button>
-        </div>
-      </dialog>
+      {pendingLeave && (
+        <Modal
+          open
+          width={640}
+          centered
+          closable={false}
+          mask={{ closable: false }}
+          keyboard={!saving}
+          focusable={{ focusTriggerAfterClose: false }}
+          className="flowark-leave-modal"
+          aria-describedby="script-leave-description"
+          aria-busy={saving}
+          onCancel={stayInEditor}
+          afterOpenChange={(open) => {
+            if (open) continueButton.current?.focus();
+          }}
+          title={
+            <Flex vertical gap={16} align="flex-start">
+              <Tag
+                color="warning"
+                variant="filled"
+                className="flowark-leave-status"
+                icon={<Badge status="warning" />}
+              >
+                存在未保存更改
+              </Tag>
+              <h2>保存脚本修改？</h2>
+            </Flex>
+          }
+          footer={
+            <Flex gap={12} wrap className="flowark-leave-actions">
+              <Button ref={continueButton} disabled={saving || undefined} onClick={stayInEditor}>
+                继续编辑
+              </Button>
+              <Button
+                color="danger"
+                variant="filled"
+                disabled={saving || undefined}
+                onClick={() => close(pendingLeave?.next)}
+              >
+                不保存离开
+              </Button>
+              <Button
+                type="primary"
+                loading={saving}
+                disabled={saving || undefined}
+                onClick={() => void persist(pendingLeave?.next)}
+              >
+                {saving ? '正在保存…' : '保存并离开'}
+              </Button>
+            </Flex>
+          }
+        >
+          <p id="script-leave-description">
+            代码、输入、超时和依赖将一起保存。放弃只撤销本次脚本编辑。
+          </p>
+        </Modal>
+      )}
     </section>
   );
 }

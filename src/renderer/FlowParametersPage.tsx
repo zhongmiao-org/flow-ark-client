@@ -1,4 +1,4 @@
-import { ConfigProvider, Select, Button, Checkbox } from 'antd';
+import { ConfigProvider, Select, Button, Checkbox, Modal, Flex, Tag, Badge, Alert } from 'antd';
 import { usePageBack } from './use-page-back';
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import type { BrowserBinding, FlowRecord, Json } from '../shared/types';
@@ -80,7 +80,6 @@ export default function FlowParametersPage({
     }
   }, [error, busy, pending]);
   const root = useRef<HTMLElement>(null),
-    dialog = useRef<HTMLDialogElement>(null),
     dialogHeading = useRef<HTMLHeadingElement>(null),
     continueButton = useRef<HTMLButtonElement>(null);
   const locked = useRef(false),
@@ -114,12 +113,7 @@ export default function FlowParametersPage({
       alive.current = false;
     };
   }, []);
-  useEffect(() => {
-    if (pending) {
-      dialog.current?.showModal();
-      continueButton.current?.focus();
-    } else dialog.current?.close();
-  }, [pending]);
+
   useEffect(() => {
     if (pending && error) dialogHeading.current?.focus();
   }, [pending, error]);
@@ -440,52 +434,67 @@ export default function FlowParametersPage({
         </fieldset>
       </ConfigProvider>
       {pending && (
-        <dialog
-          className="editor-leave-dialog flow-parameters-leave"
-          ref={dialog}
-          aria-labelledby="parameter-leave-title"
+        <Modal
+          open
+          width={640}
+          centered
+          closable={false}
+          mask={{ closable: false }}
+          keyboard={!busy}
+          focusable={{ focusTriggerAfterClose: false }}
+          className="flowark-leave-modal"
           aria-describedby="parameter-leave-description"
-          onCancel={(event) => {
-            event.preventDefault();
-            stay();
+          aria-busy={!!busy}
+          onCancel={stay}
+          afterOpenChange={(open) => {
+            if (open) (error ? dialogHeading.current : continueButton.current)?.focus();
           }}
+          title={
+            <Flex vertical gap={16} align="flex-start">
+              <Tag
+                color={error ? 'error' : 'warning'}
+                variant="filled"
+                className="flowark-leave-status"
+                icon={<Badge status={error ? 'error' : 'warning'} />}
+              >
+                {error ? '未保存 · 留在当前页' : '存在未保存更改'}
+              </Tag>
+              <h2 ref={dialogHeading} tabIndex={-1}>
+                {error ? '保存未完成，尚未离开' : '离开前保存更改？'}
+              </h2>
+            </Flex>
+          }
+          footer={
+            <Flex gap={12} wrap className="flowark-leave-actions">
+              <Button ref={continueButton} disabled={!!busy || undefined} onClick={stay}>
+                继续编辑
+              </Button>
+              <Button
+                color="danger"
+                variant="filled"
+                disabled={!!busy || undefined}
+                onClick={() => close(pending.next)}
+              >
+                不保存离开
+              </Button>
+              <Button
+                type="primary"
+                loading={busy === 'save'}
+                disabled={!!busy || undefined}
+                onClick={() => void persist(pending.next)}
+              >
+                {busy === 'save' ? '正在保存…' : error ? '重试保存并离开' : '保存并离开'}
+              </Button>
+            </Flex>
+          }
         >
-          <span className={`editor-leave-status${error ? ' is-error' : ''}`}>
-            {error ? '未保存 · 留在当前页' : '存在未保存更改'}
-          </span>
-          <h2 id="parameter-leave-title" ref={dialogHeading} tabIndex={-1}>
-            {error ? '保存未完成，尚未离开' : '离开前保存更改？'}
-          </h2>
           <p id="parameter-leave-description">
             当前参数与资源更改尚未保存。保存成功后前往“{pending.destination}
             ”；不保存只放弃本页更改。
           </p>
-          <p className="editor-leave-note">打开前的流程草稿、已开始的运行和固定计划保持原状。</p>
-          {error && (
-            <p role="alert" className="editor-leave-error">
-              {error}
-            </p>
-          )}
-          <div className="editor-leave-actions">
-            <Button autoFocus ref={continueButton} disabled={!!busy || undefined} onClick={stay}>
-              继续编辑
-            </Button>
-            <Button
-              className="editor-leave-discard"
-              disabled={!!busy || undefined}
-              onClick={() => close(pending.next)}
-            >
-              不保存离开
-            </Button>
-            <Button
-              type="primary"
-              disabled={!!busy || undefined}
-              onClick={() => void persist(pending.next)}
-            >
-              {busy === 'save' ? '正在保存…' : error ? '重试保存并离开' : '保存并离开'}
-            </Button>
-          </div>
-        </dialog>
+          <p className="flowark-leave-note">打开前的流程草稿、已开始的运行和固定计划保持原状。</p>
+          {error && <Alert type="error" title="保存未完成" description={error} role="alert" />}
+        </Modal>
       )}
     </section>
   );

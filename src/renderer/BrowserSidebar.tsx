@@ -11,6 +11,10 @@ const browserErrorMessage = (reason: unknown) =>
     /^Error invoking remote method 'flowark:request': (?:Error: )?/,
     '',
   );
+const workbenchDialogOpen = () =>
+  [...document.querySelectorAll('dialog[open], .ant-modal[role="dialog"]')].some(
+    (element) => element.getClientRects().length > 0,
+  );
 export default function BrowserSidebar({
   close,
   running,
@@ -92,16 +96,16 @@ export default function BrowserSidebar({
   const observationBusy = useRef(false);
   const statusRevision = useRef(0);
   const restoreFocus = useRef(false);
-  const [dialogOpen, setDialogOpen] = useState(() => !!document.querySelector('dialog[open]'));
+  const [dialogOpen, setDialogOpen] = useState(workbenchDialogOpen);
   const hidden = obscured || dialogOpen;
   useEffect(() => {
-    const sync = () => setDialogOpen(!!document.querySelector('dialog[open]'));
+    const sync = () => setDialogOpen(workbenchDialogOpen());
     const observer = new MutationObserver(sync);
     observer.observe(document.body, {
       subtree: true,
       childList: true,
       attributes: true,
-      attributeFilter: ['open'],
+      attributeFilter: ['open', 'style', 'class'],
     });
     sync();
     return () => observer.disconnect();
