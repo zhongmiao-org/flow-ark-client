@@ -102,7 +102,7 @@ export default function AISettingsPage({
   const [reading, setReading] = useState(false),
     [readError, setReadError] = useState('');
   const readConfiguration = useRef<(() => void) | undefined>(undefined),
-    readFailure = useRef<HTMLParagraphElement>(null);
+    readFailure = useRef<HTMLDivElement>(null);
   const [model, setModel] = useState(entry.model),
     [key, setKey] = useState('');
   const [editing, setEditing] = useState(false),
@@ -133,7 +133,7 @@ export default function AISettingsPage({
   const modelInput = useRef<HTMLInputElement>(null),
     keyInput = useRef<HTMLInputElement>(null),
     resultHeading = useRef<HTMLHeadingElement>(null),
-    formError = useRef<HTMLParagraphElement>(null),
+    formError = useRef<HTMLDivElement>(null),
     operationError = useRef<HTMLDivElement>(null);
   const focusField = useRef<'model' | 'key' | undefined>(undefined),
     focusResult = useRef(false);
@@ -554,9 +554,9 @@ export default function AISettingsPage({
                   ? '上次测试已中断'
                   : '已保存 · 待验证';
   const tone = testing
-    ? 'running'
+    ? 'processing'
     : !state?.configured || dirty
-      ? 'neutral'
+      ? 'default'
       : state.test?.status === 'passed'
         ? 'success'
         : state.test?.status === 'failed'
@@ -597,7 +597,14 @@ export default function AISettingsPage({
             </div>
           </div>
           <article className="ai-task-card ai-source-unavailable-card">
-            <span className="ai-config-status warning">无法返回原来源</span>
+            <Tag
+              className="run-state-tag"
+              variant="filled"
+              color="warning"
+              icon={<Badge status="warning" />}
+            >
+              无法返回原来源
+            </Tag>
             <h2>{name} 设置仍保留</h2>
             <p>此次返回未修改已保存的 AI 配置，也不会自动打开另一个实例。</p>
             <p className="ai-source-unavailable-origin">原来源：{entry.source?.title}</p>
@@ -713,13 +720,19 @@ export default function AISettingsPage({
         )}
         {error && !removing && !editing && (
           <div
-            className="ai-task-error"
+            className="ai-settings-feedback"
             role="alert"
             id="ai-settings-error"
             ref={operationError}
             tabIndex={-1}
           >
-            {error}
+            <Alert
+              type="error"
+              role="presentation"
+              showIcon
+              title="操作未完成"
+              description={error}
+            />
           </div>
         )}
         {removing ? (
@@ -728,7 +741,14 @@ export default function AISettingsPage({
             aria-labelledby="ai-remove-title"
             aria-busy={busy === 'remove'}
           >
-            <span className="ai-config-status warning">移除本机配置</span>
+            <Tag
+              className="run-state-tag"
+              variant="filled"
+              color="warning"
+              icon={<Badge status="warning" />}
+            >
+              移除本机配置
+            </Tag>
             <h2 id="ai-remove-title" ref={removeHeading} tabIndex={-1}>
               移除 {name} 配置？
             </h2>
@@ -742,9 +762,13 @@ export default function AISettingsPage({
             </p>
             {state?.inUse && <p className="ai-task-note">资源正在使用，暂时不能移除配置。</p>}
             {error && (
-              <p className="ai-task-error" role="alert">
-                {error}
-              </p>
+              <Alert
+                className="ai-settings-feedback"
+                type="error"
+                showIcon
+                title="移除未完成"
+                description={error}
+              />
             )}
             <div className="ai-task-actions">
               <Button ref={cancelRemove} disabled={busy === 'remove' || undefined} onClick={stay}>
@@ -765,9 +789,15 @@ export default function AISettingsPage({
               {reading ? `正在读取 ${name} 本机配置…` : '配置读取未完成，未将错误当作未配置。'}
             </p>
             {readError && (
-              <p className="ai-config-form-error" role="alert" ref={readFailure} tabIndex={-1}>
-                {readError}
-              </p>
+              <div className="ai-settings-feedback" role="alert" ref={readFailure} tabIndex={-1}>
+                <Alert
+                  type="error"
+                  role="presentation"
+                  showIcon
+                  title="配置读取未完成"
+                  description={readError}
+                />
+              </div>
             )}
             <Button disabled={reading || undefined} onClick={() => readConfiguration.current?.()}>
               {reading ? '正在读取…' : '重新读取'}
@@ -799,9 +829,9 @@ export default function AISettingsPage({
                 <>
                   <div className="ai-provider-heading">
                     <h2>{name}</h2>
-                    <span className="ai-config-status neutral">
+                    <Tag className="run-state-tag" variant="filled">
                       {provider === 'deepseek' ? '首版接入' : 'Responses API'}
-                    </span>
+                    </Tag>
                   </div>
                   <div className="ai-settings-field">
                     <span>服务地址</span>
@@ -878,15 +908,21 @@ export default function AISettingsPage({
                         : '尚未保存密钥。配置完成后，这里会显示掩码和尾四位。'}
                   </p>
                   {error && (
-                    <p
-                      className="ai-config-form-error"
+                    <div
+                      className="ai-settings-feedback"
                       id="ai-settings-error"
                       role="alert"
                       ref={formError}
                       tabIndex={-1}
                     >
-                      {error}
-                    </p>
+                      <Alert
+                        type="error"
+                        role="presentation"
+                        showIcon
+                        title="保存未完成"
+                        description={error}
+                      />
+                    </div>
                   )}
                   <div className="ai-task-actions">
                     <Button
@@ -926,7 +962,15 @@ export default function AISettingsPage({
                   </div>
                   <div className="ai-saved-key">
                     <div>
-                      API Key <span className="ai-config-status success">已配置</span>
+                      API Key{' '}
+                      <Tag
+                        className="run-state-tag"
+                        variant="filled"
+                        color="success"
+                        icon={<Badge status="success" />}
+                      >
+                        已配置
+                      </Tag>
                     </div>
                     <strong>{mask(state)}</strong>
                     <small>{state.tail ? '仅显示尾四位' : '已有受保护 Key · 无尾号元数据'}</small>
@@ -987,57 +1031,71 @@ export default function AISettingsPage({
               <h2 ref={resultHeading} tabIndex={-1}>
                 连接状态
               </h2>
-              <span role="status" className={`ai-config-status ${tone}`}>
+              <Tag
+                role="status"
+                className="run-state-tag"
+                variant="filled"
+                color={tone}
+                icon={<Badge status={tone} />}
+              >
                 {summary}
-              </span>
-              <h3>
-                {testing
-                  ? `正在请求 ${name}`
-                  : dirty
-                    ? '保存后再测试'
-                    : !state.configured
-                      ? '先保存模型与 Key'
-                      : state.test?.status === 'passed'
-                        ? `${name} 可正常响应`
-                        : state.test?.status === 'failed'
-                          ? (failure?.title ?? '连接测试未通过')
-                          : state.test?.status === 'cancelled'
-                            ? '测试已取消'
-                            : state.test?.status === 'interrupted'
-                              ? '上次测试未完成'
-                              : '配置已安全保存'}
-              </h3>
-              <p>
-                {!testing && !dirty && state.configured && state.test?.status === 'passed' && (
-                  <>
-                    最近测试：
-                    {Number.isFinite(Date.parse(state.test.at)) ? (
-                      <time dateTime={state.test.at}>
-                        {new Date(state.test.at).toLocaleString('zh-CN')}
-                      </time>
-                    ) : (
-                      '未取得有效时间'
+              </Tag>
+              <Alert
+                className="ai-connection-feedback"
+                type={tone === 'default' || tone === 'processing' ? 'info' : tone}
+                role={tone === 'error' ? 'alert' : 'status'}
+                showIcon
+                title={
+                  testing
+                    ? `正在请求 ${name}`
+                    : dirty
+                      ? '保存后再测试'
+                      : !state.configured
+                        ? '先保存模型与 Key'
+                        : state.test?.status === 'passed'
+                          ? `${name} 可正常响应`
+                          : state.test?.status === 'failed'
+                            ? (failure?.title ?? '连接测试未通过')
+                            : state.test?.status === 'cancelled'
+                              ? '测试已取消'
+                              : state.test?.status === 'interrupted'
+                                ? '上次测试未完成'
+                                : '配置已安全保存'
+                }
+                description={
+                  <div>
+                    {!testing && !dirty && state.configured && state.test?.status === 'passed' && (
+                      <>
+                        最近测试：
+                        {Number.isFinite(Date.parse(state.test.at)) ? (
+                          <time dateTime={state.test.at}>
+                            {new Date(state.test.at).toLocaleString('zh-CN')}
+                          </time>
+                        ) : (
+                          '未取得有效时间'
+                        )}
+                        <br />
+                        模型：{state.test.model ?? '未记录'}
+                        <br />
+                      </>
                     )}
-                    <br />
-                    模型：{state.test.model ?? '未记录'}
-                    <br />
-                  </>
-                )}
-                {testing
-                  ? '正在测试当前已保存的模型和 Key。'
-                  : dirty
-                    ? '密钥保存与连接测试是两个独立操作。'
-                    : !state.configured
-                      ? '仅需要 AI 的入口受影响，其他流程仍可使用。'
-                      : state.test?.status === 'passed'
-                        ? '此结果对应当前已保存配置；任务输出仍需按其要求单独核对。'
-                        : state.test?.status === 'failed' && state.test.code
-                          ? aiErrorMessage[state.test.code]
-                          : state.test?.status === 'cancelled' ||
-                              state.test?.status === 'interrupted'
-                            ? '配置仍然保留，尚未取得本次完整验证结果。没有自动重试。'
-                            : '尚未发起连接测试。保存成功不代表密钥或模型可用。'}
-              </p>
+                    {testing
+                      ? '正在测试当前已保存的模型和 Key。'
+                      : dirty
+                        ? '密钥保存与连接测试是两个独立操作。'
+                        : !state.configured
+                          ? '仅需要 AI 的入口受影响，其他流程仍可使用。'
+                          : state.test?.status === 'passed'
+                            ? '此结果对应当前已保存配置；任务输出仍需按其要求单独核对。'
+                            : state.test?.status === 'failed' && state.test.code
+                              ? aiErrorMessage[state.test.code]
+                              : state.test?.status === 'cancelled' ||
+                                  state.test?.status === 'interrupted'
+                                ? '配置仍然保留，尚未取得本次完整验证结果。没有自动重试。'
+                                : '尚未发起连接测试。保存成功不代表密钥或模型可用。'}
+                  </div>
+                }
+              />
               {!testing && !dirty && state.configured && failure && (
                 <p className="ai-connection-next">{failure.next}</p>
               )}
@@ -1272,18 +1330,26 @@ export function AISettingsSummary({
     <section className="panel">
       <h2>AI 服务</h2>
       <p>配置自己的 API Key。保存与连接验证分别显示，完整 Key 不回显。</p>
-      {error && <p role="alert">{error}</p>}
+      {error && (
+        <Alert
+          type="error"
+          showIcon
+          title="配置状态读取失败"
+          description={error}
+          className="ai-settings-feedback"
+        />
+      )}
       <div className="ai-summary-grid">
         {(['deepseek', 'openai-codex'] as const).map((provider) => (
           <div key={provider}>
             <h3>{providerName(provider)}</h3>
-            <p>
+            <Tag className="run-state-tag" variant="filled">
               {states[provider]
                 ? states[provider]!.configured
                   ? `已配置 · ${states[provider]!.operation === 'testing' ? '正在测试' : states[provider]!.test ? ({ passed: '连接已验证', failed: '连接失败', cancelled: '测试已取消', interrupted: '上次测试已中断', testing: '正在测试' } as const)[states[provider]!.test!.status] : '待验证'}`
                   : '未配置'
                 : '配置状态尚未取得'}
-            </p>
+            </Tag>
             <Button
               onClick={() =>
                 open(

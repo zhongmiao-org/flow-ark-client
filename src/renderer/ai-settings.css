@@ -396,14 +396,6 @@ button.ai-remove-button {
   line-height: 28px;
   font-weight: 500;
 }
-.ai-settings-page .ai-provider-card > .ai-config-form-error,
-.ai-settings-page .ai-read-card > .ai-config-form-error {
-  padding: 12px 16px;
-  border-radius: var(--fa-radius-6);
-  background: var(--fa-status-error-bg);
-  color: var(--fa-status-error);
-  overflow-wrap: anywhere;
-}
 
 .ai-test-details dl {
   margin: 12px 0;
@@ -422,4 +414,18 @@ button.ai-remove-button {
 .ai-settings-page .ai-connection-card > .ai-connection-next {
   border-left: 2px solid var(--fa-border-default);
   padding-left: 12px;
+}
+
+.ai-settings-feedback {
+  margin-block: 12px;
+  overflow-wrap: anywhere;
+}
+.ai-connection-feedback {
+  overflow-wrap: anywhere;
+}
+
+.ai-settings-page .ai-task-card > .run-state-tag,
+.ai-missing-card > .run-state-tag {
+  align-self: flex-start;
+  width: fit-content;
 }

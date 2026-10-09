@@ -1,4 +1,4 @@
-import { Button } from 'antd';
+import { Badge, Button, Tag } from 'antd';
 import type { PlanningContext } from '../shared/planning';
 
 const contextKinds: Record<PlanningContext['kind'], string> = {
@@ -33,9 +33,14 @@ export default function TaskMissingAI({
       aria-label="配置 AI 后继续任务"
       aria-busy={busy}
     >
-      <span className={`ai-config-status ${configured ? 'neutral' : 'warning'}`}>
+      <Tag
+        className="run-state-tag"
+        variant="filled"
+        color={configured ? 'default' : 'warning'}
+        icon={<Badge status={configured ? 'default' : 'warning'} />}
+      >
         {providerName} · {configured ? '已配置 · 使用前核对' : '未配置'}
-      </span>
+      </Tag>
       <h2>配置一次，就能继续规划任务</h2>
       <p>在本地设置中填写 Key 与模型并测试连接。返回时继续本次任务，不需要重新描述。</p>
       <article className="ai-missing-draft" aria-labelledby="missing-draft-title">
