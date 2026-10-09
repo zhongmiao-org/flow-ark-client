@@ -67,28 +67,6 @@
   width: 100%;
   min-width: 0;
 }
-.flow-parameters-card
-  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):not(
-    [type='checkbox']
-  ),
-.flow-parameters-card textarea {
-  width: 100%;
-  min-width: 0;
-  background: var(--fa-bg-canvas);
-  height: 32px;
-  min-height: 32px;
-  padding: 4px 6px;
-  font-size: 13px;
-  line-height: 20px;
-  border-color: transparent;
-}
-.flow-parameters-card
-  input:not(.ant-checkbox-input):not(.ant-radio-input):not(
-    [class*='ant-select']
-  )[aria-invalid='true'],
-.flow-parameters-card textarea[aria-invalid='true'] {
-  border-color: var(--fa-status-error);
-}
 .flow-parameters-card .parameter-fields {
   display: flex;
   flex-direction: column;
@@ -125,15 +103,9 @@
   font-size: 13px;
 }
 .flow-parameters-card .parameter-field > header > button {
-  font-size: 12px;
   position: absolute;
-  top: -2px;
+  top: -5px;
   right: 0;
-  min-height: 20px;
-  padding: 0 4px;
-  border: 0;
-  background: transparent;
-  line-height: 20px;
 }
 .flow-parameters-card .parameter-rename-controls {
   margin-top: 8px;
@@ -145,11 +117,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-.flow-parameters-card .parameter-rename-controls button {
-  min-height: 32px;
-  padding: 4px 8px;
-  font-size: 12px;
 }
 .flow-parameters-card .parameter-rename-notice {
   color: var(--fa-status-success);
@@ -214,14 +181,14 @@
 }
 .flow-parameters-resource button {
   justify-content: flex-start;
-  min-height: 32px;
-  padding: 4px 6px;
-  background: var(--fa-bg-canvas);
-  border-color: transparent;
+  height: auto;
+  min-height: var(--ant-control-height);
   text-align: left;
+}
+.flow-parameters-resource button > span:not(.ant-btn-icon) {
+  white-space: normal;
   overflow-wrap: anywhere;
-  font-size: 13px;
-  line-height: 20px;
+  min-width: 0;
 }
 .flow-parameters-binding {
   display: flex;
@@ -231,25 +198,6 @@
 }
 .flow-parameters-binding label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   line-height: 18px;
-}
-.flow-parameters-help {
-  font-size: 13px;
-  line-height: 22px;
-  color: var(--fa-text-secondary);
-}
-.flow-parameters-help summary {
-  cursor: pointer;
-}
-.flow-parameters-help p {
-  margin-top: 8px;
-}
-.flow-parameters-card .flow-parameters-note {
-  padding: 16px;
-  min-height: 72px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: 12px;
-  background: var(--fa-action-subtle);
-  color: var(--fa-action-primary);
 }
 .parameter-add-fields {
   display: flex;
@@ -263,16 +211,11 @@
 }
 .parameter-actions button {
   min-width: 160px;
-  min-height: 40px;
 }
 .flow-parameters-credential {
   display: flex;
   gap: 8px;
   align-items: flex-start;
-}
-.flow-parameters-credential
-  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
-  flex-shrink: 0;
 }
 .flow-parameters-credential > .ant-checkbox-label {
   overflow-wrap: anywhere;
@@ -283,10 +226,7 @@
   gap: 12px;
 }
 .flow-parameters-error {
-  color: var(--fa-status-error);
-  background: var(--fa-status-error-bg);
-  border-radius: 8px;
-  padding: 16px;
+  white-space: pre-line;
 }
 @container flow-parameters (max-width: 1000px) {
   .flow-parameters-columns {
@@ -308,13 +248,6 @@
     gap: 8px;
   }
 }
-.flow-parameters-credential
-  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select'])[type='checkbox'] {
-  width: 16px;
-  height: 16px;
-  min-height: 16px;
-  margin: 2px 0 0;
-}
 .flow-parameters-credential > .ant-checkbox-label {
   min-width: 0;
   flex: 1;
@@ -323,7 +256,5 @@
   outline: none;
 }
 .flow-parameters-card .literal-value textarea {
-  height: 32px;
-  min-height: 32px;
   resize: vertical;
 }

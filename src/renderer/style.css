@@ -1870,11 +1870,6 @@ main {
   min-width: 0;
   font-size: 12px;
 }
-.parameter-field > header button {
-  flex-shrink: 0;
-  padding: 4px 7px;
-  font-size: 10px;
-}
 .parameters-advanced {
   margin: 16px 0;
   font-size: 11px;

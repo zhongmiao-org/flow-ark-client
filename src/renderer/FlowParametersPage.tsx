@@ -1,4 +1,16 @@
-import { ConfigProvider, Select, Button, Checkbox, Modal, Flex, Tag, Badge, Alert } from 'antd';
+import {
+  ConfigProvider,
+  Select,
+  Button,
+  Checkbox,
+  Modal,
+  Flex,
+  Tag,
+  Badge,
+  Alert,
+  Collapse,
+} from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { usePageBack } from './use-page-back';
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import type { BrowserBinding, FlowRecord, Json } from '../shared/types';
@@ -240,6 +252,7 @@ export default function FlowParametersPage({
     <>
       <Button
         type="primary"
+        loading={busy === 'save'}
         disabled={!!busy || undefined}
         title={`保存参数、资源及当前流程草稿，并返回${returnLabel}`}
         onClick={() => void persist()}
@@ -269,11 +282,11 @@ export default function FlowParametersPage({
         </div>
       </header>
       {error && !pending && (
-        <div className="flow-parameters-error" role="alert" tabIndex={-1} ref={pageError}>
-          {error}
+        <div className="flow-parameters-error" tabIndex={-1} ref={pageError}>
+          <Alert type="error" showIcon title={error} role="alert" />
         </div>
       )}
-      <ConfigProvider componentDisabled={!!busy || undefined}>
+      <ConfigProvider componentDisabled={!!busy}>
         <fieldset disabled={!!busy} className="flow-parameters-columns">
           <section className="flow-parameters-card flow-parameters-input" aria-label="运行参数">
             <h2>运行参数</h2>
@@ -375,6 +388,9 @@ export default function FlowParametersPage({
                   <strong>{binding} 目录</strong>
                   <Button
                     htmlType="button"
+                    color="default"
+                    variant="filled"
+                    loading={busy === 'choose' && choosing === binding}
                     onClick={() => void choose(binding)}
                     aria-label={'选择 ' + binding + ' 目录'}
                     title={draft.bindings.files[binding] ?? '尚未选择'}
@@ -422,13 +438,29 @@ export default function FlowParametersPage({
                 </span>
               </Checkbox>
             ))}
-            <details className="flow-parameters-help">
-              <summary>本机绑定与凭据范围</summary>
-              <p>
-                绑定只在本机保存，不随流程导出。勾选凭据后允许脚本读取对应凭据；这里只显示引用，不显示密钥。资源可用性在运行前重新核对。
-              </p>
-            </details>
-            <p className="flow-parameters-note">删除被引用的参数会被阻止，并标出引用步骤。</p>
+            <div onKeyDown={activateCollapseWithSpace}>
+              <Collapse
+                size="small"
+                items={[
+                  {
+                    key: 'binding-scope',
+                    label: '本机绑定与凭据范围',
+                    forceRender: true,
+                    children: (
+                      <p>
+                        绑定只在本机保存，不随流程导出。勾选凭据后允许脚本读取对应凭据；这里只显示引用，不显示密钥。资源可用性在运行前重新核对。
+                      </p>
+                    ),
+                  },
+                ]}
+              />
+            </div>
+            <Alert
+              type="info"
+              showIcon
+              title="删除被引用的参数会被阻止，并标出引用步骤。"
+              role="note"
+            />
           </section>
         </fieldset>
       </ConfigProvider>
