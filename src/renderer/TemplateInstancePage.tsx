@@ -1,6 +1,13 @@
 import { usePageBack } from './use-page-back';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
-import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type MutableRefObject,
+  type ReactNode,
+} from 'react';
 import type { Bootstrap } from '../shared/types';
 import type { InstalledPackage } from '../templates/archive';
 import type { AISettingsEntry } from './AISettingsPage';
@@ -49,6 +56,7 @@ export default function TemplateInstancePage({
   close,
   choose,
   adoptedFrom,
+  browserControl,
 }: {
   initial: TemplateDetail;
   active: boolean;
@@ -64,6 +72,7 @@ export default function TemplateInstancePage({
   close: () => void;
   choose: (id: string, adoptedFrom?: TemplateAdoptionOrigin) => Promise<boolean>;
   adoptedFrom?: TemplateAdoptionOrigin;
+  browserControl?: ReactNode;
 }) {
   const [draft, setDraft] = useState(initial),
     [saved, setSaved] = useState(structuredClone(initial));
@@ -395,6 +404,7 @@ export default function TemplateInstancePage({
               : tabs.find(([id]) => id === tab)![1]}
           </span>
         </nav>
+        {browserControl}
       </header>
       <section className="page ai-task-page template-instance-page template-entry-page">
         <div className="page-heading">

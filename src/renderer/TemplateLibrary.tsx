@@ -1,7 +1,7 @@
 import { FileSpreadsheet, Folder, Globe, MousePointer2, Workflow } from 'lucide-react';
 import { usePageBack } from './use-page-back';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
-import { useState, useEffect, useRef, type MutableRefObject } from 'react';
+import { useState, useEffect, useRef, type MutableRefObject, type ReactNode } from 'react';
 import type { Bootstrap } from '../shared/types';
 import type { AISettingsEntry } from './AISettingsPage';
 import type { TemplateDetail } from './template-draft';
@@ -33,6 +33,7 @@ export default function TemplateLibrary({
   schedule,
   exportTemplate,
   homeRequest,
+  browserControl,
 }: {
   navigation: MutableRefObject<TemplateNavigation | undefined>;
   showRun: (detail: any, origin: TemplateEntryOrigin, output?: boolean) => void;
@@ -46,6 +47,7 @@ export default function TemplateLibrary({
   active: boolean;
   settings: (entry: AISettingsEntry) => void;
   homeRequest?: string;
+  browserControl?: ReactNode;
 }) {
   const [view, setView] = useState<View>('library');
   const [preview, setPreview] = useState<Preview>();
@@ -305,6 +307,7 @@ export default function TemplateLibrary({
         settings={settings}
         returnLabel={title}
         exportTemplate={exportTemplate}
+        browserControl={browserControl}
         home={() => {
           setDetail(undefined);
           home();
@@ -363,6 +366,7 @@ export default function TemplateLibrary({
           )}
           <span aria-current="page">{title}</span>
         </nav>
+        {browserControl}
       </header>
       <section className="page template-catalog-page" aria-label="模板工作区">
         <header className="template-catalog-heading">
