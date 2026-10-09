@@ -81,7 +81,10 @@ export default function BrowserNodeConfiguration({
     }
   }, [node.selector, pathKey, active]);
   const observedTarget =
-    active && target?.selector === node.selector && JSON.stringify(target.framePath) === pathKey
+    active &&
+    target &&
+    target.selector === node.selector &&
+    JSON.stringify(target.framePath) === pathKey
       ? target
       : null;
   const topLevel = ['navigate', 'screenshot'].includes(node.operation);

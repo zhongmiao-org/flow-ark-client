@@ -618,6 +618,15 @@ function WorkspaceApp() {
     if (r) void openFlow(r);
   }
   function focusInvalidInput(invalid: HTMLElement) {
+    // Invalid advanced JSON disables sibling fields. Resolve that editable error
+    // before attempting to focus a disabled pending field in the same inspector.
+    const pendingInput = invalid.querySelector<HTMLElement>('input,textarea,select');
+    if (pendingInput?.matches(':disabled')) {
+      const advanced = invalid
+        .closest('.inspector')
+        ?.querySelector<HTMLElement>('.node-advanced[data-value-invalid]');
+      if (advanced) invalid = advanced;
+    }
     const revealed = revealDraftInput(invalid);
     const input = invalid.matches('textarea,input,select')
       ? invalid
@@ -2717,6 +2726,7 @@ function Editor({
   const [resourceOpen, setResourceOpen] = useState(false);
   const [logicConfigurationOpen, setLogicConfigurationOpen] = useState(false);
   const [scriptConfigurationOpen, setScriptConfigurationOpen] = useState(false);
+  const [stepSettingsOpen, setStepSettingsOpen] = useState(false);
   const [viewRequest, setViewRequest] = useState<{ key: number; mode: 'all' | 'selected' }>();
   useEffect(() => {
     if (overviewRequest)
@@ -2755,6 +2765,7 @@ function Editor({
   const pendingStepFocus = useRef<'inspector' | 'canvas' | null>(null);
   const editorSteps = flatten(r.flow.steps);
   const selectedNode = editorSteps.find((n: Step) => n.id === selected);
+  useEffect(() => setStepSettingsOpen(false), [selectedNode?.id]);
   const selectedBrowserTarget =
     selectedNode?.type === 'browser' &&
     !['navigate', 'screenshot'].includes(selectedNode.operation);
@@ -3503,7 +3514,7 @@ function Editor({
                 {tab === 'node' &&
                   (readInspector && selectedNode?.type === 'browser' ? (
                     <>
-                      <ConfigProvider componentDisabled={!!invalid || undefined}>
+                      <ConfigProvider componentDisabled={!!invalid}>
                         <fieldset
                           disabled={!!invalid}
                           style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
@@ -3576,30 +3587,45 @@ function Editor({
                           {referenceNotice.message}
                         </p>
                       )}
-                      <details className="read-step-more">
-                        <summary>更多步骤设置</summary>
-                        <Button
-                          onClick={() => {
-                            if (!guardNodeInput()) return;
-                            setPanel('node');
-                            setBrowserActionOpen(true);
-                          }}
-                        >
-                          网页动作配置
-                        </Button>
-                        <Button
-                          data-ai-edit-step
-                          disabled={!draftSaved || undefined}
-                          onClick={() => openStepAI(selectedNode.id)}
-                        >
-                          用 AI 修改此步
-                        </Button>
-                        {advancedInput}
-                      </details>
+                      <Collapse
+                        key={selectedNode.id + ':more'}
+                        className="read-step-more"
+                        size="small"
+                        data-draft-collapse
+                        items={[
+                          {
+                            key: 'more',
+                            label: '更多步骤设置',
+                            onKeyDown: activateCollapseWithSpace,
+                            forceRender: true,
+                            children: (
+                              <div className="read-step-more-fields">
+                                <Button
+                                  onClick={() => {
+                                    if (!guardNodeInput()) return;
+                                    setPanel('node');
+                                    setBrowserActionOpen(true);
+                                  }}
+                                >
+                                  网页动作配置
+                                </Button>
+                                <Button
+                                  data-ai-edit-step
+                                  disabled={!draftSaved || undefined}
+                                  onClick={() => openStepAI(selectedNode.id)}
+                                >
+                                  用 AI 修改此步
+                                </Button>
+                                {advancedInput}
+                              </div>
+                            ),
+                          },
+                        ]}
+                      />
                     </>
                   ) : selectedNode ? (
                     <>
-                      <ConfigProvider componentDisabled={!!invalid || undefined}>
+                      <ConfigProvider componentDisabled={!!invalid}>
                         <fieldset
                           disabled={!!invalid}
                           style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
@@ -3625,327 +3651,381 @@ function Editor({
                               />
                             </>
                           )}
-                          <details
-                            key={selectedNode.id + ':' + compactBrowser}
+                          <Collapse
+                            key={selectedNode.id + ':settings'}
                             className={
                               compactBrowser ? 'compact-step-settings' : 'step-settings-expanded'
                             }
-                            open={compactBrowser ? undefined : true}
-                          >
-                            <summary hidden={!compactBrowser}>步骤与更多设置</summary>
-                            <div className="inspector-heading">
-                              <h3
-                                ref={selectedNode.type === 'browser' ? undefined : inspectorHeading}
-                                tabIndex={-1}
-                              >
-                                {kinds[selectedNode.type].label}
-                              </h3>
-                              <Button
-                                className="icon-button"
-                                aria-label="节点上移"
-                                title="在当前分支上移"
-                                disabled={!location || location.index === 0 || undefined}
-                                onClick={() =>
-                                  structure(() => moveSibling(r.flow.steps, selected, -1))
-                                }
-                              >
-                                <ArrowUp size={16} />
-                              </Button>
-                              <Button
-                                className="icon-button"
-                                aria-label="节点下移"
-                                title="在当前分支下移"
-                                disabled={
-                                  !location ||
-                                  location.index === location.siblings.length - 1 ||
-                                  undefined
-                                }
-                                onClick={() =>
-                                  structure(() => moveSibling(r.flow.steps, selected, 1))
-                                }
-                              >
-                                <ArrowDown size={16} />
-                              </Button>
-                              <Button
-                                className="icon-button"
-                                aria-label="复制节点"
-                                title="复制到后面（包含子步骤）"
-                                onClick={duplicate}
-                              >
-                                <Copy size={16} />
-                              </Button>
-                              <Button
-                                className="icon-button"
-                                aria-label="删除节点"
-                                title="删除步骤（包含子步骤）"
-                                onClick={() =>
-                                  structure(
-                                    () => changeSteps(r.flow.steps, selected, () => null),
-                                    '',
-                                  )
-                                }
-                              >
-                                <Trash2 size={16} />
-                              </Button>
-                            </div>
-                            <Button
-                              onClick={() => {
-                                if (!guardNodeInput()) return;
-                                setStructureError('');
-                                setPanel('node');
-                                setPositionOpen(true);
-                              }}
-                            >
-                              步骤编辑与位置
-                            </Button>
-                            {structureError && (
-                              <p className="field-error" role="alert">
-                                {structureError}
-                              </p>
-                            )}
-                            {referenceRecovery}
-                            {referenceNotice && referenceNotice.nodeId === selected && (
-                              <p
-                                ref={referenceFeedback}
-                                tabIndex={-1}
-                                role="status"
-                                className="note"
-                              >
-                                {referenceNotice.message}
-                              </p>
-                            )}
-                            <p className="muted">{selectedNode.id} · 修改后保存，下一次运行生效</p>
-                            <Button
-                              data-ai-edit-step
-                              disabled={!draftSaved || undefined}
-                              onClick={() => openStepAI(selectedNode.id)}
-                            >
-                              用 AI 修改此步
-                            </Button>
-                            {!draftSaved && <p className="muted">保存草稿后可使用 AI 单步修改。</p>}
-                            {!['file', 'excel'].includes(selectedNode.type) && (
-                              <>
-                                <label htmlFor="step-name">步骤名称</label>
-                                <Input
-                                  id="step-name"
-                                  value={
-                                    typeof selectedNode.name === 'string' ? selectedNode.name : ''
-                                  }
-                                  placeholder="便于识别的名称（可选）"
-                                  onChange={(e) =>
-                                    updateNode({ ...selectedNode, name: e.target.value })
-                                  }
-                                />
-                              </>
-                            )}
-                            {['value', 'condition', 'assert', 'loop', 'human'].includes(
-                              selectedNode.type,
-                            ) && (
-                              <Button
-                                onClick={() => {
-                                  if (!guardNodeInput()) return;
-                                  setPanel('node');
-                                  setLogicConfigurationOpen(true);
-                                }}
-                              >
-                                流程控制配置
-                              </Button>
-                            )}
-                            {['http', 'file', 'excel'].includes(selectedNode.type) && (
-                              <Button
-                                onClick={() => {
-                                  if (!guardNodeInput()) return;
-                                  setPanel('node');
-                                  setResourceOpen(true);
-                                }}
-                              >
-                                HTTP文件与表格配置
-                              </Button>
-                            )}
-                            {selectedNode.type === 'browser' && (
-                              <Button
-                                onClick={() => {
-                                  if (!guardNodeInput()) return;
-                                  setPanel('node');
-                                  setBrowserActionOpen(true);
-                                }}
-                              >
-                                网页动作配置
-                              </Button>
-                            )}
-                            {['loop', 'condition'].includes(selectedNode.type) && (
-                              <Button
-                                onClick={() => {
-                                  if (!guardNodeInput()) return;
-                                  setPanel('node');
-                                  setControlOpen(true);
-                                }}
-                              >
-                                条件与串行循环
-                              </Button>
-                            )}
-                            {selectedNode.type !== 'browser' &&
-                              !logicConfigurationOpen &&
-                              !scriptConfigurationOpen && (
-                                <>
-                                  <NodeTiming
-                                    key={selectedNode.id + ':timing:' + revision}
-                                    node={selectedNode}
-                                    change={(next) => {
-                                      patch(() => next);
-                                      setRaw(JSON.stringify(next, null, 2));
-                                    }}
-                                  />
-                                  <LogicNodeConfiguration
-                                    key={selectedNode.id + ':logic:' + revision}
-                                    node={selectedNode}
-                                    choices={choices}
-                                    change={updateNode}
-                                  />
-                                </>
-                              )}
-                            {selectedNode.type === 'excel' && selectedNode.operation === 'map' && (
-                              <Button
-                                type="primary"
-                                aria-label="打开 Excel 映射编辑器"
-                                onClick={() => openExcel(selectedNode.id)}
-                              >
-                                打开 Excel 映射编辑器
-                              </Button>
-                            )}
-                            {selectedNode.type === 'mcp' && (
-                              <McpNodeConfiguration
-                                key={selectedNode.id + ':' + revision}
-                                node={selectedNode}
-                                targets={r.toolTargets}
-                                choices={choices}
-                                change={updateNode}
-                              />
-                            )}
-                            {selectedNode.type === 'desktop' && (
-                              <DesktopStepDetails node={selectedNode} />
-                            )}
-                            <ResourceNodeConfiguration
-                              key={selectedNode.id + ':resource:' + revision}
-                              node={selectedNode}
-                              choices={choices}
-                              change={updateNode}
-                              bindings={r.bindings}
-                              choose={choose}
-                            />
-                            {selectedNode.type === 'script' && (
-                              <Button
-                                onClick={() => {
-                                  if (guardNodeInput()) {
-                                    setPanel('node');
-                                    setScriptConfigurationOpen(true);
-                                  }
-                                }}
-                              >
-                                脚本与依赖配置
-                              </Button>
-                            )}
-                            {selectedNode.type === 'script' &&
-                              active &&
-                              !outlineOpen &&
-                              !scriptConfigurationOpen && (
-                                <>
-                                  <Button
-                                    type="primary"
-                                    aria-label="打开完整脚本编辑器"
-                                    onClick={() => openScript(selectedNode.id)}
-                                  >
-                                    打开脚本编辑器
-                                  </Button>
-                                  <label>可信脚本 · 独立进程执行</label>
-                                  <Suspense fallback={<p>加载编辑器…</p>}>
-                                    <CodeEditor
-                                      value={selectedNode.code}
-                                      language={
-                                        selectedNode.language === 'ts' ? 'typescript' : 'javascript'
-                                      }
-                                      onChange={(code) => {
-                                        if (!guardNodeInput(false)) return;
-                                        patch((n) => ({ ...n, code }) as Step);
-                                        setRaw(JSON.stringify({ ...selectedNode, code }, null, 2));
+                            size="small"
+                            ghost={!compactBrowser}
+                            data-draft-collapse
+                            activeKey={!compactBrowser || stepSettingsOpen ? ['settings'] : []}
+                            onChange={(keys) => setStepSettingsOpen(keys.includes('settings'))}
+                            styles={
+                              !compactBrowser
+                                ? { header: { display: 'none' }, body: { padding: 0 } }
+                                : undefined
+                            }
+                            items={[
+                              {
+                                key: 'settings',
+                                label: '步骤与更多设置',
+                                onKeyDown: activateCollapseWithSpace,
+                                forceRender: true,
+                                children: (
+                                  <>
+                                    <div className="inspector-heading">
+                                      <h3
+                                        ref={
+                                          selectedNode.type === 'browser'
+                                            ? undefined
+                                            : inspectorHeading
+                                        }
+                                        tabIndex={-1}
+                                      >
+                                        {kinds[selectedNode.type].label}
+                                      </h3>
+                                      <Button
+                                        className="icon-button"
+                                        aria-label="节点上移"
+                                        title="在当前分支上移"
+                                        disabled={!location || location.index === 0 || undefined}
+                                        onClick={() =>
+                                          structure(() => moveSibling(r.flow.steps, selected, -1))
+                                        }
+                                      >
+                                        <ArrowUp size={16} />
+                                      </Button>
+                                      <Button
+                                        className="icon-button"
+                                        aria-label="节点下移"
+                                        title="在当前分支下移"
+                                        disabled={
+                                          !location ||
+                                          location.index === location.siblings.length - 1 ||
+                                          undefined
+                                        }
+                                        onClick={() =>
+                                          structure(() => moveSibling(r.flow.steps, selected, 1))
+                                        }
+                                      >
+                                        <ArrowDown size={16} />
+                                      </Button>
+                                      <Button
+                                        className="icon-button"
+                                        aria-label="复制节点"
+                                        title="复制到后面（包含子步骤）"
+                                        onClick={duplicate}
+                                      >
+                                        <Copy size={16} />
+                                      </Button>
+                                      <Button
+                                        className="icon-button"
+                                        aria-label="删除节点"
+                                        title="删除步骤（包含子步骤）"
+                                        onClick={() =>
+                                          structure(
+                                            () => changeSteps(r.flow.steps, selected, () => null),
+                                            '',
+                                          )
+                                        }
+                                      >
+                                        <Trash2 size={16} />
+                                      </Button>
+                                    </div>
+                                    <Button
+                                      onClick={() => {
+                                        if (!guardNodeInput()) return;
+                                        setStructureError('');
+                                        setPanel('node');
+                                        setPositionOpen(true);
                                       }}
-                                      height="280px"
+                                    >
+                                      步骤编辑与位置
+                                    </Button>
+                                    {structureError && (
+                                      <p className="field-error" role="alert">
+                                        {structureError}
+                                      </p>
+                                    )}
+                                    {referenceRecovery}
+                                    {referenceNotice && referenceNotice.nodeId === selected && (
+                                      <p
+                                        ref={referenceFeedback}
+                                        tabIndex={-1}
+                                        role="status"
+                                        className="note"
+                                      >
+                                        {referenceNotice.message}
+                                      </p>
+                                    )}
+                                    <p className="muted">
+                                      {selectedNode.id} · 修改后保存，下一次运行生效
+                                    </p>
+                                    <Button
+                                      data-ai-edit-step
+                                      disabled={!draftSaved || undefined}
+                                      onClick={() => openStepAI(selectedNode.id)}
+                                    >
+                                      用 AI 修改此步
+                                    </Button>
+                                    {!draftSaved && (
+                                      <p className="muted">保存草稿后可使用 AI 单步修改。</p>
+                                    )}
+                                    {!['file', 'excel'].includes(selectedNode.type) && (
+                                      <>
+                                        <label htmlFor="step-name">步骤名称</label>
+                                        <Input
+                                          id="step-name"
+                                          value={
+                                            typeof selectedNode.name === 'string'
+                                              ? selectedNode.name
+                                              : ''
+                                          }
+                                          placeholder="便于识别的名称（可选）"
+                                          onChange={(e) =>
+                                            updateNode({ ...selectedNode, name: e.target.value })
+                                          }
+                                        />
+                                      </>
+                                    )}
+                                    {['value', 'condition', 'assert', 'loop', 'human'].includes(
+                                      selectedNode.type,
+                                    ) && (
+                                      <Button
+                                        onClick={() => {
+                                          if (!guardNodeInput()) return;
+                                          setPanel('node');
+                                          setLogicConfigurationOpen(true);
+                                        }}
+                                      >
+                                        流程控制配置
+                                      </Button>
+                                    )}
+                                    {['http', 'file', 'excel'].includes(selectedNode.type) && (
+                                      <Button
+                                        onClick={() => {
+                                          if (!guardNodeInput()) return;
+                                          setPanel('node');
+                                          setResourceOpen(true);
+                                        }}
+                                      >
+                                        HTTP文件与表格配置
+                                      </Button>
+                                    )}
+                                    {selectedNode.type === 'browser' && (
+                                      <Button
+                                        onClick={() => {
+                                          if (!guardNodeInput()) return;
+                                          setPanel('node');
+                                          setBrowserActionOpen(true);
+                                        }}
+                                      >
+                                        网页动作配置
+                                      </Button>
+                                    )}
+                                    {['loop', 'condition'].includes(selectedNode.type) && (
+                                      <Button
+                                        onClick={() => {
+                                          if (!guardNodeInput()) return;
+                                          setPanel('node');
+                                          setControlOpen(true);
+                                        }}
+                                      >
+                                        条件与串行循环
+                                      </Button>
+                                    )}
+                                    {selectedNode.type !== 'browser' &&
+                                      !logicConfigurationOpen &&
+                                      !scriptConfigurationOpen && (
+                                        <>
+                                          <NodeTiming
+                                            key={selectedNode.id + ':timing:' + revision}
+                                            node={selectedNode}
+                                            change={(next) => {
+                                              patch(() => next);
+                                              setRaw(JSON.stringify(next, null, 2));
+                                            }}
+                                          />
+                                          <LogicNodeConfiguration
+                                            key={selectedNode.id + ':logic:' + revision}
+                                            node={selectedNode}
+                                            choices={choices}
+                                            change={updateNode}
+                                          />
+                                        </>
+                                      )}
+                                    {selectedNode.type === 'excel' &&
+                                      selectedNode.operation === 'map' && (
+                                        <Button
+                                          type="primary"
+                                          aria-label="打开 Excel 映射编辑器"
+                                          onClick={() => openExcel(selectedNode.id)}
+                                        >
+                                          打开 Excel 映射编辑器
+                                        </Button>
+                                      )}
+                                    {selectedNode.type === 'mcp' && (
+                                      <McpNodeConfiguration
+                                        key={selectedNode.id + ':' + revision}
+                                        node={selectedNode}
+                                        targets={r.toolTargets}
+                                        choices={choices}
+                                        change={updateNode}
+                                      />
+                                    )}
+                                    {selectedNode.type === 'desktop' && (
+                                      <DesktopStepDetails node={selectedNode} />
+                                    )}
+                                    <ResourceNodeConfiguration
+                                      key={selectedNode.id + ':resource:' + revision}
+                                      node={selectedNode}
+                                      choices={choices}
+                                      change={updateNode}
+                                      bindings={r.bindings}
+                                      choose={choose}
                                     />
-                                  </Suspense>
-                                  <ScriptPackages
-                                    flowId={r.id}
-                                    node={selectedNode}
-                                    bindings={r.bindings}
-                                    bind={(info) => {
-                                      if (!guardNodeInput(false)) return false;
-                                      const conflict = flatten(r.flow.steps).some(
-                                        (n: Step) =>
-                                          n.id !== selectedNode.id &&
-                                          n.type === 'script' &&
-                                          n.dependencies.some(
-                                            (d) =>
-                                              d.name === info.name && d.version !== info.version,
-                                          ),
-                                      );
-                                      if (conflict)
-                                        throw new Error(
-                                          '其他节点声明了不同版本，请先统一依赖版本：' + info.name,
-                                        );
-                                      const next = {
-                                        ...selectedNode,
-                                        dependencies: [
-                                          ...selectedNode.dependencies.filter(
-                                            (d: any) => d.name !== info.name,
-                                          ),
-                                          { name: info.name, version: info.version },
-                                        ],
-                                      };
-                                      setRecord({
-                                        ...r,
-                                        flow: {
-                                          ...r.flow,
-                                          steps: changeSteps(r.flow.steps, selected, () => next),
-                                        },
-                                        bindings: {
-                                          ...r.bindings,
-                                          scriptPackages: {
-                                            ...r.bindings.scriptPackages,
-                                            [info.name]: { path: info.path, version: info.version },
-                                          },
-                                        },
-                                      });
-                                      setRaw(JSON.stringify(next, null, 2));
-                                      setInvalid('');
-                                    }}
-                                    remove={(name) => {
-                                      if (!guardNodeInput(false)) return false;
-                                      const next = {
-                                        ...selectedNode,
-                                        dependencies: selectedNode.dependencies.filter(
-                                          (d: any) => d.name !== name,
-                                        ),
-                                      };
-                                      const steps = changeSteps(r.flow.steps, selected, () => next);
-                                      const packages = { ...r.bindings.scriptPackages };
-                                      if (
-                                        !flatten(steps).some(
-                                          (n: Step) =>
-                                            n.type === 'script' &&
-                                            n.dependencies.some((d) => d.name === name),
-                                        )
-                                      )
-                                        delete packages[name];
-                                      setRecord({
-                                        ...r,
-                                        flow: { ...r.flow, steps },
-                                        bindings: { ...r.bindings, scriptPackages: packages },
-                                      });
-                                      setRaw(JSON.stringify(next, null, 2));
-                                    }}
-                                  />
-                                </>
-                              )}
-                          </details>
+                                    {selectedNode.type === 'script' && (
+                                      <Button
+                                        onClick={() => {
+                                          if (guardNodeInput()) {
+                                            setPanel('node');
+                                            setScriptConfigurationOpen(true);
+                                          }
+                                        }}
+                                      >
+                                        脚本与依赖配置
+                                      </Button>
+                                    )}
+                                    {selectedNode.type === 'script' &&
+                                      active &&
+                                      !outlineOpen &&
+                                      !scriptConfigurationOpen && (
+                                        <>
+                                          <Button
+                                            type="primary"
+                                            aria-label="打开完整脚本编辑器"
+                                            onClick={() => openScript(selectedNode.id)}
+                                          >
+                                            打开脚本编辑器
+                                          </Button>
+                                          <label>可信脚本 · 独立进程执行</label>
+                                          <Suspense fallback={<p>加载编辑器…</p>}>
+                                            <CodeEditor
+                                              value={selectedNode.code}
+                                              language={
+                                                selectedNode.language === 'ts'
+                                                  ? 'typescript'
+                                                  : 'javascript'
+                                              }
+                                              onChange={(code) => {
+                                                if (!guardNodeInput(false)) return;
+                                                patch((n) => ({ ...n, code }) as Step);
+                                                setRaw(
+                                                  JSON.stringify(
+                                                    { ...selectedNode, code },
+                                                    null,
+                                                    2,
+                                                  ),
+                                                );
+                                              }}
+                                              height="280px"
+                                            />
+                                          </Suspense>
+                                          <ScriptPackages
+                                            flowId={r.id}
+                                            node={selectedNode}
+                                            bindings={r.bindings}
+                                            bind={(info) => {
+                                              if (!guardNodeInput(false)) return false;
+                                              const conflict = flatten(r.flow.steps).some(
+                                                (n: Step) =>
+                                                  n.id !== selectedNode.id &&
+                                                  n.type === 'script' &&
+                                                  n.dependencies.some(
+                                                    (d) =>
+                                                      d.name === info.name &&
+                                                      d.version !== info.version,
+                                                  ),
+                                              );
+                                              if (conflict)
+                                                throw new Error(
+                                                  '其他节点声明了不同版本，请先统一依赖版本：' +
+                                                    info.name,
+                                                );
+                                              const next = {
+                                                ...selectedNode,
+                                                dependencies: [
+                                                  ...selectedNode.dependencies.filter(
+                                                    (d: any) => d.name !== info.name,
+                                                  ),
+                                                  { name: info.name, version: info.version },
+                                                ],
+                                              };
+                                              setRecord({
+                                                ...r,
+                                                flow: {
+                                                  ...r.flow,
+                                                  steps: changeSteps(
+                                                    r.flow.steps,
+                                                    selected,
+                                                    () => next,
+                                                  ),
+                                                },
+                                                bindings: {
+                                                  ...r.bindings,
+                                                  scriptPackages: {
+                                                    ...r.bindings.scriptPackages,
+                                                    [info.name]: {
+                                                      path: info.path,
+                                                      version: info.version,
+                                                    },
+                                                  },
+                                                },
+                                              });
+                                              setRaw(JSON.stringify(next, null, 2));
+                                              setInvalid('');
+                                            }}
+                                            remove={(name) => {
+                                              if (!guardNodeInput(false)) return false;
+                                              const next = {
+                                                ...selectedNode,
+                                                dependencies: selectedNode.dependencies.filter(
+                                                  (d: any) => d.name !== name,
+                                                ),
+                                              };
+                                              const steps = changeSteps(
+                                                r.flow.steps,
+                                                selected,
+                                                () => next,
+                                              );
+                                              const packages = { ...r.bindings.scriptPackages };
+                                              if (
+                                                !flatten(steps).some(
+                                                  (n: Step) =>
+                                                    n.type === 'script' &&
+                                                    n.dependencies.some((d) => d.name === name),
+                                                )
+                                              )
+                                                delete packages[name];
+                                              setRecord({
+                                                ...r,
+                                                flow: { ...r.flow, steps },
+                                                bindings: {
+                                                  ...r.bindings,
+                                                  scriptPackages: packages,
+                                                },
+                                              });
+                                              setRaw(JSON.stringify(next, null, 2));
+                                            }}
+                                          />
+                                        </>
+                                      )}
+                                  </>
+                                ),
+                              },
+                            ]}
+                          />
                         </fieldset>
                       </ConfigProvider>
                       {!logicConfigurationOpen && advancedInput}

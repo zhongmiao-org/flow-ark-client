@@ -299,6 +299,7 @@
   display: none;
 }
 .editor-region.is-compact.has-browser .browser-sidebar {
+  min-width: 0;
   width: 60.25%;
   flex-basis: 60.25%;
 }
@@ -434,7 +435,6 @@
 }
 
 /* Figma 2:5253 keeps the current target ahead of general step settings. */
-.step-settings-expanded,
 .inspector-content {
   display: contents;
 }
@@ -475,10 +475,6 @@
 }
 .compact-step-settings {
   margin-top: 16px;
-}
-.compact-step-settings > summary {
-  cursor: pointer;
-  color: var(--fa-text-secondary);
 }
 .editor-region .compact-browser-inspector .drawer-footer {
   position: static;
