@@ -1,4 +1,5 @@
-import { Alert, Badge, Tag, ConfigProvider, Select, Button, Input } from 'antd';
+import { Alert, Badge, Tag, ConfigProvider, Select, Button, Input, Card, Collapse } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
 import type { Bootstrap, Run } from '../shared/types';
 import { runDisplayLabels } from '../shared/run-history';
@@ -363,7 +364,8 @@ export default function TemplateEntry({
       />
     </label>
   );
-  const ResourceContainer = inspection ? 'details' : 'section';
+  const [resourcesOpen, setResourcesOpen] = useState(false);
+  useEffect(() => setResourcesOpen(false), [instance.id, entryId]);
   return (
     <>
       <div className="template-entry-pane">
@@ -392,7 +394,7 @@ export default function TemplateEntry({
             (inspection ? ' template-entry-inspection' : '')
           }
         >
-          <section className="ai-task-card template-entry-input">
+          <Card className="template-entry-input">
             {!inspection && (
               <h2
                 tabIndex={-1}
@@ -429,7 +431,7 @@ export default function TemplateEntry({
                 )}
               </div>
             )}
-            <ConfigProvider componentDisabled={busy || !!sourceError || undefined}>
+            <ConfigProvider componentDisabled={busy || !!sourceError}>
               <fieldset
                 ref={inputFields}
                 disabled={busy || !!sourceError}
@@ -593,301 +595,361 @@ export default function TemplateEntry({
                   </div>
                 </div>
               )}
-          </section>
-          <ResourceContainer className="ai-task-card template-entry-resources">
-            {inspection ? (
-              <summary>资源、动作与最近运行</summary>
-            ) : (
-              <h2>{aiResources.length ? 'AI 资源' : '本次执行'}</h2>
-            )}
-            <div className="template-execution-summary">
-              <div>
-                <span>资源</span>
-                <p>
-                  {entry.resources
-                    .map((id) => detail.manifest.resources.find((r) => r.id === id)?.name ?? id)
-                    .join('、') || '无需本机资源'}
-                </p>
-              </div>
-              <div>
-                <span>动作</span>
-                {entry.actions.length ? (
-                  entry.actions.map((id) => {
-                    const mode = instance.grants[id] ?? 'deny';
-                    const savedMode = saved.instance.grants[id] ?? 'deny';
-                    return (
-                      <p key={id}>
-                        {detail.manifest.actions.find((action) => action.id === id)?.name ?? id}
-                        {' · '}
-                        {grantLabels[mode]}
-                        {mode !== savedMode && `（未保存；已保存：${grantLabels[savedMode]}）`}
-                      </p>
-                    );
-                  })
-                ) : (
-                  <p>未声明写入动作</p>
-                )}
-              </div>
-              <p>本次输入、共享配置、绑定和包版本在启动时固定。</p>
-              {!entry.schedulable && <small>此入口不支持本机计划。</small>}
-            </div>
-            {!aiResources.length && (
-              <>
-                <Tag
-                  className="run-state-tag"
-                  variant="filled"
-                  color="default"
-                  icon={<Badge status="default" />}
-                >
-                  此入口不需要 AI
-                </Tag>
-                <details className="template-entry-resource-help">
-                  <summary>资源检查范围</summary>
-                  <p>只核对当前入口声明的资源，其他入口的 AI 配置不会阻止本次操作。</p>
-                </details>
-              </>
-            )}
-            {aiResources.map((resource) => {
-              const provider = selectedProvider(resource.id),
-                state = configurations[provider];
-              const binding = instance.resources[resource.id];
-              const bound = binding?.provider === provider && !!binding.model;
-              const test =
-                state?.configured &&
-                state.provider === provider &&
-                state.revision &&
-                state.test?.revision === state.revision &&
-                state.test.model === state.model
-                  ? state.test
-                  : undefined;
-              const bindingTest = bound && state?.model === binding.model ? test : undefined;
-              const tested = bindingTest?.status === 'passed';
-              const savedBinding = saved.instance.resources[resource.id];
-              const bindingDirty = !equal(binding, savedBinding);
-              return (
-                <div className="template-entry-ai-resource" key={resource.id}>
-                  {aiResources.length > 1 && <h3>{resource.name}</h3>}
-                  <Tag
-                    className="run-state-tag"
-                    variant="filled"
-                    color={
-                      checking
-                        ? 'default'
-                        : readError || !state?.configured || !tested || bindingDirty
-                          ? 'warning'
-                          : 'success'
-                    }
-                    icon={
-                      <Badge
-                        status={
-                          checking
-                            ? 'default'
-                            : readError || !state?.configured || !tested || bindingDirty
-                              ? 'warning'
-                              : 'success'
-                        }
-                      />
-                    }
-                  >
-                    {checking
-                      ? '正在读取'
-                      : readError
-                        ? '状态未知'
-                        : !state?.configured
-                          ? '未配置'
-                          : !bound
-                            ? '已配置 · 尚未绑定'
-                            : bindingDirty
-                              ? '绑定尚未保存'
-                              : tested
-                                ? '已配置 · 已验证'
-                                : bindingTest?.status === 'testing'
-                                  ? '已配置 · 正在测试'
-                                  : bindingTest?.status === 'failed'
-                                    ? '已配置 · 验证失败'
-                                    : bindingTest?.status === 'cancelled'
-                                      ? '已配置 · 测试已取消'
-                                      : bindingTest?.status === 'interrupted'
-                                        ? '已配置 · 上次测试中断'
-                                        : '已配置 · 待验证'}
-                  </Tag>
-                  <label className="ai-settings-field">
-                    <span>供应商</span>
-                    <Select<string>
-                      aria-label={`${resource.name}供应商`}
-                      disabled={busy || checking || undefined}
-                      value={provider}
-                      onChange={(value) =>
-                        setChoices({ ...choices, [resource.id]: value as AIProviderId })
-                      }
-                      options={[
-                        { value: 'deepseek', label: 'DeepSeek' },
-                        { value: 'openai-codex', label: 'OpenAI' },
-                      ]}
-                    />
-                  </label>
-                  {state?.configured && (
-                    <div className="ai-settings-field">
-                      <span>Key 状态</span>
-                      <p>已配置 · ••••••••{state.tail ? ` ${state.tail}` : ''}</p>
-                    </div>
-                  )}
-                  {binding?.provider && (
-                    <div className="ai-settings-field">
-                      <span>当前入口绑定{bindingDirty ? ' · 未保存' : ' · 已保存'}</span>
-                      <p>
-                        {providerName(binding.provider as AIProviderId)} /{' '}
-                        {binding.model || '模型尚未填写'}
-                      </p>
-                      {!bound && <p>上方供应商用于查看配置；点击使用并保存后才会更换入口绑定。</p>}
-                    </div>
-                  )}
-                  <p>
-                    {checking
-                      ? '正在读取本机 AI 配置，入口绑定保持不变。'
-                      : readError
-                        ? '配置状态尚未取得，请先重新读取 AI 状态；不会改动已保存的入口绑定。'
-                        : state?.configured
-                          ? '配置已保存在本机。绑定模型并保存实例配置后，仍由你明确启动入口。'
-                          : '当前入口声明需要 AI。到本地设置完成配置后，再回到这里。'}
-                  </p>
-                  <Button
-                    type="primary"
-                    disabled={busy || checking || !!readError || undefined}
-                    onClick={(event) =>
-                      openSettings(resource.id, event.currentTarget as HTMLButtonElement)
-                    }
-                  >
-                    {checking || readError || state?.configured
-                      ? '管理 AI 配置'
-                      : `去配置 ${providerName(provider)}`}
-                  </Button>
-                  {state?.configured && !checking && !readError && (
-                    <details className="template-entry-verification">
-                      <summary>查看连接验证状态</summary>
-                      <p>
-                        {providerName(provider)} / {state.model}
-                      </p>
-                      <p>
-                        {test
-                          ? (
+          </Card>
+          <Card className="template-entry-resources">
+            <Collapse
+              ghost
+              activeKey={!inspection || resourcesOpen ? ['resources'] : []}
+              onChange={(keys) => setResourcesOpen(keys.includes('resources'))}
+              styles={{
+                header: inspection ? { padding: 0 } : { display: 'none' },
+                body: { padding: 0 },
+              }}
+              items={[
+                {
+                  key: 'resources',
+                  label: '资源、动作与最近运行',
+                  onKeyDown: activateCollapseWithSpace,
+                  forceRender: true,
+                  children: (
+                    <div className="template-entry-resource-content">
+                      {!inspection && <h2>{aiResources.length ? 'AI 资源' : '本次执行'}</h2>}
+                      <div className="template-execution-summary">
+                        <div>
+                          <span>资源</span>
+                          <p>
+                            {entry.resources
+                              .map(
+                                (id) =>
+                                  detail.manifest.resources.find((r) => r.id === id)?.name ?? id,
+                              )
+                              .join('、') || '无需本机资源'}
+                          </p>
+                        </div>
+                        <div>
+                          <span>动作</span>
+                          {entry.actions.length ? (
+                            entry.actions.map((id) => {
+                              const mode = instance.grants[id] ?? 'deny';
+                              const savedMode = saved.instance.grants[id] ?? 'deny';
+                              return (
+                                <p key={id}>
+                                  {detail.manifest.actions.find((action) => action.id === id)
+                                    ?.name ?? id}
+                                  {' · '}
+                                  {grantLabels[mode]}
+                                  {mode !== savedMode &&
+                                    `（未保存；已保存：${grantLabels[savedMode]}）`}
+                                </p>
+                              );
+                            })
+                          ) : (
+                            <p>未声明写入动作</p>
+                          )}
+                        </div>
+                        <p>本次输入、共享配置、绑定和包版本在启动时固定。</p>
+                        {!entry.schedulable && <small>此入口不支持本机计划。</small>}
+                      </div>
+                      {!aiResources.length && (
+                        <>
+                          <Tag
+                            className="run-state-tag"
+                            variant="filled"
+                            color="default"
+                            icon={<Badge status="default" />}
+                          >
+                            此入口不需要 AI
+                          </Tag>
+                          <Collapse
+                            className="template-entry-resource-help"
+                            size="small"
+                            items={[
                               {
-                                testing: '连接测试进行中',
-                                passed: '当前配置连接已验证',
-                                failed: '当前配置连接失败',
-                                cancelled: '本次测试已取消',
-                                interrupted: '上次测试已中断',
-                              } as const
-                            )[test.status]
-                          : '当前配置尚无有效验证记录。'}
-                      </p>
-                      {test && (
-                        <p>
-                          记录时间：
-                          {Number.isFinite(Date.parse(test.at))
-                            ? new Date(test.at).toLocaleString('zh-CN')
-                            : '未记录'}
-                        </p>
+                                key: 'scope',
+                                label: '资源检查范围',
+                                onKeyDown: activateCollapseWithSpace,
+                                forceRender: true,
+                                children: (
+                                  <p>
+                                    只核对当前入口声明的资源，其他入口的 AI 配置不会阻止本次操作。
+                                  </p>
+                                ),
+                              },
+                            ]}
+                          />
+                        </>
                       )}
-                      <p>
-                        仅显示当前供应商与模型的连接记录，不代表本入口已经执行。可进入管理 AI
-                        配置发起测试。
-                      </p>
-                    </details>
-                  )}
-                  {state?.configured && (!bound || binding.model !== state.model) && (
-                    <Button
-                      disabled={blocked || undefined}
-                      onClick={() =>
-                        change({
-                          ...detail,
-                          instance: {
-                            ...instance,
-                            resources: {
-                              ...instance.resources,
-                              [resource.id]: { provider, model: state.model },
-                            },
-                          },
-                        })
-                      }
-                    >
-                      使用 {providerName(provider)} · {state.model}
-                    </Button>
-                  )}
-                </div>
-              );
-            })}
-            {!!dirtyConfiguration && (
-              <Button disabled={blocked || undefined} onClick={() => void saveConfiguration()}>
-                保存实例配置
-              </Button>
-            )}
-            {!needsResourceConfiguration && entry.actions.length > 0 && (
-              <Button disabled={busy || undefined} onClick={configure}>
-                查看资源与动作授权
-              </Button>
-            )}
-            {!inspection && (
-              <div className="template-entry-detail-links">
-                <Button
-                  className="template-entry-open"
-                  disabled={busy || undefined}
-                  onClick={() => openDetail(entryId)}
-                >
-                  查看入口详情
-                </Button>
-                {detail.entries
-                  .filter((other) => other.id !== entryId)
-                  .map((other) => (
-                    <Button
-                      key={other.id}
-                      disabled={busy || undefined}
-                      onClick={() => openDetail(other.id)}
-                    >
-                      查看 {other.name}
-                    </Button>
-                  ))}
-              </div>
-            )}
-            <div className="template-recent-run" aria-label="最近入口运行">
-              {latestLoading ? (
-                <small>正在读取最近运行…</small>
-              ) : latestError ? (
-                <>
-                  <Alert
-                    type="error"
-                    showIcon
-                    title="最近运行读取未完成"
-                    description={latestError}
-                  />
-                  <Button onClick={() => reloadLatest((v) => v + 1)}>重试最近运行</Button>
-                </>
-              ) : latest ? (
-                <>
-                  <small>
-                    {latest.id.slice(0, 8)} · {runDisplayLabels[latest.state]} ·{' '}
-                    {new Date(latest.createdAt).toLocaleString('zh-CN')}
-                  </small>
-                  <Button
-                    disabled={busy || undefined}
-                    onClick={() =>
-                      void inspectRun(
-                        latest.id,
-                        origin(),
-                        ['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(latest.state),
-                      )
-                    }
-                  >
-                    {['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(latest.state)
-                      ? '查看上次入口结果'
-                      : '查看最近入口运行'}
-                  </Button>
-                </>
-              ) : (
-                <small>此入口还没有运行记录。</small>
-              )}
-            </div>
-          </ResourceContainer>
+                      {aiResources.map((resource) => {
+                        const provider = selectedProvider(resource.id),
+                          state = configurations[provider];
+                        const binding = instance.resources[resource.id];
+                        const bound = binding?.provider === provider && !!binding.model;
+                        const test =
+                          state?.configured &&
+                          state.provider === provider &&
+                          state.revision &&
+                          state.test?.revision === state.revision &&
+                          state.test.model === state.model
+                            ? state.test
+                            : undefined;
+                        const bindingTest =
+                          bound && state?.model === binding.model ? test : undefined;
+                        const tested = bindingTest?.status === 'passed';
+                        const savedBinding = saved.instance.resources[resource.id];
+                        const bindingDirty = !equal(binding, savedBinding);
+                        return (
+                          <div className="template-entry-ai-resource" key={resource.id}>
+                            {aiResources.length > 1 && <h3>{resource.name}</h3>}
+                            <Tag
+                              className="run-state-tag"
+                              variant="filled"
+                              color={
+                                checking
+                                  ? 'default'
+                                  : readError || !state?.configured || !tested || bindingDirty
+                                    ? 'warning'
+                                    : 'success'
+                              }
+                              icon={
+                                <Badge
+                                  status={
+                                    checking
+                                      ? 'default'
+                                      : readError || !state?.configured || !tested || bindingDirty
+                                        ? 'warning'
+                                        : 'success'
+                                  }
+                                />
+                              }
+                            >
+                              {checking
+                                ? '正在读取'
+                                : readError
+                                  ? '状态未知'
+                                  : !state?.configured
+                                    ? '未配置'
+                                    : !bound
+                                      ? '已配置 · 尚未绑定'
+                                      : bindingDirty
+                                        ? '绑定尚未保存'
+                                        : tested
+                                          ? '已配置 · 已验证'
+                                          : bindingTest?.status === 'testing'
+                                            ? '已配置 · 正在测试'
+                                            : bindingTest?.status === 'failed'
+                                              ? '已配置 · 验证失败'
+                                              : bindingTest?.status === 'cancelled'
+                                                ? '已配置 · 测试已取消'
+                                                : bindingTest?.status === 'interrupted'
+                                                  ? '已配置 · 上次测试中断'
+                                                  : '已配置 · 待验证'}
+                            </Tag>
+                            <label className="ai-settings-field">
+                              <span>供应商</span>
+                              <Select<string>
+                                aria-label={`${resource.name}供应商`}
+                                disabled={busy || checking || undefined}
+                                value={provider}
+                                onChange={(value) =>
+                                  setChoices({ ...choices, [resource.id]: value as AIProviderId })
+                                }
+                                options={[
+                                  { value: 'deepseek', label: 'DeepSeek' },
+                                  { value: 'openai-codex', label: 'OpenAI' },
+                                ]}
+                              />
+                            </label>
+                            {state?.configured && (
+                              <div className="ai-settings-field">
+                                <span>Key 状态</span>
+                                <p>已配置 · ••••••••{state.tail ? ` ${state.tail}` : ''}</p>
+                              </div>
+                            )}
+                            {binding?.provider && (
+                              <div className="ai-settings-field">
+                                <span>当前入口绑定{bindingDirty ? ' · 未保存' : ' · 已保存'}</span>
+                                <p>
+                                  {providerName(binding.provider as AIProviderId)} /{' '}
+                                  {binding.model || '模型尚未填写'}
+                                </p>
+                                {!bound && (
+                                  <p>上方供应商用于查看配置；点击使用并保存后才会更换入口绑定。</p>
+                                )}
+                              </div>
+                            )}
+                            <p>
+                              {checking
+                                ? '正在读取本机 AI 配置，入口绑定保持不变。'
+                                : readError
+                                  ? '配置状态尚未取得，请先重新读取 AI 状态；不会改动已保存的入口绑定。'
+                                  : state?.configured
+                                    ? '配置已保存在本机。绑定模型并保存实例配置后，仍由你明确启动入口。'
+                                    : '当前入口声明需要 AI。到本地设置完成配置后，再回到这里。'}
+                            </p>
+                            <Button
+                              type="primary"
+                              disabled={busy || checking || !!readError || undefined}
+                              onClick={(event) =>
+                                openSettings(resource.id, event.currentTarget as HTMLButtonElement)
+                              }
+                            >
+                              {checking || readError || state?.configured
+                                ? '管理 AI 配置'
+                                : `去配置 ${providerName(provider)}`}
+                            </Button>
+                            {state?.configured && !checking && !readError && (
+                              <Collapse
+                                key={entryId + ':' + resource.id + ':' + provider}
+                                className="template-entry-verification"
+                                size="small"
+                                items={[
+                                  {
+                                    key: 'verification',
+                                    label: '查看连接验证状态',
+                                    onKeyDown: activateCollapseWithSpace,
+                                    forceRender: true,
+                                    children: (
+                                      <div>
+                                        {' '}
+                                        <p>
+                                          {providerName(provider)} / {state.model}
+                                        </p>
+                                        <p>
+                                          {test
+                                            ? (
+                                                {
+                                                  testing: '连接测试进行中',
+                                                  passed: '当前配置连接已验证',
+                                                  failed: '当前配置连接失败',
+                                                  cancelled: '本次测试已取消',
+                                                  interrupted: '上次测试已中断',
+                                                } as const
+                                              )[test.status]
+                                            : '当前配置尚无有效验证记录。'}
+                                        </p>
+                                        {test && (
+                                          <p>
+                                            记录时间：
+                                            {Number.isFinite(Date.parse(test.at))
+                                              ? new Date(test.at).toLocaleString('zh-CN')
+                                              : '未记录'}
+                                          </p>
+                                        )}
+                                        <p>
+                                          仅显示当前供应商与模型的连接记录，不代表本入口已经执行。可进入管理
+                                          AI 配置发起测试。
+                                        </p>
+                                      </div>
+                                    ),
+                                  },
+                                ]}
+                              />
+                            )}
+                            {state?.configured && (!bound || binding.model !== state.model) && (
+                              <Button
+                                disabled={blocked || undefined}
+                                onClick={() =>
+                                  change({
+                                    ...detail,
+                                    instance: {
+                                      ...instance,
+                                      resources: {
+                                        ...instance.resources,
+                                        [resource.id]: { provider, model: state.model },
+                                      },
+                                    },
+                                  })
+                                }
+                              >
+                                使用 {providerName(provider)} · {state.model}
+                              </Button>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {!!dirtyConfiguration && (
+                        <Button
+                          disabled={blocked || undefined}
+                          onClick={() => void saveConfiguration()}
+                        >
+                          保存实例配置
+                        </Button>
+                      )}
+                      {!needsResourceConfiguration && entry.actions.length > 0 && (
+                        <Button disabled={busy || undefined} onClick={configure}>
+                          查看资源与动作授权
+                        </Button>
+                      )}
+                      {!inspection && (
+                        <div className="template-entry-detail-links">
+                          <Button
+                            className="template-entry-open"
+                            disabled={busy || undefined}
+                            onClick={() => openDetail(entryId)}
+                          >
+                            查看入口详情
+                          </Button>
+                          {detail.entries
+                            .filter((other) => other.id !== entryId)
+                            .map((other) => (
+                              <Button
+                                key={other.id}
+                                disabled={busy || undefined}
+                                onClick={() => openDetail(other.id)}
+                              >
+                                查看 {other.name}
+                              </Button>
+                            ))}
+                        </div>
+                      )}
+                      <div className="template-recent-run" aria-label="最近入口运行">
+                        {latestLoading ? (
+                          <small>正在读取最近运行…</small>
+                        ) : latestError ? (
+                          <>
+                            <Alert
+                              type="error"
+                              showIcon
+                              title="最近运行读取未完成"
+                              description={latestError}
+                            />
+                            <Button onClick={() => reloadLatest((v) => v + 1)}>重试最近运行</Button>
+                          </>
+                        ) : latest ? (
+                          <>
+                            <small>
+                              {latest.id.slice(0, 8)} · {runDisplayLabels[latest.state]} ·{' '}
+                              {new Date(latest.createdAt).toLocaleString('zh-CN')}
+                            </small>
+                            <Button
+                              disabled={busy || undefined}
+                              onClick={() =>
+                                void inspectRun(
+                                  latest.id,
+                                  origin(),
+                                  ['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(
+                                    latest.state,
+                                  ),
+                                )
+                              }
+                            >
+                              {['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(
+                                latest.state,
+                              )
+                                ? '查看上次入口结果'
+                                : '查看最近入口运行'}
+                            </Button>
+                          </>
+                        ) : (
+                          <small>此入口还没有运行记录。</small>
+                        )}
+                      </div>
+                    </div>
+                  ),
+                },
+              ]}
+            />
+          </Card>
         </div>
       </div>
     </>

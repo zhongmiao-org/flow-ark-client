@@ -111,10 +111,6 @@
 }
 .history-filter-panel {
   min-height: 620px;
-  padding: 28px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: 12px;
-  background: var(--fa-bg-surface);
 }
 .history-primary-filters {
   display: grid;
@@ -135,15 +131,6 @@
   width: 100%;
   margin: 0;
 }
-.history-filter-panel
-  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
-  width: 100%;
-  height: 40px;
-  margin: 0;
-  padding: 8px 12px;
-  font-size: 14px;
-  line-height: 22px;
-}
 .history-filter-actions {
   display: flex;
   flex-wrap: wrap;
@@ -159,14 +146,10 @@
   font-size: 13px;
   color: var(--fa-text-secondary);
 }
-.history-extra-filters summary {
-  cursor: pointer;
-}
-.history-extra-filters > div {
+.history-extra-fields {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(120px, 180px);
   gap: 20px;
-  margin-top: 20px;
 }
 .history-applied-filters {
   display: flex;

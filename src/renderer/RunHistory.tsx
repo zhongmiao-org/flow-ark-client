@@ -1,5 +1,6 @@
 import { runStateColors } from './theme';
-import { Select, Button, Input, Table, Tag, Badge } from 'antd';
+import { Select, Button, Input, Table, Tag, Badge, Collapse, Card } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useEffect, useId, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import {
@@ -36,6 +37,7 @@ export default function RunHistory({
     ...historyTimeRange(scope ? null : 7),
   }));
   const [range, setRange] = useState(scope ? 'all' : '7');
+  const [extraFiltersOpen, setExtraFiltersOpen] = useState(false);
   const [draft, setDraft] = useState({
     query: '',
     state: '',
@@ -119,6 +121,7 @@ export default function RunHistory({
       range,
       limit: query.limit ?? 6,
     });
+    setExtraFiltersOpen(!!selectedFlowId || query.limit !== 6);
     setFilterOpen(true);
   };
   useEffect(() => {
@@ -261,7 +264,7 @@ export default function RunHistory({
       </div>
       {filterOpen ? (
         <form
-          className="history-filter-panel"
+          className="history-filter-form"
           aria-label="筛选运行记录"
           onSubmit={(e) => {
             e.preventDefault();
@@ -278,107 +281,123 @@ export default function RunHistory({
             setFilterOpen(false);
           }}
         >
-          <div className="history-primary-filters">
-            <label>
-              搜索流程或运行编号
-              <Input
-                ref={(instance) => {
-                  search.current = instance?.input ?? null;
-                }}
-                aria-label="搜索运行记录"
-                maxLength={200}
-                placeholder="流程名称、运行或流程 ID"
-                value={draft.query}
-                onChange={(e) => setDraft({ ...draft, query: e.target.value })}
-              />
-            </label>
-            <label>状态{stateSelect(draft.state, (state) => setDraft({ ...draft, state }))}</label>
-            <label>
-              触发来源
-              <Select<string>
-                aria-label="运行来源筛选"
-                value={draft.source}
-                onChange={(value) => setDraft({ ...draft, source: value })}
-                options={[
-                  { value: '', label: '全部来源' },
-                  ...Object.entries(runSourceLabels).map(([value, label]) => ({
-                    value: value,
-                    label: label,
-                  })),
-                ]}
-              />
-            </label>
-            <label>
-              时间范围{rangeSelect(draft.range, (range) => setDraft({ ...draft, range }))}
-            </label>
-          </div>
-          <div className="history-filter-actions">
-            <Button type="primary" htmlType="submit">
-              应用筛选
-            </Button>
-            <Button
-              htmlType="button"
-              onClick={() => {
-                setDraft({
-                  query: '',
-                  state: '',
-                  source: '',
-                  flowId: scope?.id ?? '',
-                  range: 'all',
-                  limit: 6,
-                });
-              }}
-            >
-              清空条件
-            </Button>
-            <Button htmlType="button" onClick={() => setFilterOpen(false)}>
-              取消
-            </Button>
-          </div>
-          <details
-            className="history-extra-filters"
-            open={!!draft.flowId || draft.limit !== 6 || undefined}
-          >
-            <summary>更多条件 · 流程与每页条数</summary>
-            <div>
-              {' '}
+          <Card className="history-filter-panel">
+            <div className="history-primary-filters">
               <label>
-                流程
+                搜索流程或运行编号
+                <Input
+                  ref={(instance) => {
+                    search.current = instance?.input ?? null;
+                  }}
+                  aria-label="搜索运行记录"
+                  maxLength={200}
+                  placeholder="流程名称、运行或流程 ID"
+                  value={draft.query}
+                  onChange={(e) => setDraft({ ...draft, query: e.target.value })}
+                />
+              </label>
+              <label>
+                状态{stateSelect(draft.state, (state) => setDraft({ ...draft, state }))}
+              </label>
+              <label>
+                触发来源
                 <Select<string>
-                  aria-label="运行流程筛选"
-                  disabled={!!scope || undefined}
-                  value={draft.flowId}
-                  onChange={(value) => setDraft({ ...draft, flowId: value })}
+                  aria-label="运行来源筛选"
+                  value={draft.source}
+                  onChange={(value) => setDraft({ ...draft, source: value })}
                   options={[
-                    { value: '', label: '所有流程' },
-                    ...(draft.flowId && !flows.some((flow) => flow.id === draft.flowId)
-                      ? [
-                          {
-                            value: draft.flowId,
-                            label:
-                              scope?.id === draft.flowId
-                                ? scope.name
-                                : `当前筛选的流程（不在本地清单）：${draft.flowId}`,
-                          },
-                        ]
-                      : []),
-                    ...flows.map((flow) => ({ value: flow.id, label: flow.flow.name })),
+                    { value: '', label: '全部来源' },
+                    ...Object.entries(runSourceLabels).map(([value, label]) => ({
+                      value: value,
+                      label: label,
+                    })),
                   ]}
                 />
               </label>
               <label>
-                每页
-                <Select<string>
-                  aria-label="每页运行条数"
-                  value={String(draft.limit)}
-                  onChange={(value) => setDraft({ ...draft, limit: Number(value) })}
-                  options={[
-                    ...[6, 25, 50, 100].map((n) => ({ value: String(n), label: <>{n} 条</> })),
-                  ]}
-                />
+                时间范围{rangeSelect(draft.range, (range) => setDraft({ ...draft, range }))}
               </label>
             </div>
-          </details>
+            <div className="history-filter-actions">
+              <Button type="primary" htmlType="submit">
+                应用筛选
+              </Button>
+              <Button
+                htmlType="button"
+                onClick={() => {
+                  setDraft({
+                    query: '',
+                    state: '',
+                    source: '',
+                    flowId: scope?.id ?? '',
+                    range: 'all',
+                    limit: 6,
+                  });
+                }}
+              >
+                清空条件
+              </Button>
+              <Button htmlType="button" onClick={() => setFilterOpen(false)}>
+                取消
+              </Button>
+            </div>
+            <Collapse
+              className="history-extra-filters"
+              size="small"
+              activeKey={extraFiltersOpen ? ['extra'] : []}
+              onChange={(keys) => setExtraFiltersOpen(keys.includes('extra'))}
+              items={[
+                {
+                  key: 'extra',
+                  label: '更多条件 · 流程与每页条数',
+                  onKeyDown: activateCollapseWithSpace,
+                  forceRender: true,
+                  children: (
+                    <div className="history-extra-fields">
+                      <label>
+                        流程
+                        <Select<string>
+                          aria-label="运行流程筛选"
+                          disabled={!!scope || undefined}
+                          value={draft.flowId}
+                          onChange={(value) => setDraft({ ...draft, flowId: value })}
+                          options={[
+                            { value: '', label: '所有流程' },
+                            ...(draft.flowId && !flows.some((flow) => flow.id === draft.flowId)
+                              ? [
+                                  {
+                                    value: draft.flowId,
+                                    label:
+                                      scope?.id === draft.flowId
+                                        ? scope.name
+                                        : `当前筛选的流程（不在本地清单）：${draft.flowId}`,
+                                  },
+                                ]
+                              : []),
+                            ...flows.map((flow) => ({ value: flow.id, label: flow.flow.name })),
+                          ]}
+                        />
+                      </label>
+                      <label>
+                        每页
+                        <Select<string>
+                          aria-label="每页运行条数"
+                          value={String(draft.limit)}
+                          onChange={(value) => setDraft({ ...draft, limit: Number(value) })}
+                          options={[
+                            ...[6, 25, 50, 100].map((n) => ({
+                              value: String(n),
+                              label: <>{n} 条</>,
+                            })),
+                          ]}
+                        />
+                      </label>
+                    </div>
+                  ),
+                },
+              ]}
+            />
+          </Card>
         </form>
       ) : (
         <>
