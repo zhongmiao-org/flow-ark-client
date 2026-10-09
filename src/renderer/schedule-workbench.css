@@ -1,4 +1,4 @@
-.schedule-workbench > .schedule-plan-list {
+.schedule-workbench .schedule-plan-list > .ant-card-body {
   gap: 16px;
 }
 .schedule-workbench .template-schedule-item {
@@ -17,8 +17,6 @@
 }
 .schedule-workbench > .schedule-workbench-form {
   margin: 0;
-  border: 1px solid var(--fa-border-default);
-  padding: 24px;
 }
 .schedule-workbench-form .schedule-adoption {
   margin: 0;
@@ -50,8 +48,12 @@
   margin-top: 0;
   flex-wrap: nowrap;
 }
-.schedule-history-dialog .ant-modal-body > .ai-task-card {
+.schedule-history-active > .ant-card-body,
+.schedule-history-record > .ant-card-body {
+  display: flex;
+  flex-direction: column;
   gap: 16px;
+  min-width: 0;
 }
 .schedule-history-dialog h2,
 .schedule-history-dialog h3,
@@ -64,7 +66,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
 }
-.schedule-history-records .ai-task-card {
+.schedule-history-record {
   min-height: 220px;
 }
 .schedule-history-records small {
@@ -87,24 +89,22 @@
   color: var(--fa-text-secondary);
   font-size: 12px;
 }
-.schedule-history-dialog .ant-modal-body > .schedule-history-summary {
+.schedule-history-summary {
+  background: var(--fa-bg-canvas);
+}
+.schedule-history-summary > .ant-card-body {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
-  padding: 16px 20px;
-  border-radius: 12px;
-  background: var(--fa-bg-canvas);
 }
 
 .schedule-workbench .schedule-plan-timing {
   font-size: 12px;
   line-height: 18px;
 }
-.schedule-workbench .template-schedule-item {
-  padding-bottom: 12px;
-}
-.schedule-workbench > .schedule-workbench-form {
+.schedule-workbench-form > .schedule-surface > .ant-card-body,
+.schedule-idle > .ant-card-body {
   gap: 16px;
 }
 .schedule-workbench-form fieldset {

@@ -1,4 +1,4 @@
-import { Alert, Badge, Tag, ConfigProvider, Button, Checkbox, Input } from 'antd';
+import { Alert, Badge, Tag, ConfigProvider, Button, Checkbox, Input, Card, Empty } from 'antd';
 import { usePageBack } from './use-page-back';
 import {
   useEffect,
@@ -265,139 +265,144 @@ export default function TemplateSchedulePage({
           </div>
         )}
         <div className="template-schedule-columns">
-          <section className="ai-task-card template-schedule-list">
-            <h2>此入口的计划</h2>
-            {plans.length ? (
-              plans.map((plan) => (
-                <article
-                  key={plan.id}
-                  className="template-schedule-item"
-                  data-schedule-id={plan.id}
-                >
-                  <h3>
-                    {data.flows.find((flow) => flow.id === plan.flowId)?.flow.name ?? origin.title}
-                  </h3>
-                  <Tag
-                    className="run-state-tag"
-                    variant="filled"
-                    color={plan.enabled ? 'success' : 'default'}
-                    icon={<Badge status={plan.enabled ? 'success' : 'default'} />}
-                  >
-                    {plan.enabled ? '已启用' : '已暂停'}
-                  </Tag>
-                  <p>
-                    每 {plan.intervalMinutes} 分钟 · {plan.timezone}
-                  </p>
-                  <p>
-                    {plan.enabled ? '下次 ' + inZone(plan.nextAt, plan.timezone) : '暂无下次执行'}
-                  </p>
-                  <small>固定版本 {plan.versionId.slice(0, 8)}</small>
-                  <div className="ai-task-actions">
-                    <Button
-                      disabled={busy || undefined}
-                      onClick={(event) => {
-                        toggleFocus.current = event.currentTarget as HTMLButtonElement;
-                        void perform(
-                          () => api('schedule.toggle', { id: plan.id, enabled: !plan.enabled }),
-                          plan.enabled ? 'pause' : 'enable',
-                        ).then((result) => {
-                          if (!result) return;
-                          setNotice({
-                            title: !plan.enabled ? '计划已启用' : '计划已暂停',
-                            detail: !plan.enabled
-                              ? '下次执行按当前间隔重新计算；不会补跑错过的计划。'
-                              : '暂停后不再触发新运行；已排队和正在执行的运行保持原样。',
-                          });
-                        });
-                      }}
-                    >
-                      {plan.enabled ? '暂停计划' : '启用计划'}
-                    </Button>
-                    <Button
-                      disabled={busy || undefined}
-                      aria-label="编辑计划"
-                      onClick={() => go(() => manage(plan.id), '编辑此入口计划')}
-                    >
-                      编辑
-                    </Button>
-                  </div>
-                </article>
-              ))
-            ) : (
-              <p>此入口还没有本机计划。</p>
-            )}
-            <Button disabled={busy || undefined} onClick={() => go(() => manage(), '本机计划')}>
-              管理本机计划
-            </Button>
+          <section>
+            <Card className="schedule-surface template-schedule-list">
+              <h2>此入口的计划</h2>
+              {plans.length ? (
+                plans.map((plan) => (
+                  <article key={plan.id} data-schedule-id={plan.id}>
+                    <Card size="small" className="template-schedule-item">
+                      <h3>
+                        {data.flows.find((flow) => flow.id === plan.flowId)?.flow.name ??
+                          origin.title}
+                      </h3>
+                      <Tag
+                        className="run-state-tag"
+                        variant="filled"
+                        color={plan.enabled ? 'success' : 'default'}
+                        icon={<Badge status={plan.enabled ? 'success' : 'default'} />}
+                      >
+                        {plan.enabled ? '已启用' : '已暂停'}
+                      </Tag>
+                      <p>
+                        每 {plan.intervalMinutes} 分钟 · {plan.timezone}
+                      </p>
+                      <p>
+                        {plan.enabled
+                          ? '下次 ' + inZone(plan.nextAt, plan.timezone)
+                          : '暂无下次执行'}
+                      </p>
+                      <small>固定版本 {plan.versionId.slice(0, 8)}</small>
+                      <div className="ai-task-actions">
+                        <Button
+                          disabled={busy || undefined}
+                          onClick={(event) => {
+                            toggleFocus.current = event.currentTarget as HTMLButtonElement;
+                            void perform(
+                              () => api('schedule.toggle', { id: plan.id, enabled: !plan.enabled }),
+                              plan.enabled ? 'pause' : 'enable',
+                            ).then((result) => {
+                              if (!result) return;
+                              setNotice({
+                                title: !plan.enabled ? '计划已启用' : '计划已暂停',
+                                detail: !plan.enabled
+                                  ? '下次执行按当前间隔重新计算；不会补跑错过的计划。'
+                                  : '暂停后不再触发新运行；已排队和正在执行的运行保持原样。',
+                              });
+                            });
+                          }}
+                        >
+                          {plan.enabled ? '暂停计划' : '启用计划'}
+                        </Button>
+                        <Button
+                          disabled={busy || undefined}
+                          aria-label="编辑计划"
+                          onClick={() => go(() => manage(plan.id), '编辑此入口计划')}
+                        >
+                          编辑
+                        </Button>
+                      </div>
+                    </Card>
+                  </article>
+                ))
+              ) : (
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="此入口还没有本机计划。" />
+              )}
+              <Button disabled={busy || undefined} onClick={() => go(() => manage(), '本机计划')}>
+                管理本机计划
+              </Button>
+            </Card>
           </section>
           <form
             ref={form}
-            className="ai-task-card template-schedule-form"
+            className="template-schedule-form"
             onSubmit={(event) => {
               event.preventDefault();
               void create();
             }}
           >
-            <h2 ref={resultHeading} tabIndex={-1}>
-              {created ? '计划已创建' : '创建计划'}
-            </h2>
-            <ConfigProvider componentDisabled={busy || !!created || undefined}>
-              <fieldset disabled={busy || !!created}>
-                <label className="ai-settings-field">
-                  <span>绑定入口</span>
-                  <Input readOnly value={origin.title} aria-label="绑定入口" />
-                </label>
-                <Timing
-                  {...timing}
-                  onChange={(change) => setTiming((old) => ({ ...old, ...change }))}
-                />
-                <div className="ai-settings-field">
-                  <span>固定内容</span>
+            <Card className="schedule-surface">
+              <h2 ref={resultHeading} tabIndex={-1}>
+                {created ? '计划已创建' : '创建计划'}
+              </h2>
+              <ConfigProvider componentDisabled={busy || !!created || undefined}>
+                <fieldset disabled={busy || !!created}>
+                  <label className="ai-settings-field">
+                    <span>绑定入口</span>
+                    <Input readOnly value={origin.title} aria-label="绑定入口" />
+                  </label>
+                  <Timing
+                    {...timing}
+                    onChange={(change) => setTiming((old) => ({ ...old, ...change }))}
+                  />
+                  <div className="ai-settings-field">
+                    <span>固定内容</span>
+                    <p>
+                      {origin.savedAt
+                        ? inZone(Date.parse(origin.savedAt), timing.timezone) + ' 保存的版本'
+                        : '来源入口的已保存内容'}
+                    </p>
+                  </div>
+                  <Checkbox
+                    checked={confirmed}
+                    onChange={(event) => setConfirmed(event.target.checked)}
+                    className="schedule-adoption"
+                  >
+                    <span>固定当前已保存版本与入口</span>
+                  </Checkbox>
                   <p>
-                    {origin.savedAt
-                      ? inZone(Date.parse(origin.savedAt), timing.timezone) + ' 保存的版本'
-                      : '来源入口的已保存内容'}
+                    不采用未保存草稿。创建后启用，首次运行在所选间隔之后；已排队或活动运行保持原样。
                   </p>
+                </fieldset>
+              </ConfigProvider>
+              {created ? (
+                <>
+                  <Alert
+                    type="success"
+                    role="status"
+                    showIcon
+                    title={<>计划已创建 · 固定版本 {created.versionId.slice(0, 8)}</>}
+                    description="尚未因本次创建立即运行。"
+                  />
+                  <Button htmlType="button" onClick={back}>
+                    返回模板入口
+                  </Button>
+                </>
+              ) : (
+                <div className="ai-task-actions">
+                  <Button
+                    htmlType="submit"
+                    type="primary"
+                    disabled={busy || checking || !!sourceError || !confirmed || undefined}
+                  >
+                    {operation === 'create' ? '正在创建…' : '创建计划'}
+                  </Button>
+                  <Button htmlType="button" disabled={busy || undefined} onClick={() => go(back)}>
+                    取消
+                  </Button>
                 </div>
-                <Checkbox
-                  checked={confirmed}
-                  onChange={(event) => setConfirmed(event.target.checked)}
-                  className="schedule-adoption"
-                >
-                  <span>固定当前已保存版本与入口</span>
-                </Checkbox>
-                <p>
-                  不采用未保存草稿。创建后启用，首次运行在所选间隔之后；已排队或活动运行保持原样。
-                </p>
-              </fieldset>
-            </ConfigProvider>
-            {created ? (
-              <>
-                <Alert
-                  type="success"
-                  role="status"
-                  showIcon
-                  title={<>计划已创建 · 固定版本 {created.versionId.slice(0, 8)}</>}
-                  description="尚未因本次创建立即运行。"
-                />
-                <Button htmlType="button" onClick={back}>
-                  返回模板入口
-                </Button>
-              </>
-            ) : (
-              <div className="ai-task-actions">
-                <Button
-                  htmlType="submit"
-                  type="primary"
-                  disabled={busy || checking || !!sourceError || !confirmed || undefined}
-                >
-                  {operation === 'create' ? '正在创建…' : '创建计划'}
-                </Button>
-                <Button htmlType="button" disabled={busy || undefined} onClick={() => go(back)}>
-                  取消
-                </Button>
-              </div>
-            )}
+              )}
+            </Card>
           </form>
         </div>
       </section>
