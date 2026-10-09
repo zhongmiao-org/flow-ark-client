@@ -48,7 +48,6 @@
   input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   width: 100%;
   min-width: 0;
-  height: 40px;
   margin-top: 0;
 }
 .excel-mapping-page .value-field {
@@ -112,30 +111,9 @@
 }
 .excel-column-options {
   grid-column: 1/-1;
-  font-size: 12px;
-  color: var(--fa-text-secondary);
-}
-.excel-column-options[open] {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.excel-column-options summary,
-.excel-source-settings summary {
-  cursor: pointer;
-}
-.excel-column-options[open] summary,
-.excel-source-settings[open] summary {
-  margin-bottom: 12px;
 }
 .excel-source-settings {
-  border-top: 1px solid var(--fa-border-default);
-  padding-top: 12px;
-  font-size: 12px;
   flex-shrink: 0;
-}
-.excel-source-settings label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
-  margin-top: 12px;
 }
 .excel-mapping-page .check-label {
   flex-direction: row;
@@ -211,7 +189,6 @@
   line-height: 20px;
   overflow-wrap: anywhere;
 }
-.excel-mapping-page [aria-invalid='true']:is(input, select),
 .excel-source-value[aria-invalid='true'] textarea {
   border-color: var(--fa-status-error);
 }
