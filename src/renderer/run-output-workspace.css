@@ -133,7 +133,7 @@
 .run-output-files {
   min-height: 646px;
 }
-.run-output-result > .badge {
+.run-output-result > .run-state-tag {
   align-self: flex-start;
 }
 .run-result-review > button {

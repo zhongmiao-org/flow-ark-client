@@ -1,4 +1,5 @@
-import { Select, Button } from 'antd';
+import { runStateColors } from './theme';
+import { Select, Button, Tag, Badge } from 'antd';
 import TaskRunFailure from './TaskRunFailure';
 import McpRunReceipts from './McpRunReceipts';
 import type { LearningStatus } from '../shared/learning';
@@ -696,12 +697,19 @@ export default function TaskRunPage({
                 <TaskRunFailure model={model} error={run.error ?? ''} target={target} />
               ) : (
                 <>
-                  <span className={'badge state-' + (model.uncertain ? 'INTERRUPTED' : run.state)}>
+                  <Tag
+                    className="run-state-tag"
+                    variant="filled"
+                    color={runStateColors[model.uncertain ? 'INTERRUPTED' : run.state]}
+                    icon={
+                      <Badge status={runStateColors[model.uncertain ? 'INTERRUPTED' : run.state]} />
+                    }
+                  >
                     {model.uncertain
                       ? '需要核对'
                       : runDisplayLabels[run.state as keyof typeof runDisplayLabels]}
                     {linearPosition && ` · ${linearPosition}`}
-                  </span>
+                  </Tag>
                   <h2 className="task-run-current">
                     {model.current?.name ?? model.view.step.label}
                   </h2>

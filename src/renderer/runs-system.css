@@ -476,17 +476,7 @@
   margin-top: 16px;
 }
 .run-control-feedback {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
   margin-top: 12px;
-}
-.run-control-feedback[role='alert'] {
-  color: var(--fa-status-error);
-}
-.run-control-feedback[role='alert'] p {
-  color: inherit;
 }
 .run-control-feedback button {
   min-width: 120px;

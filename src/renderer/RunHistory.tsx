@@ -1,4 +1,5 @@
-import { Select, Button, Input, Table } from 'antd';
+import { runStateColors } from './theme';
+import { Select, Button, Input, Table, Tag, Badge } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import {
@@ -489,7 +490,14 @@ export default function RunHistory({
                   title: '状态',
                   width: '13.72%',
                   render: (_, run) => (
-                    <span className={'badge state-' + run.state}>{runStateLabels[run.state]}</span>
+                    <Tag
+                      className="run-state-tag"
+                      variant="filled"
+                      color={runStateColors[run.state]}
+                      icon={<Badge status={runStateColors[run.state]} />}
+                    >
+                      {runStateLabels[run.state]}
+                    </Tag>
                   ),
                 },
                 {

@@ -1,4 +1,4 @@
-import { Button } from 'antd';
+import { Alert, Button } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { Event, Run } from '../shared/types';
 import type { RunPresentation } from '../shared/run-presentation';
@@ -161,16 +161,27 @@ export function RunControlFeedback({
       ref={controller.feedbackRef}
       tabIndex={-1}
       className="run-control-feedback"
-      role={controlError ? 'alert' : undefined}
+      aria-label="运行控制状态"
     >
-      {showNote && controlNote && <p role="status">{controlNote}</p>}
-      {controlError && <p>{controlError}</p>}
-      <Button
-        disabled={controlBusy || refreshing || undefined}
-        onClick={() => void controller.refreshControl()}
-      >
-        {refreshing ? '正在刷新状态…' : '刷新状态'}
-      </Button>
+      <Alert
+        type={controlError ? 'error' : 'info'}
+        role={controlError ? 'alert' : 'status'}
+        showIcon
+        title={
+          controlError ||
+          (showNote && controlNote) ||
+          (refreshing ? '正在刷新状态…' : '正在核对运行状态')
+        }
+        description={showNote && controlError && controlNote ? controlNote : undefined}
+        action={
+          <Button
+            disabled={controlBusy || refreshing || undefined}
+            onClick={() => void controller.refreshControl()}
+          >
+            {refreshing ? '正在刷新状态…' : '刷新状态'}
+          </Button>
+        }
+      />
     </div>
   );
 }

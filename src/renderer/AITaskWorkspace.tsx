@@ -1,4 +1,4 @@
-import { ConfigProvider, Select, Button, Checkbox, Input } from 'antd';
+import { Alert, ConfigProvider, Select, Button, Checkbox, Input } from 'antd';
 import TaskMissingAI from './TaskMissingAI';
 import TaskStepList, { type TaskStepListHandle } from './TaskStepList';
 import TaskStepInspector from './TaskStepInspector';
@@ -683,8 +683,20 @@ export default function AITaskWorkspace(props: Props) {
     delete answers[id];
     edit({ ...draft, answers });
   }
+  const operationOrigin = useRef<HTMLElement | null>(null);
+  function dismissOperationError() {
+    setError('');
+    requestAnimationFrame(() => {
+      const origin = operationOrigin.current;
+      if (origin?.isConnected && !origin.closest('[hidden]') && !origin.matches(':disabled'))
+        origin.focus();
+      else document.querySelector<HTMLElement>('main h1')?.focus();
+    });
+  }
   async function run(operation: () => Promise<void>) {
     if (lock.current) return;
+    operationOrigin.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     lock.current = true;
     epoch.current++;
     setBusy(true);
@@ -1874,16 +1886,17 @@ export default function AITaskWorkspace(props: Props) {
         </aside>
       )}
       {error && (
-        <div className="alert error" role="alert">
-          <b>操作未完成</b>
-          <span>{error}</span>
-          <Button onClick={() => setError('')}>关闭</Button>
-        </div>
+        <Alert
+          className="workspace-feedback"
+          type="error"
+          showIcon
+          title="操作未完成"
+          description={error}
+          action={<Button onClick={dismissOperationError}>关闭</Button>}
+        />
       )}
       {message && (
-        <p className="ai-task-note" role="status">
-          {message}
-        </p>
+        <Alert className="workspace-feedback" type="info" role="status" showIcon title={message} />
       )}
       {attachmentPreview && (
         <section
@@ -1914,22 +1927,29 @@ export default function AITaskWorkspace(props: Props) {
         </section>
       )}
       {stale && detail && (
-        <div className="alert error" role="alert">
-          <span>任务已在其他位置修改；重新读取会替换当前未保存输入。</span>
-          <Button
-            disabled={busy || undefined}
-            onClick={() =>
-              void run(async () => {
-                const next: TaskDetail = await api('task.detail', { id: detail.task.id });
-                accept(next);
-                if (page === 'generation') setPage(generationDestination(next));
-                setReviewed(false);
-              })
-            }
-          >
-            重新读取任务
-          </Button>
-        </div>
+        <Alert
+          className="workspace-feedback"
+          type="warning"
+          role="alert"
+          showIcon
+          title="任务已在其他位置修改"
+          description="重新读取会替换当前未保存输入。"
+          action={
+            <Button
+              disabled={busy || undefined}
+              onClick={() =>
+                void run(async () => {
+                  const next: TaskDetail = await api('task.detail', { id: detail.task.id });
+                  accept(next);
+                  if (page === 'generation') setPage(generationDestination(next));
+                  setReviewed(false);
+                })
+              }
+            >
+              重新读取任务
+            </Button>
+          }
+        />
       )}
       {page === 'guide' ? (
         <FirstTaskGuide

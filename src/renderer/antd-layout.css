@@ -71,3 +71,26 @@ label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item
   overflow: auto;
   scrollbar-gutter: stable;
 }
+
+.run-state-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-end: 0;
+  max-width: 100%;
+  white-space: normal;
+}
+.workspace-feedback {
+  margin-block: 12px;
+}
+.workspace-notice {
+  position: fixed;
+  right: 30px;
+  bottom: 26px;
+  z-index: 1000;
+  max-width: min(560px, calc(100vw - 60px));
+}
+.workspace-feedback .ant-alert-description,
+.workspace-notice .ant-alert-title {
+  overflow-wrap: anywhere;
+}
