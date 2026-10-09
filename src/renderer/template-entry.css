@@ -1,4 +1,4 @@
-/* Figma 8:18463 / 8:18569. Shared Field renders package-defined input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*=ant-select]). */
+/* Figma 8:18463 / 8:18569. Package-defined fields use the shared Field component. */
 .template-entry-page .page-heading {
   margin-bottom: 24px;
 }
@@ -7,15 +7,8 @@
   grid-template-columns: minmax(0, 728fr) minmax(0, 400fr);
   gap: 24px;
 }
-.template-entry-columns > .ai-task-card {
+.template-entry-columns > .ant-card {
   min-height: 664px;
-  gap: 16px;
-}
-.template-entry-columns .template-entry-input {
-  padding: 28px;
-}
-.template-entry-columns .template-entry-resources {
-  padding: 24px;
 }
 .template-entry-fields,
 .template-entry-fields .template-fieldset {
@@ -39,59 +32,6 @@
   width: 100%;
   min-width: 0;
 }
-.template-entry-fields
-  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
-  width: 100%;
-  height: 40px;
-  min-width: 0;
-  border-color: var(--fa-border-default);
-  color: var(--fa-text-primary);
-  font-size: 13px;
-}
-.template-entry-fields textarea {
-  width: 100%;
-  min-height: 128px;
-  resize: vertical;
-  padding: 12px;
-  border-color: var(--fa-border-default);
-  background: var(--fa-bg-canvas);
-  color: var(--fa-text-primary);
-  font-size: 13px;
-}
-.template-entry-fields .template-field > .ant-select {
-  width: 100%;
-  min-width: 0;
-}
-.template-entry-fields
-  .template-field
-  > input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):not(
-    [type='checkbox']
-  ) {
-  width: 100%;
-  height: 40px;
-  min-width: 0;
-  padding: 8px 12px;
-  border-color: var(--fa-border-default);
-  border-radius: var(--fa-radius-8);
-  background: var(--fa-bg-surface);
-  color: var(--fa-text-primary);
-  font-size: 13px;
-  line-height: 22px;
-}
-.template-entry-fields
-  .template-field
-  > input:not(.ant-checkbox-input):not(.ant-radio-input):not(
-    [class*='ant-select']
-  )[aria-invalid='true'] {
-  border-color: var(--fa-status-error);
-}
-.template-entry-fields
-  .template-boolean-field
-  > input:not(.ant-checkbox-input):not(.ant-radio-input):not(
-    [class*='ant-select']
-  )[type='checkbox'] {
-  accent-color: var(--fa-action-primary);
-}
 .template-entry-ai-resource {
   display: flex;
   flex-direction: column;
@@ -108,27 +48,8 @@
   color: var(--fa-text-secondary);
   overflow-wrap: anywhere;
 }
-.template-entry-verification {
-  border: 1px solid var(--fa-border-default);
-  border-radius: 8px;
-  padding: 12px;
-  color: var(--fa-text-secondary);
-  font-size: 13px;
-  line-height: 22px;
-}
-.template-entry-verification summary {
-  cursor: pointer;
-  color: var(--fa-text-primary);
-}
-.template-entry-verification[open] summary {
-  margin-bottom: 12px;
-}
 .template-entry-verification p + p {
   margin-top: 8px;
-}
-.template-entry-verification summary:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
-  outline-offset: 4px;
 }
 .template-entry-readiness ul {
   margin: 0;
@@ -157,7 +78,7 @@
   .template-entry-columns {
     grid-template-columns: minmax(0, 1fr);
   }
-  .template-entry-columns > .ai-task-card {
+  .template-entry-columns > .ant-card {
     min-height: 0;
   }
 }
@@ -184,17 +105,6 @@
 .template-execution-summary > div > p {
   color: var(--fa-text-primary);
 }
-.template-entry-resource-help {
-  font-size: 13px;
-  line-height: 22px;
-  color: var(--fa-text-secondary);
-}
-.template-entry-resource-help summary {
-  cursor: pointer;
-}
-.template-entry-resource-help p {
-  margin: 8px 0 0;
-}
 .template-recent-run {
   margin-top: auto;
   padding-top: 16px;
@@ -212,14 +122,14 @@
   min-width: 200px;
 }
 
-.template-entry-columns.no-ai > .ai-task-card {
+.template-entry-columns.no-ai > .ant-card {
   min-height: 652px;
 }
 .template-entry-columns.no-ai h2 {
   font-size: 18px;
   line-height: 28px;
 }
-.template-entry-columns.no-ai .template-entry-input > .ai-settings-field {
+.template-entry-columns.no-ai .template-entry-input > .ant-card-body > .ai-settings-field {
   gap: 6px;
 }
 .template-entry-columns.no-ai .template-entry-fields .template-fieldset {
@@ -251,8 +161,6 @@
 }
 .template-entry-columns.template-entry-inspection > .template-entry-input {
   min-height: 444px;
-  padding: 32px;
-  gap: 24px;
 }
 .template-entry-columns.template-entry-inspection .template-entry-readiness {
   order: -2;
@@ -272,16 +180,6 @@
   margin: 0;
   font-size: 13px;
   line-height: 20px;
-}
-.template-entry-saved-configuration
-  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
-  width: 100%;
-  min-height: 40px;
-  height: 40px;
-  line-height: 20px;
-  color: var(--fa-text-secondary);
-  border-color: var(--fa-border-default);
-  font-size: 14px;
 }
 .template-entry-inspection .template-entry-fields {
   width: min(720px, 100%);
@@ -319,19 +217,34 @@
   min-height: 0;
   display: block;
 }
-.template-entry-inspection > .template-entry-resources > summary {
-  cursor: pointer;
-  font-size: 14px;
-  line-height: 24px;
-}
-.template-entry-inspection > .template-entry-resources[open] > :not(summary) {
-  margin-top: 20px;
-}
-.template-entry-inspection > .template-entry-resources:not([open]) > :not(summary) {
-  display: none;
-}
 @container (max-width:1000px) {
-  .template-entry-columns.no-ai > .ai-task-card {
+  .template-entry-columns.no-ai > .ant-card {
     min-height: 0;
   }
+}
+
+.template-entry-columns > .ant-card > .ant-card-body,
+.template-entry-resource-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.template-entry-columns > .ant-card > .ant-card-body {
+  height: 100%;
+}
+.template-entry-columns.template-entry-inspection > .template-entry-input > .ant-card-body {
+  gap: 24px;
+}
+.template-entry-resource-content h2,
+.template-entry-input h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 28px;
+}
+.template-entry-resource-content p {
+  margin-block: 0;
+}
+.template-entry-inspection .template-entry-resource-content {
+  padding-top: 20px;
 }
