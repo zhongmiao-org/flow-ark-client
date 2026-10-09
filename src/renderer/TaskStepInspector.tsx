@@ -1,4 +1,5 @@
-import { Select, Button } from 'antd';
+import { Select, Button, Collapse, Descriptions } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
 import type { Flow, Step } from '../shared/types';
 import { flatten } from './flow-editing';
@@ -120,16 +121,26 @@ export default function TaskStepInspector({
         if (step.operation === 'map')
           facts.push([
             '字段映射',
-            <details key={step.id}>
-              <summary>
-                {step.mappings.length} 列；{step.includeHeaders ? '写入表头' : '不写表头'}
-              </summary>
-              {step.mappings.map((mapping, index) => (
-                <p key={index}>
-                  {`来源「${mapping.source}」 → ${mapping.column} 列\n类型：${{ text: '文本', number: '数字', boolean: '布尔' }[mapping.type]}\n${step.includeHeaders ? '表头' : '已设表头（不写入）'}：${mapping.header ? `「${mapping.header}」` : '空白'}`}
-                </p>
-              ))}
-            </details>,
+            <Collapse
+              key={step.id}
+              items={[
+                {
+                  key: 'mapping',
+                  label: `${step.mappings.length} 列；${step.includeHeaders ? '写入表头' : '不写表头'}`,
+                  forceRender: true,
+                  onKeyDown: activateCollapseWithSpace,
+                  children: (
+                    <div className="feedback-body">
+                      {step.mappings.map((mapping, index) => (
+                        <p key={index}>
+                          {`来源「${mapping.source}」 → ${mapping.column} 列\n类型：${{ text: '文本', number: '数字', boolean: '布尔' }[mapping.type]}\n${step.includeHeaders ? '表头' : '已设表头（不写入）'}：${mapping.header ? `「${mapping.header}」` : '空白'}`}
+                        </p>
+                      ))}
+                    </div>
+                  ),
+                },
+              ]}
+            />,
           ]);
       }
     }
@@ -177,14 +188,14 @@ export default function TaskStepInspector({
   );
   const stepDetails = step ? (
     <>
-      <dl className="task-step-facts">
-        {facts.map(([label, content]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd>{content}</dd>
-          </div>
-        ))}
-      </dl>
+      <Descriptions
+        className="metadata-facts task-step-facts"
+        column={1}
+        layout="vertical"
+        bordered
+        size="small"
+        items={facts.map(([label, content]) => ({ key: label, label, children: content }))}
+      />
       {step.type === 'mcp' && <McpNodeConfiguration node={step} targets={context.toolTargets} />}
       {step.type === 'desktop' && <DesktopStepDetails node={step} />}
     </>
@@ -253,19 +264,43 @@ export default function TaskStepInspector({
             )}
             {step.type === 'loop' && branch('循环体', step.body)}
             <div className="task-step-actions">{actions}</div>
-            <details className="task-step-graph-details">
-              <summary>完整参数与步骤导航</summary>
-              {!longGraph && picker}
-              {location}
-              {stepDetails}
-              {!longGraph && browse}
-              {!longGraph && focusInGraph && <Button onClick={focusInGraph}>回到图中此步</Button>}
-              <p className="task-step-position">编号按流程定义排列，实际执行取决于条件与循环。</p>
-              <details className="task-step-original">
-                <summary>查看步骤原始配置</summary>
-                <pre>{JSON.stringify(step, null, 2)}</pre>
-              </details>
-            </details>
+            <Collapse
+              className="task-step-graph-details"
+              items={[
+                {
+                  key: 'parameters',
+                  label: '完整参数与步骤导航',
+                  forceRender: true,
+                  onKeyDown: activateCollapseWithSpace,
+                  children: (
+                    <div className="feedback-body">
+                      {!longGraph && picker}
+                      {location}
+                      {stepDetails}
+                      {!longGraph && browse}
+                      {!longGraph && focusInGraph && (
+                        <Button onClick={focusInGraph}>回到图中此步</Button>
+                      )}
+                      <p className="task-step-position">
+                        编号按流程定义排列，实际执行取决于条件与循环。
+                      </p>
+                      <Collapse
+                        className="task-step-original"
+                        items={[
+                          {
+                            key: 'original',
+                            label: '查看步骤原始配置',
+                            forceRender: true,
+                            onKeyDown: activateCollapseWithSpace,
+                            children: <pre>{JSON.stringify(step, null, 2)}</pre>,
+                          },
+                        ]}
+                      />
+                    </div>
+                  ),
+                },
+              ]}
+            />
           </>
         ) : (
           <>
@@ -308,10 +343,18 @@ export default function TaskStepInspector({
           {step.type === 'loop' && branch('循环体', step.body)}
           {browse}
           <p className="task-step-position">编号按流程定义排列，实际执行取决于条件与循环。</p>
-          <details className="task-step-original">
-            <summary>查看步骤原始配置</summary>
-            <pre>{JSON.stringify(step, null, 2)}</pre>
-          </details>
+          <Collapse
+            className="task-step-original"
+            items={[
+              {
+                key: 'original',
+                label: '查看步骤原始配置',
+                forceRender: true,
+                onKeyDown: activateCollapseWithSpace,
+                children: <pre>{JSON.stringify(step, null, 2)}</pre>,
+              },
+            ]}
+          />
         </>
       ) : (
         <div className="task-step-empty">
@@ -345,18 +388,30 @@ function ConfiguredValue({
       (input.length > 120 || input !== input.trim() || /[\r\n\t]/.test(input)));
   if (!expandable) return <>{summary}</>;
   return (
-    <details className="task-step-value">
-      <summary>{summary} · 查看配置</summary>
-      <p className="task-step-position">
-        {reference !== undefined
-          ? '这是引用来源，实际值由运行提供。'
-          : typeof input === 'string'
-            ? `完整文本 · ${input.length} 个字符；保留换行与空白。`
-            : '当前方案的配置内容，不是运行结果。'}
-      </p>
-      <pre tabIndex={0} aria-label={reference !== undefined ? '引用来源' : '完整配置值'}>
-        {reference ?? (typeof input === 'string' ? input : JSON.stringify(input, null, 2))}
-      </pre>
-    </details>
+    <Collapse
+      className="task-step-value"
+      items={[
+        {
+          key: 'value',
+          label: `${summary} · 查看配置`,
+          forceRender: true,
+          onKeyDown: activateCollapseWithSpace,
+          children: (
+            <div className="feedback-body">
+              <p className="task-step-position">
+                {reference !== undefined
+                  ? '这是引用来源，实际值由运行提供。'
+                  : typeof input === 'string'
+                    ? `完整文本 · ${input.length} 个字符；保留换行与空白。`
+                    : '当前方案的配置内容，不是运行结果。'}
+              </p>
+              <pre tabIndex={0} aria-label={reference !== undefined ? '引用来源' : '完整配置值'}>
+                {reference ?? (typeof input === 'string' ? input : JSON.stringify(input, null, 2))}
+              </pre>
+            </div>
+          ),
+        },
+      ]}
+    />
   );
 }
