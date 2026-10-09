@@ -265,6 +265,7 @@ function WorkspaceApp() {
   const [templateOrigin, setTemplateOrigin] = useState<TemplateEntryOrigin>();
   const scheduleNavigation = useRef<TemplateNavigation | undefined>(undefined);
   const plansNavigation = useRef<TemplateNavigation | undefined>(undefined);
+  const [scheduleEditRequest, setScheduleEditRequest] = useState<{ id: string }>();
   const scheduleRunBack = useRef<(() => void) | undefined>(undefined);
   const taskRunBack = useRef<((intent?: TaskRunIntent) => void) | undefined>(undefined);
   const [taskRunView, setTaskRunView] = useState<TaskRunView>('overview');
@@ -2395,7 +2396,15 @@ function WorkspaceApp() {
               action={action}
               navigation={scheduleNavigation}
               back={returnTemplate}
-              manage={() => leaveTemplateContext(() => setSection('schedules'), '本机计划')}
+              manage={(planId) =>
+                leaveTemplateContext(
+                  () => {
+                    setScheduleEditRequest(planId ? { id: planId } : undefined);
+                    setSection('schedules');
+                  },
+                  planId ? '编辑此入口计划' : '本机计划',
+                )
+              }
             />
           )}
           <div hidden={section !== 'schedules'}>
@@ -2403,6 +2412,8 @@ function WorkspaceApp() {
               data={data}
               action={action}
               active={section === 'schedules'}
+              editRequest={scheduleEditRequest}
+              editRequestHandled={() => setScheduleEditRequest(undefined)}
               browserControl={
                 <button
                   className="embedded-show"

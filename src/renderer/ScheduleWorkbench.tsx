@@ -38,6 +38,8 @@ export default function ScheduleWorkbench({
   data,
   action,
   active,
+  editRequest,
+  editRequestHandled,
   browserControl,
   navigation,
   showRun,
@@ -45,6 +47,8 @@ export default function ScheduleWorkbench({
   data: Bootstrap;
   action: (fn: () => Promise<any>, message?: string) => Promise<any>;
   active: boolean;
+  editRequest?: { id: string };
+  editRequestHandled?: () => void;
   browserControl?: ReactNode;
   navigation: MutableRefObject<TemplateNavigation | undefined>;
   showRun: (detail: any, back: () => void) => void;
@@ -88,6 +92,7 @@ export default function ScheduleWorkbench({
     readToken = useRef(0);
   const scroll = useRef(0);
   const listFocus = useRef<HTMLElement | null>(null);
+  const handledEditRequest = useRef<typeof editRequest>(undefined);
   const pageHeading = useRef<HTMLHeadingElement>(null);
   const feedbackHeading = useRef<HTMLHeadingElement>(null);
   const pageError = useRef<HTMLParagraphElement>(null);
@@ -221,6 +226,20 @@ export default function ScheduleWorkbench({
     setError('');
     setLeaving({ next, destination: target });
   };
+  useEffect(() => {
+    if (!active || !editRequest || busy || leaving || handledEditRequest.current === editRequest)
+      return;
+    handledEditRequest.current = editRequest;
+    editRequestHandled?.();
+    const plan = data.schedules.find((item) => item.id === editRequest.id);
+    if (!plan) {
+      setError('所选计划已不在本机列表中，请刷新后重新选择。');
+      return;
+    }
+    go(() => {
+      void open(plan);
+    }, '编辑此入口计划');
+  }, [active, editRequest, busy, leaving, data.schedules]);
   navigation.current = (next, target) => {
     if (lock.current || destination.current) return;
     cancelHistoryReads();

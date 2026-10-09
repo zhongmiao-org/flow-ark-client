@@ -22,7 +22,7 @@ export default function TemplateSchedulePage({
   action: (fn: () => Promise<any>, message?: string) => Promise<any>;
   navigation: MutableRefObject<TemplateNavigation | undefined>;
   back: () => void;
-  manage: () => void;
+  manage: (planId?: string) => void;
 }) {
   const [initial] = useState(() => ({
     minutes: '60',
@@ -154,7 +154,7 @@ export default function TemplateSchedulePage({
             href="#schedules"
             onClick={(event) => {
               event.preventDefault();
-              go(manage, '本机计划');
+              go(() => manage(), '本机计划');
             }}
           >
             本机计划
@@ -197,22 +197,31 @@ export default function TemplateSchedulePage({
                     {plan.enabled ? '下次 ' + inZone(plan.nextAt, plan.timezone) : '暂无下次执行'}
                   </p>
                   <small>固定版本 {plan.versionId.slice(0, 8)}</small>
-                  <button
-                    disabled={busy}
-                    onClick={() =>
-                      void perform(() =>
-                        api('schedule.toggle', { id: plan.id, enabled: !plan.enabled }),
-                      )
-                    }
-                  >
-                    {plan.enabled ? '暂停计划' : '启用计划'}
-                  </button>
+                  <div className="ai-task-actions">
+                    <button
+                      disabled={busy}
+                      onClick={() =>
+                        void perform(() =>
+                          api('schedule.toggle', { id: plan.id, enabled: !plan.enabled }),
+                        )
+                      }
+                    >
+                      {plan.enabled ? '暂停计划' : '启用计划'}
+                    </button>
+                    <button
+                      disabled={busy}
+                      aria-label="编辑计划"
+                      onClick={() => go(() => manage(plan.id), '编辑此入口计划')}
+                    >
+                      编辑
+                    </button>
+                  </div>
                 </article>
               ))
             ) : (
               <p>此入口还没有本机计划。</p>
             )}
-            <button disabled={busy} onClick={() => go(manage, '本机计划')}>
+            <button disabled={busy} onClick={() => go(() => manage(), '本机计划')}>
               管理本机计划
             </button>
           </section>
