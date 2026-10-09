@@ -1,4 +1,4 @@
-import { Button, Input } from 'antd';
+import { Alert, Button, Collapse, Input, Space, Tag } from 'antd';
 import { useEffect, useState, type RefObject, type Ref } from 'react';
 import type { FlowRecord, Step } from '../shared/types';
 import { nodeReferenceValues } from '../shared/flow-references';
@@ -8,6 +8,7 @@ import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 import NodeTiming from './NodeTiming';
 import type { ElementPickerControls } from './ElementPicker';
 import './read-step-inspector.css';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 
 type BrowserNode = Extract<Step, { type: 'browser' }>;
 function usesOutput(value: unknown, reference: string): boolean {
@@ -60,25 +61,40 @@ export default function ReadStepInspector({
   const consumers = steps.filter((step) => usesOutput(nodeReferenceValues(step), reference));
   useEffect(() => setNotice(''), [node]);
   const identity = (
-    <details
+    <Collapse
       key="identity"
       className="read-step-identity"
-      open={!compact || identityOpen}
-      onToggle={(event) => {
-        if (compact) setIdentityOpen(event.currentTarget.open);
+      size="small"
+      ghost={!compact}
+      activeKey={!compact || identityOpen ? ['identity'] : []}
+      onChange={(keys) => {
+        if (compact) setIdentityOpen(keys.includes('identity'));
       }}
-    >
-      <summary>步骤名称与编号</summary>
-      <span className="read-step-selection">步骤 {String(ordinal).padStart(2, '0')} · 已选择</span>
-      <label htmlFor="step-name">动作名称</label>
-      <Input
-        id="step-name"
-        aria-label="步骤名称"
-        value={node.name ?? ''}
-        placeholder="便于识别的名称（可选）"
-        onChange={(event) => change({ ...node, name: event.target.value })}
-      />
-    </details>
+      styles={!compact ? { header: { display: 'none' }, body: { padding: 0 } } : undefined}
+      items={[
+        {
+          key: 'identity',
+          label: '步骤名称与编号',
+          forceRender: true,
+          children: (
+            <div className="read-step-identity-fields">
+              <Tag color="blue" className="read-step-selection">
+                步骤 {String(ordinal).padStart(2, '0')} · 已选择
+              </Tag>
+              <label htmlFor="step-name">动作名称</label>
+              <Input
+                size="small"
+                id="step-name"
+                aria-label="步骤名称"
+                value={node.name ?? ''}
+                placeholder="便于识别的名称（可选）"
+                onChange={(event) => change({ ...node, name: event.target.value })}
+              />
+            </div>
+          ),
+        },
+      ]}
+    />
   );
   const configuration = (
     <BrowserNodeConfiguration
@@ -99,27 +115,35 @@ export default function ReadStepInspector({
             <p className="read-step-value" title={reference}>
               当前步骤输出 → 文本
             </p>
-            <Button
-              aria-expanded={referencesOpen}
-              onClick={() => setReferencesOpen(!referencesOpen)}
-            >
-              查看输出引用 · {consumers.length}
-            </Button>
-            {referencesOpen && (
-              <div className="read-step-references">
-                <code>{reference}</code>
-                <p>后续步骤可通过变量选择引用此输出。这里展示草稿引用关系，不包含实际读取结果。</p>
-                {consumers.length ? (
-                  consumers.map((step) => (
-                    <Button key={step.id} onClick={() => select(step.id)}>
-                      {String(steps.indexOf(step) + 1).padStart(2, '0')} {taskStepTitle(step)}
-                    </Button>
-                  ))
-                ) : (
-                  <p>当前草稿没有步骤引用此输出。</p>
-                )}
-              </div>
-            )}
+            <Collapse
+              size="small"
+              activeKey={referencesOpen ? ['references'] : []}
+              onChange={(keys) => setReferencesOpen(keys.includes('references'))}
+              items={[
+                {
+                  key: 'references',
+                  label: `查看输出引用 · ${consumers.length}`,
+                  forceRender: true,
+                  children: (
+                    <div className="read-step-references">
+                      <code>{reference}</code>
+                      <p>
+                        后续步骤可通过变量选择引用此输出。这里展示草稿引用关系，不包含实际读取结果。
+                      </p>
+                      {consumers.length ? (
+                        consumers.map((step) => (
+                          <Button type="text" block key={step.id} onClick={() => select(step.id)}>
+                            {String(steps.indexOf(step) + 1).padStart(2, '0')} {taskStepTitle(step)}
+                          </Button>
+                        ))
+                      ) : (
+                        <p>当前草稿没有步骤引用此输出。</p>
+                      )}
+                    </div>
+                  ),
+                },
+              ]}
+            />
           </div>
         ),
       }}
@@ -129,6 +153,7 @@ export default function ReadStepInspector({
     <section
       className={`read-step-inspector${compact ? ' is-compact' : ''}`}
       aria-label="读取文字步骤配置"
+      onKeyDown={activateCollapseWithSpace}
     >
       <h3 ref={heading} tabIndex={-1}>
         {compact ? '配置 · 读取文字' : '读取文字'}
@@ -144,15 +169,19 @@ export default function ReadStepInspector({
         应用配置
       </Button>
       {notice && (
-        <p role="status" className="read-step-notice">
-          {notice}
-        </p>
+        <Alert
+          type="success"
+          showIcon
+          role="status"
+          className="read-step-feedback"
+          title={notice}
+        />
       )}
       <Button onClick={position}>复制 / 移动 / 删除</Button>
-      <div className="read-step-view" role="group" aria-label="流程图视图">
+      <Space.Compact block className="read-step-view" role="group" aria-label="流程图视图">
         <Button onClick={() => view('all')}>全图</Button>
         <Button onClick={() => view('selected')}>聚焦当前步骤</Button>
-      </div>
+      </Space.Compact>
     </section>
   );
 }
