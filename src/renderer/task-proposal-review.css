@@ -35,8 +35,7 @@
 .task-proposal-review .planning-change-values > section {
   min-height: 108px;
 }
-.task-proposal-permissions,
-.task-proposal-source {
+.task-proposal-permissions {
   border-top: 1px solid var(--fa-border-default);
   padding-top: 16px;
 }

@@ -1,4 +1,15 @@
-import { Alert, ConfigProvider, Select, Button, Checkbox, Input, Tag } from 'antd';
+import {
+  Alert,
+  Collapse,
+  Descriptions,
+  ConfigProvider,
+  Select,
+  Button,
+  Checkbox,
+  Input,
+  Tag,
+} from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { planningTaskColors } from './theme';
 import TaskMissingAI from './TaskMissingAI';
 import TaskStepList, { type TaskStepListHandle } from './TaskStepList';
@@ -1411,42 +1422,57 @@ export default function AITaskWorkspace(props: Props) {
   const planningControls = detail && (
     <>
       {page === 'understand' || page === 'brief' || page === 'generation' || page === 'modify' ? (
-        <details className="task-understanding-provider">
-          <summary>
-            AI 服务 · {providerName} · {model}
-          </summary>{' '}
-          <ConfigProvider componentDisabled={inputDisabled || undefined}>
-            <fieldset className="ai-task-provider" disabled={inputDisabled}>
-              <label>
-                AI 服务
-                <Select<string>
-                  value={provider}
-                  onChange={(value) => {
-                    const p = value as typeof provider;
-                    setProvider(p);
-                    setModel(p === 'deepseek' ? 'deepseek-flash' : 'gpt-5.3-codex');
-                    setReviewed(false);
-                  }}
-                  options={[
-                    { value: 'deepseek', label: 'DeepSeek' },
-                    { value: 'openai-codex', label: 'OpenAI · Codex' },
-                  ]}
-                />
-              </label>
-              <label>
-                模型 ID
-                <Input
-                  value={model}
-                  maxLength={100}
-                  onChange={(e) => {
-                    setModel(e.target.value);
-                    setReviewed(false);
-                  }}
-                />
-              </label>
-            </fieldset>
-          </ConfigProvider>
-        </details>
+        <Collapse
+          className="task-understanding-provider"
+          items={[
+            {
+              key: 'provider',
+              forceRender: true,
+              onKeyDown: activateCollapseWithSpace,
+              label: (
+                <>
+                  AI 服务 · {providerName} · {model}
+                </>
+              ),
+              children: (
+                <>
+                  {' '}
+                  <ConfigProvider componentDisabled={inputDisabled || undefined}>
+                    <fieldset className="ai-task-provider" disabled={inputDisabled}>
+                      <label>
+                        AI 服务
+                        <Select<string>
+                          value={provider}
+                          onChange={(value) => {
+                            const p = value as typeof provider;
+                            setProvider(p);
+                            setModel(p === 'deepseek' ? 'deepseek-flash' : 'gpt-5.3-codex');
+                            setReviewed(false);
+                          }}
+                          options={[
+                            { value: 'deepseek', label: 'DeepSeek' },
+                            { value: 'openai-codex', label: 'OpenAI · Codex' },
+                          ]}
+                        />
+                      </label>
+                      <label>
+                        模型 ID
+                        <Input
+                          value={model}
+                          maxLength={100}
+                          onChange={(e) => {
+                            setModel(e.target.value);
+                            setReviewed(false);
+                          }}
+                        />
+                      </label>
+                    </fieldset>
+                  </ConfigProvider>
+                </>
+              ),
+            },
+          ]}
+        />
       ) : (
         <ConfigProvider componentDisabled={inputDisabled || undefined}>
           <fieldset className="ai-task-provider" disabled={inputDisabled}>
@@ -1530,107 +1556,121 @@ export default function AITaskWorkspace(props: Props) {
           </Button>
         </div>
       )}
-      <details className="ai-task-disclosure">
-        <summary>查看本次发送给 {providerName} 的内容</summary>
-        <p>
-          {page === 'modify'
-            ? '本次新的修改要求、所选资料、补问答案和当前已采纳流程。不会将历史提案作为当前方案发送。'
-            : scope
-              ? '所选步骤的修改要求与范围、已选资料、补问答案、当前完整流程及支持的能力说明。原任务描述和本机绑定不会额外加入。'
-              : '描述、所选资料与网页元数据、补问答案、当前已采纳流程及支持的能力说明。'}
-        </p>
-        <h3>{page === 'modify' ? '本次修改要求' : '描述'}</h3>
-        <pre>{scope ? scopedDescription(scope) : sendingDraft.description}</pre>
-        {draft.context.map((entry) => (
-          <div key={entry.id}>
-            <h3>{entry.label}</h3>
-            <pre>{entry.text}</pre>
-          </div>
-        ))}
-        {detail.task.attachments?.map((a) => (
-          <div key={a.id}>
-            <h3>
-              {a.name} · {a.kind === 'image' ? '完整图片' : '完整文本副本'}
-            </h3>
-            <p>
-              {a.mimeType} · {Math.ceil(a.size / 1024)} KiB
-              {a.kind === 'image' ? ` · ${a.width} × ${a.height}` : ''}
-            </p>
-            <Button
-              disabled={inputDisabled || stale || undefined}
-              onClick={() => void previewAttachment(a.id)}
-            >
-              查看发送附件：{a.name}
-            </Button>
-            {(page !== 'brief' || scope) &&
-              attachmentFeedback?.attachmentId === a.id &&
-              attachmentFeedback.status !== 'success' && (
-                <TaskAttachmentFeedback
-                  feedback={attachmentFeedback}
-                  busy={inputDisabled || stale}
-                  retry={retryAttachment}
-                />
-              )}
-          </div>
-        ))}
-        {detail.task.webTarget && (
-          <div>
-            <h3>{webContext(detail.task.webTarget).label}</h3>
-            <pre>
-              {
-                webContext(
-                  detail.task.webTarget,
-                  detail.task.outputTarget
-                    ? { ...detail.task.outputTarget, ...outputOptions }
-                    : undefined,
-                ).text
-              }
-            </pre>
-          </div>
-        )}
-        {toolContexts(detail.task.toolTargets).map((entry) => (
-          <div key={entry.id}>
-            <h3>已选工具 · {entry.label}</h3>
-            <p>仅发送以下所选定义；连接地址、程序路径与凭据留在本机。</p>
-            <pre>{entry.text}</pre>
-          </div>
-        ))}
-        {detail.task.outputTarget && (
-          <div>
-            <h3>已选输出 · 路径留在本机</h3>
-            <pre>{outputContext({ ...detail.task.outputTarget, ...outputOptions }).text}</pre>
-          </div>
-        )}
-        {(Object.keys(draft.answers).length > 0 ||
-          (result?.kind === 'clarify' && result.questions.length > 0)) && (
-          <>
-            <h3>补问答案</h3>
-            {[
-              ...new Set([
-                ...(result?.kind === 'clarify'
-                  ? result.questions.map((question) => question.id)
-                  : []),
-                ...Object.keys(draft.answers),
-              ]),
-            ].map((id) => (
-              <div className="task-answer-review" key={id}>
-                <h4>
-                  {(result?.kind === 'clarify' &&
-                    result.questions.find((question) => question.id === id)?.prompt) ||
-                    `先前补充 ${previousAnswerIds.indexOf(id) + 1}`}
-                </h4>
-                <p>{draft.answers[id]?.trim() ? draft.answers[id] : '尚未补充'}</p>
-              </div>
-            ))}
-          </>
-        )}
-        {detail.flow && (
-          <>
-            <h3>当前流程 · {detail.flow.flow.name}</h3>
-            <pre>{text(detail.flow.flow)}</pre>
-          </>
-        )}
-      </details>
+      <Collapse
+        className="task-send-review"
+        items={[
+          {
+            key: 'sending',
+            forceRender: true,
+            onKeyDown: activateCollapseWithSpace,
+            label: <>查看本次发送给 {providerName} 的内容</>,
+            children: (
+              <>
+                <p>
+                  {page === 'modify'
+                    ? '本次新的修改要求、所选资料、补问答案和当前已采纳流程。不会将历史提案作为当前方案发送。'
+                    : scope
+                      ? '所选步骤的修改要求与范围、已选资料、补问答案、当前完整流程及支持的能力说明。原任务描述和本机绑定不会额外加入。'
+                      : '描述、所选资料与网页元数据、补问答案、当前已采纳流程及支持的能力说明。'}
+                </p>
+                <h3>{page === 'modify' ? '本次修改要求' : '描述'}</h3>
+                <pre>{scope ? scopedDescription(scope) : sendingDraft.description}</pre>
+                {draft.context.map((entry) => (
+                  <div key={entry.id}>
+                    <h3>{entry.label}</h3>
+                    <pre>{entry.text}</pre>
+                  </div>
+                ))}
+                {detail.task.attachments?.map((a) => (
+                  <div key={a.id}>
+                    <h3>
+                      {a.name} · {a.kind === 'image' ? '完整图片' : '完整文本副本'}
+                    </h3>
+                    <p>
+                      {a.mimeType} · {Math.ceil(a.size / 1024)} KiB
+                      {a.kind === 'image' ? ` · ${a.width} × ${a.height}` : ''}
+                    </p>
+                    <Button
+                      disabled={inputDisabled || stale || undefined}
+                      onClick={() => void previewAttachment(a.id)}
+                    >
+                      查看发送附件：{a.name}
+                    </Button>
+                    {(page !== 'brief' || scope) &&
+                      attachmentFeedback?.attachmentId === a.id &&
+                      attachmentFeedback.status !== 'success' && (
+                        <TaskAttachmentFeedback
+                          feedback={attachmentFeedback}
+                          busy={inputDisabled || stale}
+                          retry={retryAttachment}
+                        />
+                      )}
+                  </div>
+                ))}
+                {detail.task.webTarget && (
+                  <div>
+                    <h3>{webContext(detail.task.webTarget).label}</h3>
+                    <pre>
+                      {
+                        webContext(
+                          detail.task.webTarget,
+                          detail.task.outputTarget
+                            ? { ...detail.task.outputTarget, ...outputOptions }
+                            : undefined,
+                        ).text
+                      }
+                    </pre>
+                  </div>
+                )}
+                {toolContexts(detail.task.toolTargets).map((entry) => (
+                  <div key={entry.id}>
+                    <h3>已选工具 · {entry.label}</h3>
+                    <p>仅发送以下所选定义；连接地址、程序路径与凭据留在本机。</p>
+                    <pre>{entry.text}</pre>
+                  </div>
+                ))}
+                {detail.task.outputTarget && (
+                  <div>
+                    <h3>已选输出 · 路径留在本机</h3>
+                    <pre>
+                      {outputContext({ ...detail.task.outputTarget, ...outputOptions }).text}
+                    </pre>
+                  </div>
+                )}
+                {(Object.keys(draft.answers).length > 0 ||
+                  (result?.kind === 'clarify' && result.questions.length > 0)) && (
+                  <>
+                    <h3>补问答案</h3>
+                    {[
+                      ...new Set([
+                        ...(result?.kind === 'clarify'
+                          ? result.questions.map((question) => question.id)
+                          : []),
+                        ...Object.keys(draft.answers),
+                      ]),
+                    ].map((id) => (
+                      <div className="task-answer-review" key={id}>
+                        <h4>
+                          {(result?.kind === 'clarify' &&
+                            result.questions.find((question) => question.id === id)?.prompt) ||
+                            `先前补充 ${previousAnswerIds.indexOf(id) + 1}`}
+                        </h4>
+                        <p>{draft.answers[id]?.trim() ? draft.answers[id] : '尚未补充'}</p>
+                      </div>
+                    ))}
+                  </>
+                )}
+                {detail.flow && (
+                  <>
+                    <h3>当前流程 · {detail.flow.flow.name}</h3>
+                    <pre>{text(detail.flow.flow)}</pre>
+                  </>
+                )}
+              </>
+            ),
+          },
+        ]}
+      />
       {detail.task.outputTarget && outputNameError && page !== 'understand' && (
         <div className="ai-task-note" role="alert">
           <p>{outputNameError}</p>
@@ -2504,25 +2544,65 @@ export default function AITaskWorkspace(props: Props) {
                       <div className="ai-task-note ai-step-reply">
                         <b>FlowArk</b>
                         <p>{taskProposalSummary(detail)}</p>
-                        <details className="ai-task-disclosure">
-                          <summary>查看 AI 的方案说明</summary>
-                          <p>{result?.summary}</p>
-                        </details>
+                        <Collapse
+                          items={[
+                            {
+                              key: 'summary',
+                              forceRender: true,
+                              onKeyDown: activateCollapseWithSpace,
+                              label: <>查看 AI 的方案说明</>,
+                              children: (
+                                <>
+                                  <p>{result?.summary}</p>
+                                </>
+                              ),
+                            },
+                          ]}
+                        />
                         <p>已核对：只调整所选步骤，其他步骤、结构、静态资源与现有授权保持不变。</p>
                       </div>
                       <p className="ai-task-note">
                         采纳只更新草稿，当前运行和已建立计划仍使用原快照。
                       </p>
-                      <details className="ai-task-disclosure">
-                        <summary>本次提案来源</summary>
-                        <p>
-                          任务修订 {revision} · 步骤 {detail.proposal!.scope!.nodeId} · 基线{' '}
-                          {detail.proposal!.baseFlowHash.slice(0, 12)}
-                        </p>
-                        <p>
-                          {detail.task.provider} · {detail.task.model}
-                        </p>
-                      </details>
+                      <Collapse
+                        items={[
+                          {
+                            key: 'proposal',
+                            forceRender: true,
+                            onKeyDown: activateCollapseWithSpace,
+                            label: <>本次提案来源</>,
+                            children: (
+                              <>
+                                <Descriptions
+                                  className="metadata-facts"
+                                  column={1}
+                                  bordered
+                                  size="small"
+                                  items={[
+                                    { key: 'revision', label: '任务修订', children: revision },
+                                    {
+                                      key: 'step',
+                                      label: '步骤',
+                                      children: detail.proposal!.scope!.nodeId,
+                                    },
+                                    {
+                                      key: 'baseline',
+                                      label: '基线',
+                                      children: detail.proposal!.baseFlowHash.slice(0, 12),
+                                    },
+                                    {
+                                      key: 'provider',
+                                      label: 'AI 服务',
+                                      children: detail.task.provider,
+                                    },
+                                    { key: 'model', label: '模型', children: detail.task.model },
+                                  ]}
+                                />
+                              </>
+                            ),
+                          },
+                        ]}
+                      />
                     </>
                   ) : (
                     <>
@@ -2578,10 +2658,21 @@ export default function AITaskWorkspace(props: Props) {
                         }
                       />
                       {scope && (
-                        <details className="ai-task-disclosure">
-                          <summary>原任务描述</summary>
-                          <p>{draft.description || '此任务从已保存流程开始。'}</p>
-                        </details>
+                        <Collapse
+                          items={[
+                            {
+                              key: 'request',
+                              forceRender: true,
+                              onKeyDown: activateCollapseWithSpace,
+                              label: <>原任务描述</>,
+                              children: (
+                                <>
+                                  <p>{draft.description || '此任务从已保存流程开始。'}</p>
+                                </>
+                              ),
+                            },
+                          ]}
+                        />
                       )}
                       {result && (
                         <div className="ai-task-note">
@@ -3123,28 +3214,40 @@ export default function AITaskWorkspace(props: Props) {
                             </div>
                           ) : (
                             <>
-                              <details className="task-proposal-source">
-                                <summary>查看完整资源声明与生成差异</summary>
-                                <h2>资源与权限</h2>
-                                <ul className="ai-task-resources">
-                                  {detail.resources.map((resource, i) => (
-                                    <li key={i}>{resource}</li>
-                                  ))}
-                                  {!detail.resources.length && (
-                                    <li>没有文件、浏览器、HTTP、脚本或工具资源操作。</li>
-                                  )}
-                                  <li>
-                                    声明的能力：{flow.requiredCapabilities.join('、') || '无'}
-                                  </li>
-                                </ul>
-                                <PlanningChanges
-                                  key={detail.proposal.id}
-                                  changes={detail.changes}
-                                  before={detail.proposal.baseFlow}
-                                  after={flow}
-                                  revision={detail.proposal.baseRevision}
-                                />
-                              </details>
+                              <Collapse
+                                items={[
+                                  {
+                                    key: 'resources',
+                                    forceRender: true,
+                                    onKeyDown: activateCollapseWithSpace,
+                                    label: <>查看完整资源声明与生成差异</>,
+                                    children: (
+                                      <>
+                                        <h2>资源与权限</h2>
+                                        <ul className="ai-task-resources">
+                                          {detail.resources.map((resource, i) => (
+                                            <li key={i}>{resource}</li>
+                                          ))}
+                                          {!detail.resources.length && (
+                                            <li>没有文件、浏览器、HTTP、脚本或工具资源操作。</li>
+                                          )}
+                                          <li>
+                                            声明的能力：
+                                            {flow.requiredCapabilities.join('、') || '无'}
+                                          </li>
+                                        </ul>
+                                        <PlanningChanges
+                                          key={detail.proposal.id}
+                                          changes={detail.changes}
+                                          before={detail.proposal.baseFlow}
+                                          after={flow}
+                                          revision={detail.proposal.baseRevision}
+                                        />
+                                      </>
+                                    ),
+                                  },
+                                ]}
+                              />
                             </>
                           )}
                           {changesView && proposalNavigation}
