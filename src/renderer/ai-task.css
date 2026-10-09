@@ -559,15 +559,6 @@
   font: 12px/20px var(--fa-font-latin);
   overflow-wrap: anywhere;
 }
-.run-review-check {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-.run-review-check > div {
-  min-width: 0;
-  flex: 1;
-}
 .run-review-check-detail {
   margin-top: 12px;
 }
@@ -582,22 +573,6 @@
   border-radius: var(--fa-radius-8);
   background: var(--fa-bg-subtle);
   font: 12px/20px var(--fa-font-latin);
-}
-.run-review-check > span {
-  color: var(--fa-status-success);
-  width: 16px;
-  flex: 0 0 16px;
-}
-.run-review-check b {
-  font-weight: 500;
-}
-.run-review-check p {
-  margin-top: 8px;
-  color: var(--fa-text-secondary);
-}
-.run-review-check.failed > span,
-.run-review-error {
-  color: var(--fa-status-error);
 }
 .run-review-toggle {
   display: flex;
@@ -617,16 +592,11 @@
 .run-review-confirm > button {
   width: 100%;
 }
-.run-review-receipt {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  border-radius: var(--fa-radius-12);
-  background: var(--fa-status-success-bg);
-}
-.run-review-receipt > b {
+.run-review-receipt .feedback-body > b {
   overflow-wrap: anywhere;
+}
+.run-review-receipt button {
+  width: 100%;
 }
 .run-review-page.is-task-review .run-review-columns > .ai-task-card {
   padding: 23px;
@@ -642,13 +612,10 @@
   padding-left: 0;
 }
 .run-review-check-compact {
+  display: flex;
+  align-items: baseline;
   min-height: 28px;
   gap: 10px;
-}
-.run-review-check-compact > span {
-  color: var(--fa-action-primary);
-  flex-basis: 22px;
-  width: 22px;
 }
 .run-review-check-compact > details {
   flex: 1;
@@ -1582,35 +1549,6 @@
 }
 .ai-task-readable-plan .task-plan-confirm > button:not(.ant-btn-primary) {
   min-width: 144px;
-}
-
-/* Figma 2:4732: blocked resource checks retain their specific recovery action. */
-.run-review-resource-issue {
-  margin: 16px 0;
-  padding: 24px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-  background: var(--fa-bg-surface);
-  min-width: 0;
-}
-.run-review-resource-issue h3 {
-  margin: 16px 0 12px;
-  font-size: 18px;
-  line-height: 28px;
-}
-.run-review-resource-issue p {
-  margin: 8px 0 16px;
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--fa-text-secondary);
-  overflow-wrap: anywhere;
-}
-.run-review-resource-reason {
-  white-space: pre-wrap;
-}
-.run-review-resource-issue button {
-  width: min(230px, 100%);
-  min-height: 40px;
 }
 
 .task-step-list[hidden] {
