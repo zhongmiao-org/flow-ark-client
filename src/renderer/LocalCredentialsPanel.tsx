@@ -1,4 +1,4 @@
-import { ConfigProvider, Button, Checkbox, Input, Modal } from 'antd';
+import { Alert, Badge, ConfigProvider, Button, Checkbox, Input, Modal, Tag } from 'antd';
 import './antd-layout.css';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { Bootstrap, FlowRecord } from '../shared/types';
@@ -139,15 +139,31 @@ function CredentialDialog({
           </p>
         </header>
         {error && (
-          <div className="local-resource-error" role="alert" ref={errorMessage} tabIndex={-1}>
-            <span className="badge state-FAILED">{removing ? '移除未完成' : '保存未完成'}</span>
-            <h3>
-              {error.startsWith('系统安全存储不可用，已阻止保存；不会明文降级')
-                ? '凭据保护不可用'
-                : '凭据操作未完成'}
-            </h3>
-            <p>{error}</p>
-            {!removing && <p>本次输入仍保留，可继续修改；返回时可选择放弃输入。</p>}
+          <div className="local-resource-feedback" role="alert" ref={errorMessage} tabIndex={-1}>
+            <Alert
+              type="error"
+              role="presentation"
+              showIcon
+              title={
+                error.startsWith('系统安全存储不可用，已阻止保存；不会明文降级')
+                  ? '凭据保护不可用'
+                  : '凭据操作未完成'
+              }
+              description={
+                <div className="feedback-body">
+                  <Tag
+                    className="run-state-tag"
+                    variant="filled"
+                    color="error"
+                    icon={<Badge status="error" />}
+                  >
+                    {removing ? '移除未完成' : '保存未完成'}
+                  </Tag>
+                  <p>{error}</p>
+                  {!removing && <p>本次输入仍保留，可继续修改；返回时可选择放弃输入。</p>}
+                </div>
+              }
+            />
           </div>
         )}
         {leaving ? (
@@ -278,7 +294,7 @@ export default function LocalCredentialsPanel({
   const [error, setError] = useState('');
   const [listError, setListError] = useState('');
   const listIssue = useRef<HTMLDivElement>(null);
-  const receipt = useRef<HTMLParagraphElement>(null);
+  const receipt = useRef<HTMLDivElement>(null);
   const awaitingReceipt = useRef(false);
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
@@ -408,29 +424,51 @@ export default function LocalCredentialsPanel({
         </details>
         {loading && <p role="status">正在读取凭据清单…</p>}
         {listError && (
-          <div className="local-resource-error" role="alert" ref={listIssue} tabIndex={-1}>
-            <span className="badge state-FAILED">读取未完成</span>
-            <h3>{entries ? '凭据列表尚未更新' : '暂时无法读取凭据'}</h3>
-            <p>{listError}</p>
-            <p>
-              {entries
-                ? '下方保留上次读取的列表，请重新读取后再新增、编辑或移除。'
-                : '尚未取得凭据清单，不能据此判断是否已保存凭据。'}
-            </p>
-            <Button disabled={loading || undefined} onClick={() => void read()}>
-              重新读取凭据
-            </Button>
+          <div className="local-resource-feedback" role="alert" ref={listIssue} tabIndex={-1}>
+            <Alert
+              type="error"
+              role="presentation"
+              showIcon
+              title={entries ? '凭据列表尚未更新' : '暂时无法读取凭据'}
+              description={
+                <div className="feedback-body">
+                  <Tag
+                    className="run-state-tag"
+                    variant="filled"
+                    color="error"
+                    icon={<Badge status="error" />}
+                  >
+                    读取未完成
+                  </Tag>
+                  <p>{listError}</p>
+                  <p>
+                    {entries
+                      ? '下方保留上次读取的列表，请重新读取后再新增、编辑或移除。'
+                      : '尚未取得凭据清单，不能据此判断是否已保存凭据。'}
+                  </p>
+                </div>
+              }
+              action={
+                <Button disabled={loading || undefined} onClick={() => void read()}>
+                  重新读取凭据
+                </Button>
+              }
+            />
           </div>
         )}
         {error && (
-          <p role="alert" className="field-error">
-            {error}
-          </p>
+          <Alert
+            type="error"
+            showIcon
+            title="操作未完成"
+            description={error}
+            className="local-resource-feedback"
+          />
         )}
         {notice && (
-          <p role="status" ref={receipt} tabIndex={-1}>
-            {notice}
-          </p>
+          <div role="status" ref={receipt} tabIndex={-1} className="local-resource-feedback">
+            <Alert type="success" role="presentation" showIcon title={notice} />
+          </div>
         )}
         {shown?.map((entry) => (
           <article className="local-credential-card" key={entry.id}>
@@ -447,7 +485,14 @@ export default function LocalCredentialsPanel({
             ) : (
               <div className="local-settings-row">
                 <h3>{entry.name}</h3>
-                <span>{entry.inUse ? '运行正在使用' : '已保存'}</span>
+                <Tag
+                  className="run-state-tag"
+                  variant="filled"
+                  color={entry.inUse ? 'processing' : 'success'}
+                  icon={<Badge status={entry.inUse ? 'processing' : 'success'} />}
+                >
+                  {entry.inUse ? '运行正在使用' : '已保存'}
+                </Tag>
               </div>
             )}
             <p className="local-credential-mask">••••••••</p>
