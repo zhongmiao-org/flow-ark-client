@@ -1,4 +1,4 @@
-import { Alert, Collapse, Descriptions } from 'antd';
+import { Alert, Collapse, Descriptions, Card } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { RunReviewPreview } from '../shared/run-review';
 
@@ -6,27 +6,33 @@ export default function DesktopRunConfirmation({ preview }: { preview: RunReview
   const desktop = preview.desktop!;
   return (
     <div className="desktop-run-confirmation" aria-label="本次选区修改">
-      <section className="desktop-confirm-original">
-        <h2>原选区</h2>
-        {desktop.original !== undefined ? (
-          <pre tabIndex={0} aria-label="核对的原文">
-            {desktop.original}
+      <section>
+        <Card size="small" className="desktop-confirm-card desktop-confirm-original">
+          <h2>原选区</h2>
+          {desktop.original !== undefined ? (
+            <pre tabIndex={0} aria-label="核对的原文">
+              {desktop.original}
+            </pre>
+          ) : (
+            <p>绑定窗口后显示本次核对的原文。</p>
+          )}
+        </Card>
+      </section>
+      <section>
+        <Card size="small" className="desktop-confirm-card desktop-confirm-replacement">
+          <h2>修改为</h2>
+          <pre tabIndex={0} aria-label="将替换的文字">
+            {desktop.replacement}
           </pre>
-        ) : (
-          <p>绑定窗口后显示本次核对的原文。</p>
-        )}
+        </Card>
       </section>
-      <section className="desktop-confirm-replacement">
-        <h2>修改为</h2>
-        <pre tabIndex={0} aria-label="将替换的文字">
-          {desktop.replacement}
-        </pre>
-      </section>
-      <section className="desktop-confirm-scope">
-        <h2>影响范围</h2>
-        <p>
-          只替换本次明确选择的原文，并读取修改后的文字核对。不会自动保存文档；不包含发送消息或操作其他窗口的步骤。
-        </p>
+      <section>
+        <Card size="small" className="desktop-confirm-card desktop-confirm-scope">
+          <h2>影响范围</h2>
+          <p>
+            只替换本次明确选择的原文，并读取修改后的文字核对。不会自动保存文档；不包含发送消息或操作其他窗口的步骤。
+          </p>
+        </Card>
       </section>
       <Alert
         type="info"
