@@ -1,4 +1,4 @@
-import { Alert, Button, Checkbox, Collapse, Descriptions } from 'antd';
+import { Alert, Button, Checkbox, Collapse, Descriptions, Card } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { TaskDetail } from '../shared/planning';
@@ -66,159 +66,171 @@ function Contents({
   return (
     <>
       {preview.rerun && !compact && (
-        <section className="run-review-card">
-          <h2>关联原运行，从头执行</h2>
-          <p>
-            {preview.rerun.name} · {preview.rerun.runId}
-          </p>
-          <p>已核对原输出与外部结果；新运行不恢复旧脚本内部现场，可能再次产生外部更改。</p>
+        <section>
+          <Card size="small" className="run-review-card">
+            <h2>关联原运行，从头执行</h2>
+            <p>
+              {preview.rerun.name} · {preview.rerun.runId}
+            </p>
+            <p>已核对原输出与外部结果；新运行不恢复旧脚本内部现场，可能再次产生外部更改。</p>
+          </Card>
         </section>
       )}
-      <section className="run-review-card">
-        <h2>操作对象</h2>
-        {!!tools.length && (
-          <p>包含 {tools.length} 个工具步骤；已保存连接及当前记录状态见下方“工具调用与参数”。</p>
-        )}
-        {objects.length ? (
-          <ul>
-            {objects.map((r) => (
-              <Resource key={r.id} resource={r} />
-            ))}
-          </ul>
-        ) : (
-          <p>
-            {preview.ready
-              ? locations.length
-                ? `本机文件资源：${locations.map((r) => r.name).join('、')}。实际位置见下方。`
-                : '在本机处理流程中的数据，无网页或文件资源。'
-              : '检查尚未完成，请先处理执行前检查中的提示。'}
-          </p>
-        )}
-      </section>
-      <section className="run-review-card">
-        <h2>读取内容</h2>
-        {!!sources.length && (
-          <div className="run-review-resource-group">
-            <h3>读取来源</h3>
+      <section>
+        <Card size="small" className="run-review-card">
+          <h2>操作对象</h2>
+          {!!tools.length && (
+            <p>包含 {tools.length} 个工具步骤；已保存连接及当前记录状态见下方“工具调用与参数”。</p>
+          )}
+          {objects.length ? (
             <ul>
-              {sources.map((resource) => (
-                <Resource key={resource.id} resource={resource} />
+              {objects.map((r) => (
+                <Resource key={r.id} resource={r} />
               ))}
             </ul>
-          </div>
-        )}
-        {reads.length ? (
-          <ul>
-            {reads.map((e) => (
-              <li key={e.nodeId}>
-                <b>{e.name}</b> · {e.detail}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>
-            {sources.length
-              ? '以上资源允许读取；具体内容取决于流程参数和实际执行步骤。'
-              : !preview.ready
-                ? '检查尚未通过，暂不确认读取范围。'
-                : otherReadScopes
-                  ? '没有独立的文件或网页读取步骤。'
-                  : '只处理流程中提供的数据与步骤结果，没有文件或网页读取步骤。'}
-          </p>
-        )}
-        {otherReadScopes && <p>其他操作涉及的读取范围，请结合下方影响说明与参数核对。</p>}
+          ) : (
+            <p>
+              {preview.ready
+                ? locations.length
+                  ? `本机文件资源：${locations.map((r) => r.name).join('、')}。实际位置见下方。`
+                  : '在本机处理流程中的数据，无网页或文件资源。'
+                : '检查尚未完成，请先处理执行前检查中的提示。'}
+            </p>
+          )}
+        </Card>
       </section>
-      <section className="run-review-card">
-        <h2>会产生的更改</h2>
-        {changes.length ? (
-          <ul>
-            {changes.map((e) => (
-              <li key={e.nodeId}>
-                <b>{e.name}</b> · {e.detail}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>
-            {preview.ready
-              ? '没有列出的文件写入、网络请求或其他外部更改步骤。运行记录和结果会保存在本机。'
-              : '检查尚未通过，暂不确认外部更改范围。请先处理执行前检查中的提示。'}
-          </p>
-        )}
+      <section>
+        <Card size="small" className="run-review-card">
+          <h2>读取内容</h2>
+          {!!sources.length && (
+            <div className="run-review-resource-group">
+              <h3>读取来源</h3>
+              <ul>
+                {sources.map((resource) => (
+                  <Resource key={resource.id} resource={resource} />
+                ))}
+              </ul>
+            </div>
+          )}
+          {reads.length ? (
+            <ul>
+              {reads.map((e) => (
+                <li key={e.nodeId}>
+                  <b>{e.name}</b> · {e.detail}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>
+              {sources.length
+                ? '以上资源允许读取；具体内容取决于流程参数和实际执行步骤。'
+                : !preview.ready
+                  ? '检查尚未通过，暂不确认读取范围。'
+                  : otherReadScopes
+                    ? '没有独立的文件或网页读取步骤。'
+                    : '只处理流程中提供的数据与步骤结果，没有文件或网页读取步骤。'}
+            </p>
+          )}
+          {otherReadScopes && <p>其他操作涉及的读取范围，请结合下方影响说明与参数核对。</p>}
+        </Card>
+      </section>
+      <section>
+        <Card size="small" className="run-review-card">
+          <h2>会产生的更改</h2>
+          {changes.length ? (
+            <ul>
+              {changes.map((e) => (
+                <li key={e.nodeId}>
+                  <b>{e.name}</b> · {e.detail}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>
+              {preview.ready
+                ? '没有列出的文件写入、网络请求或其他外部更改步骤。运行记录和结果会保存在本机。'
+                : '检查尚未通过，暂不确认外部更改范围。请先处理执行前检查中的提示。'}
+            </p>
+          )}
+        </Card>
       </section>
       {!!tools.length && <RunReviewTools calls={tools} />}
-      <section className="run-review-card">
-        <h2>保存位置</h2>
-        {destinations.length ? (
-          <ul>
-            {destinations.map((r) => (
-              <Resource key={r.id} resource={r} />
-            ))}
-          </ul>
-        ) : (
-          <p>
-            {preview.ready
-              ? '没有已核对的文件写入位置。本次运行记录与结果仍保存在本机，可在运行详情查看。'
-              : '资源尚未核对，暂不确认保存位置。'}
-          </p>
-        )}
+      <section>
+        <Card size="small" className="run-review-card">
+          <h2>保存位置</h2>
+          {destinations.length ? (
+            <ul>
+              {destinations.map((r) => (
+                <Resource key={r.id} resource={r} />
+              ))}
+            </ul>
+          ) : (
+            <p>
+              {preview.ready
+                ? '没有已核对的文件写入位置。本次运行记录与结果仍保存在本机，可在运行详情查看。'
+                : '资源尚未核对，暂不确认保存位置。'}
+            </p>
+          )}
+        </Card>
       </section>
-      <section className="run-review-card">
-        <h2>执行版本</h2>
-        {versionSummary}
-        <p>
-          {repairRevision !== undefined
-            ? preview.ready
-              ? `采用已检查的目标修复方案 · 任务修订 ${repairRevision}，运行中修改草稿不影响此次执行。`
-              : `目标修复方案 · 任务修订 ${repairRevision}；检查未通过，尚未固定执行版本。`
-            : preview.ready
-              ? '采用已检查的固定方案，运行中修改草稿不影响此次执行。'
-              : '当前显示已保存方案；检查尚未通过，还没有创建运行或固定执行版本。'}
-        </p>
-        <Collapse
-          items={[
-            {
-              key: 'version',
-              forceRender: true,
-              onKeyDown: activateCollapseWithSpace,
-              label: <>查看版本与参数</>,
-              children: (
-                <>
-                  <Descriptions
-                    className="metadata-facts"
-                    column={1}
-                    bordered
-                    size="small"
-                    items={[
-                      {
-                        key: 'version',
-                        label: '版本',
-                        children: preview.flow.versionId || '检查通过后固定版本',
-                      },
-                      {
-                        key: 'parameters',
-                        label: '参数',
-                        children: preview.flow.parameterNames.join('、') || '无',
-                      },
-                      {
-                        key: 'capabilities',
-                        label: '声明能力',
-                        children: preview.flow.capabilities.join('、') || '无',
-                      },
-                    ]}
-                  />
-                  {compact && preview.rerun && (
-                    <div className="run-review-rerun-origin">
-                      <p>关联原运行：{preview.rerun.name}</p>
-                      <p className="run-review-version">{preview.rerun.runId}</p>
-                      <p>已核对原输出与外部结果；新运行从第 1 步开始，不恢复旧脚本内部现场。</p>
-                    </div>
-                  )}
-                </>
-              ),
-            },
-          ]}
-        />
+      <section>
+        <Card size="small" className="run-review-card">
+          <h2>执行版本</h2>
+          {versionSummary}
+          <p>
+            {repairRevision !== undefined
+              ? preview.ready
+                ? `采用已检查的目标修复方案 · 任务修订 ${repairRevision}，运行中修改草稿不影响此次执行。`
+                : `目标修复方案 · 任务修订 ${repairRevision}；检查未通过，尚未固定执行版本。`
+              : preview.ready
+                ? '采用已检查的固定方案，运行中修改草稿不影响此次执行。'
+                : '当前显示已保存方案；检查尚未通过，还没有创建运行或固定执行版本。'}
+          </p>
+          <Collapse
+            items={[
+              {
+                key: 'version',
+                forceRender: true,
+                onKeyDown: activateCollapseWithSpace,
+                label: <>查看版本与参数</>,
+                children: (
+                  <>
+                    <Descriptions
+                      className="metadata-facts"
+                      column={1}
+                      bordered
+                      size="small"
+                      items={[
+                        {
+                          key: 'version',
+                          label: '版本',
+                          children: preview.flow.versionId || '检查通过后固定版本',
+                        },
+                        {
+                          key: 'parameters',
+                          label: '参数',
+                          children: preview.flow.parameterNames.join('、') || '无',
+                        },
+                        {
+                          key: 'capabilities',
+                          label: '声明能力',
+                          children: preview.flow.capabilities.join('、') || '无',
+                        },
+                      ]}
+                    />
+                    {compact && preview.rerun && (
+                      <div className="run-review-rerun-origin">
+                        <p>关联原运行：{preview.rerun.name}</p>
+                        <p className="run-review-version">{preview.rerun.runId}</p>
+                        <p>已核对原输出与外部结果；新运行从第 1 步开始，不恢复旧脚本内部现场。</p>
+                      </div>
+                    )}
+                  </>
+                ),
+              },
+            ]}
+          />
+        </Card>
       </section>
     </>
   );
@@ -403,7 +415,7 @@ export default function RunReviewPage(props: Props) {
         </div>
       </div>
       <div className="run-review-columns">
-        <div className="ai-task-card run-review-summary">
+        <Card className="run-review-surface run-review-summary">
           {binding && props.selection?.task && preview?.desktop && props.bound ? (
             <DesktopRunBinding
               key={preview.desktop.flowHash}
@@ -428,217 +440,223 @@ export default function RunReviewPage(props: Props) {
               description="检查不会创建运行。目标、读取内容、可能更改和保存位置将在这里显示。"
             />
           )}
-        </div>
-        <section className="ai-task-card run-review-confirm" aria-label="执行前检查">
-          <h2 ref={resultHeading} tabIndex={-1} aria-live="polite">
-            {preview?.desktop ? '本次授权' : title}
-          </h2>
-          {desktopReview && (!preview?.ready || attempt || state.loading) && (
-            <p aria-live="polite">{title}</p>
-          )}
-          {!attempt && (
-            <>
-              {preview?.checks
-                .filter((check) => !desktopReview || !check.passed)
-                .map((check, i) => (
-                  <RunReviewCheck
-                    key={`${i}:${check.detail}`}
-                    check={check}
-                    compact={compactReview}
-                    configure={props.edit}
-                    refresh={() => void reviewAction(() => session.refresh())}
-                    disabled={state.loading || state.opening || binding || locked}
-                  />
-                ))}
-              {!compactReview && !desktopReview && debugToggle}
-              {compactReview && preview?.rerun && (
-                <p className="run-review-rerun-note">
-                  从第 1 步创建新运行；已完成或结果未知的外部操作，可能再次发生。
-                </p>
-              )}
-              <Checkbox
-                checked={state.reviewed}
-                disabled={!preview?.ready || state.loading || binding || undefined}
-                onChange={(e) => session.setReviewed(e.target.checked)}
-                className="run-review-toggle"
-              >
-                {preview?.desktop
-                  ? '读取选区、替换选区并回读'
-                  : preview?.toolCalls?.length
-                    ? '我授权本次按已列工具和参数来源执行，已核对外部影响；结果未知时不自动重试'
-                    : '我已核对操作对象、可能更改和保存位置'}
-              </Checkbox>
-              {desktopReview && (
-                <p className="desktop-confirm-authorization">
-                  我授权本次只替换已核对的原选区，并读取修改后的文字核对。试运行会实际修改文档；运行期间请保持文档与选区不变，结果未知不自动重放。
-                </p>
-              )}
-              <Button
-                type="primary"
-                disabled={
-                  !preview?.ready || !state.reviewed || state.loading || binding || undefined
-                }
-                onClick={() => void reviewAction(() => session.confirm())}
-              >
-                {preview?.desktop ? '确认修改并试运行' : '开始试运行'}
-              </Button>
-            </>
-          )}
-          {attempt?.phase === 'pending' && (
-            <Alert
-              type="info"
-              role="status"
-              showIcon
-              title="正在核对并提交本次确认。离开页面不会撤销已创建的运行。"
-            />
-          )}
-          {attempt?.phase === 'unknown' && (
-            <>
+        </Card>
+        <section aria-label="执行前检查">
+          <Card className="run-review-surface run-review-confirm">
+            <h2 ref={resultHeading} tabIndex={-1} aria-live="polite">
+              {preview?.desktop ? '本次授权' : title}
+            </h2>
+            {desktopReview && (!preview?.ready || attempt || state.loading) && (
+              <p aria-live="polite">{title}</p>
+            )}
+            {!attempt && (
+              <>
+                {preview?.checks
+                  .filter((check) => !desktopReview || !check.passed)
+                  .map((check, i) => (
+                    <RunReviewCheck
+                      key={`${i}:${check.detail}`}
+                      check={check}
+                      compact={compactReview}
+                      configure={props.edit}
+                      refresh={() => void reviewAction(() => session.refresh())}
+                      disabled={state.loading || state.opening || binding || locked}
+                    />
+                  ))}
+                {!compactReview && !desktopReview && debugToggle}
+                {compactReview && preview?.rerun && (
+                  <p className="run-review-rerun-note">
+                    从第 1 步创建新运行；已完成或结果未知的外部操作，可能再次发生。
+                  </p>
+                )}
+                <Checkbox
+                  checked={state.reviewed}
+                  disabled={!preview?.ready || state.loading || binding || undefined}
+                  onChange={(e) => session.setReviewed(e.target.checked)}
+                  className="run-review-toggle"
+                >
+                  {preview?.desktop
+                    ? '读取选区、替换选区并回读'
+                    : preview?.toolCalls?.length
+                      ? '我授权本次按已列工具和参数来源执行，已核对外部影响；结果未知时不自动重试'
+                      : '我已核对操作对象、可能更改和保存位置'}
+                </Checkbox>
+                {desktopReview && (
+                  <p className="desktop-confirm-authorization">
+                    我授权本次只替换已核对的原选区，并读取修改后的文字核对。试运行会实际修改文档；运行期间请保持文档与选区不变，结果未知不自动重放。
+                  </p>
+                )}
+                <Button
+                  type="primary"
+                  disabled={
+                    !preview?.ready || !state.reviewed || state.loading || binding || undefined
+                  }
+                  onClick={() => void reviewAction(() => session.confirm())}
+                >
+                  {preview?.desktop ? '确认修改并试运行' : '开始试运行'}
+                </Button>
+              </>
+            )}
+            {attempt?.phase === 'pending' && (
               <Alert
-                type="warning"
-                role="alert"
+                type="info"
+                role="status"
                 showIcon
-                title={attempt.message}
-                description="可能已经创建运行。查询会使用同一个请求编号，不会另建确认请求。"
+                title="正在核对并提交本次确认。离开页面不会撤销已创建的运行。"
               />
-              <Button type="primary" onClick={() => void reviewAction(() => session.confirm())}>
-                查询本次确认结果
-              </Button>
-            </>
-          )}
-          {attempt?.phase === 'rejected' && (
-            <div role="alert">
-              <RunReviewCheck
-                check={{ name: '确认时核对', passed: false, detail: attempt.message ?? '' }}
-                configure={props.edit}
-                refresh={() => void reviewAction(() => session.refresh())}
-                disabled={state.loading || state.opening || binding}
-              />
-            </div>
-          )}
-          {attempt?.run && (
-            <div className="run-review-receipt" role="status">
-              <Alert
-                type="success"
-                role="note"
-                showIcon
-                title="运行已创建"
-                description={
-                  <div className="feedback-body">
-                    <b>{attempt.run.name}</b>
-                    <p className="run-review-version" data-run-id={attempt.run.id}>
-                      {attempt.run.id}
-                    </p>
-                    <p>返回或查看结果不会重复执行。</p>
-                    <Button
-                      type="primary"
-                      disabled={state.opening || undefined}
-                      onClick={() => void reviewAction(() => session.open())}
-                    >
-                      {state.opening ? '正在读取详情…' : '查看本次运行'}
-                    </Button>
-                  </div>
-                }
-              />
-            </div>
-          )}
-          {state.error && (
-            <div ref={resultError} tabIndex={-1} role="alert">
-              <Alert type="error" role="note" showIcon title={state.error} />
-            </div>
-          )}
-          {!compactReview && !desktopReview && refreshButton}
-          <Button onClick={props.back}>
-            {attempt && attempt.phase !== 'rejected'
-              ? '返回方案（不撤销本次运行）'
-              : desktopReview
-                ? '取消，回到方案'
-                : '回去修改'}
-          </Button>
-          {desktopReview ? (
-            <>
-              {!preview?.ready && !state.loading && rebindButton}
+            )}
+            {attempt?.phase === 'unknown' && (
+              <>
+                <Alert
+                  type="warning"
+                  role="alert"
+                  showIcon
+                  title={attempt.message}
+                  description="可能已经创建运行。查询会使用同一个请求编号，不会另建确认请求。"
+                />
+                <Button type="primary" onClick={() => void reviewAction(() => session.confirm())}>
+                  查询本次确认结果
+                </Button>
+              </>
+            )}
+            {attempt?.phase === 'rejected' && (
+              <div role="alert">
+                <RunReviewCheck
+                  check={{ name: '确认时核对', passed: false, detail: attempt.message ?? '' }}
+                  configure={props.edit}
+                  refresh={() => void reviewAction(() => session.refresh())}
+                  disabled={state.loading || state.opening || binding}
+                />
+              </div>
+            )}
+            {attempt?.run && (
+              <div className="run-review-receipt" role="status">
+                <Alert
+                  type="success"
+                  role="note"
+                  showIcon
+                  title="运行已创建"
+                  description={
+                    <div className="feedback-body">
+                      <b>{attempt.run.name}</b>
+                      <p className="run-review-version" data-run-id={attempt.run.id}>
+                        {attempt.run.id}
+                      </p>
+                      <p>返回或查看结果不会重复执行。</p>
+                      <Button
+                        type="primary"
+                        disabled={state.opening || undefined}
+                        onClick={() => void reviewAction(() => session.open())}
+                      >
+                        {state.opening ? '正在读取详情…' : '查看本次运行'}
+                      </Button>
+                    </div>
+                  }
+                />
+              </div>
+            )}
+            {state.error && (
+              <div ref={resultError} tabIndex={-1} role="alert">
+                <Alert type="error" role="note" showIcon title={state.error} />
+              </div>
+            )}
+            {!compactReview && !desktopReview && refreshButton}
+            <Button onClick={props.back}>
+              {attempt && attempt.phase !== 'rejected'
+                ? '返回方案（不撤销本次运行）'
+                : desktopReview
+                  ? '取消，回到方案'
+                  : '回去修改'}
+            </Button>
+            {desktopReview ? (
+              <>
+                {!preview?.ready && !state.loading && rebindButton}
+                <Collapse
+                  className="run-review-options"
+                  items={[
+                    {
+                      key: 'desktop-options',
+                      forceRender: true,
+                      onKeyDown: activateCollapseWithSpace,
+                      label: <>窗口绑定、检查与试运行选项</>,
+                      children: (
+                        <div className="run-review-option-content">
+                          <p aria-live="polite">{title}</p>
+                          {!attempt &&
+                            preview?.checks
+                              .filter((check) => check.passed)
+                              .map((check, i) => (
+                                <RunReviewCheck
+                                  key={`${i}:${check.detail}`}
+                                  check={check}
+                                  compact
+                                />
+                              ))}
+                          {debugToggle}
+                          {(preview?.ready || state.loading) && rebindButton}
+                          {reviewUtilities}
+                        </div>
+                      ),
+                    },
+                  ]}
+                />
+              </>
+            ) : compactReview && !attempt ? (
+              <>
+                <Collapse
+                  className="run-review-options"
+                  items={[
+                    {
+                      key: 'options',
+                      forceRender: true,
+                      onKeyDown: activateCollapseWithSpace,
+                      label: <>试运行选项与重新检查</>,
+                      children: (
+                        <div className="run-review-option-content">
+                          {debugToggle}
+                          {(preview?.ready || state.loading) && reviewUtilities}
+                        </div>
+                      ),
+                    },
+                  ]}
+                />
+                {!preview?.ready && !state.loading && reviewUtilities}
+              </>
+            ) : (
+              <>
+                {compactReview ? (
+                  <>
+                    {debugToggle}
+                    {reviewUtilities}
+                  </>
+                ) : (
+                  configureButton
+                )}
+              </>
+            )}
+            {preview && (
               <Collapse
-                className="run-review-options"
+                className="run-review-limitations"
                 items={[
                   {
-                    key: 'desktop-options',
+                    key: 'limitations',
                     forceRender: true,
                     onKeyDown: activateCollapseWithSpace,
-                    label: <>窗口绑定、检查与试运行选项</>,
+                    label: <>检查范围与限制</>,
                     children: (
-                      <div className="run-review-option-content">
-                        <p aria-live="polite">{title}</p>
-                        {!attempt &&
-                          preview?.checks
-                            .filter((check) => check.passed)
-                            .map((check, i) => (
-                              <RunReviewCheck key={`${i}:${check.detail}`} check={check} compact />
-                            ))}
-                        {debugToggle}
-                        {(preview?.ready || state.loading) && rebindButton}
-                        {reviewUtilities}
-                      </div>
+                      <>
+                        <ul>
+                          {preview.limitations.map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                        </ul>
+                      </>
                     ),
                   },
                 ]}
               />
-            </>
-          ) : compactReview && !attempt ? (
-            <>
-              <Collapse
-                className="run-review-options"
-                items={[
-                  {
-                    key: 'options',
-                    forceRender: true,
-                    onKeyDown: activateCollapseWithSpace,
-                    label: <>试运行选项与重新检查</>,
-                    children: (
-                      <div className="run-review-option-content">
-                        {debugToggle}
-                        {(preview?.ready || state.loading) && reviewUtilities}
-                      </div>
-                    ),
-                  },
-                ]}
-              />
-              {!preview?.ready && !state.loading && reviewUtilities}
-            </>
-          ) : (
-            <>
-              {compactReview ? (
-                <>
-                  {debugToggle}
-                  {reviewUtilities}
-                </>
-              ) : (
-                configureButton
-              )}
-            </>
-          )}
-          {preview && (
-            <Collapse
-              className="run-review-limitations"
-              items={[
-                {
-                  key: 'limitations',
-                  forceRender: true,
-                  onKeyDown: activateCollapseWithSpace,
-                  label: <>检查范围与限制</>,
-                  children: (
-                    <>
-                      <ul>
-                        {preview.limitations.map((item) => (
-                          <li key={item}>{item}</li>
-                        ))}
-                      </ul>
-                    </>
-                  ),
-                },
-              ]}
-            />
-          )}
+            )}
+          </Card>
         </section>
       </div>
     </div>

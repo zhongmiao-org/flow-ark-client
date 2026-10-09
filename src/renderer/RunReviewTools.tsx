@@ -1,4 +1,4 @@
-import { Alert, Badge, Collapse, Descriptions } from 'antd';
+import { Alert, Badge, Collapse, Descriptions, Card } from 'antd';
 import { useEffect, useState } from 'react';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { ReviewToolCall } from '../shared/run-review';
@@ -217,20 +217,22 @@ function Call({ call }: { call: ReviewToolCall }) {
 
 export default function RunReviewTools({ calls }: { calls: ReviewToolCall[] }) {
   return (
-    <section className="run-review-card run-review-tools" aria-label="工具调用与参数">
-      <h2>工具调用与参数 · {calls.length} 个步骤</h2>
-      <p>
-        展开核对每个工具的连接、参数与服务声明。查看或重新检查不会连接服务、启动程序或调用工具。
-      </p>
-      <Alert
-        type="warning"
-        role="note"
-        showIcon
-        title="确认试运行将按这些步骤执行真实调用；服务声明不能保证没有副作用，结果未知时不会自动重试。"
-      />
-      {calls.map((call) => (
-        <Call key={call.step.id} call={call} />
-      ))}
+    <section aria-label="工具调用与参数">
+      <Card size="small" className="run-review-card run-review-tools">
+        <h2>工具调用与参数 · {calls.length} 个步骤</h2>
+        <p>
+          展开核对每个工具的连接、参数与服务声明。查看或重新检查不会连接服务、启动程序或调用工具。
+        </p>
+        <Alert
+          type="warning"
+          role="note"
+          showIcon
+          title="确认试运行将按这些步骤执行真实调用；服务声明不能保证没有副作用，结果未知时不会自动重试。"
+        />
+        {calls.map((call) => (
+          <Call key={call.step.id} call={call} />
+        ))}
+      </Card>
     </section>
   );
 }

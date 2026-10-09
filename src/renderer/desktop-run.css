@@ -45,7 +45,7 @@
 .run-review-page.is-desktop .run-review-columns {
   grid-template-columns: minmax(0, 650fr) minmax(0, 478fr);
 }
-.run-review-page.is-desktop .run-review-columns > .ai-task-card {
+.run-review-page.is-desktop .run-review-columns .run-review-surface {
   min-height: 720px;
 }
 .desktop-run-confirmation {
@@ -54,13 +54,11 @@
   gap: 16px;
   min-width: 0;
 }
-.desktop-run-confirmation section {
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-  padding: 16px;
+.desktop-confirm-card {
+  min-width: 0;
   min-height: 120px;
 }
-.desktop-run-confirmation section > p {
+.desktop-run-confirmation .desktop-confirm-card > .ant-card-body > p {
   margin-top: 8px;
 }
 
@@ -156,7 +154,7 @@
   .run-review-page.is-desktop .run-review-columns {
     grid-template-columns: minmax(0, 1fr);
   }
-  .run-review-page.is-desktop .run-review-columns > .ai-task-card {
+  .run-review-page.is-desktop .run-review-columns .run-review-surface {
     min-height: 0;
   }
   .desktop-task-run .desktop-task-run-panel,
