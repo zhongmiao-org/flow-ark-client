@@ -10,7 +10,6 @@
 }
 .variable-picker-toolbar > button {
   min-width: 168px;
-  min-height: 40px;
 }
 .variable-picker-toolbar nav {
   overflow-wrap: anywhere;
@@ -22,14 +21,8 @@
   min-width: 0;
 }
 .variable-picker-toolbar nav button {
-  padding: 4px 0;
-  min-width: 0;
-  min-height: 32px;
-  border: 0;
-  background: transparent;
-  color: var(--fa-action-primary);
-  font-size: inherit;
-  overflow-wrap: anywhere;
+  height: auto;
+  white-space: normal;
   text-align: left;
 }
 .variable-picker-toolbar > .variable-picker-browser {
@@ -75,30 +68,11 @@
 .variable-picker-detail {
   padding: 28px;
 }
-.variable-picker-dialog label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper),
-.variable-picker-dialog dt {
+.variable-picker-dialog label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   color: var(--fa-text-secondary);
   font-size: 12px;
   line-height: 18px;
   margin: 0;
-}
-.variable-picker-dialog
-  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
-  width: 100%;
-  min-width: 0;
-  margin: 0;
-  height: 32px;
-  padding: 4px 6px;
-  border-color: transparent;
-  background: var(--fa-bg-canvas);
-  font-size: 13px;
-  line-height: 20px;
-}
-.variable-picker-dialog
-  input:not(.ant-checkbox-input):not(.ant-radio-input):not(
-    [class*='ant-select']
-  )[aria-invalid='true'] {
-  border-color: var(--fa-status-error);
 }
 .variable-picker-search,
 .variable-picker-path {
@@ -120,32 +94,20 @@
   overflow-wrap: anywhere;
 }
 .variable-picker-source-list button {
-  min-height: 40px;
-  padding: 8px 12px;
   width: 100%;
-  overflow-wrap: anywhere;
+  height: auto;
+  min-height: var(--ant-control-height);
+  white-space: normal;
 }
-.variable-picker-source-list button[aria-pressed='true'] {
-  background: var(--fa-action-subtle);
-  border-color: var(--fa-action-primary);
+.variable-picker-source-list button > span {
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 .variable-picker-dialog code {
   overflow-wrap: anywhere;
   white-space: pre-wrap;
   font-size: 12px;
   line-height: 20px;
-}
-.variable-picker-dialog dl {
-  margin: 0 0 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.variable-picker-dialog dd {
-  margin: 0;
-  font-size: 13px;
-  line-height: 20px;
-  overflow-wrap: anywhere;
 }
 .variable-picker-note,
 .variable-picker-empty p {
@@ -169,24 +131,14 @@
 }
 .variable-picker-actions button {
   min-width: 180px;
-  min-height: 40px;
 }
 .variable-picker-actions button:last-child {
   min-width: 120px;
 }
-.variable-picker-advanced {
-  font-size: 13px;
-  line-height: 22px;
-}
-.variable-picker-advanced summary {
-  cursor: pointer;
-}
-.variable-picker-advanced label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
-  display: block;
-  margin: 16px 0 4px;
-}
-.variable-picker-advanced p {
-  margin-top: 8px;
+.variable-picker-subpath {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 @container (max-width: 1000px) {
   .variable-picker-columns {

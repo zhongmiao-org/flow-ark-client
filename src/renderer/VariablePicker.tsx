@@ -1,4 +1,5 @@
-import { Drawer, Button, Input } from 'antd';
+import { Drawer, Button, Input, Collapse, Descriptions, Alert } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useContext, useEffect, useId, useRef, useState } from 'react';
 import { composeReference, type ReferenceChoice } from './value-references';
 import { VariableNavigationContext } from './variable-navigation';
@@ -39,13 +40,14 @@ export default function VariablePicker({
   const [suffix, setSuffix] = useState(
     source && current ? current.slice(source.path.length + 1) : '',
   );
+  const [advanced, setAdvanced] = useState(!!suffix);
   const [search, setSearch] = useState('');
   const [failure, setFailure] = useState('');
   const dialog = useRef<HTMLDivElement>(null);
   const origin = useRef(document.activeElement as HTMLElement | null);
   const searchInput = useRef<HTMLInputElement>(null);
   const titleId = useId();
-  const failureRef = useRef<HTMLParagraphElement>(null);
+  const failureRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (failure) failureRef.current?.focus();
   }, [failure]);
@@ -115,15 +117,19 @@ export default function VariablePicker({
         <nav aria-label="当前位置">
           {navigation ? (
             <>
-              <Button htmlType="button" onClick={() => navigate(navigation.openLibrary)}>
+              <Button
+                type="link"
+                htmlType="button"
+                onClick={() => navigate(navigation.openLibrary)}
+              >
                 我的流程
               </Button>
               <span aria-hidden="true">/</span>
-              <Button htmlType="button" onClick={() => navigate(navigation.openFlow)}>
+              <Button type="link" htmlType="button" onClick={() => navigate(navigation.openFlow)}>
                 {navigation.flowName}
               </Button>
               <span aria-hidden="true">/</span>
-              <Button htmlType="button" onClick={close}>
+              <Button type="link" htmlType="button" onClick={close}>
                 {navigation.source}
               </Button>
               <span aria-hidden="true">/</span>
@@ -177,6 +183,8 @@ export default function VariablePicker({
                       <Button
                         key={choice.path}
                         htmlType="button"
+                        color={base === choice.path ? 'primary' : 'default'}
+                        variant={base === choice.path ? 'filled' : 'outlined'}
                         aria-pressed={base === choice.path}
                         title={choice.path}
                         onClick={() => {
@@ -221,10 +229,12 @@ export default function VariablePicker({
             {selected ? (
               <>
                 <h3>{selected.label}</h3>
-                <dl>
-                  <dt>来源</dt>
-                  <dd>{selected.hint}</dd>
-                </dl>
+                <Descriptions
+                  column={1}
+                  layout="vertical"
+                  size="small"
+                  items={[{ key: 'source', label: '来源', children: selected.hint }]}
+                />
                 <div className="variable-picker-path">
                   <label htmlFor={titleId + '-path'}>引用路径</label>
                   <Input
@@ -249,9 +259,9 @@ export default function VariablePicker({
               </div>
             )}
             {failure && (
-              <p ref={failureRef} tabIndex={-1} role="alert" className="field-error">
-                {failure}
-              </p>
+              <div ref={failureRef} tabIndex={-1}>
+                <Alert type="error" showIcon title={failure} role="alert" />
+              </div>
             )}
             <footer className="variable-picker-actions">
               <Button
@@ -270,29 +280,44 @@ export default function VariablePicker({
               </Button>
             </footer>
             {selected && (
-              <details className="variable-picker-advanced" open={suffix ? true : undefined}>
-                <summary>编辑子路径（可选）</summary>
-                <label htmlFor={titleId + '-suffix'}>子路径</label>
-                <Input
-                  status={!!invalid ? 'error' : undefined}
-                  id={titleId + '-suffix'}
-                  value={suffix}
-                  disabled={base === 'index' || undefined}
-                  placeholder={base === 'index' ? '循环序号没有子字段' : '例如 rows.0.name'}
-                  aria-invalid={!!invalid}
-                  aria-describedby={invalid ? titleId + '-invalid' : undefined}
-                  onChange={(event) => {
-                    setSuffix(event.target.value);
-                    setFailure('');
-                  }}
+              <div onKeyDown={activateCollapseWithSpace}>
+                <Collapse
+                  size="small"
+                  activeKey={advanced ? ['subpath'] : []}
+                  onChange={(keys) => setAdvanced(keys.includes('subpath'))}
+                  items={[
+                    {
+                      key: 'subpath',
+                      label: '编辑子路径（可选）',
+                      forceRender: true,
+                      children: (
+                        <div className="variable-picker-subpath">
+                          <label htmlFor={titleId + '-suffix'}>子路径</label>
+                          <Input
+                            status={!!invalid ? 'error' : undefined}
+                            id={titleId + '-suffix'}
+                            value={suffix}
+                            disabled={base === 'index' || undefined}
+                            placeholder={
+                              base === 'index' ? '循环序号没有子字段' : '例如 rows.0.name'
+                            }
+                            aria-invalid={!!invalid}
+                            aria-describedby={invalid ? titleId + '-invalid' : undefined}
+                            onChange={(event) => {
+                              setSuffix(event.target.value);
+                              setFailure('');
+                            }}
+                          />
+                          <p className="variable-picker-note">缺失字段会报错，不会执行表达式。</p>
+                        </div>
+                      ),
+                    },
+                  ]}
                 />
-                <p className="variable-picker-note">缺失字段会报错，不会执行表达式。</p>
-              </details>
+              </div>
             )}
             {invalid && selected && (
-              <p id={titleId + '-invalid'} role="alert" className="field-error">
-                {invalid}
-              </p>
+              <Alert id={titleId + '-invalid'} type="error" showIcon title={invalid} role="alert" />
             )}
           </section>
         </div>
