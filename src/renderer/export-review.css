@@ -32,10 +32,9 @@
 }
 .export-review-card {
   min-width: 0;
-  padding: 24px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-  background: var(--fa-bg-surface);
+}
+.export-review-card > .ant-card {
+  height: 100%;
 }
 .export-review-card h2,
 .export-review-success h2 {
@@ -89,12 +88,6 @@
 .export-review-footer {
   margin-top: 24px;
 }
-.export-review-check {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  line-height: 24px;
-}
 .export-review-actions {
   display: flex;
   flex-wrap: wrap;
@@ -104,12 +97,6 @@
 .export-review-actions button {
   min-width: 160px;
 }
-.export-review-success {
-  padding: 32px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-  background: var(--fa-bg-surface);
-}
 .export-review-success p {
   line-height: 24px;
   color: var(--fa-text-secondary);
@@ -118,8 +105,5 @@
   .export-review-layout {
     grid-template-columns: minmax(0, 1fr);
     gap: 16px;
-  }
-  .export-review-card {
-    padding: 20px;
   }
 }

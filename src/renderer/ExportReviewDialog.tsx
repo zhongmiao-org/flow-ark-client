@@ -1,4 +1,4 @@
-import { Alert, Badge, Button, Checkbox, Modal, Tag } from 'antd';
+import { Alert, Badge, Button, Card, Checkbox, Modal, Tag } from 'antd';
 import './antd-layout.css';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { FlowRecord } from '../shared/types';
@@ -176,103 +176,111 @@ export default function ExportReviewDialog({
       )}
       {stage === 'done' ? (
         <section className="export-review-success">
-          <Tag className="run-state-tag" color="success" icon={<Badge status="success" />}>
-            已保存 · 标准 ZIP
-          </Tag>
-          <h2>{name}</h2>
-          {!draft && <p className="export-review-identity">原模板版本 · {source.key}</p>}
-          <p>
-            {draft
-              ? '重新导入后创建新实例，填写参数、绑定本机资源并确认动作权限。'
-              : '重新导入仍遵守同版本完整性和引用保护规则，不覆盖现有实例。'}
-          </p>
-          <p>导入验证会让你选择 ZIP 文件，安装和执行仍需明确操作。</p>
-          <div className="export-review-actions">
-            <Button
-              type="primary"
-              disabled={!!busy || undefined}
-              onClick={() => void run('import')}
-            >
-              {busy === 'import'
-                ? '正在选择并检查 ZIP…'
-                : error?.operation === 'import'
-                  ? '重新选择 ZIP 进行导入验证'
-                  : '选择 ZIP 进行导入验证'}
-            </Button>
-            <Button disabled={!!busy || undefined} onClick={close}>
-              {draft ? '返回流程编排' : `返回${templateReturnLabel}`}
-            </Button>
-          </div>
+          <Card>
+            <Tag className="run-state-tag" color="success" icon={<Badge status="success" />}>
+              已保存 · 标准 ZIP
+            </Tag>
+            <h2>{name}</h2>
+            {!draft && <p className="export-review-identity">原模板版本 · {source.key}</p>}
+            <p>
+              {draft
+                ? '重新导入后创建新实例，填写参数、绑定本机资源并确认动作权限。'
+                : '重新导入仍遵守同版本完整性和引用保护规则，不覆盖现有实例。'}
+            </p>
+            <p>导入验证会让你选择 ZIP 文件，安装和执行仍需明确操作。</p>
+            <div className="export-review-actions">
+              <Button
+                type="primary"
+                disabled={!!busy || undefined}
+                onClick={() => void run('import')}
+              >
+                {busy === 'import'
+                  ? '正在选择并检查 ZIP…'
+                  : error?.operation === 'import'
+                    ? '重新选择 ZIP 进行导入验证'
+                    : '选择 ZIP 进行导入验证'}
+              </Button>
+              <Button disabled={!!busy || undefined} onClick={close}>
+                {draft ? '返回流程编排' : `返回${templateReturnLabel}`}
+              </Button>
+            </div>
+          </Card>
         </section>
       ) : (
         <>
           <div className="export-review-layout">
             <section className="export-review-card">
-              <Tag className="run-state-tag">{draft ? '当前草稿快照' : '模板原定义'}</Tag>
-              <h2>{name}</h2>
-              <dl>
-                <div>
-                  <dt>身份与版本</dt>
-                  <dd>{draft ? '生成新的本地模板身份 · 1.0.0' : source.key}</dd>
-                </div>
-                {draft ? (
-                  <>
-                    <div>
-                      <dt>草稿状态</dt>
-                      <dd>
-                        {source.saved ? '打开核对页时已保存' : '含未保存修改；导出不会保存本地草稿'}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>步骤</dt>
-                      <dd>{flatten(source.flow.steps).length} 个步骤，包含分支与循环内部步骤</dd>
-                    </div>
-                    <div>
-                      <dt>参数结构</dt>
-                      <dd>
-                        {Object.keys(source.flow.parameters ?? {}).length} 个参数；实际值会清空
-                      </dd>
-                    </div>
-                  </>
-                ) : (
+              <Card>
+                <Tag className="run-state-tag">{draft ? '当前草稿快照' : '模板原定义'}</Tag>
+                <h2>{name}</h2>
+                <dl>
                   <div>
-                    <dt>操作入口</dt>
-                    <dd>{source.entries.join('、') || '未声明入口'}</dd>
+                    <dt>身份与版本</dt>
+                    <dd>{draft ? '生成新的本地模板身份 · 1.0.0' : source.key}</dd>
                   </div>
-                )}
-              </dl>
-              <h3>会包含</h3>
-              <ul>
-                <li>流程或模板定义、参数结构与逻辑资源声明</li>
-                <li>节点字面量、脚本代码及配置定义</li>
-                {!draft && <li>原模板包中声明的资源与入口</li>}
-              </ul>
-              <p className="export-review-muted">
-                {draft
-                  ? '导出内容固定为打开此页时的编辑状态。'
-                  : '只导出原始模板定义，不把本地实例重新打包。'}
-              </p>
+                  {draft ? (
+                    <>
+                      <div>
+                        <dt>草稿状态</dt>
+                        <dd>
+                          {source.saved
+                            ? '打开核对页时已保存'
+                            : '含未保存修改；导出不会保存本地草稿'}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>步骤</dt>
+                        <dd>{flatten(source.flow.steps).length} 个步骤，包含分支与循环内部步骤</dd>
+                      </div>
+                      <div>
+                        <dt>参数结构</dt>
+                        <dd>
+                          {Object.keys(source.flow.parameters ?? {}).length} 个参数；实际值会清空
+                        </dd>
+                      </div>
+                    </>
+                  ) : (
+                    <div>
+                      <dt>操作入口</dt>
+                      <dd>{source.entries.join('、') || '未声明入口'}</dd>
+                    </div>
+                  )}
+                </dl>
+                <h3>会包含</h3>
+                <ul>
+                  <li>流程或模板定义、参数结构与逻辑资源声明</li>
+                  <li>节点字面量、脚本代码及配置定义</li>
+                  {!draft && <li>原模板包中声明的资源与入口</li>}
+                </ul>
+                <p className="export-review-muted">
+                  {draft
+                    ? '导出内容固定为打开此页时的编辑状态。'
+                    : '只导出原始模板定义，不把本地实例重新打包。'}
+                </p>
+              </Card>
             </section>
             <aside className="export-review-card">
-              <h2>不会包含</h2>
-              <ul>
-                <li>运行参数值与实例配置值</li>
-                <li>本机路径、浏览器绑定、登录态和凭据</li>
-                <li>实例动作授权、运行历史及运行产物</li>
-              </ul>
-              <Alert
-                className="export-review-message"
-                type="warning"
-                role="note"
-                showIcon
-                title="请检查定义里的实际内容"
-                description="字面量、代码或配置定义可能含有手写的个人数据、路径或密钥。自动排除绑定不能替代逐项核对。"
-              />
-              <p className="export-review-muted">
-                {draft
-                  ? '资源声明无法确定或依赖不完整时，宿主会阻止生成包并说明原因。'
-                  : '现有实例、计划与运行继续使用原来的版本和快照。'}
-              </p>
+              <Card>
+                <h2>不会包含</h2>
+                <ul>
+                  <li>运行参数值与实例配置值</li>
+                  <li>本机路径、浏览器绑定、登录态和凭据</li>
+                  <li>实例动作授权、运行历史及运行产物</li>
+                </ul>
+                <Alert
+                  className="export-review-message"
+                  type="warning"
+                  role="note"
+                  showIcon
+                  title="请检查定义里的实际内容"
+                  description="字面量、代码或配置定义可能含有手写的个人数据、路径或密钥。自动排除绑定不能替代逐项核对。"
+                />
+                <p className="export-review-muted">
+                  {draft
+                    ? '资源声明无法确定或依赖不完整时，宿主会阻止生成包并说明原因。'
+                    : '现有实例、计划与运行继续使用原来的版本和快照。'}
+                </p>
+              </Card>
             </aside>
           </div>
           <footer className="export-review-footer">
@@ -283,7 +291,6 @@ export default function ExportReviewDialog({
               checked={reviewed}
               disabled={!!busy || undefined}
               onChange={(event) => setReviewed(event.target.checked)}
-              className="export-review-check"
             >
               我已核对字面量、脚本和配置定义，确认可以导出
             </Checkbox>
