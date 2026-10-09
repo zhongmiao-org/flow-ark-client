@@ -157,35 +157,10 @@
   min-width: 0;
   flex-shrink: 0;
 }
-.excel-preview-scroll table {
-  min-width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 16px;
-  margin-block: -16px;
-}
-.excel-preview-scroll th,
-.excel-preview-scroll td {
-  padding: 16px 12px;
-  background: var(--fa-bg-canvas);
-  text-align: left;
-  max-width: 240px;
-  overflow-wrap: anywhere;
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 20px;
-  color: var(--fa-text-primary);
-  border: 0;
-}
 .excel-data-preview .note {
   background: none;
   padding: 0;
   font-size: 12px;
-}
-.excel-preview-scroll tr > :first-child {
-  border-radius: 6px 0 0 6px;
-}
-.excel-preview-scroll tr > :last-child {
-  border-radius: 0 6px 6px 0;
 }
 .excel-mapping-note {
   padding: 16px;

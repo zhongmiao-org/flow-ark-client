@@ -1,4 +1,4 @@
-import { Select, Button, Input } from 'antd';
+import { Select, Button, Input, Table } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import {
@@ -443,93 +443,110 @@ export default function RunHistory({
             </div>
           )}
           <div className="table-wrap" aria-busy={loading}>
-            <table aria-label="运行记录">
-              <colgroup>
-                <col className="history-flow-col" />
-                <col className="history-state-col" />
-                <col className="history-source-col" />
-                <col className="history-time-col" />
-                <col className="history-duration-col" />
-                <col className="history-open-col" />
-              </colgroup>
-              <thead>
-                <tr>
-                  <th scope="col">流程 / 运行编号</th>
-                  <th scope="col">状态</th>
-                  <th scope="col">触发方式</th>
-                  <th scope="col">开始时间</th>
-                  <th scope="col">耗时</th>
-                  <th scope="col">
-                    <span className="sr-only">操作</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {data?.runs.map((r) => {
-                  const elapsed = data.elapsed[r.id];
-                  return (
-                    <tr key={r.id} aria-label={`${r.name} · ${r.id}`}>
-                      <td>
-                        <b>{r.name}</b>
-                        <small className="history-run-id" title={r.id}>
-                          {r.id}
+            <Table<RunListPage['runs'][number]>
+              aria-label="运行记录"
+              rowKey="id"
+              pagination={false}
+              scroll={{ x: 760 }}
+              dataSource={data?.runs ?? []}
+              onRow={(run) => ({ 'aria-label': `${run.name} · ${run.id}` })}
+              locale={{
+                emptyText: (
+                  <p className="history-empty" role="status">
+                    {!data
+                      ? loading
+                        ? '正在读取运行记录…'
+                        : '运行记录暂不可用，请重试读取。'
+                      : cursors.length > 1
+                        ? '当前页已没有记录，请返回上一页或查看最新。'
+                        : data.totalCount
+                          ? '没有符合筛选条件的运行记录。'
+                          : '还没有运行记录。运行一个流程后，可在这里查看。'}
+                  </p>
+                ),
+              }}
+              columns={[
+                {
+                  key: 'flow',
+                  title: '流程 / 运行编号',
+                  width: '30%',
+                  render: (_, run) => (
+                    <div className="history-run-source">
+                      <b>{run.name}</b>
+                      <small className="history-run-id" title={run.id}>
+                        {run.id}
+                      </small>
+                      {scope && (
+                        <small className="history-version" title={run.versionId}>
+                          运行版本 {run.versionId.slice(0, 12)}
                         </small>
-                        {scope && (
-                          <small className="history-version" title={r.versionId}>
-                            运行版本 {r.versionId.slice(0, 12)}
-                          </small>
-                        )}
-                      </td>
-                      <td>
-                        <span className={'badge state-' + r.state}>{runStateLabels[r.state]}</span>
-                      </td>
-                      <td>{runSourceLabels[runSource(r)] ?? r.source}</td>
-                      <td>
-                        <RunStartTime value={elapsed?.startedAt} queued={r.state === 'QUEUED'} />
-                      </td>
-                      <td className="history-duration">
-                        {elapsed?.milliseconds == null ? (
-                          '待核对'
-                        ) : (
-                          <>
-                            <span title={formatRunDuration(elapsed.milliseconds)}>
-                              {compactDuration(elapsed.milliseconds)}
-                            </span>
-                            {elapsed.kind === 'recorded' && <small>已记录</small>}
-                          </>
-                        )}
-                      </td>
-                      <td>
-                        <Button
-                          className="history-open"
-                          aria-label={`查看 ${r.name} · ${r.id}`}
-                          title={`查看 ${r.name} · ${r.id}`}
-                          data-run-id={r.id}
-                          disabled={!!opening || undefined}
-                          onClick={() => void inspect(r.id)}
-                        >
-                          {opening === r.id ? '…' : <ChevronRight size={18} />}
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {!data && (
-              <p className="history-empty" role="status">
-                {loading ? '正在读取运行记录…' : '运行记录暂不可用，请重试读取。'}
-              </p>
-            )}
-            {data && !data.runs.length && (
-              <p className="history-empty">
-                {cursors.length > 1
-                  ? '当前页已没有记录，请返回上一页或查看最新。'
-                  : data.totalCount
-                    ? '没有符合筛选条件的运行记录。'
-                    : '还没有运行记录。运行一个流程后，可在这里查看。'}
-              </p>
-            )}
+                      )}
+                    </div>
+                  ),
+                },
+                {
+                  key: 'state',
+                  title: '状态',
+                  width: '13.72%',
+                  render: (_, run) => (
+                    <span className={'badge state-' + run.state}>{runStateLabels[run.state]}</span>
+                  ),
+                },
+                {
+                  key: 'source',
+                  title: '触发方式',
+                  width: '13.02%',
+                  render: (_, run) => runSourceLabels[runSource(run)] ?? run.source,
+                },
+                {
+                  key: 'time',
+                  title: '开始时间',
+                  width: '17.01%',
+                  render: (_, run) => (
+                    <RunStartTime
+                      value={data?.elapsed[run.id]?.startedAt}
+                      queued={run.state === 'QUEUED'}
+                    />
+                  ),
+                },
+                {
+                  key: 'duration',
+                  title: '耗时',
+                  width: '8.07%',
+                  render: (_, run) => {
+                    const elapsed = data?.elapsed[run.id];
+                    return elapsed?.milliseconds == null ? (
+                      '待核对'
+                    ) : (
+                      <div className="history-duration-cell">
+                        <span title={formatRunDuration(elapsed.milliseconds)}>
+                          {compactDuration(elapsed.milliseconds)}
+                        </span>
+                        {elapsed.kind === 'recorded' && <small>已记录</small>}
+                      </div>
+                    );
+                  },
+                },
+                {
+                  key: 'open',
+                  title: <span className="sr-only">操作</span>,
+                  width: '18.18%',
+                  render: (_, run) => (
+                    <Button
+                      type="text"
+                      className="history-open"
+                      aria-label={`查看 ${run.name} · ${run.id}`}
+                      title={`查看 ${run.name} · ${run.id}`}
+                      data-run-id={run.id}
+                      disabled={!!opening}
+                      onClick={() => void inspect(run.id)}
+                    >
+                      {opening === run.id ? '…' : <ChevronRight size={18} />}
+                    </Button>
+                  ),
+                },
+              ]}
+            />
           </div>
           <div className="history-pagination">
             <span id={pageSummaryId} aria-live="polite">

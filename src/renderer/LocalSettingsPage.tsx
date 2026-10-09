@@ -1,4 +1,4 @@
-import { Select, Button, Input } from 'antd';
+import { Select, Button, Input, Tabs } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { Bootstrap, BrowserBinding, FlowRecord } from '../shared/types';
 import type { AIProviderId } from '../shared/ai-settings';
@@ -331,71 +331,8 @@ export default function LocalSettingsPage({
       打开流程配置
     </Button>
   );
-  return (
-    <section
-      className={`page local-settings-page${local && tab === 'browser' ? ' local-browser-binding-page' : ''}${resourcesPage ? ' local-resources-page' : ''}`}
-      hidden={!active}
-      aria-label="本地设置"
-    >
-      <header className="local-settings-heading">
-        <div>
-          <h1 ref={heading} tabIndex={-1}>
-            {resourcesPage
-              ? '凭据与本机资源'
-              : local && tab === 'browser'
-                ? '选择本机浏览器'
-                : '本地设置'}
-          </h1>
-          <p>
-            {resourcesPage
-              ? '本地路径与密钥不随 ZIP 导出；资源只提供给明确绑定的流程。'
-              : local && tab === 'browser'
-                ? '实际使用你选择的安装；失效时阻止运行，不下载或自动切换。'
-                : '管理运行环境、模型接口和这台 Mac 的资源。'}
-          </p>
-        </div>
-      </header>
-      <div
-        className="local-settings-tabs"
-        role="tablist"
-        aria-label="设置分类"
-        hidden={resourcesPage || (local && tab === 'browser')}
-      >
-        {tabs.map(([id, label], index) => (
-          <Button
-            key={id}
-            role="tab"
-            disabled={!!busy || undefined}
-            id={`settings-tab-${id}`}
-            aria-controls="settings-content"
-            aria-selected={tab === id}
-            tabIndex={tab === id ? 0 : -1}
-            onClick={() => changeTab(id)}
-            onKeyDown={(event) => {
-              const next =
-                event.key === 'Home'
-                  ? 0
-                  : event.key === 'End'
-                    ? tabs.length - 1
-                    : event.key === 'ArrowRight'
-                      ? (index + 1) % tabs.length
-                      : event.key === 'ArrowLeft'
-                        ? (index + tabs.length - 1) % tabs.length
-                        : undefined;
-              if (next === undefined) return;
-              event.preventDefault();
-              changeTab(tabs[next][0]);
-              (
-                (event.currentTarget as HTMLButtonElement).parentElement?.children[
-                  next
-                ] as HTMLElement
-              )?.focus();
-            }}
-          >
-            {label}
-          </Button>
-        ))}
-      </div>
+  const settingsContent = (
+    <>
       {error && (
         <div className="local-settings-banner error" role="alert" ref={errorBanner} tabIndex={-1}>
           {error}
@@ -406,7 +343,7 @@ export default function LocalSettingsPage({
           {notice}
         </div>
       )}
-      <div id="settings-content" role="tabpanel" aria-labelledby={`settings-tab-${tab}`}>
+      <div id="settings-content">
         {tab === 'browser' &&
           (!local ? (
             <div className="local-settings-layout local-browser-overview">
@@ -812,6 +749,47 @@ export default function LocalSettingsPage({
           </section>
         )}
       </div>
+    </>
+  );
+  return (
+    <section
+      className={`page local-settings-page${local && tab === 'browser' ? ' local-browser-binding-page' : ''}${resourcesPage ? ' local-resources-page' : ''}`}
+      hidden={!active}
+      aria-label="本地设置"
+    >
+      <header className="local-settings-heading">
+        <div>
+          <h1 ref={heading} tabIndex={-1}>
+            {resourcesPage
+              ? '凭据与本机资源'
+              : local && tab === 'browser'
+                ? '选择本机浏览器'
+                : '本地设置'}
+          </h1>
+          <p>
+            {resourcesPage
+              ? '本地路径与密钥不随 ZIP 导出；资源只提供给明确绑定的流程。'
+              : local && tab === 'browser'
+                ? '实际使用你选择的安装；失效时阻止运行，不下载或自动切换。'
+                : '管理运行环境、模型接口和这台 Mac 的资源。'}
+          </p>
+        </div>
+      </header>
+      <Tabs
+        id="settings"
+        className="local-settings-tabs"
+        aria-label="设置分类"
+        activeKey={tab}
+        animated={false}
+        destroyOnHidden
+        onChange={(key) => changeTab(key as Tab)}
+        items={tabs.map(([key, label]) => ({
+          key,
+          label,
+          disabled: !!busy,
+          children: tab === key ? settingsContent : undefined,
+        }))}
+      />
     </section>
   );
 }

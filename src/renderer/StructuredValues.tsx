@@ -1,4 +1,4 @@
-import { Button, Input } from 'antd';
+import { Button, Input, Table } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import './structured-values.css';
 import type { Json } from '../shared/types';
@@ -314,41 +314,51 @@ export function MatrixValues({
             </Button>
           </div>
           <div className="matrix-scroll">
-            <table aria-label="Excel 数据表格">
-              <thead>
-                <tr>
-                  <th scope="col">行</th>
-                  {columns.map((c) => (
-                    <th key={c} scope="col">
-                      {columnName(c)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.slice(rowStart, rowStart + 10).map((row, i) => (
-                  <tr key={rowStart + i}>
-                    <th scope="row">{rowStart + i + 1}</th>
-                    {columns.map((c) => (
-                      <td key={c}>
-                        <Button
-                          htmlType="button"
-                          className={
-                            active?.[0] === rowStart + i && active[1] === c ? 'selected' : ''
-                          }
-                          aria-label={'编辑单元格 ' + columnName(c) + (rowStart + i + 1)}
-                          aria-pressed={active?.[0] === rowStart + i && active?.[1] === c}
-                          title={shortValue(row[c])}
-                          onClick={() => setSelected([rowStart + i, c])}
-                        >
-                          {shortValue(row[c])}
-                        </Button>
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <Table<{ index: number; values: Json[] }>
+              aria-label="Excel 数据表格"
+              size="small"
+              bordered
+              pagination={false}
+              rowKey="index"
+              scroll={{ x: 'max-content' }}
+              dataSource={rows.slice(rowStart, rowStart + 10).map((values, index) => ({
+                index: rowStart + index,
+                values,
+              }))}
+              locale={{ emptyText: '尚无数据行' }}
+              columns={[
+                {
+                  key: 'row',
+                  title: '行',
+                  width: 48,
+                  rowScope: 'row',
+                  render: (_, row) => row.index + 1,
+                },
+                ...columns.map((column) => ({
+                  key: column,
+                  title: columnName(column),
+                  width: 120,
+                  render: (_: unknown, row: { index: number; values: Json[] }) => (
+                    <Button
+                      htmlType="button"
+                      className="matrix-cell-button"
+                      color={
+                        active?.[0] === row.index && active[1] === column ? 'primary' : 'default'
+                      }
+                      variant={
+                        active?.[0] === row.index && active[1] === column ? 'filled' : 'outlined'
+                      }
+                      aria-label={'编辑单元格 ' + columnName(column) + (row.index + 1)}
+                      aria-pressed={active?.[0] === row.index && active?.[1] === column}
+                      title={shortValue(row.values[column])}
+                      onClick={() => setSelected([row.index, column])}
+                    >
+                      {shortValue(row.values[column])}
+                    </Button>
+                  ),
+                })),
+              ]}
+            />
           </div>
           {!rows.length && (
             <p className="structured-values-empty">
