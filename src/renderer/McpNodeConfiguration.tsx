@@ -1,4 +1,5 @@
-import { Alert, Select } from 'antd';
+import { Alert, Collapse, Descriptions, Select } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { Step } from '../shared/types';
 import type { TaskMcpTarget } from '../shared/task-mcp-targets';
 import type { ReferenceChoice } from './value-references';
@@ -78,31 +79,54 @@ export default function McpNodeConfiguration({
           <p>更换工具会清空参数；仅可使用该任务已确认的工具。</p>
         </>
       ) : (
-        <dl className="mcp-step-facts">
-          <div>
-            <dt>连接对象</dt>
-            <dd>{target?.displayName || '尚未绑定本机连接'}</dd>
-          </div>
-          <div>
-            <dt>工具</dt>
-            <dd>
-              {tool?.title || node.tool}
-              <code>{node.tool}</code>
-            </dd>
-          </div>
-        </dl>
+        <Descriptions
+          className="metadata-facts mcp-step-facts"
+          column={1}
+          bordered
+          size="small"
+          items={[
+            {
+              key: 'target',
+              label: '连接对象',
+              children: target?.displayName || '尚未绑定本机连接',
+            },
+            {
+              key: 'tool',
+              label: '工具',
+              children: (
+                <>
+                  {tool?.title || node.tool}
+                  <code>{node.tool}</code>
+                </>
+              ),
+            },
+          ]}
+        />
       )}
       <p>{target ? `来源：${target.source}` : '此流程只有逻辑目标，请从原任务重新选择工具。'}</p>
-      <details>
-        <summary>查看逻辑目标与选择记录</summary>
-        <code>{node.target}</code>
-        {target && (
-          <p>
-            选择修订 {target.connectionRevision} · {new Date(target.selectedAt).toLocaleString()}
-            ；此记录不代表实时连接可用。
-          </p>
-        )}
-      </details>
+      <Collapse
+        className="mcp-step-disclosure"
+        items={[
+          {
+            key: 'evidence-1',
+            label: <>查看逻辑目标与选择记录</>,
+            forceRender: true,
+            onKeyDown: activateCollapseWithSpace,
+            children: (
+              <div className="feedback-body">
+                <code>{node.target}</code>
+                {target && (
+                  <p>
+                    选择修订 {target.connectionRevision} ·{' '}
+                    {new Date(target.selectedAt).toLocaleString()}
+                    ；此记录不代表实时连接可用。
+                  </p>
+                )}
+              </div>
+            ),
+          },
+        ]}
+      />
       {tool && (
         <>
           <p>{tool.description || '服务未提供用途说明'}</p>
@@ -123,36 +147,65 @@ export default function McpNodeConfiguration({
             }
           />
           {!!properties.length && (
-            <details>
-              <summary>参数说明 · {properties.length} 项</summary>
-              <dl className="mcp-step-facts">
-                {properties.map(([name, definition]) => {
-                  const field =
-                    definition && typeof definition === 'object'
-                      ? (definition as Record<string, unknown>)
-                      : {};
-                  return (
-                    <div key={name}>
-                      <dt>
-                        {name}
-                        {required.includes(name) ? ' · 必填' : ' · 可选'}
-                      </dt>
-                      <dd>
-                        {typeof field.description === 'string' ? field.description : '未提供说明'}
-                        <small>
-                          类型：{typeof field.type === 'string' ? field.type : '查看完整定义'}
-                        </small>
-                      </dd>
+            <Collapse
+              className="mcp-step-disclosure"
+              items={[
+                {
+                  key: 'evidence-2',
+                  label: <>参数说明 · {properties.length} 项</>,
+                  forceRender: true,
+                  onKeyDown: activateCollapseWithSpace,
+                  children: (
+                    <div className="feedback-body">
+                      <Descriptions
+                        className="metadata-facts mcp-step-facts"
+                        column={1}
+                        bordered
+                        size="small"
+                        items={properties.map(([name, definition]) => {
+                          const field =
+                            definition && typeof definition === 'object'
+                              ? (definition as Record<string, unknown>)
+                              : {};
+                          return {
+                            key: name,
+                            label: `${name}${required.includes(name) ? ' · 必填' : ' · 可选'}`,
+                            children: (
+                              <>
+                                {typeof field.description === 'string'
+                                  ? field.description
+                                  : '未提供说明'}
+                                <small>
+                                  类型：
+                                  {typeof field.type === 'string' ? field.type : '查看完整定义'}
+                                </small>
+                              </>
+                            ),
+                          };
+                        })}
+                      />
                     </div>
-                  );
-                })}
-              </dl>
-            </details>
+                  ),
+                },
+              ]}
+            />
           )}
-          <details>
-            <summary>完整输入与输出定义</summary>
-            <pre>{JSON.stringify(tool, null, 2)}</pre>
-          </details>
+          <Collapse
+            className="mcp-step-disclosure"
+            items={[
+              {
+                key: 'evidence-3',
+                label: <>完整输入与输出定义</>,
+                forceRender: true,
+                onKeyDown: activateCollapseWithSpace,
+                children: (
+                  <div className="feedback-body">
+                    <pre>{JSON.stringify(tool, null, 2)}</pre>
+                  </div>
+                ),
+              },
+            ]}
+          />
         </>
       )}
       <h4>本步骤参数</h4>
@@ -177,16 +230,18 @@ export default function McpNodeConfiguration({
           整组参数来自 <code>{argsRef}</code>
         </p>
       ) : (
-        <dl className="mcp-step-facts" aria-label="本次工具参数">
-          {Object.entries(node.arguments ?? {}).map(([key, input]) => (
-            <div key={key}>
-              <dt>{key}</dt>
-              <dd>
-                <pre>{value(input)}</pre>
-              </dd>
-            </div>
-          ))}
-        </dl>
+        <Descriptions
+          className="metadata-facts mcp-step-facts"
+          aria-label="本次工具参数"
+          column={1}
+          bordered
+          size="small"
+          items={Object.entries(node.arguments ?? {}).map(([key, input]) => ({
+            key,
+            label: key,
+            children: <pre>{value(input)}</pre>,
+          }))}
+        />
       )}
       <Alert
         type="info"

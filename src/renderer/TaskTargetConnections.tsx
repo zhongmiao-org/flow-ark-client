@@ -1,4 +1,5 @@
-import { Button, Checkbox, Input, Modal, Flex } from 'antd';
+import { Alert, Button, Checkbox, Descriptions, Input, Modal, Flex, Tag } from 'antd';
+import { toolConnectionColors } from './theme';
 import './antd-layout.css';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -57,7 +58,7 @@ export default function TaskTargetConnections({
   const heading = useRef<HTMLHeadingElement>(null);
   const reviewButton = useRef<HTMLButtonElement>(null),
     search = useRef<HTMLInputElement>(null);
-  const errorNotice = useRef<HTMLParagraphElement>(null);
+  const errorNotice = useRef<HTMLDivElement>(null);
   const focusError = useRef(false);
   const token = useRef<string | undefined>(undefined);
   const epoch = useRef(0),
@@ -211,15 +212,11 @@ export default function TaskTargetConnections({
         选择本次任务需要的工具，再核对来源和完整定义。账号、工作区与系统权限尚未核对。
       </p>
       {error && (
-        <p className="alert error" role="alert" ref={errorNotice} tabIndex={-1}>
-          {error}
-        </p>
+        <div className="task-tools-error" ref={errorNotice} tabIndex={-1}>
+          <Alert type="error" role="alert" showIcon title={error} />
+        </div>
       )}
-      {listError && (
-        <p className="alert error" role="alert">
-          {listError}
-        </p>
-      )}
+      {listError && <Alert type="error" role="alert" showIcon title={listError} />}
       {listError && !!records.length && (
         <p className="ai-task-note">
           下方保留上次读取的连接资料。重新加载成功后才能核对并保存新的工具选择。
@@ -300,6 +297,8 @@ export default function TaskTargetConnections({
               <Button
                 key={item.id}
                 className="task-target-connection"
+                color={selectedId === item.id ? 'primary' : 'default'}
+                variant="outlined"
                 disabled={busy || loading || undefined}
                 aria-pressed={selectedId === item.id}
                 aria-controls={detailsId}
@@ -307,9 +306,9 @@ export default function TaskTargetConnections({
               >
                 <strong>{item.config.displayName}</strong>
                 <span>{item.config.source}</span>
-                <span className={`task-target-status is-${item.status}`}>
+                <Tag color={toolConnectionColors[item.status]}>
                   {statusLabel[item.status]} · {item.tools.length} 项能力
-                </span>
+                </Tag>
               </Button>
             ))}
             {!visible.length && (
@@ -366,36 +365,39 @@ export default function TaskTargetConnections({
                   {record.config.transport.type === 'stdio' ? '本机程序' : 'HTTP 服务'}
                 </p>
                 <p>仅选择本次需要的工具（最多 30 项）。服务声明不替代任务授权。</p>
-                <dl className="task-tool-identity">
-                  <div>
-                    <dt>来源</dt>
-                    <dd>{record.config.source}</dd>
-                  </div>
-                  <div>
-                    <dt>服务声明</dt>
-                    <dd>
-                      {record.server
+                <Descriptions
+                  className="metadata-facts"
+                  column={1}
+                  bordered
+                  size="small"
+                  items={[
+                    { key: 'source', label: '来源', children: record.config.source },
+                    {
+                      key: 'server',
+                      label: '服务声明',
+                      children: record.server
                         ? `${record.server.name} / ${record.server.version}`
-                        : '未提供身份'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>最近核对</dt>
-                    <dd>{new Date(record.testedAt).toLocaleString('zh-CN')}</dd>
-                  </div>
-                  <div>
-                    <dt>认证方式</dt>
-                    <dd>
-                      {record.config.transport.type === 'stdio'
-                        ? '本机程序'
-                        : record.config.transport.auth === 'oauth'
-                          ? 'OAuth 登录'
-                          : record.config.transport.auth === 'bearer'
-                            ? 'Bearer Token'
-                            : '未使用凭据'}
-                    </dd>
-                  </div>
-                </dl>
+                        : '未提供身份',
+                    },
+                    {
+                      key: 'tested',
+                      label: '最近核对',
+                      children: new Date(record.testedAt).toLocaleString('zh-CN'),
+                    },
+                    {
+                      key: 'auth',
+                      label: '认证方式',
+                      children:
+                        record.config.transport.type === 'stdio'
+                          ? '本机程序'
+                          : record.config.transport.auth === 'oauth'
+                            ? 'OAuth 登录'
+                            : record.config.transport.auth === 'bearer'
+                              ? 'Bearer Token'
+                              : '未使用凭据',
+                    },
+                  ]}
+                />
                 {record.oauth && (
                   <p>
                     认证站点：{record.oauth.issuer}
@@ -513,9 +515,7 @@ export default function TaskTargetConnections({
           />
           <p className="ai-task-note">{toolsExecutionNotice}</p>
           {expired && (
-            <p className="field-error" role="alert">
-              本次核对已过期，请返回重新选择。
-            </p>
+            <Alert type="error" role="alert" showIcon title="本次核对已过期，请返回重新选择。" />
           )}
           <Checkbox
             checked={reviewed}

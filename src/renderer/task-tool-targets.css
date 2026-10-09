@@ -22,21 +22,6 @@
   gap: 12px;
   min-width: 0;
 }
-.task-tool-option > button {
-  font-size: 12px;
-  height: auto;
-  min-height: 32px;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  margin-top: 8px;
-}
-.task-tool-definition {
-  margin-top: 12px;
-  padding: 12px;
-  background: var(--fa-bg-surface);
-  border-radius: var(--fa-radius-8);
-  font-size: 12px;
-}
 .task-tool-definition pre {
   max-height: 200px;
   overflow: auto;
@@ -89,25 +74,21 @@
 .task-target-details h2 {
   margin: 0;
 }
-.task-tool-identity {
-  display: grid;
-  gap: 12px;
-  margin: 0;
-}
-.task-tool-identity > div {
-  display: grid;
-  grid-template-columns: 80px minmax(0, 1fr);
-  gap: 12px;
-  font-size: 14px;
-}
-.task-tool-identity dt {
-  color: var(--fa-text-secondary);
-}
-.task-tool-identity dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
 .task-target-details > .task-target-capabilities {
   border: 0;
   padding: 0;
+}
+
+.task-tool-disclosure {
+  margin-top: 8px;
+}
+.task-tool-definition {
+  align-items: stretch;
+}
+.task-tools-error:focus-visible {
+  outline: 2px solid var(--fa-status-error);
+  outline-offset: 4px;
+}
+.task-tools-error .ant-alert-title {
+  overflow-wrap: anywhere;
 }
