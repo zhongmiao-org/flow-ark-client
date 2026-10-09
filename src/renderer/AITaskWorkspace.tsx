@@ -1,5 +1,6 @@
 import {
   Alert,
+  Card,
   Collapse,
   Descriptions,
   ConfigProvider,
@@ -2020,47 +2021,53 @@ export default function AITaskWorkspace(props: Props) {
         />
       ) : page === 'home' ? (
         <>
-          <section className="ai-task-composer">
-            <label className="sr-only" htmlFor="new-task-description">
-              你想完成的任务
-            </label>
-            <Input.TextArea
-              id="new-task-description"
-              ref={(instance) => {
-                homeInput.current = instance?.resizableTextArea?.textArea ?? null;
-              }}
-              rows={1}
-              value={homeText}
-              disabled={busy || undefined}
-              maxLength={20000}
-              onChange={(e) => setHomeText(e.target.value)}
-              placeholder="把指定网页的标题保存到文件，标题为空就提醒我。"
-            />
-            <p>也可以附加文件、网页链接或目标截图，帮助说明需求。</p>
-            <div className="ai-task-actions task-home-attachments" aria-label="添加任务资料">
-              <Button disabled={busy || undefined} onClick={() => void create(homeText, 'file')}>
-                ＋ 文件
-              </Button>
-              <Button disabled={busy || undefined} onClick={() => void create(homeText, 'web')}>
-                ＋ 网页
-              </Button>
-              <Button disabled={busy || undefined} onClick={() => void create(homeText, 'image')}>
-                ＋ 截图
-              </Button>
-            </div>
-            <div className="ai-task-actions">
-              <Button
-                type="primary"
-                disabled={busy || !homeText.trim() || undefined}
-                onClick={() => void create(homeText)}
-              >
-                开始规划
-              </Button>
-              <Button disabled={busy || undefined} onClick={() => props.settings(provider, model)}>
-                AI 服务 · {providerName} ·{' '}
-                {props.data.credentials.includes(provider) ? '已配置' : '未配置'}
-              </Button>
-            </div>
+          <section className="task-home-composer">
+            <Card className="ai-task-composer">
+              <label className="sr-only" htmlFor="new-task-description">
+                你想完成的任务
+              </label>
+              <Input.TextArea
+                id="new-task-description"
+                variant="borderless"
+                ref={(instance) => {
+                  homeInput.current = instance?.resizableTextArea?.textArea ?? null;
+                }}
+                rows={1}
+                value={homeText}
+                disabled={busy || undefined}
+                maxLength={20000}
+                onChange={(e) => setHomeText(e.target.value)}
+                placeholder="把指定网页的标题保存到文件，标题为空就提醒我。"
+              />
+              <p>也可以附加文件、网页链接或目标截图，帮助说明需求。</p>
+              <div className="ai-task-actions task-home-attachments" aria-label="添加任务资料">
+                <Button disabled={busy || undefined} onClick={() => void create(homeText, 'file')}>
+                  ＋ 文件
+                </Button>
+                <Button disabled={busy || undefined} onClick={() => void create(homeText, 'web')}>
+                  ＋ 网页
+                </Button>
+                <Button disabled={busy || undefined} onClick={() => void create(homeText, 'image')}>
+                  ＋ 截图
+                </Button>
+              </div>
+              <div className="ai-task-actions">
+                <Button
+                  type="primary"
+                  disabled={busy || !homeText.trim() || undefined}
+                  onClick={() => void create(homeText)}
+                >
+                  开始规划
+                </Button>
+                <Button
+                  disabled={busy || undefined}
+                  onClick={() => props.settings(provider, model)}
+                >
+                  AI 服务 · {providerName} ·{' '}
+                  {props.data.credentials.includes(provider) ? '已配置' : '未配置'}
+                </Button>
+              </div>
+            </Card>
           </section>
           <div className="ai-task-examples">
             {[
@@ -2096,42 +2103,48 @@ export default function AITaskWorkspace(props: Props) {
           </div>
           <div className="task-home-status">
             {learning?.taskId && (
-              <section className="ai-task-card learning-home" aria-label="教学进度">
-                <h2>{learning.status === 'completed' ? '已完成第一次学习' : '继续上次学习'}</h2>
-                <p>
-                  {learning.status === 'skipped' ? '已跳过 · ' : ''}已完成{' '}
-                  {Object.keys(learning.achieved).length} / 4 项学习。
-                </p>
-                {learningError && <p role="alert">学习记录暂时未取得，请打开学习说明重新读取。</p>}
-                {!learningError && !learning.taskExists && (
-                  <p role="status">原教学任务已不存在，可以重新学习。已记录的学习进度仍保留。</p>
-                )}
-                <div className="ai-task-actions">
-                  <Button
-                    disabled={busy || !!learningError || !learning.taskExists || undefined}
-                    onClick={() => void startLearning('continue')}
-                  >
-                    {learning.status === 'completed' ? '查看教学结果' : '继续教学'}
-                  </Button>
-                  <Button disabled={busy || undefined} onClick={() => void showGuide()}>
-                    {learningError ? '查看学习说明' : '重新学习'}
-                  </Button>
-                </div>
+              <section className="learning-home" aria-label="教学进度">
+                <Card className="task-home-card" size="small">
+                  <h2>{learning.status === 'completed' ? '已完成第一次学习' : '继续上次学习'}</h2>
+                  <p>
+                    {learning.status === 'skipped' ? '已跳过 · ' : ''}已完成{' '}
+                    {Object.keys(learning.achieved).length} / 4 项学习。
+                  </p>
+                  {learningError && (
+                    <p role="alert">学习记录暂时未取得，请打开学习说明重新读取。</p>
+                  )}
+                  {!learningError && !learning.taskExists && (
+                    <p role="status">原教学任务已不存在，可以重新学习。已记录的学习进度仍保留。</p>
+                  )}
+                  <div className="ai-task-actions">
+                    <Button
+                      disabled={busy || !!learningError || !learning.taskExists || undefined}
+                      onClick={() => void startLearning('continue')}
+                    >
+                      {learning.status === 'completed' ? '查看教学结果' : '继续教学'}
+                    </Button>
+                    <Button disabled={busy || undefined} onClick={() => void showGuide()}>
+                      {learningError ? '查看学习说明' : '重新学习'}
+                    </Button>
+                  </div>
+                </Card>
               </section>
             )}
-            <section className="ai-task-card" aria-label="待处理入口">
-              <h2>
-                需要我处理 · {props.data.attention.filter((item) => !item.read).length} 条未读
-              </h2>
-              <p>
-                {props.data.attention.find((item) => !item.read)?.title ||
-                  '当前没有未读提醒。仍可查看待办、人工请求和历史提醒。'}
-              </p>
-              <div className="ai-task-actions">
-                <Button disabled={busy || undefined} onClick={props.openAttention}>
-                  查看待办与提醒
-                </Button>
-              </div>
+            <section aria-label="待处理入口">
+              <Card className="task-home-card" size="small">
+                <h2>
+                  需要我处理 · {props.data.attention.filter((item) => !item.read).length} 条未读
+                </h2>
+                <p>
+                  {props.data.attention.find((item) => !item.read)?.title ||
+                    '当前没有未读提醒。仍可查看待办、人工请求和历史提醒。'}
+                </p>
+                <div className="ai-task-actions">
+                  <Button disabled={busy || undefined} onClick={props.openAttention}>
+                    查看待办与提醒
+                  </Button>
+                </div>
+              </Card>
             </section>
           </div>
           <div className="ai-task-actions task-home-navigation">
@@ -2145,58 +2158,60 @@ export default function AITaskWorkspace(props: Props) {
               应用与工具
             </Button>
           </div>
-          <section className="ai-task-card" aria-labelledby="task-home-recents-title">
-            <div className="task-home-recents-heading">
-              <h2 id="task-home-recents-title">继续你的任务</h2>
-              <Button
-                disabled={busy || undefined}
-                aria-disabled={tasksLoading || undefined}
-                onClick={() => {
-                  if (!tasksLoading) setTasksRefresh((current) => current + 1);
-                }}
-              >
-                {tasksLoading ? '正在读取…' : tasksError ? '重新读取' : '刷新列表'}
-              </Button>
-            </div>
-            <div
-              role="status"
-              aria-atomic="true"
-              className={!tasksLoading && !tasksError ? 'sr-only' : undefined}
-            >
-              {tasksLoading ? (
-                <p>
-                  {tasksLoaded ? '正在更新任务列表，已显示的任务仍保留。' : '正在读取任务列表…'}
-                </p>
-              ) : tasksError ? (
-                <p className="task-home-recents-error">
-                  任务列表暂时无法读取：{tasksError}。
-                  {tasks.length
-                    ? '下方保留上次读取的列表，可以重新读取。'
-                    : '请重新读取，当前无法确认是否有任务草稿。'}
-                </p>
-              ) : (
-                <span>任务列表已更新，共 {tasks.length} 个任务。</span>
-              )}
-            </div>
-            {tasksLoaded && !tasksLoading && !tasksError && !tasks.length && (
-              <p>还没有任务草稿。从上面描述一个目标开始。</p>
-            )}
-            {tasks.length > 0 && (
-              <div className="ai-task-recents">
-                {tasks.map((task) => (
-                  <Button
-                    key={task.id}
-                    disabled={busy || undefined}
-                    onClick={() => void open(task.id)}
-                  >
-                    <span>{task.description || '尚未描述的任务'}</span>
-                    <small>
-                      {status[task.status]} · {new Date(task.updatedAt).toLocaleString('zh-CN')}
-                    </small>
-                  </Button>
-                ))}
+          <section aria-labelledby="task-home-recents-title">
+            <Card className="task-home-card">
+              <div className="task-home-recents-heading">
+                <h2 id="task-home-recents-title">继续你的任务</h2>
+                <Button
+                  disabled={busy || undefined}
+                  aria-disabled={tasksLoading || undefined}
+                  onClick={() => {
+                    if (!tasksLoading) setTasksRefresh((current) => current + 1);
+                  }}
+                >
+                  {tasksLoading ? '正在读取…' : tasksError ? '重新读取' : '刷新列表'}
+                </Button>
               </div>
-            )}
+              <div
+                role="status"
+                aria-atomic="true"
+                className={!tasksLoading && !tasksError ? 'sr-only' : undefined}
+              >
+                {tasksLoading ? (
+                  <p>
+                    {tasksLoaded ? '正在更新任务列表，已显示的任务仍保留。' : '正在读取任务列表…'}
+                  </p>
+                ) : tasksError ? (
+                  <p className="task-home-recents-error">
+                    任务列表暂时无法读取：{tasksError}。
+                    {tasks.length
+                      ? '下方保留上次读取的列表，可以重新读取。'
+                      : '请重新读取，当前无法确认是否有任务草稿。'}
+                  </p>
+                ) : (
+                  <span>任务列表已更新，共 {tasks.length} 个任务。</span>
+                )}
+              </div>
+              {tasksLoaded && !tasksLoading && !tasksError && !tasks.length && (
+                <p>还没有任务草稿。从上面描述一个目标开始。</p>
+              )}
+              {tasks.length > 0 && (
+                <div className="ai-task-recents">
+                  {tasks.map((task) => (
+                    <Button
+                      key={task.id}
+                      disabled={busy || undefined}
+                      onClick={() => void open(task.id)}
+                    >
+                      <span>{task.description || '尚未描述的任务'}</span>
+                      <small>
+                        {status[task.status]} · {new Date(task.updatedAt).toLocaleString('zh-CN')}
+                      </small>
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </Card>
           </section>
         </>
       ) : page === 'modify' && detail?.flow && modification ? (
