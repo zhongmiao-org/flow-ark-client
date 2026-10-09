@@ -350,8 +350,13 @@ export default function TemplateInstancePage({
       }}
     >
       <header className="topbar">
-        <button className="context-back" disabled={busy} onClick={back}>
-          ← 返回{entryDetail ? '实例' : returnLabel}
+        <button
+          className="context-back"
+          title={`返回${entryDetail ? '实例' : returnLabel}`}
+          disabled={busy}
+          onClick={back}
+        >
+          <span>← 返回{entryDetail ? '实例' : returnLabel}</span>
         </button>
         <nav className="breadcrumbs" aria-label="当前位置">
           <a

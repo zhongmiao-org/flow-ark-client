@@ -2,6 +2,14 @@
 .template-instance-host [hidden] {
   display: none !important;
 }
+.template-instance-host .topbar .context-back > span {
+  display: block;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .template-instance-columns {
   display: grid;
   grid-template-columns: minmax(0, 728fr) minmax(0, 400fr);
