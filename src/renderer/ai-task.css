@@ -799,28 +799,42 @@
   }
 }
 
+/* Ant Design owns the task panel surface; these rules preserve Figma layout. */
+.learning-card,
+.task-brief-card {
+  min-width: 0;
+  height: 100%;
+}
+.learning-card > .ant-card-body,
+.task-brief-card > .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  height: 100%;
+}
+
 /* Figma first-task 23:2106: 400/728 columns, 24 gap, 690 high at 1440. */
 .learning-columns {
   display: grid;
   grid-template-columns: 400px minmax(0, 1fr);
   gap: 24px;
 }
-.learning-columns > .ai-task-card {
+.learning-columns .learning-card {
   min-height: 690px;
 }
-.learning-intro > h2 {
+.learning-intro > .learning-card > .ant-card-body > h2 {
   font-size: 28px;
   line-height: 36px;
   margin-bottom: 4px;
 }
-.learning-intro > p {
+.learning-intro > .learning-card > .ant-card-body > p {
   margin-bottom: 0;
 }
 .learning-topic {
   min-height: 90px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-  padding: 16px;
+}
+.learning-topic > .ant-card-body {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -831,20 +845,13 @@
   align-items: center;
   gap: 4px 12px;
 }
-.learning-topic-heading > span {
+.learning-topic-heading > .ant-tag {
   margin-left: auto;
-  color: var(--fa-action-primary);
-  font-size: 12px;
-  line-height: 18px;
 }
-.learning-read-error {
+.learning-read-error .ant-alert-description {
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-.learning-read-error button {
-  align-self: flex-start;
-  min-height: 40px;
 }
 .learning-columns h3 {
   font-size: 18px;
@@ -859,29 +866,29 @@
   color: var(--fa-text-secondary);
 }
 .learning-step {
-  display: flex;
   min-height: 88px;
-  padding: 16px;
-  gap: 16px;
-  border-radius: 8px;
   background: var(--fa-bg-canvas);
 }
-.learning-step > span {
+.learning-step > .ant-card-body {
+  display: flex;
+  gap: 16px;
+}
+.learning-step > .ant-card-body > span {
   color: var(--fa-action-primary);
   font-size: 18px;
   line-height: 26px;
   width: 28px;
   flex-shrink: 0;
 }
-.learning-step > div {
+.learning-step > .ant-card-body > div {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
-.learning-practice > .ai-task-actions > .ant-btn-primary {
+.learning-practice > .learning-card > .ant-card-body > .ai-task-actions > .ant-btn-primary {
   min-width: 180px;
 }
-.learning-practice > .ai-task-note {
+.learning-disclosure {
   min-height: 72px;
 }
 .learning-home {
@@ -936,7 +943,7 @@
   .learning-columns {
     grid-template-columns: minmax(0, 1fr);
   }
-  .learning-columns > .ai-task-card {
+  .learning-columns .learning-card {
     min-height: 0;
   }
 }
@@ -945,12 +952,16 @@
   .learning-columns {
     grid-template-columns: minmax(0, 1fr);
   }
-  .learning-columns > .ai-task-card {
+  .learning-columns .learning-card {
     min-height: 0;
   }
 }
 
-.learning-practice > .ai-task-actions > button:not(.ant-btn-primary) {
+.learning-practice
+  > .learning-card
+  > .ant-card-body
+  > .ai-task-actions
+  > button:not(.ant-btn-primary) {
   min-width: 144px;
 }
 
@@ -1130,13 +1141,19 @@
 .task-brief-columns {
   align-items: stretch;
 }
-.task-brief-input > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.task-brief-columns .task-brief-card {
+  min-height: 700px;
+}
+.task-brief-input
+  > .task-brief-card
+  > .ant-card-body
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   color: var(--fa-text-secondary);
   font-size: 12px;
   line-height: 18px;
   margin-bottom: -8px;
 }
-.task-brief-input > textarea {
+.task-brief-input > .task-brief-card > .ant-card-body > textarea {
   min-height: 116px;
   background: var(--fa-bg-canvas);
 }
@@ -1146,22 +1163,16 @@
   gap: 12px;
   margin-top: 2px;
 }
-.task-brief-add button {
-  padding: 0 6px;
-}
-.task-brief-context {
-  border: 1px solid var(--fa-border-default);
-  border-radius: 12px;
-  padding: 16px;
+.task-brief-context-card {
   min-height: 120px;
+}
+.task-brief-context-card > .ant-card-body {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-.task-brief-context > button {
+.task-brief-context-card > .ant-card-body > button {
   align-self: flex-start;
-  min-height: 28px;
-  padding: 4px 8px;
 }
 .task-context-budget {
   font-size: 12px;
@@ -1231,20 +1242,17 @@
   color: var(--fa-text-secondary);
 }
 .task-brief-attachment button {
-  padding: 4px 8px;
-  min-height: 28px;
   flex: 0 0 auto;
 }
-.task-brief-explainer > div:not(.ant-alert) {
+.task-brief-explanation {
   min-height: 104px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: 12px;
-  padding: 16px;
+}
+.task-brief-explanation > .ant-card-body {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-.task-brief-explainer > div:not(.ant-alert):first-of-type {
+.task-brief-explanation.is-intro {
   min-height: 124px;
   background: var(--fa-action-subtle);
 }
@@ -1273,7 +1281,7 @@
   .task-brief-columns {
     grid-template-columns: minmax(0, 1fr);
   }
-  .task-brief-columns > .ai-task-card {
+  .task-brief-columns .task-brief-card {
     min-height: auto;
   }
 }

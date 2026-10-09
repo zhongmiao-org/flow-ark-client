@@ -132,6 +132,7 @@ export const flowArkTheme = {
     controlOutlineWidth: 2,
   },
   components: {
+    Card: { borderRadiusLG: 12, boxShadowTertiary: 'none' },
     Menu: { darkItemColor: '#A8B4CA' },
     Modal: { titleFontSize: 28, titleLineHeight: 40 / 28, borderRadiusLG: 12 },
     Tag: { borderRadiusSM: 999, lineHeightSM: 26 / 12 },
