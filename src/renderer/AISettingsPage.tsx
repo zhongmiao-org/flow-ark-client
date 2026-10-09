@@ -1,4 +1,17 @@
-import { Select, Button, Input, Modal, Flex, Tag, Badge, Alert, Menu } from 'antd';
+import {
+  Select,
+  Button,
+  Collapse,
+  Descriptions,
+  Input,
+  Modal,
+  Flex,
+  Tag,
+  Badge,
+  Alert,
+  Menu,
+} from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { usePageBack } from './use-page-back';
 import type { SettingsDestination } from './LocalSettingsPage';
 import type { TemplateDetail } from './template-draft';
@@ -784,7 +797,8 @@ export default function AISettingsPage({
                 取消
               </Button>
               <Button
-                className="ai-remove-button"
+                color="danger"
+                variant="filled"
                 disabled={!!busy || !state || state.inUse || undefined}
                 onClick={() => void remove()}
               >
@@ -961,6 +975,8 @@ export default function AISettingsPage({
                     <span>模型 ID</span>
                     <Button
                       className="ai-model-value"
+                      variant="filled"
+                      size="small"
                       disabled={!!busy || testing || state.inUse || undefined}
                       aria-label="修改模型 ID"
                       onClick={() => beginEdit('model')}
@@ -994,7 +1010,8 @@ export default function AISettingsPage({
                     {!entry.source && (
                       <Button
                         ref={removeButton}
-                        className="ai-remove-button"
+                        color="danger"
+                        variant="filled"
                         disabled={!!busy || testing || state.inUse || undefined}
                         onClick={() => {
                           setError('');
@@ -1013,19 +1030,32 @@ export default function AISettingsPage({
                   <p className="ai-task-note ai-provider-scope">
                     这里配置通用接口。业务提示词和输出规则由模板提供。
                   </p>
-                  <details className="ai-provider-description">
-                    <summary>服务地址与模型说明</summary>
-                    <p>
-                      {provider === 'deepseek'
-                        ? 'https://api.deepseek.com'
-                        : 'https://api.openai.com/v1/responses'}
-                    </p>
-                    <p>
-                      两家服务分别保存模型与受保护的
-                      Key，不会自动替换。模型按当前账号可用项填写，修改模型或替换 Key
-                      后需要重新测试连接。
-                    </p>
-                  </details>
+                  <Collapse
+                    className="ai-provider-description"
+                    size="small"
+                    items={[
+                      {
+                        key: 'provider',
+                        label: '服务地址与模型说明',
+                        forceRender: true,
+                        onKeyDown: activateCollapseWithSpace,
+                        children: (
+                          <>
+                            <p>
+                              {provider === 'deepseek'
+                                ? 'https://api.deepseek.com'
+                                : 'https://api.openai.com/v1/responses'}
+                            </p>
+                            <p>
+                              两家服务分别保存模型与受保护的
+                              Key，不会自动替换。模型按当前账号可用项填写，修改模型或替换 Key
+                              后需要重新测试连接。
+                            </p>
+                          </>
+                        ),
+                      },
+                    ]}
+                  />
                 </>
               ) : (
                 <small>模型按当前账号可用项填写。修改模型或替换 Key 后，需要重新测试连接。</small>
@@ -1109,33 +1139,49 @@ export default function AISettingsPage({
                 <p className="ai-connection-next">{failure.next}</p>
               )}
               {state.test && !testing && (
-                <details className="ai-provider-description ai-test-details">
-                  <summary>查看本次连接详情</summary>
-                  {dirty && <p>以下记录对应已保存配置，不包含尚未保存的输入。</p>}
-                  <dl>
-                    <div>
-                      <dt>服务</dt>
-                      <dd>{name}</dd>
-                    </div>
-                    <div>
-                      <dt>测试模型</dt>
-                      <dd>{state.test.model ?? '未记录'}</dd>
-                    </div>
-                    <div>
-                      <dt>更新时间</dt>
-                      <dd>
-                        {Number.isFinite(Date.parse(state.test.at))
-                          ? new Date(state.test.at).toLocaleString('zh-CN')
-                          : '未取得有效时间'}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>本地请求标识</dt>
-                      <dd>{state.test.requestId}</dd>
-                    </div>
-                  </dl>
-                  <p>标识仅用于区分本地测试记录，不是服务商的请求回执。</p>
-                </details>
+                <Collapse
+                  className="ai-test-details"
+                  size="small"
+                  items={[
+                    {
+                      key: 'test',
+                      label: '查看本次连接详情',
+                      forceRender: true,
+                      onKeyDown: activateCollapseWithSpace,
+                      children: (
+                        <>
+                          {dirty && <p>以下记录对应已保存配置，不包含尚未保存的输入。</p>}
+                          <Descriptions
+                            layout="vertical"
+                            column={1}
+                            size="small"
+                            items={[
+                              { key: 'provider', label: '服务', children: name },
+                              {
+                                key: 'model',
+                                label: '测试模型',
+                                children: state.test.model ?? '未记录',
+                              },
+                              {
+                                key: 'time',
+                                label: '更新时间',
+                                children: Number.isFinite(Date.parse(state.test.at))
+                                  ? new Date(state.test.at).toLocaleString('zh-CN')
+                                  : '未取得有效时间',
+                              },
+                              {
+                                key: 'request',
+                                label: '本地请求标识',
+                                children: state.test.requestId,
+                              },
+                            ]}
+                          />
+                          <p>标识仅用于区分本地测试记录，不是服务商的请求回执。</p>
+                        </>
+                      ),
+                    },
+                  ]}
+                />
               )}
               {state.configured && !editing && (
                 <>

@@ -83,8 +83,7 @@
   font-size: 12px;
   color: var(--fa-text-secondary);
 }
-.ai-settings-field > p,
-.ai-settings-field > .ai-model-value {
+.ai-settings-field > p {
   margin: 0;
   background: var(--fa-bg-canvas);
   border: none;
@@ -101,6 +100,8 @@
   justify-content: flex-start;
   display: flex;
   gap: 20px;
+  height: auto;
+  white-space: normal;
 }
 .ai-model-value .ai-model-name {
   min-width: 0;
@@ -115,7 +116,6 @@
 .ai-settings-page input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   min-width: 0;
   width: 100%;
-  height: 40px;
 }
 .ai-settings-page .ai-provider-selection {
   min-height: 82px;
@@ -133,15 +133,8 @@
   display: flex;
   align-items: center;
 }
-.ai-provider-description {
-  font-size: 12px;
-  line-height: 20px;
-  color: var(--fa-text-secondary);
-}
-.ai-provider-description summary {
-  cursor: pointer;
-}
-.ai-provider-description p {
+.ai-provider-description p,
+.ai-test-details {
   overflow-wrap: anywhere;
 }
 .ai-settings-page .ai-provider-card.is-general-provider .ai-task-actions button,
@@ -191,12 +184,6 @@
   white-space: normal;
   overflow-wrap: anywhere;
   max-width: 100%;
-}
-.ai-settings-page button.ai-remove-button,
-button.ai-remove-button {
-  background: var(--fa-status-error-bg);
-  color: var(--fa-status-error);
-  border-color: transparent;
 }
 .ai-summary-grid {
   display: grid;
@@ -284,12 +271,6 @@ button.ai-remove-button {
 .ai-settings-page .ai-provider-card.is-editing .ai-task-actions button:not(.ant-btn-primary) {
   min-width: 112px;
 }
-.ai-settings-page
-  input:not(.ant-checkbox-input):not(.ant-radio-input):not(
-    [class*='ant-select']
-  )[aria-invalid='true'] {
-  border-color: var(--fa-status-error);
-}
 
 .ai-settings-page .ai-remove-confirmation {
   width: min(728px, 100%);
@@ -337,20 +318,6 @@ button.ai-remove-button {
   font-weight: 500;
 }
 
-.ai-test-details dl {
-  margin: 12px 0;
-  display: grid;
-  gap: 12px;
-}
-.ai-test-details dl > div {
-  display: grid;
-  gap: 4px;
-}
-.ai-test-details dd {
-  margin: 0;
-  color: var(--fa-text-primary);
-  overflow-wrap: anywhere;
-}
 .ai-settings-page .ai-connection-card > .ai-connection-next {
   border-left: 2px solid var(--fa-border-default);
   padding-left: 12px;
