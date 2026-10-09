@@ -68,6 +68,9 @@ export default function TemplateLibrary({
   const [sort, setSort] = useState('recent');
   const [instanceQuery, setInstanceQuery] = useState('');
   const [instanceFilter, setInstanceFilter] = useState('');
+  const [instancesOrigin, setInstancesOrigin] = useState<'library' | 'package' | 'remove'>(
+    'library',
+  );
   const [copyFrom, setCopyFrom] = useState('');
   const [resumeInstance, setResumeInstance] = useState<string>();
   const [removeReviewed, setRemoveReviewed] = useState(false);
@@ -127,6 +130,11 @@ export default function TemplateLibrary({
   ].sort();
   const references = pkg ? data.instances.filter((i) => i.packageKey === pkg.key) : [];
   const flowRefs = pkg ? data.flows.filter((f) => f.bindings.template?.packageKey === pkg.key) : [];
+  const referenced = references.length > 0 || flowRefs.length > 0;
+  const backView =
+    view === 'instances' ? instancesOrigin : view === 'remove' ? 'package' : 'library';
+  const backLabel =
+    backView === 'remove' ? '返回版本引用' : backView === 'package' ? '返回模板详情' : '返回模板库';
   const instancePackage = data.templates.find((item) => item.key === instanceFilter);
   const title = {
     library: '模板库',
@@ -134,7 +142,7 @@ export default function TemplateLibrary({
     installed: '模板已安装',
     package: pkg?.manifest.name ?? '模板版本不可用',
     instances: instancePackage ? `${instancePackage.manifest.name} · 实例` : '本地实例',
-    remove: '卸载模板版本',
+    remove: referenced ? '模板版本与引用' : '卸载模板版本',
   }[view];
   const message = (reason: unknown) =>
     (reason instanceof Error ? reason.message : '操作未完成，请重试').replace(
@@ -195,7 +203,12 @@ export default function TemplateLibrary({
         await cancelPreview();
         home();
       });
-    else home();
+    else if (backView === 'library') home();
+    else {
+      setView(backView);
+      setError('');
+      setNotice('');
+    }
   };
   const selectZip = () =>
     work('inspect', async () => {
@@ -305,6 +318,7 @@ export default function TemplateLibrary({
   };
   const showInstances = (key = '') => {
     remember();
+    setInstancesOrigin(view === 'package' || view === 'remove' ? view : 'library');
     setInstanceFilter(key);
     setInstanceQuery('');
     setView('instances');
@@ -326,7 +340,7 @@ export default function TemplateLibrary({
       <header className="topbar">
         {view !== 'library' && (
           <button className="context-back" disabled={!!busy} onClick={back}>
-            ← 返回模板库
+            ← {backLabel}
           </button>
         )}
         <nav className="breadcrumbs" aria-label="当前位置">
@@ -336,7 +350,10 @@ export default function TemplateLibrary({
                 href="#templates"
                 onClick={(event) => {
                   event.preventDefault();
-                  if (!busy) back();
+                  if (!busy) {
+                    if (view === 'inspect') back();
+                    else home();
+                  }
                 }}
               >
                 模板库
@@ -359,7 +376,9 @@ export default function TemplateLibrary({
                 : view === 'installed'
                   ? '包定义已保存到本机，尚未创建运行。'
                   : view === 'remove'
-                    ? '核对具体版本和引用后，再决定是否卸载。'
+                    ? referenced
+                      ? '此版本仍在使用，先查看关联实例；已有版本和运行保持不变。'
+                      : '核对具体版本和引用后，再决定是否卸载。'
                     : view === 'instances'
                       ? '每个实例独立保存配置、资源、授权和业务状态。'
                       : '从已安装的模板定义开始，创建独立实例并配置本机资源。'}
@@ -680,7 +699,9 @@ export default function TemplateLibrary({
               <button
                 disabled={!!busy}
                 className="danger"
+                data-catalog-focus="review-package-removal"
                 onClick={() => {
+                  remember();
                   setRemoveReviewed(false);
                   setView('remove');
                 }}
@@ -768,49 +789,60 @@ export default function TemplateLibrary({
         )}
         {view === 'remove' && pkg && (
           <section className="template-catalog-card template-installed">
-            <span
-              className={`template-catalog-status${references.length || flowRefs.length ? ' warning' : ''}`}
-            >
-              {references.length || flowRefs.length ? '仍被引用' : '核对后卸载'}
+            <span className={`template-catalog-status${referenced ? ' warning' : ''}`}>
+              {referenced ? '不能卸载' : '核对后卸载'}
             </span>
-            <h2>
+            <h2>{referenced ? '该版本仍被引用' : '核对要卸载的版本'}</h2>
+            <p>
               {pkg.manifest.name} · v{pkg.manifest.version}
-            </h2>
-            <p>卸载会移除这台 Mac 上的此版本包定义。重新使用时需要再次导入原 ZIP。</p>
+            </p>
+            <p>
+              {referenced
+                ? '现有实例或流程仍在使用此版本，不能卸载。其他版本可以并存，不会覆盖这些引用。'
+                : '卸载会移除这台 Mac 上的此版本包定义。重新使用时需要再次导入原 ZIP。'}
+            </p>
             <p>
               当前列表中有 {references.length} 个实例、{flowRefs.length}{' '}
               个流程引用此版本。历史版本、计划和 Run 的引用仍由宿主最终检查。
             </p>
             {references.length > 0 && (
-              <button disabled={!!busy} onClick={() => showInstances(pkg.key)}>
+              <button
+                disabled={!!busy}
+                data-catalog-focus="view-package-references"
+                onClick={() => showInstances(pkg.key)}
+              >
                 查看引用此版本的实例
               </button>
             )}
-            <label className="template-catalog-check">
-              <input
-                type="checkbox"
-                checked={removeReviewed}
-                disabled={!!busy || !!references.length || !!flowRefs.length}
-                onChange={(e) => setRemoveReviewed(e.target.checked)}
-              />
-              确认只卸载这个模板版本
-            </label>
+            {!referenced && (
+              <label className="template-catalog-check">
+                <input
+                  type="checkbox"
+                  checked={removeReviewed}
+                  disabled={!!busy}
+                  onChange={(e) => setRemoveReviewed(e.target.checked)}
+                />
+                确认只卸载这个模板版本
+              </label>
+            )}
             <div className="template-catalog-actions">
-              <button
-                className="danger"
-                disabled={!!busy || !removeReviewed || !!references.length || !!flowRefs.length}
-                onClick={() =>
-                  void work('remove', async () => {
-                    await api('template.remove', { key: pkg.key });
-                    await refresh();
-                    home();
-                    setNotice('此版本已卸载，其他版本保持不变。');
-                  })
-                }
-              >
-                {busy === 'remove' ? '正在卸载…' : '确认卸载'}
-              </button>
-              <button disabled={!!busy} onClick={() => setView('package')}>
+              {!referenced && (
+                <button
+                  className="danger"
+                  disabled={!!busy || !removeReviewed}
+                  onClick={() =>
+                    void work('remove', async () => {
+                      await api('template.remove', { key: pkg.key });
+                      await refresh();
+                      home();
+                      setNotice('此版本已卸载，其他版本保持不变。');
+                    })
+                  }
+                >
+                  {busy === 'remove' ? '正在卸载…' : '确认卸载'}
+                </button>
+              )}
+              <button disabled={!!busy} onClick={back}>
                 保留，返回模板详情
               </button>
             </div>
