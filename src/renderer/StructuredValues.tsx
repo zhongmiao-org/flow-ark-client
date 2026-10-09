@@ -267,6 +267,8 @@ export function MatrixValues({
   const [rowPage, setRowPage] = useState(0),
     [columnPage, setColumnPage] = useState(0),
     [selected, setSelected] = useState<[number, number] | null>(null);
+  const paginationStatus = useRef<HTMLSpanElement>(null);
+  const paginationTrigger = useRef<HTMLButtonElement | null>(null);
   const rows = isMatrix(value) ? value : null,
     width = rows ? matrixColumns(rows) : 1;
   const rowStart = Math.min(rowPage, Math.max(0, Math.ceil((rows?.length ?? 0) / 10) - 1)) * 10;
@@ -275,6 +277,11 @@ export function MatrixValues({
     { length: Math.min(6, width - columnStart) },
     (_, i) => columnStart + i,
   );
+  useLayoutEffect(() => {
+    const trigger = paginationTrigger.current;
+    paginationTrigger.current = null;
+    if (trigger?.disabled) paginationStatus.current?.focus({ preventScroll: true });
+  }, [rowStart, columnStart]);
   const active =
     selected && rows && selected[0] < rows.length && selected[1] < width ? selected : null;
   return (
@@ -366,7 +373,7 @@ export function MatrixValues({
             </p>
           )}
           <div className="matrix-pagination" aria-label="矩阵分页">
-            <span role="status">
+            <span role="status" ref={paginationStatus} tabIndex={-1}>
               {rows.length
                 ? `第 ${rowStart + 1}–${Math.min(rowStart + 10, rows.length)} 行 / 共 ${rows.length} 行`
                 : '尚无数据行'}{' '}
@@ -376,7 +383,8 @@ export function MatrixValues({
               htmlType="button"
               aria-label="上一页数据行"
               disabled={!rowStart || undefined}
-              onClick={() => {
+              onClick={(event) => {
+                paginationTrigger.current = event.currentTarget as HTMLButtonElement;
                 setRowPage(rowStart / 10 - 1);
                 setSelected(null);
               }}
@@ -387,7 +395,8 @@ export function MatrixValues({
               htmlType="button"
               aria-label="下一页数据行"
               disabled={rowStart + 10 >= rows.length || undefined}
-              onClick={() => {
+              onClick={(event) => {
+                paginationTrigger.current = event.currentTarget as HTMLButtonElement;
                 setRowPage(rowStart / 10 + 1);
                 setSelected(null);
               }}
@@ -398,7 +407,8 @@ export function MatrixValues({
               htmlType="button"
               aria-label="上一组数据列"
               disabled={!columnStart || undefined}
-              onClick={() => {
+              onClick={(event) => {
+                paginationTrigger.current = event.currentTarget as HTMLButtonElement;
                 setColumnPage(columnStart / 6 - 1);
                 setSelected(null);
               }}
@@ -409,7 +419,8 @@ export function MatrixValues({
               htmlType="button"
               aria-label="下一组数据列"
               disabled={columnStart + 6 >= width || undefined}
-              onClick={() => {
+              onClick={(event) => {
+                paginationTrigger.current = event.currentTarget as HTMLButtonElement;
                 setColumnPage(columnStart / 6 + 1);
                 setSelected(null);
               }}
