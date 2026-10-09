@@ -26,20 +26,9 @@
   overflow-wrap: anywhere;
 }
 .tool-capability-filters {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.tool-capability-filters button {
-  min-height: 40px;
-  font-size: 12px;
-  padding: 8px 12px;
-}
-.tool-capability-filters [aria-pressed='true'],
-.tool-capability-list [aria-pressed='true'] {
-  background: var(--fa-action-subtle);
-  border-color: var(--fa-action-primary);
-  color: var(--fa-action-primary);
+  min-width: 0;
+  overflow-x: auto;
+  padding: 2px;
 }
 .tool-capability-list {
   display: grid;
@@ -67,23 +56,6 @@
 .tool-capability-name {
   color: var(--fa-text-secondary);
   font-size: 12px;
-}
-.tool-capability-change {
-  flex-shrink: 0;
-  padding: 4px 8px;
-  border-radius: var(--fa-radius-8);
-  background: var(--fa-bg-subtle);
-  color: var(--fa-text-secondary);
-  font-size: 12px;
-}
-.tool-capability-change.is-added {
-  background: var(--fa-status-success-bg);
-  color: var(--fa-status-success);
-}
-.tool-capability-change.is-changed,
-.tool-capability-change.is-removed {
-  background: var(--fa-status-warning-bg);
-  color: var(--fa-status-warning);
 }
 .tool-capability-hints {
   display: grid;

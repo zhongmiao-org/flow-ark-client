@@ -36,6 +36,16 @@ export const toolConnectionColors: Record<
   failed: 'warning',
 };
 
+export const toolCapabilityColors: Record<
+  'added' | 'changed' | 'removed' | 'unchanged',
+  (typeof runStateColors)[string]
+> = {
+  added: 'success',
+  changed: 'warning',
+  removed: 'warning',
+  unchanged: 'default',
+};
+
 // Figma semantic tokens. All shared controls and workspace colours derive from this theme.
 export const flowArkTheme = {
   token: {
