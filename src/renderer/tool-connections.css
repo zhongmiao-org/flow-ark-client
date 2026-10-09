@@ -12,13 +12,23 @@
 .tools-page .page-heading p {
   overflow-wrap: anywhere;
 }
+.tool-surface {
+  min-width: 0;
+}
+.tool-surface > .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  min-width: 0;
+}
 .tool-presets {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
   margin-bottom: 24px;
 }
-.tool-presets > .ai-task-card {
+.tool-presets > section > .tool-surface {
   min-height: 296px;
 }
 .tool-presets button {
@@ -30,9 +40,10 @@
   gap: 24px;
   margin-bottom: 24px;
 }
-.tool-catalog-bottom > .ai-task-card {
+.tool-catalog-bottom > section > .tool-surface {
   min-height: 184px;
-  padding: 16px;
+}
+.tool-catalog-bottom .tool-surface > .ant-card-body {
   gap: 10px;
 }
 .tool-catalog-bottom button {
@@ -129,12 +140,13 @@
   overflow: auto;
 }
 .tool-usage-list li {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tool-usage-card > .ant-card-body {
   display: grid;
   gap: 8px;
-  padding: 16px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-  overflow-wrap: anywhere;
+  min-width: 0;
 }
 .tool-usage-list small {
   color: var(--fa-text-secondary);
@@ -162,6 +174,7 @@
   grid-template-columns: minmax(0, 650fr) minmax(0, 478fr);
   gap: 24px;
 }
+.tool-columns > section > .tool-surface,
 .tool-columns > .ai-task-card {
   min-height: 700px;
 }
@@ -230,10 +243,10 @@
   border-radius: var(--fa-radius-999);
   background: var(--fa-bg-subtle);
 }
-.tool-config > .ai-task-card {
+.tool-config > section > .tool-surface {
   min-height: 730px;
 }
-.tool-config > .ai-task-card:first-child {
+.tool-config > section:first-child > .tool-surface > .ant-card-body {
   gap: 32px;
 }
 .tool-config-actions .ant-btn-primary {
@@ -277,13 +290,19 @@
   color: var(--fa-text-secondary);
   font-weight: 400;
 }
-.tool-definition {
+.tool-definition:not(.ant-card) {
   padding: 16px;
   border: 1px solid var(--fa-border-default);
   border-radius: var(--fa-radius-12);
+}
+.tool-definition:not(.ant-card),
+.tool-definition > .ant-card-body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
+}
+.tool-definition {
   min-width: 0;
 }
 .tool-definition h3 {
@@ -354,13 +373,14 @@
   .tool-columns {
     grid-template-columns: minmax(0, 1fr);
   }
+  .tool-columns > section > .tool-surface,
   .tool-columns > .ai-task-card {
     min-height: auto;
   }
   .tool-presets {
     grid-template-columns: minmax(0, 1fr);
   }
-  .tool-presets > .ai-task-card {
+  .tool-presets > section > .tool-surface {
     min-height: 220px;
   }
   .tool-catalog-bottom {
