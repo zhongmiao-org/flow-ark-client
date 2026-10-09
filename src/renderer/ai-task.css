@@ -123,6 +123,8 @@
 }
 .ai-task-state {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   margin: -8px 0 16px;
@@ -1319,19 +1321,8 @@
 }
 .task-attachment-feedback {
   min-width: 0;
-  font-size: 12px;
-  line-height: 20px;
   overflow-wrap: anywhere;
   scroll-margin-block: 16px;
-}
-.task-attachment-feedback p {
-  margin: 0;
-  color: inherit;
-}
-.task-attachment-feedback button {
-  margin-top: 8px;
-  min-height: 28px;
-  padding: 4px 8px;
 }
 .task-brief-attachment-item > .task-attachment-feedback {
   margin-top: 8px;

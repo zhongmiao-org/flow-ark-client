@@ -19,12 +19,6 @@
 .ai-task-card.task-generation[data-generation-state='generating'] {
   min-height: 550px;
 }
-.task-generation .task-generation-status::before {
-  content: none;
-}
-.task-generation-status img {
-  flex: 0 0 auto;
-}
 .ai-task-card.task-generation[data-generation-state='unsupported'] {
   min-height: 520px;
 }
@@ -36,7 +30,6 @@
   overflow-wrap: anywhere;
 }
 .task-generation .task-generation-limitations ul {
-  margin-top: 16px;
   white-space: pre-wrap;
 }
 .task-generation-limitations li + li {
@@ -88,7 +81,9 @@
   align-self: flex-start;
 }
 .task-generation-preserved {
-  font-size: 13px;
+  width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .task-generation-failure .task-generation-reason {
   max-height: 88px;
@@ -97,41 +92,26 @@
 .task-generation-failure {
   width: 100%;
   min-width: 0;
-  padding: 16px;
-  border-radius: var(--fa-radius-12);
-  background: var(--fa-status-error-bg);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
 }
-.task-generation-failure h3 {
-  color: var(--fa-status-error);
+.task-generation-failure .task-generation-reason {
+  margin: 0;
 }
 .task-generation-limitations,
 .task-generation-record {
   width: 100%;
   min-width: 0;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-  padding: 16px 24px;
-}
-.task-generation-limitations summary,
-.task-generation-record summary {
-  cursor: pointer;
-  color: var(--fa-text-primary);
-  min-height: 24px;
 }
 .task-generation-record dl {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px 24px;
-  margin: 16px 0;
+  margin: 0 0 16px;
 }
 .task-generation-record dl > div {
   min-width: 0;
 }
 .task-generation-record dt,
-.task-generation-record > p {
+.task-generation-record p {
   color: var(--fa-text-secondary);
   font-size: 13px;
 }
@@ -149,10 +129,7 @@
     font-size: 24px;
   }
   .task-generation-current,
-  .task-generation-review,
-  .task-generation-failure,
-  .task-generation-limitations,
-  .task-generation-record {
+  .task-generation-review {
     padding: 16px;
   }
   .task-generation-record dl {

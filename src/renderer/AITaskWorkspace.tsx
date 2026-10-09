@@ -1,4 +1,5 @@
-import { Alert, ConfigProvider, Select, Button, Checkbox, Input } from 'antd';
+import { Alert, ConfigProvider, Select, Button, Checkbox, Input, Tag } from 'antd';
+import { planningTaskColors } from './theme';
 import TaskMissingAI from './TaskMissingAI';
 import TaskStepList, { type TaskStepListHandle } from './TaskStepList';
 import TaskStepInspector from './TaskStepInspector';
@@ -2278,25 +2279,33 @@ export default function AITaskWorkspace(props: Props) {
               page !== 'understand' &&
               page !== 'brief' && (
                 <div className="ai-task-state" role="status">
-                  <span>
+                  <Tag color={planningTaskColors[detail.task.status]}>
                     {detail.task.status === 'plan' && !detail.proposal && detail.flow
                       ? '方案已保存'
                       : status[detail.task.status]}
-                  </span>
+                  </Tag>
                   <span>
                     {dirty ? '有未保存修改' : '草稿已保存'} · 修订 {revision}
                   </span>
                 </div>
               )}
             {detail.task.error && (
-              <p className="ai-task-note ai-task-failure" role="alert">
-                {detail.task.error}
-              </p>
+              <Alert
+                className="workspace-feedback"
+                type="error"
+                role="alert"
+                showIcon
+                title={detail.task.error}
+              />
             )}
             {scopeConflict && (
-              <p className="ai-task-note ai-task-failure" role="alert">
-                单步修改的基线已变化。请返回来源核对，或明确改为完整任务修改；当前要求已保留。
-              </p>
+              <Alert
+                className="workspace-feedback"
+                type="error"
+                role="alert"
+                showIcon
+                title="单步修改的基线已变化。请返回来源核对，或明确改为完整任务修改；当前要求已保留。"
+              />
             )}
             {page === 'brief' && !scope ? (
               <TaskBriefPage
@@ -2791,9 +2800,12 @@ export default function AITaskWorkspace(props: Props) {
                       />
                       <p>已核对：其他步骤、结构和静态资源保持不变；现有绑定和权限不增加。</p>
                       {detail.conflict && (
-                        <p className="ai-task-note ai-task-failure" role="alert">
-                          原流程或绑定已变化，请重新核对；不能采纳旧提案。
-                        </p>
+                        <Alert
+                          type="error"
+                          role="alert"
+                          showIcon
+                          title="原流程或绑定已变化，请重新核对；不能采纳旧提案。"
+                        />
                       )}
                       <div className="ai-task-actions">
                         <Button
@@ -2827,20 +2839,27 @@ export default function AITaskWorkspace(props: Props) {
                   ) : flow ? (
                     <>
                       {viewingPreserved && (
-                        <div className="ai-task-note" role="status">
-                          <p>这是此前保存的草稿。本次回复没有可采纳的方案，也没有修改这些步骤。</p>
-                          <Button disabled={busy || undefined} onClick={recoverDescription}>
-                            调整任务要求
-                          </Button>
-                          {detail.task.status === 'unsupported' && (
-                            <Button
-                              disabled={busy || undefined}
-                              onClick={() => setPage('generation')}
-                            >
-                              返回能力说明
-                            </Button>
-                          )}
-                        </div>
+                        <Alert
+                          type="info"
+                          role="status"
+                          showIcon
+                          title="这是此前保存的草稿。本次回复没有可采纳的方案，也没有修改这些步骤。"
+                          description={
+                            <div className="feedback-actions">
+                              <Button disabled={busy || undefined} onClick={recoverDescription}>
+                                调整任务要求
+                              </Button>
+                              {detail.task.status === 'unsupported' && (
+                                <Button
+                                  disabled={busy || undefined}
+                                  onClick={() => setPage('generation')}
+                                >
+                                  返回能力说明
+                                </Button>
+                              )}
+                            </div>
+                          }
+                        />
                       )}
                       {!changesView && proposalNavigation}
                       {!changesView && (
@@ -2858,9 +2877,15 @@ export default function AITaskWorkspace(props: Props) {
                               <h2 tabIndex={-1} data-plan-preview-heading>
                                 {flow.name}
                               </h2>
-                              <span className="badge">
+                              <Tag
+                                color={
+                                  hasPlanProposal
+                                    ? planningTaskColors.plan
+                                    : planningTaskColors.draft
+                                }
+                              >
                                 {hasPlanProposal ? '待采纳方案' : '已保存草稿'}
-                              </span>
+                              </Tag>
                             </div>
                           ) : null}
                           <div
