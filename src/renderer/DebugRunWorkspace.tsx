@@ -1,12 +1,13 @@
 import { runStateColors, runStepColors } from './theme';
-import { Button, Tag, Badge } from 'antd';
-import { useId, useState, type ReactNode, type RefObject } from 'react';
+import { Alert, Button, Collapse, Descriptions, Tag, Badge } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
+import type { ReactNode, RefObject } from 'react';
 import type { Event } from '../shared/types';
 import type { RunPresentation, RunPresentationInput } from '../shared/run-presentation';
 import { formatRunDuration } from '../shared/run-presentation';
 import { runDisplayLabels } from '../shared/run-history';
 import { runTimeline, runTimelineTitle } from './run-timeline';
-import { RunObservation } from './RunObservation';
+import { RunObservation, RunStepOutput } from './RunObservation';
 import './debug-run-workspace.css';
 
 type Props = {
@@ -25,9 +26,6 @@ type Props = {
   receipts: ReactNode;
 };
 export default function DebugRunWorkspace(props: Props) {
-  const id = useId();
-  const [outputsOpen, setOutputsOpen] = useState(false);
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const { run } = props.detail;
   const terminal = ['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(run.state);
   const paused = props.view.step.kind === 'paused' && !props.lastSaved;
@@ -72,9 +70,12 @@ export default function DebugRunWorkspace(props: Props) {
           <p>启动时已固定快照；修改编辑器草稿不会改变当前执行。</p>
         </div>
       </header>
-      <div className="debug-run-banner" role="status">
-        {banner}
-      </div>
+      <Alert
+        type={props.lastSaved || props.view.statusNote ? 'warning' : 'info'}
+        showIcon
+        title={banner}
+        role="status"
+      />
       <div className="debug-run-columns">
         <aside className="debug-run-steps" aria-label="调试步骤">
           {props.timeline.length ? (
@@ -120,65 +121,75 @@ export default function DebugRunWorkspace(props: Props) {
           </p>
           {props.controls}
           {props.feedback}
-          {run.error && (
-            <p className="field-error" role="alert">
-              {run.error}
-            </p>
-          )}
-          <div className="debug-run-detail-actions">
-            <Button
-              aria-expanded={outputsOpen}
-              aria-controls={id + '-outputs'}
-              onClick={() => setOutputsOpen(!outputsOpen)}
-            >
-              查看步骤输出
-            </Button>
-            <Button
-              aria-expanded={detailsOpen}
-              aria-controls={id + '-details'}
-              onClick={() => setDetailsOpen(!detailsOpen)}
-            >
-              查看暂停 / 等待 / 收尾
-            </Button>
-          </div>
-          <section id={id + '-outputs'} hidden={!outputsOpen} aria-label="调试步骤输出">
-            <h3>已保存的步骤输出</h3>
-            {props.results.length ? (
-              props.results.map((event) => {
-                const step = props.timeline.find((row) => row.instance === event.nodeInstance);
-                return (
-                  <details key={event.sequence} open={event === props.results.at(-1)}>
-                    <summary>
-                      {step ? runTimelineTitle(step) : event.nodeInstance || '运行输出'}
-                    </summary>
-                    {step && step.instance !== step.nodeId && <code>{step.instance}</code>}
-                    <pre tabIndex={0}>{event.data.outputPreview}</pre>
-                  </details>
-                );
-              })
-            ) : (
-              <p>尚无已保存输出；查看不会执行步骤。</p>
-            )}
-            <Button onClick={props.output}>查看输出与运行产物</Button>
-          </section>
-          <section id={id + '-details'} hidden={!detailsOpen} aria-label="调试运行详情">
-            <RunObservation detail={props.detail} compact />
-            <dl>
-              <dt>运行</dt>
-              <dd>{run.id}</dd>
-              <dt>固定版本</dt>
-              <dd>{run.versionId}</dd>
-              <dt>已记录时长</dt>
-              <dd>
-                {props.view.elapsed.milliseconds === null
-                  ? '待核对'
-                  : formatRunDuration(props.view.elapsed.milliseconds)}
-              </dd>
-            </dl>
-            {run.business && <p>{run.business}</p>}
-            <Button onClick={props.logs}>查看运行日志</Button>
-            {terminal && <Button onClick={props.rerun}>核对后重新运行</Button>}
-          </section>
+          {run.error && <Alert type="error" showIcon title={run.error} />}
+          <Collapse
+            className="debug-run-details"
+            items={[
+              {
+                key: 'outputs',
+                label: '查看步骤输出',
+                forceRender: true,
+                onKeyDown: activateCollapseWithSpace,
+                children: (
+                  <section aria-label="调试步骤输出">
+                    <h3>已保存的步骤输出</h3>
+                    {props.results.length ? (
+                      props.results.map((event) => {
+                        const step = props.timeline.find(
+                          (row) => row.instance === event.nodeInstance,
+                        );
+                        return (
+                          <RunStepOutput
+                            key={event.sequence}
+                            event={event}
+                            latest={event === props.results.at(-1)}
+                            label={step ? runTimelineTitle(step) : event.nodeInstance || '运行输出'}
+                            instance={
+                              step && step.instance !== step.nodeId ? step.instance : undefined
+                            }
+                          />
+                        );
+                      })
+                    ) : (
+                      <p>尚无已保存输出；查看不会执行步骤。</p>
+                    )}
+                    <Button onClick={props.output}>查看输出与运行产物</Button>
+                  </section>
+                ),
+              },
+              {
+                key: 'details',
+                label: '查看暂停 / 等待 / 收尾',
+                forceRender: true,
+                onKeyDown: activateCollapseWithSpace,
+                children: (
+                  <section aria-label="调试运行详情">
+                    <RunObservation detail={props.detail} compact />
+                    <Descriptions
+                      size="small"
+                      layout="vertical"
+                      column={1}
+                      items={[
+                        { key: 'run', label: '运行', children: run.id },
+                        { key: 'version', label: '固定版本', children: run.versionId },
+                        {
+                          key: 'elapsed',
+                          label: '已记录时长',
+                          children:
+                            props.view.elapsed.milliseconds === null
+                              ? '待核对'
+                              : formatRunDuration(props.view.elapsed.milliseconds),
+                        },
+                      ]}
+                    />
+                    {run.business && <p>{run.business}</p>}
+                    <Button onClick={props.logs}>查看运行日志</Button>
+                    {terminal && <Button onClick={props.rerun}>核对后重新运行</Button>}
+                  </section>
+                ),
+              },
+            ]}
+          />
           {props.receipts}
         </section>
       </div>

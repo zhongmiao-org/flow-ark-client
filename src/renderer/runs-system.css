@@ -451,3 +451,29 @@
 .run-control-feedback button {
   min-width: 120px;
 }
+
+.run-runtime-summary > .ant-alert {
+  margin-top: 12px;
+}
+.run-saved-step-output {
+  margin: 12px 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.run-saved-step-output pre {
+  margin: 0;
+  padding: 12px;
+  max-height: 280px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--fa-bg-canvas);
+}
+.run-saved-step-output pre:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 2px;
+}
+.script-bundles {
+  margin-top: 16px;
+  overflow-wrap: anywhere;
+}
