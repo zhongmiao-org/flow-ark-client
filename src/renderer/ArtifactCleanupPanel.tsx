@@ -1,4 +1,4 @@
-import { Button, Checkbox, Modal } from 'antd';
+import { Alert, Button, Checkbox, Modal } from 'antd';
 import './antd-layout.css';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ArtifactCleanupPreview, ArtifactCleanupRecord } from '../shared/artifact-cleanup';
@@ -166,38 +166,58 @@ function CleanupDialog({
         </p>
       </header>
       {(stage === 'loading' || busy) && (
-        <p role="status" className="artifact-cleanup-message">
-          {busy
-            ? '等待本次清理的实际结果，请勿关闭。不会重新执行流程。'
-            : '读取应用内副本与产物记录，本次预览不会删除文件。'}
-        </p>
+        <Alert
+          className="artifact-cleanup-feedback"
+          type="info"
+          role="status"
+          showIcon
+          title={
+            busy
+              ? '等待本次清理的实际结果，请勿关闭。不会重新执行流程。'
+              : '读取应用内副本与产物记录，本次预览不会删除文件。'
+          }
+        />
       )}
       {stage === 'error' && (
-        <div className="artifact-cleanup-message error" role="alert">
-          <p>{error}</p>
-          <p>
-            {clearAttempted
+        <Alert
+          className="artifact-cleanup-feedback"
+          type="error"
+          role="alert"
+          showIcon
+          title={error}
+          description={
+            clearAttempted
               ? '可能已有部分文件被清理。重新预览剩余范围后再确认，不会自动继续删除。'
-              : '本次未发出清理请求。核对状态后可重新预览。'}
-          </p>
-        </div>
+              : '本次未发出清理请求。核对状态后可重新预览。'
+          }
+        />
       )}
       {stage === 'result' && result && (
-        <div className="artifact-cleanup-message success" role="status">
-          <strong>
-            已清理 {result.count} 个文件 · {size(result.bytes)}
-          </strong>
-          <p>运行记录、快照、原业务文件和待办已保留。</p>
-        </div>
+        <Alert
+          className="artifact-cleanup-feedback"
+          type="success"
+          role="status"
+          showIcon
+          title={`已清理 ${result.count} 个文件 · ${size(result.bytes)}`}
+          description="运行记录、快照、原业务文件和待办已保留。"
+        />
       )}
       {refreshError && (
-        <div className="artifact-cleanup-message warning" role="alert">
-          <p>运行详情暂未刷新：{refreshError}</p>
-          <p>刷新只读取记录，不再次清理。</p>
-          <Button disabled={refreshing || undefined} onClick={() => void refresh()}>
-            {refreshing ? '正在刷新…' : '刷新运行详情'}
-          </Button>
-        </div>
+        <Alert
+          className="artifact-cleanup-feedback"
+          type="warning"
+          role="alert"
+          showIcon
+          title={`运行详情暂未刷新：${refreshError}`}
+          description={
+            <div className="feedback-body">
+              <p>刷新只读取记录，不再次清理。</p>
+              <Button disabled={refreshing || undefined} onClick={() => void refresh()}>
+                {refreshing ? '正在刷新…' : '刷新运行详情'}
+              </Button>
+            </div>
+          }
+        />
       )}
       {preview && (stage === 'review' || busy) && (
         <>
@@ -215,11 +235,17 @@ function CleanupDialog({
               <strong>{preview.externalCount} 条</strong>
             </div>
           </div>
-          <p className="artifact-cleanup-message warning">
-            {preview.count
-              ? '确认后永久删除下列应用内副本。原业务文件、运行历史、快照与待办继续保留。'
-              : '原业务文件、运行历史、快照与待办继续保留。'}
-          </p>
+          <Alert
+            className="artifact-cleanup-feedback"
+            type="warning"
+            role="note"
+            showIcon
+            title={
+              preview.count
+                ? '确认后永久删除下列应用内副本。原业务文件、运行历史、快照与待办继续保留。'
+                : '原业务文件、运行历史、快照与待办继续保留。'
+            }
+          />
           {!!preview.files.length && (
             <ul className="artifact-cleanup-files" aria-label="将清理的文件">
               {preview.files.map((file) => (
@@ -234,11 +260,17 @@ function CleanupDialog({
             <p>另有 {preview.omitted} 个文件在同一运行产物目录内，也将清理。</p>
           )}
           {!preview.count && (
-            <p className="artifact-cleanup-message">
-              {preview.indexedCount
-                ? `目录内没有剩余文件；确认后将 ${preview.indexedCount} 条缺失产物记录标记为已清理。`
-                : '没有剩余应用内文件或待清理索引，无需清理。'}
-            </p>
+            <Alert
+              className="artifact-cleanup-feedback"
+              type="info"
+              role="note"
+              showIcon
+              title={
+                preview.indexedCount
+                  ? `目录内没有剩余文件；确认后将 ${preview.indexedCount} 条缺失产物记录标记为已清理。`
+                  : '没有剩余应用内文件或待清理索引，无需清理。'
+              }
+            />
           )}
           {!empty && (
             <Checkbox
@@ -309,9 +341,13 @@ export default function ArtifactCleanupPanel({
       )}
       {cleanup?.state === 'pending' && <p role="status">正在清理产物，等待实际结果…</p>}
       {cleanup && ['failed', 'interrupted'].includes(cleanup.state) && (
-        <p className="field-error" role="status">
-          清理未完成 · {cleanup.error}。请重新预览剩余范围。
-        </p>
+        <Alert
+          className="artifact-cleanup-feedback"
+          type="warning"
+          role="status"
+          showIcon
+          title={`清理未完成 · ${cleanup.error ?? ''}。请重新预览剩余范围。`}
+        />
       )}
       {open && <CleanupDialog run={run} changed={changed} close={() => setOpen(false)} />}
     </section>

@@ -51,26 +51,12 @@
   line-height: 28px;
   overflow-wrap: anywhere;
 }
-.artifact-cleanup-message {
-  padding: 16px;
-  border-radius: var(--fa-radius-8);
-  background: var(--fa-bg-subtle);
-  margin: 20px 0;
+.artifact-cleanup-feedback {
+  margin-block: 20px;
 }
-.artifact-cleanup-message p {
-  margin: 8px 0 0;
-}
-.artifact-cleanup-message.error {
-  color: var(--fa-status-error);
-  background: var(--fa-status-error-bg);
-}
-.artifact-cleanup-message.warning {
-  color: var(--fa-status-warning);
-  background: var(--fa-status-warning-bg);
-}
-.artifact-cleanup-message.success {
-  color: var(--fa-status-success);
-  background: var(--fa-status-success-bg);
+.artifact-cleanup-feedback .ant-alert-title,
+.artifact-cleanup-feedback .ant-alert-description {
+  overflow-wrap: anywhere;
 }
 .artifact-cleanup-files {
   max-height: 220px;
@@ -98,14 +84,6 @@
   align-items: flex-start;
   gap: 10px;
   margin: 24px 0;
-}
-.artifact-cleanup-confirm
-  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
-  width: 16px;
-  height: 16px;
-  margin: 3px 0 0;
-  flex-shrink: 0;
-  accent-color: var(--fa-action-primary);
 }
 .artifact-cleanup-actions {
   display: flex;
