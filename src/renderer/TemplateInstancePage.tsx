@@ -654,7 +654,10 @@ export default function TemplateInstancePage({
                 busy={busy}
                 sourceError={sourceError}
                 sourceChecking={checking}
-                configure={() => switchTab('resources')}
+                configure={() => {
+                  switchTab('resources');
+                  requestAnimationFrame(() => resourceTab.current?.focus({ preventScroll: true }));
+                }}
                 settings={settings}
               />
             </div>
