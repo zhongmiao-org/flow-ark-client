@@ -1,4 +1,4 @@
-import { Alert, Badge, Select, Button, Checkbox, Input, Tag } from 'antd';
+import { Alert, Badge, Card, Divider, Empty, Select, Button, Checkbox, Input, Tag } from 'antd';
 import { FileSpreadsheet, Folder, Globe, MousePointer2, Workflow } from 'lucide-react';
 import { usePageBack } from './use-page-back';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
@@ -494,11 +494,11 @@ export default function TemplateLibrary({
                 }
               />
             )}
-            <div className="template-catalog-intro">
+            <Card className="template-catalog-intro">
               <h2>好流程，可以重复使用。</h2>
               <p>导入本地模板包，核对版本与能力要求，再绑定这台 Mac 的资源。</p>
               <small>模板更新不覆盖已有实例、计划或运行快照。</small>
-            </div>
+            </Card>
             <div className="template-catalog-toolbar">
               <strong>已安装 {data.templates.length} 个版本</strong>
               <label>
@@ -555,279 +555,295 @@ export default function TemplateLibrary({
                         ? Folder
                         : Workflow;
                 return (
-                  <article className="template-catalog-card template-library-card" key={p.key}>
-                    <div className="template-library-category">
-                      <Icon size={28} strokeWidth={1.6} aria-hidden="true" />
-                      <span>
-                        {capabilities.slice(0, 4).map(capabilityLabel).join(' · ') || '通用流程'}
-                      </span>
-                    </div>
-                    <h2>{p.manifest.name}</h2>
-                    <p>{p.manifest.description}</p>
-                    <div className="template-library-footer">
-                      <span className="template-catalog-muted">
-                        v{p.manifest.version} · {p.manifest.entries.length} 个入口
-                      </span>
-                      <Button
-                        disabled={!!busy || undefined}
-                        data-catalog-focus={`package-${p.key}`}
-                        onClick={() => openPackage(p)}
-                      >
-                        查看模板与实例
-                      </Button>
-                    </div>
+                  <article className="template-library-card" key={p.key}>
+                    <Card className="template-catalog-card">
+                      <div className="template-library-category">
+                        <Icon size={28} strokeWidth={1.6} aria-hidden="true" />
+                        <span>
+                          {capabilities.slice(0, 4).map(capabilityLabel).join(' · ') || '通用流程'}
+                        </span>
+                      </div>
+                      <h2>{p.manifest.name}</h2>
+                      <p>{p.manifest.description}</p>
+                      <div className="template-library-footer">
+                        <span className="template-catalog-muted">
+                          v{p.manifest.version} · {p.manifest.entries.length} 个入口
+                        </span>
+                        <Button
+                          disabled={!!busy || undefined}
+                          data-catalog-focus={`package-${p.key}`}
+                          onClick={() => openPackage(p)}
+                        >
+                          查看模板与实例
+                        </Button>
+                      </div>
+                    </Card>
                   </article>
                 );
               })}
             </div>
             {!matches.length && (
-              <div className="template-catalog-empty">
-                <h2>{data.templates.length ? '没有匹配的模板' : '尚未安装模板'}</h2>
-                <p>
-                  {data.templates.length
-                    ? '调整关键词或能力筛选。'
-                    : '选择标准 .flowark-template.zip 文件，先检查再安装。'}
-                </p>
-                {data.templates.length > 0 && (
-                  <Button
-                    onClick={() => {
-                      setQuery('');
-                      setCapability('');
-                    }}
-                  >
-                    清除筛选
-                  </Button>
-                )}
-              </div>
+              <Card className="template-catalog-empty">
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description={
+                    <>
+                      <h2>{data.templates.length ? '没有匹配的模板' : '尚未安装模板'}</h2>
+                      <p>
+                        {data.templates.length
+                          ? '调整关键词或能力筛选。'
+                          : '选择标准 .flowark-template.zip 文件，先检查再安装。'}
+                      </p>
+                    </>
+                  }
+                >
+                  {data.templates.length > 0 && (
+                    <Button
+                      onClick={() => {
+                        setQuery('');
+                        setCapability('');
+                      }}
+                    >
+                      清除筛选
+                    </Button>
+                  )}
+                </Empty>
+              </Card>
             )}
           </>
         )}
         {view === 'inspect' && preview && (
           <div className="template-catalog-layout">
             <TemplateManifestOverview key={preview.token} manifest={preview.manifest} checked />
-            <aside className="template-catalog-card template-catalog-side">
-              <h2>安装前确认</h2>
-              {conflict && (
-                <Alert
-                  className="template-install-feedback"
-                  type="error"
-                  showIcon
-                  title="同版本内容不同"
-                  description={
-                    <div className="feedback-body">
-                      <Tag
-                        variant="filled"
-                        color="error"
-                        className="run-state-tag"
-                        icon={<Badge status="error" />}
-                      >
-                        拒绝安装
-                      </Tag>
-                      <p>
-                        同 ID / 版本的内容摘要与已安装包不同，不能覆盖。请核对来源或使用独立版本。
-                      </p>
-                    </div>
-                  }
-                />
-              )}
-              {same && !conflict && (
-                <Alert
-                  className="template-install-feedback"
-                  type="success"
-                  role="status"
-                  showIcon
-                  title="该版本已安装"
-                  description={
-                    <div className="feedback-body">
-                      <Tag
-                        variant="filled"
-                        color="success"
-                        className="run-state-tag"
-                        icon={<Badge status="success" />}
-                      >
-                        无需重复安装
-                      </Tag>
-                      <p>相同 ID、版本与摘要已存在，保留当前包定义。</p>
-                    </div>
-                  }
-                />
-              )}
-              {!same && data.templates.some((item) => item.manifest.id === preview.manifest.id) && (
-                <Alert
-                  className="template-install-feedback"
-                  type="info"
-                  role="status"
-                  showIcon
-                  title="发现新版本"
-                  description={
-                    <div className="feedback-body">
-                      <Tag
-                        variant="filled"
-                        color="processing"
-                        className="run-state-tag"
-                        icon={<Badge status="processing" />}
-                      >
-                        可并存安装
-                      </Tag>
-                      <p>新版本不会覆盖原实例、计划或运行；采用新版需创建独立实例。</p>
-                    </div>
-                  }
-                />
-              )}
-              {preview.consumed && busy !== 'install' && (
-                <Alert
-                  className="template-install-feedback"
-                  type="warning"
-                  showIcon
-                  title="本次安装检查已使用。请重新选择 ZIP 后再安装。"
-                />
-              )}
-              <p>
-                {preview.manifest.scripts.length
-                  ? `此包包含 ${preview.manifest.scripts.length} 个脚本。`
-                  : '请核对包定义和来源。'}
-                安装不会执行模板代码。
-              </p>
-              {(!same || conflict) && (
-                <Checkbox
-                  checked={reviewed}
-                  disabled={!!busy || preview.consumed || !!conflict || undefined}
-                  onChange={(e) => setReviewed(e.target.checked)}
-                  className="template-catalog-check"
-                >
-                  我已核对模板来源
-                </Checkbox>
-              )}
-              <p>创建实例后再按入口配置资源；新实例动作权限默认为禁止。</p>
-              {same && !conflict ? (
-                <Button
-                  type="primary"
-                  disabled={!!busy || undefined}
-                  onClick={() =>
-                    void work('open-installed', async () => {
-                      await cancelPreview();
-                      openPackage(same);
-                    })
-                  }
-                >
-                  打开已安装模板
+            <aside className="template-catalog-side">
+              <Card className="template-catalog-card">
+                <h2>安装前确认</h2>
+                {conflict && (
+                  <Alert
+                    className="template-install-feedback"
+                    type="error"
+                    showIcon
+                    title="同版本内容不同"
+                    description={
+                      <div className="feedback-body">
+                        <Tag
+                          variant="filled"
+                          color="error"
+                          className="run-state-tag"
+                          icon={<Badge status="error" />}
+                        >
+                          拒绝安装
+                        </Tag>
+                        <p>
+                          同 ID / 版本的内容摘要与已安装包不同，不能覆盖。请核对来源或使用独立版本。
+                        </p>
+                      </div>
+                    }
+                  />
+                )}
+                {same && !conflict && (
+                  <Alert
+                    className="template-install-feedback"
+                    type="success"
+                    role="status"
+                    showIcon
+                    title="该版本已安装"
+                    description={
+                      <div className="feedback-body">
+                        <Tag
+                          variant="filled"
+                          color="success"
+                          className="run-state-tag"
+                          icon={<Badge status="success" />}
+                        >
+                          无需重复安装
+                        </Tag>
+                        <p>相同 ID、版本与摘要已存在，保留当前包定义。</p>
+                      </div>
+                    }
+                  />
+                )}
+                {!same &&
+                  data.templates.some((item) => item.manifest.id === preview.manifest.id) && (
+                    <Alert
+                      className="template-install-feedback"
+                      type="info"
+                      role="status"
+                      showIcon
+                      title="发现新版本"
+                      description={
+                        <div className="feedback-body">
+                          <Tag
+                            variant="filled"
+                            color="processing"
+                            className="run-state-tag"
+                            icon={<Badge status="processing" />}
+                          >
+                            可并存安装
+                          </Tag>
+                          <p>新版本不会覆盖原实例、计划或运行；采用新版需创建独立实例。</p>
+                        </div>
+                      }
+                    />
+                  )}
+                {preview.consumed && busy !== 'install' && (
+                  <Alert
+                    className="template-install-feedback"
+                    type="warning"
+                    showIcon
+                    title="本次安装检查已使用。请重新选择 ZIP 后再安装。"
+                  />
+                )}
+                <p>
+                  {preview.manifest.scripts.length
+                    ? `此包包含 ${preview.manifest.scripts.length} 个脚本。`
+                    : '请核对包定义和来源。'}
+                  安装不会执行模板代码。
+                </p>
+                {(!same || conflict) && (
+                  <Checkbox
+                    checked={reviewed}
+                    disabled={!!busy || preview.consumed || !!conflict || undefined}
+                    onChange={(e) => setReviewed(e.target.checked)}
+                  >
+                    我已核对模板来源
+                  </Checkbox>
+                )}
+                <p>创建实例后再按入口配置资源；新实例动作权限默认为禁止。</p>
+                {same && !conflict ? (
+                  <Button
+                    type="primary"
+                    disabled={!!busy || undefined}
+                    onClick={() =>
+                      void work('open-installed', async () => {
+                        await cancelPreview();
+                        openPackage(same);
+                      })
+                    }
+                  >
+                    打开已安装模板
+                  </Button>
+                ) : (
+                  <Button
+                    type="primary"
+                    disabled={!!busy || !reviewed || preview.consumed || !!conflict || undefined}
+                    onClick={() =>
+                      void work('install', async () => {
+                        const token = preview.token;
+                        setPreview({ ...preview, consumed: true });
+                        const result = await api('template.install', { token });
+                        setInstalled(result);
+                        setSelectedKey(result.key);
+                        setPreview(undefined);
+                        setView('installed');
+                        await refresh();
+                      })
+                    }
+                  >
+                    {busy === 'install' ? '正在安装…' : '确认安装'}
+                  </Button>
+                )}
+                <Button disabled={!!busy || undefined} onClick={() => void selectZip()}>
+                  重新选择 ZIP
                 </Button>
-              ) : (
-                <Button
-                  type="primary"
-                  disabled={!!busy || !reviewed || preview.consumed || !!conflict || undefined}
-                  onClick={() =>
-                    void work('install', async () => {
-                      const token = preview.token;
-                      setPreview({ ...preview, consumed: true });
-                      const result = await api('template.install', { token });
-                      setInstalled(result);
-                      setSelectedKey(result.key);
-                      setPreview(undefined);
-                      setView('installed');
-                      await refresh();
-                    })
-                  }
-                >
-                  {busy === 'install' ? '正在安装…' : '确认安装'}
+                <Button disabled={!!busy || undefined} onClick={back}>
+                  {same && !conflict ? '返回模板库' : '取消安装'}
                 </Button>
-              )}
-              <Button disabled={!!busy || undefined} onClick={() => void selectZip()}>
-                重新选择 ZIP
-              </Button>
-              <Button disabled={!!busy || undefined} onClick={back}>
-                {same && !conflict ? '返回模板库' : '取消安装'}
-              </Button>
+              </Card>
             </aside>
           </div>
         )}
         {view === 'installed' && shown && (
           <section
-            className="template-catalog-card template-installed template-install-receipt"
+            className="template-installed template-install-receipt"
             aria-label="模板安装结果"
           >
-            <Tag
-              className="run-state-tag"
-              variant="filled"
-              color="success"
-              icon={<Badge status="success" />}
-            >
-              安装成功
-            </Tag>
-            <h2>
-              {shown.manifest.name} · v{shown.manifest.version}
-            </h2>
-            <p>{shown.manifest.entries.length} 个入口 · 普通配置和业务状态由每个实例独立保存。</p>
-            <div className="template-catalog-actions">
-              {createButton(shown, '创建实例')}
-              <Button disabled={!!busy || undefined} onClick={home}>
-                返回模板库
-              </Button>
-            </div>
+            <Card className="template-catalog-card">
+              <Tag
+                className="run-state-tag"
+                variant="filled"
+                color="success"
+                icon={<Badge status="success" />}
+              >
+                安装成功
+              </Tag>
+              <h2>
+                {shown.manifest.name} · v{shown.manifest.version}
+              </h2>
+              <p>{shown.manifest.entries.length} 个入口 · 普通配置和业务状态由每个实例独立保存。</p>
+              <div className="template-catalog-actions">
+                {createButton(shown, '创建实例')}
+                <Button disabled={!!busy || undefined} onClick={home}>
+                  返回模板库
+                </Button>
+              </div>
+            </Card>
           </section>
         )}
         {view === 'package' && pkg && (
           <div className="template-catalog-layout">
             <TemplateManifestOverview key={pkg.key} manifest={pkg.manifest} />
-            <aside className="template-catalog-card template-catalog-side">
-              <h2>创建与管理</h2>
-              <p>同一版本可以创建多个实例，配置、资源和业务状态互相独立。</p>
-              {createButton(pkg)}
-              <Button disabled={!!busy || undefined} onClick={() => showInstances(pkg.key)}>
-                查看此版本实例 · {references.length}
-              </Button>
-              <Button disabled={!!busy || undefined} onClick={() => exportTemplate(pkg)}>
-                导出原模板 ZIP
-              </Button>
-              <h3>采用此版本</h3>
-              <label>
-                复制已有实例的普通配置
-                <Select<string>
-                  value={copyFrom}
-                  disabled={!!busy || !!resumeInstance || undefined}
-                  onChange={(value) => setCopyFrom(value)}
-                  options={[
-                    { value: '', label: '选择其他版本的实例…' },
-                    ...data.instances
-                      .filter(
-                        (i) =>
-                          i.packageKey.startsWith(pkg.manifest.id + '@') &&
-                          i.packageKey !== pkg.key,
-                      )
-                      .map((i) => ({
-                        value: i.id,
-                        label: (
-                          <>
-                            {i.name} · {i.packageKey}
-                          </>
-                        ),
-                      })),
-                  ]}
-                />
-              </label>
-              <p className="template-catalog-muted">
-                仅复制符合新 Schema 的配置，否则使用默认值；资源、授权和业务状态不复制。
-              </p>
-              <Button
-                disabled={!copyFrom || !!busy || !!resumeInstance || undefined}
-                onClick={() => void create(pkg, copyFrom)}
-              >
-                创建此版本的新实例
-              </Button>
-              <div className="template-catalog-divider" />
-              <p className="template-catalog-muted">安装于 {date(pkg.installedAt)}</p>
-              <Button
-                disabled={!!busy || undefined}
-                danger
-                data-catalog-focus="review-package-removal"
-                onClick={() => {
-                  remember();
-                  setRemoveReviewed(false);
-                  setView('remove');
-                }}
-              >
-                卸载此版本…
-              </Button>
+            <aside className="template-catalog-side">
+              <Card className="template-catalog-card">
+                <h2>创建与管理</h2>
+                <p>同一版本可以创建多个实例，配置、资源和业务状态互相独立。</p>
+                {createButton(pkg)}
+                <Button disabled={!!busy || undefined} onClick={() => showInstances(pkg.key)}>
+                  查看此版本实例 · {references.length}
+                </Button>
+                <Button disabled={!!busy || undefined} onClick={() => exportTemplate(pkg)}>
+                  导出原模板 ZIP
+                </Button>
+                <h3>采用此版本</h3>
+                <label>
+                  复制已有实例的普通配置
+                  <Select<string>
+                    value={copyFrom}
+                    disabled={!!busy || !!resumeInstance || undefined}
+                    onChange={(value) => setCopyFrom(value)}
+                    options={[
+                      { value: '', label: '选择其他版本的实例…' },
+                      ...data.instances
+                        .filter(
+                          (i) =>
+                            i.packageKey.startsWith(pkg.manifest.id + '@') &&
+                            i.packageKey !== pkg.key,
+                        )
+                        .map((i) => ({
+                          value: i.id,
+                          label: (
+                            <>
+                              {i.name} · {i.packageKey}
+                            </>
+                          ),
+                        })),
+                    ]}
+                  />
+                </label>
+                <p className="template-catalog-muted">
+                  仅复制符合新 Schema 的配置，否则使用默认值；资源、授权和业务状态不复制。
+                </p>
+                <Button
+                  disabled={!copyFrom || !!busy || !!resumeInstance || undefined}
+                  onClick={() => void create(pkg, copyFrom)}
+                >
+                  创建此版本的新实例
+                </Button>
+                <Divider />
+                <p className="template-catalog-muted">安装于 {date(pkg.installedAt)}</p>
+                <Button
+                  disabled={!!busy || undefined}
+                  danger
+                  data-catalog-focus="review-package-removal"
+                  onClick={() => {
+                    remember();
+                    setRemoveReviewed(false);
+                    setView('remove');
+                  }}
+                >
+                  卸载此版本…
+                </Button>
+              </Card>
             </aside>
           </div>
         )}
@@ -865,119 +881,138 @@ export default function TemplateLibrary({
               {instances.map((i) => {
                 const source = data.templates.find((item) => item.key === i.packageKey);
                 return (
-                  <article className="template-catalog-card template-instance-card" key={i.id}>
-                    <h2 title={`${i.id} · 创建于 ${date(i.createdAt)}`}>{i.name}</h2>
-                    <p>
-                      {source
-                        ? `${instanceFilter ? '' : source.manifest.name + ' · '}v${source.manifest.version}`
-                        : i.packageKey}
-                      {' · '}
-                      {Object.keys(i.entryFlows).length} 个入口
-                      {' · '}已保存 {Object.keys(i.resources).length} 项资源，运行前复核
-                    </p>
-                    <Button
-                      type="primary"
-                      disabled={!!busy || undefined}
-                      data-catalog-focus={`instance-${i.id}`}
-                      onClick={() => {
-                        remember();
-                        void openInstance(i.id);
-                      }}
-                    >
-                      打开实例
-                    </Button>
+                  <article className="template-instance-card" key={i.id}>
+                    <Card className="template-catalog-card">
+                      <h2 title={`${i.id} · 创建于 ${date(i.createdAt)}`}>{i.name}</h2>
+                      <p>
+                        {source
+                          ? `${instanceFilter ? '' : source.manifest.name + ' · '}v${source.manifest.version}`
+                          : i.packageKey}
+                        {' · '}
+                        {Object.keys(i.entryFlows).length} 个入口
+                        {' · '}已保存 {Object.keys(i.resources).length} 项资源，运行前复核
+                      </p>
+                      <Button
+                        type="primary"
+                        disabled={!!busy || undefined}
+                        data-catalog-focus={`instance-${i.id}`}
+                        onClick={() => {
+                          remember();
+                          void openInstance(i.id);
+                        }}
+                      >
+                        打开实例
+                      </Button>
+                    </Card>
                   </article>
                 );
               })}
             </div>
             {!instances.length && (
-              <div className="template-catalog-empty">
-                <h2>没有匹配的实例</h2>
-                <p>从模板详情创建独立实例，或调整搜索和版本筛选。</p>
-                <Button
-                  onClick={() => {
-                    setInstanceFilter('');
-                    setInstanceQuery('');
-                  }}
+              <Card className="template-catalog-empty">
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description={
+                    <>
+                      <h2>没有匹配的实例</h2>
+                      <p>从模板详情创建独立实例，或调整搜索和版本筛选。</p>
+                    </>
+                  }
                 >
-                  查看全部实例
-                </Button>
-                <Button onClick={home}>选择模板</Button>
-              </div>
+                  <Button
+                    onClick={() => {
+                      setInstanceFilter('');
+                      setInstanceQuery('');
+                    }}
+                  >
+                    查看全部实例
+                  </Button>
+                  <Button onClick={home}>选择模板</Button>
+                </Empty>
+              </Card>
             )}
           </>
         )}
         {view === 'remove' && pkg && (
-          <section className="template-catalog-card template-installed">
-            <Tag
-              className="run-state-tag"
-              variant="filled"
-              color={referenced ? 'warning' : 'default'}
-              icon={<Badge status={referenced ? 'warning' : 'default'} />}
-            >
-              {referenced ? '不能卸载' : '核对后卸载'}
-            </Tag>
-            <h2>{referenced ? '该版本仍被引用' : '核对要卸载的版本'}</h2>
-            <p>
-              {pkg.manifest.name} · v{pkg.manifest.version}
-            </p>
-            <p>
-              {referenced
-                ? '现有实例或流程仍在使用此版本，不能卸载。其他版本可以并存，不会覆盖这些引用。'
-                : '卸载会移除这台 Mac 上的此版本包定义。重新使用时需要再次导入原 ZIP。'}
-            </p>
-            <p>
-              当前列表中有 {references.length} 个实例、{flowRefs.length}{' '}
-              个流程引用此版本。历史版本、计划和 Run 的引用仍由宿主最终检查。
-            </p>
-            {references.length > 0 && (
-              <Button
-                disabled={!!busy || undefined}
-                data-catalog-focus="view-package-references"
-                onClick={() => showInstances(pkg.key)}
+          <section className="template-installed">
+            <Card className="template-catalog-card">
+              <Tag
+                className="run-state-tag"
+                variant="filled"
+                color={referenced ? 'warning' : 'default'}
+                icon={<Badge status={referenced ? 'warning' : 'default'} />}
               >
-                查看引用此版本的实例
-              </Button>
-            )}
-            {!referenced && (
-              <Checkbox
-                checked={removeReviewed}
-                disabled={!!busy || undefined}
-                onChange={(e) => setRemoveReviewed(e.target.checked)}
-                className="template-catalog-check"
-              >
-                确认只卸载这个模板版本
-              </Checkbox>
-            )}
-            <div className="template-catalog-actions">
-              {!referenced && (
+                {referenced ? '不能卸载' : '核对后卸载'}
+              </Tag>
+              <h2>{referenced ? '该版本仍被引用' : '核对要卸载的版本'}</h2>
+              <p>
+                {pkg.manifest.name} · v{pkg.manifest.version}
+              </p>
+              <p>
+                {referenced
+                  ? '现有实例或流程仍在使用此版本，不能卸载。其他版本可以并存，不会覆盖这些引用。'
+                  : '卸载会移除这台 Mac 上的此版本包定义。重新使用时需要再次导入原 ZIP。'}
+              </p>
+              <p>
+                当前列表中有 {references.length} 个实例、{flowRefs.length}{' '}
+                个流程引用此版本。历史版本、计划和 Run 的引用仍由宿主最终检查。
+              </p>
+              {references.length > 0 && (
                 <Button
-                  danger
-                  disabled={!!busy || !removeReviewed || undefined}
-                  onClick={() =>
-                    void work('remove', async () => {
-                      await api('template.remove', { key: pkg.key });
-                      await refresh();
-                      home();
-                      setNotice('此版本已卸载，其他版本保持不变。');
-                    })
-                  }
+                  disabled={!!busy || undefined}
+                  data-catalog-focus="view-package-references"
+                  onClick={() => showInstances(pkg.key)}
                 >
-                  {busy === 'remove' ? '正在卸载…' : '确认卸载'}
+                  查看引用此版本的实例
                 </Button>
               )}
-              <Button disabled={!!busy || undefined} onClick={back}>
-                保留，返回模板详情
-              </Button>
-            </div>
+              {!referenced && (
+                <Checkbox
+                  checked={removeReviewed}
+                  disabled={!!busy || undefined}
+                  onChange={(e) => setRemoveReviewed(e.target.checked)}
+                >
+                  确认只卸载这个模板版本
+                </Checkbox>
+              )}
+              <div className="template-catalog-actions">
+                {!referenced && (
+                  <Button
+                    danger
+                    disabled={!!busy || !removeReviewed || undefined}
+                    onClick={() =>
+                      void work('remove', async () => {
+                        await api('template.remove', { key: pkg.key });
+                        await refresh();
+                        home();
+                        setNotice('此版本已卸载，其他版本保持不变。');
+                      })
+                    }
+                  >
+                    {busy === 'remove' ? '正在卸载…' : '确认卸载'}
+                  </Button>
+                )}
+                <Button disabled={!!busy || undefined} onClick={back}>
+                  保留，返回模板详情
+                </Button>
+              </div>
+            </Card>
           </section>
         )}
         {['package', 'remove'].includes(view) && !pkg && (
-          <div className="template-catalog-empty">
-            <h2>此版本已不在当前模板库</h2>
-            <p>请返回列表核对，或重新选择 ZIP 导入。</p>
-            <Button onClick={home}>返回模板库</Button>
-          </div>
+          <Card className="template-catalog-empty">
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={
+                <>
+                  <h2>此版本已不在当前模板库</h2>
+                  <p>请返回列表核对，或重新选择 ZIP 导入。</p>
+                </>
+              }
+            >
+              <Button onClick={home}>返回模板库</Button>
+            </Empty>
+          </Card>
         )}
       </section>
     </>
