@@ -115,46 +115,11 @@
 .outline-toolbar > .ant-btn-primary {
   width: 192px;
 }
-.outline-more {
-  position: relative;
-}
-.outline-more > summary {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 144px;
-  height: 40px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: 8px;
-  background: var(--fa-bg-surface);
-  cursor: pointer;
-}
-.outline-more > div {
-  position: absolute;
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  min-width: 180px;
-  gap: 8px;
-  padding: 12px;
-  background: var(--fa-bg-surface);
-  border: 1px solid var(--fa-border-default);
-  border-radius: 8px;
-}
 .outline-source {
   display: flex;
   gap: 8px;
   align-items: center;
   flex-wrap: wrap;
-}
-.outline-source button {
-  min-height: 32px;
-  padding-block: 5px;
-}
-.outline-source button[aria-pressed='true'] {
-  border-color: var(--fa-action-primary);
-  color: var(--fa-action-primary);
-  background: var(--fa-action-subtle);
 }
 .outline-source p {
   margin: 0;
@@ -209,10 +174,6 @@
   font-size: 12px;
   color: var(--fa-text-secondary);
 }
-.outline-group[aria-pressed='true'] {
-  border-color: var(--fa-action-primary);
-  background: var(--fa-action-subtle);
-}
 .outline-definition-note {
   font-size: 12px;
   color: var(--fa-text-secondary);
@@ -232,11 +193,8 @@
   text-align: left;
   gap: 8px;
   min-height: 46px;
-  border: 1px solid transparent;
-  border-radius: 8px;
   padding: 10px 12px;
   margin-bottom: 16px;
-  background: var(--fa-bg-canvas);
   white-space: normal;
   overflow-wrap: anywhere;
 }
@@ -249,27 +207,13 @@
   color: var(--fa-action-primary);
   flex-shrink: 0;
 }
-.outline-step[aria-pressed='true'],
-.outline-step.is-current {
-  background: var(--fa-action-subtle);
-  color: var(--fa-action-primary);
-}
-.outline-step[aria-pressed='true'] {
-  border-color: var(--fa-action-primary);
-}
 .outline-branches {
   padding-left: 16px;
   border-left: 2px solid var(--fa-border-default);
   margin: 0 0 16px 12px;
 }
 .outline-branch-toggle {
-  min-height: 32px;
   margin-bottom: 12px;
-  border: 0;
-  background: none;
-  padding: 4px 0;
-  color: var(--fa-text-secondary);
-  font-size: 12px;
 }
 .outline-empty-branch {
   color: var(--fa-text-secondary);
@@ -296,18 +240,7 @@
   color: var(--fa-text-secondary);
   overflow-wrap: anywhere;
 }
-.outline-inspector dl {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 0;
-}
-.outline-inspector dt {
-  font-size: 12px;
-  color: var(--fa-text-secondary);
-}
-.outline-inspector dd {
-  margin: 4px 0 0;
+.outline-value-preview {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }

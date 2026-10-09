@@ -1,4 +1,5 @@
-import { Button } from 'antd';
+import { Button, Collapse, Dropdown, Descriptions } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import {
   useEffect,
   useLayoutEffect,
@@ -71,7 +72,8 @@ export default function FlowOutlineWorkspace({
   const [focusRequest, setFocusRequest] = useState(0);
   const root = useRef<HTMLElement>(null),
     list = useRef<HTMLDivElement>(null),
-    menu = useRef<HTMLDetailsElement>(null);
+    menuTrigger = useRef<HTMLButtonElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const observation = useOutlineRun(visible, record.id, activeRunId);
   const detail = observation.detail;
   const runView = observation.observed ? presentRun(observation.observed, Date.now()) : undefined;
@@ -191,20 +193,11 @@ export default function FlowOutlineWorkspace({
     else setMode(nextMode);
   };
   const closeMenu = (restoreFocus = false) => {
-    if (!menu.current?.open) return;
-    menu.current.open = false;
-    if (restoreFocus) menu.current.querySelector('summary')?.focus();
+    setMenuOpen(false);
+    if (restoreFocus) menuTrigger.current?.focus({ preventScroll: true });
   };
   useEffect(() => {
-    if (!visible) {
-      closeMenu();
-      return;
-    }
-    const outside = (event: PointerEvent) => {
-      if (event.target instanceof Node && !menu.current?.contains(event.target)) closeMenu();
-    };
-    document.addEventListener('pointerdown', outside);
-    return () => document.removeEventListener('pointerdown', outside);
+    if (!visible) setMenuOpen(false);
   }, [visible]);
   const toggle = (key: string) =>
     setCollapsed((old) => {
@@ -219,6 +212,8 @@ export default function FlowOutlineWorkspace({
     return (
       <div className="outline-branch" key={key}>
         <Button
+          type="text"
+          size="small"
           className="outline-branch-toggle"
           aria-expanded={!closed}
           onClick={() => toggle(key)}
@@ -243,6 +238,8 @@ export default function FlowOutlineWorkspace({
         <div key={step.id} className="outline-step-block">
           <Button
             className={'outline-step' + (live ? ' is-current' : '')}
+            color={selectedId === step.id || live ? 'primary' : 'default'}
+            variant="filled"
             data-outline-step={step.id}
             aria-pressed={selectedId === step.id}
             aria-current={live ? 'step' : undefined}
@@ -324,32 +321,26 @@ export default function FlowOutlineWorkspace({
         >
           {view === 'list' ? '展开流程图' : '返回步骤清单'}
         </Button>
-        <details
-          className="outline-more"
-          ref={menu}
-          onBlur={(event) => {
-            if (!event.currentTarget.contains(event.relatedTarget)) closeMenu();
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape' && menu.current?.open) {
-              event.preventDefault();
-              event.stopPropagation();
-              closeMenu(true);
-            }
-          }}
-        >
-          <summary>更多 ···</summary>
-          <div>
-            <Button
-              onClick={() => {
-                setCollapsed((old) => ({ ...old, [mode]: new Set() }));
-                closeMenu(true);
-              }}
-            >
-              展开全部分支
-            </Button>
-            <Button
-              onClick={() => {
+        <Dropdown
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          trigger={['click']}
+          autoFocus
+          menu={{
+            items: [
+              { key: 'expand', label: '展开全部分支' },
+              { key: 'collapse', label: '收起全部分支' },
+              {
+                key: 'save',
+                label: saveBusy ? '正在保存…' : saved ? '草稿已保存' : '保存草稿',
+                disabled: saveBusy || saved,
+              },
+              ...(more ? [{ key: 'more', label: '任务的更多操作', disabled: saveBusy }] : []),
+            ],
+            onClick: ({ key }) => {
+              closeMenu(key !== 'more');
+              if (key === 'expand') setCollapsed((old) => ({ ...old, [mode]: new Set() }));
+              if (key === 'collapse')
                 setCollapsed((old) => ({
                   ...old,
                   [mode]: new Set(
@@ -362,34 +353,35 @@ export default function FlowOutlineWorkspace({
                     ),
                   ),
                 }));
+              if (key === 'save') save();
+              if (key === 'more') more?.();
+            },
+            onBlur: (event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) closeMenu();
+            },
+            onKeyDown: (event) => {
+              if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
                 closeMenu(true);
-              }}
-            >
-              收起全部分支
-            </Button>
-            <Button
-              disabled={saveBusy || saved || undefined}
-              onClick={() => {
-                closeMenu(true);
-                save();
-              }}
-            >
-              {saveBusy ? '正在保存…' : saved ? '草稿已保存' : '保存草稿'}
-            </Button>
-            {more && (
-              <Button
-                aria-label="从大纲打开更多操作"
-                disabled={saveBusy || undefined}
-                onClick={() => {
-                  closeMenu();
-                  more();
-                }}
-              >
-                任务的更多操作
-              </Button>
-            )}
-          </div>
-        </details>
+              }
+            },
+          }}
+        >
+          <Button
+            ref={menuTrigger}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            onKeyDown={(event) => {
+              if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                setMenuOpen(true);
+              }
+            }}
+          >
+            更多 ···
+          </Button>
+        </Dropdown>
       </div>
       <div className="outline-columns">
         <aside className="outline-groups ai-task-card" aria-label="步骤大纲">
@@ -397,6 +389,8 @@ export default function FlowOutlineWorkspace({
           {model.groups.map((item) => (
             <Button
               key={item.id}
+              color={chosenGroup === item.id ? 'primary' : 'default'}
+              variant={chosenGroup === item.id ? 'filled' : 'outlined'}
               className="outline-group"
               aria-pressed={chosenGroup === item.id}
               onClick={() => choose(item.steps[0].id)}
@@ -425,10 +419,19 @@ export default function FlowOutlineWorkspace({
               : '选择一个步骤'}
           </h2>
           <div className="outline-source" aria-label="大纲数据来源">
-            <Button aria-pressed={mode === 'draft'} onClick={() => switchSource('draft')}>
+            <Button
+              size="small"
+              color={mode === 'draft' ? 'primary' : 'default'}
+              variant={mode === 'draft' ? 'filled' : 'outlined'}
+              aria-pressed={mode === 'draft'}
+              onClick={() => switchSource('draft')}
+            >
               编辑中的草稿
             </Button>
             <Button
+              size="small"
+              color={mode === 'run' ? 'primary' : 'default'}
+              variant={mode === 'run' ? 'filled' : 'outlined'}
               aria-pressed={mode === 'run'}
               disabled={!detail?.snapshot || undefined}
               onClick={() => switchSource('run')}
@@ -465,6 +468,8 @@ export default function FlowOutlineWorkspace({
                   block(item.steps)
                 ) : (
                   <Button
+                    color="default"
+                    variant="filled"
                     className="outline-collapsed-group"
                     onClick={() => choose(item.steps[0].id)}
                   >
@@ -500,27 +505,40 @@ export default function FlowOutlineWorkspace({
                   ? '以下属于固定运行快照，保持只读。'
                   : '以下属于当前草稿，保存不会改写已有运行。'}
               </p>
-              <dl>
-                {Object.entries(nodeReferenceValues(entry.step))
+              <Descriptions
+                column={1}
+                layout="vertical"
+                size="small"
+                items={Object.entries(nodeReferenceValues(entry.step))
                   .filter(
                     ([key]) =>
                       fields[key] &&
                       (key !== 'name' || ['file', 'excel'].includes(entry.step.type)),
                   )
-                  .map(([key, value]) => (
-                    <div key={key}>
-                      <dt>{fields[key]}</dt>
-                      <dd>
+                  .map(([key, value]) => ({
+                    key,
+                    label: fields[key],
+                    children: (
+                      <span className="outline-value-preview">
                         {format(value).slice(0, 180)}
                         {format(value).length > 180 ? '…' : ''}
-                      </dd>
-                    </div>
-                  ))}
-              </dl>
-              <details>
-                <summary>完整步骤配置</summary>
-                <pre>{format(nodeReferenceValues(entry.step))}</pre>
-              </details>
+                      </span>
+                    ),
+                  }))}
+              />
+              <div onKeyDown={activateCollapseWithSpace}>
+                <Collapse
+                  size="small"
+                  items={[
+                    {
+                      key: 'configuration',
+                      label: '完整步骤配置',
+                      forceRender: true,
+                      children: <pre>{format(nodeReferenceValues(entry.step))}</pre>,
+                    },
+                  ]}
+                />
+              </div>
               {mode === 'draft' ? (
                 <>
                   <Button onClick={() => edit(entry.step.id)}>编辑步骤配置</Button>
