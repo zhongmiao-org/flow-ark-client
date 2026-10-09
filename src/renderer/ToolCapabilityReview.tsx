@@ -1,5 +1,6 @@
-import { Alert, Button, Input } from 'antd';
-import { useMemo, useRef, useState } from 'react';
+import { Alert, Button, Input, Segmented, Tag } from 'antd';
+import { useId, useMemo, useRef, useState } from 'react';
+import { toolCapabilityColors } from './theme';
 import type {
   ConnectionDiscovery,
   ConnectionConfig,
@@ -86,6 +87,7 @@ export default function ToolCapabilityReview({
   current: Snapshot;
   baseline?: Snapshot;
 }) {
+  const id = useId();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<'all' | Change>('all');
   const [selected, setSelected] = useState('');
@@ -185,19 +187,24 @@ export default function ToolCapabilityReview({
               ))}
             </details>
           )}
-          <div className="tool-capability-filters" role="group" aria-label="按能力变化筛选">
-            {(['all', 'added', 'changed', 'removed', 'unchanged'] as const).map((key) => (
-              <Button
-                key={key}
-                aria-pressed={filter === key}
-                onClick={() => {
-                  setFilter(key);
-                  setSelected('');
-                }}
-              >
-                {key === 'all' ? `全部 ${rows.length}` : `${changeLabels[key]} ${counts[key]}`}
-              </Button>
-            ))}
+          <div className="tool-capability-filters">
+            <Segmented
+              aria-label="按能力变化筛选"
+              name={`${id}-capability-change`}
+              tabIndex={-1}
+              value={filter}
+              options={(['all', 'added', 'changed', 'removed', 'unchanged'] as const).map(
+                (key) => ({
+                  value: key,
+                  label:
+                    key === 'all' ? `全部 ${rows.length}` : `${changeLabels[key]} ${counts[key]}`,
+                }),
+              )}
+              onChange={(value) => {
+                setFilter(value);
+                setSelected('');
+              }}
+            />
           </div>
           {!identity.length && !counts.added && !counts.changed && !counts.removed && (
             <p className="tool-disclaimer">
@@ -238,6 +245,8 @@ export default function ToolCapabilityReview({
               <Button
                 key={row.name}
                 aria-pressed={chosen?.name === row.name}
+                color={chosen?.name === row.name ? 'primary' : 'default'}
+                variant="outlined"
                 onClick={() => setSelected(row.name)}
               >
                 <span>
@@ -245,9 +254,9 @@ export default function ToolCapabilityReview({
                   <small>{row.name}</small>
                 </span>
                 {baseline && (
-                  <span className={`tool-capability-change is-${row.change}`}>
+                  <Tag className="run-state-tag" color={toolCapabilityColors[row.change]}>
                     {changeLabels[row.change]}
-                  </span>
+                  </Tag>
                 )}
               </Button>
             ))}
