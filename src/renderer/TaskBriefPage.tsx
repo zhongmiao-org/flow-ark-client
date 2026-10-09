@@ -1,4 +1,5 @@
-import { ConfigProvider, Button, Input } from 'antd';
+import { Alert, Collapse, ConfigProvider, Button, Input, Tag } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { PlanningContext, PlanningTask } from '../shared/planning';
 import { IMAGE_TOTAL_BYTES } from '../shared/task-attachments';
@@ -124,11 +125,16 @@ export default function TaskBriefPage({
             {images.length > 0 && ` · ${imageSize} / 12 MiB`}
           </p>
           {(count >= 20 || imageLimit) && (
-            <p className="ai-task-note">
-              {count >= 20
-                ? '资料数量已达上限，请先移除不需要的资料、输出或工具选择。'
-                : '图片数量或总大小已达上限，请先移除不需要的图片。其他文本资料仍可添加。'}
-            </p>
+            <Alert
+              type="warning"
+              showIcon
+              role="status"
+              title={
+                count >= 20
+                  ? '资料数量已达上限，请先移除不需要的资料、输出或工具选择。'
+                  : '图片数量或总大小已达上限，请先移除不需要的图片。其他文本资料仍可添加。'
+              }
+            />
           )}
           {!count && <p>选择需要的资料；支持 UTF-8 文本、PNG / JPEG 图片。</p>}
           {task.webTarget && (
@@ -196,12 +202,12 @@ export default function TaskBriefPage({
             </div>
           )}
           {context.map((c, index) => (
-            <details
+            <Collapse
               className="task-brief-text-context"
               key={c.id}
-              open={expandedContext.includes(c.id)}
-              onToggle={(e) => {
-                const open = e.currentTarget.open;
+              activeKey={expandedContext.includes(c.id) ? [c.id] : []}
+              onChange={(keys) => {
+                const open = keys.includes(c.id);
                 setExpandedContext((current) =>
                   current.includes(c.id) === open
                     ? current
@@ -210,65 +216,79 @@ export default function TaskBriefPage({
                       : current.filter((id) => id !== c.id),
                 );
               }}
-            >
-              <summary
-                ref={(element) => {
-                  if (element) contextSummaries.current.set(c.id, element);
-                  else contextSummaries.current.delete(c.id);
-                }}
-              >
-                <span>{c.label.trim() || `未命名资料 ${index + 1}`}</span>
-                <small>
-                  {c.text.length.toLocaleString('zh-CN')} 字符 ·{' '}
-                  {expandedContext.includes(c.id) ? '收起编辑' : '展开编辑'}
-                </small>
-                {!expandedContext.includes(c.id) && (
-                  <span className="task-brief-text-summary">
-                    {c.text.trim().slice(0, 120) || '尚未填写内容'}
-                  </span>
-                )}
-              </summary>
-              <ConfigProvider componentDisabled={busy || undefined}>
-                <fieldset className="ai-task-context" disabled={busy}>
-                  <label>
-                    资料名称
-                    <Input
-                      ref={(instance) => {
-                        const element = instance?.input ?? null;
-                        if (element) contextNames.current.set(c.id, element);
-                        else contextNames.current.delete(c.id);
-                      }}
-                      aria-label={`资料 ${index + 1} 名称`}
-                      value={c.label}
-                      maxLength={200}
-                      onChange={(e) =>
-                        changeContext(
-                          context.map((entry) =>
-                            entry.id === c.id ? { ...entry, label: e.target.value } : entry,
-                          ),
-                        )
-                      }
-                    />
-                  </label>
-                  <label>
-                    资料内容
-                    <Input.TextArea
-                      aria-label={`资料 ${index + 1} 内容`}
-                      value={c.text}
-                      maxLength={50000}
-                      onChange={(e) =>
-                        changeContext(
-                          context.map((entry) =>
-                            entry.id === c.id ? { ...entry, text: e.target.value } : entry,
-                          ),
-                        )
-                      }
-                    />
-                  </label>
-                  <Button onClick={() => removeText(c.id, index)}>移除资料 {index + 1}</Button>
-                </fieldset>
-              </ConfigProvider>
-            </details>
+              ref={(element) => {
+                const header = element?.querySelector<HTMLElement>(
+                  '[role="button"][aria-expanded]',
+                );
+                if (header) contextSummaries.current.set(c.id, header);
+                else contextSummaries.current.delete(c.id);
+              }}
+              items={[
+                {
+                  key: c.id,
+                  forceRender: true,
+                  onKeyDown: activateCollapseWithSpace,
+                  label: (
+                    <div className="task-brief-text-label">
+                      <span>{c.label.trim() || `未命名资料 ${index + 1}`}</span>
+                      <small>
+                        {c.text.length.toLocaleString('zh-CN')} 字符 ·{' '}
+                        {expandedContext.includes(c.id) ? '收起编辑' : '展开编辑'}
+                      </small>
+                      {!expandedContext.includes(c.id) && (
+                        <span className="task-brief-text-summary">
+                          {c.text.trim().slice(0, 120) || '尚未填写内容'}
+                        </span>
+                      )}
+                    </div>
+                  ),
+                  children: (
+                    <ConfigProvider componentDisabled={busy || undefined}>
+                      <fieldset className="ai-task-context" disabled={busy}>
+                        <label>
+                          资料名称
+                          <Input
+                            ref={(instance) => {
+                              const element = instance?.input ?? null;
+                              if (element) contextNames.current.set(c.id, element);
+                              else contextNames.current.delete(c.id);
+                            }}
+                            aria-label={`资料 ${index + 1} 名称`}
+                            value={c.label}
+                            maxLength={200}
+                            onChange={(e) =>
+                              changeContext(
+                                context.map((entry) =>
+                                  entry.id === c.id ? { ...entry, label: e.target.value } : entry,
+                                ),
+                              )
+                            }
+                          />
+                        </label>
+                        <label>
+                          资料内容
+                          <Input.TextArea
+                            aria-label={`资料 ${index + 1} 内容`}
+                            value={c.text}
+                            maxLength={50000}
+                            onChange={(e) =>
+                              changeContext(
+                                context.map((entry) =>
+                                  entry.id === c.id ? { ...entry, text: e.target.value } : entry,
+                                ),
+                              )
+                            }
+                          />
+                        </label>
+                        <Button onClick={() => removeText(c.id, index)}>
+                          移除资料 {index + 1}
+                        </Button>
+                      </fieldset>
+                    </ConfigProvider>
+                  ),
+                },
+              ]}
+            />
           ))}
           <Button ref={addTextButton} disabled={busy || count >= 20 || undefined} onClick={addText}>
             附加文本资料
@@ -277,19 +297,31 @@ export default function TaskBriefPage({
         <p className="task-brief-disclosure">
           本次只发送你核对的描述、资料、图片和相关能力说明。未选择的窗口与文件不会加入。
         </p>
-        <details className="task-brief-format">
-          <summary>资料格式与副本说明</summary>
-          <p>
-            文本支持 UTF-8，单项最多 200 KiB / 50000 字符；PNG / JPEG 单张最多 4 MiB。
-            截图入口选择已有图片，不会自动截取屏幕。副本保存在任务中，原文件变化后需移除重选。
-          </p>
-        </details>
+        <Collapse
+          className="task-brief-format"
+          items={[
+            {
+              key: 'format',
+              label: '资料格式与副本说明',
+              forceRender: true,
+              onKeyDown: activateCollapseWithSpace,
+              children: (
+                <p>
+                  文本支持 UTF-8，单项最多 200 KiB / 50000 字符；PNG / JPEG 单张最多 4 MiB。
+                  截图入口选择已有图片，不会自动截取屏幕。副本保存在任务中，原文件变化后需移除重选。
+                </p>
+              ),
+            },
+          ]}
+        />
         {controls}
         <div className="ai-task-actions">
           <Button disabled={busy || undefined} onClick={understand}>
             理解与输出位置
           </Button>
-          <small role="status">{dirty ? '有未保存修改' : '草稿已保存'}</small>
+          <Tag color={dirty ? 'warning' : 'success'} role="status">
+            {dirty ? '有未保存修改' : '草稿已保存'}
+          </Tag>
         </div>
       </section>
       <section className="ai-task-card task-brief-explainer">
@@ -306,7 +338,12 @@ export default function TaskBriefPage({
           <h3>执行前再次检查</h3>
           <p>选对目标与权限后，由你点击试运行。</p>
         </div>
-        <p className="ai-task-note">选择附件只供 AI 理解；生成与采纳不会执行任务。</p>
+        <Alert
+          type="info"
+          showIcon
+          role="status"
+          title="选择附件只供 AI 理解；生成与采纳不会执行任务。"
+        />
       </section>
     </div>
   );
