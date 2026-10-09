@@ -104,7 +104,7 @@ export default function TemplateInstancePage({
   const [configurationGeneration, setConfigurationGeneration] = useState(0);
   const configurationError = useRef<HTMLDivElement>(null);
   const focusConfigurationError = useRef(false);
-  const resourceError = useRef<HTMLParagraphElement>(null);
+  const resourceError = useRef<HTMLDivElement>(null);
   const focusResourceError = useRef(false);
   const [savedControl, setSavedControl] = useState<HTMLButtonElement | null>(null);
   useLayoutEffect(() => {
@@ -487,46 +487,66 @@ export default function TemplateInstancePage({
         </div>
         {adoptedFrom && !entryDetail && (
           <section className="template-adoption-result" aria-labelledby="template-adoption-title">
-            <span className="ai-config-status success">新旧版本并存</span>
-            <h2 id="template-adoption-title" ref={adoptionHeading} tabIndex={-1}>
-              v{draft.manifest.version} 的新实例已创建
-            </h2>
-            <p>
-              原实例 {adoptedFrom.id.slice(0, 8)} 继续使用 v{adoptedFrom.version}
-              ，原有计划与运行快照保持不变。
-            </p>
-            <p>
-              请核对按此版本字段规则准备的普通配置。资源绑定、动作权限和业务状态不会从原实例复制。
-            </p>
-            <div className="ai-task-actions">
-              {tab !== 'resources' && (
-                <Button
-                  type="primary"
-                  disabled={busy || undefined}
-                  onClick={() => {
-                    switchTab('resources');
-                    resourceTab.current?.focus();
-                  }}
-                >
-                  核对资源与动作授权
-                </Button>
-              )}
-              <Button
-                disabled={busy || undefined}
-                onClick={() =>
-                  go(
-                    () =>
-                      void work(async () => {
-                        if (!(await choose(adoptedFrom.id)))
-                          throw new Error('暂时无法打开原实例；新实例和当前输入仍保留，请重试。');
-                      }),
-                    '原实例',
-                  )
-                }
-              >
-                打开原实例 · v{adoptedFrom.version}
-              </Button>
-            </div>
+            <Alert
+              type="success"
+              role="status"
+              showIcon
+              title={
+                <h2 id="template-adoption-title" ref={adoptionHeading} tabIndex={-1}>
+                  v{draft.manifest.version} 的新实例已创建
+                </h2>
+              }
+              description={
+                <div className="feedback-body">
+                  <Tag
+                    className="run-state-tag"
+                    variant="filled"
+                    color="success"
+                    icon={<Badge status="success" />}
+                  >
+                    新旧版本并存
+                  </Tag>
+                  <p>
+                    原实例 {adoptedFrom.id.slice(0, 8)} 继续使用 v{adoptedFrom.version}
+                    ，原有计划与运行快照保持不变。
+                  </p>
+                  <p>
+                    请核对按此版本字段规则准备的普通配置。资源绑定、动作权限和业务状态不会从原实例复制。
+                  </p>
+                  <div className="ai-task-actions">
+                    {tab !== 'resources' && (
+                      <Button
+                        type="primary"
+                        disabled={busy || undefined}
+                        onClick={() => {
+                          switchTab('resources');
+                          resourceTab.current?.focus();
+                        }}
+                      >
+                        核对资源与动作授权
+                      </Button>
+                    )}
+                    <Button
+                      disabled={busy || undefined}
+                      onClick={() =>
+                        go(
+                          () =>
+                            void work(async () => {
+                              if (!(await choose(adoptedFrom.id)))
+                                throw new Error(
+                                  '暂时无法打开原实例；新实例和当前输入仍保留，请重试。',
+                                );
+                            }),
+                          '原实例',
+                        )
+                      }
+                    >
+                      打开原实例 · v{adoptedFrom.version}
+                    </Button>
+                  </div>
+                </div>
+              }
+            />
           </section>
         )}
         <nav className="ai-settings-tabs" aria-label="实例分类" hidden={entryDetail}>
@@ -543,40 +563,63 @@ export default function TemplateInstancePage({
           ))}
         </nav>
         {sourceError && (
-          <div className="ai-task-error template-source-error" role="alert">
-            <p>{sourceError}</p>
-            <div className="ai-task-actions">
-              <Button
-                disabled={busy || checking || undefined}
-                onClick={() => setReload((v) => v + 1)}
-              >
-                重新读取状态
-              </Button>
-              <Button
-                disabled={busy || undefined}
-                onClick={() =>
-                  void work(async () => {
-                    const fresh: TemplateDetail = await api('template.detail', { id: instance.id });
-                    setSaved(structuredClone(fresh));
-                    setDraft(fresh);
-                    setSourceError('');
-                    setGeneration((v) => v + 1);
-                    if (!fresh.entries.some((entry) => entry.id === entryId))
-                      setEntryId(fresh.entries[0]?.id ?? '');
-                    return true;
-                  })
-                }
-              >
-                放弃未保存内容并重新读取实例
-              </Button>
-              <Button onClick={() => go(home, '模板库')}>返回模板库</Button>
-            </div>
+          <div className="template-source-error" role="alert">
+            <Alert
+              type="error"
+              role="presentation"
+              showIcon
+              title="来源核对未完成"
+              description={
+                <div className="feedback-body">
+                  <p>{sourceError}</p>
+                  <div className="ai-task-actions">
+                    <Button
+                      disabled={busy || checking || undefined}
+                      onClick={() => setReload((v) => v + 1)}
+                    >
+                      重新读取状态
+                    </Button>
+                    <Button
+                      disabled={busy || undefined}
+                      onClick={() =>
+                        void work(async () => {
+                          const fresh: TemplateDetail = await api('template.detail', {
+                            id: instance.id,
+                          });
+                          setSaved(structuredClone(fresh));
+                          setDraft(fresh);
+                          setSourceError('');
+                          setGeneration((v) => v + 1);
+                          if (!fresh.entries.some((entry) => entry.id === entryId))
+                            setEntryId(fresh.entries[0]?.id ?? '');
+                          return true;
+                        })
+                      }
+                    >
+                      放弃未保存内容并重新读取实例
+                    </Button>
+                    <Button onClick={() => go(home, '模板库')}>返回模板库</Button>
+                  </div>
+                </div>
+              }
+            />
           </div>
         )}
         {error && !leaving && tab !== 'configuration' && (
-          <p className="ai-task-error" role="alert" ref={resourceError} tabIndex={-1}>
-            {error}
-          </p>
+          <div
+            className="template-operation-feedback"
+            role="alert"
+            ref={resourceError}
+            tabIndex={-1}
+          >
+            <Alert
+              type="error"
+              role="presentation"
+              showIcon
+              title="操作未完成"
+              description={error}
+            />
+          </div>
         )}
         <div data-instance-tab="configuration" hidden={tab !== 'configuration'}>
           <div className="template-instance-columns">
@@ -628,9 +671,18 @@ export default function TemplateInstancePage({
                   tabIndex={-1}
                   ref={configurationError}
                 >
-                  <strong>配置保存未完成</strong>
-                  <p>{error}</p>
-                  <p>当前输入仍保留，请核对后重试；不会自动开始或重放运行。</p>
+                  <Alert
+                    type="error"
+                    role="presentation"
+                    showIcon
+                    title="配置保存未完成"
+                    description={
+                      <div className="feedback-body">
+                        <p>{error}</p>
+                        <p>当前输入仍保留，请核对后重试；不会自动开始或重放运行。</p>
+                      </div>
+                    }
+                  />
                 </div>
               )}
               <div className="ai-task-actions">
@@ -757,7 +809,14 @@ export default function TemplateInstancePage({
                 <dd>{draft.manifest.contentDigest}</dd>
               </dl>
               <div className="template-version-adoption">
-                <span className="ai-config-status neutral">创建新实例</span>
+                <Tag
+                  className="run-state-tag"
+                  variant="filled"
+                  color="default"
+                  icon={<Badge status="default" />}
+                >
+                  创建新实例
+                </Tag>
                 <h3>采用模板新版</h3>
                 <p>
                   创建独立实例，复制符合新模板字段规则的已保存普通配置，资源和权限重新核对，不迁移业务状态。
@@ -783,20 +842,32 @@ export default function TemplateInstancePage({
                   <p>本机尚未安装其他版本。</p>
                 )}
                 {selectedVersion && !createdVersion && (
-                  <div className="template-version-summary" role="status">
-                    <strong>将创建 v{selectedVersion.manifest.version} 的独立实例</strong>
-                    <p>
-                      当前实例继续使用 v{draft.manifest.version}
-                      。只复制已保存且符合目标字段规则的普通配置。
-                    </p>
-                    <p>新实例的资源绑定、动作权限和业务状态均需重新配置。</p>
-                  </div>
+                  <Alert
+                    className="template-version-summary"
+                    type="info"
+                    role="status"
+                    showIcon
+                    title={<>将创建 v{selectedVersion.manifest.version} 的独立实例</>}
+                    description={
+                      <div className="feedback-body">
+                        <p>
+                          当前实例继续使用 v{draft.manifest.version}
+                          。只复制已保存且符合目标字段规则的普通配置。
+                        </p>
+                        <p>新实例的资源绑定、动作权限和业务状态均需重新配置。</p>
+                      </div>
+                    }
+                  />
                 )}
                 {createdVersion && (
-                  <div className="template-version-summary" role="status">
-                    <strong>v{createdVersion.version} 的新实例已创建</strong>
-                    <p>暂时无法打开时，可以继续打开这个实例；原实例仍保留。</p>
-                  </div>
+                  <Alert
+                    className="template-version-summary"
+                    type="success"
+                    role="status"
+                    showIcon
+                    title={<>v{createdVersion.version} 的新实例已创建</>}
+                    description="暂时无法打开时，可以继续打开这个实例；原实例仍保留。"
+                  />
                 )}
                 <Button
                   type="primary"
@@ -828,7 +899,14 @@ export default function TemplateInstancePage({
               {!originalPackage && <p role="status">原模板包不可用，请先恢复此版本后再导出。</p>}
               <h3>原实例保持原样</h3>
               <p>新旧版本并存。模板更新不会覆盖本实例、计划或正在运行的快照。</p>
-              <span className="ai-config-status warning">该版本仍被引用</span>
+              <Tag
+                className="run-state-tag"
+                variant="filled"
+                color="warning"
+                icon={<Badge status="warning" />}
+              >
+                该版本仍被引用
+              </Tag>
               <p>当前实例正在引用此包，不能卸载。</p>
             </aside>
           </div>

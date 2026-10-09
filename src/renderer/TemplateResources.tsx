@@ -1,4 +1,4 @@
-import { ConfigProvider, Select, Button, Input } from 'antd';
+import { Badge, Tag, ConfigProvider, Select, Button, Input } from 'antd';
 import { useId, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import type { Bootstrap } from '../shared/types';
 import { equal, type TemplateDetail } from './template-draft';
@@ -301,13 +301,16 @@ export default function TemplateResources({
               key={entry.id}
               aria-label={`${entry.name}资源检查`}
             >
-              <span
+              <Tag
                 role="status"
-                className={'ai-config-status ' + (pending || incomplete ? 'warning' : 'neutral')}
+                className="run-state-tag"
+                variant="filled"
+                color={pending || incomplete ? 'warning' : 'default'}
+                icon={<Badge status={pending || incomplete ? 'warning' : 'default'} />}
               >
                 {entry.name} ·{' '}
                 {pending ? '待保存' : incomplete ? '尚未就绪' : '已填写 · 运行前复核'}
-              </span>
+              </Tag>
               {pending && <p>资源或权限修改尚未保存。核对范围后点击保存授权。</p>}
               {entry.unavailable.length > 0 && <p>缺少能力：{entry.unavailable.join('、')}</p>}
               {denied.length > 0 && (

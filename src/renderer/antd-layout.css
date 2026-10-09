@@ -73,6 +73,8 @@ label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item
 }
 
 .run-state-tag {
+  align-self: flex-start;
+  width: fit-content;
   display: inline-flex;
   align-items: center;
   gap: 8px;
