@@ -143,6 +143,7 @@ function WorkspaceApp() {
   const [toolsOrigin, setToolsOrigin] = useState<'tasks' | 'settings' | 'runs'>('tasks');
   const desktopAssistantOpener = useRef<(() => void) | undefined>(undefined);
   const [settingsNavigation, setSettingsNavigation] = useState<SettingsNavigation>();
+  const [attentionRequest, setAttentionRequest] = useState<{ id: string }>();
   const [attentionNavigation, setAttentionNavigation] = useState<AttentionNavigation>();
   const templateNavigation = useRef<TemplateNavigation | undefined>(undefined);
   const [templateHomeRequest, setTemplateHomeRequest] = useState<string>();
@@ -2358,6 +2359,26 @@ function WorkspaceApp() {
                   key={detail.run.id}
                   detail={detail}
                   fault={data.fault}
+                  humanRequest={
+                    data.attention.some(
+                      (item) =>
+                        item.kind === 'template-input' &&
+                        item.detail?.runId === detail.run.id &&
+                        !item.detail?.answered,
+                    )
+                      ? () => {
+                          const request = data.attention.find(
+                            (item) =>
+                              item.kind === 'template-input' &&
+                              item.detail?.runId === detail.run.id &&
+                              !item.detail?.answered,
+                          );
+                          if (!request) return;
+                          setAttentionRequest({ id: request.id });
+                          setSection('inbox');
+                        }
+                      : undefined
+                  }
                   open={(next) => {
                     setRunTab('current');
                     setDetail((current: any) =>
@@ -2456,6 +2477,7 @@ function WorkspaceApp() {
             />
           </div>
           <AttentionWorkspace
+            request={attentionRequest}
             data={data}
             active={section === 'inbox'}
             refresh={reloadSettingsData}

@@ -240,7 +240,9 @@ export default function AttentionWorkspace({
   openRun,
   showBrowser,
   navigation,
+  request,
 }: {
+  request?: { id: string };
   data: Bootstrap;
   active: boolean;
   refresh: () => Promise<void>;
@@ -268,6 +270,17 @@ export default function AttentionWorkspace({
   const listFocus = useRef('');
   const runReturn = useRef<{ focus: HTMLElement; scroll: number } | null>(null);
   const visit = useRef(0);
+  const handledRequest = useRef<typeof request>(undefined);
+  useLayoutEffect(() => {
+    if (!active || !request || handledRequest.current === request) return;
+    handledRequest.current = request;
+    runReturn.current = null;
+    listFocus.current = request.id;
+    setSelectedId(request.id);
+    setError('');
+    setNotice('');
+    setCancelRun(false);
+  }, [active, request]);
   useLayoutEffect(
     () => () => {
       visit.current++;
