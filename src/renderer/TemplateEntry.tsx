@@ -323,6 +323,7 @@ export default function TemplateEntry({
     ...(entry.unavailable.length ? ['缺少能力：' + entry.unavailable.join('、')] : []),
   ];
   const reading = checking || sourceChecking;
+  const needsResourceConfiguration = missing.length > 0 || denied.length > 0;
   const readiness =
     sourceError || readError
       ? '入口状态待核对'
@@ -459,6 +460,11 @@ export default function TemplateEntry({
               </div>
             )}
             <div className="ai-task-actions">
+              {!reading && needsResourceConfiguration && (
+                <button className="primary" disabled={blocked || !!readError} onClick={configure}>
+                  配置资源与动作授权
+                </button>
+              )}
               {dirtyInput && (
                 <button disabled={blocked} onClick={() => void saveInput()}>
                   保存入口参数
@@ -698,10 +704,9 @@ export default function TemplateEntry({
                 保存实例配置
               </button>
             )}
-            {(missing.some((id) => !aiResources.some((r) => r.id === id)) ||
-              entry.actions.length > 0) && (
+            {!needsResourceConfiguration && entry.actions.length > 0 && (
               <button disabled={busy} onClick={configure}>
-                {missing.length || denied.length ? '配置资源与动作授权' : '查看资源与动作授权'}
+                查看资源与动作授权
               </button>
             )}
             {!inspection && (
