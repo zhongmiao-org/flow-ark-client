@@ -34,17 +34,16 @@
   min-height: 130px;
   background: var(--fa-bg-surface);
 }
-.desktop-plan-source > .desktop-plan-text {
-  margin: 12px 0;
+.desktop-plan-generation-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
 }
-.desktop-plan-generation > :not(summary) {
-  margin-top: 16px;
-}
-.desktop-plan-generation > summary,
-.desktop-plan-source > summary {
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--fa-text-secondary);
+.desktop-plan-generation-content > fieldset,
+.desktop-plan-generation-content > .ant-alert {
+  width: 100%;
 }
 .desktop-plan-actions > .ant-btn-primary {
   min-width: 216px;
@@ -102,35 +101,9 @@
   min-height: 140px;
 }
 .desktop-plan-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 0;
   margin: 0;
+  padding: 0;
   list-style: none;
-}
-.desktop-plan-steps li {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  min-height: 104px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-}
-.desktop-plan-steps li > span {
-  font-size: 18px;
-  line-height: 28px;
-  font-weight: 600;
-  color: var(--fa-text-primary);
-}
-.desktop-plan-steps h3 {
-  font-size: 18px;
-  line-height: 28px;
-}
-.desktop-task-plan .desktop-plan-steps p {
-  margin-top: 8px;
-  color: var(--fa-text-secondary);
 }
 .desktop-plan-send-note {
   color: var(--fa-text-secondary);

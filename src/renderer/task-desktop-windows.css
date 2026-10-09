@@ -60,13 +60,6 @@
   align-self: flex-start;
   min-width: 200px;
 }
-.task-desktop-permission-settings {
-  font-size: 13px;
-  color: var(--fa-text-secondary);
-}
-.task-desktop-permission-settings p {
-  margin: 12px 0;
-}
 .task-desktop-selection {
   display: flex;
   flex-direction: column;
