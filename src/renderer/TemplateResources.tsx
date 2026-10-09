@@ -23,7 +23,7 @@ export default function TemplateResources({
   change: Dispatch<SetStateAction<TemplateDetail>>;
   work: (fn: () => Promise<any>, notice?: string) => Promise<any>;
   openAI: (id: string, trigger: HTMLButtonElement) => void;
-  save: () => void;
+  save: (control: HTMLButtonElement) => void;
   cancel: () => void;
   openEntry: (id: string) => void;
 }) {
@@ -249,7 +249,11 @@ export default function TemplateResources({
         ))}
         <p>默认为禁止。选择目录只建立资源绑定，不等于授权写入。</p>
         <div className="ai-task-actions template-resource-actions">
-          <button className="primary" disabled={blocked} onClick={save}>
+          <button
+            className="primary"
+            disabled={blocked}
+            onClick={(event) => save(event.currentTarget)}
+          >
             保存授权
           </button>
           <button disabled={busy} onClick={cancel}>
