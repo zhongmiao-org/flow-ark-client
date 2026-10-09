@@ -1,4 +1,5 @@
-import { Alert } from 'antd';
+import { Alert, Collapse, Descriptions } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { RunReviewPreview } from '../shared/run-review';
 
 export default function DesktopRunConfirmation({ preview }: { preview: RunReviewPreview }) {
@@ -40,15 +41,41 @@ export default function DesktopRunConfirmation({ preview }: { preview: RunReview
         </p>
       )}
       {preview.rerun && <p>关联原运行：{preview.rerun.runId}。本次从头执行，可能再次修改文档。</p>}
-      <details>
-        <summary>查看固定方案与运行记录位置</summary>
-        <p>
-          {preview.flow.name} · {preview.flow.stepCount} 个步骤 ·{' '}
-          {preview.debug ? '逐步调试' : '正常试运行'}
-        </p>
-        <p className="run-review-version">{preview.flow.versionId || '检查通过后固定执行版本'}</p>
-        <p>本次运行和回执保存在本机。修改结果仍在原应用文档中，需要你按需保存文件。</p>
-      </details>
+      <Collapse
+        items={[
+          {
+            key: 'version',
+            forceRender: true,
+            onKeyDown: activateCollapseWithSpace,
+            label: <>查看固定方案与运行记录位置</>,
+            children: (
+              <>
+                <Descriptions
+                  className="metadata-facts"
+                  column={1}
+                  bordered
+                  size="small"
+                  items={[
+                    { key: 'flow', label: '方案', children: preview.flow.name },
+                    { key: 'steps', label: '步骤数', children: preview.flow.stepCount },
+                    {
+                      key: 'mode',
+                      label: '运行方式',
+                      children: preview.debug ? '逐步调试' : '正常试运行',
+                    },
+                    {
+                      key: 'version',
+                      label: '版本',
+                      children: preview.flow.versionId || '检查通过后固定执行版本',
+                    },
+                  ]}
+                />
+                <p>本次运行和回执保存在本机。修改结果仍在原应用文档中，需要你按需保存文件。</p>
+              </>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }

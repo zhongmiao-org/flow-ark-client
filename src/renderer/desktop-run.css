@@ -60,16 +60,6 @@
 .desktop-confirm-authorization {
   color: var(--fa-text-secondary);
 }
-.desktop-review-options[open] {
-  display: grid;
-  gap: 16px;
-}
-.desktop-review-options > :not(summary) {
-  margin-top: 0;
-}
-.desktop-review-options > button {
-  width: 100%;
-}
 .desktop-confirm-original {
   background: var(--fa-status-error-bg);
 }

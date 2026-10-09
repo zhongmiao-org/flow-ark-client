@@ -1,4 +1,5 @@
-import { Alert, Badge, Button, Tag } from 'antd';
+import { Alert, Badge, Button, Collapse, Tag } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { runStateColors } from './theme';
 import type { RunReviewPreview } from '../shared/run-review';
 
@@ -186,16 +187,28 @@ export default function RunReviewCheck({
   const expandedDetail = issue.summary !== check.detail && !!check.detail;
   if (compact && check.passed)
     return (
-      <div className="run-review-check-compact">
-        <Badge status="success" />
-        <details>
-          <summary>
-            <span className="sr-only">通过：</span>
-            {check.name}
-          </summary>
-          <p>{check.detail}</p>
-        </details>
-      </div>
+      <Collapse
+        className="run-review-check-compact"
+        items={[
+          {
+            key: 'passed',
+            forceRender: true,
+            onKeyDown: activateCollapseWithSpace,
+            label: (
+              <>
+                <Badge status="success" />
+                <span className="sr-only">通过：</span>
+                {check.name}
+              </>
+            ),
+            children: (
+              <>
+                <p>{check.detail}</p>
+              </>
+            ),
+          },
+        ]}
+      />
     );
   return (
     <Alert
@@ -213,12 +226,24 @@ export default function RunReviewCheck({
           <p>{issue.summary}</p>
           {issue.next && <p>{issue.next}</p>}
           {expandedDetail && (
-            <details className="run-review-check-detail">
-              <summary>查看检查详情</summary>
-              <pre tabIndex={0} aria-label={`${check.name}的检查详情`}>
-                {check.detail}
-              </pre>
-            </details>
+            <Collapse
+              className="run-review-check-detail"
+              items={[
+                {
+                  key: 'details',
+                  forceRender: true,
+                  onKeyDown: activateCollapseWithSpace,
+                  label: <>查看检查详情</>,
+                  children: (
+                    <>
+                      <pre tabIndex={0} aria-label={`${check.name}的检查详情`}>
+                        {check.detail}
+                      </pre>
+                    </>
+                  ),
+                },
+              ]}
+            />
           )}
         </div>
       }

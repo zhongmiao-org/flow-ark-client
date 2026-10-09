@@ -542,16 +542,7 @@
   color: var(--fa-text-primary);
   font-weight: 500;
 }
-.run-review-page details {
-  color: var(--fa-text-secondary);
-  min-width: 0;
-}
-.run-review-page summary {
-  cursor: pointer;
-  color: var(--fa-action-primary);
-}
 .run-review-limitations ul {
-  margin-top: 12px;
   font-size: 12px;
   line-height: 20px;
 }
@@ -611,24 +602,12 @@
   list-style: none;
   padding-left: 0;
 }
-.run-review-check-compact {
-  display: flex;
-  align-items: baseline;
-  min-height: 28px;
-  gap: 10px;
+.run-review-option-content {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
 }
-.run-review-check-compact > details {
-  flex: 1;
-}
-.run-review-check-compact > details > summary {
-  color: var(--fa-text-primary);
-  font-size: 14px;
-  line-height: 22px;
-}
-.run-review-options > :not(summary) {
-  margin-top: 16px;
-}
-.run-review-options > button {
+.run-review-option-content > button {
   width: 100%;
 }
 @container (max-width: 950px) {
