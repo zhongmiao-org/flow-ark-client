@@ -1,4 +1,4 @@
-import { Button } from 'antd';
+import { Alert, Button } from 'antd';
 import type { ToolConnection } from '../shared/tool-connections';
 
 export type ConnectionTaskReference = NonNullable<ToolConnection['taskReferences']>[number];
@@ -44,13 +44,19 @@ export default function ToolConnectionUsage({
       ) : (
         <p>尚未取得任务引用，请刷新后核对。</p>
       )}
-      <p className="ai-task-note">
-        断开、删除或重新保存连接后，原任务的工具选择需重新核对；任务草稿和已有运行记录保留。
-      </p>
+      <Alert
+        type="info"
+        role="note"
+        showIcon
+        title="断开、删除或重新保存连接后，原任务的工具选择需重新核对；任务草稿和已有运行记录保留。"
+      />
       {!!connection.activeRunCount && (
-        <p className="ai-task-note tool-warning">
-          断开或删除会取消本连接正在执行或收尾的工具调用。已发送操作的结果可能未知，请查看运行回执；不会自动重试或回滚外部操作。
-        </p>
+        <Alert
+          type="warning"
+          role="note"
+          showIcon
+          title="断开或删除会取消本连接正在执行或收尾的工具调用。已发送操作的结果可能未知，请查看运行回执；不会自动重试或回滚外部操作。"
+        />
       )}
     </section>
   );

@@ -1,4 +1,4 @@
-import { Button, Input } from 'antd';
+import { Alert, Button, Input } from 'antd';
 import { useMemo, useRef, useState } from 'react';
 import type {
   ConnectionDiscovery,
@@ -207,9 +207,12 @@ export default function ToolCapabilityReview({
         </>
       )}
       {baseline && !current.tools.length && (
-        <p className="tool-warning">
-          本次未返回任何工具。下方仅用于核对原定义，保存连接也不会获得工具执行能力。
-        </p>
+        <Alert
+          type="warning"
+          role="note"
+          showIcon
+          title="本次未返回任何工具。下方仅用于核对原定义，保存连接也不会获得工具执行能力。"
+        />
       )}
       {!!rows.length && (
         <label className="tool-field">
@@ -258,7 +261,12 @@ export default function ToolCapabilityReview({
               <h3>{chosen.tool.title || chosen.name}</h3>
               <p className="tool-capability-name">{chosen.name}</p>
               {chosen.change === 'removed' && baseline && (
-                <p className="tool-warning">本次发现已不包含该工具。以下为原保存定义。</p>
+                <Alert
+                  type="warning"
+                  role="note"
+                  showIcon
+                  title="本次发现已不包含该工具。以下为原保存定义。"
+                />
               )}
               <ToolDefinitionDetails tool={chosen.tool} />
               {chosen.change === 'changed' && chosen.previous && chosen.next && (

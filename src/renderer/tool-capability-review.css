@@ -151,10 +151,6 @@
   display: grid;
   gap: 16px;
 }
-.tool-capability-detail .tool-warning {
-  padding: 12px;
-  border-radius: var(--fa-radius-8);
-}
 @container (max-width:460px) {
   .tool-capability-comparison {
     grid-template-columns: minmax(0, 1fr);

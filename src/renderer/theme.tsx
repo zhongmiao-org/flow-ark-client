@@ -1,5 +1,6 @@
 import { ConfigProvider, theme, type ThemeConfig } from 'antd';
 import type { RunState } from '../shared/types';
+import type { ToolConnection } from '../shared/tool-connections';
 import zhCN from 'antd/locale/zh_CN';
 import { useLayoutEffect, type ReactNode } from 'react';
 
@@ -23,6 +24,16 @@ export const runStepColors: Record<string, (typeof runStateColors)[string]> = {
   running: runStateColors.RUNNING,
   warning: runStateColors.PAUSED,
   neutral: runStateColors.CANCELLED,
+};
+
+export const toolConnectionColors: Record<
+  ToolConnection['status'],
+  (typeof runStateColors)[string]
+> = {
+  verified: 'success',
+  unverified: 'warning',
+  disconnected: 'warning',
+  failed: 'warning',
 };
 
 // Figma semantic tokens. All shared controls and workspace colours derive from this theme.

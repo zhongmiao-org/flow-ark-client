@@ -1,4 +1,4 @@
-import { ConfigProvider, Button, Checkbox, Input, Radio } from 'antd';
+import { Alert, ConfigProvider, Button, Checkbox, Input, Radio } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { OAuthInspection } from '../shared/tool-connections';
 
@@ -38,13 +38,18 @@ export default function ToolOAuthInspection({
       <h2 ref={heading} tabIndex={-1}>
         认证站点与权限范围
       </h2>
-      <p className="ai-task-note tool-warning" role="status">
-        {busy
-          ? '正在等待浏览器登录返回或读取工具清单，请完成登录后回到这里。最多等待 10 分钟，可取消登录。'
-          : expired
-            ? '本次检查已过期，请重新检查。'
-            : '仅完成配置读取。选择认证站点并登录后，还需核对工具能力才能保存。'}
-      </p>
+      <Alert
+        type="warning"
+        role="status"
+        showIcon
+        title={
+          busy
+            ? '正在等待浏览器登录返回或读取工具清单，请完成登录后回到这里。最多等待 10 分钟，可取消登录。'
+            : expired
+              ? '本次检查已过期，请重新检查。'
+              : '仅完成配置读取。选择认证站点并登录后，还需核对工具能力才能保存。'
+        }
+      />
       <dl>
         <div>
           <dt>所选服务</dt>
