@@ -230,14 +230,12 @@
   flex: 0 0 16px;
   accent-color: var(--fa-action-primary);
 }
-.ai-task-disclosure,
 .ai-task-diff {
   border: 1px solid var(--fa-border-default);
   padding: 12px;
   border-radius: var(--fa-radius-8);
   min-width: 0;
 }
-.ai-task-disclosure summary,
 .ai-task-diff summary {
   cursor: pointer;
   color: var(--fa-action-primary);
@@ -254,7 +252,7 @@
   background: var(--fa-bg-canvas);
   color: var(--fa-text-primary);
 }
-.ai-task-disclosure h3,
+.task-send-review h3,
 .ai-task-change h3 {
   margin: 12px 0 8px;
   font-size: 14px;
@@ -1098,24 +1096,14 @@
   align-self: flex-start;
   width: 228px;
 }
-.task-understanding-provider {
-  color: var(--fa-text-secondary);
-  font-size: 12px;
-}
 .task-understanding-provider .ai-task-provider {
-  margin-top: 12px;
+  margin: 0;
 }
 .task-understanding-controls {
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
-}
-.task-understanding-controls > .ai-task-disclosure {
-  border: 0;
-  padding: 0;
-  font-size: 12px;
-  line-height: 20px;
 }
 .task-understanding-controls > .ai-task-note {
   padding: 12px;

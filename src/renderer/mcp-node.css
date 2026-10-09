@@ -27,8 +27,7 @@
   margin: 0;
   min-width: 0;
 }
-.mcp-node pre,
-.ai-task-disclosure .mcp-node pre {
+.mcp-node pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   max-height: 240px;
