@@ -1,5 +1,6 @@
-import { Badge, Button, Tag } from 'antd';
+import { Badge, Button, Collapse, Descriptions, Tag } from 'antd';
 import { useState } from 'react';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { InstalledPackage } from '../templates/archive';
 export type TemplateManifest = InstalledPackage['manifest'];
 export const capabilityLabel = (name: string) =>
@@ -56,16 +57,16 @@ export default function TemplateManifestOverview({
         版本 {manifest.version} · SDK {manifest.sdkVersion} · 最低客户端{' '}
         {manifest.minimumClientVersion}
       </p>
-      <dl className="template-catalog-facts">
-        <div>
-          <dt>作者声明</dt>
-          <dd>{manifest.author}</dd>
-        </div>
-        <div>
-          <dt>来源声明</dt>
-          <dd>{manifest.source}</dd>
-        </div>
-      </dl>
+      <Descriptions
+        className="template-catalog-facts"
+        layout="vertical"
+        column={1}
+        size="small"
+        items={[
+          { key: 'author', label: '作者声明', children: manifest.author },
+          { key: 'source', label: '来源声明', children: manifest.source },
+        ]}
+      />
       <p className="template-catalog-muted">作者和来源由包提供，不代表签名认证。</p>
       <h3>操作入口与要求</h3>
       <div className="template-entry-choices" role="group" aria-label="查看入口要求">
@@ -121,37 +122,49 @@ export default function TemplateManifestOverview({
           )}
         </div>
       )}
-      <details className="template-manifest-details">
-        <summary>包内容与身份</summary>
-        <dl className="template-catalog-facts">
-          <div>
-            <dt>模板 ID</dt>
-            <dd>{manifest.id}</dd>
-          </div>
-          <div>
-            <dt>内容摘要</dt>
-            <dd>{manifest.contentDigest}</dd>
-          </div>
-          <div>
-            <dt>包内容</dt>
-            <dd>
-              {manifest.files.length} 个文件 · {manifest.scripts.length} 个脚本
-            </dd>
-          </div>
-        </dl>
-        {manifest.dependencies.length > 0 && (
-          <>
-            <h3>依赖声明</h3>
-            <ul>
-              {manifest.dependencies.map((d) => (
-                <li key={`${d.name}@${d.version}`}>
-                  {d.name} · {d.version} · {d.license}
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </details>
+      <Collapse
+        className="template-manifest-details"
+        size="small"
+        items={[
+          {
+            key: 'identity',
+            label: '包内容与身份',
+            forceRender: true,
+            onKeyDown: activateCollapseWithSpace,
+            children: (
+              <>
+                <Descriptions
+                  className="template-catalog-facts"
+                  layout="vertical"
+                  column={1}
+                  size="small"
+                  items={[
+                    { key: 'id', label: '模板 ID', children: manifest.id },
+                    { key: 'digest', label: '内容摘要', children: manifest.contentDigest },
+                    {
+                      key: 'files',
+                      label: '包内容',
+                      children: `${manifest.files.length} 个文件 · ${manifest.scripts.length} 个脚本`,
+                    },
+                  ]}
+                />
+                {manifest.dependencies.length > 0 && (
+                  <>
+                    <h3>依赖声明</h3>
+                    <ul>
+                      {manifest.dependencies.map((d) => (
+                        <li key={`${d.name}@${d.version}`}>
+                          {d.name} · {d.version} · {d.license}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </>
+            ),
+          },
+        ]}
+      />
     </section>
   );
 }
