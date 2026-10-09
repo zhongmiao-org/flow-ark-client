@@ -1,4 +1,4 @@
-import { Button, Input, Segmented, Tag, Badge } from 'antd';
+import { Button, Input, Segmented, Tag, Badge, Card, Empty } from 'antd';
 import { runStepColors } from './theme';
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import type { taskRunPresentation } from './task-run-presentation';
@@ -158,117 +158,125 @@ export default function TaskExecutionSteps({
     </>
   );
   return (
-    <section
-      className={
-        'ai-task-card task-run-steps task-execution-steps' + (compact ? ' is-compact' : '')
-      }
-      aria-labelledby={`${id}-heading`}
-    >
-      <h2 id={`${id}-heading`}>执行步骤</h2>
-      {!compact && controls}
-      <ol
-        ref={list}
-        aria-label="执行步骤清单"
-        onScroll={(event) => update({ query, filter, scroll: event.currentTarget.scrollTop })}
+    <section aria-labelledby={`${id}-heading`}>
+      <Card
+        className={
+          'task-run-card task-run-steps task-execution-steps' + (compact ? ' is-compact' : '')
+        }
       >
-        {visible.map(({ row, index }) => {
-          const node = nodes.get(row.nodeId);
-          const summary =
-            compact && node && snapshot
-              ? taskStepSummary(node, snapshot, { snapshot: true })
-              : undefined;
-          return (
-            <li
-              key={row.instance}
-              tabIndex={-1}
-              ref={(element) => {
-                if (element) elements.current.set(row.instance, element);
-                else elements.current.delete(row.instance);
-              }}
-              aria-current={row.current ? 'step' : undefined}
-            >
-              <span className="task-run-index">{String(index + 1).padStart(2, '0')}</span>
-              <div>
-                <div className="task-execution-row-heading">
-                  <Button
-                    htmlType="button"
-                    className="task-execution-record-toggle"
-                    aria-label={`步骤记录：${String(index + 1).padStart(2, '0')} · ${row.name}`}
-                    aria-expanded={expanded === row.instance}
-                    aria-controls={`${id}-record-${index}`}
-                    onClick={() =>
-                      change({
-                        query,
-                        filter,
-                        scroll: list.current?.scrollTop ?? scroll,
-                        expanded: expanded === row.instance ? undefined : row.instance,
-                      })
-                    }
-                  >
-                    <strong>{row.name}</strong>
-                  </Button>
-                  {compact && (
-                    <Tag
-                      className="run-state-tag"
-                      variant="filled"
-                      color={runStepColors[row.tone]}
-                      icon={<Badge status={runStepColors[row.tone]} />}
+        <h2 id={`${id}-heading`}>执行步骤</h2>
+        {!compact && controls}
+        <ol
+          ref={list}
+          aria-label="执行步骤清单"
+          onScroll={(event) => update({ query, filter, scroll: event.currentTarget.scrollTop })}
+        >
+          {visible.map(({ row, index }) => {
+            const node = nodes.get(row.nodeId);
+            const summary =
+              compact && node && snapshot
+                ? taskStepSummary(node, snapshot, { snapshot: true })
+                : undefined;
+            return (
+              <li
+                key={row.instance}
+                tabIndex={-1}
+                ref={(element) => {
+                  if (element) elements.current.set(row.instance, element);
+                  else elements.current.delete(row.instance);
+                }}
+                aria-current={row.current ? 'step' : undefined}
+              >
+                <span className="task-run-index">{String(index + 1).padStart(2, '0')}</span>
+                <div>
+                  <div className="task-execution-row-heading">
+                    <Button
+                      htmlType="button"
+                      className="task-execution-record-toggle"
+                      aria-label={`步骤记录：${String(index + 1).padStart(2, '0')} · ${row.name}`}
+                      aria-expanded={expanded === row.instance}
+                      aria-controls={`${id}-record-${index}`}
+                      onClick={() =>
+                        change({
+                          query,
+                          filter,
+                          scroll: list.current?.scrollTop ?? scroll,
+                          expanded: expanded === row.instance ? undefined : row.instance,
+                        })
+                      }
                     >
-                      {row.label}
-                    </Tag>
+                      <strong>{row.name}</strong>
+                    </Button>
+                    {compact && (
+                      <Tag
+                        className="run-state-tag"
+                        variant="filled"
+                        color={runStepColors[row.tone]}
+                        icon={<Badge status={runStepColors[row.tone]} />}
+                      >
+                        {row.label}
+                      </Tag>
+                    )}
+                  </div>
+                  {summary && <p className="task-execution-summary">配置：{summary}</p>}
+                  {!compact && (
+                    <p>
+                      <Tag
+                        className="run-state-tag"
+                        variant="filled"
+                        color={runStepColors[row.tone]}
+                        icon={<Badge status={runStepColors[row.tone]} />}
+                      >
+                        {row.label}
+                      </Tag>
+                    </p>
                   )}
-                </div>
-                {summary && <p className="task-execution-summary">配置：{summary}</p>}
-                {!compact && (
-                  <p>
-                    <Tag
-                      className="run-state-tag"
-                      variant="filled"
-                      color={runStepColors[row.tone]}
-                      icon={<Badge status={runStepColors[row.tone]} />}
-                    >
-                      {row.label}
-                    </Tag>
-                  </p>
-                )}
-                {(!compact || row.instance !== row.nodeId) && (
-                  <small>
-                    {row.instance !== row.nodeId ? '循环/分支位置：' : '步骤编号：'}
-                    {row.instance}
-                  </small>
-                )}
-                <div id={`${id}-record-${index}`} hidden={expanded !== row.instance}>
-                  {expanded === row.instance && (
-                    <RunStepDetails
-                      detail={detail}
-                      compact
-                      step={{
-                        instance: row.instance,
-                        nodeId: row.nodeId,
-                        name: row.name,
-                        type: row.type,
-                        label: row.label,
-                        kind: row.current ? model.view.step.kind : row.started ? 'last' : 'pending',
-                      }}
-                    />
+                  {(!compact || row.instance !== row.nodeId) && (
+                    <small>
+                      {row.instance !== row.nodeId ? '循环/分支位置：' : '步骤编号：'}
+                      {row.instance}
+                    </small>
                   )}
+                  <div id={`${id}-record-${index}`} hidden={expanded !== row.instance}>
+                    {expanded === row.instance && (
+                      <RunStepDetails
+                        detail={detail}
+                        compact
+                        step={{
+                          instance: row.instance,
+                          nodeId: row.nodeId,
+                          name: row.name,
+                          type: row.type,
+                          label: row.label,
+                          kind: row.current
+                            ? model.view.step.kind
+                            : row.started
+                              ? 'last'
+                              : 'pending',
+                        }}
+                      />
+                    )}
+                  </div>
                 </div>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
-      {compact && <div className="task-execution-tools">{controls}</div>}
-      {!visible.length && (
-        <p className="task-execution-empty">
-          {model.rows.length
-            ? '没有匹配的步骤。清除筛选可查看全部记录。'
-            : '尚无已保存的执行步骤。'}
+              </li>
+            );
+          })}
+        </ol>
+        {compact && <div className="task-execution-tools">{controls}</div>}
+        {!visible.length && (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              model.rows.length
+                ? '没有匹配的步骤。清除筛选可查看全部记录。'
+                : '尚无已保存的执行步骤。'
+            }
+          />
+        )}
+        <p className="task-run-note">
+          点击步骤名称查看该次记录与启动时配置。未选分支保持未执行；查看和筛选不会执行步骤或更改运行起点。
         </p>
-      )}
-      <p className="task-run-note">
-        点击步骤名称查看该次记录与启动时配置。未选分支保持未执行；查看和筛选不会执行步骤或更改运行起点。
-      </p>
+      </Card>
     </section>
   );
 }
