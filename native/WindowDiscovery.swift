@@ -38,6 +38,11 @@ func discover() -> Discovery {
     let applications = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.TextEdit")
     let deadline = ProcessInfo.processInfo.systemUptime + 5
     for application in applications {
+        if application.isTerminated { continue }
+        guard application.processIdentifier > 0 else {
+            result.truncated = true
+            continue
+        }
         if result.windows.count >= 30 || ProcessInfo.processInfo.systemUptime >= deadline {
             result.truncated = true
             break

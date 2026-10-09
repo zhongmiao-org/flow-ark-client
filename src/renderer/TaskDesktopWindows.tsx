@@ -122,9 +122,13 @@ export function DesktopWindowList({
           ) : (
             <div className="task-target-empty" role="status">
               <h3 ref={resultHeading} tabIndex={-1}>
-                没有发现可显示的窗口
+                {snapshot.truncated ? '暂未取得可显示的窗口' : '没有发现可显示的窗口'}
               </h3>
-              <p>请在文本编辑中打开文档，然后重新检查。</p>
+              <p>
+                {snapshot.truncated
+                  ? '本次窗口清单不完整，尚不能确认可用窗口。请确认文本编辑文档可以正常响应后重新检查。'
+                  : '请在文本编辑中打开文档，然后重新检查。'}
+              </p>
             </div>
           )}
           {snapshot.truncated && (
