@@ -32,11 +32,17 @@ export function Field({ schema: s, value, change, label, required = false, draft
   const id = useId();
   if (Object.hasOwn(s, 'const') || s.readOnly) return null;
   const title = s.title ?? label;
+  const options =
+    s.oneOf ??
+    s.enum?.map((v: Json) => ({
+      const: v,
+      title: typeof v === 'object' ? JSON.stringify(v) : String(v),
+    }));
   if (!s.type && !s.enum && !s.oneOf)
     return (
       <LiteralValue label={title ?? '值'} value={value ?? null} change={change} draft={draft} />
     );
-  if (s.type === 'object')
+  if (s.type === 'object' && !options)
     return (
       <fieldset className="template-fieldset">
         {title && <legend>{title}</legend>}
@@ -54,14 +60,8 @@ export function Field({ schema: s, value, change, label, required = false, draft
         ))}
       </fieldset>
     );
-  if (s.type === 'array')
+  if (s.type === 'array' && !options)
     return <TemplateArray schema={s} value={value} change={change} title={title} draft={draft} />;
-  const options =
-    s.oneOf ??
-    s.enum?.map((v: Json) => ({
-      const: v,
-      title: typeof v === 'object' ? JSON.stringify(v) : String(v),
-    }));
   const selected = options?.findIndex((option: any) => sameOption(option.const, value));
   const text = typeof value === 'string' ? value : '';
   const length = [...text].length;
@@ -111,7 +111,7 @@ export function Field({ schema: s, value, change, label, required = false, draft
           </option>
           {options.map((o: any, index: number) => (
             <option value={String(index)} key={index}>
-              {o.title ?? String(o.const)}
+              {o.title ?? (typeof o.const === 'object' ? JSON.stringify(o.const) : String(o.const))}
             </option>
           ))}
         </select>
