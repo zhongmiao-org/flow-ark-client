@@ -60,7 +60,7 @@ export function ToolDefinitionDetails({
     <>
       {showDescription && <p>{tool.description || '服务未提供说明，请向提供者核对用途。'}</p>}
       <Descriptions
-        className="tool-connection-facts"
+        className="metadata-facts"
         column={1}
         bordered
         size="small"

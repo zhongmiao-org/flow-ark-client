@@ -118,22 +118,11 @@
   flex-direction: column;
   gap: 12px;
 }
-.tool-identity-details {
-  margin-top: 8px;
-}
-.tool-identity-details > p {
-  margin-top: 8px;
-}
-.tool-connection-maintenance[open] {
+.tool-connection-maintenance .ant-collapse-body {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
-.tool-connection-maintenance > button {
+.tool-connection-maintenance .ant-collapse-body > button {
   width: 100%;
-}
-.tool-connection-maintenance > summary,
-.tool-identity-details > summary {
-  color: var(--fa-action-primary);
-  cursor: pointer;
 }

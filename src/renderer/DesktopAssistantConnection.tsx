@@ -114,7 +114,7 @@ export default function DesktopAssistantConnection({
         <p>随客户端提供，在这台 Mac 上运行，无需安装其他连接程序。</p>
       </div>
       <Descriptions
-        className="tool-connection-facts"
+        className="metadata-facts"
         column={1}
         bordered
         size="small"
@@ -149,7 +149,7 @@ export default function DesktopAssistantConnection({
   const records = (
     <>
       <Descriptions
-        className="tool-connection-facts"
+        className="metadata-facts"
         column={1}
         bordered
         size="small"

@@ -112,3 +112,12 @@ label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item
 .feedback-body > p {
   margin: 0;
 }
+
+/* Shared read-only records: plain text, including long service addresses. */
+.metadata-facts .ant-descriptions-item-label {
+  width: 160px;
+}
+.metadata-facts .ant-descriptions-item-content {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

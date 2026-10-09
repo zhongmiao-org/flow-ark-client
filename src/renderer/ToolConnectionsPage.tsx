@@ -1,5 +1,18 @@
-import { Select, Button, Checkbox, Input, Modal, Flex, Alert, Tag, Badge } from 'antd';
+import {
+  Select,
+  Button,
+  Checkbox,
+  Collapse,
+  Descriptions,
+  Input,
+  Modal,
+  Flex,
+  Alert,
+  Tag,
+  Badge,
+} from 'antd';
 import { toolConnectionColors } from './theme';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import './antd-layout.css';
 import ToolConnectionUsage, { type ConnectionTaskReference } from './ToolConnectionUsage';
 import DesktopAssistantConnection, { type AssistantPhase } from './DesktopAssistantConnection';
@@ -112,7 +125,11 @@ export default function ToolConnectionsPage({
     const first = (
       ['name', 'type', 'url', 'auth', 'secret', 'command', 'args', 'protocol', 'source'] as const
     ).find((field) => fieldErrors[field]);
-    if (first) document.getElementById(`tool-config-${first}`)?.focus();
+    if (!first) return;
+    const frame = requestAnimationFrame(() => {
+      document.getElementById(`tool-config-${first}`)?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
   }, [fieldErrors]);
   const fieldProps = (field: ConfigField) => ({
     id: `tool-config-${field}`,
@@ -1063,27 +1080,35 @@ export default function ToolConnectionsPage({
                   </p>
                 </>
               )}
-              <details
+              <Collapse
                 className="tool-protocol-settings"
-                open={protocolOpen}
-                onToggle={(event) => setProtocolOpen(event.currentTarget.open)}
-              >
-                <summary>协议设置 · {form.protocol}</summary>
-                <label className="tool-field">
-                  协议版本
-                  <Select<string>
-                    {...fieldProps('protocol')}
-                    value={form.protocol}
-                    disabled={!!busy || undefined}
-                    onChange={(value) => change({ protocol: value as Form['protocol'] })}
-                    options={[
-                      { value: '2026-07-28', label: '2026-07-28' },
-                      { value: '2025-11-25', label: '2025-11-25' },
-                    ]}
-                  />
-                  {fieldError('protocol')}
-                </label>
-              </details>
+                activeKey={protocolOpen ? ['protocol'] : []}
+                onChange={(keys) => setProtocolOpen(keys.includes('protocol'))}
+                items={[
+                  {
+                    key: 'protocol',
+                    forceRender: true,
+                    onKeyDown: activateCollapseWithSpace,
+                    label: `协议设置 · ${form.protocol}`,
+                    children: (
+                      <label className="tool-field">
+                        协议版本
+                        <Select<string>
+                          {...fieldProps('protocol')}
+                          value={form.protocol}
+                          disabled={!!busy || undefined}
+                          onChange={(value) => change({ protocol: value as Form['protocol'] })}
+                          options={[
+                            { value: '2026-07-28', label: '2026-07-28' },
+                            { value: '2025-11-25', label: '2025-11-25' },
+                          ]}
+                        />
+                        {fieldError('protocol')}
+                      </label>
+                    ),
+                  },
+                ]}
+              />
               <p>
                 {form.type === 'http' && form.auth === 'oauth'
                   ? '先读取认证站点与范围，再使用服务分配的公开客户端 ID 登录。能力核对后才保存连接。'
@@ -1192,50 +1217,89 @@ export default function ToolConnectionsPage({
               </Tag>
               <article className="tool-definition">
                 <h2>身份与范围</h2>
-                <p>
-                  账号 / 工作区：尚未核对
-                  <br />
-                  认证：
-                  {content.config.transport.type === 'http' &&
-                  content.config.transport.auth === 'bearer'
-                    ? 'Bearer Token'
-                    : content.config.transport.type === 'http' &&
-                        content.config.transport.auth === 'oauth'
-                      ? 'OAuth 浏览器登录'
-                      : '未使用认证凭据'}
-                </p>
-                <details className="tool-identity-details">
-                  <summary>查看连接来源与发现记录</summary>
-                  <p>
-                    连接：{content.config.displayName}
-                    <br />
-                    服务声明：
-                    {content.server
-                      ? `${content.server.name} / ${content.server.version}`
-                      : '未提供身份'}
-                    <br />
-                    来源说明：{content.config.source}
-                    <br />
-                    最近发现：{when(content.testedAt)}
-                  </p>
-                </details>
+                <Descriptions
+                  className="metadata-facts"
+                  column={1}
+                  bordered
+                  size="small"
+                  items={[
+                    { key: 'account', label: '账号 / 工作区', children: '尚未核对' },
+                    {
+                      key: 'auth',
+                      label: '认证',
+                      children:
+                        content.config.transport.type === 'http' &&
+                        content.config.transport.auth === 'bearer'
+                          ? 'Bearer Token'
+                          : content.config.transport.type === 'http' &&
+                              content.config.transport.auth === 'oauth'
+                            ? 'OAuth 浏览器登录'
+                            : '未使用认证凭据',
+                    },
+                  ]}
+                />
+                <Collapse
+                  items={[
+                    {
+                      key: 'source',
+                      onKeyDown: activateCollapseWithSpace,
+                      label: '查看连接来源与发现记录',
+                      children: (
+                        <Descriptions
+                          className="metadata-facts"
+                          column={1}
+                          bordered
+                          size="small"
+                          items={[
+                            {
+                              key: 'connection',
+                              label: '连接',
+                              children: content.config.displayName,
+                            },
+                            {
+                              key: 'server',
+                              label: '服务声明',
+                              children: content.server
+                                ? `${content.server.name} / ${content.server.version}`
+                                : '未提供身份',
+                            },
+                            { key: 'source', label: '来源说明', children: content.config.source },
+                            {
+                              key: 'discovered',
+                              label: '最近发现',
+                              children: when(content.testedAt),
+                            },
+                          ]}
+                        />
+                      ),
+                    },
+                  ]}
+                />
                 {content.oauth && (
                   <div className="tool-oauth-inspection">
-                    <p>
-                      认证站点：{content.oauth.issuer}
-                      <br />
-                      目标资源：{content.oauth.resource}
-                      <br />
-                      客户端 ID：{content.oauth.clientId}
-                    </p>
-                    <p>
-                      授予范围：{content.oauth.scopes.join(' · ') || '服务未声明具体范围'}
-                      <br />
-                      令牌到期：
-                      {content.oauth.expiresAt
-                        ? when(new Date(content.oauth.expiresAt).toISOString())
-                        : '服务未提供，以后续响应为准'}
-                    </p>
+                    <Descriptions
+                      className="metadata-facts"
+                      column={1}
+                      bordered
+                      size="small"
+                      items={[
+                        { key: 'issuer', label: '认证站点', children: content.oauth.issuer },
+                        { key: 'resource', label: '目标资源', children: content.oauth.resource },
+                        { key: 'client', label: '客户端 ID', children: content.oauth.clientId },
+                        {
+                          key: 'scopes',
+                          label: '授予范围',
+                          children: content.oauth.scopes.join(' · ') || '服务未声明具体范围',
+                        },
+                        {
+                          key: 'expires',
+                          label: '令牌到期',
+                          children: content.oauth.expiresAt
+                            ? when(new Date(content.oauth.expiresAt).toISOString())
+                            : '服务未提供，以后续响应为准',
+                        },
+                      ]}
+                    />
                     <p>登录结果不证明服务内账号或工作区身份，使用前仍需核对。</p>
                   </div>
                 )}
@@ -1268,11 +1332,16 @@ export default function ToolConnectionsPage({
                 showIcon
                 title="服务说明只提供上下文。任务授权、目标选择和参数校验由 FlowArk 宿主执行。"
               />
-              <p>
-                任务执行授权：每次试运行前明确核对
-                <br />
-                系统权限：未通过连接发现核对
-              </p>
+              <Descriptions
+                className="metadata-facts"
+                column={1}
+                bordered
+                size="small"
+                items={[
+                  { key: 'task', label: '任务执行授权', children: '每次试运行前明确核对' },
+                  { key: 'system', label: '系统权限', children: '未通过连接发现核对' },
+                ]}
+              />
               {view === 'saved' && selected && (
                 <>
                   {selected.status !== 'verified' && (
@@ -1356,34 +1425,52 @@ export default function ToolConnectionsPage({
                         重新检查连接
                       </Button>
                     )}
-                    <details className="tool-connection-maintenance">
-                      <summary>连接维护与任务引用</summary>
-                      {selected.status === 'verified' && (
-                        <Button disabled={!!busy || undefined} onClick={() => edit(selected)}>
-                          重新检查连接
-                        </Button>
-                      )}
-                      <ToolConnectionUsage
-                        connection={selected}
-                        busy={!!busy}
-                        openTask={(task) => void openReference(task)}
-                      />
-                      <Button disabled={!!busy || undefined} onClick={() => void inspect()}>
-                        {busy === 'inspect' ? '正在刷新引用…' : '刷新连接与任务引用'}
-                      </Button>
-                      {busy === 'open-task' && (
-                        <p role="status">正在保存原任务草稿并核对目标任务…</p>
-                      )}
-                      <Button
-                        disabled={!!busy || selected.status === 'disconnected' || undefined}
-                        onClick={() => void inspect('disconnect')}
-                      >
-                        断开连接
-                      </Button>
-                      <Button disabled={!!busy || undefined} onClick={() => void inspect('remove')}>
-                        删除连接
-                      </Button>
-                    </details>
+                    <Collapse
+                      className="tool-connection-maintenance"
+                      items={[
+                        {
+                          key: 'maintenance',
+                          forceRender: true,
+                          onKeyDown: activateCollapseWithSpace,
+                          label: '连接维护与任务引用',
+                          children: (
+                            <>
+                              {selected.status === 'verified' && (
+                                <Button
+                                  disabled={!!busy || undefined}
+                                  onClick={() => edit(selected)}
+                                >
+                                  重新检查连接
+                                </Button>
+                              )}
+                              <ToolConnectionUsage
+                                connection={selected}
+                                busy={!!busy}
+                                openTask={(task) => void openReference(task)}
+                              />
+                              <Button disabled={!!busy || undefined} onClick={() => void inspect()}>
+                                {busy === 'inspect' ? '正在刷新引用…' : '刷新连接与任务引用'}
+                              </Button>
+                              {busy === 'open-task' && (
+                                <p role="status">正在保存原任务草稿并核对目标任务…</p>
+                              )}
+                              <Button
+                                disabled={!!busy || selected.status === 'disconnected' || undefined}
+                                onClick={() => void inspect('disconnect')}
+                              >
+                                断开连接
+                              </Button>
+                              <Button
+                                disabled={!!busy || undefined}
+                                onClick={() => void inspect('remove')}
+                              >
+                                删除连接
+                              </Button>
+                            </>
+                          ),
+                        },
+                      ]}
+                    />
                   </>
                 )
               )}

@@ -1,4 +1,4 @@
-import { Alert, Button, Collapse, Tag } from 'antd';
+import { Alert, Button, Collapse, Descriptions, Tag } from 'antd';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { PlanningTask, PlanningResult } from '../shared/planning';
 import { planningTaskColors } from './theme';
@@ -220,38 +220,41 @@ export default function TaskGenerationPage({
               label: '查看本次请求记录',
               children: (
                 <>
-                  <dl>
-                    <div>
-                      <dt>AI 服务</dt>
-                      <dd>
-                        {task.provider === 'deepseek'
-                          ? 'DeepSeek'
-                          : task.provider === 'openai-codex'
-                            ? 'OpenAI · Codex'
-                            : '未记录'}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>模型</dt>
-                      <dd>{task.model || '未记录'}</dd>
-                    </div>
-                    <div>
-                      <dt>本地请求标识</dt>
-                      <dd>{task.requestId || '未记录'}</dd>
-                    </div>
-                    <div>
-                      <dt>状态更新时间</dt>
-                      <dd>
-                        {Number.isFinite(updatedAt) ? (
+                  <Descriptions
+                    className="metadata-facts"
+                    column={1}
+                    bordered
+                    size="small"
+                    items={[
+                      {
+                        key: 'provider',
+                        label: 'AI 服务',
+                        children:
+                          task.provider === 'deepseek'
+                            ? 'DeepSeek'
+                            : task.provider === 'openai-codex'
+                              ? 'OpenAI · Codex'
+                              : '未记录',
+                      },
+                      { key: 'model', label: '模型', children: task.model || '未记录' },
+                      {
+                        key: 'request',
+                        label: '本地请求标识',
+                        children: task.requestId || '未记录',
+                      },
+                      {
+                        key: 'updated',
+                        label: '状态更新时间',
+                        children: Number.isFinite(updatedAt) ? (
                           <time dateTime={task.updatedAt}>
                             {new Date(updatedAt).toLocaleString('zh-CN')}
                           </time>
                         ) : (
                           '时间待核对'
-                        )}
-                      </dd>
-                    </div>
-                  </dl>
+                        ),
+                      },
+                    ]}
+                  />
                   <p>这里显示本次生成留下的记录；重新生成前，可在核对区检查要使用的服务与模型。</p>
                 </>
               ),
