@@ -110,6 +110,13 @@
 .export-review-message p {
   margin: 8px 0 0;
 }
+.export-review-message:focus {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 3px;
+}
+.export-review-identity {
+  overflow-wrap: anywhere;
+}
 .export-review-message.error {
   color: var(--fa-status-error);
   background: var(--fa-status-error-bg);

@@ -44,11 +44,12 @@ export default function ExportReviewDialog({
     descriptionId = useId();
   const dialog = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const feedback = useRef<HTMLDivElement>(null);
   const locked = useRef(false);
   const [reviewed, setReviewed] = useState(false);
   const [busy, setBusy] = useState<'export' | 'import'>();
   const [stage, setStage] = useState<'review' | 'done'>('review');
-  const [error, setError] = useState('');
+  const [error, setError] = useState<{ operation: 'export' | 'import'; message: string }>();
   const [notice, setNotice] = useState('');
   const draft = source.kind === 'draft';
   const name = draft ? source.flow.name : source.name;
@@ -64,6 +65,9 @@ export default function ExportReviewDialog({
   useEffect(() => {
     if (stage === 'done') heading.current?.focus();
   }, [stage]);
+  useEffect(() => {
+    if (!busy && (error || notice)) feedback.current?.focus();
+  }, [busy, error, notice]);
   const fail = (reason: unknown) =>
     (reason instanceof Error ? reason.message : '导出未完成，请核对来源后重试').replace(
       /^Error invoking remote method 'flowark:request': (?:Error: )?/,
@@ -73,7 +77,7 @@ export default function ExportReviewDialog({
     if (locked.current || (operation === 'export' && !reviewed)) return;
     locked.current = true;
     setBusy(operation);
-    setError('');
+    setError(undefined);
     setNotice('');
     try {
       if (operation === 'import') {
@@ -93,9 +97,9 @@ export default function ExportReviewDialog({
       );
       if (result === true) setStage('done');
       else if (result === false) setNotice('已取消保存，本次没有导出文件。');
-      else setError('未取得明确的导出结果，请先检查你选择的保存位置。');
+      else setError({ operation, message: '未取得明确的导出结果，请先检查你选择的保存位置。' });
     } catch (reason) {
-      setError(fail(reason));
+      setError({ operation, message: fail(reason) });
     } finally {
       locked.current = false;
       setBusy(undefined);
@@ -131,14 +135,18 @@ export default function ExportReviewDialog({
         </button>
       </header>
       {error && (
-        <div className="export-review-message error" role="alert">
-          <strong>{busy === 'import' ? '导入选择未完成' : '操作未完成'}</strong>
-          <p>{error}</p>
-          <p>保留当前来源；请核对资源声明、脚本依赖或保存位置后，再明确重试。</p>
+        <div className="export-review-message error" role="alert" ref={feedback} tabIndex={-1}>
+          <strong>{error.operation === 'import' ? 'ZIP 导入检查未完成' : '导出未完成'}</strong>
+          <p>{error.message}</p>
+          <p>
+            {error.operation === 'import'
+              ? '已导出的文件保持不变。请重新选择完整的标准模板 ZIP，再检查并安装。'
+              : '保留当前来源；请核对资源声明、脚本依赖或保存位置后，再明确重试。'}
+          </p>
         </div>
       )}
       {notice && (
-        <div className="export-review-message" role="status">
+        <div className="export-review-message" role="status" ref={feedback} tabIndex={-1}>
           {notice}
         </div>
       )}
@@ -146,6 +154,7 @@ export default function ExportReviewDialog({
         <section className="export-review-success">
           <span className="export-review-badge success">已保存 · 标准 ZIP</span>
           <h2>{name}</h2>
+          {!draft && <p className="export-review-identity">原模板版本 · {source.key}</p>}
           <p>
             {draft
               ? '重新导入后创建新实例，填写参数、绑定本机资源并确认动作权限。'
@@ -154,7 +163,11 @@ export default function ExportReviewDialog({
           <p>导入验证会让你选择 ZIP 文件，安装和执行仍需明确操作。</p>
           <div className="export-review-actions">
             <button className="primary" disabled={!!busy} onClick={() => void run('import')}>
-              {busy === 'import' ? '正在选择文件…' : '选择 ZIP 进行导入验证'}
+              {busy === 'import'
+                ? '正在选择并检查 ZIP…'
+                : error?.operation === 'import'
+                  ? '重新选择 ZIP 进行导入验证'
+                  : '选择 ZIP 进行导入验证'}
             </button>
             <button disabled={!!busy} onClick={close}>
               {draft ? '返回流程编排' : `返回${templateReturnLabel}`}
@@ -170,9 +183,7 @@ export default function ExportReviewDialog({
               <dl>
                 <div>
                   <dt>身份与版本</dt>
-                  <dd>
-                    {draft ? '生成新的本地模板身份 · 1.0.0' : `${source.key} · ${source.version}`}
-                  </dd>
+                  <dd>{draft ? '生成新的本地模板身份 · 1.0.0' : source.key}</dd>
                 </div>
                 {draft ? (
                   <>
