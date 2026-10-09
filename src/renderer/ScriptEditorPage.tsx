@@ -1,3 +1,4 @@
+import { ConfigProvider, Select, Button, Input } from 'antd';
 import {
   lazy,
   Suspense,
@@ -297,249 +298,260 @@ export default function ScriptEditorPage({
           {error}
         </p>
       )}
-      <fieldset className="script-editor-columns" disabled={saving}>
-        <section className="script-editor-code ai-task-card">
-          <div className="script-editor-toolbar">
-            <span className="badge" title={node.id}>
-              {node.name || node.id}.{node.language}
-            </span>
-            <button disabled={syntax.checking} onClick={check}>
-              {syntax.checking ? '正在检查…' : '检查语法'}
-            </button>
-            <button aria-expanded={preview} onClick={refreshPreview}>
-              预览输入输出
-            </button>
-          </div>
-          <Suspense fallback={<p>加载代码编辑器…</p>}>
-            <CodeEditor
-              value={node.code}
-              language={node.language === 'ts' ? 'typescript' : 'javascript'}
-              label="脚本代码"
-              theme="vs-dark"
-              readOnly={saving}
-              height="390px"
-              location={location}
-              onChange={(code) => change({ ...node, code })}
-            />
-          </Suspense>
-          <div className="script-syntax" role="status" aria-live="polite">
-            {syntax.error && <p className="field-error">检查未完成：{syntax.error}</p>}
-            {syntax.issues &&
-              (syntax.issues.length ? (
+      <ConfigProvider componentDisabled={saving || undefined}>
+        <fieldset className="script-editor-columns" disabled={saving}>
+          <section className="script-editor-code ai-task-card">
+            <div className="script-editor-toolbar">
+              <span className="badge" title={node.id}>
+                {node.name || node.id}.{node.language}
+              </span>
+              <Button disabled={syntax.checking || undefined} onClick={check}>
+                {syntax.checking ? '正在检查…' : '检查语法'}
+              </Button>
+              <Button aria-expanded={preview} onClick={refreshPreview}>
+                预览输入输出
+              </Button>
+            </div>
+            <Suspense fallback={<p>加载代码编辑器…</p>}>
+              <CodeEditor
+                value={node.code}
+                language={node.language === 'ts' ? 'typescript' : 'javascript'}
+                label="脚本代码"
+                theme="vs-dark"
+                readOnly={saving}
+                height="390px"
+                location={location}
+                onChange={(code) => change({ ...node, code })}
+              />
+            </Suspense>
+            <div className="script-syntax" role="status" aria-live="polite">
+              {syntax.error && <p className="field-error">检查未完成：{syntax.error}</p>}
+              {syntax.issues &&
+                (syntax.issues.length ? (
+                  <>
+                    <p className="field-error">
+                      发现 {syntax.issues.length} 个语法问题，选择一项定位到代码。
+                    </p>
+                    <ul>
+                      {syntax.issues.map((issue, index) => (
+                        <li key={index}>
+                          <Button
+                            className="script-diagnostic"
+                            onClick={() =>
+                              setLocation((current) => ({
+                                lineNumber: issue.lineNumber,
+                                column: issue.column,
+                                request: (current?.request ?? 0) + 1,
+                              }))
+                            }
+                          >
+                            第 {issue.lineNumber} 行，{issue.column} 列：{issue.message}
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p>语法检查通过；依赖解析、入口函数和实际结果仍需运行前检查及试运行。</p>
+                ))}
+            </div>
+            <p className="note">入口为 default export 的函数，参数为 ctx；返回值成为步骤输出。</p>
+            <section
+              className="script-preview"
+              aria-label="输入与输出预览"
+              data-script-preview
+              tabIndex={-1}
+            >
+              <h2>输入与输出预览</h2>
+              {preview ? (
                 <>
-                  <p className="field-error">
-                    发现 {syntax.issues.length} 个语法问题，选择一项定位到代码。
+                  <h3>当前草稿输入</h3>
+                  {inputIncomplete ? (
+                    <p role="status">输入尚未完成，修正后才能预览当前值。</p>
+                  ) : (
+                    <>
+                      <p>
+                        {input.available
+                          ? '按当前参数解析；执行前仍会固定本次输入。'
+                          : '此输入当前无法解析；以下显示来源配置。'}
+                      </p>
+                      <pre tabIndex={0} aria-label="当前草稿输入内容">
+                        {json(input.available ? input.value : node.input)}
+                      </pre>
+                      {!input.available && <p className="note">{input.reason}</p>}
+                    </>
+                  )}
+                  <h3>历史运行输出</h3>
+                  <label htmlFor="script-history">最近 20 次运行</label>
+                  <Select<string>
+                    id="script-history"
+                    value={runId}
+                    disabled={historyLoading || !runs.length || undefined}
+                    onChange={(value) => {
+                      resultFocus.current = document.getElementById('script-history');
+                      setDetail(undefined);
+                      setDetailError('');
+                      setRunId(value);
+                    }}
+                    options={[
+                      { value: '', label: '选择运行…' },
+                      ...runs.map((run) => ({
+                        value: run.id,
+                        label: (
+                          <>
+                            {new Date(run.createdAt).toLocaleString('zh-CN')} · {run.id.slice(0, 8)}{' '}
+                            · {runDisplayLabels[run.state]}
+                          </>
+                        ),
+                      })),
+                    ]}
+                  />
+                  <p role="status">
+                    {historyLoading
+                      ? '正在读取最近 20 次运行…'
+                      : historyError
+                        ? runs.length
+                          ? '运行列表未更新，保留上次读取的选项。'
+                          : '运行列表尚未取得，请重新读取。'
+                        : !runs.length
+                          ? '尚无运行记录；预览不会运行脚本'
+                          : !runId
+                            ? '选择历史运行查看实际输出'
+                            : ''}
                   </p>
-                  <ul>
-                    {syntax.issues.map((issue, index) => (
-                      <li key={index}>
-                        <button
-                          className="script-diagnostic"
-                          onClick={() =>
-                            setLocation((current) => ({
-                              lineNumber: issue.lineNumber,
-                              column: issue.column,
-                              request: (current?.request ?? 0) + 1,
-                            }))
-                          }
-                        >
-                          第 {issue.lineNumber} 行，{issue.column} 列：{issue.message}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                  {historyError && (
+                    <p className="field-error" role="alert">
+                      运行列表读取失败：{historyError}
+                    </p>
+                  )}
+                  {runId && detailLoading && <p role="status">正在读取所选运行结果…</p>}
+                  {runId && detailError && (
+                    <p className="field-error" role="alert" data-script-detail-error tabIndex={-1}>
+                      运行结果读取失败：{detailError}
+                    </p>
+                  )}
+                  {(historyError || detailError) && (
+                    <Button
+                      disabled={historyLoading || detailLoading || undefined}
+                      onClick={refreshPreview}
+                    >
+                      重新读取历史结果
+                    </Button>
+                  )}
+                  {currentDetail && (
+                    <div
+                      data-script-run={currentDetail.run.id}
+                      tabIndex={-1}
+                      aria-label="所选运行的历史输出"
+                    >
+                      <p>
+                        固定版本 {currentDetail.run.versionId} · 运行 {currentDetail.run.id}
+                      </p>
+                      <p>
+                        {JSON.stringify(snapshotNode) === JSON.stringify(node)
+                          ? '步骤配置与当前草稿相同；历史结果不保证下一次结果。'
+                          : '历史步骤配置与当前草稿不同，以下不是本次编辑的结果。'}
+                      </p>
+                      {outputs.length ? (
+                        outputs.map((output) => (
+                          <div key={output.instance}>
+                            <strong>{output.instance}</strong>
+                            <pre tabIndex={0} aria-label={`历史输出 ${output.instance}`}>
+                              {json(output.value)}
+                            </pre>
+                          </div>
+                        ))
+                      ) : (
+                        <p>此运行没有该步骤的已保存输出；不能据此判定成功，也不会自动重跑。</p>
+                      )}
+                    </div>
+                  )}
                 </>
               ) : (
-                <p>语法检查通过；依赖解析、入口函数和实际结果仍需运行前检查及试运行。</p>
-              ))}
-          </div>
-          <p className="note">入口为 default export 的函数，参数为 ctx；返回值成为步骤输出。</p>
-          <section
-            className="script-preview"
-            aria-label="输入与输出预览"
-            data-script-preview
-            tabIndex={-1}
-          >
-            <h2>输入与输出预览</h2>
-            {preview ? (
-              <>
-                <h3>当前草稿输入</h3>
-                {inputIncomplete ? (
-                  <p role="status">输入尚未完成，修正后才能预览当前值。</p>
-                ) : (
-                  <>
-                    <p>
-                      {input.available
-                        ? '按当前参数解析；执行前仍会固定本次输入。'
-                        : '此输入当前无法解析；以下显示来源配置。'}
-                    </p>
-                    <pre tabIndex={0} aria-label="当前草稿输入内容">
-                      {json(input.available ? input.value : node.input)}
-                    </pre>
-                    {!input.available && <p className="note">{input.reason}</p>}
-                  </>
-                )}
-                <h3>历史运行输出</h3>
-                <label htmlFor="script-history">最近 20 次运行</label>
-                <select
-                  id="script-history"
-                  value={runId}
-                  disabled={historyLoading || !runs.length}
-                  onChange={(e) => {
-                    resultFocus.current = e.currentTarget;
-                    setDetail(undefined);
-                    setDetailError('');
-                    setRunId(e.target.value);
-                  }}
-                >
-                  <option value="">选择运行…</option>
-                  {runs.map((run) => (
-                    <option value={run.id} key={run.id}>
-                      {new Date(run.createdAt).toLocaleString('zh-CN')} · {run.id.slice(0, 8)} ·{' '}
-                      {runDisplayLabels[run.state]}
-                    </option>
-                  ))}
-                </select>
-                <p role="status">
-                  {historyLoading
-                    ? '正在读取最近 20 次运行…'
-                    : historyError
-                      ? runs.length
-                        ? '运行列表未更新，保留上次读取的选项。'
-                        : '运行列表尚未取得，请重新读取。'
-                      : !runs.length
-                        ? '尚无运行记录；预览不会运行脚本'
-                        : !runId
-                          ? '选择历史运行查看实际输出'
-                          : ''}
-                </p>
-                {historyError && (
-                  <p className="field-error" role="alert">
-                    运行列表读取失败：{historyError}
-                  </p>
-                )}
-                {runId && detailLoading && <p role="status">正在读取所选运行结果…</p>}
-                {runId && detailError && (
-                  <p className="field-error" role="alert" data-script-detail-error tabIndex={-1}>
-                    运行结果读取失败：{detailError}
-                  </p>
-                )}
-                {(historyError || detailError) && (
-                  <button disabled={historyLoading || detailLoading} onClick={refreshPreview}>
-                    重新读取历史结果
-                  </button>
-                )}
-                {currentDetail && (
-                  <div
-                    data-script-run={currentDetail.run.id}
-                    tabIndex={-1}
-                    aria-label="所选运行的历史输出"
-                  >
-                    <p>
-                      固定版本 {currentDetail.run.versionId} · 运行 {currentDetail.run.id}
-                    </p>
-                    <p>
-                      {JSON.stringify(snapshotNode) === JSON.stringify(node)
-                        ? '步骤配置与当前草稿相同；历史结果不保证下一次结果。'
-                        : '历史步骤配置与当前草稿不同，以下不是本次编辑的结果。'}
-                    </p>
-                    {outputs.length ? (
-                      outputs.map((output) => (
-                        <div key={output.instance}>
-                          <strong>{output.instance}</strong>
-                          <pre tabIndex={0} aria-label={`历史输出 ${output.instance}`}>
-                            {json(output.value)}
-                          </pre>
-                        </div>
-                      ))
-                    ) : (
-                      <p>此运行没有该步骤的已保存输出；不能据此判定成功，也不会自动重跑。</p>
-                    )}
-                  </div>
-                )}
-              </>
-            ) : (
-              <p>点击“预览输入输出”查看当前输入来源与已有运行结果，不执行脚本。</p>
-            )}
+                <p>点击“预览输入输出”查看当前输入来源与已有运行结果，不执行脚本。</p>
+              )}
+            </section>
           </section>
-        </section>
-        <aside className="script-editor-settings ai-task-card">
-          <h2>配置</h2>
-          <label htmlFor="script-language">语言</label>
-          <select
-            id="script-language"
-            value={node.language}
-            onChange={(e) => change({ ...node, language: e.target.value as 'js' | 'ts' })}
-          >
-            <option value="ts">TypeScript</option>
-            <option value="js">JavaScript</option>
-          </select>
-          <details className="script-input-settings">
-            <summary>输入 · 配置来源</summary>
-            <ValueField
-              label="脚本输入"
-              value={node.input}
-              choices={referenceChoices(draft.flow, nodeId)}
-              defaultValue={{}}
-              change={(input) => change({ ...node, input })}
-              onIncompleteChange={inputStateChanged}
+          <aside className="script-editor-settings ai-task-card">
+            <h2>配置</h2>
+            <label htmlFor="script-language">语言</label>
+            <Select<string>
+              id="script-language"
+              value={node.language}
+              onChange={(value) => change({ ...node, language: value as 'js' | 'ts' })}
+              options={[
+                { value: 'ts', label: 'TypeScript' },
+                { value: 'js', label: 'JavaScript' },
+              ]}
             />
-          </details>
-          <label htmlFor="script-timeout">超时（毫秒）</label>
-          <input
-            id="script-timeout"
-            inputMode="numeric"
-            aria-invalid={!!timeoutError}
-            aria-describedby={
-              timeoutError ? 'script-timeout-error script-timeout-help' : 'script-timeout-help'
-            }
-            value={timeout}
-            onChange={(e) => {
-              setTimeoutValue(e.target.value);
-              setTimeoutError('');
-              setError('');
-            }}
-          />
-          {timeoutError && (
-            <p className="field-error" id="script-timeout-error">
-              {timeoutError}
-            </p>
-          )}
-          <p className="note" id="script-timeout-help">
-            100–3600000 毫秒；未配置时为 60000 毫秒，外层步骤可能先到期。
-          </p>
-          <details className="script-dependency-settings">
-            <summary>
-              依赖 ·{' '}
-              {node.dependencies.length ? `${node.dependencies.length} 个本地包` : '仅内置 SDK'}
-            </summary>
-            <ScriptPackages
-              flowId={record.id}
-              node={node}
-              bindings={draft.bindings}
-              bind={(info) => setDraft(editScriptPackage(draft, node, info.name, info))}
-              remove={(name) => setDraft(editScriptPackage(draft, node, name))}
+            <details className="script-input-settings">
+              <summary>输入 · 配置来源</summary>
+              <ValueField
+                label="脚本输入"
+                value={node.input}
+                choices={referenceChoices(draft.flow, nodeId)}
+                defaultValue={{}}
+                change={(input) => change({ ...node, input })}
+                onIncompleteChange={inputStateChanged}
+              />
+            </details>
+            <label htmlFor="script-timeout">超时（毫秒）</label>
+            <Input
+              status={!!timeoutError ? 'error' : undefined}
+              id="script-timeout"
+              inputMode="numeric"
+              aria-invalid={!!timeoutError}
+              aria-describedby={
+                timeoutError ? 'script-timeout-error script-timeout-help' : 'script-timeout-help'
+              }
+              value={timeout}
+              onChange={(e) => {
+                setTimeoutValue(e.target.value);
+                setTimeoutError('');
+                setError('');
+              }}
             />
-          </details>
-          <details className="script-access">
-            <summary>
-              文件与凭据 · {Object.keys(draft.bindings.files).length} 个目录 ·{' '}
-              {draft.bindings.credentials.length} 个凭据引用
-            </summary>
-            <p className="note">
-              可信脚本可使用 Node 能力；这些绑定不是文件或网络安全隔离。模板 SDK
-              另按当前入口授权检查。
+            {timeoutError && (
+              <p className="field-error" id="script-timeout-error">
+                {timeoutError}
+              </p>
+            )}
+            <p className="note" id="script-timeout-help">
+              100–3600000 毫秒；未配置时为 60000 毫秒，外层步骤可能先到期。
             </p>
-          </details>
-          <p className="script-editor-note">
-            保存会更新当前流程草稿。代码和依赖在运行前固定，不自动安装依赖；语法检查不代表业务结果通过。
-          </p>
-          <button className="primary" onClick={() => persist()}>
-            {saving ? '正在保存…' : '保存并返回'}
-          </button>
-          <button onClick={() => navigation.current?.()}>取消</button>
-        </aside>
-      </fieldset>
+            <details className="script-dependency-settings">
+              <summary>
+                依赖 ·{' '}
+                {node.dependencies.length ? `${node.dependencies.length} 个本地包` : '仅内置 SDK'}
+              </summary>
+              <ScriptPackages
+                flowId={record.id}
+                node={node}
+                bindings={draft.bindings}
+                bind={(info) => setDraft(editScriptPackage(draft, node, info.name, info))}
+                remove={(name) => setDraft(editScriptPackage(draft, node, name))}
+              />
+            </details>
+            <details className="script-access">
+              <summary>
+                文件与凭据 · {Object.keys(draft.bindings.files).length} 个目录 ·{' '}
+                {draft.bindings.credentials.length} 个凭据引用
+              </summary>
+              <p className="note">
+                可信脚本可使用 Node 能力；这些绑定不是文件或网络安全隔离。模板 SDK
+                另按当前入口授权检查。
+              </p>
+            </details>
+            <p className="script-editor-note">
+              保存会更新当前流程草稿。代码和依赖在运行前固定，不自动安装依赖；语法检查不代表业务结果通过。
+            </p>
+            <Button type="primary" onClick={() => persist()}>
+              {saving ? '正在保存…' : '保存并返回'}
+            </Button>
+            <Button onClick={() => navigation.current?.()}>取消</Button>
+          </aside>
+        </fieldset>
+      </ConfigProvider>
       <dialog
         ref={dialog}
         className="script-leave-dialog"
@@ -552,15 +564,19 @@ export default function ScriptEditorPage({
         <h2 id="script-leave-title">保存脚本修改？</h2>
         <p>代码、输入、超时和依赖将一起保存。放弃只撤销本次脚本编辑。</p>
         <div>
-          <button className="primary" disabled={saving} onClick={() => persist(pendingLeave?.next)}>
+          <Button
+            type="primary"
+            disabled={saving || undefined}
+            onClick={() => persist(pendingLeave?.next)}
+          >
             保存并离开
-          </button>
-          <button disabled={saving} onClick={() => close(pendingLeave?.next)}>
+          </Button>
+          <Button disabled={saving || undefined} onClick={() => close(pendingLeave?.next)}>
             放弃修改
-          </button>
-          <button disabled={saving} onClick={() => setPendingLeave(undefined)}>
+          </Button>
+          <Button disabled={saving || undefined} onClick={() => setPendingLeave(undefined)}>
             继续编辑
-          </button>
+          </Button>
         </div>
       </dialog>
     </section>

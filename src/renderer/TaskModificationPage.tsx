@@ -1,3 +1,4 @@
+import { Button, Input } from 'antd';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { Flow } from '../shared/types';
 import type { TaskStepContext } from './task-step-presentation';
@@ -77,12 +78,15 @@ export default function TaskModificationPage({
     <div className="ai-task-columns task-modification">
       <section className="ai-task-card">
         <label htmlFor="task-modification-instruction">你想怎么调整？</label>
-        <textarea
+        <Input.TextArea
+          status={!!invalid || undefined ? 'error' : undefined}
           id="task-modification-instruction"
-          ref={input}
+          ref={(instance) => {
+            input.current = instance?.resizableTextArea?.textArea ?? null;
+          }}
           placeholder="输入新的修改要求……"
           value={instruction}
-          disabled={busy}
+          disabled={busy || undefined}
           maxLength={10000}
           aria-invalid={!!invalid || undefined}
           aria-describedby={`task-modification-help${invalid ? ' task-modification-error' : ''}`}
@@ -94,9 +98,9 @@ export default function TaskModificationPage({
         {conflict && (
           <div className="alert error" role="alert">
             <span>当前草稿已变化，修改要求仍保留，请先重新核对右侧方案。</span>
-            <button disabled={busy} onClick={rebase}>
+            <Button disabled={busy || undefined} onClick={rebase}>
               以当前草稿重新核对
-            </button>
+            </Button>
           </div>
         )}
         {invalid && (
@@ -104,10 +108,10 @@ export default function TaskModificationPage({
             {invalid}
           </p>
         )}
-        <button
+        <Button
           ref={reviewButton}
-          className="primary"
-          disabled={busy || conflict || !!invalid || !instruction.trim()}
+          type="primary"
+          disabled={busy || conflict || !!invalid || !instruction.trim() || undefined}
           aria-expanded={review}
           aria-controls={review ? 'task-modification-review' : undefined}
           onClick={() => {
@@ -116,7 +120,7 @@ export default function TaskModificationPage({
           }}
         >
           核对修改要求
-        </button>
+        </Button>
         <p id="task-modification-help">
           先核对发送内容，再生成当前草稿的修改差异。未提出新要求时，不重新套用之前的提议。
         </p>
@@ -130,8 +134,8 @@ export default function TaskModificationPage({
           >
             <h2>发送前再确认</h2>
             {controls}
-            <button
-              disabled={busy}
+            <Button
+              disabled={busy || undefined}
               onClick={() => {
                 resetReview();
                 setReview(false);
@@ -139,12 +143,12 @@ export default function TaskModificationPage({
               }}
             >
               收起核对
-            </button>
+            </Button>
           </div>
         )}
-        <button disabled={busy} onClick={back}>
+        <Button disabled={busy || undefined} onClick={back}>
           返回当前方案
-        </button>
+        </Button>
       </section>
       <section className="ai-task-card">
         <h2 title={name}>当前方案 · 修订 {revision}</h2>
@@ -164,14 +168,14 @@ export default function TaskModificationPage({
               selected={selected}
               select={inspectStep}
               actions={
-                <button
+                <Button
                   onClick={() => {
                     setInspecting(false);
                     stepList.current?.reveal(selected);
                   }}
                 >
                   返回当前方案步骤
-                </button>
+                </Button>
               }
             />
           </div>

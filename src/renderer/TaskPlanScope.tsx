@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import type { Flow } from '../shared/types';
 import { flatten } from './flow-editing';
 import { taskStepSummary, taskStepTitle, type TaskStepContext } from './task-step-presentation';
@@ -54,14 +55,14 @@ export default function TaskPlanScope({
           )}
           <div className="task-plan-scope-list">
             {operations.map((step) => (
-              <button key={step.id} onClick={() => select(step.id)}>
+              <Button key={step.id} onClick={() => select(step.id)}>
                 <strong>
                   第 {steps.findIndex((entry) => entry.id === step.id) + 1} 步 ·{' '}
                   {taskStepTitle(step)}
                 </strong>
                 <span>{taskStepSummary(step, flow, context)}</span>
                 <small>查看完整参数</small>
-              </button>
+              </Button>
             ))}
           </div>
         </details>

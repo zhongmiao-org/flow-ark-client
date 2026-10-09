@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import type { RunReviewPreview } from '../shared/run-review';
 
 type Check = RunReviewPreview['checks'][number];
@@ -162,9 +163,9 @@ export default function RunReviewCheck({
         <p className="run-review-resource-reason">{check.detail}</p>
         <p>{resourceIssue.next}</p>
         {recover && (
-          <button className="primary" disabled={disabled} onClick={recover}>
+          <Button type="primary" disabled={disabled || undefined} onClick={recover}>
             {resourceIssue.action}
-          </button>
+          </Button>
         )}
       </section>
     );

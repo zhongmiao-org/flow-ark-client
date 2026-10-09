@@ -1,3 +1,4 @@
+import { Select, Input } from 'antd';
 import { useId } from 'react';
 import type { Json, Step } from '../shared/types';
 import ValueField from './ValueField';
@@ -54,19 +55,20 @@ export default function LogicNodeConfiguration({
         </header>
         {field('actual', '判断值', node.actual)}
         <label htmlFor={id + '-operator'}>判断方式</label>
-        <select
+        <Select<string>
           id={id + '-operator'}
           value={node.operator}
-          onChange={(e) => {
-            if (guard()) change({ ...node, operator: e.target.value } as Step);
+          onChange={(value) => {
+            if (guard()) change({ ...node, operator: value } as Step);
           }}
-        >
-          <option value="equals">等于</option>
-          <option value="notEquals">不等于</option>
-          <option value="contains">包含</option>
-          <option value="gt">大于（数字）</option>
-          <option value="exists">不是空值</option>
-        </select>
+          options={[
+            { value: 'equals', label: '等于' },
+            { value: 'notEquals', label: '不等于' },
+            { value: 'contains', label: '包含' },
+            { value: 'gt', label: '大于（数字）' },
+            { value: 'exists', label: '不是空值' },
+          ]}
+        />
         {node.operator !== 'exists' && field('expected', '比较值', node.expected)}
         {node.type === 'condition' && (
           <dl className="node-control-summary">
@@ -116,7 +118,7 @@ export default function LogicNodeConfiguration({
           <h4>等待人工</h4>
         </header>
         <label htmlFor={id + '-message'}>人工提示</label>
-        <textarea
+        <Input.TextArea
           id={id + '-message'}
           value={node.message}
           onChange={(e) => change({ ...node, message: e.target.value })}

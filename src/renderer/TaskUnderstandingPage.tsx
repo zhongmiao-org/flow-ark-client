@@ -1,3 +1,4 @@
+import { ConfigProvider, Button, Input, Radio } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { PlanningTask, PlanningResult, PlanningContext } from '../shared/planning';
 import { learningPrompt } from '../shared/learning';
@@ -98,11 +99,11 @@ export default function TaskUnderstandingPage({
         <h2>{requiredOutput && !output ? '还差一个信息' : '确认输出信息'}</h2>
         <div className="task-understanding-directory" aria-busy={outputPending}>
           <label htmlFor="task-output-directory">结果保存到哪里？</label>
-          <button
+          <Button
             id="task-output-directory"
             ref={directoryButton}
             aria-describedby={outputFeedback ? outputFeedbackId : undefined}
-            disabled={busy || !!outputNameError}
+            disabled={busy || !!outputNameError || undefined}
             onClick={choose}
             title={output?.directory}
           >
@@ -111,7 +112,7 @@ export default function TaskUnderstandingPage({
               : output
                 ? '任务输出（本机目录）· 更换'
                 : '选择本机输出目录'}
-          </button>
+          </Button>
           {outputFeedback && (
             <p
               id={outputFeedbackId}
@@ -131,39 +132,37 @@ export default function TaskUnderstandingPage({
             <small>需要保存文本时选择目录；其他需求可先生成方案。</small>
           )}
         </div>
-        <fieldset className="task-output-policy" disabled={busy}>
-          <legend>已有同名文件时</legend>
-          <label>
-            <input
-              type="radio"
+        <ConfigProvider componentDisabled={busy || undefined}>
+          <fieldset className="task-output-policy" disabled={busy}>
+            <legend>已有同名文件时</legend>
+            <Radio
               name="task-output-policy"
               checked={options.onConflict === 'number'}
               onChange={() => changed({ ...options, onConflict: 'number' })}
-            />
-            新建带序号的文件，保留原文件
-          </label>
-          <label>
-            <input
-              type="radio"
+            >
+              新建带序号的文件，保留原文件
+            </Radio>
+            <Radio
               name="task-output-policy"
               checked={options.onConflict === 'overwrite'}
               onChange={() => changed({ ...options, onConflict: 'overwrite' })}
-            />
-            覆盖原文件
-          </label>
-        </fieldset>
+            >
+              覆盖原文件
+            </Radio>
+          </fieldset>
+        </ConfigProvider>
         {outputNameError && (
           <div className="ai-task-note" role="alert">
             <p>输出文件名需要修改，暂不能选择目录{output ? '、保存或生成方案' : ''}。</p>
-            <button
-              disabled={busy}
+            <Button
+              disabled={busy || undefined}
               onClick={() => {
                 setOptionsOpen(true);
                 requestAnimationFrame(() => outputInput.current?.focus());
               }}
             >
               修改输出文件名
-            </button>
+            </Button>
           </div>
         )}
         <div className="task-understanding-controls">{controls}</div>
@@ -220,9 +219,9 @@ export default function TaskUnderstandingPage({
         <div className="task-understanding-fact" aria-label="已选操作对象">
           <div className="task-understanding-fact-heading">
             <h3>操作对象</h3>
-            <button disabled={busy} onClick={target}>
+            <Button disabled={busy || undefined} onClick={target}>
               {web || task.toolTargets?.length ? '查看或更换任务对象' : '选择任务对象'}
-            </button>
+            </Button>
           </div>
           <p title={web?.page.url}>
             {web
@@ -286,9 +285,12 @@ export default function TaskUnderstandingPage({
             </p>
             <label>
               输出文件名
-              <input
-                disabled={busy}
-                ref={outputInput}
+              <Input
+                status={!!outputNameError ? 'error' : undefined}
+                disabled={busy || undefined}
+                ref={(instance) => {
+                  outputInput.current = instance?.input ?? null;
+                }}
                 aria-invalid={!!outputNameError}
                 aria-describedby={outputNameError ? outputErrorId : undefined}
                 value={options.name}
@@ -297,9 +299,9 @@ export default function TaskUnderstandingPage({
               />
             </label>
             {output && (
-              <button disabled={busy} onClick={clear}>
+              <Button disabled={busy || undefined} onClick={clear}>
                 {outputFeedback?.kind === 'clearing' ? '正在移除…' : '移除输出目录'}
-              </button>
+              </Button>
             )}
           </details>
           {outputNameError && (
@@ -308,9 +310,13 @@ export default function TaskUnderstandingPage({
             </p>
           )}
         </div>
-        <button className="task-understanding-describe" disabled={busy} onClick={describe}>
+        <Button
+          className="task-understanding-describe"
+          disabled={busy || undefined}
+          onClick={describe}
+        >
           理解不对，重新描述
-        </button>
+        </Button>
         {result?.limitations.map((limitation, i) => (
           <p className="ai-task-note" key={i}>
             {limitation}

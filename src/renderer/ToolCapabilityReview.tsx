@@ -1,3 +1,4 @@
+import { Button, Input } from 'antd';
 import { useMemo, useRef, useState } from 'react';
 import type {
   ConnectionDiscovery,
@@ -186,7 +187,7 @@ export default function ToolCapabilityReview({
           )}
           <div className="tool-capability-filters" role="group" aria-label="按能力变化筛选">
             {(['all', 'added', 'changed', 'removed', 'unchanged'] as const).map((key) => (
-              <button
+              <Button
                 key={key}
                 aria-pressed={filter === key}
                 onClick={() => {
@@ -195,7 +196,7 @@ export default function ToolCapabilityReview({
                 }}
               >
                 {key === 'all' ? `全部 ${rows.length}` : `${changeLabels[key]} ${counts[key]}`}
-              </button>
+              </Button>
             ))}
           </div>
           {!identity.length && !counts.added && !counts.changed && !counts.removed && (
@@ -213,8 +214,10 @@ export default function ToolCapabilityReview({
       {!!rows.length && (
         <label className="tool-field">
           查找工具
-          <input
-            ref={search}
+          <Input
+            ref={(instance) => {
+              search.current = instance?.input ?? null;
+            }}
             type="search"
             value={query}
             placeholder="按工具名称或用途筛选"
@@ -229,7 +232,7 @@ export default function ToolCapabilityReview({
         <>
           <div className="tool-capability-list" role="group" aria-label="工具列表">
             {matches.map((row) => (
-              <button
+              <Button
                 key={row.name}
                 aria-pressed={chosen?.name === row.name}
                 onClick={() => setSelected(row.name)}
@@ -243,7 +246,7 @@ export default function ToolCapabilityReview({
                     {changeLabels[row.change]}
                   </span>
                 )}
-              </button>
+              </Button>
             ))}
           </div>
           {chosen && (
@@ -293,7 +296,7 @@ export default function ToolCapabilityReview({
             {rows.length ? '没有符合当前筛选的工具。' : '该服务未返回工具，不能据此提供执行能力。'}
           </p>
           {!!rows.length && (
-            <button
+            <Button
               onClick={() => {
                 setQuery('');
                 setFilter('all');
@@ -302,7 +305,7 @@ export default function ToolCapabilityReview({
               }}
             >
               清除筛选
-            </button>
+            </Button>
           )}
         </div>
       )}

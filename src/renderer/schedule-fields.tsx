@@ -1,3 +1,4 @@
+import { Input } from 'antd';
 export function inZone(time: number, timezone: string) {
   try {
     return new Intl.DateTimeFormat('zh-CN', {
@@ -25,7 +26,7 @@ export function Timing({
     <>
       <label>
         <span>间隔（分钟）</span>
-        <input
+        <Input
           aria-label={editing ? '计划间隔分钟' : '创建间隔分钟'}
           type="number"
           min={1}
@@ -38,7 +39,7 @@ export function Timing({
       </label>
       <label>
         <span>时区</span>
-        <input
+        <Input
           aria-label={editing ? '计划时区' : '创建时区'}
           list="schedule-timezones"
           required

@@ -1,3 +1,4 @@
+import { Button, Input } from 'antd';
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import type { Json } from '../shared/types';
 import ValueField from './ValueField';
@@ -67,8 +68,8 @@ export default function ArchiveFileList({
               >
                 <div className="archive-file-row-heading">
                   <span>文件 {index + 1}</span>
-                  <button
-                    type="button"
+                  <Button
+                    htmlType="button"
                     aria-label={`删除归档文件 ${index + 1}`}
                     onClick={() => {
                       focusIndex.current = Math.min(index, files.length - 2);
@@ -81,7 +82,7 @@ export default function ArchiveFileList({
                     }}
                   >
                     移除
-                  </button>
+                  </Button>
                 </div>
                 <ValueField
                   label={`文件 ${index + 1}`}
@@ -93,7 +94,7 @@ export default function ArchiveFileList({
                   {typeof file === 'string' ? (
                     <>
                       <label htmlFor={`${id}-${index}`}>相对文件名 {index + 1}</label>
-                      <input
+                      <Input
                         id={`${id}-${index}`}
                         value={file}
                         placeholder="例如 reports/summary.txt"
@@ -117,10 +118,10 @@ export default function ArchiveFileList({
               尚未添加文件。添加一项，或在下方选择整个文件列表变量。
             </div>
           )}
-          <button
+          <Button
             ref={add}
-            type="button"
-            disabled={files.length >= 200}
+            htmlType="button"
+            disabled={files.length >= 200 || undefined}
             onClick={() => {
               focusIndex.current = files.length;
               const next = [...files, ''];
@@ -132,7 +133,7 @@ export default function ArchiveFileList({
             }}
           >
             添加文件
-          </button>
+          </Button>
           {files.length >= 200 && (
             <p className="archive-file-hint">文件清单最多 200 项；请先移除不需要的条目。</p>
           )}

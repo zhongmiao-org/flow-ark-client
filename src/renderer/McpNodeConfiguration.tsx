@@ -1,3 +1,4 @@
+import { Select } from 'antd';
 import type { Step } from '../shared/types';
 import type { TaskMcpTarget } from '../shared/task-mcp-targets';
 import type { ReferenceChoice } from './value-references';
@@ -36,13 +37,11 @@ export default function McpNodeConfiguration({
         <>
           <label>
             连接对象
-            <select
+            <Select<string>
               aria-label="工具连接对象"
               value={node.target}
-              onChange={(event) => {
-                const selected = targets.find(
-                  (target) => target.selectionId === event.target.value,
-                );
+              onChange={(value) => {
+                const selected = targets.find((target) => target.selectionId === value);
                 if (selected)
                   change({
                     ...node,
@@ -51,30 +50,30 @@ export default function McpNodeConfiguration({
                     arguments: {},
                   });
               }}
-            >
-              {!target && <option value={node.target}>未绑定 · {node.target}</option>}
-              {targets.map((target) => (
-                <option key={target.selectionId} value={target.selectionId}>
-                  {target.displayName}
-                </option>
-              ))}
-            </select>
+              options={[
+                ...(!target ? [{ value: node.target, label: <>未绑定 · {node.target}</> }] : []),
+                ...targets.map((target) => ({
+                  value: target.selectionId,
+                  label: target.displayName,
+                })),
+              ]}
+            />
           </label>
           <label>
             工具
-            <select
+            <Select<string>
               aria-label="工具名称"
               value={node.tool}
-              disabled={!target}
-              onChange={(event) => change({ ...node, tool: event.target.value, arguments: {} })}
-            >
-              {!tool && <option value={node.tool}>未选择 · {node.tool}</option>}
-              {target?.tools.map((tool) => (
-                <option key={tool.name} value={tool.name}>
-                  {tool.title || tool.name} · {tool.name}
-                </option>
-              ))}
-            </select>
+              disabled={!target || undefined}
+              onChange={(value) => change({ ...node, tool: value, arguments: {} })}
+              options={[
+                ...(!tool ? [{ value: node.tool, label: `未选择 · ${node.tool}` }] : []),
+                ...(target?.tools ?? []).map((tool) => ({
+                  value: tool.name,
+                  label: `${tool.title || tool.name} · ${tool.name}`,
+                })),
+              ]}
+            />
           </label>
           <p>更换工具会清空参数；仅可使用该任务已确认的工具。</p>
         </>

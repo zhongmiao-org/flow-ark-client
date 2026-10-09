@@ -1,4 +1,4 @@
-/* Figma 8:18463 / 8:18569. Shared Field renders package-defined input. */
+/* Figma 8:18463 / 8:18569. Shared Field renders package-defined input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*=ant-select]). */
 .template-entry-page .page-heading {
   margin-bottom: 24px;
 }
@@ -35,8 +35,12 @@
   gap: 8px;
   margin: 0;
 }
-.template-entry-fields input,
-.template-entry-resources select {
+.template-entry-resources .ant-select {
+  width: 100%;
+  min-width: 0;
+}
+.template-entry-fields
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   width: 100%;
   height: 40px;
   min-width: 0;
@@ -54,8 +58,15 @@
   color: var(--fa-text-primary);
   font-size: 13px;
 }
-.template-entry-fields .template-field > input:not([type='checkbox']),
-.template-entry-fields .template-field > select {
+.template-entry-fields .template-field > .ant-select {
+  width: 100%;
+  min-width: 0;
+}
+.template-entry-fields
+  .template-field
+  > input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):not(
+    [type='checkbox']
+  ) {
   width: 100%;
   height: 40px;
   min-width: 0;
@@ -67,11 +78,18 @@
   font-size: 13px;
   line-height: 22px;
 }
-.template-entry-fields .template-field > input[aria-invalid='true'],
-.template-entry-fields .template-field > select[aria-invalid='true'] {
+.template-entry-fields
+  .template-field
+  > input:not(.ant-checkbox-input):not(.ant-radio-input):not(
+    [class*='ant-select']
+  )[aria-invalid='true'] {
   border-color: var(--fa-status-error);
 }
-.template-entry-fields .template-boolean-field > input[type='checkbox'] {
+.template-entry-fields
+  .template-boolean-field
+  > input:not(.ant-checkbox-input):not(.ant-radio-input):not(
+    [class*='ant-select']
+  )[type='checkbox'] {
   accent-color: var(--fa-action-primary);
 }
 .template-entry-ai-resource {
@@ -215,11 +233,6 @@
 .template-entry-columns.no-ai .template-entry-input > .ai-settings-field {
   gap: 6px;
 }
-.template-entry-columns.no-ai .template-entry-input > .ai-settings-field select {
-  padding: 4px 6px;
-  min-height: 32px;
-  line-height: 20px;
-}
 .template-entry-columns.no-ai .template-entry-fields .template-fieldset {
   gap: 32px;
 }
@@ -271,7 +284,8 @@
   font-size: 13px;
   line-height: 20px;
 }
-.template-entry-saved-configuration input {
+.template-entry-saved-configuration
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   width: 100%;
   min-height: 40px;
   height: 40px;

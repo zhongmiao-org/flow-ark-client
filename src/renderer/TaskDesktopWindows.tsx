@@ -1,3 +1,4 @@
+import { Button, Checkbox } from 'antd';
 import { useEffect, useRef } from 'react';
 import useDesktopWindows from './useDesktopWindows';
 import DesktopSelectionPreview from './DesktopSelectionPreview';
@@ -45,9 +46,12 @@ export function DesktopWindowList({
           <h2 ref={listHeading} tabIndex={-1}>
             文本编辑的窗口
           </h2>
-          <button onClick={() => void state.refresh()} disabled={loading || state.settingsPending}>
+          <Button
+            onClick={() => void state.refresh()}
+            disabled={loading || state.settingsPending || undefined}
+          >
             {loading ? '正在检查…' : '重新检查'}
-          </button>
+          </Button>
         </div>
       )}
       {!selected && (
@@ -81,16 +85,16 @@ export function DesktopWindowList({
                 <p>未读取其他段落或文件路径；账号与文档归属尚未核对</p>
               </div>
               <div className="ai-task-actions">
-                <button className="task-desktop-change" onClick={() => state.select(undefined)}>
+                <Button className="task-desktop-change" onClick={() => state.select(undefined)}>
                   更换窗口
-                </button>
+                </Button>
                 {ready && (
-                  <button
-                    disabled={loading || state.settingsPending}
+                  <Button
+                    disabled={loading || state.settingsPending || undefined}
                     onClick={() => void state.refresh()}
                   >
                     重新检查
-                  </button>
+                  </Button>
                 )}
               </div>
             </>
@@ -102,21 +106,22 @@ export function DesktopWindowList({
               aria-label="已发现的 TextEdit 窗口"
             >
               {snapshot.windows.map((window, index) => (
-                <button
+                <Button
                   className="task-target-connection"
                   key={window.id}
                   ref={(element) => {
-                    if (element) windowButtons.current.set(window.id, element);
+                    if (element instanceof HTMLButtonElement)
+                      windowButtons.current.set(window.id, element);
                     else windowButtons.current.delete(window.id);
                   }}
-                  disabled={state.expired}
+                  disabled={state.expired || undefined}
                   onClick={() => state.select(window.id)}
                 >
                   <strong>{window.title || '未命名窗口'}</strong>
                   <span>
                     文本编辑 · 窗口 {index + 1} · {window.minimized ? '已最小化' : '未最小化'}
                   </span>
-                </button>
+                </Button>
               ))}
             </div>
           ) : (
@@ -217,10 +222,9 @@ export function DesktopWindowCapabilities({
         { label: '编辑选中段落并回读 · 需在试运行前核对能力与授权', checked: false },
         { label: '发送邮件 / 后台操作其他窗口 · 不支持', checked: false },
       ].map(({ label, checked }) => (
-        <label className="ai-task-checkbox" key={label}>
-          <input type="checkbox" checked={checked} disabled />
+        <Checkbox checked={checked} disabled className="ai-task-checkbox" key={label}>
           {label}
-        </label>
+        </Checkbox>
       ))}
       <div
         className={`task-desktop-permission ${permission === 'granted' ? 'is-ready' : permission === 'not-granted' ? 'is-warning' : ''}`}
@@ -248,12 +252,12 @@ export function DesktopWindowCapabilities({
         <details className="task-desktop-permission-settings" open={permission !== 'granted'}>
           <summary>系统权限与重新检查</summary>
           <p>打开系统设置会清除这次窗口选择和选区预览。返回后重新检查，再选择任务对象。</p>
-          <button
-            disabled={state.settingsPending || loading}
+          <Button
+            disabled={state.settingsPending || loading || undefined}
             onClick={() => void state.openSettings()}
           >
             {state.settingsPending ? '正在打开…' : '查看系统辅助功能设置'}
-          </button>
+          </Button>
         </details>
       )}
       {!state.selected && (
@@ -262,8 +266,8 @@ export function DesktopWindowCapabilities({
         </p>
       )}
       <div className="ai-task-actions">
-        <button onClick={chooseWeb}>改用网页目标</button>
-        <button onClick={back}>{backLabel}</button>
+        <Button onClick={chooseWeb}>改用网页目标</Button>
+        <Button onClick={back}>{backLabel}</Button>
       </div>
     </div>
   );

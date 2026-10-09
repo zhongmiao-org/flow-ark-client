@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { presentRun } from '../shared/run-presentation';
 import { runDisplayLabels } from '../shared/run-history';
@@ -77,27 +78,27 @@ export default function RunLogSummary({
     }
   }
   const recordButton = (id: string, name?: string) => (
-    <button
-      type="button"
+    <Button
+      htmlType="button"
       ref={(element) => {
-        if (element) buttons.current.set(id, element);
+        if (element instanceof HTMLButtonElement) buttons.current.set(id, element);
         else buttons.current.delete(id);
       }}
-      disabled={!!opening}
+      disabled={!!opening || undefined}
       aria-label={`查看关联运行 ${id}`}
       onClick={() => void open(id)}
     >
       {opening === id ? '正在读取…' : name || '查看运行'}
       <code>{id}</code>
-    </button>
+    </Button>
   );
   return (
     <>
       <section className="run-log-output-card" aria-label="普通输出">
         <RunOutput detail={detail} layout="log" />
-        <button type="button" onClick={showOutput}>
+        <Button htmlType="button" onClick={showOutput}>
           查看输出与产物
-        </button>
+        </Button>
       </section>
       <section aria-label="步骤进度说明">
         <h3>{view.step.type === 'script' ? '脚本进度' : '步骤进度'}</h3>
@@ -113,9 +114,9 @@ export default function RunLogSummary({
         </dl>
         <p>仅显示该步骤实际报告的数量；未报告时不以步骤数估算百分比。</p>
         {view.statusNote && <p>{view.statusNote}</p>}
-        <button type="button" onClick={showCurrent}>
+        <Button htmlType="button" onClick={showCurrent}>
           查看运行详情
-        </button>
+        </Button>
       </section>
       <section className="run-log-relations" aria-label="日志来源与派生记录">
         <h3 ref={heading} tabIndex={-1}>
@@ -155,9 +156,9 @@ export default function RunLogSummary({
         ) : (
           <p>尚未取得关联记录，请重新读取运行详情。</p>
         )}
-        <button type="button" onClick={showRerun}>
+        <Button htmlType="button" onClick={showRerun}>
           核对后重新运行
-        </button>
+        </Button>
         <p>查看只读取已有记录。重新执行需另行预览并确认。</p>
       </section>
     </>

@@ -290,10 +290,10 @@
 .tool-config > .ai-task-card:first-child {
   gap: 32px;
 }
-.tool-config-actions .primary {
+.tool-config-actions .ant-btn-primary {
   min-width: 208px;
 }
-.tool-config-actions button:not(.primary) {
+.tool-config-actions button:not(.ant-btn-primary) {
   min-width: 144px;
 }
 .tool-config .tool-config-actions-compact {
@@ -310,7 +310,7 @@
 .tool-field .tool-field-error {
   color: var(--fa-status-error);
 }
-.tool-field :is(input, select, textarea)[aria-invalid='true'] {
+.tool-field :is(input, .ant-select, textarea)[aria-invalid='true'] {
   border-color: var(--fa-status-error);
 }
 .tool-field {
@@ -320,8 +320,11 @@
   font-size: 12px;
   font-weight: 600;
 }
-.tool-field input,
-.tool-field select,
+.tool-field .ant-select {
+  width: 100%;
+  min-width: 0;
+}
+.tool-field input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']),
 .tool-field textarea {
   width: 100%;
   min-width: 0;

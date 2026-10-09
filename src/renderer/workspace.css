@@ -74,6 +74,7 @@
   scrollbar-width: thin;
 }
 .app .sidebar nav button {
+  justify-content: flex-start;
   width: 100%;
   height: 40px;
   min-height: 40px;
@@ -291,7 +292,7 @@
   border-radius: 8px;
   color: var(--fa-text-secondary);
 }
-.flow-search input {
+.flow-search input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   width: 100%;
   margin: 0;
   font-size: 14px;
@@ -301,7 +302,8 @@
   outline: 2px solid var(--fa-action-primary);
   outline-offset: 2px;
 }
-.flow-search input:focus-visible {
+.flow-search
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):focus-visible {
   outline: none;
 }
 .flows-page .flow-grid {

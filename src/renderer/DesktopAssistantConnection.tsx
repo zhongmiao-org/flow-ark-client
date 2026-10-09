@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import useDesktopWindows from './useDesktopWindows';
 
@@ -295,17 +296,17 @@ export default function DesktopAssistantConnection({
           )}
           <div className="tool-assistant-actions">
             {hasWindows && (
-              <button className="primary" disabled={settingsPending} onClick={choose}>
+              <Button type="primary" disabled={settingsPending || undefined} onClick={choose}>
                 选择应用窗口
-              </button>
+              </Button>
             )}
-            <button
-              className={
+            <Button
+              type={
                 hasWindows || (!settingsChanged && snapshot?.availability === 'permission-required')
-                  ? undefined
+                  ? 'default'
                   : 'primary'
               }
-              disabled={loading || settingsPending}
+              disabled={loading || settingsPending || undefined}
               onClick={() => {
                 operationOrigin.current = document.activeElement;
                 setSettingsChanged(false);
@@ -317,15 +318,15 @@ export default function DesktopAssistantConnection({
                 : hadWindows || snapshot || error || expired
                   ? '重新检查权限与窗口'
                   : '检查权限与窗口'}
-            </button>
+            </Button>
             {snapshot?.platform === 'macos' && (
-              <button
-                className={
+              <Button
+                type={
                   snapshot.availability === 'permission-required' && !settingsChanged
                     ? 'primary'
-                    : undefined
+                    : 'default'
                 }
-                disabled={loading || settingsPending}
+                disabled={loading || settingsPending || undefined}
                 onClick={() => {
                   operationOrigin.current = document.activeElement;
                   setSettingsChanged(true);
@@ -333,9 +334,9 @@ export default function DesktopAssistantConnection({
                 }}
               >
                 {settingsPending ? '正在打开系统设置…' : '查看系统辅助功能设置'}
-              </button>
+              </Button>
             )}
-            <button onClick={back}>返回应用与工具</button>
+            <Button onClick={back}>返回应用与工具</Button>
           </div>
 
           {!managed && (

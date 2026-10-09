@@ -1,3 +1,4 @@
+import { Button, Checkbox, Input } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ToolConnection } from '../shared/tool-connections';
@@ -204,9 +205,12 @@ export default function TaskTargetConnections({
     <div className="task-target-connections" aria-busy={loading || busy}>
       <div className="task-target-section-heading">
         <h2>已连接工具</h2>
-        <button disabled={loading || busy} onClick={() => setRefresh((value) => value + 1)}>
+        <Button
+          disabled={loading || busy || undefined}
+          onClick={() => setRefresh((value) => value + 1)}
+        >
           刷新连接
-        </button>
+        </Button>
       </div>
       <p className="ai-task-note">
         选择本次任务需要的工具，再核对来源和完整定义。账号、工作区与系统权限尚未核对。
@@ -250,8 +254,8 @@ export default function TaskTargetConnections({
                         : '连接已变化或尚未核对，请重新选择'}
                 </p>
                 <p>{target.tools.map((tool) => tool.title || tool.name).join('、')}</p>
-                <button
-                  disabled={busy || loading}
+                <Button
+                  disabled={busy || loading || undefined}
                   onClick={() =>
                     void act(async () => {
                       const ticket = epoch.current;
@@ -264,7 +268,7 @@ export default function TaskTargetConnections({
                   }
                 >
                   移除 {target.displayName} 的任务选择
-                </button>
+                </Button>
               </div>
             );
           })}
@@ -273,33 +277,35 @@ export default function TaskTargetConnections({
       {loading ? (
         <p role="status">正在读取你的连接…</p>
       ) : listError && !records.length ? (
-        <button onClick={() => setRefresh((value) => value + 1)}>重新加载</button>
+        <Button onClick={() => setRefresh((value) => value + 1)}>重新加载</Button>
       ) : !records.length ? (
         <div className="task-target-empty">
           <h3>还没有连接工具</h3>
-          <button className="primary" onClick={manage}>
+          <Button type="primary" onClick={manage}>
             连接其他应用
-          </button>
+          </Button>
         </div>
       ) : (
         <>
           <label className="task-target-search">
             查找连接
-            <input
-              ref={search}
+            <Input
+              ref={(instance) => {
+                search.current = instance?.input ?? null;
+              }}
               type="search"
               value={query}
               placeholder="搜索名称或来源"
               onChange={(event) => setQuery(event.target.value)}
-              disabled={busy}
+              disabled={busy || undefined}
             />
           </label>
           <div className="task-target-connection-list" aria-label="已有连接">
             {visible.map((item) => (
-              <button
+              <Button
                 key={item.id}
                 className="task-target-connection"
-                disabled={busy || loading}
+                disabled={busy || loading || undefined}
                 aria-pressed={selectedId === item.id}
                 aria-controls={detailsId}
                 onClick={(event) => choose(item, event.detail === 0)}
@@ -309,19 +315,19 @@ export default function TaskTargetConnections({
                 <span className={`task-target-status is-${item.status}`}>
                   {statusLabel[item.status]} · {item.tools.length} 项能力
                 </span>
-              </button>
+              </Button>
             ))}
             {!visible.length && (
               <div className="task-target-empty">
                 <p>没有找到匹配的连接。</p>
-                <button
+                <Button
                   onClick={() => {
                     setQuery('');
                     search.current?.focus();
                   }}
                 >
                   清除搜索
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -330,9 +336,9 @@ export default function TaskTargetConnections({
               之前选择的连接已不在当前列表中，请选择其他连接；已保存的任务选择仍保留在上方。
             </p>
           )}
-          <button disabled={busy} onClick={manage}>
+          <Button disabled={busy || undefined} onClick={manage}>
             连接其他应用
-          </button>
+          </Button>
         </>
       )}
       {detailsContainer &&
@@ -426,10 +432,10 @@ export default function TaskTargetConnections({
                   change={changeNames}
                 />
                 <div className="ai-task-actions">
-                  <button
-                    className="primary"
+                  <Button
+                    type="primary"
                     ref={reviewButton}
-                    disabled={busy || blocked || !names.length}
+                    disabled={busy || blocked || !names.length || undefined}
                     onClick={() =>
                       void act(async () => {
                         const ticket = epoch.current;
@@ -453,10 +459,10 @@ export default function TaskTargetConnections({
                     }
                   >
                     核对所选工具
-                  </button>
-                  <button disabled={busy} onClick={manage}>
+                  </Button>
+                  <Button disabled={busy || undefined} onClick={manage}>
                     管理连接与能力
-                  </button>
+                  </Button>
                 </div>
               </section>
             )}
@@ -513,28 +519,27 @@ export default function TaskTargetConnections({
               本次核对已过期，请返回重新选择。
             </p>
           )}
-          <label className="ai-task-checkbox">
-            <input
-              type="checkbox"
-              checked={reviewed}
-              disabled={busy || expired}
-              onChange={(event) => setReviewed(event.target.checked)}
-            />
+          <Checkbox
+            checked={reviewed}
+            disabled={busy || expired || undefined}
+            onChange={(event) => setReviewed(event.target.checked)}
+            className="ai-task-checkbox"
+          >
             我已核对来源与本次所选工具
-          </label>
+          </Checkbox>
           <div className="editor-leave-actions">
-            <button
-              disabled={busy}
+            <Button
+              disabled={busy || undefined}
               onClick={() => {
                 cancelCandidate();
                 requestAnimationFrame(() => reviewButton.current?.focus());
               }}
             >
               返回重新选择
-            </button>
-            <button
-              className="primary"
-              disabled={!reviewed || busy || expired}
+            </Button>
+            <Button
+              type="primary"
+              disabled={!reviewed || busy || expired || undefined}
               onClick={() =>
                 void act(async () => {
                   const ticket = epoch.current;
@@ -549,7 +554,7 @@ export default function TaskTargetConnections({
               }
             >
               {busy ? '正在保存…' : '确认工具对象'}
-            </button>
+            </Button>
           </div>
         </dialog>
       )}

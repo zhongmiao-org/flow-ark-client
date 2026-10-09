@@ -1,3 +1,4 @@
+import { Button, Checkbox } from 'antd';
 import type { taskRunPresentation } from './task-run-presentation';
 
 type Observation = ReturnType<typeof taskRunPresentation>;
@@ -51,15 +52,14 @@ export default function TaskRepairRestart({
           <p>{observation.summary}。</p>
           <p>{observation.effectNote}</p>
         </div>
-        <label className="run-review-toggle">
-          <input
-            type="checkbox"
-            checked={reviewed}
-            disabled={!applied}
-            onChange={(event) => review(event.target.checked)}
-          />
+        <Checkbox
+          checked={reviewed}
+          disabled={!applied || undefined}
+          onChange={(event) => review(event.target.checked)}
+          className="run-review-toggle"
+        >
           我已核对原运行的输出与外部结果，确认可以从头执行
-        </label>
+        </Checkbox>
         <dl className="task-restart-version">
           <dt>执行起点</dt>
           <dd>第 1 步</dd>
@@ -74,7 +74,7 @@ export default function TaskRepairRestart({
         {!applied && (
           <div className="task-restart-unavailable" role="status">
             <p>当前任务不再保留这次修复依据。请回到任务核对方案，再重新选择目标。</p>
-            <button onClick={modify}>回到任务核对</button>
+            <Button onClick={modify}>回到任务核对</Button>
           </div>
         )}
       </section>
@@ -86,10 +86,10 @@ export default function TaskRepairRestart({
           <br />
           新运行：重新检查对象与权限，再按新快照从头执行。
         </p>
-        <button className="primary" disabled={!reviewed || !applied} onClick={check}>
+        <Button type="primary" disabled={!reviewed || !applied || undefined} onClick={check}>
           确认，重新检查
-        </button>
-        <button onClick={back}>先不运行</button>
+        </Button>
+        <Button onClick={back}>先不运行</Button>
         <div className="task-restart-records">
           <History title="已完成" rows={observation.completed} />
           <History title="已开始未确认完成" rows={observation.unresolved} />

@@ -61,14 +61,21 @@
 .control-workspace-card .node-configuration > header {
   display: none;
 }
-.control-workspace-card label {
+.control-workspace-card label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   margin: 0;
   font-size: 12px;
   line-height: 18px;
   color: var(--fa-text-secondary);
 }
-.control-workspace-card input:not([type='checkbox']),
-.control-workspace-card select,
+.control-workspace-card .ant-select {
+  margin: 0;
+  min-width: 0;
+  width: 100%;
+}
+.control-workspace-card
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):not(
+    [type='checkbox']
+  ),
 .control-workspace-card textarea {
   margin: 0;
   min-width: 0;
@@ -95,7 +102,7 @@
   align-items: center;
   margin-top: -10px;
 }
-.control-workspace-add select {
+.control-workspace-add .ant-select {
   flex: 1;
 }
 .control-workspace-add button {

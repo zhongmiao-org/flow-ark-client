@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { Attention, Bootstrap } from '../shared/types';
 import AttentionDetails from './AttentionDetails';
@@ -68,7 +69,7 @@ export default function RunResultReview({ runId }: { runId: string }) {
   };
   return (
     <div className="run-result-review">
-      <button
+      <Button
         ref={trigger}
         aria-expanded={open}
         aria-controls="run-result-review-content"
@@ -82,7 +83,7 @@ export default function RunResultReview({ runId }: { runId: string }) {
         }}
       >
         {open ? '收起待核对结果' : '查看待核对结果'}
-      </button>
+      </Button>
       {open && (
         <section id="run-result-review-content" aria-labelledby="run-result-review-heading">
           <h3 id="run-result-review-heading" ref={heading} tabIndex={-1}>
@@ -112,17 +113,17 @@ export default function RunResultReview({ runId }: { runId: string }) {
             </>
           )}
           <div className="ai-task-actions">
-            <button
+            <Button
               ref={refresh}
-              disabled={busy}
+              disabled={busy || undefined}
               onClick={() => {
                 refreshFocus.current = document.activeElement === refresh.current;
                 void read();
               }}
             >
               {error ? '重试读取' : '刷新记录'}
-            </button>
-            <button onClick={close}>返回已保存结果</button>
+            </Button>
+            <Button onClick={close}>返回已保存结果</Button>
           </div>
         </section>
       )}

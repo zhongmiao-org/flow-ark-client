@@ -35,12 +35,12 @@
   flex-direction: column;
   gap: 8px;
 }
-.outline-search label {
+.outline-search label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   margin: 0;
   color: var(--fa-text-primary);
   font-size: 12px;
 }
-.outline-search input {
+.outline-search input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   width: 100%;
   height: 40px;
 }
@@ -65,7 +65,8 @@
 .outline-search-field {
   position: relative;
 }
-.outline-search-field input {
+.outline-search-field
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   padding-right: 40px;
 }
 .outline-search .outline-search-clear {
@@ -111,7 +112,7 @@
 .outline-toolbar > button {
   width: 144px;
 }
-.outline-toolbar > .primary {
+.outline-toolbar > .ant-btn-primary {
   width: 192px;
 }
 .outline-more {

@@ -1,3 +1,4 @@
+import { ConfigProvider, Select, Button } from 'antd';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
@@ -116,148 +117,153 @@ export default function StepPositionPage(props: Props) {
           </p>
         )}
         {props.referenceRecovery}
-        <fieldset disabled={props.busy} className="step-position-columns">
-          <section className="step-position-card" aria-label="当前步骤与位置">
-            <h2>{props.title ? `当前步骤 · ${props.title}` : '当前未选择步骤'}</h2>
-            {props.title ? (
-              <>
-                <label>
-                  添加到
-                  <span className="step-position-add-target">
-                    <select
-                      aria-label="动作添加位置"
-                      title={addTarget?.label}
-                      aria-invalid={!addTarget}
-                      aria-describedby={!addTarget ? targetErrorId : undefined}
-                      value={addTarget ? props.destination : ''}
-                      onChange={(event) => props.setDestination(event.target.value)}
+        <ConfigProvider componentDisabled={props.busy || undefined}>
+          <fieldset disabled={props.busy} className="step-position-columns">
+            <section className="step-position-card" aria-label="当前步骤与位置">
+              <h2>{props.title ? `当前步骤 · ${props.title}` : '当前未选择步骤'}</h2>
+              {props.title ? (
+                <>
+                  <label>
+                    添加到
+                    <span className="step-position-add-target">
+                      <Select<string>
+                        status={!addTarget ? 'error' : undefined}
+                        aria-label="动作添加位置"
+                        title={addTarget?.label}
+                        aria-invalid={!addTarget}
+                        aria-describedby={!addTarget ? targetErrorId : undefined}
+                        value={addTarget ? props.destination : ''}
+                        onChange={(value) => props.setDestination(value)}
+                        options={[
+                          ...(!addTarget
+                            ? [{ value: '', disabled: true, label: '原位置已删除，请重新选择' }]
+                            : []),
+                          ...props.targets.map((target) => ({
+                            value: target.value,
+                            label: target.label,
+                          })),
+                        ]}
+                      />
+                      <Button
+                        htmlType="button"
+                        disabled={!addTarget || undefined}
+                        onClick={props.add}
+                      >
+                        选择动作
+                      </Button>
+                    </span>
+                  </label>
+                  {!addTarget && (
+                    <p id={targetErrorId} className="step-position-error" role="alert">
+                      添加位置已失效，请先重新选择位置。
+                    </p>
+                  )}
+                  <label>
+                    移动到
+                    <Select<string>
+                      aria-label="步骤移动位置"
+                      title={moveTarget?.label}
+                      value={props.moveTo}
+                      onChange={(value) => props.setMoveTo(value)}
+                      options={[
+                        { value: '', label: '选择移动位置…' },
+                        ...props.targets.map((target) => ({
+                          value: target.value,
+                          label: target.label,
+                        })),
+                      ]}
+                    />
+                  </label>
+                  <div className="step-position-actions">
+                    <Button onClick={() => props.insert('before')}>前方插入</Button>
+                    <Button onClick={() => props.insert('after')}>后方插入</Button>
+                    <Button
+                      onClick={() =>
+                        applyStructure(props.duplicate, `已复制「${props.title}」及其子步骤。`)
+                      }
                     >
-                      {!addTarget && (
-                        <option value="" disabled>
-                          原位置已删除，请重新选择
-                        </option>
-                      )}
-                      {props.targets.map((target) => (
-                        <option key={target.value} value={target.value}>
-                          {target.label}
-                        </option>
-                      ))}
-                    </select>
-                    <button type="button" disabled={!addTarget} onClick={props.add}>
-                      选择动作
-                    </button>
-                  </span>
-                </label>
-                {!addTarget && (
-                  <p id={targetErrorId} className="step-position-error" role="alert">
-                    添加位置已失效，请先重新选择位置。
-                  </p>
-                )}
-                <label>
-                  移动到
-                  <select
-                    aria-label="步骤移动位置"
-                    title={moveTarget?.label}
-                    value={props.moveTo}
-                    onChange={(event) => props.setMoveTo(event.target.value)}
-                  >
-                    <option value="">选择移动位置…</option>
-                    {props.targets.map((target) => (
-                      <option key={target.value} value={target.value}>
-                        {target.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <div className="step-position-actions">
-                  <button onClick={() => props.insert('before')}>前方插入</button>
-                  <button onClick={() => props.insert('after')}>后方插入</button>
-                  <button
-                    onClick={() =>
-                      applyStructure(props.duplicate, `已复制「${props.title}」及其子步骤。`)
-                    }
-                  >
-                    复制子树
-                  </button>
-                </div>
-                <div className="step-position-actions">
-                  <button
-                    className="primary"
-                    disabled={!moveTarget}
-                    onClick={() =>
-                      applyStructure(
-                        props.move,
-                        `已将「${props.title}」移动到「${moveTarget?.label}」。`,
-                      )
-                    }
-                  >
-                    移动步骤
-                  </button>
-                  <button
-                    className="step-position-delete"
-                    onClick={() =>
-                      applyStructure(
-                        props.remove,
-                        `已删除「${props.title}」及其子步骤，可撤销恢复。`,
-                      )
-                    }
-                  >
-                    删除步骤
-                  </button>
-                </div>
-              </>
-            ) : (
-              <p>步骤已删除或不再可用。可撤销恢复，或返回画布选择其他步骤。</p>
-            )}
-            <p className="step-position-note">
-              删除或移动导致引用失效时，保留草稿并指出受影响字段。
-            </p>
-          </section>
-          <section className="step-position-card step-position-draft" aria-label="草稿与视图">
-            <h2>草稿与视图</h2>
-            <div className="step-position-actions">
-              <button
-                disabled={!props.canUndo}
+                      复制子树
+                    </Button>
+                  </div>
+                  <div className="step-position-actions">
+                    <Button
+                      type="primary"
+                      disabled={!moveTarget || undefined}
+                      onClick={() =>
+                        applyStructure(
+                          props.move,
+                          `已将「${props.title}」移动到「${moveTarget?.label}」。`,
+                        )
+                      }
+                    >
+                      移动步骤
+                    </Button>
+                    <Button
+                      className="step-position-delete"
+                      onClick={() =>
+                        applyStructure(
+                          props.remove,
+                          `已删除「${props.title}」及其子步骤，可撤销恢复。`,
+                        )
+                      }
+                    >
+                      删除步骤
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <p>步骤已删除或不再可用。可撤销恢复，或返回画布选择其他步骤。</p>
+              )}
+              <p className="step-position-note">
+                删除或移动导致引用失效时，保留草稿并指出受影响字段。
+              </p>
+            </section>
+            <section className="step-position-card step-position-draft" aria-label="草稿与视图">
+              <h2>草稿与视图</h2>
+              <div className="step-position-actions">
+                <Button
+                  disabled={!props.canUndo || undefined}
+                  onClick={() => {
+                    setNotice('');
+                    props.undo();
+                  }}
+                >
+                  撤销
+                </Button>
+                <Button
+                  disabled={!props.canRedo || undefined}
+                  onClick={() => {
+                    setNotice('');
+                    props.redo();
+                  }}
+                >
+                  重做
+                </Button>
+              </div>
+              <Button
+                ref={saveButton}
+                type="primary"
                 onClick={() => {
                   setNotice('');
-                  props.undo();
+                  setAttempted(true);
+                  void props.save();
                 }}
               >
-                撤销
-              </button>
-              <button
-                disabled={!props.canRedo}
-                onClick={() => {
-                  setNotice('');
-                  props.redo();
-                }}
-              >
-                重做
-              </button>
-            </div>
-            <button
-              ref={saveButton}
-              className="primary"
-              onClick={() => {
-                setNotice('');
-                setAttempted(true);
-                void props.save();
-              }}
-            >
-              {props.busy
-                ? '正在保存…'
-                : attempted && props.saveError
-                  ? '重试保存草稿'
-                  : '保存草稿'}
-            </button>
-            <button onClick={() => props.view('all')}>显示全图</button>
-            <button disabled={!props.title} onClick={() => props.view('selected')}>
-              聚焦所选步骤
-            </button>
-            <p>输入框内使用文本撤销；流程结构撤销不影响活动 Run 的固定快照。</p>
-            <p role="status">{props.saved ? '草稿已保存' : '有未保存的更改'}</p>
-          </section>
-        </fieldset>
+                {props.busy
+                  ? '正在保存…'
+                  : attempted && props.saveError
+                    ? '重试保存草稿'
+                    : '保存草稿'}
+              </Button>
+              <Button onClick={() => props.view('all')}>显示全图</Button>
+              <Button disabled={!props.title || undefined} onClick={() => props.view('selected')}>
+                聚焦所选步骤
+              </Button>
+              <p>输入框内使用文本撤销；流程结构撤销不影响活动 Run 的固定快照。</p>
+              <p role="status">{props.saved ? '草稿已保存' : '有未保存的更改'}</p>
+            </section>
+          </fieldset>
+        </ConfigProvider>
       </div>
     </dialog>,
     document.body,

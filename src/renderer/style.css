@@ -1,14 +1,6 @@
 @import url('@xyflow/react/dist/style.css');
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
-  color: #283632;
-  background: #f5f7f6;
   font-synthesis: none;
-  --accent: #237568;
-  --border: #e2e7e4;
-  --muted: #85918b;
-  --nav: #182c28;
-  --soft: #edf4f0;
 }
 * {
   box-sizing: border-box;
@@ -16,60 +8,11 @@
 body {
   margin: 0;
 }
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-button {
-  border: 1px solid var(--border);
-  background: #fff;
-  color: #33473f;
-  padding: 9px 14px;
-  border-radius: 7px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  cursor: pointer;
-  font-size: 12px;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
-}
-button:hover {
-  background: #f0f5f2;
-  border-color: #b8ccc3;
-}
-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
 button:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible {
+input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):focus-visible,
+textarea:focus-visible {
   outline: 2px solid #49a18d;
   outline-offset: 2px;
-}
-input,
-select,
-textarea {
-  border: 1px solid #dce4df;
-  border-radius: 6px;
-  background: #fff;
-  padding: 9px 10px;
-  color: #30463c;
-  font-size: 12px;
-  min-width: 0;
-}
-input:focus,
-textarea:focus {
-  border-color: #82b4a1;
-}
-select {
-  max-width: 100%;
 }
 h1,
 h2,
@@ -110,14 +53,19 @@ pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-label {
+label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   font-size: 12px;
   display: block;
   margin: 16px 0 8px;
   color: #677970;
 }
-label input,
-label select {
+label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) .ant-select {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+}
+label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper)
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   display: block;
   width: 100%;
   margin-top: 8px;
@@ -301,17 +249,6 @@ main {
 .heading-dot {
   color: #629a75;
 }
-.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-  box-shadow: 0 2px 3px #12392c0c;
-}
-.primary:hover {
-  background: #1d665a;
-  border-color: #1d665a;
-  color: white;
-}
 .overview {
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -396,7 +333,7 @@ main {
   border-radius: 6px;
   padding: 0 10px;
 }
-.search input {
+.search input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   border: 0;
   background: transparent;
   width: 150px;
@@ -614,7 +551,7 @@ main {
   border-radius: 4px;
   padding: 5px 7px;
 }
-.template-card .primary {
+.template-card .ant-btn-primary {
   width: 100%;
 }
 .note {
@@ -689,7 +626,7 @@ main {
   border-radius: 6px;
   padding: 0 7px;
 }
-.action-search input {
+.action-search input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   border: 0;
   padding: 8px 0;
   width: 100%;
@@ -700,7 +637,8 @@ main {
   outline: 2px solid #79a797;
   outline-offset: 1px;
 }
-.action-search input:focus {
+.action-search
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):focus {
   outline: 0;
 }
 .action-search button {
@@ -715,11 +653,9 @@ main {
   color: var(--muted);
   margin: 0;
 }
-.action-library-tools select {
+.action-library-tools .ant-select {
   width: 100%;
   min-width: 0;
-  font-size: 11px;
-  padding: 7px 4px;
 }
 .action-list {
   overflow-y: auto;
@@ -1032,7 +968,7 @@ main {
   align-items: center;
   gap: 9px;
 }
-.check-label input {
+.check-label input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   display: inline;
   width: auto;
   margin: 0;
@@ -1042,7 +978,7 @@ main {
   align-items: center;
   justify-content: space-between;
 }
-.policy-row select {
+.policy-row .ant-select {
   width: 130px;
   margin: 0;
 }
@@ -1198,7 +1134,7 @@ td small {
 .form-grid .row {
   margin-bottom: 9px;
 }
-.form-grid label {
+.form-grid label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   margin-top: 8px;
 }
 .settings-page {
@@ -1310,15 +1246,18 @@ td small {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
   gap: 16px;
 }
-.schedule-fields label {
+.schedule-fields label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
   font-size: 11px;
 }
-.schedule-fields input,
-.schedule-fields select {
+.schedule-fields .ant-select {
+  width: 100%;
+  min-width: 0;
+}
+.schedule-fields input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   width: 100%;
   min-width: 0;
 }
@@ -1334,7 +1273,7 @@ td small {
   margin-top: 20px;
   font-size: 12px;
 }
-.schedule-adoption input {
+.schedule-adoption input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   width: auto;
 }
 .schedule-version-note {
@@ -1549,8 +1488,10 @@ td small {
   margin-bottom: 16px;
   font-size: 13px;
 }
-.template-field input,
-.template-field select {
+.template-field .ant-select {
+  width: 100%;
+}
+.template-field input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   width: 100%;
   padding: 10px;
   border: 1px solid #d8e3df;
@@ -1562,17 +1503,25 @@ td small {
   gap: 12px;
   align-items: flex-start;
 }
-.template-field:has(> input[type='checkbox']) {
+.template-field:has(
+  > input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select'])[type='checkbox']
+) {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
 }
-.template-field:has(> input[type='checkbox']) > span {
+.template-field:has(
+    > input:not(.ant-checkbox-input):not(.ant-radio-input):not(
+        [class*='ant-select']
+      )[type='checkbox']
+  )
+  > span {
   grid-column: 2;
   grid-row: 1;
 }
-.template-field input[type='checkbox'] {
+.template-field
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select'])[type='checkbox'] {
   grid-column: 1;
   grid-row: 1;
   width: 18px;
@@ -1581,7 +1530,12 @@ td small {
   margin: 0;
   accent-color: #26776a;
 }
-.template-field:has(> input[type='checkbox']) > small {
+.template-field:has(
+    > input:not(.ant-checkbox-input):not(.ant-radio-input):not(
+        [class*='ant-select']
+      )[type='checkbox']
+  )
+  > small {
   grid-column: 2;
 }
 .template-array-row > :first-child {
@@ -1642,7 +1596,7 @@ td small {
   background: #f5f8f6;
   border-bottom: 1px solid var(--border);
 }
-.browser-address input {
+.browser-address input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   flex: 1;
   min-width: 0;
   margin: 0;
@@ -1880,7 +1834,7 @@ td small {
   align-items: center;
   margin-bottom: 10px;
 }
-.node-move-actions select {
+.node-move-actions .ant-select {
   min-width: 0;
   flex: 1;
   margin: 0;
@@ -1907,9 +1861,12 @@ td small {
   min-width: 0;
   margin: 12px 0 18px;
 }
-.value-field input,
-.value-field textarea,
-.value-field select {
+.value-field .ant-select {
+  width: 100%;
+  min-width: 0;
+}
+.value-field input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']),
+.value-field textarea {
   width: 100%;
   min-width: 0;
 }
@@ -1977,7 +1934,7 @@ td small {
   align-items: center;
   min-width: 0;
 }
-.resource-inline input {
+.resource-inline input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   flex: 1;
   width: 0;
   min-width: 0;
@@ -2112,7 +2069,7 @@ td small {
   flex-wrap: wrap;
   gap: 10px;
 }
-.run-rerun-options > label:first-child {
+.run-rerun-options > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):first-child {
   display: grid;
   gap: 6px;
   min-width: 180px;
@@ -2122,7 +2079,7 @@ td small {
   align-items: flex-start;
   gap: 8px;
 }
-.run-rerun-check input {
+.run-rerun-check input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   flex: none;
   width: auto;
   margin-top: 3px;
@@ -2176,7 +2133,7 @@ td small {
   gap: 12px;
   margin-bottom: 16px;
 }
-.history-filters label {
+.history-filters label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   display: grid;
   gap: 6px;
   font-size: 12px;
@@ -2186,8 +2143,11 @@ td small {
   flex: 1 1 220px;
   min-width: 0;
 }
-.history-filters input,
-.history-filters select {
+.history-filters .ant-select {
+  width: 100%;
+  min-width: 0;
+}
+.history-filters input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   width: 100%;
   min-width: 0;
 }
@@ -2362,7 +2322,7 @@ td small {
   line-height: 1.7;
   margin: 10px 0;
 }
-.templates-page .template-card .primary {
+.templates-page .template-card .ant-btn-primary {
   width: auto;
 }
 .templates-page .actions {
@@ -2384,11 +2344,13 @@ td small {
   gap: 10px;
   margin-bottom: 14px;
 }
-.templates-page .field > label,
+.templates-page .field > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper),
 .templates-page .field > small {
   flex-basis: 100%;
 }
-.templates-page .field > input {
+.templates-page
+  .field
+  > input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   flex: 1;
   min-width: 220px;
 }

@@ -47,10 +47,10 @@
   line-height: 22px;
   color: var(--fa-text-secondary);
 }
-.desktop-plan-actions > .primary {
+.desktop-plan-actions > .ant-btn-primary {
   min-width: 216px;
 }
-.desktop-plan-actions > button:not(.primary) {
+.desktop-plan-actions > button:not(.ant-btn-primary) {
   min-width: 144px;
 }
 .desktop-plan-stack h2,

@@ -1,3 +1,4 @@
+import { Select, Button } from 'antd';
 import TaskRunFailure from './TaskRunFailure';
 import McpRunReceipts from './McpRunReceipts';
 import type { LearningStatus } from '../shared/learning';
@@ -262,18 +263,18 @@ export default function TaskRunPage({
     />
   );
   const previewButton = (a: (typeof model.artifacts)[number]) => (
-    <button
+    <Button
       ref={(element) => {
-        if (element) previewButtons.current.set(a.artifactId, element);
+        if (element instanceof HTMLButtonElement) previewButtons.current.set(a.artifactId, element);
         else previewButtons.current.delete(a.artifactId);
       }}
-      className="primary"
+      type="primary"
       aria-label={`预览文件：${a.name}`}
-      disabled={!a.available || a.integrity !== 'verified'}
+      disabled={!a.available || a.integrity !== 'verified' || undefined}
       onClick={() => inspect(a.artifactId)}
     >
       预览文件
-    </button>
+    </Button>
   );
   const singleResultFile = model.success && page === 'overview' && model.artifacts.length === 1;
   const fileCards = (
@@ -322,18 +323,18 @@ export default function TaskRunPage({
     <>
       {canRepair && (
         <>
-          <button className="primary" onClick={() => setPage('repair')}>
+          <Button type="primary" onClick={() => setPage('repair')}>
             重新选择网页目标
-          </button>
-          <button onClick={() => setPage('repair')}>让 AI 提议修复</button>
+          </Button>
+          <Button onClick={() => setPage('repair')}>让 AI 提议修复</Button>
         </>
       )}
-      <button className={canRepair ? undefined : 'primary'} onClick={() => navigate('modify')}>
+      <Button type={canRepair ? 'default' : 'primary'} onClick={() => navigate('modify')}>
         {model.success ? '告诉 AI 怎么改' : '修改需求与方案'}
-      </button>
-      {!model.success && <button onClick={() => navigate('plan')}>手动检查步骤</button>}
+      </Button>
+      {!model.success && <Button onClick={() => navigate('plan')}>手动检查步骤</Button>}
       {model.terminal && (
-        <button
+        <Button
           ref={rerunButton}
           onClick={() => {
             detailScroll.current = document.querySelector('main')?.scrollTop ?? 0;
@@ -342,7 +343,7 @@ export default function TaskRunPage({
           }}
         >
           {model.success ? '再次运行前检查' : '核对后重新运行'}
-        </button>
+        </Button>
       )}
       {model.success ? (
         <details className="task-run-next-help">
@@ -441,7 +442,7 @@ export default function TaskRunPage({
               open={open}
               initialMode="saved"
             />
-            <button onClick={() => setPage('overview')}>先不运行，返回结果</button>
+            <Button onClick={() => setPage('overview')}>先不运行，返回结果</Button>
           </section>
         ) : page === 'details' ? (
           <div className="task-run-columns task-run-details">
@@ -450,21 +451,25 @@ export default function TaskRunPage({
               {model.artifacts.length > 1 && (
                 <>
                   <label htmlFor="task-artifact">选择本次文件</label>
-                  <select
+                  <Select<string>
                     id="task-artifact"
                     value={selected ?? ''}
-                    onChange={(e) => {
+                    onChange={(value) => {
                       previewRetryOrigin.current = undefined;
-                      setSelected(e.target.value || undefined);
+                      setSelected(value || undefined);
                     }}
-                  >
-                    <option value="">请选择文件</option>
-                    {model.artifacts.map((a) => (
-                      <option key={a.artifactId} value={a.artifactId}>
-                        {a.name} · {artifactLabel(a)}
-                      </option>
-                    ))}
-                  </select>
+                    options={[
+                      { value: '', label: '请选择文件' },
+                      ...model.artifacts.map((a) => ({
+                        value: a.artifactId,
+                        label: (
+                          <>
+                            {a.name} · {artifactLabel(a)}
+                          </>
+                        ),
+                      })),
+                    ]}
+                  />
                 </>
               )}
               <div className="task-file-content">
@@ -514,13 +519,15 @@ export default function TaskRunPage({
                     {item?.available &&
                       item.integrity === 'verified' &&
                       (previewError || (loading && previewRetryOrigin.current)) && (
-                        <button
-                          type="button"
-                          disabled={loading}
-                          onClick={(event) => retryPreview(event.currentTarget)}
+                        <Button
+                          htmlType="button"
+                          disabled={loading || undefined}
+                          onClick={(event) =>
+                            retryPreview(event.currentTarget as HTMLButtonElement)
+                          }
                         >
                           {loading ? '正在重新读取…' : '重新读取预览'}
-                        </button>
+                        </Button>
                       )}
                   </div>
                 )}
@@ -561,9 +568,9 @@ export default function TaskRunPage({
                 </div>
               </dl>
               {run.error && <p className="field-error">{run.error}</p>}
-              <button className="primary" onClick={() => setPage('overview')}>
+              <Button type="primary" onClick={() => setPage('overview')}>
                 返回结果摘要
-              </button>
+              </Button>
               <details className="task-run-record-info">
                 <summary>运行状态与耗时</summary>
                 <dl>
@@ -594,12 +601,14 @@ export default function TaskRunPage({
                   )}
                   <div className="ai-task-actions">
                     {!previewError && !(loading && previewRetryOrigin.current) && (
-                      <button
-                        disabled={loading || !item?.available || item.integrity !== 'verified'}
-                        onClick={(event) => retryPreview(event.currentTarget)}
+                      <Button
+                        disabled={
+                          loading || !item?.available || item.integrity !== 'verified' || undefined
+                        }
+                        onClick={(event) => retryPreview(event.currentTarget as HTMLButtonElement)}
                       >
                         重新读取预览
-                      </button>
+                      </Button>
                     )}
                     {item && (
                       <TaskArtifactLocation
@@ -657,9 +666,9 @@ export default function TaskRunPage({
                 {fileCards}
                 <div className="ai-task-actions task-run-result-actions">
                   {singleResultFile && previewButton(model.artifacts[0])}
-                  <button ref={detailsButton} onClick={() => inspect()}>
+                  <Button ref={detailsButton} onClick={() => inspect()}>
                     详细信息
-                  </button>
+                  </Button>
                 </div>
                 <p>
                   未确认完成：{model.unresolved.length} 次。
@@ -773,42 +782,48 @@ export default function TaskRunPage({
               )}
               <div className="ai-task-actions">
                 {allowed && run.state === 'RUNNING' && (
-                  <button disabled={controlPending} onClick={() => void sendControl('pause')}>
+                  <Button
+                    disabled={controlPending || undefined}
+                    onClick={() => void sendControl('pause')}
+                  >
                     {command?.action === 'pause' ? '暂停请求中' : '请求暂停'}
-                  </button>
+                  </Button>
                 )}
                 {allowed && ['PAUSED', 'WAITING_INPUT'].includes(run.state) && (
-                  <button
-                    className="primary"
-                    disabled={controlPending}
+                  <Button
+                    type="primary"
+                    disabled={controlPending || undefined}
                     onClick={() => void sendControl('resume')}
                   >
                     继续
-                  </button>
+                  </Button>
                 )}
                 {allowed && run.state === 'PAUSED' && (
-                  <button disabled={controlPending} onClick={() => void sendControl('step')}>
+                  <Button
+                    disabled={controlPending || undefined}
+                    onClick={() => void sendControl('step')}
+                  >
                     执行下一步
-                  </button>
+                  </Button>
                 )}
                 {!model.terminal &&
                   !model.view.closing &&
                   !model.uncertain &&
                   (allowed || run.state === 'QUEUED') && (
-                    <button
-                      disabled={controlBusy || command?.action === 'cancel'}
-                      className="danger"
+                    <Button
+                      disabled={controlBusy || command?.action === 'cancel' || undefined}
+                      danger
                       onClick={() => void sendControl('cancel')}
                     >
                       取消运行
-                    </button>
+                    </Button>
                   )}
                 {model.rows.some((r) => r.type === 'browser') && (
-                  <button onClick={showBrowser}>查看当前网页</button>
+                  <Button onClick={showBrowser}>查看当前网页</Button>
                 )}
-                <button ref={detailsButton} onClick={() => inspect()}>
+                <Button ref={detailsButton} onClick={() => inspect()}>
                   详细信息
-                </button>
+                </Button>
               </div>
               {controlFeedback}
               {compactLive && (
@@ -837,9 +852,9 @@ export default function TaskRunPage({
         {page !== 'details' && (
           <>
             <div className="ai-task-actions task-run-footer">
-              <button onClick={() => navigate('plan')}>回到任务</button>
-              <button onClick={history}>运行记录</button>
-              <button onClick={() => navigate('home')}>回到开始</button>
+              <Button onClick={() => navigate('plan')}>回到任务</Button>
+              <Button onClick={history}>运行记录</Button>
+              <Button onClick={() => navigate('home')}>回到开始</Button>
             </div>
             <p className="task-run-note">
               返回、查看结果和修改草稿不会重复执行；未知的外部结果请先核对。

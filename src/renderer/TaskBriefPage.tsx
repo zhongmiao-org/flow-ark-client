@@ -1,3 +1,4 @@
+import { ConfigProvider, Button, Input } from 'antd';
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { PlanningContext, PlanningTask } from '../shared/planning';
 import { IMAGE_TOTAL_BYTES } from '../shared/task-attachments';
@@ -88,23 +89,26 @@ export default function TaskBriefPage({
     <div className="ai-task-columns task-brief-columns">
       <section className="ai-task-card task-brief-input">
         <label htmlFor="task-description">你的需求</label>
-        <textarea
+        <Input.TextArea
           id="task-description"
-          disabled={busy}
+          disabled={busy || undefined}
           value={description}
           maxLength={20000}
           onChange={(e) => changeDescription(e.target.value)}
         />
         <div className="task-brief-add">
-          <button disabled={busy || count >= 20} onClick={() => choose('file')}>
+          <Button disabled={busy || count >= 20 || undefined} onClick={() => choose('file')}>
             {pendingAction === 'file' ? '正在选择…' : '附加文件'}
-          </button>
-          <button disabled={busy} aria-label="网页链接与对象" onClick={target}>
+          </Button>
+          <Button disabled={busy || undefined} aria-label="网页链接与对象" onClick={target}>
             网页链接
-          </button>
-          <button disabled={busy || count >= 20 || imageLimit} onClick={() => choose('image')}>
+          </Button>
+          <Button
+            disabled={busy || count >= 20 || imageLimit || undefined}
+            onClick={() => choose('image')}
+          >
             {pendingAction === 'image' ? '正在选择…' : '目标截图'}
-          </button>
+          </Button>
         </div>
         {attachmentFeedback && !rowFeedback && (
           <TaskAttachmentFeedback
@@ -136,9 +140,9 @@ export default function TaskBriefPage({
                   {task.webTarget.element.target.label || task.webTarget.element.target.tag}
                 </p>
               )}
-              <button disabled={busy} onClick={target}>
+              <Button disabled={busy || undefined} onClick={target}>
                 查看或更换网页目标
-              </button>
+              </Button>
             </div>
           )}
           {task.attachments?.map((a) => (
@@ -151,20 +155,24 @@ export default function TaskBriefPage({
                     {Math.ceil(a.size / 1024)} KiB
                   </small>
                 </span>
-                <button disabled={busy} onClick={() => preview(a.id)} aria-label={`预览 ${a.name}`}>
+                <Button
+                  disabled={busy || undefined}
+                  onClick={() => preview(a.id)}
+                  aria-label={`预览 ${a.name}`}
+                >
                   {pendingAction === 'preview' && attachmentFeedback?.attachmentId === a.id
                     ? '读取中…'
                     : '预览'}
-                </button>
-                <button
-                  disabled={busy}
+                </Button>
+                <Button
+                  disabled={busy || undefined}
                   onClick={() => remove(a.id)}
                   aria-label={`移除附件 ${a.name}`}
                 >
                   {pendingAction === 'remove' && attachmentFeedback?.attachmentId === a.id
                     ? '移除中…'
                     : '移除'}
-                </button>
+                </Button>
               </div>
               {attachmentFeedback?.attachmentId === a.id &&
                 attachmentFeedback.status !== 'success' && (
@@ -220,48 +228,51 @@ export default function TaskBriefPage({
                   </span>
                 )}
               </summary>
-              <fieldset className="ai-task-context" disabled={busy}>
-                <label>
-                  资料名称
-                  <input
-                    ref={(element) => {
-                      if (element) contextNames.current.set(c.id, element);
-                      else contextNames.current.delete(c.id);
-                    }}
-                    aria-label={`资料 ${index + 1} 名称`}
-                    value={c.label}
-                    maxLength={200}
-                    onChange={(e) =>
-                      changeContext(
-                        context.map((entry) =>
-                          entry.id === c.id ? { ...entry, label: e.target.value } : entry,
-                        ),
-                      )
-                    }
-                  />
-                </label>
-                <label>
-                  资料内容
-                  <textarea
-                    aria-label={`资料 ${index + 1} 内容`}
-                    value={c.text}
-                    maxLength={50000}
-                    onChange={(e) =>
-                      changeContext(
-                        context.map((entry) =>
-                          entry.id === c.id ? { ...entry, text: e.target.value } : entry,
-                        ),
-                      )
-                    }
-                  />
-                </label>
-                <button onClick={() => removeText(c.id, index)}>移除资料 {index + 1}</button>
-              </fieldset>
+              <ConfigProvider componentDisabled={busy || undefined}>
+                <fieldset className="ai-task-context" disabled={busy}>
+                  <label>
+                    资料名称
+                    <Input
+                      ref={(instance) => {
+                        const element = instance?.input ?? null;
+                        if (element) contextNames.current.set(c.id, element);
+                        else contextNames.current.delete(c.id);
+                      }}
+                      aria-label={`资料 ${index + 1} 名称`}
+                      value={c.label}
+                      maxLength={200}
+                      onChange={(e) =>
+                        changeContext(
+                          context.map((entry) =>
+                            entry.id === c.id ? { ...entry, label: e.target.value } : entry,
+                          ),
+                        )
+                      }
+                    />
+                  </label>
+                  <label>
+                    资料内容
+                    <Input.TextArea
+                      aria-label={`资料 ${index + 1} 内容`}
+                      value={c.text}
+                      maxLength={50000}
+                      onChange={(e) =>
+                        changeContext(
+                          context.map((entry) =>
+                            entry.id === c.id ? { ...entry, text: e.target.value } : entry,
+                          ),
+                        )
+                      }
+                    />
+                  </label>
+                  <Button onClick={() => removeText(c.id, index)}>移除资料 {index + 1}</Button>
+                </fieldset>
+              </ConfigProvider>
             </details>
           ))}
-          <button ref={addTextButton} disabled={busy || count >= 20} onClick={addText}>
+          <Button ref={addTextButton} disabled={busy || count >= 20 || undefined} onClick={addText}>
             附加文本资料
-          </button>
+          </Button>
         </section>
         <p className="task-brief-disclosure">
           本次只发送你核对的描述、资料、图片和相关能力说明。未选择的窗口与文件不会加入。
@@ -275,9 +286,9 @@ export default function TaskBriefPage({
         </details>
         {controls}
         <div className="ai-task-actions">
-          <button disabled={busy} onClick={understand}>
+          <Button disabled={busy || undefined} onClick={understand}>
             理解与输出位置
-          </button>
+          </Button>
           <small role="status">{dirty ? '有未保存修改' : '草稿已保存'}</small>
         </div>
       </section>

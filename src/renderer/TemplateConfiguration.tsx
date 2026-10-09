@@ -1,3 +1,4 @@
+import { ConfigProvider, Select, Button, Checkbox, Input } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import type { Bindings, Json } from '../shared/types';
@@ -86,7 +87,7 @@ export function Field({ schema: s, value, change, label, required = false, draft
       .filter(Boolean)
       .join(' ') || undefined;
   return (
-    <label
+    <div
       className={`template-field${s.type === 'boolean' && !options ? ' template-boolean-field' : ''}`}
     >
       <span id={id}>
@@ -94,41 +95,42 @@ export function Field({ schema: s, value, change, label, required = false, draft
         {required && <small className="template-required">（必需）</small>}
       </span>
       {options ? (
-        <select
+        <Select<string>
+          status={!!error ? 'error' : undefined}
           aria-labelledby={id}
           aria-describedby={describedBy}
           aria-required={required || undefined}
           aria-invalid={!!error}
           data-value-invalid={!!error || undefined}
           value={selected === -1 ? '' : String(selected)}
-          onChange={(e) => {
-            const option = options[Number(e.target.value)];
-            if (e.target.value && option) change(option.const);
+          onChange={(value) => {
+            const option = options[Number(value)];
+            if (value && option) change(option.const);
           }}
-        >
-          <option value="" disabled>
-            请选择
-          </option>
-          {options.map((o: any, index: number) => (
-            <option value={String(index)} key={index}>
-              {o.title ?? (typeof o.const === 'object' ? JSON.stringify(o.const) : String(o.const))}
-            </option>
-          ))}
-        </select>
+          options={[
+            { value: '', disabled: true, label: '请选择' },
+            ...options.map((o: any, index: number) => ({
+              value: String(index),
+              label:
+                o.title ??
+                (typeof o.const === 'object' ? JSON.stringify(o.const) : String(o.const)),
+            })),
+          ]}
+        />
       ) : s.type === 'boolean' ? (
-        <input
+        <Checkbox
           aria-labelledby={id}
           aria-describedby={describedBy}
           aria-invalid={!!error}
           data-value-invalid={!!error || undefined}
-          type="checkbox"
           checked={Boolean(value)}
           onChange={(e) => change(e.target.checked)}
         />
       ) : s.type === 'number' || s.type === 'integer' ? (
         <TemplateNumber schema={s} value={value} change={change} labelId={id} required={required} />
       ) : s.type === 'string' && s.maxLength > 500 ? (
-        <textarea
+        <Input.TextArea
+          status={!!error ? 'error' : undefined}
           aria-labelledby={id}
           aria-describedby={describedBy}
           aria-required={required || undefined}
@@ -138,7 +140,8 @@ export function Field({ schema: s, value, change, label, required = false, draft
           onChange={(e) => change(e.target.value)}
         />
       ) : (
-        <input
+        <Input
+          status={!!error ? 'error' : undefined}
           aria-labelledby={id}
           aria-describedby={describedBy}
           aria-required={required || undefined}
@@ -155,7 +158,7 @@ export function Field({ schema: s, value, change, label, required = false, draft
         </small>
       )}
       {s.description && <small id={id + '-description'}>{s.description}</small>}
-    </label>
+    </div>
   );
 }
 function TemplateArray({ schema, value, change, title, draft }: any) {
@@ -239,8 +242,8 @@ function TemplateArray({ schema, value, change, title, draft }: any) {
             draft={childDraft(draft, 'item:' + rows.keys[index])}
             change={(next: Json) => change(values.map((v, i) => (i === index ? next : v)))}
           />
-          <button
-            type="button"
+          <Button
+            htmlType="button"
             className="icon-button"
             aria-label={`移除 ${title} ${index + 1}`}
             onClick={() => {
@@ -252,13 +255,13 @@ function TemplateArray({ schema, value, change, title, draft }: any) {
             }}
           >
             <Trash2 size={14} />
-          </button>
+          </Button>
         </div>
       ))}
-      <button
+      <Button
         ref={add}
-        type="button"
-        disabled={values.length >= limit}
+        htmlType="button"
+        disabled={values.length >= limit || undefined}
         onClick={() => {
           focusRow.current = rows.next;
           setRows({ keys: [...rows.keys, rows.next], next: rows.next + 1 });
@@ -267,7 +270,7 @@ function TemplateArray({ schema, value, change, title, draft }: any) {
       >
         <Plus size={14} />
         添加{title}
-      </button>
+      </Button>
     </fieldset>
   );
 }
@@ -290,7 +293,8 @@ function TemplateNumber({ schema, value, change, labelId, required }: any) {
   const invalid = !!error;
   return (
     <>
-      <input
+      <Input
+        status={invalid ? 'error' : undefined}
         aria-labelledby={labelId}
         aria-required={required || undefined}
         aria-invalid={invalid}
@@ -349,14 +353,14 @@ export default function TemplateConfiguration({
             <h2 id="template-config-title">实例配置</h2>
             <p>{name}</p>
           </div>
-          <button
+          <Button
             aria-label="关闭实例配置"
             className="icon-button"
             onClick={close}
-            disabled={saving}
+            disabled={saving || undefined}
           >
             <X size={20} />
-          </button>
+          </Button>
         </header>
         <form
           onInvalid={(event) => {
@@ -382,9 +386,11 @@ export default function TemplateConfiguration({
             }
           }}
         >
-          <fieldset className="template-form-scroll template-form-fields" disabled={saving}>
-            <Field schema={configuration.schema} value={values} change={setValues} />
-          </fieldset>
+          <ConfigProvider componentDisabled={saving || undefined}>
+            <fieldset className="template-form-scroll template-form-fields" disabled={saving}>
+              <Field schema={configuration.schema} value={values} change={setValues} />
+            </fieldset>
+          </ConfigProvider>
           {error && (
             <p className="field-error template-save-error" role="alert">
               {error}
@@ -392,12 +398,12 @@ export default function TemplateConfiguration({
           )}
           <footer>
             <span>只保存当前实例；不会开始运行</span>
-            <button type="button" onClick={close} disabled={saving}>
+            <Button htmlType="button" onClick={close} disabled={saving || undefined}>
               取消
-            </button>
-            <button className="primary" disabled={saving} type="submit">
+            </Button>
+            <Button type="primary" disabled={saving || undefined} htmlType="submit">
               保存配置
-            </button>
+            </Button>
           </footer>
         </form>
       </section>

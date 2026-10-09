@@ -1,3 +1,4 @@
+import { ConfigProvider, Select, Button, Checkbox, Input } from 'antd';
 import { usePageBack } from './use-page-back';
 import {
   useEffect,
@@ -380,9 +381,9 @@ export default function ScheduleWorkbench({
     <>
       <header className="topbar">
         {draft && (
-          <button className="context-back" disabled={busy} onClick={endEditing}>
+          <Button className="context-back" disabled={busy || undefined} onClick={endEditing}>
             ← 返回本机计划
-          </button>
+          </Button>
         )}
         <nav className="breadcrumbs" aria-label="当前位置">
           {draft && (
@@ -418,12 +419,12 @@ export default function ScheduleWorkbench({
             </h1>
             <p>按分钟间隔执行固定内容，休眠或退出期间不补跑。</p>
           </div>
-          <button
-            className="primary"
+          <Button
+            type="primary"
             aria-label="新建本机计划"
-            disabled={busy}
+            disabled={busy || undefined}
             onClick={(event) => {
-              const trigger = event.currentTarget;
+              const trigger = event.currentTarget as HTMLButtonElement;
               go(() => {
                 listFocus.current = trigger;
                 assign(blank());
@@ -431,7 +432,7 @@ export default function ScheduleWorkbench({
             }}
           >
             创建计划
-          </button>
+          </Button>
         </div>
         {notice && (
           <div className="schedule-feedback" role="status">
@@ -440,9 +441,9 @@ export default function ScheduleWorkbench({
               {notice.title}
             </h2>
             <p>{notice.detail}</p>
-            <button
-              type="button"
-              className="primary"
+            <Button
+              htmlType="button"
+              type="primary"
               onClick={() => {
                 setNotice(undefined);
                 requestAnimationFrame(() => {
@@ -454,7 +455,7 @@ export default function ScheduleWorkbench({
               }}
             >
               返回计划
-            </button>
+            </Button>
           </div>
         )}
         {operationLabel && (
@@ -502,10 +503,10 @@ export default function ScheduleWorkbench({
                   {plan.enabled ? '下次 ' + inZone(plan.nextAt, plan.timezone) : '暂无下次执行'}
                 </p>
                 <div className="ai-task-actions">
-                  <button
-                    disabled={busy}
+                  <Button
+                    disabled={busy || undefined}
                     onClick={(event) => {
-                      listFocus.current = event.currentTarget;
+                      listFocus.current = event.currentTarget as HTMLButtonElement;
                       const toggle = () => {
                         void perform(
                           async () => {
@@ -535,10 +536,10 @@ export default function ScheduleWorkbench({
                     }}
                   >
                     {plan.enabled ? '暂停' : '启用'}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     aria-label="编辑计划"
-                    disabled={busy}
+                    disabled={busy || undefined}
                     onClick={() =>
                       go(
                         () => {
@@ -549,16 +550,16 @@ export default function ScheduleWorkbench({
                     }
                   >
                     编辑
-                  </button>
-                  <button
-                    disabled={busy}
+                  </Button>
+                  <Button
+                    disabled={busy || undefined}
                     onClick={(event) => {
-                      historyFocus.current = event.currentTarget;
+                      historyFocus.current = event.currentTarget as HTMLButtonElement;
                       void readHistory(plan.id);
                     }}
                   >
                     计划记录
-                  </button>
+                  </Button>
                 </div>
               </article>
             ))}
@@ -578,146 +579,158 @@ export default function ScheduleWorkbench({
               }}
             >
               <h2>{draft.mode === 'edit' ? '编辑计划' : '创建计划'}</h2>
-              <fieldset ref={fields} disabled={busy}>
-                <label>
-                  <span>绑定入口</span>
-                  {draft.mode === 'edit' ? (
-                    <input
-                      aria-label="绑定入口"
-                      readOnly
-                      value={draft.flow?.flow.name ?? draft.version?.name ?? '来源流程不可用'}
-                    />
-                  ) : (
-                    <select
-                      required
-                      aria-label="计划流程"
-                      value={draft.flow?.id ?? ''}
-                      onChange={(event) =>
-                        setDraft({
-                          ...draft,
-                          flow: structuredClone(
-                            data.flows.find((flow) => flow.id === event.target.value),
-                          ),
-                          adopt: false,
-                        })
-                      }
-                    >
-                      <option value="">选择已保存的流程或入口</option>
-                      {data.flows.map((flow) => (
-                        <option key={flow.id} value={flow.id}>
-                          {flow.flow.name} · {flow.id.slice(0, 8)}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </label>
-                <Timing
-                  minutes={draft.minutes}
-                  timezone={draft.timezone}
-                  editing={draft.mode === 'edit'}
-                  onChange={(change) => setDraft({ ...draft, ...change })}
-                />
-                <div className="schedule-fixed-version">
-                  <span>固定版本</span>
-                  <p>
-                    {draft.mode === 'edit'
-                      ? draft.version
-                        ? `${inZone(Date.parse(draft.version.savedAt), draft.timezone)} 保存的版本`
-                        : '原固定版本不可用，请核对后处理'
-                      : draft.flow
-                        ? `${inZone(Date.parse(draft.flow.updatedAt), draft.timezone)} 保存的版本`
-                        : '先选择已保存的流程或入口'}
-                  </p>
-                  {draft.plan && (
-                    <small className="schedule-version-id">版本标识：{draft.plan.versionId}</small>
-                  )}
-                </div>
-                <label className="schedule-adoption">
-                  <input
-                    type="checkbox"
-                    checked={draft.adopt}
-                    disabled={!draft.flow}
-                    onChange={(event) => setDraft({ ...draft, adopt: event.target.checked })}
+              <ConfigProvider componentDisabled={busy || undefined}>
+                <fieldset ref={fields} disabled={busy}>
+                  <label>
+                    <span>绑定入口</span>
+                    {draft.mode === 'edit' ? (
+                      <Input
+                        aria-label="绑定入口"
+                        readOnly
+                        value={draft.flow?.flow.name ?? draft.version?.name ?? '来源流程不可用'}
+                      />
+                    ) : (
+                      <Select<string>
+                        aria-required
+                        aria-label="计划流程"
+                        value={draft.flow?.id ?? ''}
+                        onChange={(value) =>
+                          setDraft({
+                            ...draft,
+                            flow: structuredClone(data.flows.find((flow) => flow.id === value)),
+                            adopt: false,
+                          })
+                        }
+                        options={[
+                          { value: '', label: '选择已保存的流程或入口' },
+                          ...data.flows.map((flow) => ({
+                            value: flow.id,
+                            label: (
+                              <>
+                                {flow.flow.name} · {flow.id.slice(0, 8)}
+                              </>
+                            ),
+                          })),
+                        ]}
+                      />
+                    )}
+                  </label>
+                  <Timing
+                    minutes={draft.minutes}
+                    timezone={draft.timezone}
+                    editing={draft.mode === 'edit'}
+                    onChange={(change) => setDraft({ ...draft, ...change })}
                   />
-                  <span>
-                    {draft.mode === 'edit'
-                      ? '采用当前已保存的流程版本'
-                      : '固定当前已保存版本与入口'}
-                  </span>
-                </label>
-                {draft.mode === 'edit' && draft.adopt && draft.flow && (
-                  <p>
-                    将采用 {draft.flow.flow.name} · 保存于{' '}
-                    {inZone(Date.parse(draft.flow.updatedAt), draft.timezone)}
-                    。未保存的编辑不在其中。
-                  </p>
-                )}
-                <p>
-                  {draft.mode === 'edit'
-                    ? '默认保留原快照；不采用未保存草稿。更新不改变已排队或活动运行。'
-                    : '创建后启用，首次执行在所选间隔之后。不采用未保存草稿。'}
-                </p>
-                {changed && (
-                  <div role="alert" className="schedule-conflict">
-                    <span className="ai-config-status error">保存被拒绝</span>
-                    <h3>
-                      {draft.mode === 'edit' && !currentPlan ? '计划已不可用' : '计划或来源已更新'}
-                    </h3>
+                  <div className="schedule-fixed-version">
+                    <span>固定版本</span>
                     <p>
-                      编辑期间计划或所选流程发生变化。当前输入已保留，重新编辑前请核对最新内容。
+                      {draft.mode === 'edit'
+                        ? draft.version
+                          ? `${inZone(Date.parse(draft.version.savedAt), draft.timezone)} 保存的版本`
+                          : '原固定版本不可用，请核对后处理'
+                        : draft.flow
+                          ? `${inZone(Date.parse(draft.flow.updatedAt), draft.timezone)} 保存的版本`
+                          : '先选择已保存的流程或入口'}
                     </p>
-                    <button
-                      className="primary"
-                      type="button"
-                      onClick={() =>
-                        go(() => {
-                          if (draft.mode === 'edit' && !currentPlan) assign();
-                          else if (draft.plan) void open(draft.plan);
-                          else assign(blank());
-                        })
+                    {draft.plan && (
+                      <small className="schedule-version-id">
+                        版本标识：{draft.plan.versionId}
+                      </small>
+                    )}
+                  </div>
+                  <Checkbox
+                    checked={draft.adopt}
+                    disabled={!draft.flow || undefined}
+                    onChange={(event) => setDraft({ ...draft, adopt: event.target.checked })}
+                    className="schedule-adoption"
+                  >
+                    <span>
+                      {draft.mode === 'edit'
+                        ? '采用当前已保存的流程版本'
+                        : '固定当前已保存版本与入口'}
+                    </span>
+                  </Checkbox>
+                  {draft.mode === 'edit' && draft.adopt && draft.flow && (
+                    <p>
+                      将采用 {draft.flow.flow.name} · 保存于{' '}
+                      {inZone(Date.parse(draft.flow.updatedAt), draft.timezone)}
+                      。未保存的编辑不在其中。
+                    </p>
+                  )}
+                  <p>
+                    {draft.mode === 'edit'
+                      ? '默认保留原快照；不采用未保存草稿。更新不改变已排队或活动运行。'
+                      : '创建后启用，首次执行在所选间隔之后。不采用未保存草稿。'}
+                  </p>
+                  {changed && (
+                    <div role="alert" className="schedule-conflict">
+                      <span className="ai-config-status error">保存被拒绝</span>
+                      <h3>
+                        {draft.mode === 'edit' && !currentPlan
+                          ? '计划已不可用'
+                          : '计划或来源已更新'}
+                      </h3>
+                      <p>
+                        编辑期间计划或所选流程发生变化。当前输入已保留，重新编辑前请核对最新内容。
+                      </p>
+                      <Button
+                        type="primary"
+                        htmlType="button"
+                        onClick={() =>
+                          go(() => {
+                            if (draft.mode === 'edit' && !currentPlan) assign();
+                            else if (draft.plan) void open(draft.plan);
+                            else assign(blank());
+                          })
+                        }
+                      >
+                        {draft.mode === 'edit' && !currentPlan ? '返回计划' : '重新编辑'}
+                      </Button>
+                    </div>
+                  )}
+                  {error && !leaving && (
+                    <p role="alert" className="ai-task-error" ref={pageError} tabIndex={-1}>
+                      {error}
+                    </p>
+                  )}
+                  <div className="ai-task-actions">
+                    <Button
+                      htmlType="submit"
+                      type="primary"
+                      disabled={
+                        changed ||
+                        (draft.mode === 'create' && (!draft.flow || !draft.adopt)) ||
+                        undefined
                       }
                     >
-                      {draft.mode === 'edit' && !currentPlan ? '返回计划' : '重新编辑'}
-                    </button>
+                      {operation === 'save'
+                        ? '正在保存…'
+                        : draft.mode === 'edit'
+                          ? '保存计划'
+                          : '创建计划'}
+                    </Button>
+                    <Button
+                      htmlType="button"
+                      aria-label={draft.mode === 'edit' ? '取消编辑' : '取消创建'}
+                      onClick={() => go(() => assign())}
+                    >
+                      取消
+                    </Button>
                   </div>
-                )}
-                {error && !leaving && (
-                  <p role="alert" className="ai-task-error" ref={pageError} tabIndex={-1}>
-                    {error}
-                  </p>
-                )}
-                <div className="ai-task-actions">
-                  <button
-                    className="primary"
-                    disabled={changed || (draft.mode === 'create' && (!draft.flow || !draft.adopt))}
-                  >
-                    {operation === 'save'
-                      ? '正在保存…'
-                      : draft.mode === 'edit'
-                        ? '保存计划'
-                        : '创建计划'}
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={draft.mode === 'edit' ? '取消编辑' : '取消创建'}
-                    onClick={() => go(() => assign())}
-                  >
-                    取消
-                  </button>
-                </div>
-                {draft.plan && (
-                  <button
-                    type="button"
-                    className="schedule-history-trigger"
-                    onClick={(event) => {
-                      historyFocus.current = event.currentTarget;
-                      void readHistory(draft.plan!.id);
-                    }}
-                  >
-                    查看错过 / 占用跳过
-                  </button>
-                )}
-              </fieldset>
+                  {draft.plan && (
+                    <Button
+                      htmlType="button"
+                      className="schedule-history-trigger"
+                      onClick={(event) => {
+                        historyFocus.current = event.currentTarget as HTMLButtonElement;
+                        void readHistory(draft.plan!.id);
+                      }}
+                    >
+                      查看错过 / 占用跳过
+                    </Button>
+                  )}
+                </fieldset>
+              </ConfigProvider>
             </form>
           ) : (
             <section className="ai-task-card schedule-idle">
@@ -795,15 +808,15 @@ export default function ScheduleWorkbench({
             )}
             <p>错过不补跑，占用时不重复创建运行。这里只显示已报告的记录。</p>
             <div className="ai-task-actions">
-              <button disabled={busy} onClick={closeHistory}>
+              <Button disabled={busy || undefined} onClick={closeHistory}>
                 返回计划
-              </button>
-              <button
-                disabled={reading || busy || openingRun}
+              </Button>
+              <Button
+                disabled={reading || busy || openingRun || undefined}
                 onClick={() => void readHistory(history.id)}
               >
                 刷新记录
-              </button>
+              </Button>
             </div>
             {history.result?.activeRun && (
               <div className="ai-task-card">
@@ -811,12 +824,12 @@ export default function ScheduleWorkbench({
                   {runDisplayLabels[history.result.activeRun.state]}
                 </span>
                 <p>{history.result.activeRun.name}</p>
-                <button
-                  disabled={busy || reading || openingRun || !!history.error}
+                <Button
+                  disabled={busy || reading || openingRun || !!history.error || undefined}
                   onClick={() => void inspectActive()}
                 >
                   {openingRun ? '正在读取活动运行…' : '查看活动运行'}
-                </button>
+                </Button>
               </div>
             )}
             {(history.error || runError) && (
@@ -879,12 +892,12 @@ export default function ScheduleWorkbench({
             </div>
             {reading && <p role="status">正在读取计划记录…</p>}
             {history.result?.nextCursor && (
-              <button
-                disabled={reading || busy || openingRun}
+              <Button
+                disabled={reading || busy || openingRun || undefined}
                 onClick={() => void readHistory(history.id, history.result!.nextCursor!)}
               >
                 读取更早记录
-              </button>
+              </Button>
             )}
           </dialog>
         )}

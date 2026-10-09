@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useEffect, useState } from 'react';
 import { Globe, Eye, EyeOff } from 'lucide-react';
 const api = (method: string, args?: unknown) => window.flowark.request(method, args);
@@ -38,8 +39,8 @@ export default function EmbeddedBrowserPanel({
           <span className="badge">{enabled ? '已启用' : '可选'}</span>
         </div>
         {!enabled ? (
-          <button
-            className="primary"
+          <Button
+            type="primary"
             onClick={() =>
               action(
                 () => api('browser.embedded.enable'),
@@ -48,11 +49,11 @@ export default function EmbeddedBrowserPanel({
             }
           >
             启用内置浏览器
-          </button>
+          </Button>
         ) : (
-          <button onClick={() => window.dispatchEvent(new Event('flowark:open-browser'))}>
+          <Button onClick={() => window.dispatchEvent(new Event('flowark:open-browser'))}>
             <Eye size={15} /> 打开右侧网页面板
-          </button>
+          </Button>
         )}
       </div>
       <p>

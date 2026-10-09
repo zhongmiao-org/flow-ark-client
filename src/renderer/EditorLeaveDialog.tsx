@@ -1,5 +1,5 @@
-import { useEffect, useId, useRef, useState } from 'react';
-import './editor-leave.css';
+import { Alert, Button, Flex, Modal } from 'antd';
+import { useEffect, useRef, useState } from 'react';
 
 export default function EditorLeaveDialog({
   name,
@@ -14,8 +14,6 @@ export default function EditorLeaveDialog({
   discard: () => void;
   stay: () => void;
 }) {
-  const id = useId();
-  const dialog = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const continueButton = useRef<HTMLButtonElement>(null);
   const locked = useRef(false);
@@ -27,12 +25,8 @@ export default function EditorLeaveDialog({
   }, [error]);
   useEffect(() => {
     alive.current = true;
-    const element = dialog.current;
-    element?.showModal();
-    continueButton.current?.focus();
     return () => {
       alive.current = false;
-      element?.close();
     };
   }, []);
   const persist = async () => {
@@ -56,43 +50,48 @@ export default function EditorLeaveDialog({
     }
   };
   return (
-    <dialog
-      className="editor-leave-dialog editor-draft-leave"
-      ref={dialog}
-      aria-labelledby={`${id}-title`}
-      aria-describedby={`${id}-description`}
-      aria-busy={busy}
-      onCancel={(event) => {
-        event.preventDefault();
+    <Modal
+      open
+      width={640}
+      centered
+      closable={false}
+      keyboard={!busy}
+      mask={{ closable: false }}
+      onCancel={() => {
         if (!locked.current) stay();
       }}
+      afterOpenChange={(open) => {
+        if (open) continueButton.current?.focus();
+      }}
+      title={
+        <h2 ref={heading} tabIndex={-1}>
+          {error ? '保存未完成，尚未离开' : '离开前保存更改？'}
+        </h2>
+      }
+      footer={
+        <Flex gap={12} wrap justify="flex-end">
+          <Button ref={continueButton} disabled={busy || undefined} onClick={stay}>
+            继续编辑
+          </Button>
+          <Button danger disabled={busy || undefined} onClick={discard}>
+            不保存离开
+          </Button>
+          <Button
+            type="primary"
+            loading={busy}
+            disabled={busy || undefined}
+            onClick={() => void persist()}
+          >
+            {busy ? '正在保存…' : error ? '重试保存并离开' : '保存并离开'}
+          </Button>
+        </Flex>
+      }
     >
-      <span className={`editor-leave-status${error ? ' is-error' : ''}`}>
-        {busy ? '正在保存' : error ? '未保存 · 留在当前页' : '存在未保存更改'}
-      </span>
-      <h2 id={`${id}-title`} ref={heading} tabIndex={-1}>
-        {error ? '保存未完成，尚未离开' : '离开前保存更改？'}
-      </h2>
-      <p id={`${id}-description`}>
+      <p>
         “{name}”的当前输入尚未保存。保存成功后前往“{destination}”；不保存将放弃本次草稿更改。
       </p>
-      <p className="editor-leave-note">已开始的运行和固定计划保持原版本。</p>
-      {error && (
-        <p className="editor-leave-error" role="alert" tabIndex={0} aria-label="保存错误详情">
-          {error}
-        </p>
-      )}
-      <div className="editor-leave-actions">
-        <button autoFocus ref={continueButton} disabled={busy} onClick={stay}>
-          继续编辑
-        </button>
-        <button className="editor-leave-discard" disabled={busy} onClick={discard}>
-          不保存离开
-        </button>
-        <button className="primary" disabled={busy} onClick={() => void persist()}>
-          {busy ? '正在保存…' : error ? '重试保存并离开' : '保存并离开'}
-        </button>
-      </div>
-    </dialog>
+      <p>已开始的运行和固定计划保持原版本。</p>
+      {error && <Alert type="error" title="保存错误详情" description={error} role="alert" />}
+    </Modal>
   );
 }

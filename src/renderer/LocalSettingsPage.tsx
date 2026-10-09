@@ -1,3 +1,4 @@
+import { Select, Button, Input } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { Bootstrap, BrowserBinding, FlowRecord } from '../shared/types';
 import type { AIProviderId } from '../shared/ai-settings';
@@ -326,9 +327,9 @@ export default function LocalSettingsPage({
     }
   };
   const flowLink = (flow: FlowRecord) => (
-    <button disabled={!!busy} onClick={() => void act('flow', () => openFlow(flow))}>
+    <Button disabled={!!busy || undefined} onClick={() => void act('flow', () => openFlow(flow))}>
       打开流程配置
-    </button>
+    </Button>
   );
   return (
     <section
@@ -361,10 +362,10 @@ export default function LocalSettingsPage({
         hidden={resourcesPage || (local && tab === 'browser')}
       >
         {tabs.map(([id, label], index) => (
-          <button
+          <Button
             key={id}
             role="tab"
-            disabled={!!busy}
+            disabled={!!busy || undefined}
             id={`settings-tab-${id}`}
             aria-controls="settings-content"
             aria-selected={tab === id}
@@ -384,11 +385,15 @@ export default function LocalSettingsPage({
               if (next === undefined) return;
               event.preventDefault();
               changeTab(tabs[next][0]);
-              (event.currentTarget.parentElement?.children[next] as HTMLElement)?.focus();
+              (
+                (event.currentTarget as HTMLButtonElement).parentElement?.children[
+                  next
+                ] as HTMLElement
+              )?.focus();
             }}
           >
             {label}
-          </button>
+          </Button>
         ))}
       </div>
       {error && (
@@ -407,10 +412,10 @@ export default function LocalSettingsPage({
             <div className="local-settings-layout local-browser-overview">
               <section className="local-settings-card local-browser-options">
                 <h2>浏览器执行方式</h2>
-                <button
+                <Button
                   className={`local-browser-mode${embedded ? ' is-ready' : ''}`}
                   aria-label={embedded ? '打开右侧网页面板' : '启用内置浏览器'}
-                  disabled={!!busy}
+                  disabled={!!busy || undefined}
                   onClick={() =>
                     embedded
                       ? showBrowser()
@@ -431,11 +436,11 @@ export default function LocalSettingsPage({
                   <span className="local-browser-mode-description">
                     在主窗口右侧操作网页，复用应用内核。
                   </span>
-                </button>
-                <button
+                </Button>
+                <Button
                   className="local-browser-mode"
                   ref={bindingEntry}
-                  disabled={!!busy}
+                  disabled={!!busy || undefined}
                   aria-label="选择与管理本机浏览器"
                   onClick={() => {
                     setLocal(true);
@@ -450,7 +455,7 @@ export default function LocalSettingsPage({
                   <span className="local-browser-mode-description">
                     使用你已安装并明确选择的浏览器。
                   </span>
-                </button>
+                </Button>
                 <div className="local-settings-divider" />
                 {refreshError && (
                   <div
@@ -460,9 +465,12 @@ export default function LocalSettingsPage({
                     tabIndex={-1}
                   >
                     <p>{refreshError}</p>
-                    <button disabled={!!busy} onClick={() => void act('refresh', refreshBindings)}>
+                    <Button
+                      disabled={!!busy || undefined}
+                      onClick={() => void act('refresh', refreshBindings)}
+                    >
                       {busy === 'refresh' ? '正在读取列表…' : '重新读取设置列表'}
-                    </button>
+                    </Button>
                   </div>
                 )}
                 <h2>网页展示</h2>
@@ -511,7 +519,7 @@ export default function LocalSettingsPage({
                   </p>
                 </div>
                 <div className="local-settings-health">
-                  <button
+                  <Button
                     className="local-health-link"
                     onClick={() => changeTab('ai', true)}
                     aria-label="管理 AI 服务"
@@ -522,7 +530,7 @@ export default function LocalSettingsPage({
                         ? '已配置 · 待核对'
                         : '未配置'}
                     </span>
-                  </button>
+                  </Button>
                   <p>
                     {data.credentials.some((id) => id === 'deepseek' || id === 'openai-codex')
                       ? '连接验证状态在 AI 服务中查看。'
@@ -530,7 +538,7 @@ export default function LocalSettingsPage({
                   </p>
                 </div>
                 <div className="local-settings-health">
-                  <button
+                  <Button
                     className="local-health-link"
                     onClick={() => changeTab('resources', true)}
                     id="settings-file-resources"
@@ -540,11 +548,11 @@ export default function LocalSettingsPage({
                     <span className="badge">
                       {fileFlows.length ? `${fileFlows.length} 个流程有绑定` : '未绑定'}
                     </span>
-                  </button>
+                  </Button>
                   <p>按流程保存本机文件或目录绑定。</p>
                 </div>
                 <div className="local-settings-health">
-                  <button
+                  <Button
                     className="local-health-link"
                     onClick={() => changeTab('resources', true)}
                     id="settings-credential-resources"
@@ -552,7 +560,7 @@ export default function LocalSettingsPage({
                   >
                     <span>凭据保护</span>
                     <span className="badge">保存时核验</span>
-                  </button>
+                  </Button>
                   <p>系统保护不可用时拒绝保存。</p>
                 </div>
                 <p className="local-settings-muted">只有使用相应资源的流程才需要完成绑定。</p>
@@ -564,7 +572,7 @@ export default function LocalSettingsPage({
                       session?.url ||
                       '打开网页或执行网页步骤时才创建会话。'}
                   </p>
-                  <button onClick={() => setStatusRevision((v) => v + 1)}>重新读取状态</button>
+                  <Button onClick={() => setStatusRevision((v) => v + 1)}>重新读取状态</Button>
                   <p className="local-settings-muted">
                     收起面板不会停止运行；最小化不阻止电脑休眠，退出后停止执行与调度。
                   </p>
@@ -576,32 +584,40 @@ export default function LocalSettingsPage({
               <div className="local-browser-binding-fields">
                 <div className="local-settings-field">
                   <label htmlFor="local-browser-mode">执行方式</label>
-                  <input id="local-browser-mode" readOnly value="本机已安装浏览器" />
+                  <Input id="local-browser-mode" readOnly value="本机已安装浏览器" />
                 </div>
                 <div className="local-settings-field">
                   <label htmlFor="local-browser-choice">浏览器</label>
                   <div className="local-browser-discovery-row">
-                    <select
+                    <Select<string>
                       id="local-browser-choice"
-                      disabled={!!busy}
+                      disabled={!!busy || undefined}
                       value={picked?.id ?? ''}
-                      onChange={(event) => {
-                        const next = choices.find((item) => item.id === event.target.value);
+                      onChange={(value) => {
+                        const next = choices.find((item) => item.id === value);
                         if (next) select(next);
                       }}
-                    >
-                      <option value="" disabled>
-                        {path ? '手动选择的安装 · 保存时识别' : '选择已发现或已绑定的浏览器'}
-                      </option>
-                      {choices.map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {browserName(b.product)} · {b.version} ·{' '}
-                          {bound.some((item) => item.id === b.id) ? '已保存' : '尚未绑定'}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      disabled={!!busy}
+                      options={[
+                        {
+                          value: '',
+                          disabled: true,
+                          label: path
+                            ? '手动选择的安装 · 保存时识别'
+                            : '选择已发现或已绑定的浏览器',
+                        },
+                        ...choices.map((b) => ({
+                          value: b.id,
+                          label: (
+                            <>
+                              {browserName(b.product)} · {b.version} ·{' '}
+                              {bound.some((item) => item.id === b.id) ? '已保存' : '尚未绑定'}
+                            </>
+                          ),
+                        })),
+                      ]}
+                    />
+                    <Button
+                      disabled={!!busy || undefined}
                       onClick={() =>
                         void act('discover', async () => {
                           setCandidates(await api('browser.discover'));
@@ -610,7 +626,7 @@ export default function LocalSettingsPage({
                       }
                     >
                       {busy === 'discover' ? '正在发现…' : '发现已安装浏览器'}
-                    </button>
+                    </Button>
                   </div>
                   {discovered && !choices.length && (
                     <p role="status">未发现支持的安装，请通过下方选择应用。</p>
@@ -618,23 +634,23 @@ export default function LocalSettingsPage({
                 </div>
                 <div className="local-settings-field">
                   <label htmlFor="local-browser-path">安装位置</label>
-                  <button
+                  <Button
                     id="local-browser-path"
                     className="local-browser-file-choice"
-                    disabled={!!busy}
+                    disabled={!!busy || undefined}
                     aria-label="选择应用"
                     title={path || undefined}
                     onClick={() => void choose('browser')}
                   >
                     {path || '[从这台 Mac 选择应用]'}
-                  </button>
+                  </Button>
                 </div>
                 <div className="local-settings-field local-browser-driver-field">
                   <label htmlFor="local-driver-path">驱动来源（Firefox 需要）</label>
-                  <button
+                  <Button
                     id="local-driver-path"
                     className="local-browser-file-choice"
-                    disabled={!!busy || picked?.product === 'safari'}
+                    disabled={!!busy || picked?.product === 'safari' || undefined}
                     aria-label="选择驱动"
                     title={driver || undefined}
                     onClick={() => void choose('driver')}
@@ -642,18 +658,18 @@ export default function LocalSettingsPage({
                     {picked?.product === 'safari'
                       ? '使用系统 safaridriver'
                       : driver || '手动选择已准备的驱动'}
-                  </button>
+                  </Button>
                   {driver && picked?.product !== 'safari' && (
-                    <button
+                    <Button
                       className="local-browser-clear-driver"
-                      disabled={!!busy}
+                      disabled={!!busy || undefined}
                       onClick={() => {
                         setDriver('');
                         setReceipt(undefined);
                       }}
                     >
                       清除驱动选择
-                    </button>
+                    </Button>
                   )}
                 </div>
                 <div
@@ -691,22 +707,25 @@ export default function LocalSettingsPage({
                 >
                   <strong>设置列表刷新失败</strong>
                   <p>{refreshError}</p>
-                  <button disabled={!!busy} onClick={() => void act('refresh', refreshBindings)}>
+                  <Button
+                    disabled={!!busy || undefined}
+                    onClick={() => void act('refresh', refreshBindings)}
+                  >
                     {busy === 'refresh' ? '正在读取列表…' : '重新读取设置列表'}
-                  </button>
+                  </Button>
                 </div>
               )}
               <div className="local-settings-actions">
-                <button
-                  className="primary"
-                  disabled={!path || !!busy || !!receipt}
+                <Button
+                  type="primary"
+                  disabled={!path || !!busy || !!receipt || undefined}
                   onClick={() => void save()}
                 >
                   {busy === 'save' ? '正在检测并保存…' : receipt ? '绑定已保存' : '检测并保存'}
-                </button>
-                <button disabled={!!busy} onClick={back}>
+                </Button>
+                <Button disabled={!!busy || undefined} onClick={back}>
                   返回浏览器设置
-                </button>
+                </Button>
               </div>
               <p className="local-settings-muted">
                 请在流程资源中明确选择浏览器。返回不修改已有绑定，也不关闭用户原有窗口。
@@ -754,7 +773,7 @@ export default function LocalSettingsPage({
             <p>按流程保存本地包目录与精确版本。更改依赖需进入对应脚本步骤，不自动安装依赖。</p>
             <label className="local-settings-search">
               搜索脚本包
-              <input
+              <Input
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}

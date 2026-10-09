@@ -8,9 +8,11 @@
   font-size: 12px;
   line-height: 18px;
 }
-.template-field > input[aria-invalid='true'],
-.template-field > textarea[aria-invalid='true'],
-.template-field > select[aria-invalid='true'] {
+.template-field
+  > input:not(.ant-checkbox-input):not(.ant-radio-input):not(
+    [class*='ant-select']
+  )[aria-invalid='true'],
+.template-field > textarea[aria-invalid='true'] {
   border-color: var(--fa-status-error);
 }
 .template-fieldset.template-array-field legend {

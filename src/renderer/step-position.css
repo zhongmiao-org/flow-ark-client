@@ -44,7 +44,7 @@
   line-height: 28px;
   overflow-wrap: anywhere;
 }
-.step-position-card label {
+.step-position-card label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -54,16 +54,10 @@
   font-size: 12px;
   line-height: 18px;
 }
-.step-position-card select {
+.step-position-card .ant-select {
   margin: 0;
   width: 100%;
   min-width: 0;
-  height: 32px;
-  padding: 4px 6px;
-  font-size: 13px;
-  line-height: 20px;
-  background: var(--fa-bg-canvas);
-  border-color: transparent;
 }
 .step-position-actions {
   display: flex;
@@ -113,7 +107,7 @@
   gap: 8px;
   align-items: center;
 }
-.step-position-add-target select {
+.step-position-add-target .ant-select {
   flex: 1;
 }
 .step-position-add-target button {

@@ -1,3 +1,4 @@
+import { Select, Button, Checkbox, Input } from 'antd';
 import ToolConnectionUsage, { type ConnectionTaskReference } from './ToolConnectionUsage';
 import DesktopAssistantConnection, { type AssistantPhase } from './DesktopAssistantConnection';
 import { usePageBack } from './use-page-back';
@@ -673,15 +674,15 @@ export default function ToolConnectionsPage({
   const configActions = (className: string) => (
     <div className={`ai-task-actions tool-config-actions ${className}`}>
       {reusableOAuth && (
-        <button
-          type="button"
-          disabled={!!busy || !sourceReviewed}
+        <Button
+          htmlType="button"
+          disabled={!!busy || !sourceReviewed || undefined}
           onClick={() => void discover(true)}
         >
           使用已保存登录检查能力
-        </button>
+        </Button>
       )}
-      <button className="primary" type="submit" disabled={!!busy || !sourceReviewed}>
+      <Button type="primary" htmlType="submit" disabled={!!busy || !sourceReviewed || undefined}>
         {form.type === 'http' && form.auth === 'oauth'
           ? busy === 'discover'
             ? '正在检查认证配置…'
@@ -689,10 +690,10 @@ export default function ToolConnectionsPage({
           : busy === 'discover'
             ? '正在发现能力…'
             : '发现并检查能力'}
-      </button>
-      <button
-        type="button"
-        disabled={!!busy && busy !== 'discover' && busy !== 'authorize'}
+      </Button>
+      <Button
+        htmlType="button"
+        disabled={(!!busy && busy !== 'discover' && busy !== 'authorize') || undefined}
         onClick={
           busy === 'discover' || busy === 'authorize'
             ? () => void cancel().catch((e) => setError(connectionError(e)))
@@ -700,19 +701,19 @@ export default function ToolConnectionsPage({
         }
       >
         {busy === 'authorize' ? '取消登录' : busy === 'discover' ? '取消检查' : '取消'}
-      </button>
+      </Button>
     </div>
   );
   return (
     <div className="tools-host" hidden={!active}>
       <header className="topbar">
-        <button
+        <Button
           className="context-back"
           onClick={back}
-          disabled={!!busy && busy !== 'discover' && busy !== 'authorize'}
+          disabled={(!!busy && busy !== 'discover' && busy !== 'authorize') || undefined}
         >
           ← 返回{backLabel}
-        </button>
+        </Button>
         <nav className="breadcrumbs" aria-label="当前位置">
           <a
             href="#tools-parent"
@@ -756,7 +757,7 @@ export default function ToolConnectionsPage({
         {view === 'saved' && loaded && !selected && (
           <div className="alert error" role="alert">
             原连接记录已不存在。任务与历史仍保留，请返回目录选择有效连接并重新核对。
-            <button onClick={catalog}>返回连接目录</button>
+            <Button onClick={catalog}>返回连接目录</Button>
           </div>
         )}
         {view === 'catalog' && (
@@ -770,7 +771,7 @@ export default function ToolConnectionsPage({
                   <br />
                   对象：FlowArk 受控网页
                 </p>
-                <button onClick={() => choose('web')}>查看并选择网页</button>
+                <Button onClick={() => choose('web')}>查看并选择网页</Button>
               </section>
               <section className="ai-task-card">
                 <h2>本机文件</h2>
@@ -780,7 +781,7 @@ export default function ToolConnectionsPage({
                   <br />
                   范围：每次任务明确选取
                 </p>
-                <button onClick={() => choose('file')}>查看并选择文件</button>
+                <Button onClick={() => choose('file')}>查看并选择文件</Button>
               </section>
               <section className="ai-task-card">
                 <h2>本机应用助手</h2>
@@ -790,7 +791,7 @@ export default function ToolConnectionsPage({
                   <br />
                   执行前重新核对能力与授权
                 </p>
-                <button onClick={() => move('assistant')}>连接应用助手</button>
+                <Button onClick={() => move('assistant')}>连接应用助手</Button>
               </section>
             </div>
             <div className="tool-catalog-bottom">
@@ -802,9 +803,12 @@ export default function ToolConnectionsPage({
                   <h2 id="saved-connections-title" tabIndex={-1} ref={savedHeading}>
                     已保存连接{loaded ? ` · ${connections.length}` : ''}
                   </h2>
-                  <button disabled={listLoading} onClick={() => void refresh().catch(() => {})}>
+                  <Button
+                    disabled={listLoading || undefined}
+                    onClick={() => void refresh().catch(() => {})}
+                  >
                     {listLoading ? '正在读取…' : listError ? '重新读取' : '刷新列表'}
-                  </button>
+                  </Button>
                 </div>
                 {listError && (
                   <div role="alert" className="tool-list-error">
@@ -823,8 +827,10 @@ export default function ToolConnectionsPage({
                   <div className="tool-saved-search">
                     <label className="tool-field">
                       查找连接
-                      <input
-                        ref={connectionSearch}
+                      <Input
+                        ref={(instance) => {
+                          connectionSearch.current = instance?.input ?? null;
+                        }}
                         type="search"
                         value={connectionQuery}
                         placeholder="搜索名称、来源、地址或程序"
@@ -844,7 +850,7 @@ export default function ToolConnectionsPage({
                 {!!connections.length && !matchingConnections.length && (
                   <div className="tool-saved-empty">
                     <p>没有找到匹配的连接。</p>
-                    <button
+                    <Button
                       onClick={() => {
                         setConnectionQuery('');
                         (connections.length > 6
@@ -854,17 +860,18 @@ export default function ToolConnectionsPage({
                       }}
                     >
                       清除搜索
-                    </button>
+                    </Button>
                   </div>
                 )}
                 {!!matchingConnections.length && (
                   <ul ref={savedList} className="tool-saved-list" aria-label="已保存的工具连接">
                     {matchingConnections.map((connection) => (
                       <li key={connection.id}>
-                        <button
+                        <Button
                           className="tool-connection-row"
                           ref={(button) => {
-                            if (button) rowButtons.current.set(connection.id, button);
+                            if (button instanceof HTMLButtonElement)
+                              rowButtons.current.set(connection.id, button);
                             else rowButtons.current.delete(connection.id);
                           }}
                           onClick={() => {
@@ -895,7 +902,7 @@ export default function ToolConnectionsPage({
                             {connection.config.transport.type === 'http' ? '地址：' : '程序：'}
                             {address(connection.config)}
                           </span>
-                        </button>
+                        </Button>
                       </li>
                     ))}
                   </ul>
@@ -905,7 +912,7 @@ export default function ToolConnectionsPage({
               <section className="ai-task-card">
                 <h2>高级设置</h2>
                 <p>自定义 MCP 地址或本地程序，仅在了解来源时配置。</p>
-                <button onClick={() => edit()}>自定义 MCP</button>
+                <Button onClick={() => edit()}>自定义 MCP</Button>
               </section>
             </div>
             <p className="ai-task-note">
@@ -925,42 +932,43 @@ export default function ToolConnectionsPage({
             <section className="ai-task-card">
               <label className="tool-field">
                 显示名称
-                <input
+                <Input
                   {...fieldProps('name')}
                   value={form.name}
                   maxLength={100}
                   placeholder="我的工具服务"
-                  disabled={!!busy}
+                  disabled={!!busy || undefined}
                   onChange={(e) => change({ name: e.target.value })}
                 />
                 {fieldError('name')}
               </label>
               <label className="tool-field">
                 连接方式
-                <select
+                <Select<string>
                   {...fieldProps('type')}
                   value={form.type}
-                  disabled={!!busy}
-                  onChange={(e) => {
-                    change({ type: e.target.value as Form['type'] });
+                  disabled={!!busy || undefined}
+                  onChange={(value) => {
+                    change({ type: value as Form['type'] });
                     setSecret('');
                   }}
-                >
-                  <option value="http">远程 HTTPS / 本机 HTTP</option>
-                  <option value="stdio">本地程序（stdio）</option>
-                </select>
+                  options={[
+                    { value: 'http', label: '远程 HTTPS / 本机 HTTP' },
+                    { value: 'stdio', label: '本地程序（stdio）' },
+                  ]}
+                />
                 {fieldError('type')}
               </label>
               {form.type === 'http' ? (
                 <>
                   <label className="tool-field">
                     服务地址
-                    <input
+                    <Input
                       {...fieldProps('url')}
                       value={form.url}
                       maxLength={2048}
                       placeholder="https://tools.example.com/mcp"
-                      disabled={!!busy}
+                      disabled={!!busy || undefined}
                       onChange={(e) => {
                         change({ url: e.target.value });
                         setSecret('');
@@ -970,25 +978,26 @@ export default function ToolConnectionsPage({
                   </label>
                   <label className="tool-field">
                     认证方式
-                    <select
+                    <Select<string>
                       {...fieldProps('auth')}
                       value={form.auth}
-                      disabled={!!busy}
-                      onChange={(e) => {
-                        change({ auth: e.target.value as Form['auth'] });
+                      disabled={!!busy || undefined}
+                      onChange={(value) => {
+                        change({ auth: value as Form['auth'] });
                         setSecret('');
                       }}
-                    >
-                      <option value="none">无需凭据</option>
-                      <option value="bearer">Bearer Token</option>
-                      <option value="oauth">OAuth · 浏览器登录</option>
-                    </select>
+                      options={[
+                        { value: 'none', label: '无需凭据' },
+                        { value: 'bearer', label: 'Bearer Token' },
+                        { value: 'oauth', label: 'OAuth · 浏览器登录' },
+                      ]}
+                    />
                     {fieldError('auth')}
                   </label>
                   {form.auth === 'bearer' && (
                     <label className="tool-field">
                       Bearer Token
-                      <input
+                      <Input
                         {...fieldProps('secret')}
                         aria-describedby={
                           fieldErrors.secret
@@ -999,7 +1008,7 @@ export default function ToolConnectionsPage({
                         autoComplete="off"
                         value={secret}
                         maxLength={8192}
-                        disabled={!!busy}
+                        disabled={!!busy || undefined}
                         placeholder={
                           reusableBearer ? '留空可复用此连接已保存的凭据' : '填写当前服务的凭据'
                         }
@@ -1027,22 +1036,22 @@ export default function ToolConnectionsPage({
                 <>
                   <label className="tool-field">
                     本地程序绝对路径
-                    <input
+                    <Input
                       {...fieldProps('command')}
                       value={form.command}
                       maxLength={4096}
                       placeholder="/绝对路径/可执行程序"
-                      disabled={!!busy}
+                      disabled={!!busy || undefined}
                       onChange={(e) => change({ command: e.target.value })}
                     />
                     {fieldError('command')}
                   </label>
                   <label className="tool-field">
                     程序参数（JSON 字符串数组）
-                    <textarea
+                    <Input.TextArea
                       {...fieldProps('args')}
                       value={form.args}
-                      disabled={!!busy}
+                      disabled={!!busy || undefined}
                       rows={3}
                       onChange={(e) => change({ args: e.target.value })}
                     />
@@ -1062,15 +1071,16 @@ export default function ToolConnectionsPage({
                 <summary>协议设置 · {form.protocol}</summary>
                 <label className="tool-field">
                   协议版本
-                  <select
+                  <Select<string>
                     {...fieldProps('protocol')}
                     value={form.protocol}
-                    disabled={!!busy}
-                    onChange={(e) => change({ protocol: e.target.value as Form['protocol'] })}
-                  >
-                    <option value="2026-07-28">2026-07-28</option>
-                    <option value="2025-11-25">2025-11-25</option>
-                  </select>
+                    disabled={!!busy || undefined}
+                    onChange={(value) => change({ protocol: value as Form['protocol'] })}
+                    options={[
+                      { value: '2026-07-28', label: '2026-07-28' },
+                      { value: '2025-11-25', label: '2025-11-25' },
+                    ]}
+                  />
                   {fieldError('protocol')}
                 </label>
               </details>
@@ -1096,29 +1106,28 @@ export default function ToolConnectionsPage({
               </p>
               <label className="tool-field">
                 来源说明
-                <input
+                <Input
                   {...fieldProps('source')}
                   value={form.source}
                   maxLength={500}
-                  disabled={!!busy}
+                  disabled={!!busy || undefined}
                   placeholder="填写你核对过的发布者或获取渠道"
                   onChange={(e) => change({ source: e.target.value })}
                 />
                 {fieldError('source')}
               </label>
-              <label className="ai-task-checkbox">
-                <input
-                  type="checkbox"
-                  checked={sourceReviewed}
-                  disabled={!!busy}
-                  onChange={(e) => setSourceReviewed(e.target.checked)}
-                />
+              <Checkbox
+                checked={sourceReviewed}
+                disabled={!!busy || undefined}
+                onChange={(e) => setSourceReviewed(e.target.checked)}
+                className="ai-task-checkbox"
+              >
                 {form.type === 'http' && form.auth === 'oauth'
                   ? reusableOAuth
                     ? '我已核对来源，同意检查认证配置或使用已保存登录读取能力'
                     : '我已核对来源，同意读取此服务及其声明的认证站点配置'
                   : '我已核对来源、地址或程序及其运行方式'}
-              </label>
+              </Checkbox>
               <p className="ai-task-note">
                 {form.type === 'http' && form.auth === 'oauth'
                   ? reusableOAuth
@@ -1256,29 +1265,30 @@ export default function ToolConnectionsPage({
               )}
               {view === 'review' && candidate ? (
                 <>
-                  <label className="ai-task-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={capabilitiesReviewed}
-                      disabled={!!busy}
-                      onChange={(e) => setCapabilitiesReviewed(e.target.checked)}
-                    />
+                  <Checkbox
+                    checked={capabilitiesReviewed}
+                    disabled={!!busy || undefined}
+                    onChange={(e) => setCapabilitiesReviewed(e.target.checked)}
+                    className="ai-task-checkbox"
+                  >
                     我已核对该连接的身份说明和完整工具清单
-                  </label>
+                  </Checkbox>
                   <p role="status">
                     {clock >= candidate.expiresAt
                       ? '检查已过期，请返回设置重新发现。'
                       : `检查结果有效至 ${when(new Date(candidate!.expiresAt).toISOString())}；保存不会执行任何工具。`}
                   </p>
-                  <button
-                    className="primary"
-                    disabled={!!busy || !capabilitiesReviewed || clock >= candidate.expiresAt}
+                  <Button
+                    type="primary"
+                    disabled={
+                      !!busy || !capabilitiesReviewed || clock >= candidate.expiresAt || undefined
+                    }
                     onClick={() => void save()}
                   >
                     {busy === 'save' ? '正在保存…' : '保存这个连接'}
-                  </button>
-                  <button
-                    disabled={!!busy}
+                  </Button>
+                  <Button
+                    disabled={!!busy || undefined}
                     onClick={() =>
                       void cancel()
                         .then(() => move('config'))
@@ -1286,7 +1296,7 @@ export default function ToolConnectionsPage({
                     }
                   >
                     取消，回到设置
-                  </button>
+                  </Button>
                 </>
               ) : (
                 selected && (
@@ -1298,48 +1308,52 @@ export default function ToolConnectionsPage({
                           ? '配置与历史能力已保留，重新连接需要再次检查。'
                           : '能力发现已关闭测试连接；任务使用前仍须核对实时状态。'}
                     </p>
-                    <button
-                      className={selected.status === 'verified' ? 'primary' : undefined}
-                      disabled={!!busy}
+                    <Button
+                      type={selected.status === 'verified' ? 'primary' : 'default'}
+                      disabled={!!busy || undefined}
                       onClick={catalog}
                     >
                       返回应用与工具
-                    </button>
-                    <button disabled={!!busy} onClick={() => edit(selected)}>
+                    </Button>
+                    <Button disabled={!!busy || undefined} onClick={() => edit(selected)}>
                       查看连接设置
-                    </button>
+                    </Button>
                     {selected.status !== 'verified' && (
-                      <button className="primary" disabled={!!busy} onClick={() => edit(selected)}>
+                      <Button
+                        type="primary"
+                        disabled={!!busy || undefined}
+                        onClick={() => edit(selected)}
+                      >
                         重新检查连接
-                      </button>
+                      </Button>
                     )}
                     <details className="tool-connection-maintenance">
                       <summary>连接维护与任务引用</summary>
                       {selected.status === 'verified' && (
-                        <button disabled={!!busy} onClick={() => edit(selected)}>
+                        <Button disabled={!!busy || undefined} onClick={() => edit(selected)}>
                           重新检查连接
-                        </button>
+                        </Button>
                       )}
                       <ToolConnectionUsage
                         connection={selected}
                         busy={!!busy}
                         openTask={(task) => void openReference(task)}
                       />
-                      <button disabled={!!busy} onClick={() => void inspect()}>
+                      <Button disabled={!!busy || undefined} onClick={() => void inspect()}>
                         {busy === 'inspect' ? '正在刷新引用…' : '刷新连接与任务引用'}
-                      </button>
+                      </Button>
                       {busy === 'open-task' && (
                         <p role="status">正在保存原任务草稿并核对目标任务…</p>
                       )}
-                      <button
-                        disabled={!!busy || selected.status === 'disconnected'}
+                      <Button
+                        disabled={!!busy || selected.status === 'disconnected' || undefined}
                         onClick={() => void inspect('disconnect')}
                       >
                         断开连接
-                      </button>
-                      <button disabled={!!busy} onClick={() => void inspect('remove')}>
+                      </Button>
+                      <Button disabled={!!busy || undefined} onClick={() => void inspect('remove')}>
                         删除连接
-                      </button>
+                      </Button>
                     </details>
                   </>
                 )
@@ -1361,11 +1375,11 @@ export default function ToolConnectionsPage({
           <h2 id="tool-leave-title">离开尚未保存的连接？</h2>
           <p>将取消这次检查并丢弃未保存的配置和凭据输入；已保存连接保持不变。</p>
           <div className="ai-task-actions">
-            <button autoFocus onClick={() => setPendingLeave(undefined)}>
+            <Button autoFocus onClick={() => setPendingLeave(undefined)}>
               继续编辑
-            </button>
-            <button
-              disabled={!!busy && busy !== 'discover' && busy !== 'authorize'}
+            </Button>
+            <Button
+              disabled={(!!busy && busy !== 'discover' && busy !== 'authorize') || undefined}
               onClick={() => {
                 const next = pendingLeave.next;
                 void cancel()
@@ -1381,7 +1395,7 @@ export default function ToolConnectionsPage({
               }}
             >
               放弃连接并离开
-            </button>
+            </Button>
           </div>
         </ToolDialog>
       )}
@@ -1403,12 +1417,12 @@ export default function ToolConnectionsPage({
           <ToolConnectionUsage connection={selected} />
           <p>以上为刚读取的引用。本操作不会新增运行或重放任务；已完成的外部操作不会回滚。</p>
           <div className="ai-task-actions">
-            <button autoFocus disabled={!!busy} onClick={() => setConfirm(undefined)}>
+            <Button autoFocus disabled={!!busy || undefined} onClick={() => setConfirm(undefined)}>
               取消
-            </button>
-            <button disabled={!!busy} onClick={() => void manage(confirm)}>
+            </Button>
+            <Button disabled={!!busy || undefined} onClick={() => void manage(confirm)}>
               确认{confirm === 'remove' ? '删除' : '断开'}
-            </button>
+            </Button>
           </div>
         </ToolDialog>
       )}

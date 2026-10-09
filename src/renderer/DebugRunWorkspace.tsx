@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useId, useState, type ReactNode, type RefObject } from 'react';
 import type { Event } from '../shared/types';
 import type { RunPresentation, RunPresentationInput } from '../shared/run-presentation';
@@ -114,20 +115,20 @@ export default function DebugRunWorkspace(props: Props) {
             </p>
           )}
           <div className="debug-run-detail-actions">
-            <button
+            <Button
               aria-expanded={outputsOpen}
               aria-controls={id + '-outputs'}
               onClick={() => setOutputsOpen(!outputsOpen)}
             >
               查看步骤输出
-            </button>
-            <button
+            </Button>
+            <Button
               aria-expanded={detailsOpen}
               aria-controls={id + '-details'}
               onClick={() => setDetailsOpen(!detailsOpen)}
             >
               查看暂停 / 等待 / 收尾
-            </button>
+            </Button>
           </div>
           <section id={id + '-outputs'} hidden={!outputsOpen} aria-label="调试步骤输出">
             <h3>已保存的步骤输出</h3>
@@ -147,7 +148,7 @@ export default function DebugRunWorkspace(props: Props) {
             ) : (
               <p>尚无已保存输出；查看不会执行步骤。</p>
             )}
-            <button onClick={props.output}>查看输出与运行产物</button>
+            <Button onClick={props.output}>查看输出与运行产物</Button>
           </section>
           <section id={id + '-details'} hidden={!detailsOpen} aria-label="调试运行详情">
             <RunObservation detail={props.detail} compact />
@@ -164,8 +165,8 @@ export default function DebugRunWorkspace(props: Props) {
               </dd>
             </dl>
             {run.business && <p>{run.business}</p>}
-            <button onClick={props.logs}>查看运行日志</button>
-            {terminal && <button onClick={props.rerun}>核对后重新运行</button>}
+            <Button onClick={props.logs}>查看运行日志</Button>
+            {terminal && <Button onClick={props.rerun}>核对后重新运行</Button>}
           </section>
           {props.receipts}
         </section>

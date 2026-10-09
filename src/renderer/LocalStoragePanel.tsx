@@ -1,3 +1,4 @@
+import { Button, Input } from 'antd';
 import { useRef, useState } from 'react';
 import type { Bootstrap, FlowRecord } from '../shared/types';
 import './local-storage.css';
@@ -85,8 +86,10 @@ export default function LocalStoragePanel({
           <summary hidden={!compact}>查找本机资源 · {count}</summary>
           <label className="local-settings-search">
             搜索本机资源
-            <input
-              ref={search}
+            <Input
+              ref={(instance) => {
+                search.current = instance?.input ?? null;
+              }}
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -101,13 +104,13 @@ export default function LocalStoragePanel({
           <article className="local-settings-resource" key={flow.id}>
             <div className="local-settings-row">
               <h3>{flow.flow.name}</h3>
-              <button
-                disabled={busy}
+              <Button
+                disabled={busy || undefined}
                 onClick={() => openFlow(flow)}
                 aria-label={`配置 ${flow.flow.name} 的资源`}
               >
                 打开流程配置
-              </button>
+              </Button>
             </div>
             <ul className="local-storage-resources">
               {resources.map((resource) => (
@@ -131,14 +134,14 @@ export default function LocalStoragePanel({
               {needle ? '没有匹配的资源。' : '尚无文件或目录资源。可在流程配置中选择本机位置。'}
             </p>
             {needle && (
-              <button
+              <Button
                 onClick={() => {
                   setQuery('');
                   search.current?.focus();
                 }}
               >
                 清除搜索
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -157,9 +160,13 @@ export default function LocalStoragePanel({
               ? '按运行独立保存。'
               : '按运行独立保存。进入运行详情的“输出 / 产物”，查看文件状态、保存位置或清理预览。'}
           </p>
-          <button className={compact ? undefined : 'primary'} disabled={busy} onClick={openRuns}>
+          <Button
+            type={compact ? 'default' : 'primary'}
+            disabled={busy || undefined}
+            onClick={openRuns}
+          >
             查看运行与产物
-          </button>
+          </Button>
         </div>
         <details
           className="local-storage-location local-storage-data"
@@ -168,9 +175,9 @@ export default function LocalStoragePanel({
           <summary hidden={!compact}>本地数据目录</summary>
           {!compact && <h3>本地数据目录</h3>}
           <p className="local-settings-path">{data.dataPath || '正在初始化安全存储…'}</p>
-          <button disabled={busy || !data.dataPath} onClick={showData}>
+          <Button disabled={busy || !data.dataPath || undefined} onClick={showData}>
             打开数据目录
-          </button>
+          </Button>
         </details>
         <details className="local-storage-help" open={compact ? undefined : true}>
           <summary hidden={!compact}>资源使用说明</summary>

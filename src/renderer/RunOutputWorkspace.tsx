@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { RunOutput } from './RunObservation';
 import ArtifactCleanupPanel from './ArtifactCleanupPanel';
@@ -67,8 +68,8 @@ function ArtifactCard({
             : '外部文件记录，当前文件不代表运行时的历史内容。'}
         </p>
       </details>
-      <button
-        disabled={busy || !artifact.available}
+      <Button
+        disabled={busy || !artifact.available || undefined}
         onClick={async () => {
           if (lock.current || !artifact.available) return;
           lock.current = true;
@@ -87,7 +88,7 @@ function ArtifactCard({
         }}
       >
         {busy ? '正在定位…' : snapshot ? '定位副本' : '定位当前文件'}
-      </button>
+      </Button>
       {!artifact.available && <p>当前文件不可定位；保留本条记录供核对。</p>}
       {notice && artifact.available && <p role="status">{notice}</p>}
       {error && (
@@ -155,9 +156,9 @@ export default function RunOutputWorkspace({
             changed={reload}
             compact
           />
-          <button className="primary" onClick={rerun}>
+          <Button type="primary" onClick={rerun}>
             核对后重新运行
-          </button>
+          </Button>
         </aside>
       </div>
     </div>

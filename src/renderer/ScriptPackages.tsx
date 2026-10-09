@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { Bindings, Step } from '../shared/types';
 import './script-packages.css';
@@ -247,15 +248,18 @@ export default function ScriptPackages(props: Props) {
       </header>
       <p className="note">选择已安装包的目录，使用精确版本。运行时不自动安装依赖。</p>
       {props.node.dependencies.length > 1 && (
-        <button
+        <Button
           disabled={
             !!busy ||
-            !props.node.dependencies.some((dep) => props.bindings.scriptPackages?.[dep.name]?.path)
+            !props.node.dependencies.some(
+              (dep) => props.bindings.scriptPackages?.[dep.name]?.path,
+            ) ||
+            undefined
           }
           onClick={() => void inspect()}
         >
           核对全部已绑定目录
-        </button>
+        </Button>
       )}
       {!props.node.dependencies.length && (
         <p className="script-package-empty">当前步骤未声明第三方依赖。需要时绑定已有包目录。</p>
@@ -304,27 +308,30 @@ export default function ScriptPackages(props: Props) {
               <p className="note">仅核对目录的包名与版本；完整依赖编译与运行前检查仍需通过。</p>
             )}
             <div className="script-package-actions">
-              <button disabled={!!busy} onClick={() => void choose(dep.name)}>
+              <Button disabled={!!busy || undefined} onClick={() => void choose(dep.name)}>
                 {missing ? '选择包目录' : '重新选择目录'}
-              </button>
-              <button disabled={!!busy || missing} onClick={() => void inspect(dep.name)}>
+              </Button>
+              <Button
+                disabled={!!busy || missing || undefined}
+                onClick={() => void inspect(dep.name)}
+              >
                 核对当前目录
-              </button>
-              <button
-                disabled={!!busy}
+              </Button>
+              <Button
+                disabled={!!busy || undefined}
                 data-dependency-remove={dep.name}
                 aria-label={`移除依赖 ${dep.name}`}
                 onClick={() => remove(dep.name)}
               >
                 移除依赖
-              </button>
+              </Button>
             </div>
           </article>
         );
       })}
-      <button ref={addButton} onClick={() => void choose()} disabled={!!busy}>
+      <Button ref={addButton} onClick={() => void choose()} disabled={!!busy || undefined}>
         {busy === 'add' ? '读取包信息…' : '绑定本地包'}
-      </button>
+      </Button>
       {notice && (
         <p className="script-package-feedback" role="status">
           {notice}
@@ -386,10 +393,10 @@ export default function ScriptPackages(props: Props) {
             </p>
           )}
           <footer className="script-package-actions">
-            <button onClick={cancel}>取消</button>
-            <button className="primary" onClick={apply}>
+            <Button onClick={cancel}>取消</Button>
+            <Button type="primary" onClick={apply}>
               应用到草稿
-            </button>
+            </Button>
           </footer>
         </dialog>
       )}

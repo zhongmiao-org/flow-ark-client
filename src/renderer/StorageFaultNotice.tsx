@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { Bootstrap } from '../shared/types';
 import { runStateLabels } from '../shared/run-history';
@@ -103,15 +104,15 @@ export default function StorageFaultNotice({
           <p>以下为最后成功保存的记录；当前执行和外部结果需要核对。重新打开不会自动重放操作。</p>
         </div>
         <div className="storage-fault-actions">
-          <button onClick={() => setExpanded(true)}>核对活动运行</button>
-          <button
+          <Button onClick={() => setExpanded(true)}>核对活动运行</Button>
+          <Button
             ref={toggle}
             aria-expanded={expanded}
             aria-controls={`${id}-details`}
             onClick={() => setExpanded(!expanded)}
           >
             {expanded ? '收起故障说明' : '查看故障说明'}
-          </button>
+          </Button>
         </div>
       </div>
       {expanded && (
@@ -133,9 +134,9 @@ export default function StorageFaultNotice({
                 <div className="storage-fault-run">
                   <strong>活动运行的保存记录暂不可用</strong>
                   <code>{owner.runId}</code>
-                  <button disabled={!!busy} onClick={() => viewRun(owner.runId)}>
+                  <Button disabled={!!busy || undefined} onClick={() => viewRun(owner.runId)}>
                     读取该运行记录
-                  </button>
+                  </Button>
                 </div>
               )}
               {ordered.length ? (
@@ -150,9 +151,9 @@ export default function StorageFaultNotice({
                           {run.id === owner?.runId ? ' · 仍在处理' : ' · 当前执行未确认'}
                         </span>
                       </div>
-                      <button disabled={!!busy} onClick={() => viewRun(run.id)}>
+                      <Button disabled={!!busy || undefined} onClick={() => viewRun(run.id)}>
                         {busy === run.id ? '读取中…' : '查看此运行'}
-                      </button>
+                      </Button>
                     </li>
                   ))}
                 </ul>
@@ -164,9 +165,9 @@ export default function StorageFaultNotice({
                 最后保存的排队数量：{data.runOverview.queued}。此处的近期记录最多 200
                 条，不代表完整历史。
               </p>
-              <button disabled={!!busy} onClick={openHistory}>
+              <Button disabled={!!busy || undefined} onClick={openHistory}>
                 查看完整运行记录
-              </button>
+              </Button>
             </section>
             <section aria-labelledby={`${id}-reason`}>
               <h3 id={`${id}-reason`}>故障说明</h3>
@@ -182,8 +183,8 @@ export default function StorageFaultNotice({
                   FlowArk，再检查历史。刷新记录不会修复存储或恢复执行。
                 </li>
               </ol>
-              <button
-                disabled={!!busy}
+              <Button
+                disabled={!!busy || undefined}
                 onClick={() =>
                   void operate('refresh', async () => {
                     await refresh();
@@ -193,7 +194,7 @@ export default function StorageFaultNotice({
                 }
               >
                 {busy === 'refresh' ? '正在重新读取…' : '只读刷新记录'}
-              </button>
+              </Button>
               <p className="storage-fault-muted">不会清理数据、重跑任务或更改原有授权。</p>
             </section>
           </div>
@@ -207,14 +208,14 @@ export default function StorageFaultNotice({
               {notice}
             </p>
           )}
-          <button
+          <Button
             onClick={() => {
               setExpanded(false);
               toggle.current?.focus();
             }}
           >
             收起，继续查看当前页面
-          </button>
+          </Button>
         </div>
       )}
     </section>

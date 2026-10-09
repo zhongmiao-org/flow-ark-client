@@ -99,10 +99,10 @@
 .task-proposal-capability-details > .task-proposal-permissions {
   margin-top: 12px;
 }
-.is-condition-review > .ai-task-actions > .primary {
+.is-condition-review > .ai-task-actions > .ant-btn-primary {
   min-width: 168px;
 }
-.is-condition-review > .ai-task-actions > button:not(.primary) {
+.is-condition-review > .ai-task-actions > button:not(.ant-btn-primary) {
   min-width: 144px;
 }
 

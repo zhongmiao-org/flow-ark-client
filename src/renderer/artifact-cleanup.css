@@ -112,7 +112,8 @@
   gap: 10px;
   margin: 24px 0;
 }
-.artifact-cleanup-confirm input {
+.artifact-cleanup-confirm
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   width: 16px;
   height: 16px;
   margin: 3px 0 0;

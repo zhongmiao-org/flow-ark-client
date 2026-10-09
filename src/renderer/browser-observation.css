@@ -112,7 +112,9 @@
   border: 0;
   background: transparent;
 }
-.browser-observation-expanded .browser-address input {
+.browser-observation-expanded
+  .browser-address
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   height: 40px;
   background: var(--fa-bg-surface);
 }
@@ -215,14 +217,17 @@
   grid-template-columns: minmax(0, 1fr) 32px 32px;
   gap: 6px;
 }
-.browser-editor-panel .browser-address > label {
+.browser-editor-panel .browser-address > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   grid-column: 1 / -1;
   margin: 0;
   font-size: 12px;
   line-height: 18px;
   color: var(--fa-text-secondary);
 }
-.editor-region .browser-editor-panel:not(.browser-observation-expanded) .browser-address input {
+.editor-region
+  .browser-editor-panel:not(.browser-observation-expanded)
+  .browser-address
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   height: 32px;
   padding: 6px;
   border: 0;

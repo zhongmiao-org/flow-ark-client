@@ -18,7 +18,9 @@
   font-size: 13px;
   line-height: 22px;
 }
-.logic-configuration-workspace .node-advanced label {
+.logic-configuration-workspace
+  .node-advanced
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   display: block;
   margin-top: 12px;
 }

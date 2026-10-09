@@ -1,3 +1,4 @@
+import { Select, Button, Input } from 'antd';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import ArchiveFileList from './ArchiveFileList';
 import type { Bindings, Json, Step } from '../shared/types';
@@ -70,7 +71,7 @@ export default function ResourceNodeConfiguration({
       {text && typeof value === 'string' ? (
         <>
           <label htmlFor={prefix + 'resource-' + key}>{label}</label>
-          <input
+          <Input
             id={prefix + 'resource-' + key}
             value={value}
             onChange={(e) => change({ ...node, [key]: e.target.value } as Step)}
@@ -90,17 +91,16 @@ export default function ResourceNodeConfiguration({
         </header>
         <p>配置方法、地址、请求头和请求体；运行时才会发出请求。</p>
         <label htmlFor={prefix + 'http-method'}>请求方法</label>
-        <select
+        <Select<string>
           id={prefix + 'http-method'}
           value={node.method}
-          onChange={(e) => {
-            if (guard()) change({ ...node, method: e.target.value } as Step);
+          onChange={(value) => {
+            if (guard()) change({ ...node, method: value } as Step);
           }}
-        >
-          {['GET', 'POST', 'PUT', 'DELETE'].map((method) => (
-            <option key={method}>{method}</option>
-          ))}
-        </select>
+          options={[
+            ...['GET', 'POST', 'PUT', 'DELETE'].map((method) => ({ value: method, label: method })),
+          ]}
+        />
         {field('url', '请求地址', node.url, '', true)}
         <ResourceDetails compact={compact} title="请求头">
           <MappingValues
@@ -134,33 +134,35 @@ export default function ResourceNodeConfiguration({
         <h4>{isExcel ? '工作簿与数据' : '文件与目录'}</h4>
       </header>
       <label htmlFor={prefix + 'file-operation'}>操作</label>
-      <select
+      <Select<string>
         id={prefix + 'file-operation'}
         value={node.operation}
-        onChange={(e) => {
-          if (guard()) change(resourceOperation(node, e.target.value));
+        onChange={(value) => {
+          if (guard()) change(resourceOperation(node, value));
         }}
-      >
-        <option value="read">读取</option>
-        <option value="write">写入（可能覆盖）</option>
-        {isExcel ? (
-          <>
-            <option value="map">字段映射 · 新建工作簿</option>
-            <option value="fill">填充工作簿模板</option>
-          </>
-        ) : (
-          <>
-            <option value="create">新建文本文件（不覆盖）</option>
-            <option value="copy">复制文件</option>
-            <option value="archive">归档为 ZIP</option>
-          </>
-        )}
-      </select>
+        options={[
+          { value: 'read', label: '读取' },
+          { value: 'write', label: '写入（可能覆盖）' },
+          ...(isExcel
+            ? [
+                { value: 'map', label: '字段映射 · 新建工作簿' },
+                { value: 'fill', label: '填充工作簿模板' },
+              ]
+            : [
+                { value: 'create', label: '新建文本文件（不覆盖）' },
+                { value: 'copy', label: '复制文件' },
+                { value: 'archive', label: '归档为 ZIP' },
+              ]),
+        ]}
+      />
       <p className="note">切换操作使用默认配置，可撤销恢复。</p>
       <div className="resource-binding-field" data-value-invalid={bindingError || undefined}>
         <label htmlFor={prefix + 'resource-binding'}>文件目录绑定</label>
-        <input
-          ref={bindingInput}
+        <Input
+          status={!!bindingError ? 'error' : undefined}
+          ref={(instance) => {
+            bindingInput.current = instance?.input ?? null;
+          }}
           id={prefix + 'resource-binding'}
           list={prefix + 'resource-binding-names'}
           value={bindingDraft}
@@ -184,8 +186,8 @@ export default function ResourceNodeConfiguration({
             <p id={prefix + 'resource-binding-error'} className="field-error" role="alert">
               {bindingError}
             </p>
-            <button
-              type="button"
+            <Button
+              htmlType="button"
               onClick={() => {
                 setBindingDraft(appliedBinding);
                 setBindingError('');
@@ -193,7 +195,7 @@ export default function ResourceNodeConfiguration({
               }}
             >
               恢复已应用绑定
-            </button>
+            </Button>
           </>
         )}
       </div>
@@ -203,14 +205,14 @@ export default function ResourceNodeConfiguration({
         ))}
       </datalist>
       <p className="path-text">{bindings.files[node.binding] || '尚未选择本机目录'}</p>
-      <button
-        type="button"
-        disabled={!validBinding}
+      <Button
+        htmlType="button"
+        disabled={!validBinding || undefined}
         aria-label="选择节点文件目录"
         onClick={() => choose(node.binding)}
       >
         选择此目录
-      </button>
+      </Button>
       {field(
         'name',
         node.operation === 'read'
@@ -231,14 +233,15 @@ export default function ResourceNodeConfiguration({
       {node.type === 'file' && node.operation === 'create' && (
         <>
           <label htmlFor={prefix + 'file-conflict'}>已有同名文件时</label>
-          <select
+          <Select<string>
             id={prefix + 'file-conflict'}
             value={node.version === 4 ? 'number' : 'error'}
-            onChange={(e) => change(fileConflictPolicy(node, e.target.value))}
-          >
-            <option value="error">停止并提示，保留原文件</option>
-            <option value="number">新建带序号的文件，保留原文件</option>
-          </select>
+            onChange={(value) => change(fileConflictPolicy(node, value))}
+            options={[
+              { value: 'error', label: '停止并提示，保留原文件' },
+              { value: 'number', label: '新建带序号的文件，保留原文件' },
+            ]}
+          />
           <p className="note">
             仅接受文本，UTF-8 内容最多 10 MiB；
             {node.version === 4
@@ -278,7 +281,7 @@ export default function ResourceNodeConfiguration({
         <>
           {field('templateName', '模板文件名', node.templateName, '', true)}
           <label htmlFor={prefix + 'excel-sheet'}>工作表名称</label>
-          <input
+          <Input
             id={prefix + 'excel-sheet'}
             value={node.sheet}
             placeholder="留空使用首个工作表"

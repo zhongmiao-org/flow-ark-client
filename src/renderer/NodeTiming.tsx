@@ -1,3 +1,4 @@
+import { Checkbox, Input } from 'antd';
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import type { Step } from '../shared/types';
 import './node-configuration.css';
@@ -45,28 +46,28 @@ export default function NodeTiming({
           <span>{enabled ? '自定义' : '默认规则'}</span>
         </header>
       )}
-      <label className="node-timing-toggle" htmlFor={id + '-enabled'}>
-        <input
-          id={id + '-enabled'}
-          type="checkbox"
-          checked={enabled}
-          onChange={(event) => {
-            setError('');
-            if (event.target.checked) {
-              setText('60000');
-              change({ ...node, timeoutMs: 60000 });
-            } else {
-              const { timeoutMs: _timeout, ...next } = node;
-              change(next as Step);
-            }
-          }}
-        />
+      <Checkbox
+        id={id + '-enabled'}
+        checked={enabled}
+        onChange={(event) => {
+          setError('');
+          if (event.target.checked) {
+            setText('60000');
+            change({ ...node, timeoutMs: 60000 });
+          } else {
+            const { timeoutMs: _timeout, ...next } = node;
+            change(next as Step);
+          }
+        }}
+        className="node-timing-toggle"
+      >
         <span>为此节点设置期限</span>
-      </label>
+      </Checkbox>
       {enabled ? (
         <>
           <label htmlFor={id}>期限（毫秒）</label>
-          <input
+          <Input
+            status={!!error ? 'error' : undefined}
             id={id}
             type="text"
             inputMode="numeric"

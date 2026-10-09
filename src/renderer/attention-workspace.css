@@ -52,7 +52,7 @@
   font-size: 12px;
   color: var(--fa-text-secondary);
 }
-.attention-search input {
+.attention-search input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   width: 240px;
 }
 .attention-list {
@@ -250,7 +250,7 @@
   padding: 0 6px;
   font-size: 13px;
 }
-.attention-fields label {
+.attention-fields label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   display: grid;
   gap: 8px;
 }
@@ -265,7 +265,8 @@
   cursor: pointer;
   line-height: 24px;
 }
-.attention-review-check input {
+.attention-review-check
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   width: 16px;
   height: 16px;
   margin: 4px 0;
@@ -319,7 +320,8 @@
     flex: 1;
     min-width: 160px;
   }
-  .attention-search input {
+  .attention-search
+    input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
     width: 100%;
   }
 }
@@ -354,10 +356,10 @@
 .attention-card.is-compact .attention-actions button {
   min-width: 120px;
 }
-.attention-card.is-expanded > .attention-actions > .primary {
+.attention-card.is-expanded > .attention-actions > .ant-btn-primary {
   min-width: 180px;
 }
-.attention-card.is-expanded > .attention-actions > button:not(.primary) {
+.attention-card.is-expanded > .attention-actions > button:not(.ant-btn-primary) {
   min-width: 152px;
 }
 .attention-card.is-expanded {
@@ -375,13 +377,15 @@
   padding: 5px 12px;
 }
 
-.attention-toolbar label,
-.attention-toolbar input,
-.attention-toolbar select {
+.attention-toolbar .ant-select {
   margin: 0;
 }
-.attention-toolbar input,
-.attention-toolbar select {
+
+.attention-toolbar label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper),
+.attention-toolbar input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
+  margin: 0;
+}
+.attention-toolbar input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   height: 40px;
 }
 .attention-tabs {
@@ -442,8 +446,14 @@
   padding: 0;
   margin-bottom: 12px;
 }
-.attention-request-card .attention-fields input:not([type='checkbox']),
-.attention-request-card .attention-fields select {
+.attention-request-card .attention-fields .ant-select {
+  margin: 0;
+}
+.attention-request-card
+  .attention-fields
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):not(
+    [type='checkbox']
+  ) {
   min-height: 40px;
   margin: 0;
 }
@@ -496,8 +506,11 @@
 .attention-request-card .attention-fields > .template-field {
   margin: 0;
 }
-.attention-request-card .attention-fields input:not([type='checkbox']),
-.attention-request-card .attention-fields select {
+.attention-request-card
+  .attention-fields
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):not(
+    [type='checkbox']
+  ) {
   padding: 8px 12px;
   font-size: 14px;
   line-height: 22px;

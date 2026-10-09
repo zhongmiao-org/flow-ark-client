@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import type { Json } from '../shared/types';
 
 export default function TemplateParameters({
@@ -25,9 +26,9 @@ export default function TemplateParameters({
       ) : (
         <p className="note">当前没有参数。</p>
       )}
-      <button type="button" onClick={edit}>
+      <Button htmlType="button" onClick={edit}>
         编辑实例配置
-      </button>
+      </Button>
     </section>
   );
 }

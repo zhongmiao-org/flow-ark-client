@@ -68,12 +68,16 @@
   font-size: 18px;
   line-height: 28px;
 }
-.script-editor-settings label {
+.script-editor-settings label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   margin: 0;
 }
-.script-editor-settings input,
-.script-editor-settings select,
-.script-preview select {
+.script-editor-settings .ant-select,
+.script-preview .ant-select {
+  width: 100%;
+  min-width: 0;
+}
+.script-editor-settings
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   width: 100%;
   min-width: 0;
 }
@@ -135,7 +139,7 @@
   background: var(--fa-action-subtle);
   color: var(--fa-action-primary);
 }
-.script-editor-settings > .primary {
+.script-editor-settings > .ant-btn-primary {
   margin-top: 0;
 }
 .script-syntax {

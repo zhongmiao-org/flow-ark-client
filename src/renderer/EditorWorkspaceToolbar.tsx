@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useContext } from 'react';
 import { VariableNavigationContext } from './variable-navigation';
 import './editor-workspace-toolbar.css';
@@ -19,25 +20,29 @@ export default function EditorWorkspaceToolbar({
   const openBrowser = showBrowser ?? navigation?.showBrowser;
   return (
     <div className="editor-workspace-toolbar">
-      <button type="button" disabled={disabled} onClick={back}>
+      <Button htmlType="button" disabled={disabled || undefined} onClick={back}>
         ← {backLabel}
-      </button>
+      </Button>
       <nav aria-label="当前位置">
         {navigation && (
           <>
-            <button type="button" disabled={disabled} onClick={navigation.openLibrary}>
+            <Button
+              htmlType="button"
+              disabled={disabled || undefined}
+              onClick={navigation.openLibrary}
+            >
               我的流程
-            </button>
+            </Button>
             <span aria-hidden="true">/</span>
-            <button
-              type="button"
+            <Button
+              htmlType="button"
               className="editor-workspace-flow"
-              disabled={disabled}
+              disabled={disabled || undefined}
               title={navigation.flowName}
               onClick={navigation.openFlow}
             >
               {navigation.flowName}
-            </button>
+            </Button>
             <span aria-hidden="true">/</span>
           </>
         )}
@@ -46,14 +51,14 @@ export default function EditorWorkspaceToolbar({
         </span>
       </nav>
       {openBrowser && (
-        <button
-          type="button"
+        <Button
+          htmlType="button"
           className="editor-workspace-browser"
-          disabled={disabled}
+          disabled={disabled || undefined}
           onClick={openBrowser}
         >
           显示网页
-        </button>
+        </Button>
       )}
     </div>
   );

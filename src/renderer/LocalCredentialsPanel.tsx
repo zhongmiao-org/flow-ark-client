@@ -1,3 +1,4 @@
+import { ConfigProvider, Button, Checkbox, Input } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { Bootstrap, FlowRecord } from '../shared/types';
 import type { LocalCredentialState } from '../shared/local-credentials';
@@ -154,23 +155,23 @@ function CredentialDialog({
         )}
         {leaving ? (
           <div className="local-credential-actions">
-            <button
-              type="button"
+            <Button
+              htmlType="button"
               ref={stayButton}
-              disabled={busy}
+              disabled={busy || undefined}
               onClick={() => {
                 setLeaving(false);
                 requestAnimationFrame(() => nameInput.current?.focus());
               }}
             >
               继续编辑
-            </button>
-            <button type="button" disabled={busy} onClick={exit}>
+            </Button>
+            <Button htmlType="button" disabled={busy || undefined} onClick={exit}>
               不保存离开
-            </button>
-            <button className="primary" disabled={busy || blocked}>
+            </Button>
+            <Button htmlType="submit" type="primary" disabled={busy || blocked || undefined}>
               {busy ? '正在保存…' : '保存并离开'}
-            </button>
+            </Button>
           </div>
         ) : (
           <>
@@ -191,54 +192,59 @@ function CredentialDialog({
                   <p>没有已保存流程引用此凭据。</p>
                 )}
                 {editor.entry?.inUse && <p role="status">活动或排队运行正在使用，当前不可移除。</p>}
-                <label className="local-credential-confirm">
-                  <input
-                    type="checkbox"
-                    checked={confirmed}
-                    disabled={busy || blocked}
-                    onChange={(event) => setConfirmed(event.target.checked)}
-                  />
+                <Checkbox
+                  checked={confirmed}
+                  disabled={busy || blocked || undefined}
+                  onChange={(event) => setConfirmed(event.target.checked)}
+                  className="local-credential-confirm"
+                >
                   已核对影响，确认移除本机保存的值
-                </label>
+                </Checkbox>
               </section>
             ) : (
-              <fieldset disabled={busy || blocked}>
-                <label htmlFor={`${id}-name`}>凭据名称</label>
-                <input
-                  ref={nameInput}
-                  id={`${id}-name`}
-                  value={name}
-                  maxLength={100}
-                  autoComplete="off"
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="例如：资料接口"
-                />
-                <label htmlFor={`${id}-value`}>{editor.entry ? '替换凭据值' : '凭据值'}</label>
-                {editor.entry && <p className="local-credential-mask">已保存 · ••••••••</p>}
-                <input
-                  id={`${id}-value`}
-                  type="password"
-                  value={value}
-                  maxLength={8192}
-                  autoComplete="new-password"
-                  spellCheck={false}
-                  onChange={(event) => setValue(event.target.value)}
-                  placeholder={editor.entry ? '留空保留已保存值' : '填写要保护的值'}
-                />
-                <p>系统保护不可用时会拒绝保存，不会改为明文存储。</p>
-              </fieldset>
+              <ConfigProvider componentDisabled={busy || blocked || undefined}>
+                <fieldset disabled={busy || blocked}>
+                  <label htmlFor={`${id}-name`}>凭据名称</label>
+                  <Input
+                    ref={(instance) => {
+                      nameInput.current = instance?.input ?? null;
+                    }}
+                    id={`${id}-name`}
+                    value={name}
+                    maxLength={100}
+                    autoComplete="off"
+                    onChange={(event) => setName(event.target.value)}
+                    placeholder="例如：资料接口"
+                  />
+                  <label htmlFor={`${id}-value`}>{editor.entry ? '替换凭据值' : '凭据值'}</label>
+                  {editor.entry && <p className="local-credential-mask">已保存 · ••••••••</p>}
+                  <Input
+                    id={`${id}-value`}
+                    type="password"
+                    value={value}
+                    maxLength={8192}
+                    autoComplete="new-password"
+                    spellCheck={false}
+                    onChange={(event) => setValue(event.target.value)}
+                    placeholder={editor.entry ? '留空保留已保存值' : '填写要保护的值'}
+                  />
+                  <p>系统保护不可用时会拒绝保存，不会改为明文存储。</p>
+                </fieldset>
+              </ConfigProvider>
             )}
             {blocked && !removing && <p role="status">凭据正在被运行使用，请等待结束后再编辑。</p>}
             <footer className="local-credential-actions">
-              <button type="button" disabled={busy} onClick={cancel}>
+              <Button htmlType="button" disabled={busy || undefined} onClick={cancel}>
                 {error ? '返回凭据设置' : '取消'}
-              </button>
-              <button
-                className={removing ? 'danger' : 'primary'}
-                disabled={busy || blocked || (removing ? !confirmed : !dirty)}
+              </Button>
+              <Button
+                danger={removing ? true : false}
+                htmlType="submit"
+                type={removing ? 'default' : 'primary'}
+                disabled={busy || blocked || (removing ? !confirmed : !dirty) || undefined}
               >
                 {busy ? '正在处理…' : removing ? '确认移除' : '保存凭据'}
-              </button>
+              </Button>
             </footer>
           </>
         )}
@@ -364,22 +370,24 @@ export default function LocalCredentialsPanel({
       >
         <div className="local-settings-row">
           <h2>{compact ? '凭据' : '通用本机凭据'}</h2>
-          <button
+          <Button
             ref={createButton}
-            className="primary"
-            disabled={loading || !!listError}
+            type="primary"
+            disabled={loading || !!listError || undefined}
             onClick={() => begin({ kind: 'edit', id: 'local-' + crypto.randomUUID() })}
           >
             新增凭据
-          </button>
+          </Button>
         </div>
         <p>名称便于识别，保存值只供明确绑定的流程读取。</p>
         <details className="local-resource-search-controls" open={compact ? undefined : true}>
           <summary hidden={!compact}>查找与刷新凭据{entries ? ` · ${entries.length}` : ''}</summary>
           <label className="local-settings-search">
             搜索凭据
-            <input
-              ref={search}
+            <Input
+              ref={(instance) => {
+                search.current = instance?.input ?? null;
+              }}
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -390,9 +398,9 @@ export default function LocalCredentialsPanel({
             <span>
               {entries ? `${shown?.length} / ${entries.length} 个凭据` : '尚未读取凭据清单'}
             </span>
-            <button disabled={loading} onClick={() => void read()}>
+            <Button disabled={loading || undefined} onClick={() => void read()}>
               {loading ? '正在读取…' : '刷新列表'}
-            </button>
+            </Button>
           </div>
         </details>
         {loading && <p role="status">正在读取凭据清单…</p>}
@@ -406,9 +414,9 @@ export default function LocalCredentialsPanel({
                 ? '下方保留上次读取的列表，请重新读取后再新增、编辑或移除。'
                 : '尚未取得凭据清单，不能据此判断是否已保存凭据。'}
             </p>
-            <button disabled={loading} onClick={() => void read()}>
+            <Button disabled={loading || undefined} onClick={() => void read()}>
               重新读取凭据
-            </button>
+            </Button>
           </div>
         )}
         {error && (
@@ -427,7 +435,7 @@ export default function LocalCredentialsPanel({
               <>
                 <label className="local-resource-field-label">
                   名称
-                  <input readOnly value={entry.name} />
+                  <Input readOnly value={entry.name} />
                 </label>
                 <div className="local-resource-field-label">
                   值 · {entry.inUse ? '运行正在使用' : '已保存'}
@@ -442,18 +450,18 @@ export default function LocalCredentialsPanel({
             <p className="local-credential-mask">••••••••</p>
             {!compact && <code>{entry.id}</code>}
             <div className="local-credential-actions">
-              <button
-                disabled={loading || !!listError}
+              <Button
+                disabled={loading || !!listError || undefined}
                 onClick={() => begin({ kind: 'edit', id: entry.id, entry })}
               >
                 编辑凭据
-              </button>
-              <button
-                disabled={loading || !!listError}
+              </Button>
+              <Button
+                disabled={loading || !!listError || undefined}
                 onClick={() => begin({ kind: 'remove', id: entry.id, entry })}
               >
                 移除凭据
-              </button>
+              </Button>
             </div>
             <details>
               <summary>引用流程 · {entry.boundFlows.length}</summary>
@@ -462,9 +470,9 @@ export default function LocalCredentialsPanel({
                 <ul>
                   {entry.boundFlows.map((flow) => (
                     <li key={flow.id}>
-                      <button disabled={!!opening} onClick={() => void open(flow.id)}>
+                      <Button disabled={!!opening || undefined} onClick={() => void open(flow.id)}>
                         {flow.name} · 打开绑定
-                      </button>
+                      </Button>
                     </li>
                   ))}
                 </ul>
@@ -479,14 +487,14 @@ export default function LocalCredentialsPanel({
             {query ? (
               <>
                 <p>没有匹配的凭据。</p>
-                <button
+                <Button
                   onClick={() => {
                     setQuery('');
                     search.current?.focus();
                   }}
                 >
                   清除搜索
-                </button>
+                </Button>
               </>
             ) : (
               '尚无通用凭据。点击“新增凭据”保存本机资源。'
@@ -511,8 +519,8 @@ export default function LocalCredentialsPanel({
         <h3>AI 与工具认证</h3>
         <p>供应商密钥和工具认证在各自的设置中管理。</p>
         <div className="local-credential-actions">
-          <button onClick={openAI}>管理 AI 密钥</button>
-          <button onClick={openTools}>管理工具认证</button>
+          <Button onClick={openAI}>管理 AI 密钥</Button>
+          <Button onClick={openTools}>管理工具认证</Button>
         </div>
       </details>
       {editor && (

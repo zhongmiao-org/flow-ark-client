@@ -1,3 +1,4 @@
+import { Button, Checkbox } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ArtifactCleanupPreview, ArtifactCleanupRecord } from '../shared/artifact-cleanup';
 import type { Run } from '../shared/types';
@@ -195,9 +196,9 @@ function CleanupDialog({
         <div className="artifact-cleanup-message warning" role="alert">
           <p>运行详情暂未刷新：{refreshError}</p>
           <p>刷新只读取记录，不再次清理。</p>
-          <button disabled={refreshing} onClick={() => void refresh()}>
+          <Button disabled={refreshing || undefined} onClick={() => void refresh()}>
             {refreshing ? '正在刷新…' : '刷新运行详情'}
-          </button>
+          </Button>
         </div>
       )}
       {preview && (stage === 'review' || busy) && (
@@ -242,31 +243,30 @@ function CleanupDialog({
             </p>
           )}
           {!empty && (
-            <label className="artifact-cleanup-confirm">
-              <input
-                type="checkbox"
-                checked={reviewed}
-                disabled={busy}
-                onChange={(event) => setReviewed(event.target.checked)}
-              />
+            <Checkbox
+              checked={reviewed}
+              disabled={busy || undefined}
+              onChange={(event) => setReviewed(event.target.checked)}
+              className="artifact-cleanup-confirm"
+            >
               已核对范围，并保存需要保留的文件
-            </label>
+            </Checkbox>
           )}
         </>
       )}
       <footer className="artifact-cleanup-actions">
-        <button disabled={busy} onClick={dismiss}>
+        <Button disabled={busy || undefined} onClick={dismiss}>
           {stage === 'result' ? '返回产物列表' : '取消清理'}
-        </button>
+        </Button>
         {stage === 'error' && (
-          <button disabled={refreshing} onClick={() => void load()}>
+          <Button disabled={refreshing || undefined} onClick={() => void load()}>
             重新预览清理
-          </button>
+          </Button>
         )}
         {preview && !empty && (
-          <button className="danger" disabled={busy || !reviewed} onClick={() => void clear()}>
+          <Button danger disabled={busy || !reviewed || undefined} onClick={() => void clear()}>
             {busy ? '正在清理…' : '确认清理产物'}
-          </button>
+          </Button>
         )}
       </footer>
     </dialog>
@@ -296,9 +296,12 @@ export default function ArtifactCleanupPanel({
           <h3>产物保留与清理</h3>
           <p>默认保留。仅清理本次运行在应用内保存的副本。</p>
         </div>
-        <button disabled={!terminal || cleanup?.state === 'pending'} onClick={() => setOpen(true)}>
+        <Button
+          disabled={!terminal || cleanup?.state === 'pending' || undefined}
+          onClick={() => setOpen(true)}
+        >
           预览产物清理
-        </button>
+        </Button>
       </div>
       {!terminal && <p>运行尚未结束，暂不能清理产物。</p>}
       {cleanup?.state === 'completed' && (

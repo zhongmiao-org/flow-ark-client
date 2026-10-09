@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Clock, ListChecks, Terminal } from 'lucide-react';
 import { formatRunDuration, presentRun } from '../shared/run-presentation';
@@ -143,16 +144,16 @@ export function RunOutput({
           )}
         </h3>
         {layout !== 'result' && output.truncated && (
-          <button
+          <Button
             onClick={(event) => {
-              toggleOrigin.current = event.currentTarget;
+              toggleOrigin.current = event.currentTarget as HTMLButtonElement;
               setExpanded(!expanded);
             }}
             aria-expanded={expanded}
             aria-controls={outputId}
           >
             {expanded ? '收起输出' : '展开完整输出'}
-          </button>
+          </Button>
         )}
       </div>
       {output.available ? (
@@ -191,17 +192,17 @@ export function RunOutput({
             运行结束、外部业务结果与文件可用性分别核对；查看结果不会重新执行步骤。
           </p>
           {output.available && (
-            <button
+            <Button
               className="run-result-output-toggle"
               aria-expanded={expanded}
               aria-controls={outputId}
               onClick={(event) => {
-                toggleOrigin.current = event.currentTarget;
+                toggleOrigin.current = event.currentTarget as HTMLButtonElement;
                 setExpanded(!expanded);
               }}
             >
               {expanded ? '收起完整脱敏输出' : '展开完整脱敏输出'}
-            </button>
+            </Button>
           )}
         </>
       )}

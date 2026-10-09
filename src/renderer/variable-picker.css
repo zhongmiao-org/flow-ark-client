@@ -79,14 +79,15 @@ body:has(.variable-picker-dialog[open])
 .variable-picker-detail {
   padding: 28px;
 }
-.variable-picker-dialog label,
+.variable-picker-dialog label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper),
 .variable-picker-dialog dt {
   color: var(--fa-text-secondary);
   font-size: 12px;
   line-height: 18px;
   margin: 0;
 }
-.variable-picker-dialog input {
+.variable-picker-dialog
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   width: 100%;
   min-width: 0;
   margin: 0;
@@ -97,7 +98,10 @@ body:has(.variable-picker-dialog[open])
   font-size: 13px;
   line-height: 20px;
 }
-.variable-picker-dialog input[aria-invalid='true'] {
+.variable-picker-dialog
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not(
+    [class*='ant-select']
+  )[aria-invalid='true'] {
   border-color: var(--fa-status-error);
 }
 .variable-picker-search,
@@ -181,7 +185,7 @@ body:has(.variable-picker-dialog[open])
 .variable-picker-advanced summary {
   cursor: pointer;
 }
-.variable-picker-advanced label {
+.variable-picker-advanced label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   display: block;
   margin: 16px 0 4px;
 }

@@ -1,3 +1,4 @@
+import { ConfigProvider, Select, Button, Checkbox, Input } from 'antd';
 import {
   useEffect,
   useId,
@@ -142,92 +143,96 @@ function AnswerForm({
       }}
     >
       {!simpleBoolean && (
-        <fieldset
-          disabled={!enabled}
-          className="attention-fields"
-          onChangeCapture={resetReview}
-          onClickCapture={(event) => {
-            if ((event.target as HTMLElement).closest('button')) resetReview();
-          }}
-        >
-          <legend className="sr-only">补充本次请求需要的信息</legend>
-          {supported && (Object.hasOwn(schema, 'const') || schema.readOnly) && (
-            <pre>{JSON.stringify(value, null, 2)}</pre>
-          )}
-          {supported ? (
-            <Field
-              schema={schema}
-              value={value}
-              draft={fields.current}
-              change={(next: Json) => {
-                resetReview();
-                setValue(next);
-              }}
-              label="处理结果"
-            />
-          ) : (
-            <>
-              <label>
-                此请求使用复杂数据格式
-                <textarea
-                  ref={jsonInput}
-                  value={text}
-                  onChange={(event) => setText(event.target.value)}
-                  aria-label="处理结果 JSON"
-                  aria-invalid={!!error || undefined}
-                  aria-describedby={error ? errorId : undefined}
-                  placeholder="填写请求要求的 JSON"
-                  rows={7}
-                />
-              </label>
-              <details>
-                <summary>查看所需格式</summary>
-                <pre>{JSON.stringify(schema, null, 2)}</pre>
-              </details>
-            </>
-          )}
-        </fieldset>
+        <ConfigProvider componentDisabled={!enabled || undefined}>
+          <fieldset
+            disabled={!enabled}
+            className="attention-fields"
+            onChangeCapture={resetReview}
+            onClickCapture={(event) => {
+              if ((event.target as HTMLElement).closest('button')) resetReview();
+            }}
+          >
+            <legend className="sr-only">补充本次请求需要的信息</legend>
+            {supported && (Object.hasOwn(schema, 'const') || schema.readOnly) && (
+              <pre>{JSON.stringify(value, null, 2)}</pre>
+            )}
+            {supported ? (
+              <Field
+                schema={schema}
+                value={value}
+                draft={fields.current}
+                change={(next: Json) => {
+                  resetReview();
+                  setValue(next);
+                }}
+                label="处理结果"
+              />
+            ) : (
+              <>
+                <label>
+                  此请求使用复杂数据格式
+                  <Input.TextArea
+                    status={!!error || undefined ? 'error' : undefined}
+                    ref={(instance) => {
+                      jsonInput.current = instance?.resizableTextArea?.textArea ?? null;
+                    }}
+                    value={text}
+                    onChange={(event) => setText(event.target.value)}
+                    aria-label="处理结果 JSON"
+                    aria-invalid={!!error || undefined}
+                    aria-describedby={error ? errorId : undefined}
+                    placeholder="填写请求要求的 JSON"
+                    rows={7}
+                  />
+                </label>
+                <details>
+                  <summary>查看所需格式</summary>
+                  <pre>{JSON.stringify(schema, null, 2)}</pre>
+                </details>
+              </>
+            )}
+          </fieldset>
+        </ConfigProvider>
       )}
-      <label className="attention-review-check">
-        <input
-          type="checkbox"
-          checked={reviewed}
-          disabled={!enabled}
-          onChange={(event) => setReviewed(event.target.checked)}
-        />
+      <Checkbox
+        checked={reviewed}
+        disabled={!enabled || undefined}
+        onChange={(event) => setReviewed(event.target.checked)}
+        className="attention-review-check"
+      >
         已核对本次目标和内容
-      </label>
+      </Checkbox>
       {error && (
         <p id={errorId} role="alert" className="attention-error">
           {error}
         </p>
       )}
       <div className="attention-actions">
-        <button className="primary" type="submit" disabled={!enabled || !reviewed}>
+        <Button type="primary" htmlType="submit" disabled={!enabled || !reviewed || undefined}>
           {busy ? '正在提交…' : simpleBoolean ? '确认本次动作' : '提交本次结果'}
-        </button>
+        </Button>
         {cancel && (
-          <button
-            type="button"
-            className="danger"
+          <Button
+            htmlType="button"
+            danger
             data-attention-cancel
-            disabled={!enabled}
+            disabled={!enabled || undefined}
             onClick={cancel}
           >
             取消本次运行
-          </button>
+          </Button>
         )}
         {simpleBoolean && (
-          <button
-            type="button"
-            disabled={!enabled}
+          <Button
+            htmlType="button"
+            disabled={!enabled || undefined}
             onClick={() => {
               setReviewed(false);
               void submit(false);
             }}
           >
             拒绝本次请求
-          </button>
+          </Button>
         )}
       </div>
     </form>
@@ -513,13 +518,13 @@ export default function AttentionWorkspace({
                   : '当前摘要未包含此记录，可打开详情核对。'}
               </p>
               <code>{id}</code>
-              <button
-                disabled={busy}
+              <Button
+                disabled={busy || undefined}
                 aria-label={`查看第 ${index + 1} 个关联运行：${run?.name || id}`}
-                onClick={(event) => viewRun(id, event.currentTarget)}
+                onClick={(event) => viewRun(id, event.currentTarget as HTMLButtonElement)}
               >
                 {openingRunId === id ? '正在读取运行…' : '查看运行详情'}
-              </button>
+              </Button>
             </li>
           );
         })}
@@ -547,9 +552,12 @@ export default function AttentionWorkspace({
         <div ref={errorPanel} tabIndex={-1} className="attention-banner is-error" role="alert">
           <strong>请核对当前处理状态</strong>
           <p>{error}</p>
-          <button disabled={busy} onClick={() => void act(async () => {}, '已刷新当前处理状态')}>
+          <Button
+            disabled={busy || undefined}
+            onClick={() => void act(async () => {}, '已刷新当前处理状态')}
+          >
             刷新状态
-          </button>
+          </Button>
         </div>
       )}
       {notice && (
@@ -567,7 +575,7 @@ export default function AttentionWorkspace({
                   ['done', '已处理', doneCount],
                 ] as const
               ).map(([id, name, count]) => (
-                <button
+                <Button
                   key={id}
                   role="tab"
                   id={`attention-tab-${id}`}
@@ -579,7 +587,7 @@ export default function AttentionWorkspace({
                     if (['ArrowLeft', 'ArrowRight'].includes(event.key)) {
                       event.preventDefault();
                       setTab(id === 'pending' ? 'done' : 'pending');
-                      const parent = event.currentTarget.parentElement;
+                      const parent = (event.currentTarget as HTMLButtonElement).parentElement;
                       (
                         parent?.querySelectorAll('button')[
                           id === 'pending' ? 1 : 0
@@ -590,12 +598,12 @@ export default function AttentionWorkspace({
                 >
                   {name}
                   <span>{count}</span>
-                </button>
+                </Button>
               ))}
             </div>
             <label className="attention-search">
               <span className="sr-only">搜索待办</span>
-              <input
+              <Input
                 type="search"
                 placeholder="搜索标题或说明"
                 value={query}
@@ -604,12 +612,16 @@ export default function AttentionWorkspace({
             </label>
             <label className="attention-filter">
               <span className="sr-only">提醒类型</span>
-              <select value={kind} onChange={(event) => setKind(event.target.value)}>
-                <option value="all">全部类型</option>
-                <option value="human">人工请求</option>
-                <option value="unknown">结果待核对</option>
-                <option value="other">其他提醒</option>
-              </select>
+              <Select<string>
+                value={kind}
+                onChange={(value) => setKind(value)}
+                options={[
+                  { value: 'all', label: '全部类型' },
+                  { value: 'human', label: '人工请求' },
+                  { value: 'unknown', label: '结果待核对' },
+                  { value: 'other', label: '其他提醒' },
+                ]}
+              />
             </label>
           </div>
           {tab === 'done' && (
@@ -642,8 +654,8 @@ export default function AttentionWorkspace({
                   </p>
                 )}
                 <div className="attention-actions">
-                  <button
-                    className={item.kind === 'unknown-result' ? 'primary' : ''}
+                  <Button
+                    type={item.kind === 'unknown-result' ? 'primary' : 'default'}
                     data-attention-open={item.id}
                     onClick={() => open(item)}
                   >
@@ -652,14 +664,16 @@ export default function AttentionWorkspace({
                       : human(item) && !completed(item)
                         ? '查看本次请求'
                         : '查看详情'}
-                  </button>
+                  </Button>
                   {sourceId(item) && (
-                    <button
-                      disabled={busy}
-                      onClick={(event) => viewRun(sourceId(item)!, event.currentTarget)}
+                    <Button
+                      disabled={busy || undefined}
+                      onClick={(event) =>
+                        viewRun(sourceId(item)!, event.currentTarget as HTMLButtonElement)
+                      }
                     >
                       查看运行详情
-                    </button>
+                    </Button>
                   )}
                 </div>
               </article>
@@ -679,14 +693,14 @@ export default function AttentionWorkspace({
                     : '需要你的确认或出现异常时，提醒会保存在这里。'}
                 </p>
                 {(query || kind !== 'all') && (
-                  <button
+                  <Button
                     onClick={() => {
                       setQuery('');
                       setKind('all');
                     }}
                   >
                     清除筛选
-                  </button>
+                  </Button>
                 )}
               </div>
             )}
@@ -781,9 +795,9 @@ export default function AttentionWorkspace({
             )}
             {!human(selected) && (
               <div className="attention-actions">
-                <button
-                  disabled={busy || selected.read}
-                  className="primary"
+                <Button
+                  disabled={busy || selected.read || undefined}
+                  type="primary"
                   onClick={() =>
                     void act(async () => {
                       await api('attention.read', { id: selected.id });
@@ -791,9 +805,9 @@ export default function AttentionWorkspace({
                   }
                 >
                   {selected.read ? '已标为已读' : '标为已读'}
-                </button>
-                <button
-                  disabled={busy}
+                </Button>
+                <Button
+                  disabled={busy || undefined}
                   onClick={() =>
                     void act(async () => {
                       await api('clipboard.copy', {
@@ -806,12 +820,12 @@ export default function AttentionWorkspace({
                   }
                 >
                   复制内容
-                </button>
+                </Button>
               </div>
             )}
             {human(selected) && state === 'expired' && !selected.read && (
-              <button
-                disabled={busy}
+              <Button
+                disabled={busy || undefined}
                 onClick={() =>
                   void act(async () => {
                     await api('attention.read', { id: selected.id });
@@ -819,7 +833,7 @@ export default function AttentionWorkspace({
                 }
               >
                 归档失效提醒
-              </button>
+              </Button>
             )}
             {human(selected) && state === 'waiting' && sourceId(selected) && cancelRun && (
               <div
@@ -830,9 +844,9 @@ export default function AttentionWorkspace({
                 <strong>停止这个运行？</strong>
                 <p>已产生的结果会保留；尚未执行的步骤不会继续。</p>
                 <div className="attention-actions">
-                  <button
-                    className="danger"
-                    disabled={busy}
+                  <Button
+                    danger
+                    disabled={busy || undefined}
                     onClick={() =>
                       void act(async () => {
                         await api('run.control', { id: sourceId(selected), action: 'cancel' });
@@ -841,9 +855,9 @@ export default function AttentionWorkspace({
                     }
                   >
                     确认停止
-                  </button>
-                  <button
-                    disabled={busy}
+                  </Button>
+                  <Button
+                    disabled={busy || undefined}
                     onClick={() => {
                       setCancelRun(false);
                       requestAnimationFrame(() =>
@@ -852,7 +866,7 @@ export default function AttentionWorkspace({
                     }}
                   >
                     继续查看
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -901,12 +915,12 @@ export default function AttentionWorkspace({
                     <p className="attention-muted">
                       请求最长等待 10 分钟；取消或宿主退出会提前失效。
                     </p>
-                    <button
-                      disabled={busy}
+                    <Button
+                      disabled={busy || undefined}
                       onClick={() => void act(async () => {}, '已刷新当前处理状态')}
                     >
                       {busy ? '正在处理…' : '刷新状态'}
-                    </button>
+                    </Button>
                   </div>
                 </details>
                 <details className="attention-context-disclosure">
@@ -917,9 +931,9 @@ export default function AttentionWorkspace({
             ) : (
               <>
                 {relatedRuns}
-                <button disabled={busy} onClick={showBrowser}>
+                <Button disabled={busy || undefined} onClick={showBrowser}>
                   查看当前网页
-                </button>
+                </Button>
                 <p className="attention-muted">当前网页可能已切换，请先核对地址与目标。</p>
               </>
             )}

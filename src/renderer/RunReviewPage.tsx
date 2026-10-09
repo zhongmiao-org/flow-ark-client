@@ -1,3 +1,4 @@
+import { Button, Checkbox } from 'antd';
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { TaskDetail } from '../shared/planning';
 import DesktopRunBinding from './DesktopRunBinding';
@@ -300,44 +301,43 @@ export default function RunReviewPage(props: Props) {
     (check) => reviewRecoveryIssue(check)?.recovery === 'refresh',
   );
   const debugToggle = !attempt ? (
-    <label className="run-review-toggle">
-      <input
-        type="checkbox"
-        checked={!!state.selection?.debug}
-        disabled={state.loading || binding}
-        onChange={(e) => {
-          const debug = e.target.checked;
-          void reviewAction(() => session.refresh(debug));
-        }}
-      />
+    <Checkbox
+      checked={!!state.selection?.debug}
+      disabled={state.loading || binding || undefined}
+      onChange={(e) => {
+        const debug = e.target.checked;
+        void reviewAction(() => session.refresh(debug));
+      }}
+      className="run-review-toggle"
+    >
       逐步调试，在每个步骤前暂停
-    </label>
+    </Checkbox>
   ) : null;
   const refreshButton = !locked && !hasInlineRefresh && (
-    <button
+    <Button
       onClick={() => void reviewAction(() => session.refresh())}
-      disabled={state.loading || state.opening || binding}
+      disabled={state.loading || state.opening || binding || undefined}
     >
       {attempt?.run ? '检查新的试运行' : '重新检查'}
-    </button>
+    </Button>
   );
   const hasResourceIssue = recoveryChecks.some(
     (check) => reviewRecoveryIssue(check)?.recovery === 'configure',
   );
   const configureButton = !locked && !attempt?.run && !hasResourceIssue && (
-    <button onClick={props.edit}>配置流程与资源</button>
+    <Button onClick={props.edit}>配置流程与资源</Button>
   );
   const rebindButton =
     !locked && !attempt?.run && desktopReview && props.selection?.task && props.bound ? (
-      <button
-        disabled={state.loading || binding}
+      <Button
+        disabled={state.loading || binding || undefined}
         onClick={() => {
           session.setReviewed(false);
           setBinding(true);
         }}
       >
         重新选择窗口与原选区
-      </button>
+      </Button>
     ) : null;
   const reviewUtilities = (
     <>
@@ -421,31 +421,32 @@ export default function RunReviewPage(props: Props) {
                   从第 1 步创建新运行；已完成或结果未知的外部操作，可能再次发生。
                 </p>
               )}
-              <label className="run-review-toggle">
-                <input
-                  type="checkbox"
-                  checked={state.reviewed}
-                  disabled={!preview?.ready || state.loading || binding}
-                  onChange={(e) => session.setReviewed(e.target.checked)}
-                />
+              <Checkbox
+                checked={state.reviewed}
+                disabled={!preview?.ready || state.loading || binding || undefined}
+                onChange={(e) => session.setReviewed(e.target.checked)}
+                className="run-review-toggle"
+              >
                 {preview?.desktop
                   ? '读取选区、替换选区并回读'
                   : preview?.toolCalls?.length
                     ? '我授权本次按已列工具和参数来源执行，已核对外部影响；结果未知时不自动重试'
                     : '我已核对操作对象、可能更改和保存位置'}
-              </label>
+              </Checkbox>
               {desktopReview && (
                 <p className="desktop-confirm-authorization">
                   我授权本次只替换已核对的原选区，并读取修改后的文字核对。试运行会实际修改文档；运行期间请保持文档与选区不变，结果未知不自动重放。
                 </p>
               )}
-              <button
-                className="primary"
-                disabled={!preview?.ready || !state.reviewed || state.loading || binding}
+              <Button
+                type="primary"
+                disabled={
+                  !preview?.ready || !state.reviewed || state.loading || binding || undefined
+                }
                 onClick={() => void reviewAction(() => session.confirm())}
               >
                 {preview?.desktop ? '确认修改并试运行' : '开始试运行'}
-              </button>
+              </Button>
             </>
           )}
           {attempt?.phase === 'pending' && (
@@ -455,12 +456,9 @@ export default function RunReviewPage(props: Props) {
             <>
               <p role="alert">{attempt.message}</p>
               <p>可能已经创建运行。查询会使用同一个请求编号，不会另建确认请求。</p>
-              <button
-                className="primary"
-                onClick={() => void reviewAction(() => session.confirm())}
-              >
+              <Button type="primary" onClick={() => void reviewAction(() => session.confirm())}>
                 查询本次确认结果
-              </button>
+              </Button>
             </>
           )}
           {attempt?.phase === 'rejected' && (
@@ -481,13 +479,13 @@ export default function RunReviewPage(props: Props) {
                 {attempt.run.id}
               </p>
               <p>返回或查看结果不会重复执行。</p>
-              <button
-                className="primary"
-                disabled={state.opening}
+              <Button
+                type="primary"
+                disabled={state.opening || undefined}
                 onClick={() => void reviewAction(() => session.open())}
               >
                 {state.opening ? '正在读取详情…' : '查看本次运行'}
-              </button>
+              </Button>
             </div>
           )}
           {state.error && (
@@ -496,13 +494,13 @@ export default function RunReviewPage(props: Props) {
             </p>
           )}
           {!compactReview && !desktopReview && refreshButton}
-          <button onClick={props.back}>
+          <Button onClick={props.back}>
             {attempt && attempt.phase !== 'rejected'
               ? '返回方案（不撤销本次运行）'
               : desktopReview
                 ? '取消，回到方案'
                 : '回去修改'}
-          </button>
+          </Button>
           {desktopReview ? (
             <>
               {!preview?.ready && !state.loading && rebindButton}

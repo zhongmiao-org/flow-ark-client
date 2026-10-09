@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type useDesktopWindows from './useDesktopWindows';
 
@@ -43,19 +44,19 @@ export default function DesktopSelectionPreview({
       </h3>
       <p>先在这个 TextEdit 窗口选中文字，再明确读取。这里只在本地查看，不发送给 AI，不修改原文。</p>
       <div className="ai-task-actions">
-        <button
+        <Button
           ref={readButton}
-          className="primary"
-          disabled={reading || expired || state.loading || state.settingsPending}
+          type="primary"
+          disabled={reading || expired || state.loading || state.settingsPending || undefined}
           onClick={() => {
             setClearNotice('');
             void state.readSelection();
           }}
         >
           {reading ? '正在读取选区…' : preview ? '重新读取选中段落' : '读取选中段落'}
-        </button>
+        </Button>
         {(preview || reading) && (
-          <button
+          <Button
             onClick={() => {
               restoreReadFocus.current = true;
               setClearNotice(
@@ -67,7 +68,7 @@ export default function DesktopSelectionPreview({
             }}
           >
             {reading ? '停止等待' : '清除预览'}
-          </button>
+          </Button>
         )}
       </div>
       {reading && <p role="status">正在核对窗口与当前选区…</p>}
@@ -108,22 +109,29 @@ export default function DesktopSelectionPreview({
               当前窗口检查已失效。请重新检查、选择窗口，再读取段落。
             </p>
           )}
-          <button
+          <Button
             onClick={() => void state.refresh()}
-            disabled={state.loading || state.settingsPending}
+            disabled={state.loading || state.settingsPending || undefined}
           >
             重新检查窗口
-          </button>
+          </Button>
         </>
       )}
       {preview?.status === 'ready' && (
-        <button
-          className="primary"
+        <Button
+          type="primary"
           onClick={plan}
-          disabled={actionDisabled || expired || reading || state.loading || state.settingsPending}
+          disabled={
+            actionDisabled ||
+            expired ||
+            reading ||
+            state.loading ||
+            state.settingsPending ||
+            undefined
+          }
         >
           {actionLabel}
-        </button>
+        </Button>
       )}
       <p className="task-desktop-observed">{note}</p>
     </section>

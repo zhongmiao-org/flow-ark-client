@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { Crosshair, Check, X } from 'lucide-react';
 import type { ElementTarget, PickerState } from '../shared/element-picker';
@@ -455,32 +456,46 @@ export default function ElementPicker({
   return (
     <div className="element-picker" ref={region}>
       <div className="element-picker-actions">
-        <button
+        <Button
+          type={purpose === 'task' ? 'default' : 'primary'}
           ref={pickButton}
-          className={purpose === 'task' ? undefined : 'primary'}
           disabled={
-            !active || disabled || picking || validating || applying || focusing || viewingRun
+            !active ||
+            disabled ||
+            picking ||
+            validating ||
+            applying ||
+            focusing ||
+            viewingRun ||
+            undefined
           }
           onClick={() => void pick()}
         >
           <Crosshair size={15} />
           {pickLabel ?? (candidate || error || message ? '重新拾取' : '从网页选取')}
-        </button>
+        </Button>
         {picking ? (
-          <button onClick={() => void cancel()}>
+          <Button onClick={() => void cancel()}>
             <X size={14} />
             取消拾取
-          </button>
+          </Button>
         ) : allowInspect ? (
-          <button
+          <Button
             disabled={
-              !active || disabled || !selector || validating || applying || focusing || viewingRun
+              !active ||
+              disabled ||
+              !selector ||
+              validating ||
+              applying ||
+              focusing ||
+              viewingRun ||
+              undefined
             }
             onClick={() => void validate()}
           >
             <Check size={14} />
             {validating ? '验证中…' : '验证定位'}
-          </button>
+          </Button>
         ) : null}
       </div>
       {feedback && (
@@ -510,33 +525,33 @@ export default function ElementPicker({
           )}
           {candidate && (
             <div className="element-picker-apply-actions">
-              <button
+              <Button
                 ref={applyButton}
-                className="primary"
-                disabled={!active || disabled || applying || focusing}
+                type="primary"
+                disabled={!active || disabled || applying || focusing || undefined}
                 onClick={() => void apply()}
               >
                 {applying ? '正在核对目标…' : purpose === 'task' ? '使用这个目标' : '应用目标'}
-              </button>
+              </Button>
               {browserFocus && (
-                <button
-                  disabled={!active || disabled || applying || focusing}
+                <Button
+                  disabled={!active || disabled || applying || focusing || undefined}
                   onClick={() => void focusCandidate()}
                 >
                   {focusing ? '正在核对目标…' : '聚焦选中目标'}
-                </button>
+                </Button>
               )}
-              <button onClick={discard}>放弃此目标</button>
+              <Button onClick={discard}>放弃此目标</Button>
             </div>
           )}
           {busy && blockingRunId && onViewRun && (
-            <button
+            <Button
               ref={viewRunButton}
-              disabled={!active || disabled || viewingRun}
+              disabled={!active || disabled || viewingRun || undefined}
               onClick={() => void openRun()}
             >
               {viewingRun ? '正在读取运行…' : '查看运行'}
-            </button>
+            </Button>
           )}
           {runError && (
             <p className="field-error" role="alert">
@@ -544,9 +559,9 @@ export default function ElementPicker({
             </p>
           )}
           {error && onAdjust && (
-            <button disabled={!active || disabled} onClick={onAdjust}>
+            <Button disabled={!active || disabled || undefined} onClick={onAdjust}>
               手动调整定位
-            </button>
+            </Button>
           )}
         </section>
       )}

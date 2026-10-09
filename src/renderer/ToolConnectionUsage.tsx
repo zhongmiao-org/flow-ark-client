@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import type { ToolConnection } from '../shared/tool-connections';
 
 export type ConnectionTaskReference = NonNullable<ToolConnection['taskReferences']>[number];
@@ -29,10 +30,10 @@ export default function ToolConnectionUsage({
                 <strong>{task.description || '未命名任务'}</strong>
                 <small>流程 {task.flowId}</small>
                 {openTask && (
-                  <button disabled={busy} onClick={() => openTask(task)}>
+                  <Button disabled={busy || undefined} onClick={() => openTask(task)}>
                     查看任务
                     <span className="sr-only">：{task.description || task.taskId}</span>
-                  </button>
+                  </Button>
                 )}
               </li>
             ))}
