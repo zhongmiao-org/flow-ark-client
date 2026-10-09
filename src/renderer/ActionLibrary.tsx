@@ -1,4 +1,4 @@
-import { Select, Button, Input } from 'antd';
+import { Alert, Collapse, Select, Button, Input } from 'antd';
 import { useId, useRef, useState } from 'react';
 import { Search, Plus, X } from 'lucide-react';
 import type { Step } from '../shared/types';
@@ -7,6 +7,7 @@ import { taskStepTitle } from './task-step-presentation';
 import { kinds } from './node-kinds';
 import { newStep } from './node-defaults';
 import { browserActions, newBrowserStep, type BrowserOperation } from './browser-actions';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import './action-library.css';
 
 const groups = [
@@ -106,7 +107,7 @@ export default function ActionLibrary({
   const [expanded, setExpanded] = useState('');
   const [closedSearchGroups, setClosedSearchGroups] = useState<string[]>([]);
   const scope = useId();
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string }>();
   const search = useRef<HTMLInputElement>(null);
   const targets = destinationChoices(steps);
   const target = targets.find((item) => item.value === destination);
@@ -128,31 +129,40 @@ export default function ActionLibrary({
         <h3>动作库</h3>
         <label className="action-search-label">
           <span>搜索动作</span>
-          <div className="action-search">
-            <Search size={14} aria-hidden="true" />
-            <Input
-              ref={(instance) => {
-                search.current = instance?.input ?? null;
-              }}
-              aria-label="搜索动作"
-              placeholder="搜索名称 / 操作"
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setClosedSearchGroups([]);
-              }}
-            />
-            {query && (
-              <Button aria-label="清空动作搜索" onClick={clear}>
-                <X size={12} />
-              </Button>
-            )}
-          </div>
+          <Input
+            size="small"
+            ref={(instance) => {
+              search.current = instance?.input ?? null;
+            }}
+            prefix={<Search size={14} aria-hidden="true" />}
+            suffix={
+              query && (
+                <Button
+                  size="small"
+                  type="text"
+                  aria-label="清空动作搜索"
+                  icon={<X size={12} aria-hidden="true" />}
+                  onClick={clear}
+                />
+              )
+            }
+            aria-label="搜索动作"
+            placeholder="搜索名称 / 操作"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setClosedSearchGroups([]);
+            }}
+          />
         </label>
         <label className="action-destination">
           添加到
           <Select<string>
             aria-label="动作添加位置"
+            size="small"
+            status={!target ? 'error' : undefined}
+            aria-invalid={!target}
+            aria-describedby={!target ? `${scope}-target-error` : undefined}
             title={target?.label}
             value={target ? destination : ''}
             onChange={(value) => setDestination(value)}
@@ -170,9 +180,12 @@ export default function ActionLibrary({
           </p>
         )}
         {!target && (
-          <p className="field-error" role="alert">
-            添加位置已失效，请先重新选择位置。
-          </p>
+          <Alert
+            id={`${scope}-target-error`}
+            type="error"
+            showIcon
+            title="添加位置已失效，请先重新选择位置。"
+          />
         )}
       </div>
       <div className="action-list" aria-label="可添加动作">
@@ -183,65 +196,82 @@ export default function ActionLibrary({
             terms.length > 0 ? !closedSearchGroups.includes(group.id) : expanded === group.id;
           const panelId = `${scope}-${group.id}`;
           return (
-            <section className="action-group" key={group.id} aria-label={group.label}>
-              <Button
-                className="action-category"
-                aria-expanded={open}
-                aria-controls={panelId}
-                onClick={() => {
+            <div key={group.id} onKeyDown={activateCollapseWithSpace}>
+              <Collapse
+                className="action-group"
+                size="small"
+                activeKey={open ? [group.id] : []}
+                onChange={(keys) => {
+                  const nextOpen = keys.includes(group.id);
                   if (terms.length) {
                     setClosedSearchGroups((current) =>
-                      open ? [...current, group.id] : current.filter((id) => id !== group.id),
+                      nextOpen
+                        ? current.filter((id) => id !== group.id)
+                        : [...new Set([...current, group.id])],
                     );
-                  } else setExpanded(open ? '' : group.id);
+                  } else setExpanded(nextOpen ? group.id : '');
                 }}
-              >
-                {group.label}
-                {group.id === 'browser' ? ` · ${members.length}` : ''}
-              </Button>
-              <div id={panelId} className="action-category-members" hidden={!open}>
-                {members.map((entry) => {
-                  const Icon = kinds[entry.type].icon;
-                  return (
-                    <Button
-                      key={entry.id}
-                      aria-label={`添加 ${entry.label}`}
-                      title={`${entry.detail} · ${target?.label ?? '请选择添加位置'}`}
-                      disabled={!target || undefined}
-                      onClick={() => {
-                        if (!target) return;
-                        const added = add(entry.create(), target);
-                        setNotice(
-                          added
-                            ? `已添加“${entry.label}”至 ${target.label}；可在当前步骤配置中继续编辑。`
-                            : '未添加动作，请先处理当前编辑器中的错误。',
-                        );
-                      }}
-                    >
-                      <Icon size={15} aria-hidden="true" />
-                      <span className="action-entry-copy">
-                        <strong>{entry.label}</strong>
-                        <small>{entry.detail}</small>
-                      </span>
-                      <Plus size={12} className="action-add-icon" aria-hidden="true" />
-                    </Button>
-                  );
-                })}
-              </div>
-            </section>
+                items={[
+                  {
+                    key: group.id,
+                    label: `${group.label}${group.id === 'browser' ? ` · ${members.length}` : ''}`,
+                    showArrow: false,
+                    forceRender: true,
+                    children: (
+                      <div id={panelId} className="action-category-members">
+                        {members.map((entry) => {
+                          const Icon = kinds[entry.type].icon;
+                          return (
+                            <Button
+                              key={entry.id}
+                              className="action-entry"
+                              type="text"
+                              block
+                              aria-label={`添加 ${entry.label}`}
+                              title={`${entry.detail} · ${target?.label ?? '请选择添加位置'}`}
+                              disabled={!target || undefined}
+                              onClick={() => {
+                                if (!target) return;
+                                const added = add(entry.create(), target);
+                                setNotice({
+                                  type: added ? 'success' : 'error',
+                                  text: added
+                                    ? `已添加“${entry.label}”至 ${target.label}；可在当前步骤配置中继续编辑。`
+                                    : '未添加动作，请先处理当前编辑器中的错误。',
+                                });
+                              }}
+                            >
+                              <Icon size={15} aria-hidden="true" />
+                              <span className="action-entry-copy">
+                                <strong>{entry.label}</strong>
+                                <small>{entry.detail}</small>
+                              </span>
+                              <Plus size={12} className="action-add-icon" aria-hidden="true" />
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+            </div>
           );
         })}
         {!matches.length && (
           <div className="action-library-empty">
-            <p>没有匹配动作</p>
-            <p>调整关键词后重试。</p>
+            <Alert type="info" showIcon title="没有匹配动作" description="调整关键词后重试。" />
             {query && <Button onClick={clear}>清空搜索</Button>}
           </div>
         )}
       </div>
-      <p className="action-library-notice" role="status" aria-live="polite">
-        {notice || '选择动作，将其添加到指定位置。添加不会执行流程。'}
-      </p>
+      <Alert
+        type={notice?.type ?? 'info'}
+        showIcon
+        role="status"
+        aria-live="polite"
+        title={notice?.text ?? '选择动作，将其添加到指定位置。添加不会执行流程。'}
+      />
     </aside>
   );
 }
