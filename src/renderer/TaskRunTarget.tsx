@@ -1,3 +1,5 @@
+import { Collapse, Descriptions } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { Flow, Run, Step } from '../shared/types';
 import type { RunTargetContext } from '../shared/run-target-context';
 import { taskStepTitle, taskStepValue } from './task-step-presentation';
@@ -106,19 +108,30 @@ export default function TaskRunTarget({
       {node ? (
         <>
           <p>{summary}</p>
-          <details key={`${run.id}:${node.id}`}>
-            <summary>查看快照中的对象与定位</summary>
-            <p>{taskStepTitle(node)}</p>
-            <dl>
-              {facts.map(([label, text]) => (
-                <div key={label}>
-                  <dt>{label}</dt>
-                  <dd>{text}</dd>
-                </div>
-              ))}
-            </dl>
-            <p className="task-run-target-note">{note}</p>
-          </details>
+          <Collapse
+            key={`${run.id}:${node.id}`}
+            items={[
+              {
+                key: 'target',
+                label: '查看快照中的对象与定位',
+                forceRender: true,
+                onKeyDown: activateCollapseWithSpace,
+                children: (
+                  <div className="feedback-body">
+                    <p>{taskStepTitle(node)}</p>
+                    <Descriptions
+                      className="metadata-facts"
+                      column={1}
+                      bordered
+                      size="small"
+                      items={facts.map(([label, text]) => ({ key: label, label, children: text }))}
+                    />
+                    <p className="task-run-target-note">{note}</p>
+                  </div>
+                ),
+              },
+            ]}
+          />
         </>
       ) : (
         <p>

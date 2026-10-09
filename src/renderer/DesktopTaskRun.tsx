@@ -1,5 +1,5 @@
 import { runStateColors } from './theme';
-import { Alert, Button, Tag, Badge } from 'antd';
+import { Alert, Button, Descriptions, Tag, Badge } from 'antd';
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { TaskRunIntent, TaskRunView, taskRunPresentation } from './task-run-presentation';
 import { runDisplayLabels } from '../shared/run-history';
@@ -204,18 +204,29 @@ export default function DesktopTaskRun({
               snapshot={detail.snapshot}
             />
             <div className="desktop-task-record">
-              <p>
-                记录中的对象：
-                {desktop.windowTitle
-                  ? `文本编辑 / ${desktop.windowTitle} / 原选区`
-                  : '本次记录未提供窗口名称'}
-              </p>
-              <p>固定版本：{run.versionId}</p>
-              <p>
-                运行记录：
-                {runDisplayLabels[run.state as keyof typeof runDisplayLabels] ?? run.state} ·
-                已记录耗时：{model.view.elapsed.label}
-              </p>
+              <Descriptions
+                className="metadata-facts"
+                column={1}
+                bordered
+                size="small"
+                items={[
+                  {
+                    key: 'target',
+                    label: '记录中的对象',
+                    children: desktop.windowTitle
+                      ? `文本编辑 / ${desktop.windowTitle} / 原选区`
+                      : '本次记录未提供窗口名称',
+                  },
+                  { key: 'version', label: '固定版本', children: run.versionId },
+                  {
+                    key: 'state',
+                    label: '运行记录',
+                    children:
+                      runDisplayLabels[run.state as keyof typeof runDisplayLabels] ?? run.state,
+                  },
+                  { key: 'elapsed', label: '已记录耗时', children: model.view.elapsed.label },
+                ]}
+              />
               <p>记录只代表本次执行时的目标和回读，不代表当前窗口或文档仍然一致。</p>
             </div>
             <TaskExecutionSteps

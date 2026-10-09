@@ -1,4 +1,5 @@
-import { Tag, Badge } from 'antd';
+import { Alert, Collapse, Descriptions, Tag, Badge } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { ReactNode } from 'react';
 import type { taskRunPresentation } from './task-run-presentation';
 
@@ -76,7 +77,7 @@ export default function TaskRunFailure({
         需要处理
       </Tag>
       <h2 className="task-run-current">{reason.title}</h2>
-      <p role="status">{reason.explanation}</p>
+      <Alert type="warning" role="status" showIcon title={reason.explanation} />
       {model.current?.ended && (
         <p>最后记录的“{model.current.name}”已确认完成；当前记录未确认后续执行位置。</p>
       )}
@@ -97,20 +98,39 @@ export default function TaskRunFailure({
         <p>{model.summary}</p>
         <p>{model.effectNote}</p>
       </section>
-      <details className="task-failure-details">
-        <summary>错误详情与运行对象</summary>
-        <p>
-          {model.view.step.label} · 已记录耗时：{model.view.elapsed.label}
-        </p>
-        {error ? (
-          <pre tabIndex={0} aria-label="完整运行错误">
-            {error}
-          </pre>
-        ) : (
-          <p>没有保存具体错误说明。</p>
-        )}
-        {target}
-      </details>
+      <Collapse
+        className="task-failure-details"
+        items={[
+          {
+            key: 'failure',
+            label: '错误详情与运行对象',
+            forceRender: true,
+            onKeyDown: activateCollapseWithSpace,
+            children: (
+              <div className="feedback-body">
+                <Descriptions
+                  className="metadata-facts"
+                  column={1}
+                  bordered
+                  size="small"
+                  items={[
+                    { key: 'step', label: '步骤记录', children: model.view.step.label },
+                    { key: 'elapsed', label: '已记录耗时', children: model.view.elapsed.label },
+                  ]}
+                />
+                {error ? (
+                  <pre tabIndex={0} aria-label="完整运行错误">
+                    {error}
+                  </pre>
+                ) : (
+                  <p>没有保存具体错误说明。</p>
+                )}
+                {target}
+              </div>
+            ),
+          },
+        ]}
+      />
     </>
   );
 }

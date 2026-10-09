@@ -1,4 +1,4 @@
-import { Alert, Tag } from 'antd';
+import { Alert, Descriptions, Tag } from 'antd';
 import { desktopReceiptColors } from './theme';
 import type { DesktopReceipt } from '../shared/desktop-run';
 import type { Flow } from '../shared/types';
@@ -77,12 +77,26 @@ export default function DesktopRunReceipt({
           ) : (
             <p>请回到原任务重新选择窗口与原文，再决定是否创建新的试运行。</p>
           )}
-          <p className="task-desktop-observed">
-            尝试时间：{new Date(receipt.attemptedAt).toLocaleString('zh-CN')}
-            {receipt.completedAt
-              ? ` · 回执时间：${new Date(receipt.completedAt).toLocaleString('zh-CN')}`
-              : ' · 尚未取得最终回执'}
-          </p>
+          <Descriptions
+            className="metadata-facts"
+            column={1}
+            bordered
+            size="small"
+            items={[
+              {
+                key: 'attempt',
+                label: '尝试时间',
+                children: new Date(receipt.attemptedAt).toLocaleString('zh-CN'),
+              },
+              {
+                key: 'receipt',
+                label: '回执时间',
+                children: receipt.completedAt
+                  ? new Date(receipt.completedAt).toLocaleString('zh-CN')
+                  : '尚未取得最终回执',
+              },
+            ]}
+          />
         </div>
       ))}
     </section>
