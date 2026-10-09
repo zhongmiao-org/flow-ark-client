@@ -1,4 +1,16 @@
-import { Alert, Badge, Tag, ConfigProvider, Select, Button, Checkbox, Input, Modal } from 'antd';
+import {
+  Alert,
+  Badge,
+  Tag,
+  ConfigProvider,
+  Select,
+  Button,
+  Checkbox,
+  Input,
+  Modal,
+  Card,
+  Empty,
+} from 'antd';
 import './antd-layout.css';
 import { usePageBack } from './use-page-back';
 import {
@@ -482,109 +494,118 @@ export default function ScheduleWorkbench({
           )}
         </datalist>
         <div className="template-schedule-columns schedule-workbench">
-          <section className="ai-task-card schedule-plan-list" aria-label="本机计划列表">
-            {!data.schedules.length && (
-              <>
-                <h2>还没有本机计划</h2>
-                <p>选择一个已保存的流程或模板入口，再确认执行间隔。</p>
-              </>
-            )}
-            {data.schedules.map((plan) => (
-              <article
-                key={plan.id}
-                className={
-                  'template-schedule-item' + (draft?.plan?.id === plan.id ? ' selected' : '')
-                }
-                aria-current={draft?.plan?.id === plan.id ? 'true' : undefined}
-                data-schedule-id={plan.id}
-                aria-label={
-                  '计划 ' +
-                  (data.flows.find((flow) => flow.id === plan.flowId)?.flow.name ?? '来源不可用')
-                }
-              >
-                <h3>
-                  {data.flows.find((flow) => flow.id === plan.flowId)?.flow.name ??
-                    '来源流程不可用'}
-                </h3>
-                <Tag
-                  className="run-state-tag"
-                  variant="filled"
-                  color={plan.enabled ? 'success' : 'default'}
-                  icon={<Badge status={plan.enabled ? 'success' : 'default'} />}
+          <section aria-label="本机计划列表">
+            <Card className="schedule-surface schedule-plan-list">
+              {!data.schedules.length && (
+                <>
+                  <h2>还没有本机计划</h2>
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description="选择一个已保存的流程或模板入口，再确认执行间隔。"
+                  />
+                </>
+              )}
+              {data.schedules.map((plan) => (
+                <article
+                  key={plan.id}
+                  aria-current={draft?.plan?.id === plan.id ? 'true' : undefined}
+                  data-schedule-id={plan.id}
+                  aria-label={
+                    '计划 ' +
+                    (data.flows.find((flow) => flow.id === plan.flowId)?.flow.name ?? '来源不可用')
+                  }
                 >
-                  {plan.enabled ? '已启用' : '已暂停'}
-                </Tag>
-                <p className="schedule-plan-timing">
-                  每 {plan.intervalMinutes} 分钟 · {plan.timezone} ·{' '}
-                  {plan.enabled ? '下次 ' + inZone(plan.nextAt, plan.timezone) : '暂无下次执行'}
-                </p>
-                <div className="ai-task-actions">
-                  <Button
-                    disabled={busy || undefined}
-                    onClick={(event) => {
-                      listFocus.current = event.currentTarget as HTMLButtonElement;
-                      const toggle = () => {
-                        void perform(
-                          async () => {
-                            const result = await api('schedule.toggle', {
-                              id: plan.id,
-                              enabled: !plan.enabled,
-                            });
-                            if (draft?.plan?.id === plan.id) assign();
-                            const name =
-                              data.flows.find((flow) => flow.id === plan.flowId)?.flow.name ??
-                              '此计划';
-                            setNotice({
-                              title: plan.enabled ? '计划已暂停' : '计划已启用',
-                              badge: '固定版本保持不变',
-                              detail: plan.enabled
-                                ? `${name}已暂停；已有运行不受影响。`
-                                : `${name}已启用，下次执行按当前间隔重新计算；不会补跑错过的计划。`,
-                            });
-                            return result;
-                          },
-                          plan.enabled ? 'pause' : 'enable',
-                        );
-                      };
-                      if (draft?.plan?.id === plan.id)
-                        go(toggle, plan.enabled ? '暂停计划' : '启用计划');
-                      else toggle();
-                    }}
-                  >
-                    {plan.enabled ? '暂停' : '启用'}
-                  </Button>
-                  <Button
-                    aria-label="编辑计划"
-                    disabled={busy || undefined}
-                    onClick={() =>
-                      go(
-                        () => {
-                          void open(plan);
-                        },
-                        `编辑计划 · ${data.flows.find((flow) => flow.id === plan.flowId)?.flow.name ?? plan.id}`,
-                      )
+                  <Card
+                    size="small"
+                    className={
+                      'template-schedule-item' + (draft?.plan?.id === plan.id ? ' selected' : '')
                     }
                   >
-                    编辑
-                  </Button>
-                  <Button
-                    disabled={busy || undefined}
-                    onClick={(event) => {
-                      historyFocus.current = event.currentTarget as HTMLButtonElement;
-                      void readHistory(plan.id);
-                    }}
-                  >
-                    计划记录
-                  </Button>
-                </div>
-              </article>
-            ))}
+                    <h3>
+                      {data.flows.find((flow) => flow.id === plan.flowId)?.flow.name ??
+                        '来源流程不可用'}
+                    </h3>
+                    <Tag
+                      className="run-state-tag"
+                      variant="filled"
+                      color={plan.enabled ? 'success' : 'default'}
+                      icon={<Badge status={plan.enabled ? 'success' : 'default'} />}
+                    >
+                      {plan.enabled ? '已启用' : '已暂停'}
+                    </Tag>
+                    <p className="schedule-plan-timing">
+                      每 {plan.intervalMinutes} 分钟 · {plan.timezone} ·{' '}
+                      {plan.enabled ? '下次 ' + inZone(plan.nextAt, plan.timezone) : '暂无下次执行'}
+                    </p>
+                    <div className="ai-task-actions">
+                      <Button
+                        disabled={busy || undefined}
+                        onClick={(event) => {
+                          listFocus.current = event.currentTarget as HTMLButtonElement;
+                          const toggle = () => {
+                            void perform(
+                              async () => {
+                                const result = await api('schedule.toggle', {
+                                  id: plan.id,
+                                  enabled: !plan.enabled,
+                                });
+                                if (draft?.plan?.id === plan.id) assign();
+                                const name =
+                                  data.flows.find((flow) => flow.id === plan.flowId)?.flow.name ??
+                                  '此计划';
+                                setNotice({
+                                  title: plan.enabled ? '计划已暂停' : '计划已启用',
+                                  badge: '固定版本保持不变',
+                                  detail: plan.enabled
+                                    ? `${name}已暂停；已有运行不受影响。`
+                                    : `${name}已启用，下次执行按当前间隔重新计算；不会补跑错过的计划。`,
+                                });
+                                return result;
+                              },
+                              plan.enabled ? 'pause' : 'enable',
+                            );
+                          };
+                          if (draft?.plan?.id === plan.id)
+                            go(toggle, plan.enabled ? '暂停计划' : '启用计划');
+                          else toggle();
+                        }}
+                      >
+                        {plan.enabled ? '暂停' : '启用'}
+                      </Button>
+                      <Button
+                        aria-label="编辑计划"
+                        disabled={busy || undefined}
+                        onClick={() =>
+                          go(
+                            () => {
+                              void open(plan);
+                            },
+                            `编辑计划 · ${data.flows.find((flow) => flow.id === plan.flowId)?.flow.name ?? plan.id}`,
+                          )
+                        }
+                      >
+                        编辑
+                      </Button>
+                      <Button
+                        disabled={busy || undefined}
+                        onClick={(event) => {
+                          historyFocus.current = event.currentTarget as HTMLButtonElement;
+                          void readHistory(plan.id);
+                        }}
+                      >
+                        计划记录
+                      </Button>
+                    </div>
+                  </Card>
+                </article>
+              ))}
+            </Card>
           </section>
           {draft ? (
             <form
               key={draft.mode + (draft.plan?.id ?? '')}
               className={
-                'ai-task-card template-schedule-form schedule-workbench-form ' +
+                'template-schedule-form schedule-workbench-form ' +
                 (draft.mode === 'edit' ? 'schedule-edit' : 'schedule-form')
               }
               aria-label={draft.mode === 'edit' ? '编辑本机计划' : '创建本机计划'}
@@ -594,209 +615,213 @@ export default function ScheduleWorkbench({
                 void save();
               }}
             >
-              <h2>{draft.mode === 'edit' ? '编辑计划' : '创建计划'}</h2>
-              <ConfigProvider componentDisabled={busy || undefined}>
-                <fieldset ref={fields} disabled={busy}>
-                  <label>
-                    <span>绑定入口</span>
-                    {draft.mode === 'edit' ? (
-                      <Input
-                        aria-label="绑定入口"
-                        readOnly
-                        value={draft.flow?.flow.name ?? draft.version?.name ?? '来源流程不可用'}
-                      />
-                    ) : (
-                      <Select<string>
-                        aria-required
-                        aria-label="计划流程"
-                        value={draft.flow?.id ?? ''}
-                        onChange={(value) =>
-                          setDraft({
-                            ...draft,
-                            flow: structuredClone(data.flows.find((flow) => flow.id === value)),
-                            adopt: false,
-                          })
-                        }
-                        options={[
-                          { value: '', label: '选择已保存的流程或入口' },
-                          ...data.flows.map((flow) => ({
-                            value: flow.id,
-                            label: (
-                              <>
-                                {flow.flow.name} · {flow.id.slice(0, 8)}
-                              </>
-                            ),
-                          })),
-                        ]}
-                      />
+              <Card className="schedule-surface">
+                <h2>{draft.mode === 'edit' ? '编辑计划' : '创建计划'}</h2>
+                <ConfigProvider componentDisabled={busy || undefined}>
+                  <fieldset ref={fields} disabled={busy}>
+                    <label>
+                      <span>绑定入口</span>
+                      {draft.mode === 'edit' ? (
+                        <Input
+                          aria-label="绑定入口"
+                          readOnly
+                          value={draft.flow?.flow.name ?? draft.version?.name ?? '来源流程不可用'}
+                        />
+                      ) : (
+                        <Select<string>
+                          aria-required
+                          aria-label="计划流程"
+                          value={draft.flow?.id ?? ''}
+                          onChange={(value) =>
+                            setDraft({
+                              ...draft,
+                              flow: structuredClone(data.flows.find((flow) => flow.id === value)),
+                              adopt: false,
+                            })
+                          }
+                          options={[
+                            { value: '', label: '选择已保存的流程或入口' },
+                            ...data.flows.map((flow) => ({
+                              value: flow.id,
+                              label: (
+                                <>
+                                  {flow.flow.name} · {flow.id.slice(0, 8)}
+                                </>
+                              ),
+                            })),
+                          ]}
+                        />
+                      )}
+                    </label>
+                    <Timing
+                      minutes={draft.minutes}
+                      timezone={draft.timezone}
+                      editing={draft.mode === 'edit'}
+                      onChange={(change) => setDraft({ ...draft, ...change })}
+                    />
+                    <div className="schedule-fixed-version">
+                      <span>固定版本</span>
+                      <p>
+                        {draft.mode === 'edit'
+                          ? draft.version
+                            ? `${inZone(Date.parse(draft.version.savedAt), draft.timezone)} 保存的版本`
+                            : '原固定版本不可用，请核对后处理'
+                          : draft.flow
+                            ? `${inZone(Date.parse(draft.flow.updatedAt), draft.timezone)} 保存的版本`
+                            : '先选择已保存的流程或入口'}
+                      </p>
+                      {draft.plan && (
+                        <small className="schedule-version-id">
+                          版本标识：{draft.plan.versionId}
+                        </small>
+                      )}
+                    </div>
+                    <Checkbox
+                      checked={draft.adopt}
+                      disabled={!draft.flow || undefined}
+                      onChange={(event) => setDraft({ ...draft, adopt: event.target.checked })}
+                      className="schedule-adoption"
+                    >
+                      <span>
+                        {draft.mode === 'edit'
+                          ? '采用当前已保存的流程版本'
+                          : '固定当前已保存版本与入口'}
+                      </span>
+                    </Checkbox>
+                    {draft.mode === 'edit' && draft.adopt && draft.flow && (
+                      <p>
+                        将采用 {draft.flow.flow.name} · 保存于{' '}
+                        {inZone(Date.parse(draft.flow.updatedAt), draft.timezone)}
+                        。未保存的编辑不在其中。
+                      </p>
                     )}
-                  </label>
-                  <Timing
-                    minutes={draft.minutes}
-                    timezone={draft.timezone}
-                    editing={draft.mode === 'edit'}
-                    onChange={(change) => setDraft({ ...draft, ...change })}
-                  />
-                  <div className="schedule-fixed-version">
-                    <span>固定版本</span>
                     <p>
                       {draft.mode === 'edit'
-                        ? draft.version
-                          ? `${inZone(Date.parse(draft.version.savedAt), draft.timezone)} 保存的版本`
-                          : '原固定版本不可用，请核对后处理'
-                        : draft.flow
-                          ? `${inZone(Date.parse(draft.flow.updatedAt), draft.timezone)} 保存的版本`
-                          : '先选择已保存的流程或入口'}
+                        ? '默认保留原快照；不采用未保存草稿。更新不改变已排队或活动运行。'
+                        : '创建后启用，首次执行在所选间隔之后。不采用未保存草稿。'}
                     </p>
+                    {changed && (
+                      <div role="alert" className="schedule-conflict">
+                        <Alert
+                          type="error"
+                          role="presentation"
+                          showIcon
+                          title={
+                            <h3>
+                              {draft.mode === 'edit' && !currentPlan
+                                ? '计划已不可用'
+                                : '计划或来源已更新'}
+                            </h3>
+                          }
+                          description={
+                            <div className="feedback-body">
+                              <Tag
+                                className="run-state-tag"
+                                variant="filled"
+                                color="error"
+                                icon={<Badge status="error" />}
+                              >
+                                保存被拒绝
+                              </Tag>
+                              <p>
+                                编辑期间计划或所选流程发生变化。当前输入已保留，重新编辑前请核对最新内容。
+                              </p>
+                              <Button
+                                type="primary"
+                                htmlType="button"
+                                onClick={() =>
+                                  go(() => {
+                                    if (draft.mode === 'edit' && !currentPlan) assign();
+                                    else if (draft.plan) void open(draft.plan);
+                                    else assign(blank());
+                                  })
+                                }
+                              >
+                                {draft.mode === 'edit' && !currentPlan ? '返回计划' : '重新编辑'}
+                              </Button>
+                            </div>
+                          }
+                        />
+                      </div>
+                    )}
+                    {error && !leaving && (
+                      <div
+                        role="alert"
+                        className="template-operation-feedback"
+                        ref={pageError}
+                        tabIndex={-1}
+                      >
+                        <Alert
+                          type="error"
+                          role="presentation"
+                          showIcon
+                          title="操作未完成"
+                          description={error}
+                        />
+                      </div>
+                    )}
+                    <div className="ai-task-actions">
+                      <Button
+                        htmlType="submit"
+                        type="primary"
+                        disabled={
+                          changed ||
+                          (draft.mode === 'create' && (!draft.flow || !draft.adopt)) ||
+                          undefined
+                        }
+                      >
+                        {operation === 'save'
+                          ? '正在保存…'
+                          : draft.mode === 'edit'
+                            ? '保存计划'
+                            : '创建计划'}
+                      </Button>
+                      <Button
+                        htmlType="button"
+                        aria-label={draft.mode === 'edit' ? '取消编辑' : '取消创建'}
+                        onClick={() => go(() => assign())}
+                      >
+                        取消
+                      </Button>
+                    </div>
                     {draft.plan && (
-                      <small className="schedule-version-id">
-                        版本标识：{draft.plan.versionId}
-                      </small>
+                      <Button
+                        htmlType="button"
+                        className="schedule-history-trigger"
+                        onClick={(event) => {
+                          historyFocus.current = event.currentTarget as HTMLButtonElement;
+                          void readHistory(draft.plan!.id);
+                        }}
+                      >
+                        查看错过 / 占用跳过
+                      </Button>
                     )}
-                  </div>
-                  <Checkbox
-                    checked={draft.adopt}
-                    disabled={!draft.flow || undefined}
-                    onChange={(event) => setDraft({ ...draft, adopt: event.target.checked })}
-                    className="schedule-adoption"
-                  >
-                    <span>
-                      {draft.mode === 'edit'
-                        ? '采用当前已保存的流程版本'
-                        : '固定当前已保存版本与入口'}
-                    </span>
-                  </Checkbox>
-                  {draft.mode === 'edit' && draft.adopt && draft.flow && (
-                    <p>
-                      将采用 {draft.flow.flow.name} · 保存于{' '}
-                      {inZone(Date.parse(draft.flow.updatedAt), draft.timezone)}
-                      。未保存的编辑不在其中。
-                    </p>
-                  )}
-                  <p>
-                    {draft.mode === 'edit'
-                      ? '默认保留原快照；不采用未保存草稿。更新不改变已排队或活动运行。'
-                      : '创建后启用，首次执行在所选间隔之后。不采用未保存草稿。'}
-                  </p>
-                  {changed && (
-                    <div role="alert" className="schedule-conflict">
-                      <Alert
-                        type="error"
-                        role="presentation"
-                        showIcon
-                        title={
-                          <h3>
-                            {draft.mode === 'edit' && !currentPlan
-                              ? '计划已不可用'
-                              : '计划或来源已更新'}
-                          </h3>
-                        }
-                        description={
-                          <div className="feedback-body">
-                            <Tag
-                              className="run-state-tag"
-                              variant="filled"
-                              color="error"
-                              icon={<Badge status="error" />}
-                            >
-                              保存被拒绝
-                            </Tag>
-                            <p>
-                              编辑期间计划或所选流程发生变化。当前输入已保留，重新编辑前请核对最新内容。
-                            </p>
-                            <Button
-                              type="primary"
-                              htmlType="button"
-                              onClick={() =>
-                                go(() => {
-                                  if (draft.mode === 'edit' && !currentPlan) assign();
-                                  else if (draft.plan) void open(draft.plan);
-                                  else assign(blank());
-                                })
-                              }
-                            >
-                              {draft.mode === 'edit' && !currentPlan ? '返回计划' : '重新编辑'}
-                            </Button>
-                          </div>
-                        }
-                      />
-                    </div>
-                  )}
-                  {error && !leaving && (
-                    <div
-                      role="alert"
-                      className="template-operation-feedback"
-                      ref={pageError}
-                      tabIndex={-1}
-                    >
-                      <Alert
-                        type="error"
-                        role="presentation"
-                        showIcon
-                        title="操作未完成"
-                        description={error}
-                      />
-                    </div>
-                  )}
-                  <div className="ai-task-actions">
-                    <Button
-                      htmlType="submit"
-                      type="primary"
-                      disabled={
-                        changed ||
-                        (draft.mode === 'create' && (!draft.flow || !draft.adopt)) ||
-                        undefined
-                      }
-                    >
-                      {operation === 'save'
-                        ? '正在保存…'
-                        : draft.mode === 'edit'
-                          ? '保存计划'
-                          : '创建计划'}
-                    </Button>
-                    <Button
-                      htmlType="button"
-                      aria-label={draft.mode === 'edit' ? '取消编辑' : '取消创建'}
-                      onClick={() => go(() => assign())}
-                    >
-                      取消
-                    </Button>
-                  </div>
-                  {draft.plan && (
-                    <Button
-                      htmlType="button"
-                      className="schedule-history-trigger"
-                      onClick={(event) => {
-                        historyFocus.current = event.currentTarget as HTMLButtonElement;
-                        void readHistory(draft.plan!.id);
-                      }}
-                    >
-                      查看错过 / 占用跳过
-                    </Button>
-                  )}
-                </fieldset>
-              </ConfigProvider>
+                  </fieldset>
+                </ConfigProvider>
+              </Card>
             </form>
           ) : (
-            <section className="ai-task-card schedule-idle">
-              <h2>选择一个计划</h2>
-              <p>选择左侧计划进行编辑，或创建一个新的本机计划。</p>
-              {error && (
-                <div
-                  role="alert"
-                  className="template-operation-feedback"
-                  ref={pageError}
-                  tabIndex={-1}
-                >
-                  <Alert
-                    type="error"
-                    role="presentation"
-                    showIcon
-                    title="操作未完成"
-                    description={error}
-                  />
-                </div>
-              )}
+            <section>
+              <Card className="schedule-surface schedule-idle">
+                <h2>选择一个计划</h2>
+                <p>选择左侧计划进行编辑，或创建一个新的本机计划。</p>
+                {error && (
+                  <div
+                    role="alert"
+                    className="template-operation-feedback"
+                    ref={pageError}
+                    tabIndex={-1}
+                  >
+                    <Alert
+                      type="error"
+                      role="presentation"
+                      showIcon
+                      title="操作未完成"
+                      description={error}
+                    />
+                  </div>
+                )}
+              </Card>
             </section>
           )}
         </div>
@@ -858,7 +883,7 @@ export default function ScheduleWorkbench({
               计划记录 · {historyTitle}
             </h2>
             {history.result && (
-              <div className="schedule-history-summary">
+              <Card size="small" className="schedule-history-summary">
                 <Tag
                   className="run-state-tag"
                   variant="filled"
@@ -876,7 +901,7 @@ export default function ScheduleWorkbench({
                     : '暂停期间不触发；已有运行不受影响。'}
                 </p>
                 <small>固定版本：{history.result.plan.versionId}</small>
-              </div>
+              </Card>
             )}
             <p>错过不补跑，占用时不重复创建运行。这里只显示已报告的记录。</p>
             <div className="ai-task-actions">
@@ -891,7 +916,7 @@ export default function ScheduleWorkbench({
               </Button>
             </div>
             {history.result?.activeRun && (
-              <div className="ai-task-card">
+              <Card className="schedule-history-active">
                 <Tag
                   className="run-state-tag"
                   variant="filled"
@@ -907,7 +932,7 @@ export default function ScheduleWorkbench({
                 >
                   {openingRun ? '正在读取活动运行…' : '查看活动运行'}
                 </Button>
-              </div>
+              </Card>
             )}
             {(history.error || runError) && (
               <div
@@ -929,64 +954,69 @@ export default function ScheduleWorkbench({
               <p>上次读取的记录仍保留。请重新读取后再查看活动运行。</p>
             )}
             {!history.result?.records.length && !reading && !history.error && (
-              <p>此计划还没有错过或跳过记录。</p>
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description="此计划还没有错过或跳过记录。"
+              />
             )}
             <div className="schedule-history-records">
               {history.result?.records.map((record) => (
-                <article className="ai-task-card" key={record.position}>
-                  <Tag
-                    className="run-state-tag"
-                    variant="filled"
-                    color={
-                      record.kind === 'missed'
-                        ? 'default'
+                <article key={record.position}>
+                  <Card className="schedule-history-record">
+                    <Tag
+                      className="run-state-tag"
+                      variant="filled"
+                      color={
+                        record.kind === 'missed'
+                          ? 'default'
+                          : record.kind === 'occupied'
+                            ? 'warning'
+                            : 'error'
+                      }
+                      icon={
+                        <Badge
+                          status={
+                            record.kind === 'missed'
+                              ? 'default'
+                              : record.kind === 'occupied'
+                                ? 'warning'
+                                : 'error'
+                          }
+                        />
+                      }
+                    >
+                      {record.kind === 'missed'
+                        ? '不补跑'
                         : record.kind === 'occupied'
-                          ? 'warning'
-                          : 'error'
-                    }
-                    icon={
-                      <Badge
-                        status={
-                          record.kind === 'missed'
-                            ? 'default'
-                            : record.kind === 'occupied'
-                              ? 'warning'
-                              : 'error'
-                        }
-                      />
-                    }
-                  >
-                    {record.kind === 'missed'
-                      ? '不补跑'
-                      : record.kind === 'occupied'
-                        ? '资源被占用'
-                        : '触发失败'}
-                  </Tag>
-                  <h3>
-                    {record.kind === 'missed'
-                      ? '错过的计划'
-                      : record.kind === 'occupied'
-                        ? '本次触发已跳过'
-                        : '未创建运行'}
-                  </h3>
-                  <p>
-                    {record.kind === 'missed'
-                      ? '退出、休眠或时钟间隙后没有追赶历史触发。'
-                      : record.kind === 'occupied'
-                        ? '同计划仍有运行，未重复创建 Run。'
-                        : record.reason}
-                  </p>
-                  <small>
-                    {typeof (record.time ?? record.to) === 'number'
-                      ? inZone((record.time ?? record.to)!, history.result!.plan.timezone)
-                      : '时间未报告'}
-                  </small>
-                  {record.from !== undefined && record.to !== undefined && (
+                          ? '资源被占用'
+                          : '触发失败'}
+                    </Tag>
+                    <h3>
+                      {record.kind === 'missed'
+                        ? '错过的计划'
+                        : record.kind === 'occupied'
+                          ? '本次触发已跳过'
+                          : '未创建运行'}
+                    </h3>
+                    <p>
+                      {record.kind === 'missed'
+                        ? '退出、休眠或时钟间隙后没有追赶历史触发。'
+                        : record.kind === 'occupied'
+                          ? '同计划仍有运行，未重复创建 Run。'
+                          : record.reason}
+                    </p>
                     <small>
-                      原定 {inZone(record.from, history.result!.plan.timezone)} · 恢复{' '}
-                      {inZone(record.to, history.result!.plan.timezone)}
+                      {typeof (record.time ?? record.to) === 'number'
+                        ? inZone((record.time ?? record.to)!, history.result!.plan.timezone)
+                        : '时间未报告'}
                     </small>
-                  )}
+                    {record.from !== undefined && record.to !== undefined && (
+                      <small>
+                        原定 {inZone(record.from, history.result!.plan.timezone)} · 恢复{' '}
+                        {inZone(record.to, history.result!.plan.timezone)}
+                      </small>
+                    )}
+                  </Card>
                 </article>
               ))}
             </div>

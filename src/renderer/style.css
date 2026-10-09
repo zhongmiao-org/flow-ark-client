@@ -1163,11 +1163,6 @@ main {
   width: 100%;
   min-width: 0;
 }
-.schedule-edit {
-  border-top: 1px solid var(--border);
-  padding-top: 22px;
-  margin-top: 22px;
-}
 .schedule-adoption {
   display: flex;
   gap: 9px;

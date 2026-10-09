@@ -15,10 +15,15 @@
   color: var(--fa-status-error);
   background: var(--fa-status-error-bg);
 }
-.template-schedule-columns > .ai-task-card {
-  padding: 24px;
+.template-schedule-columns > section > .schedule-surface,
+.template-schedule-columns > form > .schedule-surface {
   min-height: 676px;
+}
+.schedule-surface > .ant-card-body {
+  display: flex;
+  flex-direction: column;
   gap: 24px;
+  min-width: 0;
 }
 .template-schedule-columns h2 {
   font-size: 18px;
@@ -37,15 +42,12 @@
   margin: 0;
   overflow-wrap: anywhere;
 }
-.template-schedule-item {
-  border: 1px solid var(--fa-border-default);
-  border-radius: 12px;
-  padding: 20px;
+.template-schedule-item > .ant-card-body {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-.template-schedule-item > button {
+.template-schedule-item > .ant-card-body > button {
   align-self: flex-start;
 }
 .template-schedule-form fieldset {
@@ -89,7 +91,8 @@
   .template-schedule-columns {
     grid-template-columns: minmax(0, 1fr);
   }
-  .template-schedule-columns > .ai-task-card {
+  .template-schedule-columns > section > .schedule-surface,
+  .template-schedule-columns > form > .schedule-surface {
     min-height: 0;
   }
 }
