@@ -18,6 +18,13 @@ export const runStateColors: Record<
   FAILED: 'error',
 } as const satisfies Record<RunState, string>;
 
+export const runStepColors: Record<string, (typeof runStateColors)[string]> = {
+  success: runStateColors.SUCCEEDED,
+  running: runStateColors.RUNNING,
+  warning: runStateColors.PAUSED,
+  neutral: runStateColors.CANCELLED,
+};
+
 // Figma semantic tokens. All shared controls and workspace colours derive from this theme.
 export const flowArkTheme = {
   token: {

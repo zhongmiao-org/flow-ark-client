@@ -51,9 +51,9 @@
   line-height: 22px;
 }
 button:focus-visible,
-input:not(.ant-input):not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
-    [class*='ant-select']
-  ):focus-visible,
+input:not(.ant-input):not(.ant-checkbox-input):not(.ant-radio-input):not(
+    .ant-segmented-item-input
+  ):not([class*='ant-select']):focus-visible,
 textarea:focus-visible,
 a:focus-visible,
 summary:focus-visible {
