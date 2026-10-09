@@ -42,6 +42,8 @@ export default function ValueField({
           <Button
             htmlType="button"
             className="value-source-button"
+            color="default"
+            variant="filled"
             aria-label={'选择变量 · ' + label}
             aria-expanded={open}
             onClick={(event) => {
@@ -86,6 +88,9 @@ export default function ValueField({
       {choices && !(compactReference && current !== undefined) && (
         <Button
           className="value-source-button"
+          color="primary"
+          variant="outlined"
+          size="small"
           htmlType="button"
           aria-expanded={open}
           aria-label={'选择变量 · ' + label}
@@ -257,6 +262,9 @@ export function LiteralValue({
           <Button
             htmlType="button"
             className="literal-value-restore"
+            color="primary"
+            variant="outlined"
+            size="small"
             aria-label={'恢复已应用值 · ' + label}
             onClick={() => {
               setText(format());

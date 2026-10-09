@@ -76,21 +76,10 @@
   margin: 0;
   min-width: 0;
   width: 100%;
-  min-height: 32px;
-  padding: 4px 6px;
-  font-size: 13px;
-  line-height: 20px;
-  background: var(--fa-bg-canvas);
 }
 .control-workspace-card .reference-value {
   padding: 12px;
   background: var(--fa-bg-canvas);
-}
-.control-workspace-card .node-control-summary {
-  margin: 0;
-}
-.control-workspace-card button {
-  min-height: 40px;
 }
 .control-workspace-add {
   display: flex;
@@ -102,24 +91,6 @@
   flex: 1;
 }
 .control-workspace-add button {
-  flex-shrink: 0;
-  min-height: 32px;
-  padding: 4px 10px;
-}
-.control-workspace-page .control-workspace-error {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px;
-  border-radius: 8px;
-  background: var(--fa-status-error-bg);
-  color: var(--fa-status-error);
-}
-.control-workspace-error p {
-  color: inherit;
-}
-.control-workspace-error button {
   flex-shrink: 0;
 }
 .control-workspace-card .field-error {
@@ -140,25 +111,4 @@
 .control-workspace-card > .value-field {
   border: 0;
   padding: 0;
-}
-.control-workspace-card .reference-value-compact {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.control-workspace-card .reference-value-compact .value-field-label {
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--fa-text-secondary);
-}
-.control-workspace-card .reference-value-compact button {
-  width: 100%;
-  min-height: 32px;
-  padding: 4px 6px;
-  background: var(--fa-bg-canvas);
-  border-color: transparent;
-  justify-content: flex-start;
-  color: var(--fa-text-primary);
-  font-size: 13px;
-  line-height: 20px;
 }
