@@ -1,4 +1,4 @@
-import { ConfigProvider, Select, Button, Checkbox, Input, Modal } from 'antd';
+import { Alert, Badge, Tag, ConfigProvider, Select, Button, Checkbox, Input, Modal } from 'antd';
 import './antd-layout.css';
 import { usePageBack } from './use-page-back';
 import {
@@ -80,7 +80,7 @@ export default function ScheduleWorkbench({
   const [openingRun, setOpeningRun] = useState(false);
   const [runError, setRunError] = useState('');
   const runToken = useRef(0);
-  const historyError = useRef<HTMLParagraphElement>(null);
+  const historyError = useRef<HTMLDivElement>(null);
   const focusHistoryError = useRef(false);
   const historyHeading = useRef<HTMLHeadingElement>(null);
   const fields = useRef<HTMLFieldSetElement>(null),
@@ -96,7 +96,7 @@ export default function ScheduleWorkbench({
   const handledEditRequest = useRef<typeof editRequest>(undefined);
   const pageHeading = useRef<HTMLHeadingElement>(null);
   const feedbackHeading = useRef<HTMLHeadingElement>(null);
-  const pageError = useRef<HTMLParagraphElement>(null);
+  const pageError = useRef<HTMLDivElement>(null);
   const cancelHistoryReads = () => {
     readToken.current++;
     runToken.current++;
@@ -425,32 +425,54 @@ export default function ScheduleWorkbench({
         </div>
         {notice && (
           <div className="schedule-feedback" role="status">
-            <span className="ai-config-status success">{notice.badge}</span>
-            <h2 ref={feedbackHeading} tabIndex={-1}>
-              {notice.title}
-            </h2>
-            <p>{notice.detail}</p>
-            <Button
-              htmlType="button"
-              type="primary"
-              onClick={() => {
-                setNotice(undefined);
-                requestAnimationFrame(() => {
-                  const target = listFocus.current?.isConnected
-                    ? listFocus.current
-                    : pageHeading.current;
-                  target?.focus();
-                });
-              }}
-            >
-              返回计划
-            </Button>
+            <Alert
+              type="success"
+              role="presentation"
+              showIcon
+              title={
+                <h2 ref={feedbackHeading} tabIndex={-1}>
+                  {notice.title}
+                </h2>
+              }
+              description={
+                <div className="feedback-body">
+                  <Tag
+                    className="run-state-tag"
+                    variant="filled"
+                    color="success"
+                    icon={<Badge status="success" />}
+                  >
+                    {notice.badge}
+                  </Tag>
+                  <p>{notice.detail}</p>
+                  <Button
+                    htmlType="button"
+                    type="primary"
+                    onClick={() => {
+                      setNotice(undefined);
+                      requestAnimationFrame(() => {
+                        const target = listFocus.current?.isConnected
+                          ? listFocus.current
+                          : pageHeading.current;
+                        target?.focus();
+                      });
+                    }}
+                  >
+                    返回计划
+                  </Button>
+                </div>
+              }
+            />
           </div>
         )}
         {operationLabel && (
-          <p role="status" className="schedule-operation">
-            {operationLabel}
-          </p>
+          <Alert
+            type="info"
+            role="status"
+            showIcon
+            className="schedule-operation"
+            title={operationLabel}
+          />
         )}
         <datalist id="schedule-timezones">
           {['Asia/Shanghai', 'UTC', 'Asia/Tokyo', 'America/New_York', 'Europe/London'].map(
@@ -484,9 +506,14 @@ export default function ScheduleWorkbench({
                   {data.flows.find((flow) => flow.id === plan.flowId)?.flow.name ??
                     '来源流程不可用'}
                 </h3>
-                <span className={'ai-config-status ' + (plan.enabled ? 'success' : 'neutral')}>
+                <Tag
+                  className="run-state-tag"
+                  variant="filled"
+                  color={plan.enabled ? 'success' : 'default'}
+                  icon={<Badge status={plan.enabled ? 'success' : 'default'} />}
+                >
                   {plan.enabled ? '已启用' : '已暂停'}
-                </span>
+                </Tag>
                 <p className="schedule-plan-timing">
                   每 {plan.intervalMinutes} 分钟 · {plan.timezone} ·{' '}
                   {plan.enabled ? '下次 ' + inZone(plan.nextAt, plan.timezone) : '暂无下次执行'}
@@ -653,34 +680,63 @@ export default function ScheduleWorkbench({
                   </p>
                   {changed && (
                     <div role="alert" className="schedule-conflict">
-                      <span className="ai-config-status error">保存被拒绝</span>
-                      <h3>
-                        {draft.mode === 'edit' && !currentPlan
-                          ? '计划已不可用'
-                          : '计划或来源已更新'}
-                      </h3>
-                      <p>
-                        编辑期间计划或所选流程发生变化。当前输入已保留，重新编辑前请核对最新内容。
-                      </p>
-                      <Button
-                        type="primary"
-                        htmlType="button"
-                        onClick={() =>
-                          go(() => {
-                            if (draft.mode === 'edit' && !currentPlan) assign();
-                            else if (draft.plan) void open(draft.plan);
-                            else assign(blank());
-                          })
+                      <Alert
+                        type="error"
+                        role="presentation"
+                        showIcon
+                        title={
+                          <h3>
+                            {draft.mode === 'edit' && !currentPlan
+                              ? '计划已不可用'
+                              : '计划或来源已更新'}
+                          </h3>
                         }
-                      >
-                        {draft.mode === 'edit' && !currentPlan ? '返回计划' : '重新编辑'}
-                      </Button>
+                        description={
+                          <div className="feedback-body">
+                            <Tag
+                              className="run-state-tag"
+                              variant="filled"
+                              color="error"
+                              icon={<Badge status="error" />}
+                            >
+                              保存被拒绝
+                            </Tag>
+                            <p>
+                              编辑期间计划或所选流程发生变化。当前输入已保留，重新编辑前请核对最新内容。
+                            </p>
+                            <Button
+                              type="primary"
+                              htmlType="button"
+                              onClick={() =>
+                                go(() => {
+                                  if (draft.mode === 'edit' && !currentPlan) assign();
+                                  else if (draft.plan) void open(draft.plan);
+                                  else assign(blank());
+                                })
+                              }
+                            >
+                              {draft.mode === 'edit' && !currentPlan ? '返回计划' : '重新编辑'}
+                            </Button>
+                          </div>
+                        }
+                      />
                     </div>
                   )}
                   {error && !leaving && (
-                    <p role="alert" className="ai-task-error" ref={pageError} tabIndex={-1}>
-                      {error}
-                    </p>
+                    <div
+                      role="alert"
+                      className="template-operation-feedback"
+                      ref={pageError}
+                      tabIndex={-1}
+                    >
+                      <Alert
+                        type="error"
+                        role="presentation"
+                        showIcon
+                        title="操作未完成"
+                        description={error}
+                      />
+                    </div>
                   )}
                   <div className="ai-task-actions">
                     <Button
@@ -726,9 +782,20 @@ export default function ScheduleWorkbench({
               <h2>选择一个计划</h2>
               <p>选择左侧计划进行编辑，或创建一个新的本机计划。</p>
               {error && (
-                <p role="alert" className="ai-task-error" ref={pageError} tabIndex={-1}>
-                  {error}
-                </p>
+                <div
+                  role="alert"
+                  className="template-operation-feedback"
+                  ref={pageError}
+                  tabIndex={-1}
+                >
+                  <Alert
+                    type="error"
+                    role="presentation"
+                    showIcon
+                    title="操作未完成"
+                    description={error}
+                  />
+                </div>
               )}
             </section>
           )}
@@ -792,13 +859,14 @@ export default function ScheduleWorkbench({
             </h2>
             {history.result && (
               <div className="schedule-history-summary">
-                <span
-                  className={
-                    'ai-config-status ' + (history.result.plan.enabled ? 'success' : 'neutral')
-                  }
+                <Tag
+                  className="run-state-tag"
+                  variant="filled"
+                  color={history.result.plan.enabled ? 'success' : 'default'}
+                  icon={<Badge status={history.result.plan.enabled ? 'success' : 'default'} />}
                 >
                   {history.result.plan.enabled ? '已启用' : '已暂停'}
-                </span>
+                </Tag>
                 <p>
                   每 {history.result.plan.intervalMinutes} 分钟 · {history.result.plan.timezone}
                 </p>
@@ -824,9 +892,14 @@ export default function ScheduleWorkbench({
             </div>
             {history.result?.activeRun && (
               <div className="ai-task-card">
-                <span className="ai-config-status warning">
+                <Tag
+                  className="run-state-tag"
+                  variant="filled"
+                  color="warning"
+                  icon={<Badge status="warning" />}
+                >
                   {runDisplayLabels[history.result.activeRun.state]}
-                </span>
+                </Tag>
                 <p>{history.result.activeRun.name}</p>
                 <Button
                   disabled={busy || reading || openingRun || !!history.error || undefined}
@@ -837,9 +910,20 @@ export default function ScheduleWorkbench({
               </div>
             )}
             {(history.error || runError) && (
-              <p role="alert" className="ai-task-error" ref={historyError} tabIndex={-1}>
-                {history.error || runError}
-              </p>
+              <div
+                role="alert"
+                className="template-operation-feedback"
+                ref={historyError}
+                tabIndex={-1}
+              >
+                <Alert
+                  type="error"
+                  role="presentation"
+                  showIcon
+                  title="操作未完成"
+                  description={history.error || runError}
+                />
+              </div>
             )}
             {history.error && history.result && (
               <p>上次读取的记录仍保留。请重新读取后再查看活动运行。</p>
@@ -850,14 +934,26 @@ export default function ScheduleWorkbench({
             <div className="schedule-history-records">
               {history.result?.records.map((record) => (
                 <article className="ai-task-card" key={record.position}>
-                  <span
-                    className={
-                      'ai-config-status ' +
-                      (record.kind === 'missed'
-                        ? 'neutral'
+                  <Tag
+                    className="run-state-tag"
+                    variant="filled"
+                    color={
+                      record.kind === 'missed'
+                        ? 'default'
                         : record.kind === 'occupied'
                           ? 'warning'
-                          : 'error')
+                          : 'error'
+                    }
+                    icon={
+                      <Badge
+                        status={
+                          record.kind === 'missed'
+                            ? 'default'
+                            : record.kind === 'occupied'
+                              ? 'warning'
+                              : 'error'
+                        }
+                      />
                     }
                   >
                     {record.kind === 'missed'
@@ -865,7 +961,7 @@ export default function ScheduleWorkbench({
                       : record.kind === 'occupied'
                         ? '资源被占用'
                         : '触发失败'}
-                  </span>
+                  </Tag>
                   <h3>
                     {record.kind === 'missed'
                       ? '错过的计划'

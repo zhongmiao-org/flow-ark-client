@@ -184,17 +184,6 @@
 .template-execution-summary > div > p {
   color: var(--fa-text-primary);
 }
-.template-entry-created {
-  padding: 16px;
-  border-radius: 8px;
-  background: var(--fa-status-warning-bg);
-  color: var(--fa-text-primary);
-  font-size: 13px;
-  line-height: 22px;
-}
-.template-entry-created p {
-  margin: 8px 0 0;
-}
 .template-entry-resource-help {
   font-size: 13px;
   line-height: 22px;

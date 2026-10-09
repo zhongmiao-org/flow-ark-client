@@ -69,43 +69,6 @@
   gap: 16px;
   min-height: 40px;
 }
-.ai-config-status {
-  display: inline-flex;
-  align-items: center;
-  align-self: flex-start;
-  gap: 8px;
-  border-radius: var(--fa-radius-999);
-  padding: 5px 12px;
-  font-size: 12px;
-  line-height: 18px;
-}
-.ai-config-status::before {
-  content: '';
-  height: 6px;
-  width: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.ai-config-status.neutral {
-  color: var(--fa-text-secondary);
-  background: var(--fa-bg-canvas);
-}
-.ai-config-status.success {
-  color: var(--fa-status-success);
-  background: var(--fa-status-success-bg);
-}
-.ai-config-status.warning {
-  color: var(--fa-status-warning);
-  background: var(--fa-status-warning-bg);
-}
-.ai-config-status.error {
-  color: var(--fa-status-error);
-  background: var(--fa-status-error-bg);
-}
-.ai-config-status.running {
-  color: var(--fa-action-primary);
-  background: var(--fa-action-subtle);
-}
 /* Figma 8:19310: an unavailable return source must offer an explicit destination. */
 .ai-settings-page .ai-task-card.ai-source-unavailable-card {
   min-height: 350px;
@@ -422,10 +385,4 @@ button.ai-remove-button {
 }
 .ai-connection-feedback {
   overflow-wrap: anywhere;
-}
-
-.ai-settings-page .ai-task-card > .run-state-tag,
-.ai-missing-card > .run-state-tag {
-  align-self: flex-start;
-  width: fit-content;
 }

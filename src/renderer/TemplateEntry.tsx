@@ -1,4 +1,4 @@
-import { ConfigProvider, Select, Button, Input } from 'antd';
+import { Alert, Badge, Tag, ConfigProvider, Select, Button, Input } from 'antd';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
 import type { Bootstrap, Run } from '../shared/types';
 import { runDisplayLabels } from '../shared/run-history';
@@ -368,11 +368,21 @@ export default function TemplateEntry({
     <>
       <div className="template-entry-pane">
         {readError && (
-          <div className="ai-task-error" role="alert">
-            <p>{readError}</p>
-            <Button disabled={checking || undefined} onClick={() => setReload((v) => v + 1)}>
-              重新读取 AI 状态
-            </Button>
+          <div className="template-operation-feedback" role="alert">
+            <Alert
+              type="error"
+              role="presentation"
+              showIcon
+              title="AI 状态读取未完成"
+              description={
+                <div className="feedback-body">
+                  <p>{readError}</p>
+                  <Button disabled={checking || undefined} onClick={() => setReload((v) => v + 1)}>
+                    重新读取 AI 状态
+                  </Button>
+                </div>
+              }
+            />
           </div>
         )}
         <div
@@ -448,18 +458,30 @@ export default function TemplateEntry({
               ref={readinessNotice}
               tabIndex={-1}
             >
-              <span
-                className={
-                  'ai-config-status ' +
-                  (sourceError || readError || (!reading && requirements.length)
+              <Tag
+                className="run-state-tag"
+                variant="filled"
+                color={
+                  sourceError || readError || (!reading && requirements.length)
                     ? 'warning'
                     : reading
-                      ? 'neutral'
-                      : 'success')
+                      ? 'default'
+                      : 'success'
+                }
+                icon={
+                  <Badge
+                    status={
+                      sourceError || readError || (!reading && requirements.length)
+                        ? 'warning'
+                        : reading
+                          ? 'default'
+                          : 'success'
+                    }
+                  />
                 }
               >
                 {readiness}
-              </span>
+              </Tag>
               {!reading && requirements.length > 0 && (
                 <ul>
                   {requirements.map((requirement) => (
@@ -484,8 +506,13 @@ export default function TemplateEntry({
                 tabIndex={-1}
                 ref={createdRunNotice}
               >
-                <strong>入口运行已创建 · {createdRun.id.slice(0, 8)}</strong>
-                <p>详情尚未打开。继续查看会读取同一条运行，不会再次执行入口。</p>
+                <Alert
+                  type="warning"
+                  role="presentation"
+                  showIcon
+                  title={<>入口运行已创建 · {createdRun.id.slice(0, 8)}</>}
+                  description="详情尚未打开。继续查看会读取同一条运行，不会再次执行入口。"
+                />
               </div>
             )}
             <div className="ai-task-actions">
@@ -606,7 +633,14 @@ export default function TemplateEntry({
             </div>
             {!aiResources.length && (
               <>
-                <span className="ai-config-status neutral">此入口不需要 AI</span>
+                <Tag
+                  className="run-state-tag"
+                  variant="filled"
+                  color="default"
+                  icon={<Badge status="default" />}
+                >
+                  此入口不需要 AI
+                </Tag>
                 <details className="template-entry-resource-help">
                   <summary>资源检查范围</summary>
                   <p>只核对当前入口声明的资源，其他入口的 AI 配置不会阻止本次操作。</p>
@@ -633,8 +667,27 @@ export default function TemplateEntry({
               return (
                 <div className="template-entry-ai-resource" key={resource.id}>
                   {aiResources.length > 1 && <h3>{resource.name}</h3>}
-                  <span
-                    className={`ai-config-status ${checking ? 'neutral' : readError || !state?.configured || !tested || bindingDirty ? 'warning' : 'success'}`}
+                  <Tag
+                    className="run-state-tag"
+                    variant="filled"
+                    color={
+                      checking
+                        ? 'default'
+                        : readError || !state?.configured || !tested || bindingDirty
+                          ? 'warning'
+                          : 'success'
+                    }
+                    icon={
+                      <Badge
+                        status={
+                          checking
+                            ? 'default'
+                            : readError || !state?.configured || !tested || bindingDirty
+                              ? 'warning'
+                              : 'success'
+                        }
+                      />
+                    }
                   >
                     {checking
                       ? '正在读取'
@@ -657,7 +710,7 @@ export default function TemplateEntry({
                                       : bindingTest?.status === 'interrupted'
                                         ? '已配置 · 上次测试中断'
                                         : '已配置 · 待验证'}
-                  </span>
+                  </Tag>
                   <label className="ai-settings-field">
                     <span>供应商</span>
                     <Select<string>
@@ -801,7 +854,12 @@ export default function TemplateEntry({
                 <small>正在读取最近运行…</small>
               ) : latestError ? (
                 <>
-                  <p role="alert">{latestError}</p>
+                  <Alert
+                    type="error"
+                    showIcon
+                    title="最近运行读取未完成"
+                    description={latestError}
+                  />
                   <Button onClick={() => reloadLatest((v) => v + 1)}>重试最近运行</Button>
                 </>
               ) : latest ? (

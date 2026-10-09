@@ -1,4 +1,4 @@
-import { ConfigProvider, Button, Checkbox, Input } from 'antd';
+import { Alert, Badge, Tag, ConfigProvider, Button, Checkbox, Input } from 'antd';
 import { usePageBack } from './use-page-back';
 import {
   useEffect,
@@ -48,7 +48,7 @@ export default function TemplateSchedulePage({
     [created, setCreated] = useState<Schedule>();
   const busy = operation !== undefined;
   const [notice, setNotice] = useState<{ title: string; detail: string }>();
-  const pageError = useRef<HTMLParagraphElement>(null);
+  const pageError = useRef<HTMLDivElement>(null);
   const feedbackHeading = useRef<HTMLHeadingElement>(null);
   const resultHeading = useRef<HTMLHeadingElement>(null);
   const toggleFocus = useRef<HTMLButtonElement | null>(null);
@@ -203,35 +203,65 @@ export default function TemplateSchedulePage({
           </div>
         </div>
         {(checking || operation) && !leaving && (
-          <p className="schedule-operation" role="status">
-            {operation
-              ? { create: '正在创建计划…', enable: '正在启用计划…', pause: '正在暂停计划…' }[
-                  operation
-                ]
-              : '正在核对来源实例与入口…'}
-          </p>
+          <Alert
+            className="schedule-operation"
+            type="info"
+            role="status"
+            showIcon
+            title={
+              operation
+                ? { create: '正在创建计划…', enable: '正在启用计划…', pause: '正在暂停计划…' }[
+                    operation
+                  ]
+                : '正在核对来源实例与入口…'
+            }
+          />
         )}
         {(sourceError || error) && !leaving && (
-          <p ref={pageError} tabIndex={-1} role="alert" className="ai-task-error">
-            {sourceError || error}
-          </p>
+          <div ref={pageError} tabIndex={-1} role="alert" className="template-operation-feedback">
+            <Alert
+              type="error"
+              role="presentation"
+              showIcon
+              title="操作未完成"
+              description={sourceError || error}
+            />
+          </div>
         )}
         {notice && !leaving && (
           <div className="schedule-feedback" role="status">
-            <span className="ai-config-status success">固定版本保持不变</span>
-            <h2 ref={feedbackHeading} tabIndex={-1}>
-              {notice.title}
-            </h2>
-            <p>{notice.detail}</p>
-            <Button
-              htmlType="button"
-              onClick={() => {
-                setNotice(undefined);
-                requestAnimationFrame(() => toggleFocus.current?.focus());
-              }}
-            >
-              返回计划
-            </Button>
+            <Alert
+              type="success"
+              role="presentation"
+              showIcon
+              title={
+                <h2 ref={feedbackHeading} tabIndex={-1}>
+                  {notice.title}
+                </h2>
+              }
+              description={
+                <div className="feedback-body">
+                  <Tag
+                    className="run-state-tag"
+                    variant="filled"
+                    color="success"
+                    icon={<Badge status="success" />}
+                  >
+                    固定版本保持不变
+                  </Tag>
+                  <p>{notice.detail}</p>
+                  <Button
+                    htmlType="button"
+                    onClick={() => {
+                      setNotice(undefined);
+                      requestAnimationFrame(() => toggleFocus.current?.focus());
+                    }}
+                  >
+                    返回计划
+                  </Button>
+                </div>
+              }
+            />
           </div>
         )}
         <div className="template-schedule-columns">
@@ -247,9 +277,14 @@ export default function TemplateSchedulePage({
                   <h3>
                     {data.flows.find((flow) => flow.id === plan.flowId)?.flow.name ?? origin.title}
                   </h3>
-                  <span className={'ai-config-status ' + (plan.enabled ? 'success' : 'neutral')}>
+                  <Tag
+                    className="run-state-tag"
+                    variant="filled"
+                    color={plan.enabled ? 'success' : 'default'}
+                    icon={<Badge status={plan.enabled ? 'success' : 'default'} />}
+                  >
                     {plan.enabled ? '已启用' : '已暂停'}
-                  </span>
+                  </Tag>
                   <p>
                     每 {plan.intervalMinutes} 分钟 · {plan.timezone}
                   </p>
@@ -338,9 +373,13 @@ export default function TemplateSchedulePage({
             </ConfigProvider>
             {created ? (
               <>
-                <p role="status">
-                  计划已创建 · 固定版本 {created.versionId.slice(0, 8)}，尚未因本次创建立即运行。
-                </p>
+                <Alert
+                  type="success"
+                  role="status"
+                  showIcon
+                  title={<>计划已创建 · 固定版本 {created.versionId.slice(0, 8)}</>}
+                  description="尚未因本次创建立即运行。"
+                />
                 <Button htmlType="button" onClick={back}>
                   返回模板入口
                 </Button>
