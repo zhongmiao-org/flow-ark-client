@@ -1,8 +1,9 @@
-import { Button, Modal } from 'antd';
+import { Alert, Button, Card, Collapse, Descriptions, Modal, Tag } from 'antd';
 import './antd-layout.css';
 import { useEffect, useRef, useState } from 'react';
 import type { Bindings, Step } from '../shared/types';
 import './script-packages.css';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 
 type Package = { name: string; version: string; path: string };
 type Props = {
@@ -39,7 +40,7 @@ export default function ScriptPackages(props: Props) {
   const root = useRef<HTMLElement>(null);
   const addButton = useRef<HTMLButtonElement>(null);
   const review = useRef<HTMLHeadingElement>(null);
-  const errorElement = useRef<HTMLParagraphElement>(null);
+  const errorElement = useRef<HTMLDivElement>(null);
   const origin = useRef<HTMLElement | null>(null);
   const restore = useRef(false);
   useEffect(() => {
@@ -256,7 +257,7 @@ export default function ScriptPackages(props: Props) {
         </Button>
       )}
       {!props.node.dependencies.length && (
-        <p className="script-package-empty">当前步骤未声明第三方依赖。需要时绑定已有包目录。</p>
+        <Alert type="info" showIcon title="当前步骤未声明第三方依赖。需要时绑定已有包目录。" />
       )}
       {props.node.dependencies.map((dep) => {
         const binding = props.bindings.scriptPackages?.[dep.name];
@@ -266,13 +267,28 @@ export default function ScriptPackages(props: Props) {
           mismatch = !!binding && binding.version !== dep.version;
         const warning = missing || mismatch || !!check?.error;
         return (
-          <article className="script-package-card" key={dep.name} aria-label={`${dep.name} 依赖`}>
+          <Card
+            size="small"
+            className="script-package-card"
+            key={dep.name}
+            role="group"
+            aria-label={`${dep.name} 依赖`}
+          >
             <h4>{dep.name}</h4>
             <p className="script-package-version">
               要求版本 <strong>{dep.version}</strong>
             </p>
-            <span
-              className={`script-package-state ${warning ? 'warning' : check ? 'success' : ''}`}
+            <Tag
+              className="script-package-state"
+              color={
+                busy === dep.name
+                  ? 'processing'
+                  : warning
+                    ? 'warning'
+                    : check
+                      ? 'success'
+                      : 'default'
+              }
             >
               {busy === dep.name
                 ? '正在读取包信息…'
@@ -285,19 +301,37 @@ export default function ScriptPackages(props: Props) {
                       : check
                         ? '名称与版本已核对'
                         : '已绑定 · 本次尚未核对'}
-            </span>
+            </Tag>
             {binding?.path && (
-              <details>
-                <summary>查看本机目录</summary>
-                <p className="path-text">{binding.path}</p>
-                <p>绑定版本：{binding.version}</p>
-              </details>
+              <div className="script-package-directory" onKeyDown={activateCollapseWithSpace}>
+                <Collapse
+                  size="small"
+                  items={[
+                    {
+                      key: 'directory',
+                      label: '查看本机目录',
+                      forceRender: true,
+                      children: (
+                        <Descriptions
+                          size="small"
+                          column={1}
+                          layout="vertical"
+                          items={[
+                            {
+                              key: 'path',
+                              label: '本机目录',
+                              children: <span className="path-text">{binding.path}</span>,
+                            },
+                            { key: 'version', label: '绑定版本', children: binding.version },
+                          ]}
+                        />
+                      ),
+                    },
+                  ]}
+                />
+              </div>
             )}
-            {check?.error && (
-              <p role="alert" className="field-error">
-                {check.error}
-              </p>
-            )}
+            {check?.error && <Alert type="error" showIcon title={check.error} />}
             {check && !check.error && (
               <p className="note">仅核对目录的包名与版本；完整依赖编译与运行前检查仍需通过。</p>
             )}
@@ -312,6 +346,7 @@ export default function ScriptPackages(props: Props) {
                 核对当前目录
               </Button>
               <Button
+                danger
                 disabled={!!busy || undefined}
                 data-dependency-remove={dep.name}
                 aria-label={`移除依赖 ${dep.name}`}
@@ -320,22 +355,19 @@ export default function ScriptPackages(props: Props) {
                 移除依赖
               </Button>
             </div>
-          </article>
+          </Card>
         );
       })}
-      <Button ref={addButton} onClick={() => void choose()} disabled={!!busy || undefined}>
+      <Button
+        ref={addButton}
+        onClick={() => void choose()}
+        loading={busy === 'add'}
+        disabled={!!busy || undefined}
+      >
         {busy === 'add' ? '读取包信息…' : '绑定本地包'}
       </Button>
-      {notice && (
-        <p className="script-package-feedback" role="status">
-          {notice}
-        </p>
-      )}
-      {error && !candidate && (
-        <p className="field-error" role="alert">
-          {error}
-        </p>
-      )}
+      {notice && <Alert type="info" showIcon role="status" title={notice} />}
+      {error && !candidate && <Alert type="error" showIcon title={error} />}
       {candidate && (
         <Modal
           open
@@ -357,33 +389,44 @@ export default function ScriptPackages(props: Props) {
           </h2>
           <p>只更新当前草稿；不会安装包或运行脚本。</p>
           <h3>{candidate.info.name}</h3>
-          <dl>
-            <dt>当前步骤版本</dt>
-            <dd>{old?.version ?? '未声明'}</dd>
-            <dt>所选目录版本</dt>
-            <dd>{candidate.info.version}</dd>
-            {previous && (
-              <>
-                <dt>当前绑定目录</dt>
-                <dd>{previous.path}</dd>
-              </>
-            )}
-            <dt>所选本机目录</dt>
-            <dd>{candidate.info.path}</dd>
-          </dl>
+          <Descriptions
+            size="small"
+            column={1}
+            layout="vertical"
+            className="script-package-review"
+            items={[
+              { key: 'current', label: '当前步骤版本', children: old?.version ?? '未声明' },
+              { key: 'next', label: '所选目录版本', children: candidate.info.version },
+              ...(previous
+                ? [
+                    {
+                      key: 'previous-path',
+                      label: '当前绑定目录',
+                      children: <span className="path-text">{previous.path}</span>,
+                    },
+                  ]
+                : []),
+              {
+                key: 'path',
+                label: '所选本机目录',
+                children: <span className="path-text">{candidate.info.path}</span>,
+              },
+            ]}
+          />
           {old && old.version !== candidate.info.version && (
-            <p className="script-package-warning">
-              应用后将把本步骤的依赖版本改为 {candidate.info.version}
-              。其他步骤若声明不同版本，会拒绝应用。
-            </p>
+            <Alert
+              type="warning"
+              showIcon
+              title={`应用后将把本步骤的依赖版本改为 ${candidate.info.version}。其他步骤若声明不同版本，会拒绝应用。`}
+            />
           )}
           <p>
             目录绑定由同一流程的脚本步骤共享。保存后供新的运行使用，已有运行与计划的固定内容保持原样。
           </p>
           {error && (
-            <p ref={errorElement} tabIndex={-1} className="field-error" role="alert">
-              {error}
-            </p>
+            <div ref={errorElement} tabIndex={-1}>
+              <Alert type="error" showIcon title={error} />
+            </div>
           )}
           <footer className="script-package-actions">
             <Button onClick={cancel}>取消</Button>
