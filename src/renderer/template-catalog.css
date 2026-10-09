@@ -99,47 +99,6 @@
 .template-catalog-row h2 {
   margin: 0;
 }
-.template-catalog-status {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: var(--fa-radius-999);
-  color: var(--fa-text-secondary);
-  background: var(--fa-bg-subtle);
-  font-size: 12px;
-  line-height: 18px;
-}
-.template-catalog-status.success {
-  color: var(--fa-status-success);
-  background: var(--fa-status-success-bg);
-}
-.template-catalog-status.warning {
-  color: var(--fa-status-warning);
-  background: var(--fa-status-warning-bg);
-}
-.template-catalog-status.error {
-  color: var(--fa-status-error);
-  background: var(--fa-status-error-bg);
-}
-.template-install-state {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-}
-.template-install-state .template-catalog-status::before {
-  content: '';
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 8px;
-  border-radius: 50%;
-  background: currentColor;
-  vertical-align: middle;
-}
-.template-catalog-side .template-install-state h3 {
-  font-size: 18px;
-  line-height: 28px;
-}
 .template-catalog-muted {
   font-size: 12px;
   color: var(--fa-text-secondary);
@@ -192,9 +151,6 @@
 }
 .template-catalog-side > button {
   width: 100%;
-}
-.template-catalog-side .template-catalog-banner {
-  margin: 0;
 }
 .template-catalog-facts {
   display: grid;
@@ -283,28 +239,6 @@
   margin: 4px 0;
   flex-shrink: 0;
   accent-color: var(--fa-action-primary);
-}
-.template-catalog-banner {
-  margin-bottom: 24px;
-  padding: 16px 20px;
-  border-radius: var(--fa-radius-8);
-  background: var(--fa-bg-subtle);
-  line-height: 24px;
-  overflow-wrap: anywhere;
-}
-.template-catalog-banner p {
-  margin: 8px 0;
-}
-.template-catalog-banner > button {
-  margin: 12px 12px 0 0;
-}
-.template-catalog-banner.error {
-  background: var(--fa-status-error-bg);
-  color: var(--fa-status-error);
-}
-.template-catalog-banner.warning {
-  background: var(--fa-status-warning-bg);
-  color: var(--fa-status-warning);
 }
 .template-catalog-empty {
   padding: 48px 24px;
@@ -450,16 +384,6 @@
   background: var(--fa-bg-canvas);
   border-radius: var(--fa-radius-8);
 }
-.template-manifest > .template-catalog-status::before {
-  content: '';
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 8px;
-  border-radius: 50%;
-  background: currentColor;
-  vertical-align: middle;
-}
 @container (max-width: 860px) {
   .template-catalog-layout > .template-catalog-card {
     min-height: 0;
@@ -478,4 +402,13 @@
 }
 .template-catalog-intro {
   padding-bottom: 16px;
+}
+
+.template-catalog-feedback {
+  margin-bottom: 24px;
+  overflow-wrap: anywhere;
+}
+.template-install-feedback {
+  width: 100%;
+  overflow-wrap: anywhere;
 }

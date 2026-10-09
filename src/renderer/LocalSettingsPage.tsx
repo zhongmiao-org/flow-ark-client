@@ -1,4 +1,4 @@
-import { Select, Button, Input, Tabs } from 'antd';
+import { Alert, Badge, Select, Button, Input, Tabs, Tag } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { Bootstrap, BrowserBinding, FlowRecord } from '../shared/types';
 import type { AIProviderId } from '../shared/ai-settings';
@@ -334,14 +334,18 @@ export default function LocalSettingsPage({
   const settingsContent = (
     <>
       {error && (
-        <div className="local-settings-banner error" role="alert" ref={errorBanner} tabIndex={-1}>
-          {error}
+        <div className="local-settings-feedback" role="alert" ref={errorBanner} tabIndex={-1}>
+          <Alert type="error" role="presentation" showIcon title={error} />
         </div>
       )}
       {notice && (
-        <div className="local-settings-banner success" role="status">
-          {notice}
-        </div>
+        <Alert
+          className="local-settings-feedback"
+          type="success"
+          role="status"
+          showIcon
+          title={notice}
+        />
       )}
       <div id="settings-content">
         {tab === 'browser' &&
@@ -396,18 +400,26 @@ export default function LocalSettingsPage({
                 <div className="local-settings-divider" />
                 {refreshError && (
                   <div
-                    className="local-settings-banner warning"
+                    className="local-settings-feedback"
                     role="alert"
                     ref={refreshBanner}
                     tabIndex={-1}
                   >
-                    <p>{refreshError}</p>
-                    <Button
-                      disabled={!!busy || undefined}
-                      onClick={() => void act('refresh', refreshBindings)}
-                    >
-                      {busy === 'refresh' ? '正在读取列表…' : '重新读取设置列表'}
-                    </Button>
+                    <Alert
+                      type="warning"
+                      role="presentation"
+                      showIcon
+                      title="设置列表刷新失败"
+                      description={refreshError}
+                      action={
+                        <Button
+                          disabled={!!busy || undefined}
+                          onClick={() => void act('refresh', refreshBindings)}
+                        >
+                          {busy === 'refresh' ? '正在读取列表…' : '重新读取设置列表'}
+                        </Button>
+                      }
+                    />
                   </div>
                 )}
                 <h2>网页展示</h2>
@@ -429,8 +441,27 @@ export default function LocalSettingsPage({
                 <div className="local-settings-health">
                   <div className="local-health-heading">
                     <h3>浏览器</h3>
-                    <span
-                      className={`badge ${sessionError || session?.blocked ? 'state-INTERRUPTED' : session && embedded ? 'state-SUCCEEDED' : ''}`}
+                    <Tag
+                      className="run-state-tag"
+                      variant="filled"
+                      color={
+                        sessionError || session?.blocked
+                          ? 'warning'
+                          : session && embedded
+                            ? 'success'
+                            : 'default'
+                      }
+                      icon={
+                        <Badge
+                          status={
+                            sessionError || session?.blocked
+                              ? 'warning'
+                              : session && embedded
+                                ? 'success'
+                                : 'default'
+                          }
+                        />
+                      }
                     >
                       {sessionError
                         ? '状态未取得'
@@ -441,7 +472,7 @@ export default function LocalSettingsPage({
                             : embedded
                               ? '已启用'
                               : '未启用'}
-                    </span>
+                    </Tag>
                   </div>
                   <p role={sessionError ? 'alert' : undefined}>
                     {sessionError || !session
@@ -462,11 +493,11 @@ export default function LocalSettingsPage({
                     aria-label="管理 AI 服务"
                   >
                     <span>AI 服务</span>
-                    <span className="badge">
+                    <Tag className="run-state-tag" variant="filled">
                       {data.credentials.some((id) => id === 'deepseek' || id === 'openai-codex')
                         ? '已配置 · 待核对'
                         : '未配置'}
-                    </span>
+                    </Tag>
                   </Button>
                   <p>
                     {data.credentials.some((id) => id === 'deepseek' || id === 'openai-codex')
@@ -482,9 +513,9 @@ export default function LocalSettingsPage({
                     aria-label="查看文件与存储"
                   >
                     <span>输出与文件</span>
-                    <span className="badge">
+                    <Tag className="run-state-tag" variant="filled">
                       {fileFlows.length ? `${fileFlows.length} 个流程有绑定` : '未绑定'}
-                    </span>
+                    </Tag>
                   </Button>
                   <p>按流程保存本机文件或目录绑定。</p>
                 </div>
@@ -496,7 +527,9 @@ export default function LocalSettingsPage({
                     aria-label="管理本机凭据"
                   >
                     <span>凭据保护</span>
-                    <span className="badge">保存时核验</span>
+                    <Tag className="run-state-tag" variant="filled">
+                      保存时核验
+                    </Tag>
                   </Button>
                   <p>系统保护不可用时拒绝保存。</p>
                 </div>
@@ -615,11 +648,30 @@ export default function LocalSettingsPage({
                   ref={receiptBanner}
                   tabIndex={-1}
                 >
-                  <span
-                    className={`badge ${receipt ? (receipt.product === 'firefox' && !receipt.driver ? 'state-INTERRUPTED' : 'state-SUCCEEDED') : ''}`}
+                  <Tag
+                    className="run-state-tag"
+                    variant="filled"
+                    color={
+                      receipt
+                        ? receipt.product === 'firefox' && !receipt.driver
+                          ? 'warning'
+                          : 'success'
+                        : 'default'
+                    }
+                    icon={
+                      <Badge
+                        status={
+                          receipt
+                            ? receipt.product === 'firefox' && !receipt.driver
+                              ? 'warning'
+                              : 'success'
+                            : 'default'
+                        }
+                      />
+                    }
                   >
                     {receipt ? '绑定已保存' : path ? '尚未检测保存' : '尚未选择本机安装'}
-                  </span>
+                  </Tag>
                   {receipt && (
                     <>
                       <strong>
@@ -637,19 +689,26 @@ export default function LocalSettingsPage({
               </div>
               {refreshError && (
                 <div
-                  className="local-settings-banner warning"
+                  className="local-settings-feedback"
                   role="alert"
                   ref={refreshBanner}
                   tabIndex={-1}
                 >
-                  <strong>设置列表刷新失败</strong>
-                  <p>{refreshError}</p>
-                  <Button
-                    disabled={!!busy || undefined}
-                    onClick={() => void act('refresh', refreshBindings)}
-                  >
-                    {busy === 'refresh' ? '正在读取列表…' : '重新读取设置列表'}
-                  </Button>
+                  <Alert
+                    type="warning"
+                    role="presentation"
+                    showIcon
+                    title="设置列表刷新失败"
+                    description={refreshError}
+                    action={
+                      <Button
+                        disabled={!!busy || undefined}
+                        onClick={() => void act('refresh', refreshBindings)}
+                      >
+                        {busy === 'refresh' ? '正在读取列表…' : '重新读取设置列表'}
+                      </Button>
+                    }
+                  />
                 </div>
               )}
               <div className="local-settings-actions">

@@ -66,24 +66,6 @@
   font-size: 12px;
   color: var(--fa-text-secondary);
 }
-.attention-status {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: var(--fa-radius-999);
-  font-size: 12px;
-  line-height: 18px;
-  background: var(--fa-bg-subtle);
-  color: var(--fa-text-secondary);
-}
-.attention-status.is-warning {
-  background: var(--fa-status-warning-bg);
-  color: var(--fa-status-warning);
-}
-.attention-status.is-error {
-  background: var(--fa-status-error-bg);
-  color: var(--fa-status-error);
-}
 .attention-card h2,
 .attention-detail-card h2 {
   font-size: 18px;
@@ -258,28 +240,6 @@
   accent-color: var(--fa-action-primary);
   flex: 0 0 auto;
 }
-.attention-banner {
-  border-radius: var(--fa-radius-8);
-  padding: 16px;
-  margin-bottom: 20px;
-  line-height: 24px;
-  overflow-wrap: anywhere;
-}
-.attention-banner.is-error {
-  background: var(--fa-status-error-bg);
-  color: var(--fa-status-error);
-}
-.attention-banner.is-warning {
-  background: var(--fa-status-warning-bg);
-  color: var(--fa-status-warning);
-}
-.attention-banner.is-success {
-  background: var(--fa-status-success-bg);
-  color: var(--fa-status-success);
-}
-.attention-error {
-  color: var(--fa-status-error);
-}
 .attention-page {
   container-type: inline-size;
 }
@@ -314,18 +274,6 @@
   }
 }
 
-.attention-status::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  margin-right: 8px;
-  background: currentColor;
-}
-.attention-status.is-success {
-  background: var(--fa-status-success-bg);
-  color: var(--fa-status-success);
-}
 .attention-card.is-compact {
   padding-bottom: 12px;
 }
@@ -360,9 +308,6 @@
 }
 .attention-card > .attention-actions {
   margin-top: 16px;
-}
-.attention-status {
-  padding: 5px 12px;
 }
 
 .attention-toolbar .ant-select {
@@ -461,18 +406,6 @@
   font-size: 13px;
   line-height: 20px;
   overflow-wrap: anywhere;
-}
-.attention-banner > strong {
-  font-size: 16px;
-  line-height: 24px;
-}
-.attention-banner > p {
-  margin: 8px 0 0;
-  font-size: 14px;
-  line-height: 22px;
-}
-.attention-banner > button {
-  margin-top: 12px;
 }
 @container (max-width: 850px) {
   .attention-detail-layout > .attention-detail-card {
@@ -583,4 +516,9 @@
   border: 1px solid var(--fa-border-default);
   border-radius: var(--fa-radius-12);
   background: var(--fa-bg-subtle);
+}
+
+.attention-feedback {
+  margin-bottom: 20px;
+  overflow-wrap: anywhere;
 }

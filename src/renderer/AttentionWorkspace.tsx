@@ -1,4 +1,4 @@
-import { ConfigProvider, Select, Button, Checkbox, Input, Tabs } from 'antd';
+import { Alert, Badge, ConfigProvider, Select, Button, Checkbox, Input, Tabs, Tag } from 'antd';
 import {
   useEffect,
   useId,
@@ -203,9 +203,7 @@ function AnswerForm({
         已核对本次目标和内容
       </Checkbox>
       {error && (
-        <p id={errorId} role="alert" className="attention-error">
-          {error}
-        </p>
+        <Alert id={errorId} type="error" showIcon title={error} className="attention-feedback" />
       )}
       <div className="attention-actions">
         <Button type="primary" htmlType="submit" disabled={!enabled || !reviewed || undefined}>
@@ -486,7 +484,7 @@ export default function AttentionWorkspace({
       ? 'warning'
       : /error|fail|limitation/.test(item.kind)
         ? 'error'
-        : 'neutral';
+        : 'default';
   };
   const label = (item: Attention) => {
     if (human(item))
@@ -550,7 +548,14 @@ export default function AttentionWorkspace({
             aria-label={item.title}
           >
             <div className="attention-card-heading">
-              <span className={`attention-status is-${tone(item)}`}>{label(item)}</span>
+              <Tag
+                className="run-state-tag"
+                variant="filled"
+                color={tone(item)}
+                icon={<Badge status={tone(item)} />}
+              >
+                {label(item)}
+              </Tag>
               {item.kind !== 'unknown-result' && <h2>{item.title}</h2>}
               <time dateTime={item.time}>{date(item.time)}</time>
             </div>
@@ -631,20 +636,27 @@ export default function AttentionWorkspace({
         </div>
       </header>
       {error && (
-        <div ref={errorPanel} tabIndex={-1} className="attention-banner is-error" role="alert">
-          <strong>请核对当前处理状态</strong>
-          <p>{error}</p>
-          <Button
-            disabled={busy || undefined}
-            onClick={() => void act(async () => {}, '已刷新当前处理状态')}
-          >
-            刷新状态
-          </Button>
+        <div ref={errorPanel} tabIndex={-1} className="attention-feedback" role="alert">
+          <Alert
+            type="error"
+            role="presentation"
+            showIcon
+            title="请核对当前处理状态"
+            description={error}
+            action={
+              <Button
+                disabled={busy || undefined}
+                onClick={() => void act(async () => {}, '已刷新当前处理状态')}
+              >
+                刷新状态
+              </Button>
+            }
+          />
         </div>
       )}
       {notice && (
-        <div ref={noticePanel} tabIndex={-1} className="attention-banner is-success" role="status">
-          {notice}
+        <div ref={noticePanel} tabIndex={-1} className="attention-feedback" role="status">
+          <Alert type="success" role="presentation" showIcon title={notice} />
         </div>
       )}
       {!selected ? (
@@ -703,32 +715,50 @@ export default function AttentionWorkspace({
           <article
             className={`attention-detail-card${human(selected) ? ' attention-request-card' : ''}`}
           >
-            <span className={`attention-status is-${tone(selected)}`}>{label(selected)}</span>
+            <Tag
+              className="run-state-tag"
+              variant="filled"
+              color={tone(selected)}
+              icon={<Badge status={tone(selected)} />}
+            >
+              {label(selected)}
+            </Tag>
             <h2>{selected.title}</h2>
             {state === 'answered' ? (
-              <div className="attention-banner is-success">
-                <strong>本次请求已回应</strong>
-                <p>不会重复提交。是否继续及执行结果以来源运行为准。</p>
-              </div>
+              <Alert
+                className="attention-feedback"
+                type="success"
+                role="status"
+                showIcon
+                title="本次请求已回应"
+                description="不会重复提交。是否继续及执行结果以来源运行为准。"
+              />
             ) : state === 'expired' ? (
-              <div className="attention-banner is-error">
-                <strong>人工请求已失效</strong>
-                <p>请求已超时或来源运行已结束，旧确认不能继续执行。可查看来源运行和保留的证据。</p>
-              </div>
+              <Alert
+                className="attention-feedback"
+                type="error"
+                showIcon
+                title="人工请求已失效"
+                description="请求已超时或来源运行已结束，旧确认不能继续执行。可查看来源运行和保留的证据。"
+              />
             ) : state === 'unavailable' ? (
-              <div className="attention-banner is-warning">
-                <strong>当前无法确认请求状态</strong>
-                <p>请查看来源运行，或刷新状态后重新核对。旧按钮不会继续执行。</p>
-              </div>
+              <Alert
+                className="attention-feedback"
+                type="warning"
+                showIcon
+                title="当前无法确认请求状态"
+                description="请查看来源运行，或刷新状态后重新核对。旧按钮不会继续执行。"
+              />
             ) : null}
             {human(selected) ? (
               review === null ? (
-                <div className="attention-banner is-error" role="alert">
-                  <strong>本次核对内容格式无效</strong>
-                  <p>
-                    无法完整展示目标和拟执行内容，不能回应此请求。请查看来源运行并联系模板提供者。
-                  </p>
-                </div>
+                <Alert
+                  className="attention-feedback"
+                  type="error"
+                  showIcon
+                  title="本次核对内容格式无效"
+                  description="无法完整展示目标和拟执行内容，不能回应此请求。请查看来源运行并联系模板提供者。"
+                />
               ) : review ? (
                 <>
                   <dl className="attention-review-content">
@@ -831,35 +861,50 @@ export default function AttentionWorkspace({
               <div
                 ref={stopPanel}
                 tabIndex={-1}
-                className="attention-banner is-warning attention-stop-confirm"
+                className="attention-feedback attention-stop-confirm"
+                aria-label="停止运行确认"
               >
-                <strong>停止这个运行？</strong>
-                <p>已产生的结果会保留；尚未执行的步骤不会继续。</p>
-                <div className="attention-actions">
-                  <Button
-                    danger
-                    disabled={busy || undefined}
-                    onClick={() =>
-                      void act(async () => {
-                        await api('run.control', { id: sourceId(selected), action: 'cancel' });
-                        setCancelRun(false);
-                      }, '已请求停止，请查看运行最终状态。')
-                    }
-                  >
-                    确认停止
-                  </Button>
-                  <Button
-                    disabled={busy || undefined}
-                    onClick={() => {
-                      setCancelRun(false);
-                      requestAnimationFrame(() =>
-                        document.querySelector<HTMLElement>('[data-attention-cancel]')?.focus(),
-                      );
-                    }}
-                  >
-                    继续查看
-                  </Button>
-                </div>
+                <Alert
+                  type="warning"
+                  role="presentation"
+                  showIcon
+                  title="停止这个运行？"
+                  description={
+                    <div className="feedback-body">
+                      <p>已产生的结果会保留；尚未执行的步骤不会继续。</p>
+                      <div className="attention-actions">
+                        <Button
+                          danger
+                          disabled={busy || undefined}
+                          onClick={() =>
+                            void act(async () => {
+                              await api('run.control', {
+                                id: sourceId(selected),
+                                action: 'cancel',
+                              });
+                              setCancelRun(false);
+                            }, '已请求停止，请查看运行最终状态。')
+                          }
+                        >
+                          确认停止
+                        </Button>
+                        <Button
+                          disabled={busy || undefined}
+                          onClick={() => {
+                            setCancelRun(false);
+                            requestAnimationFrame(() =>
+                              document
+                                .querySelector<HTMLElement>('[data-attention-cancel]')
+                                ?.focus(),
+                            );
+                          }}
+                        >
+                          继续查看
+                        </Button>
+                      </div>
+                    </div>
+                  }
+                />
               </div>
             )}
             {human(selected) && (

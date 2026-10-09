@@ -252,26 +252,6 @@
 .local-settings-actions > button {
   min-width: 160px;
 }
-.local-settings-banner {
-  padding: 16px 20px;
-  margin-bottom: 24px;
-  background: var(--fa-bg-subtle);
-  border-radius: var(--fa-radius-8);
-  line-height: 24px;
-  overflow-wrap: anywhere;
-}
-.local-settings-banner p {
-  margin: 8px 0 0;
-  color: inherit;
-}
-.local-settings-banner.error {
-  color: var(--fa-status-error);
-  background: var(--fa-status-error-bg);
-}
-.local-settings-banner.success {
-  color: var(--fa-status-success);
-  background: var(--fa-status-success-bg);
-}
 .local-browser-choices {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -378,11 +358,6 @@
     width: 100%;
     flex-basis: 100%;
   }
-}
-
-.local-settings-banner.warning {
-  color: var(--fa-status-warning);
-  background: var(--fa-status-warning-bg);
 }
 
 .local-browser-binding-page .local-settings-heading {
@@ -635,4 +610,9 @@
 }
 .local-resources-layout .local-settings-row:has(> h2) {
   align-items: flex-start;
+}
+
+.local-settings-feedback {
+  margin-bottom: 24px;
+  overflow-wrap: anywhere;
 }

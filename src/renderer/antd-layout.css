@@ -94,3 +94,19 @@ label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item
 .workspace-notice .ant-alert-title {
   overflow-wrap: anywhere;
 }
+
+.feedback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.feedback-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+.feedback-body > p {
+  margin: 0;
+}

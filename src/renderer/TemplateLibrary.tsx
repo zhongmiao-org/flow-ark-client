@@ -1,4 +1,4 @@
-import { Select, Button, Checkbox, Input } from 'antd';
+import { Alert, Badge, Select, Button, Checkbox, Input, Tag } from 'antd';
 import { FileSpreadsheet, Folder, Globe, MousePointer2, Workflow } from 'lucide-react';
 import { usePageBack } from './use-page-back';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
@@ -102,6 +102,10 @@ export default function TemplateLibrary({
   }, [initialPreview, consumePreview]);
   const pkg = data.templates.find((p) => p.key === selectedKey);
   const shown = view === 'installed' ? installed : pkg;
+  const installedRefreshFailure =
+    view === 'installed' &&
+    !!installed &&
+    ['install', 'refresh-installed'].includes(failedOperation);
   const same =
     preview &&
     data.templates.find((p) => p.key === `${preview.manifest.id}@${preview.manifest.version}`);
@@ -397,57 +401,98 @@ export default function TemplateLibrary({
           )}
         </header>
         {error && (
-          <div className="template-catalog-banner error" role="alert">
-            <strong ref={errorHeading} tabIndex={-1}>
-              {failedOperation === 'inspect'
-                ? '模板检查未完成'
-                : failedOperation === 'install'
-                  ? '安装未完成'
-                  : '操作未完成'}
-            </strong>
-            <p>{error}</p>
-            {failedOperation === 'inspect' && (
-              <Button disabled={!!busy || undefined} onClick={() => void selectZip()}>
-                重新选择 ZIP
-              </Button>
-            )}
-          </div>
+          <Alert
+            className="template-catalog-feedback"
+            type={installedRefreshFailure ? 'warning' : 'error'}
+            showIcon
+            title={
+              <strong ref={errorHeading} tabIndex={-1}>
+                {installedRefreshFailure
+                  ? '模板已安装，列表刷新失败'
+                  : failedOperation === 'inspect'
+                    ? '模板检查未完成'
+                    : failedOperation === 'install'
+                      ? '安装未完成'
+                      : '操作未完成'}
+              </strong>
+            }
+            description={error}
+            action={
+              installedRefreshFailure ? (
+                <Button
+                  disabled={!!busy || undefined}
+                  onClick={() =>
+                    void work('refresh-installed', async () => {
+                      await refresh();
+                      requestAnimationFrame(() => heading.current?.focus());
+                    })
+                  }
+                >
+                  重新读取模板列表
+                </Button>
+              ) : failedOperation === 'inspect' ? (
+                <Button disabled={!!busy || undefined} onClick={() => void selectZip()}>
+                  重新选择 ZIP
+                </Button>
+              ) : undefined
+            }
+          />
         )}
         {notice && (
-          <div className="template-catalog-banner" role="status">
-            {notice}
-          </div>
+          <Alert
+            className="template-catalog-feedback"
+            type="info"
+            role="status"
+            showIcon
+            title={notice}
+          />
         )}
         {resumeInstance && (
-          <div className="template-catalog-banner warning">
-            <strong>实例已创建，详情尚未打开</strong>
-            <p>可以重新打开这个实例，避免重复创建。</p>
-            <Button
-              disabled={!!busy || undefined}
-              onClick={() => void openInstance(resumeInstance)}
-            >
-              打开已创建实例
-            </Button>
-            <Button disabled={!!busy || undefined} onClick={() => setResumeInstance(undefined)}>
-              稍后到实例列表查看
-            </Button>
-          </div>
+          <Alert
+            className="template-catalog-feedback"
+            type="warning"
+            role="status"
+            showIcon
+            title="实例已创建，详情尚未打开"
+            description="可以重新打开这个实例，避免重复创建。"
+            action={
+              <div className="feedback-actions">
+                <Button
+                  disabled={!!busy || undefined}
+                  onClick={() => void openInstance(resumeInstance)}
+                >
+                  打开已创建实例
+                </Button>
+                <Button disabled={!!busy || undefined} onClick={() => setResumeInstance(undefined)}>
+                  稍后到实例列表查看
+                </Button>
+              </div>
+            }
+          />
         )}
         {view === 'library' && (
           <>
             {preview && (
-              <div className="template-catalog-banner">
-                <strong>{preview.manifest.name} · 安装检查未结束</strong>
-                <Button disabled={!!busy || undefined} onClick={() => setView('inspect')}>
-                  继续查看检查
-                </Button>
-                <Button
-                  disabled={!!busy || undefined}
-                  onClick={() => void work('cancel', cancelPreview)}
-                >
-                  取消这次检查
-                </Button>
-              </div>
+              <Alert
+                className="template-catalog-feedback"
+                type="info"
+                role="status"
+                showIcon
+                title={`${preview.manifest.name} · 安装检查未结束`}
+                action={
+                  <div className="feedback-actions">
+                    <Button disabled={!!busy || undefined} onClick={() => setView('inspect')}>
+                      继续查看检查
+                    </Button>
+                    <Button
+                      disabled={!!busy || undefined}
+                      onClick={() => void work('cancel', cancelPreview)}
+                    >
+                      取消这次检查
+                    </Button>
+                  </div>
+                }
+              />
             )}
             <div className="template-catalog-intro">
               <h2>好流程，可以重复使用。</h2>
@@ -563,30 +608,79 @@ export default function TemplateLibrary({
             <aside className="template-catalog-card template-catalog-side">
               <h2>安装前确认</h2>
               {conflict && (
-                <div className="template-catalog-banner error template-install-state" role="alert">
-                  <span className="template-catalog-status error">拒绝安装</span>
-                  <h3>同版本内容不同</h3>
-                  <p>同 ID / 版本的内容摘要与已安装包不同，不能覆盖。请核对来源或使用独立版本。</p>
-                </div>
+                <Alert
+                  className="template-install-feedback"
+                  type="error"
+                  showIcon
+                  title="同版本内容不同"
+                  description={
+                    <div className="feedback-body">
+                      <Tag
+                        variant="filled"
+                        color="error"
+                        className="run-state-tag"
+                        icon={<Badge status="error" />}
+                      >
+                        拒绝安装
+                      </Tag>
+                      <p>
+                        同 ID / 版本的内容摘要与已安装包不同，不能覆盖。请核对来源或使用独立版本。
+                      </p>
+                    </div>
+                  }
+                />
               )}
               {same && !conflict && (
-                <div className="template-catalog-banner template-install-state" role="status">
-                  <span className="template-catalog-status success">无需重复安装</span>
-                  <h3>该版本已安装</h3>
-                  <p>相同 ID、版本与摘要已存在，保留当前包定义。</p>
-                </div>
+                <Alert
+                  className="template-install-feedback"
+                  type="success"
+                  role="status"
+                  showIcon
+                  title="该版本已安装"
+                  description={
+                    <div className="feedback-body">
+                      <Tag
+                        variant="filled"
+                        color="success"
+                        className="run-state-tag"
+                        icon={<Badge status="success" />}
+                      >
+                        无需重复安装
+                      </Tag>
+                      <p>相同 ID、版本与摘要已存在，保留当前包定义。</p>
+                    </div>
+                  }
+                />
               )}
               {!same && data.templates.some((item) => item.manifest.id === preview.manifest.id) && (
-                <div className="template-catalog-banner template-install-state" role="status">
-                  <span className="template-catalog-status">可并存安装</span>
-                  <h3>发现新版本</h3>
-                  <p>新版本不会覆盖原实例、计划或运行；采用新版需创建独立实例。</p>
-                </div>
+                <Alert
+                  className="template-install-feedback"
+                  type="info"
+                  role="status"
+                  showIcon
+                  title="发现新版本"
+                  description={
+                    <div className="feedback-body">
+                      <Tag
+                        variant="filled"
+                        color="processing"
+                        className="run-state-tag"
+                        icon={<Badge status="processing" />}
+                      >
+                        可并存安装
+                      </Tag>
+                      <p>新版本不会覆盖原实例、计划或运行；采用新版需创建独立实例。</p>
+                    </div>
+                  }
+                />
               )}
               {preview.consumed && busy !== 'install' && (
-                <div className="template-catalog-banner warning">
-                  本次安装检查已使用。请重新选择 ZIP 后再安装。
-                </div>
+                <Alert
+                  className="template-install-feedback"
+                  type="warning"
+                  showIcon
+                  title="本次安装检查已使用。请重新选择 ZIP 后再安装。"
+                />
               )}
               <p>
                 {preview.manifest.scripts.length
@@ -652,7 +746,14 @@ export default function TemplateLibrary({
             className="template-catalog-card template-installed template-install-receipt"
             aria-label="模板安装结果"
           >
-            <span className="badge state-SUCCEEDED">安装成功</span>
+            <Tag
+              className="run-state-tag"
+              variant="filled"
+              color="success"
+              icon={<Badge status="success" />}
+            >
+              安装成功
+            </Tag>
             <h2>
               {shown.manifest.name} · v{shown.manifest.version}
             </h2>
@@ -808,9 +909,14 @@ export default function TemplateLibrary({
         )}
         {view === 'remove' && pkg && (
           <section className="template-catalog-card template-installed">
-            <span className={`template-catalog-status${referenced ? ' warning' : ''}`}>
+            <Tag
+              className="run-state-tag"
+              variant="filled"
+              color={referenced ? 'warning' : 'default'}
+              icon={<Badge status={referenced ? 'warning' : 'default'} />}
+            >
               {referenced ? '不能卸载' : '核对后卸载'}
-            </span>
+            </Tag>
             <h2>{referenced ? '该版本仍被引用' : '核对要卸载的版本'}</h2>
             <p>
               {pkg.manifest.name} · v{pkg.manifest.version}
