@@ -1,4 +1,4 @@
-import { Button, Checkbox, Modal } from 'antd';
+import { Alert, Badge, Button, Checkbox, Modal, Tag } from 'antd';
 import './antd-layout.css';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { FlowRecord } from '../shared/types';
@@ -150,24 +150,35 @@ export default function ExportReviewDialog({
         </Button>
       </header>
       {error && (
-        <div className="export-review-message error" role="alert" ref={feedback} tabIndex={-1}>
-          <strong>{error.operation === 'import' ? 'ZIP 导入检查未完成' : '导出未完成'}</strong>
-          <p>{error.message}</p>
-          <p>
-            {error.operation === 'import'
-              ? '已导出的文件保持不变。请重新选择完整的标准模板 ZIP，再检查并安装。'
-              : '保留当前来源；请核对资源声明、脚本依赖或保存位置后，再明确重试。'}
-          </p>
+        <div className="export-review-message" role="alert" ref={feedback} tabIndex={-1}>
+          <Alert
+            type="error"
+            role="presentation"
+            showIcon
+            title={error.operation === 'import' ? 'ZIP 导入检查未完成' : '导出未完成'}
+            description={
+              <div className="feedback-body">
+                <p>{error.message}</p>
+                <p>
+                  {error.operation === 'import'
+                    ? '已导出的文件保持不变。请重新选择完整的标准模板 ZIP，再检查并安装。'
+                    : '保留当前来源；请核对资源声明、脚本依赖或保存位置后，再明确重试。'}
+                </p>
+              </div>
+            }
+          />
         </div>
       )}
       {notice && (
         <div className="export-review-message" role="status" ref={feedback} tabIndex={-1}>
-          {notice}
+          <Alert type="info" role="presentation" showIcon title={notice} />
         </div>
       )}
       {stage === 'done' ? (
         <section className="export-review-success">
-          <span className="export-review-badge success">已保存 · 标准 ZIP</span>
+          <Tag className="run-state-tag" color="success" icon={<Badge status="success" />}>
+            已保存 · 标准 ZIP
+          </Tag>
           <h2>{name}</h2>
           {!draft && <p className="export-review-identity">原模板版本 · {source.key}</p>}
           <p>
@@ -197,7 +208,7 @@ export default function ExportReviewDialog({
         <>
           <div className="export-review-layout">
             <section className="export-review-card">
-              <span className="export-review-badge">{draft ? '当前草稿快照' : '模板原定义'}</span>
+              <Tag className="run-state-tag">{draft ? '当前草稿快照' : '模板原定义'}</Tag>
               <h2>{name}</h2>
               <dl>
                 <div>
@@ -249,12 +260,14 @@ export default function ExportReviewDialog({
                 <li>本机路径、浏览器绑定、登录态和凭据</li>
                 <li>实例动作授权、运行历史及运行产物</li>
               </ul>
-              <div className="export-review-message warning">
-                <strong>请检查定义里的实际内容</strong>
-                <p>
-                  字面量、代码或配置定义可能含有手写的个人数据、路径或密钥。自动排除绑定不能替代逐项核对。
-                </p>
-              </div>
+              <Alert
+                className="export-review-message"
+                type="warning"
+                role="note"
+                showIcon
+                title="请检查定义里的实际内容"
+                description="字面量、代码或配置定义可能含有手写的个人数据、路径或密钥。自动排除绑定不能替代逐项核对。"
+              />
               <p className="export-review-muted">
                 {draft
                   ? '资源声明无法确定或依赖不完整时，宿主会阻止生成包并说明原因。'
