@@ -266,6 +266,7 @@ export default function AttentionWorkspace({
   const drafts = useRef(new Map<string, AnswerDraft>());
   const locked = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
+  const answerFocus = useRef<string | undefined>(undefined);
   const listScroll = useRef(0);
   const listFocus = useRef('');
   const runReturn = useRef<{ focus: HTMLElement; scroll: number } | null>(null);
@@ -367,6 +368,19 @@ export default function AttentionWorkspace({
   useEffect(() => {
     if (cancelRun) stopPanel.current?.focus();
   }, [cancelRun]);
+  useEffect(() => {
+    if (busy || !answerFocus.current) return;
+    const answeredId = answerFocus.current;
+    answerFocus.current = undefined;
+    if (
+      active &&
+      selectedId === answeredId &&
+      state === 'answered' &&
+      !error &&
+      document.activeElement === document.body
+    )
+      heading.current?.focus({ preventScroll: true });
+  }, [active, busy, error, selectedId, state]);
   const act = async (operation: () => Promise<void>, message = '', acknowledgedMessage = '') => {
     if (locked.current) return;
     locked.current = true;
@@ -730,16 +744,17 @@ export default function AttentionWorkspace({
                 cancel={
                   state === 'waiting' && sourceId(selected) ? () => setCancelRun(true) : undefined
                 }
-                submit={(value) =>
-                  act(
+                submit={(value) => {
+                  answerFocus.current = selected.id;
+                  return act(
                     async () => {
                       await api('template.answer', { id: selected.id, value });
                       setAcknowledged((previous) => new Set(previous).add(selected.id));
                     },
                     '已回应本次请求，正在更新来源运行。',
                     '请求已回应，但列表更新失败；请刷新状态，不要重复提交',
-                  )
-                }
+                  );
+                }}
               />
             )}
             {!human(selected) && (
