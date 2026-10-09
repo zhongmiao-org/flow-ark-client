@@ -1,9 +1,17 @@
 /* Figma 23:10659 / 23:10802 / 23:10940; AI request feedback 2:4629. */
-.ai-task-card.task-generation {
+.task-generation-surface {
   min-height: 500px;
-  padding: 31px;
+  min-width: 0;
+}
+.task-generation-surface > .ant-card-body {
+  display: flex;
+  flex-direction: column;
   gap: 16px;
   align-items: flex-start;
+}
+.task-generation-surface > .ant-card-body > article {
+  width: 100%;
+  min-width: 0;
 }
 .task-generation h2 {
   font-size: 28px;
@@ -16,10 +24,10 @@
   line-height: 28px;
   font-weight: 500;
 }
-.ai-task-card.task-generation[data-generation-state='generating'] {
+.task-generation[data-generation-state='generating'] .task-generation-surface {
   min-height: 550px;
 }
-.ai-task-card.task-generation[data-generation-state='unsupported'] {
+.task-generation[data-generation-state='unsupported'] .task-generation-surface {
   min-height: 520px;
 }
 .task-generation[data-generation-state='unsupported'] h2 {
@@ -39,16 +47,17 @@
 .task-generation-review {
   width: 100%;
   min-width: 0;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-  padding: 24px;
+}
+.task-generation-current > .ant-card-body,
+.task-generation-review-card > .ant-card-body {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 .task-generation-current {
   min-height: 116px;
-  padding: 15px;
+}
+.task-generation-current > .ant-card-body {
   gap: 8px;
 }
 .task-generation-current p,
@@ -59,7 +68,7 @@
   width: 100%;
   overflow-wrap: anywhere;
 }
-.task-generation > p,
+.task-generation-surface > .ant-card-body > p,
 .task-generation-current p,
 .task-generation small {
   color: var(--fa-text-secondary);
@@ -77,7 +86,7 @@
 .task-generation[data-generation-state='unsupported'] .ai-task-actions button.ant-btn-primary {
   min-width: 208px;
 }
-.task-generation-review > button {
+.task-generation-review-card > .ant-card-body > button {
   align-self: flex-start;
 }
 .task-generation-preserved {
@@ -109,16 +118,10 @@
   font-size: 13px;
 }
 @container (max-width: 760px) {
-  .ai-task-card.task-generation,
-  .ai-task-card.task-generation[data-generation-state] {
-    padding: 24px;
+  .task-generation .task-generation-surface {
     min-height: 420px;
   }
   .task-generation h2 {
     font-size: 24px;
-  }
-  .task-generation-current,
-  .task-generation-review {
-    padding: 16px;
   }
 }

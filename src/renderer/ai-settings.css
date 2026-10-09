@@ -190,20 +190,25 @@
   grid-template-columns: 1fr 1fr;
   gap: 24px;
 }
-.ai-task-card.ai-missing-card {
+.ai-missing-surface {
   min-height: 520px;
-  padding: 32px;
+  min-width: 0;
+}
+.ai-missing-surface > .ant-card-body {
+  display: flex;
+  flex-direction: column;
   gap: 24px;
+}
+.ai-missing-surface > .ant-card-body > article {
+  min-width: 0;
 }
 .ai-missing-card h2 {
   font-size: 28px;
   line-height: 40px;
 }
 .ai-missing-draft {
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-  padding: 16px;
   min-height: 104px;
+  min-width: 0;
 }
 .ai-missing-draft h3 {
   margin: 0 0 12px;
