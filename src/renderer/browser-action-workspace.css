@@ -75,14 +75,6 @@
   margin: 0;
   width: 100%;
   min-width: 0;
-  min-height: 32px;
-  padding: 4px 6px;
-  font-size: 13px;
-  line-height: 20px;
-  background: var(--fa-bg-canvas);
-}
-.browser-action-card button {
-  min-height: 40px;
 }
 .browser-action-card > .ant-btn-primary {
   margin-top: 6px;

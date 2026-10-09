@@ -1,5 +1,6 @@
-import { Checkbox, Input } from 'antd';
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import { Checkbox, Input, Collapse } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
+import { useEffect, useId, useState } from 'react';
 import type { Step } from '../shared/types';
 import './node-configuration.css';
 
@@ -7,17 +8,6 @@ function timeoutError(value: number | undefined) {
   return value !== undefined && (!Number.isInteger(value) || value < 100 || value > 3600000)
     ? '请输入 100–3600000 的整数毫秒数'
     : '';
-}
-
-function TimingHelp({ compact, children }: { compact: boolean; children: ReactNode }) {
-  return compact ? (
-    <details>
-      <summary>期限规则</summary>
-      {children}
-    </details>
-  ) : (
-    children
-  );
 }
 
 export default function NodeTiming({
@@ -38,6 +28,17 @@ export default function NodeTiming({
     setText(String(node.timeoutMs ?? 60000));
     setError(timeoutError(node.timeoutMs));
   }, [node.id, node.timeoutMs]);
+  const help = enabled ? (
+    <p id={id + '-help'}>
+      100–3600000 毫秒。{!error && `${Number(text) / 1000} 秒。`}从此节点开始执行时计时。
+    </p>
+  ) : (
+    <p>
+      {noDefault
+        ? '此类节点未配置时没有自身默认期限；仍受父容器期限和运行取消约束。'
+        : '未配置时使用 60000 毫秒（60 秒）；父容器可以更早到期。'}
+    </p>
+  );
   return (
     <section className="node-timing" aria-label="节点期限" data-value-invalid={error || undefined}>
       {!compact && (
@@ -63,7 +64,7 @@ export default function NodeTiming({
       >
         <span>为此节点设置期限</span>
       </Checkbox>
-      {enabled ? (
+      {enabled && (
         <>
           <label htmlFor={id}>期限（毫秒）</label>
           <Input
@@ -86,20 +87,23 @@ export default function NodeTiming({
               change({ ...node, timeoutMs: amount });
             }}
           />
-          <TimingHelp compact={compact}>
-            <p id={id + '-help'}>
-              100–3600000 毫秒。{!error && `${Number(text) / 1000} 秒。`}从此节点开始执行时计时。
-            </p>
-          </TimingHelp>
         </>
+      )}
+      {compact ? (
+        <Collapse
+          size="small"
+          items={[
+            {
+              key: 'rules',
+              onKeyDown: activateCollapseWithSpace,
+              label: '期限规则',
+              forceRender: true,
+              children: help,
+            },
+          ]}
+        />
       ) : (
-        <TimingHelp compact={compact}>
-          <p>
-            {noDefault
-              ? '此类节点未配置时没有自身默认期限；仍受父容器期限和运行取消约束。'
-              : '未配置时使用 60000 毫秒（60 秒）；父容器可以更早到期。'}
-          </p>
-        </TimingHelp>
+        help
       )}
       {['condition', 'loop'].includes(node.type) && (
         <p>容器期限覆盖子步骤及内部等待、暂停，不会在每个子步骤开始时重新计时。</p>

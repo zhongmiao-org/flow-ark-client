@@ -59,7 +59,6 @@
 .node-configuration textarea {
   width: 100%;
   min-width: 0;
-  background: var(--fa-bg-canvas);
 }
 .node-timing-toggle {
   display: flex;

@@ -12,6 +12,7 @@ import {
   Collapse,
   Space,
 } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import {
   useCallback,
   useEffect,
@@ -352,6 +353,7 @@ export default function ExcelMappingPage({
                       items={[
                         {
                           key: 'options',
+                          onKeyDown: activateCollapseWithSpace,
                           label: `${item.header || '无表头'} · ${{ text: '文本', number: '数字', boolean: '布尔' }[item.type]}`,
                           forceRender: true,
                           children: (
@@ -461,6 +463,7 @@ export default function ExcelMappingPage({
                 items={[
                   {
                     key: 'source',
+                    onKeyDown: activateCollapseWithSpace,
                     label: '来源数据、输出目录与表头',
                     forceRender: true,
                     children: (

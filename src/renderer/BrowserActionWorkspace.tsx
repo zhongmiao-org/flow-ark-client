@@ -1,4 +1,5 @@
-import { Drawer, Select, Button, Input } from 'antd';
+import { Drawer, Select, Button, Input, Collapse } from 'antd';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
 import type { FlowRecord } from '../shared/types';
@@ -276,14 +277,24 @@ export default function BrowserActionWorkspace(props: Props) {
                 } as BrowserNode);
               }}
             />
-            <details>
-              <summary>定位规则</summary>
-              <p id={id + '-frame-help'}>
-                {topLevel
-                  ? '此动作作用于顶层网页，不使用元素定位和 iframe 路径。'
-                  : '从外到内，最多 8 层，每层必须唯一匹配。可返回网页面板拾取并验证。'}
-              </p>
-            </details>
+            <Collapse
+              size="small"
+              items={[
+                {
+                  key: 'rules',
+                  onKeyDown: activateCollapseWithSpace,
+                  label: '定位规则',
+                  forceRender: true,
+                  children: (
+                    <p id={id + '-frame-help'}>
+                      {topLevel
+                        ? '此动作作用于顶层网页，不使用元素定位和 iframe 路径。'
+                        : '从外到内，最多 8 层，每层必须唯一匹配。可返回网页面板拾取并验证。'}
+                    </p>
+                  ),
+                },
+              ]}
+            />
             {frameError && (
               <>
                 <p id={id + '-frame-error'} role="alert" className="field-error">
