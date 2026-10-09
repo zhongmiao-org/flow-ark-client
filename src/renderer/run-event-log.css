@@ -212,8 +212,7 @@
   }
 }
 
-.run-detail.is-logs .run-runtime-summary[hidden],
-.run-detail.is-logs .run-detail-tabs[hidden] {
+.run-detail.is-logs .run-runtime-summary[hidden] {
   display: none;
 }
 .run-detail.is-logs .run-log-context > section {

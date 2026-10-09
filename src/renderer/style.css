@@ -9,7 +9,9 @@ body {
   margin: 0;
 }
 button:focus-visible,
-input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):focus-visible,
+input:not(.ant-input):not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
+    [class*='ant-select']
+  ):focus-visible,
 textarea:focus-visible {
   outline: 2px solid #49a18d;
   outline-offset: 2px;
@@ -53,14 +55,16 @@ pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item) {
   font-size: 12px;
   display: block;
   margin: 16px 0 8px;
   color: #677970;
 }
-label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper)
-  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
+label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item)
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
+    [class*='ant-select']
+  ) {
   display: block;
   width: 100%;
   margin-top: 8px;
@@ -328,7 +332,10 @@ main {
   border-radius: 6px;
   padding: 0 10px;
 }
-.search input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
+.search
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
+    [class*='ant-select']
+  ) {
   border: 0;
   background: transparent;
   width: 150px;
@@ -621,7 +628,10 @@ main {
   border-radius: 6px;
   padding: 0 7px;
 }
-.action-search input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
+.action-search
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
+    [class*='ant-select']
+  ) {
   border: 0;
   padding: 8px 0;
   width: 100%;
@@ -633,7 +643,9 @@ main {
   outline-offset: 1px;
 }
 .action-search
-  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):focus {
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
+    [class*='ant-select']
+  ):focus {
   outline: 0;
 }
 .action-search button {
@@ -915,22 +927,8 @@ main {
   padding: 0 20px 30px;
   overflow: auto;
 }
-.tabs {
-  display: flex;
-  margin: 0 -20px 20px;
-  border-bottom: 1px solid var(--border);
-  padding: 0 9px;
-}
-.tabs button {
-  border: 0;
-  border-radius: 0;
-  font-size: 11px;
-  padding: 16px 11px;
-  color: #9aa89f;
-}
-.tabs button.selected {
-  border-bottom: 2px solid #3f8a6f;
-  color: #326e58;
+.inspector-navigation {
+  margin-bottom: 16px;
 }
 .inspector-heading {
   display: flex;
@@ -963,7 +961,10 @@ main {
   align-items: center;
   gap: 9px;
 }
-.check-label input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
+.check-label
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
+    [class*='ant-select']
+  ) {
   display: inline;
   width: auto;
   margin: 0;
@@ -1092,7 +1093,7 @@ main {
 .form-grid .row {
   margin-bottom: 9px;
 }
-.form-grid label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.form-grid label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item) {
   margin-top: 8px;
 }
 .settings-page {
@@ -1204,7 +1205,7 @@ main {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
   gap: 16px;
 }
-.schedule-fields label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.schedule-fields label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item) {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1215,7 +1216,10 @@ main {
   width: 100%;
   min-width: 0;
 }
-.schedule-fields input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
+.schedule-fields
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
+    [class*='ant-select']
+  ) {
   width: 100%;
   min-width: 0;
 }
@@ -1231,7 +1235,10 @@ main {
   margin-top: 20px;
   font-size: 12px;
 }
-.schedule-adoption input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
+.schedule-adoption
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
+    [class*='ant-select']
+  ) {
   width: auto;
 }
 .schedule-version-note {
@@ -1449,7 +1456,10 @@ main {
 .template-field .ant-select {
   width: 100%;
 }
-.template-field input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
+.template-field
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
+    [class*='ant-select']
+  ) {
   width: 100%;
   padding: 10px;
   border: 1px solid #d8e3df;
@@ -1462,7 +1472,9 @@ main {
   align-items: flex-start;
 }
 .template-field:has(
-  > input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select'])[type='checkbox']
+  > input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
+      [class*='ant-select']
+    )[type='checkbox']
 ) {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr);
@@ -1470,7 +1482,7 @@ main {
   gap: 10px;
 }
 .template-field:has(
-    > input:not(.ant-checkbox-input):not(.ant-radio-input):not(
+    > input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
         [class*='ant-select']
       )[type='checkbox']
   )
@@ -1479,7 +1491,9 @@ main {
   grid-row: 1;
 }
 .template-field
-  input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select'])[type='checkbox'] {
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
+    [class*='ant-select']
+  )[type='checkbox'] {
   grid-column: 1;
   grid-row: 1;
   width: 18px;
@@ -1489,7 +1503,7 @@ main {
   accent-color: #26776a;
 }
 .template-field:has(
-    > input:not(.ant-checkbox-input):not(.ant-radio-input):not(
+    > input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
         [class*='ant-select']
       )[type='checkbox']
   )
@@ -1554,7 +1568,10 @@ main {
   background: #f5f8f6;
   border-bottom: 1px solid var(--border);
 }
-.browser-address input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
+.browser-address
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
+    [class*='ant-select']
+  ) {
   flex: 1;
   min-width: 0;
   margin: 0;
@@ -1709,9 +1726,6 @@ main {
   flex-basis: 282px;
   padding-inline: 16px;
 }
-.with-browser .inspector .tabs {
-  margin-inline: -16px;
-}
 .with-browser .editor-toolbar {
   height: auto;
   flex-basis: auto;
@@ -1823,7 +1837,10 @@ main {
   width: 100%;
   min-width: 0;
 }
-.value-field input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']),
+.value-field
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
+    [class*='ant-select']
+  ),
 .value-field textarea {
   width: 100%;
   min-width: 0;
@@ -1892,7 +1909,10 @@ main {
   align-items: center;
   min-width: 0;
 }
-.resource-inline input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
+.resource-inline
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
+    [class*='ant-select']
+  ) {
   flex: 1;
   width: 0;
   min-width: 0;
@@ -1985,7 +2005,8 @@ main {
   flex-wrap: wrap;
   gap: 10px;
 }
-.run-rerun-options > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):first-child {
+.run-rerun-options
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item):first-child {
   display: grid;
   gap: 6px;
   min-width: 180px;
@@ -1995,7 +2016,10 @@ main {
   align-items: flex-start;
   gap: 8px;
 }
-.run-rerun-check input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
+.run-rerun-check
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
+    [class*='ant-select']
+  ) {
   flex: none;
   width: auto;
   margin-top: 3px;
@@ -2049,7 +2073,7 @@ main {
   gap: 12px;
   margin-bottom: 16px;
 }
-.history-filters label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.history-filters label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item) {
   display: grid;
   gap: 6px;
   font-size: 12px;
@@ -2063,7 +2087,10 @@ main {
   width: 100%;
   min-width: 0;
 }
-.history-filters input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
+.history-filters
+  input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
+    [class*='ant-select']
+  ) {
   width: 100%;
   min-width: 0;
 }
@@ -2249,13 +2276,17 @@ main {
   gap: 10px;
   margin-bottom: 14px;
 }
-.templates-page .field > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper),
+.templates-page
+  .field
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item),
 .templates-page .field > small {
   flex-basis: 100%;
 }
 .templates-page
   .field
-  > input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
+  > input:not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
+    [class*='ant-select']
+  ) {
   flex: 1;
   min-width: 220px;
 }

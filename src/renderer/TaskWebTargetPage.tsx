@@ -1,4 +1,4 @@
-import { Button, Checkbox, Input } from 'antd';
+import { Button, Checkbox, Input, Tabs } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { PlanningTask, TaskDetail } from '../shared/planning';
 import { sameWebPage, type TaskWebPreview } from '../shared/task-web-target';
@@ -239,6 +239,96 @@ export default function TaskWebTargetPage({
       'select',
       true,
     );
+  const targetPanels = {
+    web: (
+      <div className="task-target-tab-panel">
+        <div className="task-web-object task-web-current">
+          <h2>
+            {webReady && <span aria-hidden="true">✓ </span>}
+            {current?.title || (current ? '未命名网页' : '尚未取得网页')}
+          </h2>
+          <p>
+            内置浏览器 · 当前标签
+            <br />
+            账号：未核对 · 工作区：本机内置浏览器
+          </p>
+          <Button disabled={busy || undefined} onClick={inspectBrowser}>
+            扩大查看
+          </Button>
+        </div>
+        {task.webTarget && (
+          <p className="ai-task-note" role="status">
+            {savedCurrent
+              ? task.webTarget.element
+                ? `上次选择的元素：${task.webTarget.element.target.label || task.webTarget.element.target.tag}。可重新选取元素或改用整个网页。`
+                : '已保存此网页选择；执行前仍会再次核对。'
+              : '上次选择的网页已变化或尚未打开，请重新检查并确认。'}
+          </p>
+        )}
+        <div className="task-web-object">
+          <h2>其他网页</h2>
+          <p>输入网址，打开后检查 FlowArk 的当前网页。</p>
+        </div>
+        <form
+          className="task-target-address-form"
+          noValidate
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!busy && url.trim()) openUrl();
+          }}
+        >
+          <label htmlFor="task-target-url">网页地址</label>
+          <Input
+            status={invalidUrl ? 'error' : undefined}
+            id="task-target-url"
+            ref={(instance) => {
+              urlInput.current = instance?.input ?? null;
+            }}
+            aria-invalid={invalidUrl}
+            aria-describedby={invalidUrl ? 'task-web-error' : undefined}
+            type="url"
+            value={url}
+            maxLength={8192}
+            placeholder="https://example.com"
+            disabled={busy || undefined}
+            onChange={(e) => {
+              setUrl(e.target.value);
+              if (invalidUrl) {
+                setInvalidUrl(false);
+                setError('');
+              }
+            }}
+          />
+          <div className="ai-task-actions">
+            <Button disabled={busy || !url.trim() || undefined} htmlType="submit">
+              {webAction === 'open' ? '正在打开网页…' : '打开此网页'}
+            </Button>
+            <Button htmlType="button" disabled={busy || undefined} onClick={recheckWeb}>
+              {webAction === 'refresh' ? '正在重新检查…' : '重新检查网页'}
+            </Button>
+          </div>
+        </form>
+        <p className="ai-task-note">切换目标后重新核对方案与能力，不沿用旧对象的执行授权。</p>
+      </div>
+    ),
+    window: (
+      <div className="task-target-tab-panel">
+        <DesktopWindowList state={desktop} compactSelected />
+      </div>
+    ),
+    tools: (
+      <div className="task-target-tab-panel">
+        <TaskTargetConnections
+          active={active && tab === 'tools'}
+          task={task}
+          manage={openTools}
+          selected={selected}
+          pending={setBusy}
+          detailsContainer={toolDetails}
+        />
+      </div>
+    ),
+  };
   if (desktopPlan && desktop.selected && desktop.preview?.status === 'ready')
     return (
       <DesktopTaskPlan
@@ -272,144 +362,29 @@ export default function TaskWebTargetPage({
       )}
       <div className={`task-web-columns${tab === 'window' ? ' is-desktop' : ''}`}>
         <section className="ai-task-card">
-          <div
-            className="task-web-tabs"
-            role="tablist"
+          <Tabs
+            id={tabId}
+            className={
+              'task-web-tabs' +
+              (tab === 'window' && !!desktop.selected && !desktop.expired
+                ? ' is-window-selection'
+                : '')
+            }
             aria-label="对象类型"
-            hidden={tab === 'window' && !!desktop.selected && !desktop.expired}
-          >
-            {tabs.map((item, index) => (
-              <Button
-                key={item.id}
-                id={`${tabId}-${item.id}`}
-                htmlType="button"
-                role="tab"
-                aria-selected={tab === item.id}
-                aria-controls={`${tabId}-panel-${item.id}`}
-                tabIndex={tab === item.id ? 0 : -1}
-                disabled={busy || undefined}
-                onClick={() => setTab(item.id)}
-                onKeyDown={(event) => {
-                  const next =
-                    event.key === 'ArrowRight'
-                      ? (index + 1) % tabs.length
-                      : event.key === 'ArrowLeft'
-                        ? (index + tabs.length - 1) % tabs.length
-                        : event.key === 'Home'
-                          ? 0
-                          : event.key === 'End'
-                            ? tabs.length - 1
-                            : -1;
-                  if (next < 0 || busy) return;
-                  event.preventDefault();
-                  setTab(tabs[next].id);
-                  document.getElementById(`${tabId}-${tabs[next].id}`)?.focus();
-                }}
-              >
-                {item.label}
-              </Button>
-            ))}
-          </div>
-          <div
-            className="task-target-tab-panel"
-            role="tabpanel"
-            id={`${tabId}-panel-web`}
-            aria-labelledby={`${tabId}-web`}
-            hidden={tab !== 'web'}
-          >
-            <div className="task-web-object task-web-current">
-              <h2>
-                {webReady && <span aria-hidden="true">✓ </span>}
-                {current?.title || (current ? '未命名网页' : '尚未取得网页')}
-              </h2>
-              <p>
-                内置浏览器 · 当前标签
-                <br />
-                账号：未核对 · 工作区：本机内置浏览器
-              </p>
-              <Button disabled={busy || undefined} onClick={inspectBrowser}>
-                扩大查看
-              </Button>
-            </div>
-            {task.webTarget && (
-              <p className="ai-task-note" role="status">
-                {savedCurrent
-                  ? task.webTarget.element
-                    ? `上次选择的元素：${task.webTarget.element.target.label || task.webTarget.element.target.tag}。可重新选取元素或改用整个网页。`
-                    : '已保存此网页选择；执行前仍会再次核对。'
-                  : '上次选择的网页已变化或尚未打开，请重新检查并确认。'}
-              </p>
-            )}
-            <div className="task-web-object">
-              <h2>其他网页</h2>
-              <p>输入网址，打开后检查 FlowArk 的当前网页。</p>
-            </div>
-            <form
-              className="task-target-address-form"
-              noValidate
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (!busy && url.trim()) openUrl();
-              }}
-            >
-              <label htmlFor="task-target-url">网页地址</label>
-              <Input
-                status={invalidUrl ? 'error' : undefined}
-                id="task-target-url"
-                ref={(instance) => {
-                  urlInput.current = instance?.input ?? null;
-                }}
-                aria-invalid={invalidUrl}
-                aria-describedby={invalidUrl ? 'task-web-error' : undefined}
-                type="url"
-                value={url}
-                maxLength={8192}
-                placeholder="https://example.com"
-                disabled={busy || undefined}
-                onChange={(e) => {
-                  setUrl(e.target.value);
-                  if (invalidUrl) {
-                    setInvalidUrl(false);
-                    setError('');
-                  }
-                }}
-              />
-              <div className="ai-task-actions">
-                <Button disabled={busy || !url.trim() || undefined} htmlType="submit">
-                  {webAction === 'open' ? '正在打开网页…' : '打开此网页'}
-                </Button>
-                <Button htmlType="button" disabled={busy || undefined} onClick={recheckWeb}>
-                  {webAction === 'refresh' ? '正在重新检查…' : '重新检查网页'}
-                </Button>
-              </div>
-            </form>
-            <p className="ai-task-note">切换目标后重新核对方案与能力，不沿用旧对象的执行授权。</p>
-          </div>
-          <div
-            className="task-target-tab-panel"
-            role="tabpanel"
-            id={`${tabId}-panel-window`}
-            aria-labelledby={`${tabId}-window`}
-            hidden={tab !== 'window'}
-          >
-            <DesktopWindowList state={desktop} compactSelected />
-          </div>
-          <div
-            className="task-target-tab-panel"
-            role="tabpanel"
-            id={`${tabId}-panel-tools`}
-            aria-labelledby={`${tabId}-tools`}
-            hidden={tab !== 'tools'}
-          >
-            <TaskTargetConnections
-              active={active && tab === 'tools'}
-              task={task}
-              manage={openTools}
-              selected={selected}
-              pending={setBusy}
-              detailsContainer={toolDetails}
-            />
-          </div>
+            activeKey={tab}
+            animated={false}
+            destroyOnHidden={false}
+            onChange={(key) => {
+              if (!busy) setTab(key as typeof tab);
+            }}
+            items={tabs.map(({ id: key, label }) => ({
+              key,
+              label,
+              disabled: busy,
+              forceRender: true,
+              children: targetPanels[key],
+            }))}
+          />
         </section>
         <section className="ai-task-card">
           <div ref={setToolDetails} className="task-tools-detail-slot" hidden={tab !== 'tools'} />

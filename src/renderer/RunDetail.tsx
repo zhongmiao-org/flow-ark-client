@@ -1,4 +1,4 @@
-import { Button } from 'antd';
+import { Button, Tabs } from 'antd';
 import McpRunReceipts from './McpRunReceipts';
 import DebugRunWorkspace from './DebugRunWorkspace';
 import { useRunControl, RunControlFeedback } from './useRunControl';
@@ -27,7 +27,7 @@ export type RunDetailReturnContext = {
   relatedRunId?: string;
 };
 export type RunTab = 'current' | 'output' | 'logs' | 'rerun';
-const tabs: [RunTab, string][] = [
+const tabs: [Exclude<RunTab, 'rerun'>, string][] = [
   ['current', '当前步骤'],
   ['output', '输出与产物'],
   ['logs', '运行日志'],
@@ -71,14 +71,6 @@ export default function RunDetail({
   restored?: RunDetailReturnContext;
   humanRequest?: () => void;
 }) {
-  const visibleTabs: [RunTab, string][] =
-    tab === 'output'
-      ? [
-          ['output', '输出与产物'],
-          ['logs', '日志与步骤'],
-          ['rerun', '核对后重新运行'],
-        ]
-      : tabs;
   const [rerunOpened, setRerunOpened] = useState(tab === 'rerun');
   const previousTab = useRef<RunTab | null>(null);
   useEffect(() => {
@@ -166,6 +158,92 @@ export default function RunDetail({
     </div>
   );
   const controlFeedbackContent = <RunControlFeedback controller={controller} />;
+  const runPanels = {
+    current: (
+      <>
+        <RunObservation detail={observed} compact />
+        {r.business && <p className="run-business-note">{r.business}</p>}
+        {r.debug && (
+          <p className="note">逐步调试 · 执行下一步会实际操作页面；继续将连续运行剩余流程。</p>
+        )}
+        {controllable && r.state === 'PAUSED' && pause && (
+          <section aria-label="调试位置">
+            <h3>下一步：{pause.data.nodeName}</h3>
+            <code>{pause.nodeInstance}</code>
+          </section>
+        )}
+        {results.length > 0 && (
+          <section aria-label="步骤输出">
+            <h3>步骤输出</h3>
+            <p className="note">已保存的脱敏预览；已执行步骤不会因暂停或失败自动重放。</p>
+            {results.map((event: Event) => (
+              <details key={event.sequence} open={event === results.at(-1)}>
+                <summary>{event.nodeInstance}</summary>
+                <pre>{event.data.outputPreview}</pre>
+              </details>
+            ))}
+          </section>
+        )}
+      </>
+    ),
+    output: (
+      <>
+        <RunOutputWorkspace
+          detail={observed}
+          reveal={reveal}
+          reload={reload}
+          rerun={() => setTab('rerun')}
+        />
+      </>
+    ),
+    logs: (
+      <>
+        <RunEventLog
+          key={r.id}
+          position={logPosition}
+          runId={r.id}
+          run={r}
+          events={d.events}
+          snapshot={d.snapshot}
+          summary={
+            <RunLogSummary
+              detail={observed}
+              active={tab === 'logs'}
+              restoredRunId={restored?.relatedRunId}
+              showOutput={() => setTab('output')}
+              showCurrent={() => setTab('current')}
+              showRerun={() => setTab('rerun')}
+              inspect={(next, relatedRunId) =>
+                inspectRelated(next, {
+                  runId: r.id,
+                  tab: 'logs',
+                  scroll: document.querySelector('main')?.scrollTop ?? 0,
+                  logs: { ...logPosition.current },
+                  relatedRunId,
+                })
+              }
+            />
+          }
+        />
+        {d.scriptBundles?.length > 0 && (
+          <details className="script-bundles">
+            <summary>已固定的脚本与依赖 · {d.scriptBundles.length} 个节点</summary>
+            {d.scriptBundles.map((bundle: any) => (
+              <div key={bundle.nodeId}>
+                <p>
+                  <b>{bundle.nodeId}</b> ·{' '}
+                  {bundle.dependencies.length
+                    ? bundle.dependencies.map((dep: any) => dep.name + '@' + dep.version).join('，')
+                    : '仅使用脚本及 Node 内置能力'}
+                </p>
+                <code className="path-text">SHA-256 {bundle.sha256}</code>
+              </div>
+            ))}
+          </details>
+        )}
+      </>
+    ),
+  };
   return (
     <div
       className={
@@ -305,141 +383,27 @@ export default function RunDetail({
                 )}
               </aside>
               <section className="run-observation-content">
-                <div
-                  className="run-detail-tabs"
-                  role="tablist"
+                <Tabs
+                  id="run"
+                  className={'run-detail-tabs' + (tab === 'output' ? ' is-output' : '')}
                   aria-label="运行详情内容"
-                  hidden={tab === 'logs'}
-                >
-                  {visibleTabs.map(([id, label], index) => (
-                    <Button
-                      key={id}
-                      id={'run-tab-' + id}
-                      role="tab"
-                      aria-selected={tab === id}
-                      aria-controls={'run-panel-' + id}
-                      tabIndex={tab === id ? 0 : -1}
-                      onClick={() => setTab(id)}
-                      onKeyDown={(event) => {
-                        const target =
-                          event.key === 'Home'
-                            ? 0
-                            : event.key === 'End'
-                              ? visibleTabs.length - 1
-                              : event.key === 'ArrowRight'
-                                ? (index + 1) % visibleTabs.length
-                                : event.key === 'ArrowLeft'
-                                  ? (index + visibleTabs.length - 1) % visibleTabs.length
-                                  : null;
-                        if (target === null) return;
-                        event.preventDefault();
-                        setTab(visibleTabs[target][0]);
-                        (event.currentTarget as HTMLButtonElement).parentElement
-                          ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
-                          [target]?.focus();
-                      }}
-                    >
-                      {label}
-                    </Button>
-                  ))}
-                </div>
-                <div
-                  id="run-panel-current"
-                  role="tabpanel"
-                  aria-labelledby="run-tab-current"
-                  hidden={tab !== 'current'}
-                >
-                  <RunObservation detail={observed} compact />
-                  {r.business && <p className="run-business-note">{r.business}</p>}
-                  {r.debug && (
-                    <p className="note">
-                      逐步调试 · 执行下一步会实际操作页面；继续将连续运行剩余流程。
-                    </p>
-                  )}
-                  {controllable && r.state === 'PAUSED' && pause && (
-                    <section aria-label="调试位置">
-                      <h3>下一步：{pause.data.nodeName}</h3>
-                      <code>{pause.nodeInstance}</code>
-                    </section>
-                  )}
-                  {results.length > 0 && (
-                    <section aria-label="步骤输出">
-                      <h3>步骤输出</h3>
-                      <p className="note">已保存的脱敏预览；已执行步骤不会因暂停或失败自动重放。</p>
-                      {results.map((event: Event) => (
-                        <details key={event.sequence} open={event === results.at(-1)}>
-                          <summary>{event.nodeInstance}</summary>
-                          <pre>{event.data.outputPreview}</pre>
-                        </details>
-                      ))}
-                    </section>
-                  )}
-                </div>
-                <div
-                  id="run-panel-output"
-                  role="tabpanel"
-                  aria-labelledby="run-tab-output"
-                  hidden={tab !== 'output'}
-                >
-                  <RunOutputWorkspace
-                    detail={observed}
-                    reveal={reveal}
-                    reload={reload}
-                    rerun={() => setTab('rerun')}
-                  />
-                </div>
-                <div
-                  id="run-panel-logs"
-                  role="tabpanel"
-                  aria-labelledby="run-tab-logs"
-                  hidden={tab !== 'logs'}
-                >
-                  <RunEventLog
-                    key={r.id}
-                    position={logPosition}
-                    runId={r.id}
-                    run={r}
-                    events={d.events}
-                    snapshot={d.snapshot}
-                    summary={
-                      <RunLogSummary
-                        detail={observed}
-                        active={tab === 'logs'}
-                        restoredRunId={restored?.relatedRunId}
-                        showOutput={() => setTab('output')}
-                        showCurrent={() => setTab('current')}
-                        showRerun={() => setTab('rerun')}
-                        inspect={(next, relatedRunId) =>
-                          inspectRelated(next, {
-                            runId: r.id,
-                            tab: 'logs',
-                            scroll: document.querySelector('main')?.scrollTop ?? 0,
-                            logs: { ...logPosition.current },
-                            relatedRunId,
-                          })
-                        }
-                      />
-                    }
-                  />
-                  {d.scriptBundles?.length > 0 && (
-                    <details className="script-bundles">
-                      <summary>已固定的脚本与依赖 · {d.scriptBundles.length} 个节点</summary>
-                      {d.scriptBundles.map((bundle: any) => (
-                        <div key={bundle.nodeId}>
-                          <p>
-                            <b>{bundle.nodeId}</b> ·{' '}
-                            {bundle.dependencies.length
-                              ? bundle.dependencies
-                                  .map((dep: any) => dep.name + '@' + dep.version)
-                                  .join('，')
-                              : '仅使用脚本及 Node 内置能力'}
-                          </p>
-                          <code className="path-text">SHA-256 {bundle.sha256}</code>
-                        </div>
-                      ))}
-                    </details>
-                  )}
-                </div>
+                  activeKey={tab}
+                  animated={false}
+                  destroyOnHidden={false}
+                  onChange={(key) => setTab(key as RunTab)}
+                  tabBarExtraContent={
+                    tab === 'output' ? (
+                      <Button onClick={() => setTab('rerun')}>核对后重新运行</Button>
+                    ) : undefined
+                  }
+                  items={tabs.map(([key, label]) => ({
+                    key,
+                    label: key === 'logs' && tab === 'output' ? '日志与步骤' : label,
+                    disabled: key === 'current' && tab === 'output',
+                    forceRender: true,
+                    children: runPanels[key],
+                  }))}
+                />
               </section>
             </div>
             <div className="run-rerun-entry" hidden={tab === 'output' || tab === 'logs'}>

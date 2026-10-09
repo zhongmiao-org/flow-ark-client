@@ -1,4 +1,4 @@
-import { ConfigProvider, Button, Input } from 'antd';
+import { ConfigProvider, Button, Input, Segmented } from 'antd';
 import { VariableNavigationContext } from './variable-navigation';
 import StructureReferenceRecovery from './StructureReferenceRecovery';
 import type { ReferenceIssue } from '../shared/flow-references';
@@ -3386,30 +3386,25 @@ function Editor({
               }}
             >
               <div className="inspector-content">
-                <div className="tabs" role="group" aria-label="检查器内容">
-                  {[
-                    ['node', '节点'],
-                    ['params', '参数'],
-                  ].map(([k, t]) => (
-                    <Button
-                      key={k}
-                      aria-pressed={tab === k}
-                      onClick={() => {
-                        if (k === 'params') {
-                          openParameters();
-                          return;
-                        }
-                        if (guardNodeInput()) {
-                          setTab(k);
-                          if (compact) setPanel(k);
-                        }
-                      }}
-                      className={tab === k ? 'selected' : ''}
-                    >
-                      {t}
-                    </Button>
-                  ))}
-                </div>
+                <Segmented<string>
+                  className="inspector-navigation"
+                  aria-label="检查器内容"
+                  value={tab}
+                  options={[
+                    { value: 'node', label: '节点' },
+                    { value: 'params', label: '参数' },
+                  ]}
+                  onChange={(key) => {
+                    if (key === 'params') {
+                      openParameters();
+                      return;
+                    }
+                    if (guardNodeInput()) {
+                      setTab(key);
+                      if (compact) setPanel(key);
+                    }
+                  }}
+                />
                 {copiedStep && copiedStep.id === selected && !draftSaved && (
                   <section
                     className="editor-feedback"

@@ -51,14 +51,16 @@
   line-height: 22px;
 }
 button:focus-visible,
-input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):focus-visible,
+input:not(.ant-input):not(.ant-checkbox-input):not(.ant-radio-input):not(.ant-segmented-input):not(
+    [class*='ant-select']
+  ):focus-visible,
 textarea:focus-visible,
 a:focus-visible,
 summary:focus-visible {
   outline: 2px solid var(--fa-action-primary);
   outline-offset: 2px;
 }
-label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item) {
   font-size: 13px;
   line-height: 20px;
   color: var(--fa-text-secondary);

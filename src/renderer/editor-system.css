@@ -3,13 +3,6 @@
 .editor-page .eyebrow {
   color: var(--fa-text-secondary);
 }
-.editor-region .tabs button {
-  color: var(--fa-text-secondary);
-}
-.editor-region .tabs button.selected {
-  color: var(--fa-action-primary);
-  border-color: var(--fa-action-primary);
-}
 .editor-region .canvas-label {
   color: var(--fa-text-secondary);
 }
@@ -174,10 +167,6 @@
   border: 1px solid var(--fa-border-default);
   border-radius: 12px;
   background: var(--fa-bg-surface);
-}
-.editor-region .inspector .tabs {
-  margin: -24px -24px 16px;
-  padding-inline: 16px;
 }
 .editor-region .selected-step-summary {
   display: none;
@@ -463,9 +452,6 @@
   overflow: auto;
   scroll-padding-block: 12px;
   padding: 20px;
-}
-.editor-region .compact-browser-inspector .tabs {
-  margin: -20px -20px 16px;
 }
 .editor-region .compact-config-heading {
   margin: 0 0 16px;

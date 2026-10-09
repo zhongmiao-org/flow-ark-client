@@ -6,7 +6,7 @@
   border: 0;
   background: transparent;
 }
-.run-observation-layout.is-output .run-detail-tabs {
+.run-observation-layout.is-output .run-detail-tabs > .ant-tabs-nav {
   margin: 0 0 24px;
 }
 .run-output-workspace {
