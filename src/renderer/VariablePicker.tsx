@@ -43,6 +43,7 @@ export default function VariablePicker({
   const [advanced, setAdvanced] = useState(!!suffix);
   const [search, setSearch] = useState('');
   const [failure, setFailure] = useState('');
+  const [failureRevision, setFailureRevision] = useState(0);
   const [selectionRevision, setSelectionRevision] = useState(0);
   const sourcesRef = useRef<HTMLElement>(null);
   const detailRef = useRef<HTMLElement>(null);
@@ -54,7 +55,7 @@ export default function VariablePicker({
   const failureRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (failure) failureRef.current?.focus();
-  }, [failure]);
+  }, [failure, failureRevision]);
   const closeRef = useRef(close);
   closeRef.current = close;
   const selected = choices.find((choice) => choice.path === base);
@@ -97,6 +98,7 @@ export default function VariablePicker({
       close();
     } catch (error) {
       setFailure(error instanceof Error ? error.message : '字段尚未更新，请重试');
+      setFailureRevision((revision) => revision + 1);
     }
   };
   return (

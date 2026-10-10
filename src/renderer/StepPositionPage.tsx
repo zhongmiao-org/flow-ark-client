@@ -35,6 +35,9 @@ export default function StepPositionPage(props: Props) {
   const origin = useRef(document.activeElement as HTMLElement | null);
   const heading = useRef<HTMLHeadingElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
+  const saveErrorRef = useRef<HTMLDivElement>(null);
+  const feedbackAction = useRef<'structure' | 'save'>('structure');
+  const [feedbackRevision, setFeedbackRevision] = useState(0);
   const saveButton = useRef<HTMLButtonElement>(null);
   const wasSaving = useRef(false);
   const noticeRef = useRef<HTMLDivElement>(null);
@@ -45,7 +48,9 @@ export default function StepPositionPage(props: Props) {
   const addTarget = props.targets.find((target) => target.value === props.destination);
   const moveTarget = props.targets.find((target) => target.value === props.moveTo);
   const targetErrorId = useId();
-  const error = props.structureError || (attempted ? props.saveError : '');
+  const saveError = attempted ? props.saveError : '';
+  const error = props.structureError || saveError;
+  const activeErrorRef = feedbackAction.current === 'save' ? saveErrorRef : errorRef;
   useEffect(() => {
     const trigger = origin.current;
     return () => {
@@ -55,25 +60,27 @@ export default function StepPositionPage(props: Props) {
     };
   }, []);
   useEffect(() => {
-    if (error && !props.busy) errorRef.current?.focus();
+    if (!props.busy && activeErrorRef.current) activeErrorRef.current.focus();
     else if (wasSaving.current && !props.busy) saveButton.current?.focus();
     wasSaving.current = props.busy;
-  }, [error, props.busy]);
+  }, [props.structureError, saveError, props.busy, feedbackRevision]);
   useEffect(() => {
     const keepNotice = structureNoticePending.current;
     structureNoticePending.current = false;
-    if (error) errorRef.current?.focus();
-    else if (keepNotice) noticeRef.current?.focus();
+    if (keepNotice) noticeRef.current?.focus();
+    else if (error) (activeErrorRef.current ?? errorRef.current)?.focus();
     else heading.current?.focus();
     if (!keepNotice) setNotice('');
   }, [props.revision]);
   const applyStructure = (operation: () => boolean, message: string) => {
+    feedbackAction.current = 'structure';
     setNotice('');
     if (operation()) {
       structureNoticePending.current = true;
       setNotice(message);
       requestAnimationFrame(() => noticeRef.current?.focus());
     }
+    setFeedbackRevision((revision) => revision + 1);
   };
   return (
     <Drawer
@@ -88,7 +95,12 @@ export default function StepPositionPage(props: Props) {
       keyboard={!props.busy}
       afterOpenChange={(opened) => {
         if (opened)
-          (error ? errorRef.current : notice ? noticeRef.current : heading.current)?.focus();
+          (error
+            ? (activeErrorRef.current ?? errorRef.current)
+            : notice
+              ? noticeRef.current
+              : heading.current
+          )?.focus();
       }}
       className="editor-workspace-dialog step-position-dialog"
       aria-labelledby={titleId}
@@ -121,12 +133,23 @@ export default function StepPositionPage(props: Props) {
           </h1>
           <p>所有操作只修改草稿，不撤销已执行的网页或文件动作。</p>
         </header>
-        {error && (
-          <div ref={errorRef} tabIndex={-1} role="alert">
-            <Alert type="error" showIcon role="presentation" title={error} />
+        {saveError && (
+          <div ref={saveErrorRef} tabIndex={-1} role="alert">
+            <Alert
+              type="error"
+              showIcon
+              role="presentation"
+              title="草稿保存未完成"
+              description={saveError}
+            />
           </div>
         )}
-        {notice && !error && (
+        {props.structureError && (
+          <div ref={errorRef} tabIndex={-1} role="alert">
+            <Alert type="error" showIcon role="presentation" title={props.structureError} />
+          </div>
+        )}
+        {notice && !props.structureError && (
           <div ref={noticeRef} tabIndex={-1} role="status">
             <Alert
               type="success"
@@ -274,6 +297,8 @@ export default function StepPositionPage(props: Props) {
                   type="primary"
                   loading={props.busy}
                   onClick={() => {
+                    feedbackAction.current = 'save';
+                    setFeedbackRevision((revision) => revision + 1);
                     setNotice('');
                     setAttempted(true);
                     void props.save();
