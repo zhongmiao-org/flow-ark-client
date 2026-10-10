@@ -688,7 +688,7 @@ export default function AITaskWorkspace(props: Props) {
     }).finally(props.entryHandled);
   }, [props.active, props.entry?.key, busy]);
 
-  function accept(next: TaskDetail, preserveOutput = false) {
+  function accept(next: TaskDetail, preserveOutput = false, learningTaskId = learning?.taskId) {
     if (selectedTask.current !== next.task.id) setHiddenListStep('');
     selectedTask.current = next.task.id;
     setDetail(next);
@@ -699,7 +699,7 @@ export default function AITaskWorkspace(props: Props) {
     const options: OutputOptions = {
       name:
         next.task.outputTarget?.name ??
-        (learning?.taskId === next.task.id ? '页面标题.txt' : '结果.txt'),
+        (learningTaskId === next.task.id ? '页面标题.txt' : '结果.txt'),
       onConflict: next.task.outputTarget?.onConflict ?? 'number',
     };
     setSavedOutput(JSON.stringify(options));
@@ -809,24 +809,24 @@ export default function AITaskWorkspace(props: Props) {
     }
     return next;
   }
-  const showTask = (next: TaskDetail) => {
-    accept(next);
+  const showTask = (next: TaskDetail, learningTaskId = learning?.taskId) => {
+    accept(next, false, learningTaskId);
     setEditingProposal(false);
     setReviewed(false);
     setSelected('');
     setProvider(next.task.provider ?? 'deepseek');
     setModel(next.task.model ?? 'deepseek-flash');
-    setPage(
-      ['generating', 'failed', 'unsupported'].includes(next.task.status)
-        ? 'generation'
-        : next.proposal?.result.kind === 'clarify' && !next.task.scope
-          ? 'understand'
-          : next.proposal || next.flow
-            ? 'review'
-            : next.task.webTarget || next.task.outputTarget || next.task.toolTargets?.length
-              ? 'understand'
-              : 'brief',
-    );
+    const destination = ['generating', 'failed', 'unsupported'].includes(next.task.status)
+      ? 'generation'
+      : next.proposal?.result.kind === 'clarify' && !next.task.scope
+        ? 'understand'
+        : next.proposal || next.flow
+          ? 'review'
+          : next.task.webTarget || next.task.outputTarget || next.task.toolTargets?.length
+            ? 'understand'
+            : 'brief';
+    setPage(destination);
+    return destination;
   };
   async function open(id: string) {
     await run(async () => {
@@ -1107,7 +1107,15 @@ export default function AITaskWorkspace(props: Props) {
   async function back() {
     await run(async () => {
       if (detail && dirty) await save();
-      setPage('home');
+      showHome();
+    });
+  }
+  function showHome() {
+    setPage('home');
+    requestAnimationFrame(() => {
+      if (!location.current.active || location.current.page !== 'home') return;
+      document.querySelector('main')?.scrollTo({ top: 0 });
+      homeInput.current?.focus({ preventScroll: true });
     });
   }
   async function returnFromReview() {
@@ -1346,6 +1354,7 @@ export default function AITaskWorkspace(props: Props) {
       if (!location.current.active || learningVisit.current !== visit) return;
       props.showBrowser(false);
       setPage('guide');
+      focusTaskHeading('guide');
       await refreshLearning();
     });
   }
@@ -1379,23 +1388,24 @@ export default function AITaskWorkspace(props: Props) {
             if (
               !result?.run ||
               result.run.id !== next.learning.latestRunId ||
-              (result.run.task && result.run.task.id !== next.detail.task.id)
+              result.run.task?.id !== next.detail.task.id
             )
               throw new Error(
                 '教学任务已恢复，但上次运行记录与当前教学不一致。请从当前任务核对运行记录。',
               );
           } catch (reason) {
             if (!stillHere()) return;
-            showTask(next.detail);
+            showTask(next.detail, next.learning.taskId);
             throw reason;
           }
         }
         if (!stillHere()) return;
-        showTask(next.detail);
+        const destination = showTask(next.detail, next.learning.taskId);
         if (result)
           props.openRun(result, (intent = 'plan') =>
             returnToTask.current(next.detail.task.id, intent),
           );
+        else focusTaskHeading(destination);
       } catch (reason) {
         if (stillHere()) throw reason;
       } finally {
@@ -1412,7 +1422,7 @@ export default function AITaskWorkspace(props: Props) {
         const next = await api('learning.skip', { revision: learning.revision });
         if (location.current.active && learningVisit.current === visit) {
           setLearning(next);
-          setPage('home');
+          showHome();
         }
       } catch (reason) {
         if (location.current.active && learningVisit.current === visit) throw reason;

@@ -51,7 +51,12 @@ export default function FirstTaskGuide({
             ['3 试一次', '每一步都能看见进度'],
             ['4 找结果', '打开文件并继续修改'],
           ].map(([heading, text], index) => (
-            <Card className="learning-topic" size="small" key={heading}>
+            <Card
+              className="learning-topic"
+              size="small"
+              styles={{ body: { padding: 16 } }}
+              key={heading}
+            >
               <div className="learning-topic-heading">
                 <h3>{heading}</h3>
                 {progress?.achieved[milestones[index]] && (
@@ -74,7 +79,13 @@ export default function FirstTaskGuide({
             ['标题不为空？', '满足条件继续；否则结束并提醒'],
             ['保存为文本文件', '位置：任务输出 · 新建文件，不覆盖'],
           ].map(([heading, text], i) => (
-            <Card className="learning-step" size="small" variant="borderless" key={heading}>
+            <Card
+              className="learning-step"
+              size="small"
+              variant="borderless"
+              styles={{ body: { padding: 16 } }}
+              key={heading}
+            >
               <span>{String(i + 1).padStart(2, '0')}</span>
               <div>
                 <h3>{heading}</h3>
