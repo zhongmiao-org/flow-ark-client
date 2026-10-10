@@ -186,10 +186,8 @@ export default function RunHistory({
       const button = [
         ...(root.current?.querySelectorAll<HTMLButtonElement>('[data-run-id]') ?? []),
       ].find((e) => e.dataset.runId === saved.id);
-      (button ?? (scope ? appliedFilters.current : heading.current))?.focus({
-        preventScroll: true,
-      });
       root.current?.closest('main')?.scrollTo({ top: saved.scroll });
+      (button ?? (scope ? appliedFilters.current : heading.current))?.focus();
       restore.current = null;
     });
     return () => cancelAnimationFrame(frame);
