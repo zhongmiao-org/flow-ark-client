@@ -30,6 +30,9 @@
 .attention-tabs > .ant-tabs-nav {
   margin-bottom: 24px;
 }
+.attention-tabs > .ant-tabs-nav .ant-tabs-tab {
+  padding-block: 9px;
+}
 .attention-search,
 .attention-filter {
   display: grid;
@@ -47,6 +50,12 @@
 .attention-card,
 .attention-detail-card {
   min-width: 0;
+}
+.attention-card.is-expanded > .attention-card-surface {
+  min-height: 246px;
+}
+.attention-card.is-compact > .attention-card-surface {
+  min-height: 158px;
 }
 .attention-card.is-expanded.is-warning > .attention-card-surface {
   border-color: var(--fa-status-warning);
@@ -284,11 +293,14 @@
   margin-top: 16px;
 }
 
-.attention-toolbar .ant-select {
+.attention-toolbar
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item)
+  > .ant-select {
   margin: 0;
 }
 
-.attention-toolbar label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper),
+.attention-toolbar
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item),
 .attention-toolbar input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   margin: 0;
 }
@@ -405,6 +417,27 @@
 /* 2:2911: template-supplied target and proposed content remain separate. */
 .attention-review-content {
   margin: 20px 0;
+}
+.attention-review-content tr:first-child > th {
+  padding-bottom: 8px;
+}
+.attention-review-content tr:nth-child(2) > td {
+  padding-bottom: 30px;
+}
+.attention-review-content tr:nth-child(3) > th {
+  padding-bottom: 0;
+}
+.attention-review-content .ant-descriptions-item-label,
+.attention-source-facts .ant-descriptions-item-label,
+.attention-facts .ant-descriptions-item-label {
+  font-size: 12px;
+  line-height: 18px;
+}
+.attention-review-content .ant-descriptions-item-content,
+.attention-source-facts .ant-descriptions-item-content,
+.attention-facts .ant-descriptions-item-content {
+  font-size: 14px;
+  line-height: 22px;
 }
 .attention-review-preview {
   width: 100%;
