@@ -1,4 +1,4 @@
-import { Drawer, ConfigProvider, Select, Button, Alert } from 'antd';
+import { Card, Drawer, ConfigProvider, Select, Button, Alert } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { FlowRecord, Step } from '../shared/types';
 import DiagramCanvas from './DiagramCanvas';
@@ -142,111 +142,113 @@ export default function ControlWorkspace(props: Props) {
             />
           </div>
           <ConfigProvider componentDisabled={props.busy}>
-            <fieldset disabled={props.busy} className="control-workspace-card">
-              {node ? (
-                <>
-                  <h2 ref={currentHeading} tabIndex={-1}>
-                    {kinds[node.type].label}
-                  </h2>
-                  <p className="control-workspace-current">
-                    {String(steps.indexOf(node) + 1).padStart(2, '0')} {taskStepTitle(node)}
-                  </p>
-                  {node.type === 'loop' ? (
-                    <ValueField
-                      compactReference
-                      label="集合来源"
-                      value={node.items}
-                      defaultValue={[]}
-                      jsonDefault={[]}
-                      choices={referenceChoices(props.record.flow, node.id)}
-                      change={(items) => {
-                        if (referenceOf(items) === undefined) {
-                          if (!Array.isArray(items))
-                            throw new Error('循环集合必须是数组，或选择数组来源的变量引用');
-                          if (items.length > 1000) throw new Error('循环集合最多 1000 项');
-                        }
-                        props.change({ ...node, items });
-                      }}
-                    />
-                  ) : supported ? (
-                    <LogicNodeConfiguration
-                      key={node.id}
-                      node={node}
-                      choices={referenceChoices(props.record.flow, node.id)}
-                      change={props.change}
-                    />
-                  ) : (
-                    <p>此步骤的详细配置在步骤编辑器中。</p>
-                  )}
-                  <label htmlFor={titleId + '-destination'}>添加位置</label>
-                  <div className="control-workspace-add">
-                    <Select<string>
-                      status={!destination ? 'error' : undefined}
-                      id={titleId + '-destination'}
-                      value={destination ? props.destination : ''}
-                      title={destination?.label}
-                      aria-invalid={!destination}
-                      aria-describedby={!destination ? titleId + '-destination-error' : undefined}
-                      onChange={(value) => props.setDestination(value)}
-                      options={[
-                        ...(!destination
-                          ? [{ value: '', disabled: true, label: '原位置已删除，请重新选择' }]
-                          : []),
-                        ...props.targets.map((target) => ({
-                          value: target.value,
-                          label: target.label,
-                        })),
-                      ]}
-                    />
-                    <Button disabled={!destination || undefined} onClick={props.add}>
-                      选择动作
-                    </Button>
-                  </div>
-                  {!destination && (
-                    <p id={titleId + '-destination-error'} className="field-error" role="alert">
-                      添加位置已失效，请先重新选择位置。
+            <fieldset disabled={props.busy} className="control-workspace-fields">
+              <Card className="control-workspace-card">
+                {node ? (
+                  <>
+                    <h2 ref={currentHeading} tabIndex={-1}>
+                      {kinds[node.type].label}
+                    </h2>
+                    <p className="control-workspace-current">
+                      {String(steps.indexOf(node) + 1).padStart(2, '0')} {taskStepTitle(node)}
                     </p>
-                  )}
-                  {node.type === 'loop' && (
-                    <p>空集合直接走完成路径；每次迭代分别记录步骤实例和输出。</p>
-                  )}
-                  {node.type === 'condition' && <p>空分支直接汇合，不会创建或执行额外步骤。</p>}
-                  {related && (
-                    <Button onClick={() => selectRelated(related.id)}>
-                      配置 {taskStepTitle(related)}
-                    </Button>
-                  )}
-                  {dataSource && (
-                    <Button onClick={() => selectRelated(dataSource.id)}>
-                      配置数据 · {taskStepTitle(dataSource)}
-                    </Button>
-                  )}
-                  <Button onClick={props.edit}>编辑当前步骤与期限</Button>
-                </>
-              ) : (
-                <>
-                  <h2>选择一个步骤</h2>
-                  <p>在左侧流程图选择条件、循环或其他步骤。</p>
-                </>
-              )}
-              <Button
-                ref={saveButton}
-                type="primary"
-                loading={props.busy}
-                onClick={() => {
-                  setAttemptedSave(true);
-                  void props.save();
-                }}
-              >
-                {props.busy
-                  ? '正在保存…'
-                  : attemptedSave && props.error
-                    ? '重试保存草稿'
-                    : '保存草稿'}
-              </Button>
-              <p role="status">
-                {props.saved ? '草稿已保存' : '有未保存的更改'} · 修改不影响已开始的运行。
-              </p>
+                    {node.type === 'loop' ? (
+                      <ValueField
+                        compactReference
+                        label="集合来源"
+                        value={node.items}
+                        defaultValue={[]}
+                        jsonDefault={[]}
+                        choices={referenceChoices(props.record.flow, node.id)}
+                        change={(items) => {
+                          if (referenceOf(items) === undefined) {
+                            if (!Array.isArray(items))
+                              throw new Error('循环集合必须是数组，或选择数组来源的变量引用');
+                            if (items.length > 1000) throw new Error('循环集合最多 1000 项');
+                          }
+                          props.change({ ...node, items });
+                        }}
+                      />
+                    ) : supported ? (
+                      <LogicNodeConfiguration
+                        key={node.id}
+                        node={node}
+                        choices={referenceChoices(props.record.flow, node.id)}
+                        change={props.change}
+                      />
+                    ) : (
+                      <p>此步骤的详细配置在步骤编辑器中。</p>
+                    )}
+                    <label htmlFor={titleId + '-destination'}>添加位置</label>
+                    <div className="control-workspace-add">
+                      <Select<string>
+                        status={!destination ? 'error' : undefined}
+                        id={titleId + '-destination'}
+                        value={destination ? props.destination : ''}
+                        title={destination?.label}
+                        aria-invalid={!destination}
+                        aria-describedby={!destination ? titleId + '-destination-error' : undefined}
+                        onChange={(value) => props.setDestination(value)}
+                        options={[
+                          ...(!destination
+                            ? [{ value: '', disabled: true, label: '原位置已删除，请重新选择' }]
+                            : []),
+                          ...props.targets.map((target) => ({
+                            value: target.value,
+                            label: target.label,
+                          })),
+                        ]}
+                      />
+                      <Button disabled={!destination || undefined} onClick={props.add}>
+                        选择动作
+                      </Button>
+                    </div>
+                    {!destination && (
+                      <p id={titleId + '-destination-error'} className="field-error" role="alert">
+                        添加位置已失效，请先重新选择位置。
+                      </p>
+                    )}
+                    {node.type === 'loop' && (
+                      <p>空集合直接走完成路径；每次迭代分别记录步骤实例和输出。</p>
+                    )}
+                    {node.type === 'condition' && <p>空分支直接汇合，不会创建或执行额外步骤。</p>}
+                    {related && (
+                      <Button onClick={() => selectRelated(related.id)}>
+                        配置 {taskStepTitle(related)}
+                      </Button>
+                    )}
+                    {dataSource && (
+                      <Button onClick={() => selectRelated(dataSource.id)}>
+                        配置数据 · {taskStepTitle(dataSource)}
+                      </Button>
+                    )}
+                    <Button onClick={props.edit}>编辑当前步骤与期限</Button>
+                  </>
+                ) : (
+                  <>
+                    <h2>选择一个步骤</h2>
+                    <p>在左侧流程图选择条件、循环或其他步骤。</p>
+                  </>
+                )}
+                <Button
+                  ref={saveButton}
+                  type="primary"
+                  loading={props.busy}
+                  onClick={() => {
+                    setAttemptedSave(true);
+                    void props.save();
+                  }}
+                >
+                  {props.busy
+                    ? '正在保存…'
+                    : attemptedSave && props.error
+                      ? '重试保存草稿'
+                      : '保存草稿'}
+                </Button>
+                <p role="status">
+                  {props.saved ? '草稿已保存' : '有未保存的更改'} · 修改不影响已开始的运行。
+                </p>
+              </Card>
             </fieldset>
           </ConfigProvider>
         </div>

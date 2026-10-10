@@ -1,4 +1,4 @@
-import { Alert, Drawer, Collapse, Descriptions, Select, Button } from 'antd';
+import { Card, Alert, Drawer, Collapse, Descriptions, Select, Button } from 'antd';
 import { useEffect, useId, useRef } from 'react';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
 import type { FlowRecord } from '../shared/types';
@@ -109,249 +109,261 @@ export default function ScriptConfigurationWorkspace(props: Props) {
           />
         )}
         <div className="resource-workspace-grid">
-          <section className="resource-workspace-card" aria-label="JS / TS 脚本">
-            <h2>JS / TS 脚本</h2>
-            <div className="script-configuration-field">
-              <label htmlFor={id + '-language'}>语言</label>
-              <Select<string>
-                id={id + '-language'}
-                value={props.node.language}
-                onChange={(value) =>
-                  navigate(() => props.change({ ...props.node, language: value as 'js' | 'ts' }))
-                }
-                options={[
-                  { value: 'ts', label: 'TypeScript' },
-                  { value: 'js', label: 'JavaScript' },
-                ]}
+          <section aria-label="JS / TS 脚本">
+            <Card className="resource-workspace-card">
+              <h2>JS / TS 脚本</h2>
+              <div className="script-configuration-field">
+                <label htmlFor={id + '-language'}>语言</label>
+                <Select<string>
+                  id={id + '-language'}
+                  value={props.node.language}
+                  onChange={(value) =>
+                    navigate(() => props.change({ ...props.node, language: value as 'js' | 'ts' }))
+                  }
+                  options={[
+                    { value: 'ts', label: 'TypeScript' },
+                    { value: 'js', label: 'JavaScript' },
+                  ]}
+                />
+              </div>
+              <Descriptions
+                className="script-configuration-summary"
+                column={1}
+                layout="vertical"
+                size="small"
+                items={[['入口', 'export default 的函数 · 接收 ctx']].map(([label, text]) => ({
+                  key: label,
+                  label,
+                  children: <span title={text}>{text}</span>,
+                }))}
               />
-            </div>
-            <Descriptions
-              className="script-configuration-summary"
-              column={1}
-              layout="vertical"
-              size="small"
-              items={[['入口', 'export default 的函数 · 接收 ctx']].map(([label, text]) => ({
-                key: label,
-                label,
-                children: <span title={text}>{text}</span>,
-              }))}
-            />
-            <ValueField
-              compactReference
-              label="脚本输入"
-              value={props.node.input}
-              choices={referenceChoices(props.record.flow, props.node.id)}
-              defaultValue={{}}
-              change={(input) => props.change({ ...props.node, input })}
-            />
-            <Button type="primary" onClick={() => navigate(props.close)}>
-              应用配置
-            </Button>
+              <ValueField
+                compactReference
+                label="脚本输入"
+                value={props.node.input}
+                choices={referenceChoices(props.record.flow, props.node.id)}
+                defaultValue={{}}
+                change={(input) => props.change({ ...props.node, input })}
+              />
+              <Button type="primary" onClick={() => navigate(props.close)}>
+                应用配置
+              </Button>
+            </Card>
           </section>
-          <section className="resource-workspace-card" aria-label="脚本正文">
-            <h2>脚本正文</h2>
-            <Descriptions
-              className="script-configuration-summary"
-              column={1}
-              layout="vertical"
-              size="small"
-              items={[
-                ['当前代码', props.node.code.trim().split('\n')[0] || '尚未编写'],
-                ['输出', '函数返回值成为步骤输出'],
-                ['定位错误', '编辑器可检查语法并定位行列'],
-              ].map(([label, text]) => ({
-                key: label,
-                label,
-                children: <span title={text}>{text}</span>,
-              }))}
-            />
-            <Button type="primary" onClick={() => navigate(() => props.openEditor())}>
-              打开脚本编辑器
-            </Button>
+          <section aria-label="脚本正文">
+            <Card className="resource-workspace-card">
+              <h2>脚本正文</h2>
+              <Descriptions
+                className="script-configuration-summary"
+                column={1}
+                layout="vertical"
+                size="small"
+                items={[
+                  ['当前代码', props.node.code.trim().split('\n')[0] || '尚未编写'],
+                  ['输出', '函数返回值成为步骤输出'],
+                  ['定位错误', '编辑器可检查语法并定位行列'],
+                ].map(([label, text]) => ({
+                  key: label,
+                  label,
+                  children: <span title={text}>{text}</span>,
+                }))}
+              />
+              <Button type="primary" onClick={() => navigate(() => props.openEditor())}>
+                打开脚本编辑器
+              </Button>
+            </Card>
           </section>
-          <section className="resource-workspace-card" aria-label="依赖检查">
-            <h2>依赖检查</h2>
-            <Descriptions
-              className="script-configuration-summary"
-              column={1}
-              layout="vertical"
-              size="small"
-              items={[
-                [
-                  '依赖',
-                  props.node.dependencies.length
-                    ? `${props.node.dependencies.length} 个精确版本依赖`
-                    : '仅内置 SDK',
-                ],
-                [
-                  '绑定状态',
-                  missing.length || mismatched.length
-                    ? [
-                        missing.length ? `${missing.length} 个缺少目录` : '',
-                        mismatched.length ? `${mismatched.length} 个版本不一致` : '',
-                      ]
-                        .filter(Boolean)
-                        .join('；')
-                    : props.node.dependencies.length
-                      ? '已绑定 · 目录尚需核对'
-                      : '未声明第三方依赖',
-                ],
-                ['运行中', '不自动安装依赖'],
-              ].map(([label, text]) => ({
-                key: label,
-                label,
-                children: <span title={text}>{text}</span>,
-              }))}
-            />
-            <Collapse
-              className="script-configuration-packages"
-              size="small"
-              items={[
-                {
-                  key: 'packages',
-                  label: '配置与核对本地依赖',
-                  forceRender: true,
-                  onKeyDown: activateCollapseWithSpace,
-                  children: (
-                    <ScriptPackages
-                      flowId={props.record.id}
-                      node={props.node}
-                      bindings={props.record.bindings}
-                      guard={props.guard}
-                      bind={props.bind}
-                      remove={props.remove}
-                    />
-                  ),
-                },
-              ]}
-            />
-          </section>
-          <section className="resource-workspace-card" aria-label="模板内脚本">
-            <h2>模板内脚本</h2>
-            <Descriptions
-              className="script-configuration-summary"
-              column={1}
-              layout="vertical"
-              size="small"
-              items={[
-                ['来源', template?.packageKey || '本地流程 · 无模板来源'],
-                ['入口', template?.entryId || '当前流程脚本节点'],
-                ['执行', '独立受监督进程 · 可信代码'],
-              ].map(([label, text]) => ({
-                key: label,
-                label,
-                children: <span title={text}>{text}</span>,
-              }))}
-            />
-            {template ? (
+          <section aria-label="依赖检查">
+            <Card className="resource-workspace-card">
+              <h2>依赖检查</h2>
+              <Descriptions
+                className="script-configuration-summary"
+                column={1}
+                layout="vertical"
+                size="small"
+                items={[
+                  [
+                    '依赖',
+                    props.node.dependencies.length
+                      ? `${props.node.dependencies.length} 个精确版本依赖`
+                      : '仅内置 SDK',
+                  ],
+                  [
+                    '绑定状态',
+                    missing.length || mismatched.length
+                      ? [
+                          missing.length ? `${missing.length} 个缺少目录` : '',
+                          mismatched.length ? `${mismatched.length} 个版本不一致` : '',
+                        ]
+                          .filter(Boolean)
+                          .join('；')
+                      : props.node.dependencies.length
+                        ? '已绑定 · 目录尚需核对'
+                        : '未声明第三方依赖',
+                  ],
+                  ['运行中', '不自动安装依赖'],
+                ].map(([label, text]) => ({
+                  key: label,
+                  label,
+                  children: <span title={text}>{text}</span>,
+                }))}
+              />
               <Collapse
-                className="script-configuration-source"
+                className="script-configuration-packages"
                 size="small"
                 items={[
                   {
-                    key: 'source',
-                    label: '查看固定来源',
+                    key: 'packages',
+                    label: '配置与核对本地依赖',
                     forceRender: true,
                     onKeyDown: activateCollapseWithSpace,
                     children: (
-                      <>
-                        <Descriptions
-                          className="script-configuration-summary"
-                          column={1}
-                          layout="vertical"
-                          size="small"
-                          items={[
-                            { key: 'instance', label: '实例', children: template.instanceId },
-                            { key: 'digest', label: '内容摘要', children: template.digest },
-                          ]}
-                        />
-                        <p>权限与资源由该模板入口声明，运行前核对绑定和授权。</p>
-                      </>
+                      <ScriptPackages
+                        flowId={props.record.id}
+                        node={props.node}
+                        bindings={props.record.bindings}
+                        guard={props.guard}
+                        bind={props.bind}
+                        remove={props.remove}
+                      />
                     ),
                   },
                 ]}
               />
-            ) : (
-              <p className="script-configuration-footnote">
-                此节点不属于模板入口，未附加模板权限。
-              </p>
-            )}
+            </Card>
           </section>
-          <section className="resource-workspace-card" aria-label="日志与进度">
-            <h2>日志与进度</h2>
-            <Descriptions
-              className="script-configuration-summary"
-              column={1}
-              layout="vertical"
-              size="small"
-              items={[
-                ['日志', '统一脱敏后展示'],
-                ['进度', '仅展示实际报告的数量'],
-                ['取消', '协作取消，超时回收进程'],
-              ].map(([label, text]) => ({
-                key: label,
-                label,
-                children: <span title={text}>{text}</span>,
-              }))}
-            />
-            <Button type="primary" onClick={() => navigate(() => props.openEditor(true))}>
-              打开编辑器查看历史输出
-            </Button>
-          </section>
-          <section className="resource-workspace-card" aria-label="AI 调用边界">
-            <h2>AI 调用边界</h2>
-            <Descriptions
-              className="script-configuration-summary"
-              column={1}
-              layout="vertical"
-              size="small"
-              items={[
-                ['入口', template ? '当前模板入口 / 可信脚本 SDK' : '可信脚本 SDK'],
-                [
-                  '资源',
-                  resources.length
-                    ? resources
-                        .map(
-                          ([name, value]) =>
-                            `${name} · ${value.provider} / ${value.model || '未设置模型'}`,
-                        )
-                        .join('；')
-                    : '当前流程未绑定 AI 资源',
-                ],
-                ['规则', '业务提示词归模板，调用前核对授权'],
-              ].map(([label, text]) => ({
-                key: label,
-                label,
-                children: <span title={text}>{text}</span>,
-              }))}
-            />
-            {resources.length > 0 && (
-              <Collapse
-                className="script-configuration-source"
+          <section aria-label="模板内脚本">
+            <Card className="resource-workspace-card">
+              <h2>模板内脚本</h2>
+              <Descriptions
+                className="script-configuration-summary"
+                column={1}
+                layout="vertical"
                 size="small"
                 items={[
-                  {
-                    key: 'ai',
-                    label: '查看全部 AI 绑定',
-                    forceRender: true,
-                    onKeyDown: activateCollapseWithSpace,
-                    children: (
-                      <>
-                        {resources.map(([name, resource]) => (
-                          <p key={name}>
-                            {name}：{resource.provider} / {resource.model || '未设置模型'}
-                          </p>
-                        ))}
-                        <p>仅展示当前绑定，不表示密钥可用或 API 已验证。</p>
-                      </>
-                    ),
-                  },
-                ]}
+                  ['来源', template?.packageKey || '本地流程 · 无模板来源'],
+                  ['入口', template?.entryId || '当前流程脚本节点'],
+                  ['执行', '独立受监督进程 · 可信代码'],
+                ].map(([label, text]) => ({
+                  key: label,
+                  label,
+                  children: <span title={text}>{text}</span>,
+                }))}
               />
-            )}
-            <Button type="primary" onClick={() => navigate(props.openParameters)}>
-              查看参数与资源
-            </Button>
+              {template ? (
+                <Collapse
+                  className="script-configuration-source"
+                  size="small"
+                  items={[
+                    {
+                      key: 'source',
+                      label: '查看固定来源',
+                      forceRender: true,
+                      onKeyDown: activateCollapseWithSpace,
+                      children: (
+                        <>
+                          <Descriptions
+                            className="script-configuration-summary"
+                            column={1}
+                            layout="vertical"
+                            size="small"
+                            items={[
+                              { key: 'instance', label: '实例', children: template.instanceId },
+                              { key: 'digest', label: '内容摘要', children: template.digest },
+                            ]}
+                          />
+                          <p>权限与资源由该模板入口声明，运行前核对绑定和授权。</p>
+                        </>
+                      ),
+                    },
+                  ]}
+                />
+              ) : (
+                <p className="script-configuration-footnote">
+                  此节点不属于模板入口，未附加模板权限。
+                </p>
+              )}
+            </Card>
+          </section>
+          <section aria-label="日志与进度">
+            <Card className="resource-workspace-card">
+              <h2>日志与进度</h2>
+              <Descriptions
+                className="script-configuration-summary"
+                column={1}
+                layout="vertical"
+                size="small"
+                items={[
+                  ['日志', '统一脱敏后展示'],
+                  ['进度', '仅展示实际报告的数量'],
+                  ['取消', '协作取消，超时回收进程'],
+                ].map(([label, text]) => ({
+                  key: label,
+                  label,
+                  children: <span title={text}>{text}</span>,
+                }))}
+              />
+              <Button type="primary" onClick={() => navigate(() => props.openEditor(true))}>
+                打开编辑器查看历史输出
+              </Button>
+            </Card>
+          </section>
+          <section aria-label="AI 调用边界">
+            <Card className="resource-workspace-card">
+              <h2>AI 调用边界</h2>
+              <Descriptions
+                className="script-configuration-summary"
+                column={1}
+                layout="vertical"
+                size="small"
+                items={[
+                  ['入口', template ? '当前模板入口 / 可信脚本 SDK' : '可信脚本 SDK'],
+                  [
+                    '资源',
+                    resources.length
+                      ? resources
+                          .map(
+                            ([name, value]) =>
+                              `${name} · ${value.provider} / ${value.model || '未设置模型'}`,
+                          )
+                          .join('；')
+                      : '当前流程未绑定 AI 资源',
+                  ],
+                  ['规则', '业务提示词归模板，调用前核对授权'],
+                ].map(([label, text]) => ({
+                  key: label,
+                  label,
+                  children: <span title={text}>{text}</span>,
+                }))}
+              />
+              {resources.length > 0 && (
+                <Collapse
+                  className="script-configuration-source"
+                  size="small"
+                  items={[
+                    {
+                      key: 'ai',
+                      label: '查看全部 AI 绑定',
+                      forceRender: true,
+                      onKeyDown: activateCollapseWithSpace,
+                      children: (
+                        <>
+                          {resources.map(([name, resource]) => (
+                            <p key={name}>
+                              {name}：{resource.provider} / {resource.model || '未设置模型'}
+                            </p>
+                          ))}
+                          <p>仅展示当前绑定，不表示密钥可用或 API 已验证。</p>
+                        </>
+                      ),
+                    },
+                  ]}
+                />
+              )}
+              <Button type="primary" onClick={() => navigate(props.openParameters)}>
+                查看参数与资源
+              </Button>
+            </Card>
           </section>
         </div>
       </div>

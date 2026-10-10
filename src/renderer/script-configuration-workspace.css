@@ -1,7 +1,4 @@
-.script-configuration-workspace .resource-workspace-card {
-  padding-bottom: 50px;
-}
-.script-configuration-workspace .resource-workspace-card > button:last-child,
+.script-configuration-workspace .resource-workspace-card > .ant-card-body > button:last-child,
 .script-configuration-packages,
 .script-configuration-source,
 .script-configuration-footnote {
@@ -21,11 +18,6 @@
 }
 .script-configuration-summary .ant-descriptions-item-content {
   overflow-wrap: anywhere;
-}
-@container (max-width: 720px) {
-  .script-configuration-workspace .resource-workspace-card {
-    padding-bottom: 20px;
-  }
 }
 .script-configuration-workspace .value-field {
   margin: 0;
