@@ -41,7 +41,7 @@ export default function TaskStepList({
     ref,
     () => ({
       reveal(id) {
-        setQuery('');
+        if (terms.length && !matches.some((entry) => entry.step.id === id)) setQuery('');
         setCollapsed((previous) => {
           const next = new Set(previous);
           byId.get(id)?.ancestors.forEach((key) => next.delete(key));
@@ -50,7 +50,7 @@ export default function TaskStepList({
         setFocusId(id);
       },
     }),
-    [byId],
+    [byId, matches, terms.length],
   );
   useLayoutEffect(() => {
     if (!active || !focusId) return;
