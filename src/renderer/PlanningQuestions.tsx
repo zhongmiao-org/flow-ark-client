@@ -1,4 +1,5 @@
-import { ConfigProvider, Button, Collapse, Input } from 'antd';
+import { Alert, Card, ConfigProvider, Button, Collapse, Input, Tag } from 'antd';
+import type { AlertRef } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useId, useRef, useState } from 'react';
 import type { PlanningResult } from '../shared/planning';
@@ -19,7 +20,7 @@ export default function PlanningQuestions({
 }) {
   const prefix = useId();
   const inputs = useRef(new Map<string, HTMLTextAreaElement>());
-  const removalStatus = useRef<HTMLParagraphElement>(null);
+  const removalStatus = useRef<AlertRef>(null);
   const [removed, setRemoved] = useState(false);
   const previous = Object.entries(answers).filter(
     ([id]) => !questions.some((question) => question.id === id),
@@ -38,9 +39,13 @@ export default function PlanningQuestions({
         </div>
       )}
       {atLimit && (
-        <p className="planning-questions-note" role="status" id={`${prefix}-limit`}>
-          已保留 30 项回答。请先清除不再需要的回答，再补充新问题；已有回答仍可修改。
-        </p>
+        <Alert
+          type="warning"
+          showIcon
+          role="status"
+          id={`${prefix}-limit`}
+          title="已保留 30 项回答。请先清除不再需要的回答，再补充新问题；已有回答仍可修改。"
+        />
       )}
       {questions.map((question, index) => {
         const value = answers[question.id] ?? '';
@@ -49,55 +54,62 @@ export default function PlanningQuestions({
         const note = `${prefix}-answer-${index}`;
         return (
           <ConfigProvider componentDisabled={busy || undefined} key={question.id}>
-            <fieldset className="ai-task-question" disabled={busy}>
-              <legend>
-                {index + 1}. {question.prompt}
-              </legend>
-              {!!question.options.length && (
-                <div className="ai-task-options">
-                  {question.options.map((option) => (
-                    <Button
-                      htmlType="button"
-                      disabled={limited || undefined}
-                      key={option}
-                      aria-pressed={value === option}
-                      onClick={() => answer(question.id, option)}
-                    >
-                      {option}
-                    </Button>
-                  ))}
-                </div>
-              )}
-              <Input.TextArea
-                ref={(instance) => {
-                  const element = instance?.resizableTextArea?.textArea ?? null;
-                  if (element) inputs.current.set(question.id, element);
-                  else inputs.current.delete(question.id);
-                }}
-                aria-label={question.prompt}
-                aria-describedby={limited ? `${note} ${prefix}-limit` : note}
-                disabled={limited || undefined}
-                value={value}
-                maxLength={3000}
-                placeholder="选择上方选项，或直接补充说明"
-                onChange={(event) => answer(question.id, event.target.value)}
-              />
-              <div className="planning-answer-footer">
-                <small id={note}>
-                  {value.trim() ? '已补充' : '尚未补充'} · {value.length} / 3000 字符
-                </small>
-                <Button
-                  htmlType="button"
-                  disabled={busy || !exists || undefined}
-                  onClick={() => {
-                    clear(question.id);
-                    inputs.current.get(question.id)?.focus();
+            <Card className="planning-question-card">
+              <fieldset className="ai-task-question" disabled={busy}>
+                <legend>
+                  {index + 1}. {question.prompt}
+                </legend>
+                {!!question.options.length && (
+                  <div className="ai-task-options">
+                    {question.options.map((option) => (
+                      <Button
+                        htmlType="button"
+                        disabled={limited || undefined}
+                        key={option}
+                        aria-pressed={value === option}
+                        color={value === option ? 'primary' : 'default'}
+                        variant={value === option ? 'filled' : 'outlined'}
+                        onClick={() => answer(question.id, option)}
+                      >
+                        {option}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+                <Input.TextArea
+                  ref={(instance) => {
+                    const element = instance?.resizableTextArea?.textArea ?? null;
+                    if (element) inputs.current.set(question.id, element);
+                    else inputs.current.delete(question.id);
                   }}
-                >
-                  清除此项回答
-                </Button>
-              </div>
-            </fieldset>
+                  aria-label={question.prompt}
+                  aria-describedby={limited ? `${note} ${prefix}-limit` : note}
+                  disabled={limited || undefined}
+                  value={value}
+                  maxLength={3000}
+                  placeholder="选择上方选项，或直接补充说明"
+                  onChange={(event) => answer(question.id, event.target.value)}
+                />
+                <div className="planning-answer-footer">
+                  <small id={note}>
+                    <Tag color={value.trim() ? 'success' : 'default'}>
+                      {value.trim() ? '已补充' : '尚未补充'}
+                    </Tag>
+                    {value.length} / 3000 字符
+                  </small>
+                  <Button
+                    htmlType="button"
+                    disabled={busy || !exists || undefined}
+                    onClick={() => {
+                      clear(question.id);
+                      inputs.current.get(question.id)?.focus();
+                    }}
+                  >
+                    清除此项回答
+                  </Button>
+                </div>
+              </fieldset>
+            </Card>
           </ConfigProvider>
         );
       })}
@@ -117,40 +129,46 @@ export default function PlanningQuestions({
                   </p>
                   {previous.map(([id, value], index) => (
                     <ConfigProvider componentDisabled={busy || undefined} key={id}>
-                      <fieldset className="ai-task-question" disabled={busy}>
-                        <legend>先前补充 {index + 1}</legend>
-                        <Input.TextArea
-                          ref={(instance) => {
-                            const element = instance?.resizableTextArea?.textArea ?? null;
-                            if (element) inputs.current.set(id, element);
-                            else inputs.current.delete(id);
-                          }}
-                          aria-label={`先前补充 ${index + 1}`}
-                          aria-describedby={`${prefix}-previous-${index}`}
-                          value={value}
-                          maxLength={3000}
-                          onChange={(event) => answer(id, event.target.value)}
-                        />
-                        <div className="planning-answer-footer">
-                          <small id={`${prefix}-previous-${index}`}>
-                            {value.length} / 3000 字符
-                          </small>
-                          <Button
-                            htmlType="button"
-                            onClick={() => {
-                              const next = previous[index + 1]?.[0] ?? previous[index - 1]?.[0];
-                              clear(id);
-                              setRemoved(true);
-                              requestAnimationFrame(() => {
-                                if (next) inputs.current.get(next)?.focus();
-                                else removalStatus.current?.focus();
-                              });
+                      <Card className="planning-question-card">
+                        <fieldset className="ai-task-question" disabled={busy}>
+                          <legend>先前补充 {index + 1}</legend>
+                          <Input.TextArea
+                            ref={(instance) => {
+                              const element = instance?.resizableTextArea?.textArea ?? null;
+                              if (element) inputs.current.set(id, element);
+                              else inputs.current.delete(id);
                             }}
-                          >
-                            移除先前补充 {index + 1}
-                          </Button>
-                        </div>
-                      </fieldset>
+                            aria-label={`先前补充 ${index + 1}`}
+                            aria-describedby={`${prefix}-previous-${index}`}
+                            value={value}
+                            maxLength={3000}
+                            onChange={(event) => answer(id, event.target.value)}
+                          />
+                          <div className="planning-answer-footer">
+                            <small id={`${prefix}-previous-${index}`}>
+                              {value.length} / 3000 字符
+                            </small>
+                            <Button
+                              htmlType="button"
+                              onClick={() => {
+                                const next = previous[index + 1]?.[0] ?? previous[index - 1]?.[0];
+                                clear(id);
+                                setRemoved(true);
+                                requestAnimationFrame(() => {
+                                  if (next) inputs.current.get(next)?.focus();
+                                  else {
+                                    const element = removalStatus.current?.nativeElement;
+                                    element?.setAttribute('tabindex', '-1');
+                                    element?.focus();
+                                  }
+                                });
+                              }}
+                            >
+                              移除先前补充 {index + 1}
+                            </Button>
+                          </div>
+                        </fieldset>
+                      </Card>
                     </ConfigProvider>
                   ))}
                 </div>
@@ -160,9 +178,13 @@ export default function PlanningQuestions({
         />
       )}
       {removed && (
-        <p className="planning-questions-note" role="status" tabIndex={-1} ref={removalStatus}>
-          已移除先前补充。保存后生效，下次发送前请重新核对内容。
-        </p>
+        <Alert
+          type="info"
+          showIcon
+          role="status"
+          ref={removalStatus}
+          title="已移除先前补充。保存后生效，下次发送前请重新核对内容。"
+        />
       )}
       <p className="planning-questions-note">
         补充内容只用于下一次生成方案；选择答案不会开始执行任务。
