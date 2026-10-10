@@ -725,6 +725,7 @@ export default function AISettingsPage({
         {(!entry.source || fromTemplate) && (
           <Menu
             className="ai-settings-menu"
+            style={{ lineHeight: '32px' }}
             aria-label="设置分类"
             mode="horizontal"
             selectedKeys={['ai']}
@@ -766,7 +767,7 @@ export default function AISettingsPage({
         )}
         {removing ? (
           <section aria-labelledby="ai-remove-title" aria-busy={busy === 'remove'}>
-            <Card className="ai-remove-confirmation">
+            <Card className="ai-remove-confirmation" styles={{ body: { padding: 32 } }}>
               <Tag
                 className="run-state-tag"
                 variant="filled"
@@ -838,6 +839,7 @@ export default function AISettingsPage({
             <section>
               <Card
                 className={`ai-provider-card${editing ? ' is-editing' : ''}${!entry.source ? ' is-general-provider' : ''}`}
+                styles={{ body: { padding: 28 } }}
               >
                 {!entry.source ? (
                   <label className="ai-settings-field ai-provider-selection">
@@ -983,6 +985,7 @@ export default function AISettingsPage({
                       <span>模型 ID</span>
                       <Button
                         className="ai-model-value"
+                        color="default"
                         variant="filled"
                         size="small"
                         disabled={!!busy || testing || state.inUse || undefined}
@@ -993,7 +996,7 @@ export default function AISettingsPage({
                         <span>修改</span>
                       </Button>
                     </div>
-                    <Card size="small" className="ai-saved-key">
+                    <Card size="small" className="ai-saved-key" styles={{ body: { padding: 20 } }}>
                       <div>
                         API Key{' '}
                         <Tag
@@ -1093,7 +1096,17 @@ export default function AISettingsPage({
                   className="ai-connection-feedback"
                   type={tone === 'default' || tone === 'processing' ? 'info' : tone}
                   role={tone === 'error' ? 'alert' : 'status'}
-                  showIcon
+                  styles={{
+                    root: { padding: 0, border: 0, background: 'transparent' },
+                    title: {
+                      fontSize: 18,
+                      lineHeight: '28px',
+                      fontWeight: 500,
+                      color: 'var(--fa-text-primary)',
+                      marginBottom: 16,
+                    },
+                    description: { color: 'var(--fa-text-secondary)' },
+                  }}
                   title={
                     testing
                       ? `正在请求 ${name}`
