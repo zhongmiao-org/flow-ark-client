@@ -28,7 +28,8 @@ export default function FirstTaskGuide({
   useEffect(() => {
     if (retrying.current && !busy) {
       retrying.current = false;
-      if (!readError) {
+      if (readError) feedback.current?.focus();
+      else {
         actionButton.current?.parentElement
           ?.querySelector<HTMLButtonElement>('button:not(:disabled)')
           ?.focus();
