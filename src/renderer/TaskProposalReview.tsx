@@ -94,7 +94,11 @@ export default function TaskProposalReview({
               { step: newStep, index: newIndex, flow: after, side: 'after', label: '新条件' },
             ].map(({ step, index, flow, side, label }) => (
               <section key={side}>
-                <Card size="small" className={`task-condition-card planning-change-${side}`}>
+                <Card
+                  size="small"
+                  className={`task-condition-card planning-change-${side}`}
+                  styles={{ body: { padding: 16 } }}
+                >
                   <h3>{label}</h3>
                   <p>
                     第 {index + 1} 步 · {taskStepSummary(step, flow)}
