@@ -1,4 +1,17 @@
-import { Alert, Badge, Collapse, ConfigProvider, Button, Checkbox, Input, Modal, Tag } from 'antd';
+import {
+  Card,
+  Divider,
+  Empty,
+  Alert,
+  Badge,
+  Collapse,
+  ConfigProvider,
+  Button,
+  Checkbox,
+  Input,
+  Modal,
+  Tag,
+} from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import './antd-layout.css';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -406,172 +419,183 @@ export default function LocalCredentialsPanel({
   );
   return (
     <div className={`local-credentials-layout${compact ? ' is-compact' : ''}`}>
-      <section
-        ref={listRoot}
-        className="local-settings-card"
-        aria-label="通用本机凭据"
-        aria-busy={loading}
-      >
-        <div className="local-settings-row">
-          <h2>{compact ? '凭据' : '通用本机凭据'}</h2>
-          <Button
-            ref={createButton}
-            type="primary"
-            disabled={loading || !!listError || undefined}
-            onClick={() => begin({ kind: 'edit', id: 'local-' + crypto.randomUUID() })}
-          >
-            新增凭据
-          </Button>
-        </div>
-        <p>名称便于识别，保存值只供明确绑定的流程读取。</p>
-        {compact ? (
-          <Collapse
-            className="local-resource-search-controls"
-            size="small"
-            activeKey={searchOpen ? ['search'] : []}
-            onChange={(keys) => setSearchOpen(keys.includes('search'))}
-            items={[
-              {
-                key: 'search',
-                label: `查找与刷新凭据${entries ? ` · ${entries.length}` : ''}`,
-                forceRender: true,
-                onKeyDown: activateCollapseWithSpace,
-                children: searchControls,
-              },
-            ]}
-          />
-        ) : (
-          searchControls
-        )}
-        {loading && <p role="status">正在读取凭据清单…</p>}
-        {listError && (
-          <div className="local-resource-feedback" role="alert" ref={listIssue} tabIndex={-1}>
-            <Alert
-              type="error"
-              role="presentation"
-              showIcon
-              title={entries ? '凭据列表尚未更新' : '暂时无法读取凭据'}
-              description={
-                <div className="feedback-body">
-                  <Tag
-                    className="run-state-tag"
-                    variant="filled"
-                    color="error"
-                    icon={<Badge status="error" />}
-                  >
-                    读取未完成
-                  </Tag>
-                  <p>{listError}</p>
-                  <p>
-                    {entries
-                      ? '下方保留上次读取的列表，请重新读取后再新增、编辑或移除。'
-                      : '尚未取得凭据清单，不能据此判断是否已保存凭据。'}
-                  </p>
-                </div>
-              }
-              action={
-                <Button disabled={loading || undefined} onClick={() => void read()}>
-                  重新读取凭据
-                </Button>
-              }
-            />
+      <section ref={listRoot} aria-label="通用本机凭据" aria-busy={loading}>
+        <Card
+          className="local-settings-card"
+          variant={compact ? 'borderless' : 'outlined'}
+          styles={compact ? { body: { padding: 0 } } : undefined}
+        >
+          <div className="local-settings-row">
+            <h2>{compact ? '凭据' : '通用本机凭据'}</h2>
+            <Button
+              ref={createButton}
+              type="primary"
+              disabled={loading || !!listError || undefined}
+              onClick={() => begin({ kind: 'edit', id: 'local-' + crypto.randomUUID() })}
+            >
+              新增凭据
+            </Button>
           </div>
-        )}
-        {error && (
-          <Alert
-            type="error"
-            showIcon
-            title="操作未完成"
-            description={error}
-            className="local-resource-feedback"
-          />
-        )}
-        {notice && (
-          <div role="status" ref={receipt} tabIndex={-1} className="local-resource-feedback">
-            <Alert type="success" role="presentation" showIcon title={notice} />
-          </div>
-        )}
-        {shown?.map((entry) => (
-          <article className="local-credential-card" key={entry.id}>
-            {compact ? (
-              <>
-                <label className="local-resource-field-label">
-                  名称
-                  <Input size="small" readOnly value={entry.name} />
-                </label>
-                <div className="local-resource-field-label">
-                  值 · {entry.inUse ? '运行正在使用' : '已保存'}
-                </div>
-              </>
-            ) : (
-              <div className="local-settings-row">
-                <h3>{entry.name}</h3>
-                <Tag
-                  className="run-state-tag"
-                  variant="filled"
-                  color={entry.inUse ? 'processing' : 'success'}
-                  icon={<Badge status={entry.inUse ? 'processing' : 'success'} />}
-                >
-                  {entry.inUse ? '运行正在使用' : '已保存'}
-                </Tag>
-              </div>
-            )}
-            <p className="local-credential-mask">••••••••</p>
-            {!compact && <code>{entry.id}</code>}
-            <div className="local-credential-actions">
-              <Button
-                disabled={loading || !!listError || undefined}
-                onClick={() => begin({ kind: 'edit', id: entry.id, entry })}
-              >
-                编辑凭据
-              </Button>
-              <Button
-                disabled={loading || !!listError || undefined}
-                onClick={() => begin({ kind: 'remove', id: entry.id, entry })}
-              >
-                移除凭据
-              </Button>
-            </div>
+          <p>名称便于识别，保存值只供明确绑定的流程读取。</p>
+          {compact ? (
             <Collapse
-              className="local-credential-references"
+              className="local-resource-search-controls"
               size="small"
+              activeKey={searchOpen ? ['search'] : []}
+              onChange={(keys) => setSearchOpen(keys.includes('search'))}
               items={[
                 {
-                  key: 'references',
-                  label: `引用流程 · ${entry.boundFlows.length}`,
+                  key: 'search',
+                  label: `查找与刷新凭据${entries ? ` · ${entries.length}` : ''}`,
                   forceRender: true,
                   onKeyDown: activateCollapseWithSpace,
-                  children: (
-                    <>
-                      {compact && <code>{entry.id}</code>}
-                      {entry.boundFlows.length ? (
-                        <ul>
-                          {entry.boundFlows.map((flow) => (
-                            <li key={flow.id}>
-                              <Button
-                                disabled={!!opening || undefined}
-                                onClick={() => void open(flow.id)}
-                              >
-                                {flow.name} · 打开绑定
-                              </Button>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p>没有已保存流程绑定；保存凭据不会自动授权。</p>
-                      )}
-                    </>
-                  ),
+                  children: searchControls,
                 },
               ]}
             />
-          </article>
-        ))}
-        {entries && !listError && !shown?.length && (
-          <div className="local-settings-empty">
-            {query ? (
-              <>
-                <p>没有匹配的凭据。</p>
+          ) : (
+            searchControls
+          )}
+          {loading && <p role="status">正在读取凭据清单…</p>}
+          {listError && (
+            <div className="local-resource-feedback" role="alert" ref={listIssue} tabIndex={-1}>
+              <Alert
+                type="error"
+                role="presentation"
+                showIcon
+                title={entries ? '凭据列表尚未更新' : '暂时无法读取凭据'}
+                description={
+                  <div className="feedback-body">
+                    <Tag
+                      className="run-state-tag"
+                      variant="filled"
+                      color="error"
+                      icon={<Badge status="error" />}
+                    >
+                      读取未完成
+                    </Tag>
+                    <p>{listError}</p>
+                    <p>
+                      {entries
+                        ? '下方保留上次读取的列表，请重新读取后再新增、编辑或移除。'
+                        : '尚未取得凭据清单，不能据此判断是否已保存凭据。'}
+                    </p>
+                  </div>
+                }
+                action={
+                  <Button disabled={loading || undefined} onClick={() => void read()}>
+                    重新读取凭据
+                  </Button>
+                }
+              />
+            </div>
+          )}
+          {error && (
+            <Alert
+              type="error"
+              showIcon
+              title="操作未完成"
+              description={error}
+              className="local-resource-feedback"
+            />
+          )}
+          {notice && (
+            <div role="status" ref={receipt} tabIndex={-1} className="local-resource-feedback">
+              <Alert type="success" role="presentation" showIcon title={notice} />
+            </div>
+          )}
+          {shown?.map((entry) => (
+            <article className="local-credential-entry" key={entry.id}>
+              {compact && <Divider className="local-credential-divider" />}
+              <Card
+                className="local-credential-card"
+                variant={compact ? 'borderless' : 'outlined'}
+                styles={compact ? { body: { padding: 0 } } : undefined}
+              >
+                {compact ? (
+                  <>
+                    <label className="local-resource-field-label">
+                      名称
+                      <Input size="small" readOnly value={entry.name} />
+                    </label>
+                    <div className="local-resource-field-label">
+                      值 · {entry.inUse ? '运行正在使用' : '已保存'}
+                    </div>
+                  </>
+                ) : (
+                  <div className="local-settings-row">
+                    <h3>{entry.name}</h3>
+                    <Tag
+                      className="run-state-tag"
+                      variant="filled"
+                      color={entry.inUse ? 'processing' : 'success'}
+                      icon={<Badge status={entry.inUse ? 'processing' : 'success'} />}
+                    >
+                      {entry.inUse ? '运行正在使用' : '已保存'}
+                    </Tag>
+                  </div>
+                )}
+                <p className="local-credential-mask">••••••••</p>
+                {!compact && <code>{entry.id}</code>}
+                <div className="local-credential-actions">
+                  <Button
+                    disabled={loading || !!listError || undefined}
+                    onClick={() => begin({ kind: 'edit', id: entry.id, entry })}
+                  >
+                    编辑凭据
+                  </Button>
+                  <Button
+                    disabled={loading || !!listError || undefined}
+                    onClick={() => begin({ kind: 'remove', id: entry.id, entry })}
+                  >
+                    移除凭据
+                  </Button>
+                </div>
+                <Collapse
+                  className="local-credential-references"
+                  size="small"
+                  items={[
+                    {
+                      key: 'references',
+                      label: `引用流程 · ${entry.boundFlows.length}`,
+                      forceRender: true,
+                      onKeyDown: activateCollapseWithSpace,
+                      children: (
+                        <>
+                          {compact && <code>{entry.id}</code>}
+                          {entry.boundFlows.length ? (
+                            <ul>
+                              {entry.boundFlows.map((flow) => (
+                                <li key={flow.id}>
+                                  <Button
+                                    disabled={!!opening || undefined}
+                                    onClick={() => void open(flow.id)}
+                                  >
+                                    {flow.name} · 打开绑定
+                                  </Button>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p>没有已保存流程绑定；保存凭据不会自动授权。</p>
+                          )}
+                        </>
+                      ),
+                    },
+                  ]}
+                />
+              </Card>
+            </article>
+          ))}
+          {entries && !listError && !shown?.length && (
+            <Empty
+              className="local-settings-empty"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={
+                query ? '没有匹配的凭据。' : '尚无通用凭据。点击“新增凭据”保存本机资源。'
+              }
+            >
+              {query && (
                 <Button
                   onClick={() => {
                     setQuery('');
@@ -581,47 +605,51 @@ export default function LocalCredentialsPanel({
                 >
                   清除搜索
                 </Button>
-              </>
-            ) : (
-              '尚无通用凭据。点击“新增凭据”保存本机资源。'
-            )}
-          </div>
-        )}
-        {compact && (
-          <p className="local-credential-protection">系统保护不可用时拒绝保存，不降级为明文。</p>
-        )}
+              )}
+            </Empty>
+          )}
+          {compact && (
+            <p className="local-credential-protection">系统保护不可用时拒绝保存，不降级为明文。</p>
+          )}
+        </Card>
       </section>
-      <section className={compact ? undefined : 'local-settings-card'}>
-        <Collapse
-          className="local-credential-help"
-          key={compact ? 'compact' : 'full'}
-          size="small"
-          defaultActiveKey={compact ? [] : ['help']}
-          items={[
-            {
-              key: 'help',
-              label: '绑定与保护说明',
-              forceRender: true,
-              onKeyDown: activateCollapseWithSpace,
-              children: (
-                <>
-                  <p>
-                    在流程参数与资源中勾选要使用的凭据。替换不改变
-                    ID，旧运行继续受固定快照和在用保护约束。
-                  </p>
-                  <p>活动或排队运行使用期间不能替换或移除。删除前需先解除已保存流程的绑定。</p>
-                  <p>已保存值不回显，不随流程 ZIP 导出。</p>
-                  <h3>AI 与工具认证</h3>
-                  <p>供应商密钥和工具认证在各自的设置中管理。</p>
-                  <div className="local-credential-actions">
-                    <Button onClick={openAI}>管理 AI 密钥</Button>
-                    <Button onClick={openTools}>管理工具认证</Button>
-                  </div>
-                </>
-              ),
-            },
-          ]}
-        />
+      <section>
+        <Card
+          className="local-settings-card"
+          variant={compact ? 'borderless' : 'outlined'}
+          styles={compact ? { body: { padding: 0 } } : undefined}
+        >
+          <Collapse
+            className="local-credential-help"
+            key={compact ? 'compact' : 'full'}
+            size="small"
+            defaultActiveKey={compact ? [] : ['help']}
+            items={[
+              {
+                key: 'help',
+                label: '绑定与保护说明',
+                forceRender: true,
+                onKeyDown: activateCollapseWithSpace,
+                children: (
+                  <>
+                    <p>
+                      在流程参数与资源中勾选要使用的凭据。替换不改变
+                      ID，旧运行继续受固定快照和在用保护约束。
+                    </p>
+                    <p>活动或排队运行使用期间不能替换或移除。删除前需先解除已保存流程的绑定。</p>
+                    <p>已保存值不回显，不随流程 ZIP 导出。</p>
+                    <h3>AI 与工具认证</h3>
+                    <p>供应商密钥和工具认证在各自的设置中管理。</p>
+                    <div className="local-credential-actions">
+                      <Button onClick={openAI}>管理 AI 密钥</Button>
+                      <Button onClick={openTools}>管理工具认证</Button>
+                    </div>
+                  </>
+                ),
+              },
+            ]}
+          />
+        </Card>
       </section>
       {editor && (
         <CredentialDialog

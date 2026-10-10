@@ -1,4 +1,4 @@
-import { Button, Collapse, Input } from 'antd';
+import { Card, Empty, Button, Collapse, Input } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useRef, useState } from 'react';
 import type { Bootstrap, FlowRecord } from '../shared/types';
@@ -121,127 +121,142 @@ export default function LocalStoragePanel({
   );
   return (
     <div className={`local-storage-layout${compact ? ' is-compact' : ''}`}>
-      <section className="local-settings-card local-storage-bindings">
-        <h2>{compact ? '文件与存储' : '文件与目录绑定'}</h2>
-        <p>本地路径只保存在这台 Mac 上。重新选择位置，请打开所属流程的资源配置。</p>
-        {compact ? (
-          <Collapse
-            className="local-resource-search-controls"
-            size="small"
-            activeKey={searchOpen ? ['search'] : []}
-            onChange={(keys) => setSearchOpen(keys.includes('search'))}
-            items={[
-              {
-                key: 'search',
-                label: `查找本机资源 · ${count}`,
-                forceRender: true,
-                onKeyDown: activateCollapseWithSpace,
-                children: searchControls,
-              },
-            ]}
-          />
-        ) : (
-          searchControls
-        )}
-        {filtered.map(({ flow, resources }) => (
-          <article className="local-settings-resource" key={flow.id}>
-            <div className="local-settings-row">
-              <h3>{flow.flow.name}</h3>
-              <Button
-                disabled={busy || undefined}
-                onClick={() => openFlow(flow)}
-                aria-label={`配置 ${flow.flow.name} 的资源`}
-              >
-                打开流程配置
-              </Button>
-            </div>
-            <ul className="local-storage-resources">
-              {resources.map((resource) => (
-                <li key={resource.key}>
-                  <div className="local-storage-resource-title">
-                    <strong>{resource.name}</strong>
-                    <span>{resource.kind}</span>
-                  </div>
-                  <span className="local-storage-usage">{resource.usage}</span>
-                  <p className={`local-settings-path${resource.path ? '' : ' is-unbound'}`}>
-                    {resource.path || '尚未选择本机位置'}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </article>
-        ))}
-        {!filtered.length && (
-          <div className="local-settings-empty">
-            <p>
-              {needle ? '没有匹配的资源。' : '尚无文件或目录资源。可在流程配置中选择本机位置。'}
+      <section>
+        <Card
+          className="local-settings-card local-storage-bindings"
+          variant={compact ? 'borderless' : 'outlined'}
+          styles={compact ? { body: { padding: 0 } } : undefined}
+        >
+          <h2>{compact ? '文件与存储' : '文件与目录绑定'}</h2>
+          <p>本地路径只保存在这台 Mac 上。重新选择位置，请打开所属流程的资源配置。</p>
+          {compact ? (
+            <Collapse
+              className="local-resource-search-controls"
+              size="small"
+              activeKey={searchOpen ? ['search'] : []}
+              onChange={(keys) => setSearchOpen(keys.includes('search'))}
+              items={[
+                {
+                  key: 'search',
+                  label: `查找本机资源 · ${count}`,
+                  forceRender: true,
+                  onKeyDown: activateCollapseWithSpace,
+                  children: searchControls,
+                },
+              ]}
+            />
+          ) : (
+            searchControls
+          )}
+          {filtered.map(({ flow, resources }) => (
+            <article className="local-settings-resource" key={flow.id}>
+              <div className="local-settings-row">
+                <h3>{flow.flow.name}</h3>
+                <Button
+                  disabled={busy || undefined}
+                  onClick={() => openFlow(flow)}
+                  aria-label={`配置 ${flow.flow.name} 的资源`}
+                >
+                  打开流程配置
+                </Button>
+              </div>
+              <ul className="local-storage-resources">
+                {resources.map((resource) => (
+                  <li key={resource.key}>
+                    <div className="local-storage-resource-title">
+                      <strong>{resource.name}</strong>
+                      <span>{resource.kind}</span>
+                    </div>
+                    <span className="local-storage-usage">{resource.usage}</span>
+                    <p className={`local-settings-path${resource.path ? '' : ' is-unbound'}`}>
+                      {resource.path || '尚未选择本机位置'}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          ))}
+          {!filtered.length && (
+            <Empty
+              className="local-settings-empty"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={
+                needle ? '没有匹配的资源。' : '尚无文件或目录资源。可在流程配置中选择本机位置。'
+              }
+            >
+              {needle && (
+                <Button
+                  onClick={() => {
+                    setQuery('');
+                    setSearchOpen(true);
+                    requestAnimationFrame(() => search.current?.focus());
+                  }}
+                >
+                  清除搜索
+                </Button>
+              )}
+            </Empty>
+          )}
+          {!compact && (
+            <p className="local-settings-muted">
+              用途来自模板声明，选择路径不等于授权执行；已保存路径是否可用，会在运行前重新检查。
             </p>
-            {needle && (
-              <Button
-                onClick={() => {
-                  setQuery('');
-                  setSearchOpen(true);
-                  requestAnimationFrame(() => search.current?.focus());
-                }}
-              >
-                清除搜索
-              </Button>
-            )}
-          </div>
-        )}
-        {!compact && (
-          <p className="local-settings-muted">
-            用途来自模板声明，选择路径不等于授权执行；已保存路径是否可用，会在运行前重新检查。
-          </p>
-        )}
+          )}
+        </Card>
       </section>
-      <section className="local-settings-card local-storage-locations">
-        {!compact && <h2>文件与存储</h2>}
-        <div className="local-storage-location">
-          <h3>应用内产物</h3>
-          <p>
-            {compact
-              ? '按运行独立保存。'
-              : '按运行独立保存。进入运行详情的“输出 / 产物”，查看文件状态、保存位置或清理预览。'}
-          </p>
-          <Button
-            type={compact ? 'default' : 'primary'}
-            disabled={busy || undefined}
-            onClick={openRuns}
-          >
-            查看运行与产物
-          </Button>
-        </div>
-        {compact ? (
-          <Collapse
-            className="local-storage-details"
-            size="small"
-            items={[
-              {
-                key: 'data',
-                label: '本地数据目录',
-                forceRender: true,
-                onKeyDown: activateCollapseWithSpace,
-                children: dataLocation,
-              },
-              {
-                key: 'help',
-                label: '资源使用说明',
-                forceRender: true,
-                onKeyDown: activateCollapseWithSpace,
-                children: resourceHelp,
-              },
-            ]}
-          />
-        ) : (
-          <>
-            <div className="local-storage-location">
-              <h3>本地数据目录</h3>
-              {dataLocation}
-            </div>
-            {resourceHelp}
-          </>
-        )}
+      <section>
+        <Card
+          className="local-settings-card local-storage-locations"
+          variant={compact ? 'borderless' : 'outlined'}
+          styles={compact ? { body: { padding: 0 } } : undefined}
+        >
+          {!compact && <h2>文件与存储</h2>}
+          <div className="local-storage-location">
+            <h3>应用内产物</h3>
+            <p>
+              {compact
+                ? '按运行独立保存。'
+                : '按运行独立保存。进入运行详情的“输出 / 产物”，查看文件状态、保存位置或清理预览。'}
+            </p>
+            <Button
+              type={compact ? 'default' : 'primary'}
+              disabled={busy || undefined}
+              onClick={openRuns}
+            >
+              查看运行与产物
+            </Button>
+          </div>
+          {compact ? (
+            <Collapse
+              className="local-storage-details"
+              size="small"
+              items={[
+                {
+                  key: 'data',
+                  label: '本地数据目录',
+                  forceRender: true,
+                  onKeyDown: activateCollapseWithSpace,
+                  children: dataLocation,
+                },
+                {
+                  key: 'help',
+                  label: '资源使用说明',
+                  forceRender: true,
+                  onKeyDown: activateCollapseWithSpace,
+                  children: resourceHelp,
+                },
+              ]}
+            />
+          ) : (
+            <>
+              <div className="local-storage-location">
+                <h3>本地数据目录</h3>
+                {dataLocation}
+              </div>
+              {resourceHelp}
+            </>
+          )}
+        </Card>
       </section>
     </div>
   );
