@@ -228,6 +228,10 @@
   left: 32px;
   right: 32px;
 }
+.flow-task-node.flow-shape--subprocess .task-node-copy {
+  left: 32px;
+  right: 32px;
+}
 .flow-task-node.flow-shape--data .task-node-copy,
 .flow-task-node.flow-shape--manual .task-node-copy,
 .flow-task-node.flow-shape--loop .task-node-copy {
