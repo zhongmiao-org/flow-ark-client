@@ -56,6 +56,7 @@ export default function TaskRepairPage({
   const proposalHeading = useRef<HTMLHeadingElement>(null);
   const proposalOrigin = useRef<HTMLButtonElement | null>(null);
   const operationError = useRef<HTMLDivElement>(null);
+  const failedOperation = useRef<{ epoch: number; origin: Element | null } | null>(null);
   const generationError = useRef<HTMLDivElement>(null);
   const observation = taskRunPresentation(runDetail);
   const node = observation.node;
@@ -165,6 +166,21 @@ export default function TaskRepairPage({
       proposalOrigin.current = null;
     }
   }, [active, phase, busy, generating, ours, error, task?.task.error, task?.task.status]);
+  useLayoutEffect(() => {
+    if (!active) {
+      failedOperation.current = null;
+      return;
+    }
+    const failure = failedOperation.current;
+    if (busy || !failure) return;
+    failedOperation.current = null;
+    if (
+      current(failure.epoch) &&
+      error &&
+      (document.activeElement === failure.origin || document.activeElement === document.body)
+    )
+      operationError.current?.focus();
+  }, [active, busy, error]);
   async function act(fn: (epoch: number) => Promise<void>) {
     if (lock.current) return;
     lock.current = true;
@@ -172,10 +188,14 @@ export default function TaskRepairPage({
     setBusy(true);
     setError('');
     const epoch = location.current.epoch;
+    const origin = document.activeElement;
     try {
       await fn(epoch);
     } catch (e: any) {
-      if (current(epoch)) setError(e.message);
+      if (current(epoch)) {
+        failedOperation.current = { epoch, origin };
+        setError(e.message);
+      }
     } finally {
       lock.current = false;
       setBusy(false);
