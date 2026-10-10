@@ -1,4 +1,4 @@
-import { Alert, Button, Checkbox, Descriptions, Input, Modal, Flex, Tag } from 'antd';
+import { Alert, Button, Checkbox, Descriptions, Input, Modal, Flex, Tag, Card, Empty } from 'antd';
 import { toolConnectionColors } from './theme';
 import './antd-layout.css';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
@@ -271,12 +271,12 @@ export default function TaskTargetConnections({
       ) : listError && !records.length ? (
         <Button onClick={() => setRefresh((value) => value + 1)}>重新加载</Button>
       ) : !records.length ? (
-        <div className="task-target-empty">
-          <h3>还没有连接工具</h3>
+        <Card className="task-target-empty">
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={<h3>还没有连接工具</h3>} />
           <Button type="primary" onClick={manage}>
             连接其他应用
           </Button>
-        </div>
+        </Card>
       ) : (
         <>
           <label className="task-target-search">
@@ -312,8 +312,8 @@ export default function TaskTargetConnections({
               </Button>
             ))}
             {!visible.length && (
-              <div className="task-target-empty">
-                <p>没有找到匹配的连接。</p>
+              <Card className="task-target-empty">
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="没有找到匹配的连接。" />
                 <Button
                   onClick={() => {
                     setQuery('');
@@ -322,7 +322,7 @@ export default function TaskTargetConnections({
                 >
                   清除搜索
                 </Button>
-              </div>
+              </Card>
             )}
           </div>
           {selectedId && !record && (
@@ -340,17 +340,24 @@ export default function TaskTargetConnections({
           <div id={detailsId} className="task-target-details" aria-label="当前连接与任务能力">
             <h2>当前将操作的对象</h2>
             {!record && (
-              <div className="task-target-empty">
+              <Card className="task-target-empty">
                 <h3>选择本次任务的工具连接</h3>
-                <p>
-                  {loading
-                    ? '正在读取本机连接…'
-                    : selectedId
-                      ? '之前的连接已不在列表中，请重新选择。'
-                      : '从连接列表选一项，在这里核对身份和本次所需能力。'}
-                </p>
-                <p>未选择的连接不会加入任务，也不会发送给模型。</p>
-              </div>
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description={
+                    <>
+                      <p>
+                        {loading
+                          ? '正在读取本机连接…'
+                          : selectedId
+                            ? '之前的连接已不在列表中，请重新选择。'
+                            : '从连接列表选一项，在这里核对身份和本次所需能力。'}
+                      </p>
+                      <p>未选择的连接不会加入任务，也不会发送给模型。</p>
+                    </>
+                  }
+                />
+              </Card>
             )}
             {record && (
               <section

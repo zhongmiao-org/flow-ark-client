@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Checkbox, Collapse, type AlertRef } from 'antd';
+import { Alert, Button, Card, Empty, Checkbox, Collapse, type AlertRef } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useEffect, useRef, useState } from 'react';
 import useDesktopWindows from './useDesktopWindows';
@@ -126,16 +126,21 @@ export function DesktopWindowList({
               ))}
             </div>
           ) : (
-            <div className="task-target-empty" role="status">
+            <Card className="task-target-empty" role="status">
               <h3 ref={resultHeading} tabIndex={-1}>
                 {snapshot.truncated ? '暂未取得可显示的窗口' : '没有发现可显示的窗口'}
               </h3>
-              <p>
-                {snapshot.truncated
-                  ? '本次窗口清单不完整，尚不能确认可用窗口。请确认文本编辑文档可以正常响应后重新检查。'
-                  : '请在文本编辑中打开文档，然后重新检查。'}
-              </p>
-            </div>
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  <p>
+                    {snapshot.truncated
+                      ? '本次窗口清单不完整，尚不能确认可用窗口。请确认文本编辑文档可以正常响应后重新检查。'
+                      : '请在文本编辑中打开文档，然后重新检查。'}
+                  </p>
+                }
+              />
+            </Card>
           )}
           {snapshot.truncated && (
             <Alert
@@ -154,25 +159,25 @@ export function DesktopWindowList({
         </>
       )}
       {snapshot?.availability === 'permission-required' && (
-        <div className="task-target-empty">
+        <Card className="task-target-empty">
           <h3 ref={resultHeading} tabIndex={-1}>
             尚需辅助功能权限
           </h3>
           <p>
             系统尚未允许本机助手识别应用窗口。先查看右侧授权说明，再由你决定是否在系统设置中开启。
           </p>
-        </div>
+        </Card>
       )}
       {snapshot?.availability === 'unsupported' && (
-        <div className="task-target-empty">
+        <Card className="task-target-empty">
           <h3 ref={resultHeading} tabIndex={-1}>
             当前系统暂不支持应用窗口
           </h3>
           <p>应用窗口发现当前仅接入 macOS 的文本编辑。你可以继续使用网页或已连接工具。</p>
-        </div>
+        </Card>
       )}
       {snapshot?.availability === 'unavailable' && (
-        <div className="task-target-empty" role="status">
+        <Card className="task-target-empty" role="status">
           <h3 ref={resultHeading} tabIndex={-1}>
             暂时无法取得窗口
           </h3>
@@ -180,7 +185,7 @@ export function DesktopWindowList({
           {snapshot.accessibility === 'granted' && !state.expired && !loading && (
             <p>本次检查已确认辅助功能权限。请先确认文本编辑的文档窗口可以正常响应，再重新检查。</p>
           )}
-        </div>
+        </Card>
       )}
       <Alert
         type="info"

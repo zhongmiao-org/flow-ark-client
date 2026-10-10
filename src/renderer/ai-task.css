@@ -676,14 +676,18 @@
   width: 100%;
 }
 .task-target-empty {
+  background: var(--fa-bg-subtle);
+}
+.task-target-empty > .ant-card-body {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 12px;
-  padding: 24px 16px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-  background: var(--fa-bg-subtle);
+}
+.task-target-empty .ant-empty {
+  width: 100%;
+  margin: 0;
+  text-align: left;
 }
 .task-target-empty h3,
 .task-target-empty p,
