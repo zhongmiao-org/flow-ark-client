@@ -1,4 +1,4 @@
-import { Button, Checkbox, Collapse, Input, Segmented } from 'antd';
+import { Button, Checkbox, Collapse, Input, Segmented, Card, Empty } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useId, useRef, useState } from 'react';
 import type { ToolDefinition } from '../shared/tool-connections';
@@ -111,16 +111,21 @@ export default function TaskToolPicker({
         ))}
       </fieldset>
       {!shown.length && (
-        <div className="task-target-empty">
-          <p>
-            {!tools.length
-              ? '该连接没有可选择的工具。'
-              : onlySelected && !names.length
-                ? '还没有勾选工具，可返回全部工具选择。'
-                : '没有符合当前筛选的工具。'}
-          </p>
+        <Card className="task-target-empty">
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <p>
+                {!tools.length
+                  ? '该连接没有可选择的工具。'
+                  : onlySelected && !names.length
+                    ? '还没有勾选工具，可返回全部工具选择。'
+                    : '没有符合当前筛选的工具。'}
+              </p>
+            }
+          />
           {!!tools.length && <Button onClick={clear}>查看全部工具</Button>}
-        </div>
+        </Card>
       )}
     </section>
   );
