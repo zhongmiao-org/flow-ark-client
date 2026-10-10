@@ -44,6 +44,17 @@ export default function ToolOAuthInspection({
     return () => clearInterval(timer);
   }, [result]);
   const expired = clock >= result.expiresAt;
+  const canAuthorize =
+    !disabled &&
+    !expired &&
+    reviewed &&
+    !!clientId.trim() &&
+    Number.isInteger(Number(port)) &&
+    Number(port) >= 1024 &&
+    Number(port) <= 65535;
+  const login = () => {
+    if (canAuthorize) void authorize(issuer, clientId.trim(), Number(port));
+  };
   return (
     <section className="tool-oauth-inspection" aria-label="OAuth 授权前检查">
       <h2 ref={heading} tabIndex={-1}>
@@ -211,7 +222,20 @@ export default function ToolOAuthInspection({
       </p>
       {issuer && (
         <ConfigProvider componentDisabled={disabled || expired || undefined}>
-          <fieldset disabled={disabled || expired} className="tool-oauth-login">
+          <fieldset
+            disabled={disabled || expired}
+            className="tool-oauth-login"
+            onKeyDown={(event) => {
+              if (
+                event.key !== 'Enter' ||
+                event.nativeEvent.isComposing ||
+                !(event.target instanceof HTMLInputElement)
+              )
+                return;
+              event.preventDefault();
+              if (event.target.type !== 'checkbox') login();
+            }}
+          >
             <legend>登录前核对</legend>
             <label className="tool-field">
               公开客户端 ID
@@ -253,19 +277,7 @@ export default function ToolOAuthInspection({
             >
               我已核对认证站点、客户端、回调地址和请求范围，同意打开登录网页
             </Checkbox>
-            <Button
-              htmlType="button"
-              type="primary"
-              disabled={
-                !reviewed ||
-                !clientId.trim() ||
-                !Number.isInteger(Number(port)) ||
-                Number(port) < 1024 ||
-                Number(port) > 65535 ||
-                undefined
-              }
-              onClick={() => void authorize(issuer, clientId.trim(), Number(port))}
-            >
+            <Button htmlType="button" type="primary" disabled={!canAuthorize} onClick={login}>
               登录并核对能力
             </Button>
           </fieldset>
