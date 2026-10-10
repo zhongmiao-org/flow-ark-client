@@ -10,6 +10,7 @@ import {
   Input,
   Tag,
 } from 'antd';
+import type { AlertRef } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { planningTaskColors } from './theme';
 import TaskMissingAI from './TaskMissingAI';
@@ -697,6 +698,18 @@ export default function AITaskWorkspace(props: Props) {
     edit({ ...draft, answers });
   }
   const operationOrigin = useRef<HTMLElement | null>(null);
+  const operationError = useRef<AlertRef>(null);
+  const focusOperationError = useRef(false);
+  const [operationFailure, setOperationFailure] = useState(0);
+  useLayoutEffect(() => {
+    if (busy || !focusOperationError.current) return;
+    focusOperationError.current = false;
+    const element = operationError.current?.nativeElement;
+    if (!props.active || !error || !element || element.closest('[hidden]')) return;
+    element.tabIndex = -1;
+    element.focus({ preventScroll: true });
+    element.scrollIntoView({ block: 'nearest' });
+  }, [busy, error, operationFailure, props.active]);
   function dismissOperationError() {
     setError('');
     requestAnimationFrame(() => {
@@ -713,11 +726,14 @@ export default function AITaskWorkspace(props: Props) {
     lock.current = true;
     epoch.current++;
     setBusy(true);
+    focusOperationError.current = false;
     setError('');
     setMessage('');
     try {
       await operation();
     } catch (e: any) {
+      focusOperationError.current = true;
+      setOperationFailure((previous) => previous + 1);
       setError(e.message);
     } finally {
       lock.current = false;
@@ -1929,6 +1945,7 @@ export default function AITaskWorkspace(props: Props) {
       )}
       {error && (
         <Alert
+          ref={operationError}
           className="workspace-feedback"
           type="error"
           showIcon
@@ -2416,6 +2433,13 @@ export default function AITaskWorkspace(props: Props) {
                     await save();
                     setPage('brief');
                     setReviewed(false);
+                    requestAnimationFrame(() => {
+                      if (!location.current.active || location.current.page !== 'brief') return;
+                      document.querySelector('main')?.scrollTo({ top: 0 });
+                      document
+                        .querySelector<HTMLTextAreaElement>('#task-description')
+                        ?.focus({ preventScroll: true });
+                    });
                   })
                 }
                 target={() => void openTarget()}
