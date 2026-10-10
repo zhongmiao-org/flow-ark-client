@@ -184,10 +184,17 @@ export default function TaskRunPage({
   }, [run.id, page]);
   useLayoutEffect(() => {
     const origin = previewRetryOrigin.current;
-    if (loading || !origin) return;
-    previewRetryOrigin.current = undefined;
-    if (document.activeElement === origin || document.activeElement === document.body)
-      (previewContent.current ?? previewStatus.current)?.focus({ preventScroll: true });
+    if (loading) return;
+    if (origin) {
+      previewRetryOrigin.current = undefined;
+      if (document.activeElement === origin || document.activeElement === document.body)
+        (previewContent.current ?? previewStatus.current)?.focus({ preventScroll: true });
+    } else if (
+      previewError &&
+      (document.activeElement === heading.current || document.activeElement === document.body)
+    ) {
+      previewStatus.current?.focus();
+    }
   }, [loading, preview, previewError]);
   function retryPreview(origin: HTMLButtonElement) {
     previewRetryOrigin.current = origin;
