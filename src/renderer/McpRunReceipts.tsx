@@ -1,5 +1,5 @@
 import { activateCollapseWithSpace } from './collapseKeyboard';
-import { Alert, Collapse, Tag } from 'antd';
+import { Card, Divider, Alert, Collapse, Tag } from 'antd';
 import { mcpReceiptColors } from './theme';
 import { mcpReceiptsForRun } from './mcp-run-presentation';
 import type { McpReceipt } from '../shared/mcp-run';
@@ -28,100 +28,109 @@ export default function McpRunReceipts({
   const selected = mcpReceiptsForRun(runId, receipts, snapshot);
   if (!selected.length) return null;
   return (
-    <section className="ai-task-card mcp-run-receipts" aria-label="工具调用回执">
-      <h2>工具调用回执</h2>
-      <p>逐项核对服务回复。收到回复不代表外部业务已完成，查看此页不会再次调用。</p>
-      {selected.map((receipt, index) => {
-        const node = nodes.find((node) => node.id === receipt.nodeId);
-        const status = receipt.status;
-        const waiting = status === 'unknown' && !receipt.completedAt && running;
-        const result = ['received', 'tool-error'].includes(status) ? receipt.result : undefined;
-        const texts =
-          result?.content.filter((item) => item.type === 'text' && typeof item.text === 'string') ??
-          [];
-        const rich = (result?.content.length ?? 0) - texts.length;
-        return (
-          <article key={receipt.nodeInstance + ':' + index} data-mcp-result={status}>
-            <div className="mcp-receipt-heading">
-              <h3>{typeof node?.name === 'string' ? node.name : receipt.tool}</h3>
-              <Tag className="run-state-tag" color={mcpReceiptColors[waiting ? 'waiting' : status]}>
-                {waiting ? '正在等待服务回复' : titles[status]}
-              </Tag>
-            </div>
-            <p>
-              {receipt.connectionName} · <code>{receipt.tool}</code>
-            </p>
-            <Alert
-              type={waiting || status === 'received' || status === 'not-sent' ? 'info' : 'error'}
-              role={status === 'unknown' && !waiting ? 'alert' : 'status'}
-              showIcon
-              title={
-                waiting ? '调用尝试已保存，等待服务回复和会话关闭；未自动重试。' : receipt.message
-              }
-              description={
-                status === 'unknown' && !waiting
-                  ? '操作可能已经发生。请先到原服务核对，再决定是否从头创建新的运行。'
-                  : undefined
-              }
-            />
-            {result && <p>以下回复已脱敏；文本字段最多展示 4000 个字符，较长内容为节选。</p>}
-            {texts.map((item, i) => (
-              <pre key={i} tabIndex={0} aria-label={`服务文本 ${i + 1}`}>
-                {String(item.text)}
-              </pre>
-            ))}
-            {result?.structuredContent !== undefined && (
-              <Collapse
-                className="mcp-receipt-content"
-                items={[
-                  {
-                    key: 'evidence-0',
-                    label: '查看结构化结果',
-                    forceRender: true,
-                    onKeyDown: activateCollapseWithSpace,
-                    children: (
-                      <div className="feedback-body">
-                        <pre tabIndex={0}>{JSON.stringify(result.structuredContent, null, 2)}</pre>
-                      </div>
-                    ),
-                  },
-                ]}
+    <section className="mcp-run-receipts" aria-label="工具调用回执">
+      <Card className="mcp-receipts-surface">
+        <h2>工具调用回执</h2>
+        <p>逐项核对服务回复。收到回复不代表外部业务已完成，查看此页不会再次调用。</p>
+        {selected.map((receipt, index) => {
+          const node = nodes.find((node) => node.id === receipt.nodeId);
+          const status = receipt.status;
+          const waiting = status === 'unknown' && !receipt.completedAt && running;
+          const result = ['received', 'tool-error'].includes(status) ? receipt.result : undefined;
+          const texts =
+            result?.content.filter(
+              (item) => item.type === 'text' && typeof item.text === 'string',
+            ) ?? [];
+          const rich = (result?.content.length ?? 0) - texts.length;
+          return (
+            <article key={receipt.nodeInstance + ':' + index} data-mcp-result={status}>
+              <Divider />
+              <div className="mcp-receipt-heading">
+                <h3>{typeof node?.name === 'string' ? node.name : receipt.tool}</h3>
+                <Tag
+                  className="run-state-tag"
+                  color={mcpReceiptColors[waiting ? 'waiting' : status]}
+                >
+                  {waiting ? '正在等待服务回复' : titles[status]}
+                </Tag>
+              </div>
+              <p>
+                {receipt.connectionName} · <code>{receipt.tool}</code>
+              </p>
+              <Alert
+                type={waiting || status === 'received' || status === 'not-sent' ? 'info' : 'error'}
+                role={status === 'unknown' && !waiting ? 'alert' : 'status'}
+                showIcon
+                title={
+                  waiting ? '调用尝试已保存，等待服务回复和会话关闭；未自动重试。' : receipt.message
+                }
+                description={
+                  status === 'unknown' && !waiting
+                    ? '操作可能已经发生。请先到原服务核对，再决定是否从头创建新的运行。'
+                    : undefined
+                }
               />
-            )}
-            {rich > 0 && (
-              <p>另有 {rich} 项富内容，保留在完整回复中；未自动打开链接、下载资源或播放媒体。</p>
-            )}
-            {result && (
-              <Collapse
-                className="mcp-receipt-content"
-                items={[
-                  {
-                    key: 'evidence-1',
-                    label: '查看完整回执内容',
-                    forceRender: true,
-                    onKeyDown: activateCollapseWithSpace,
-                    children: (
-                      <div className="feedback-body">
-                        <pre tabIndex={0} aria-label="完整回执内容">
-                          {JSON.stringify(result, null, 2)}
-                        </pre>
-                      </div>
-                    ),
-                  },
-                ]}
-              />
-            )}
-            <p className="mcp-receipt-time">
-              尝试时间：{new Date(receipt.attemptedAt).toLocaleString('zh-CN')}
-              {receipt.completedAt &&
-                ` · 回执时间：${new Date(receipt.completedAt).toLocaleString('zh-CN')}`}
-            </p>
-            <p className="mcp-receipt-time">
-              步骤实例：<code>{receipt.nodeInstance}</code>
-            </p>
-          </article>
-        );
-      })}
+              {result && <p>以下回复已脱敏；文本字段最多展示 4000 个字符，较长内容为节选。</p>}
+              {texts.map((item, i) => (
+                <pre key={i} tabIndex={0} aria-label={`服务文本 ${i + 1}`}>
+                  {String(item.text)}
+                </pre>
+              ))}
+              {result?.structuredContent !== undefined && (
+                <Collapse
+                  className="mcp-receipt-content"
+                  items={[
+                    {
+                      key: 'evidence-0',
+                      label: '查看结构化结果',
+                      forceRender: true,
+                      onKeyDown: activateCollapseWithSpace,
+                      children: (
+                        <div className="feedback-body">
+                          <pre tabIndex={0}>
+                            {JSON.stringify(result.structuredContent, null, 2)}
+                          </pre>
+                        </div>
+                      ),
+                    },
+                  ]}
+                />
+              )}
+              {rich > 0 && (
+                <p>另有 {rich} 项富内容，保留在完整回复中；未自动打开链接、下载资源或播放媒体。</p>
+              )}
+              {result && (
+                <Collapse
+                  className="mcp-receipt-content"
+                  items={[
+                    {
+                      key: 'evidence-1',
+                      label: '查看完整回执内容',
+                      forceRender: true,
+                      onKeyDown: activateCollapseWithSpace,
+                      children: (
+                        <div className="feedback-body">
+                          <pre tabIndex={0} aria-label="完整回执内容">
+                            {JSON.stringify(result, null, 2)}
+                          </pre>
+                        </div>
+                      ),
+                    },
+                  ]}
+                />
+              )}
+              <p className="mcp-receipt-time">
+                尝试时间：{new Date(receipt.attemptedAt).toLocaleString('zh-CN')}
+                {receipt.completedAt &&
+                  ` · 回执时间：${new Date(receipt.completedAt).toLocaleString('zh-CN')}`}
+              </p>
+              <p className="mcp-receipt-time">
+                步骤实例：<code>{receipt.nodeInstance}</code>
+              </p>
+            </article>
+          );
+        })}
+      </Card>
     </section>
   );
 }

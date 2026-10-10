@@ -1,5 +1,5 @@
 import { runStateColors } from './theme';
-import { Button, Input, Segmented, Tag, Badge } from 'antd';
+import { Card, Empty, Alert, Button, Input, Segmented, Tag, Badge } from 'antd';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { FileText, Folder, Globe, Search, Workflow } from 'lucide-react';
 import type { Bootstrap, FlowRecord, Run } from '../shared/types';
@@ -39,7 +39,7 @@ export default function FlowLibrary({
   const entryLocked = useRef(false);
   const [entryAction, setEntryAction] = useState<'create' | 'import' | ''>('');
   const [entryError, setEntryError] = useState('');
-  const entryErrorPanel = useRef<HTMLParagraphElement>(null);
+  const entryErrorPanel = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     if (visible && entryError) entryErrorPanel.current?.focus();
   }, [visible, entryError]);
@@ -105,17 +105,21 @@ export default function FlowLibrary({
           </p>
         </div>
         {!first && (
-          <Button type="primary" onClick={create} disabled={busy || !ready || undefined}>
-            新建流程
+          <Button
+            type="primary"
+            onClick={() => void startEntry('create')}
+            disabled={busy || !ready || !!entryAction || undefined}
+          >
+            {entryAction === 'create' ? '正在创建…' : '新建流程'}
           </Button>
         )}
       </div>
       {!ready ? (
-        <div className="first-flow" role="status">
+        <Card className="first-flow" role="status">
           {data.fault ? '本地记录读取异常，请先处理上方提示。' : '正在读取本地工作空间…'}
-        </div>
+        </Card>
       ) : first ? (
-        <div className="first-flow" aria-busy={!!entryAction}>
+        <Card className="first-flow" aria-busy={!!entryAction}>
           <Workflow size={56} strokeWidth={1.6} aria-hidden="true" />
           <h2>你的工作流，从这里开始。</h2>
           <p>从空白流程搭建，或导入可信模板。所有流程和运行记录保存在本机。</p>
@@ -135,21 +139,16 @@ export default function FlowLibrary({
             </Button>
           </div>
           <small>无需连接 FlowArk 平台即可开始。</small>
-          {entryError && (
-            <p ref={entryErrorPanel} role="alert" tabIndex={-1}>
-              {entryError}
-            </p>
-          )}
-        </div>
+        </Card>
       ) : (
         <>
           <div className="workspace-summary" aria-label="本地工作空间统计">
-            <div>
+            <Card size="small">
               <span>本地流程</span>
               <strong>{data.flows.length}</strong>
               <small>{filterFlows(data.flows, 'recent', '', now).length} 个最近编辑</small>
-            </div>
-            <div>
+            </Card>
+            <Card size="small">
               <span>今日运行</span>
               <strong>{today?.total ?? '—'}</strong>
               <small>
@@ -157,8 +156,8 @@ export default function FlowLibrary({
                   ? `${today.succeeded} 完成 · ${today.failed} 失败 · ${today.interrupted} 中断`
                   : '尚未取得今日记录'}
               </small>
-            </div>
-            <div>
+            </Card>
+            <Card size="small">
               <span>正在运行</span>
               <strong>{data.execution ? (data.execution.active ? '01' : '00') : '—'}</strong>
               <small title={active?.name}>
@@ -173,12 +172,14 @@ export default function FlowLibrary({
                         : '正在核对执行状态'}
                 {data.runOverview.queued > 0 ? ` · ${data.runOverview.queued} 个排队` : ''}
               </small>
-            </div>
-            <Button className="summary-attention" onClick={showAttention}>
-              <span>需要处理</span>
-              <strong>{String(unread).padStart(2, '0')}</strong>
-              <small>查看待办与提醒 →</small>
-            </Button>
+            </Card>
+            <Card size="small" styles={{ body: { padding: 0 } }}>
+              <Button type="text" className="summary-attention" onClick={showAttention}>
+                <span>需要处理</span>
+                <strong>{String(unread).padStart(2, '0')}</strong>
+                <small>查看待办与提醒 →</small>
+              </Button>
+            </Card>
           </div>
           <div className="flow-filters">
             <Segmented<'all' | 'recent' | 'template'>
@@ -221,62 +222,82 @@ export default function FlowLibrary({
                 ['RUNNING', 'PAUSED', 'WAITING_INPUT', 'CANCELLING'].includes(run.state) &&
                 data.execution?.active?.runId !== run.id;
               return (
-                <article className="flow-card" key={record.id} aria-label={record.flow.name}>
-                  <div className="card-top">
-                    <Icon size={28} strokeWidth={1.6} aria-hidden="true" />
-                    <Tag
-                      className="run-state-tag"
-                      variant="filled"
-                      color={
-                        historicalActive ? 'warning' : state ? runStateColors[state] : 'default'
-                      }
-                      icon={
-                        <Badge
-                          status={
-                            historicalActive ? 'warning' : state ? runStateColors[state] : 'default'
-                          }
-                        />
-                      }
-                    >
-                      {historicalActive ? '待核对' : state ? runStateLabels[state] : '未运行'}
-                    </Tag>
-                  </div>
-                  <h2 title={record.flow.name}>{record.flow.name}</h2>
-                  <p title={record.flow.description}>
-                    {record.flow.description || '你的下一个自动化流程'}
-                  </p>
-                  <footer>
-                    <span title={new Date(record.updatedAt).toLocaleString('zh-CN')}>
-                      {steps.length} 个步骤 · {relativeEditTime(record.updatedAt, now)}
-                    </span>
-                    <Button
-                      disabled={busy || undefined}
-                      aria-label={`编辑 ${record.flow.name}`}
-                      onClick={() => open(record)}
-                    >
-                      打开
-                    </Button>
-                  </footer>
+                <article key={record.id} aria-label={record.flow.name}>
+                  <Card className="flow-card">
+                    <div className="card-top">
+                      <Icon size={28} strokeWidth={1.6} aria-hidden="true" />
+                      <Tag
+                        className="run-state-tag"
+                        variant="filled"
+                        color={
+                          historicalActive ? 'warning' : state ? runStateColors[state] : 'default'
+                        }
+                        icon={
+                          <Badge
+                            status={
+                              historicalActive
+                                ? 'warning'
+                                : state
+                                  ? runStateColors[state]
+                                  : 'default'
+                            }
+                          />
+                        }
+                      >
+                        {historicalActive ? '待核对' : state ? runStateLabels[state] : '未运行'}
+                      </Tag>
+                    </div>
+                    <h2 title={record.flow.name}>{record.flow.name}</h2>
+                    <p title={record.flow.description}>
+                      {record.flow.description || '你的下一个自动化流程'}
+                    </p>
+                    <footer>
+                      <span title={new Date(record.updatedAt).toLocaleString('zh-CN')}>
+                        {steps.length} 个步骤 · {relativeEditTime(record.updatedAt, now)}
+                      </span>
+                      <Button
+                        disabled={busy || undefined}
+                        aria-label={`编辑 ${record.flow.name}`}
+                        onClick={() => open(record)}
+                      >
+                        打开
+                      </Button>
+                    </footer>
+                  </Card>
                 </article>
               );
             })}
           </div>
           {!records.length && (
-            <div className="flow-no-results" role="status">
-              <h2>没有找到匹配的流程</h2>
-              <p>调整名称或筛选条件后重试。</p>
-              <Button
-                onClick={() => {
-                  setQuery('');
-                  setFilter('all');
-                  search.current?.focus();
-                }}
+            <div role="status">
+              <Empty
+                className="flow-no-results"
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  <>
+                    <h2>没有找到匹配的流程</h2>
+                    <p>调整名称或筛选条件后重试。</p>
+                  </>
+                }
               >
-                清除筛选
-              </Button>
+                <Button
+                  onClick={() => {
+                    setQuery('');
+                    setFilter('all');
+                    search.current?.focus();
+                  }}
+                >
+                  清除筛选
+                </Button>
+              </Empty>
             </div>
           )}
         </>
+      )}
+      {entryError && (
+        <div ref={entryErrorPanel} tabIndex={-1} className="flow-entry-error">
+          <Alert type="error" showIcon title={entryError} />
+        </div>
       )}
     </section>
   );

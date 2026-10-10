@@ -222,19 +222,24 @@
   gap: 16px;
   margin-bottom: 24px;
 }
-.workspace-summary > div,
-.workspace-summary > button {
-  height: 112px;
+.workspace-summary > .ant-card {
   min-width: 0;
-  padding: 16px;
+  min-height: 112px;
+}
+.workspace-summary > .ant-card > .ant-card-body,
+.workspace-summary .summary-attention {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-start;
   gap: 4px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: 12px;
-  background: var(--fa-bg-surface);
+  min-height: 110px;
+}
+.workspace-summary .summary-attention {
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+  white-space: normal;
 }
 .workspace-summary span,
 .workspace-summary small {
@@ -252,13 +257,6 @@
 }
 .workspace-summary strong {
   font: 600 32px/40px var(--fa-font-latin);
-}
-.workspace-summary > div > *,
-.workspace-summary > button > * {
-  flex-shrink: 0;
-}
-.workspace-summary > button:hover {
-  border-color: var(--fa-action-primary);
 }
 .flow-filters {
   display: flex;
@@ -278,19 +276,17 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px 16px;
 }
+.flows-page .flow-grid > article {
+  min-width: 0;
+}
 .flows-page .flow-card {
   min-width: 0;
-  height: 220px;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: none;
+  min-height: 220px;
+}
+.flows-page .flow-card > .ant-card-body {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-.flows-page .flow-card:hover {
-  transform: none;
-  box-shadow: none;
 }
 .flows-page .card-top {
   height: 32px;
@@ -298,13 +294,16 @@
   margin: 0;
   color: var(--fa-action-primary);
 }
+.flows-page .card-top .run-state-tag {
+  margin-left: auto;
+}
 .flows-page .flow-card h2 {
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.flows-page .flow-card > p {
+.flows-page .flow-card > .ant-card-body > p {
   margin: 0;
   font-size: 14px;
   line-height: 22px;
@@ -315,8 +314,8 @@
   white-space: nowrap;
 }
 .flows-page .flow-card footer {
-  border: 0;
-  padding: 0 30px 0 0;
+  display: flex;
+  justify-content: space-between;
   margin: 0;
   gap: 8px;
   min-height: 40px;
@@ -333,10 +332,7 @@
 }
 .flows-page .flow-card footer button {
   width: 88px;
-  height: 40px;
   flex: 0 0 88px;
-  padding: 9px 12px;
-  font-size: 13px;
 }
 @container (max-width: 760px) {
   .flows-page .workspace-summary {
@@ -351,9 +347,6 @@
   .flows-page .flow-filter-control {
     flex: 0 1 auto;
   }
-  .flows-page .flow-card footer {
-    padding-right: 0;
-  }
 }
 @container (max-width: 550px) {
   .flows-page .flow-grid {
@@ -362,17 +355,15 @@
 }
 .first-flow {
   min-height: 470px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: 12px;
-  background: var(--fa-bg-surface);
-  padding: 48px;
+  text-align: center;
+}
+.first-flow > .ant-card-body {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  text-align: center;
 }
-.first-flow > svg {
+.first-flow > .ant-card-body > svg {
   color: var(--fa-action-primary);
   flex-shrink: 0;
 }
@@ -398,14 +389,15 @@
 .first-flow small {
   color: var(--fa-text-secondary);
 }
-.first-flow [role='alert'] {
-  color: var(--fa-status-error);
+.flow-entry-error {
+  margin-top: 24px;
   overflow-wrap: anywhere;
 }
+.flow-entry-error:focus-visible {
+  outline: 2px solid var(--fa-status-error);
+  outline-offset: 4px;
+}
 @container (max-width: 550px) {
-  .first-flow {
-    padding: 32px 20px;
-  }
   .first-flow h2 {
     font-size: 24px;
     line-height: 34px;
@@ -413,7 +405,7 @@
 }
 .flow-no-results {
   text-align: center;
-  padding: 48px;
+  margin: 48px 0;
 }
 .app.editing-workspace .sidebar,
 .app.with-browser .sidebar {
@@ -486,7 +478,6 @@
 .with-browser .first-flow {
   height: auto;
   min-height: 470px;
-  padding: 32px;
 }
 .with-browser .first-flow .row {
   flex-wrap: wrap;

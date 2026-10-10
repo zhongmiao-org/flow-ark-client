@@ -2,12 +2,13 @@
   margin: 20px 0;
   min-width: 0;
 }
-.mcp-run-receipts article {
-  padding: 20px 0;
-  border-top: 1px solid var(--fa-border-default);
+.mcp-receipts-surface > .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
-.mcp-run-receipts article:last-child {
-  padding-bottom: 0;
+.mcp-run-receipts article > .ant-divider {
+  margin: 4px 0 20px;
 }
 .mcp-receipt-heading {
   display: flex;
