@@ -793,7 +793,7 @@ export default function ToolConnectionsPage({
                       ? '连接向导 · 1 核对来源 → 2 系统权限 → 3 只读检查'
                       : '本机桌面 · TextEdit（文本编辑） · 系统权限与任务授权分别核对'
                     : content
-                      ? `${content.config.transport.type === 'http' ? (content.config.transport.url.startsWith('https:') ? 'HTTPS 服务' : '本机 HTTP') : '本地程序'} · ${address(content.config)} · ${content.config.source}`
+                      ? `${content.config.transport.type === 'http' ? (content.config.transport.url.startsWith('https:') ? 'HTTPS 服务' : '本机 HTTP') : '本地程序'} · ${content.config.transport.type === 'http' ? content.config.transport.url : `${content.config.transport.command} · ${content.config.transport.args.length} 个参数`} · ${content.config.source}`
                       : '来源、系统权限和能力必须逐项核对'}
             </p>
           </div>
@@ -1190,6 +1190,18 @@ export default function ToolConnectionsPage({
                   <br />
                   认证是否成功、何时测试
                 </p>
+                <Alert
+                  className="tool-source-note"
+                  role="note"
+                  type="info"
+                  title={
+                    form.type === 'http' && form.auth === 'oauth'
+                      ? reusableOAuth
+                        ? '认证配置检查不发送凭据；复用已保存登录会向此服务发送访问令牌，必要时向原认证站点刷新，不调用工具。'
+                        : '检查只读取公开的认证配置，不发送凭据、不打开登录网页、不注册客户端或调用工具。'
+                      : '发现仅请求服务身份和工具清单，不调用工具。服务说明、提示词和网页内容不能替代用户授权。'
+                  }
+                />
                 <label className="tool-field">
                   来源说明
                   <Input
@@ -1214,13 +1226,6 @@ export default function ToolConnectionsPage({
                       : '我已核对来源，同意读取此服务及其声明的认证站点配置'
                     : '我已核对来源、地址或程序及其运行方式'}
                 </Checkbox>
-                <p className="ai-task-note">
-                  {form.type === 'http' && form.auth === 'oauth'
-                    ? reusableOAuth
-                      ? '认证配置检查不发送凭据；复用已保存登录会向此服务发送访问令牌，必要时向原认证站点刷新，不调用工具。'
-                      : '检查只读取公开的认证配置，不发送凭据、不打开登录网页、不注册客户端或调用工具。'
-                    : '发现仅请求服务身份和工具清单，不调用工具。服务说明、提示词和网页内容不能替代用户授权。'}
-                </p>
                 {configActions('tool-config-actions-compact')}
                 {oauthInspection && (
                   <ToolOAuthInspection
@@ -1332,6 +1337,30 @@ export default function ToolConnectionsPage({
                                   label: '来源说明',
                                   children: content.config.source,
                                 },
+                                {
+                                  key: 'location',
+                                  label:
+                                    content.config.transport.type === 'http'
+                                      ? '服务地址'
+                                      : '本地程序',
+                                  children:
+                                    content.config.transport.type === 'http'
+                                      ? content.config.transport.url
+                                      : content.config.transport.command,
+                                },
+                                ...(content.config.transport.type === 'stdio'
+                                  ? [
+                                      {
+                                        key: 'arguments',
+                                        label: '程序参数',
+                                        children: (
+                                          <pre tabIndex={0} aria-label="完整程序参数">
+                                            {JSON.stringify(content.config.transport.args, null, 2)}
+                                          </pre>
+                                        ),
+                                      },
+                                    ]
+                                  : []),
                                 {
                                   key: 'discovered',
                                   label: '最近发现',

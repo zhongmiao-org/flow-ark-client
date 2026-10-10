@@ -258,6 +258,29 @@
 .tool-config > section:first-child > .tool-surface > .ant-card-body {
   gap: 32px;
 }
+.ai-task-page.tools-page .tool-config label.tool-field {
+  color: var(--fa-text-primary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.tool-config .tool-field > input.ant-input,
+.tool-config .tool-field > .ant-select {
+  min-height: 40px;
+}
+.tool-config .tool-field > .ant-select {
+  font-weight: 400;
+}
+.tool-source-note {
+  padding: 16px;
+  border-color: var(--fa-border-default);
+  border-radius: calc(var(--fa-radius-8) * 1.5);
+  background: var(--fa-action-subtle);
+}
+.tool-source-note .ant-alert-title {
+  color: var(--fa-action-primary);
+  font-size: 13px;
+  line-height: 20px;
+}
 .tool-config-actions .ant-btn-primary {
   min-width: 208px;
 }
