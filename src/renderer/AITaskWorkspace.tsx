@@ -1643,6 +1643,7 @@ export default function AITaskWorkspace(props: Props) {
                       {a.kind === 'image' ? ` · ${a.width} × ${a.height}` : ''}
                     </p>
                     <Button
+                      className="task-send-attachment-preview"
                       disabled={inputDisabled || stale || undefined}
                       onClick={() => void previewAttachment(a.id)}
                     >
