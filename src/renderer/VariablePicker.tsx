@@ -1,6 +1,6 @@
 import { Drawer, Button, Card, Empty, Input, Collapse, Descriptions, Alert } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
-import { useContext, useEffect, useId, useRef, useState } from 'react';
+import { useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { composeReference, type ReferenceChoice } from './value-references';
 import { VariableNavigationContext } from './variable-navigation';
 import './variable-picker.css';
@@ -43,6 +43,10 @@ export default function VariablePicker({
   const [advanced, setAdvanced] = useState(!!suffix);
   const [search, setSearch] = useState('');
   const [failure, setFailure] = useState('');
+  const [selectionRevision, setSelectionRevision] = useState(0);
+  const sourcesRef = useRef<HTMLElement>(null);
+  const detailRef = useRef<HTMLElement>(null);
+  const detailHeadingRef = useRef<HTMLHeadingElement>(null);
   const dialog = useRef<HTMLDivElement>(null);
   const origin = useRef(document.activeElement as HTMLElement | null);
   const searchInput = useRef<HTMLInputElement>(null);
@@ -54,6 +58,19 @@ export default function VariablePicker({
   const closeRef = useRef(close);
   closeRef.current = close;
   const selected = choices.find((choice) => choice.path === base);
+  useLayoutEffect(() => {
+    if (!selectionRevision) return;
+    const sources = sourcesRef.current;
+    const detail = detailRef.current;
+    if (
+      sources &&
+      detail &&
+      detail.getBoundingClientRect().top > sources.getBoundingClientRect().top + 1
+    ) {
+      detail.scrollIntoView({ block: 'start' });
+      detailHeadingRef.current?.focus({ preventScroll: true });
+    }
+  }, [selectionRevision]);
   const filtered = choices.filter((choice) =>
     `${choice.label} ${choice.path} ${choice.group}`
       .toLocaleLowerCase()
@@ -160,7 +177,7 @@ export default function VariablePicker({
           </div>
         </header>
         <div className="variable-picker-columns">
-          <section className="variable-picker-sources" aria-label="可用变量来源">
+          <section ref={sourcesRef} className="variable-picker-sources" aria-label="可用变量来源">
             <Card className="variable-picker-sources-card">
               <div className="variable-picker-search">
                 <label htmlFor={titleId + '-search'}>搜索</label>
@@ -192,6 +209,7 @@ export default function VariablePicker({
                             setBase(choice.path);
                             setSuffix('');
                             setFailure('');
+                            setSelectionRevision((revision) => revision + 1);
                           }}
                         >
                           {group === '前序步骤' ? choice.label : `${group} / ${choice.label}`}
@@ -231,11 +249,13 @@ export default function VariablePicker({
               </p>
             </Card>
           </section>
-          <section className="variable-picker-detail" aria-label="引用详情">
+          <section ref={detailRef} className="variable-picker-detail" aria-label="引用详情">
             <Card className="variable-picker-detail-card">
               {selected ? (
                 <>
-                  <h3>{selected.label}</h3>
+                  <h3 ref={detailHeadingRef} tabIndex={-1}>
+                    {selected.label}
+                  </h3>
                   <Descriptions
                     column={1}
                     layout="vertical"
