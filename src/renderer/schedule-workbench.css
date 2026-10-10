@@ -24,6 +24,7 @@
 .schedule-workbench-form .ant-select {
   width: 100%;
   min-width: 0;
+  min-height: 32px;
 }
 .schedule-fixed-version {
   display: flex;
@@ -109,12 +110,19 @@
   gap: 16px;
 }
 .schedule-workbench-form fieldset {
-  gap: 20px;
+  gap: 16px;
 }
 .schedule-workbench-form
   fieldset
   > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.schedule-adoption) {
-  gap: 4px;
+  gap: 6px;
+  min-height: 58px;
+}
+.schedule-workbench-form
+  fieldset
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.schedule-adoption)
+  > span:first-child {
+  line-height: 18px;
 }
 .schedule-workbench-form
   input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):not(

@@ -10,6 +10,7 @@ import {
   Modal,
   Card,
   Empty,
+  theme,
 } from 'antd';
 import './antd-layout.css';
 import { usePageBack } from './use-page-back';
@@ -67,6 +68,7 @@ export default function ScheduleWorkbench({
   navigation: MutableRefObject<TemplateNavigation | undefined>;
   showRun: (detail: any, back: () => void) => void;
 }) {
+  const { token } = theme.useToken();
   const [draft, setDraft] = useState<Draft>();
   const [initial, setInitial] = useState<Draft>();
   const [notice, setNotice] = useState<{ title: string; detail: string; badge: string }>();
@@ -211,8 +213,10 @@ export default function ScheduleWorkbench({
   }, [active, draft?.mode, draft?.plan?.id]);
   useLayoutEffect(() => {
     if (!active || busy || leaving) return;
-    if (error) pageError.current?.focus();
-    else if (notice) feedbackHeading.current?.focus();
+    if (error) {
+      visibleReturn.current = pageError.current;
+      pageError.current?.focus();
+    } else if (notice) feedbackHeading.current?.focus();
   }, [active, busy, leaving, error, notice]);
   useLayoutEffect(() => {
     if (!active) {
@@ -263,7 +267,7 @@ export default function ScheduleWorkbench({
       cancelAnimationFrame(frame);
       observer.disconnect();
     };
-  }, [active, busy, history, leaving]);
+  }, [active, busy, history, leaving, error]);
   const go: TemplateNavigation = (next, target = '本机计划') => {
     if (lock.current || destination.current) return;
     if (!dirty) {
@@ -660,7 +664,25 @@ export default function ScheduleWorkbench({
             >
               <Card className="schedule-surface">
                 <h2>{draft.mode === 'edit' ? '编辑计划' : '创建计划'}</h2>
-                <ConfigProvider componentDisabled={busy || undefined}>
+                <ConfigProvider
+                  componentDisabled={busy}
+                  variant="filled"
+                  theme={{
+                    token: { colorFillTertiary: token.colorBgLayout },
+                    components: {
+                      Input: { activeBg: token.colorBgLayout, fontSize: 13, borderRadius: 6 },
+                      Select: {
+                        algorithm: true,
+                        colorFillTertiary: token.colorBgLayout,
+                        controlHeight: 32,
+                        fontSize: 13,
+                        lineHeight: 20 / 13,
+                        borderRadius: 6,
+                        paddingSM: 7,
+                      },
+                    },
+                  }}
+                >
                   <fieldset ref={fields} disabled={busy}>
                     <label>
                       <span>绑定入口</span>
