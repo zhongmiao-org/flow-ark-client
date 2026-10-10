@@ -856,17 +856,7 @@ export default function TemplateInstancePage({
                       <Button
                         type="primary"
                         disabled={busy || undefined}
-                        onClick={() => {
-                          switchTab('resources');
-                          requestAnimationFrame(() => {
-                            const panel = root.current
-                              ?.querySelector('[data-instance-tab="resources"]')
-                              ?.closest('[role="tabpanel"]');
-                            const tabId = panel?.getAttribute('aria-labelledby');
-                            if (tabId)
-                              document.getElementById(tabId)?.focus({ preventScroll: true });
-                          });
-                        }}
+                        onClick={() => switchTab('resources', true)}
                       >
                         核对资源与动作授权
                       </Button>
