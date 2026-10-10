@@ -91,9 +91,6 @@
 }
 .mapping-values .mapping-current,
 .matrix-values .matrix-current {
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-8);
-  padding: 16px;
   margin: 0;
   min-width: 0;
   background: var(--fa-bg-canvas);
@@ -113,10 +110,7 @@
   padding: 0;
 }
 .node-configuration .structured-values-empty {
-  border: 1px dashed var(--fa-border-default);
-  border-radius: var(--fa-radius-8);
-  padding: 16px;
-  color: var(--fa-text-secondary);
+  margin: 0;
 }
 .node-configuration .structured-values-feedback {
   color: var(--fa-action-primary);

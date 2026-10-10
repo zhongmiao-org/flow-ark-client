@@ -55,18 +55,19 @@
 }
 .variable-picker-sources,
 .variable-picker-detail {
-  border: 1px solid var(--fa-border-default);
-  background: var(--fa-bg-surface);
-  border-radius: 12px;
-  padding: 24px;
+  min-width: 0;
+}
+.variable-picker-sources-card,
+.variable-picker-detail-card {
+  min-width: 0;
+  min-height: 670px;
+}
+.variable-picker-sources-card > .ant-card-body,
+.variable-picker-detail-card > .ant-card-body {
   display: flex;
   flex-direction: column;
   gap: 16px;
   min-width: 0;
-  min-height: 670px;
-}
-.variable-picker-detail {
-  padding: 28px;
 }
 .variable-picker-dialog label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   color: var(--fa-text-secondary);
@@ -109,8 +110,7 @@
   font-size: 12px;
   line-height: 20px;
 }
-.variable-picker-note,
-.variable-picker-empty p {
+.variable-picker-note {
   font-size: 14px;
   line-height: 22px;
   color: var(--fa-text-secondary);
@@ -144,8 +144,8 @@
   .variable-picker-columns {
     grid-template-columns: minmax(0, 1fr);
   }
-  .variable-picker-sources,
-  .variable-picker-detail {
+  .variable-picker-sources-card,
+  .variable-picker-detail-card {
     min-height: 0;
   }
   .variable-picker-source-list {
@@ -154,4 +154,9 @@
     padding: 4px;
     margin: -4px;
   }
+}
+
+.variable-picker-empty .ant-empty {
+  margin: 0;
+  width: 100%;
 }

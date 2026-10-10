@@ -1,4 +1,4 @@
-import { Button } from 'antd';
+import { Button, Card } from 'antd';
 import { useContext, useState } from 'react';
 import type { Flow, Step } from '../shared/types';
 import { nodeReferenceValues, type ReferenceIssue } from '../shared/flow-references';
@@ -88,48 +88,50 @@ export default function StructureReferenceRecovery({
   if (!fields.length && !target) return null;
   return (
     <section className="structure-reference-recovery" aria-label="受影响的引用字段">
-      <h3>先调整引用，再重试结构操作</h3>
-      <p>
-        删除或移动尚未应用，草稿保持原状。选择一个受影响字段查看来源；修改引用不会自动重试原操作。
-      </p>
-      <ul>
-        {fields.map((field) => (
-          <li key={JSON.stringify([field.nodeId, field.keys])}>
-            <strong>{field.label}</strong>
-            <code>{field.reference}</code>
-            <Button
-              htmlType="button"
-              onClick={(event) => {
-                event.currentTarget.focus();
-                setTarget(field);
+      <Card size="small" className="structure-reference-recovery-card">
+        <h3>先调整引用，再重试结构操作</h3>
+        <p>
+          删除或移动尚未应用，草稿保持原状。选择一个受影响字段查看来源；修改引用不会自动重试原操作。
+        </p>
+        <ul>
+          {fields.map((field) => (
+            <li key={JSON.stringify([field.nodeId, field.keys])}>
+              <strong>{field.label}</strong>
+              <code>{field.reference}</code>
+              <Button
+                htmlType="button"
+                onClick={(event) => {
+                  event.currentTarget.focus();
+                  setTarget(field);
+                }}
+                aria-label={`查看引用来源 · ${field.label}`}
+              >
+                查看引用来源
+              </Button>
+            </li>
+          ))}
+        </ul>
+        {target && (
+          <VariableNavigationContext.Provider
+            value={navigation ? { ...navigation, source: '输入与保存状态' } : undefined}
+          >
+            <VariablePicker
+              label={target.label}
+              current={target.reference}
+              choices={node ? referenceChoices(flow, node.id) : []}
+              choose={(reference) => {
+                if (!node) throw new Error('引用字段所在步骤已不存在，请返回重新核对。');
+                if (reference === target.reference)
+                  throw new Error('引用未改变，原结构操作仍被阻止。请选择其他来源，或取消返回。');
+                change(replaceField(node, target, reference), target.label);
               }}
-              aria-label={`查看引用来源 · ${field.label}`}
-            >
-              查看引用来源
-            </Button>
-          </li>
-        ))}
-      </ul>
-      {target && (
-        <VariableNavigationContext.Provider
-          value={navigation ? { ...navigation, source: '输入与保存状态' } : undefined}
-        >
-          <VariablePicker
-            label={target.label}
-            current={target.reference}
-            choices={node ? referenceChoices(flow, node.id) : []}
-            choose={(reference) => {
-              if (!node) throw new Error('引用字段所在步骤已不存在，请返回重新核对。');
-              if (reference === target.reference)
-                throw new Error('引用未改变，原结构操作仍被阻止。请选择其他来源，或取消返回。');
-              change(replaceField(node, target, reference), target.label);
-            }}
-            fixedLabel="去步骤填写固定值"
-            fixed={() => edit(target.nodeId, target.label)}
-            close={() => setTarget(undefined)}
-          />
-        </VariableNavigationContext.Provider>
-      )}
+              fixedLabel="去步骤填写固定值"
+              fixed={() => edit(target.nodeId, target.label)}
+              close={() => setTarget(undefined)}
+            />
+          </VariableNavigationContext.Provider>
+        )}
+      </Card>
     </section>
   );
 }

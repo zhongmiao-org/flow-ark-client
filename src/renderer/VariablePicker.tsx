@@ -1,4 +1,4 @@
-import { Drawer, Button, Input, Collapse, Descriptions, Alert } from 'antd';
+import { Drawer, Button, Card, Empty, Input, Collapse, Descriptions, Alert } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useContext, useEffect, useId, useRef, useState } from 'react';
 import { composeReference, type ReferenceChoice } from './value-references';
@@ -161,164 +161,182 @@ export default function VariablePicker({
         </header>
         <div className="variable-picker-columns">
           <section className="variable-picker-sources" aria-label="可用变量来源">
-            <div className="variable-picker-search">
-              <label htmlFor={titleId + '-search'}>搜索</label>
-              <Input
-                id={titleId + '-search'}
-                ref={(instance) => {
-                  searchInput.current = instance?.input ?? null;
-                }}
-                aria-label="搜索名称或来源"
-                value={search}
-                placeholder="输入名称、来源或路径"
-                onChange={(event) => setSearch(event.target.value)}
-              />
-            </div>
-            <div className="variable-picker-source-list">
-              {(['流程参数', '前序步骤', '当前循环'] as const).map((group) => {
-                const items = filtered.filter((choice) => choice.group === group);
-                return items.length ? (
-                  <section key={group} aria-label={group}>
-                    {items.map((choice) => (
+            <Card className="variable-picker-sources-card">
+              <div className="variable-picker-search">
+                <label htmlFor={titleId + '-search'}>搜索</label>
+                <Input
+                  id={titleId + '-search'}
+                  ref={(instance) => {
+                    searchInput.current = instance?.input ?? null;
+                  }}
+                  aria-label="搜索名称或来源"
+                  value={search}
+                  placeholder="输入名称、来源或路径"
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </div>
+              <div className="variable-picker-source-list">
+                {(['流程参数', '前序步骤', '当前循环'] as const).map((group) => {
+                  const items = filtered.filter((choice) => choice.group === group);
+                  return items.length ? (
+                    <section key={group} aria-label={group}>
+                      {items.map((choice) => (
+                        <Button
+                          key={choice.path}
+                          htmlType="button"
+                          color={base === choice.path ? 'primary' : 'default'}
+                          variant={base === choice.path ? 'filled' : 'outlined'}
+                          aria-pressed={base === choice.path}
+                          title={choice.path}
+                          onClick={() => {
+                            setBase(choice.path);
+                            setSuffix('');
+                            setFailure('');
+                          }}
+                        >
+                          {group === '前序步骤' ? choice.label : `${group} / ${choice.label}`}
+                        </Button>
+                      ))}
+                    </section>
+                  ) : null;
+                })}
+                {!filtered.length && (
+                  <div className="variable-picker-empty">
+                    <h3>{choices.length ? '没有匹配的变量' : '当前位置没有可用变量'}</h3>
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description={
+                        choices.length
+                          ? '尝试搜索其他名称或路径。已选来源会保留。'
+                          : '先添加流程参数或可访问的前序步骤，也可以返回填写固定值。'
+                      }
+                    />
+
+                    {search && (
                       <Button
-                        key={choice.path}
                         htmlType="button"
-                        color={base === choice.path ? 'primary' : 'default'}
-                        variant={base === choice.path ? 'filled' : 'outlined'}
-                        aria-pressed={base === choice.path}
-                        title={choice.path}
                         onClick={() => {
-                          setBase(choice.path);
-                          setSuffix('');
-                          setFailure('');
+                          setSearch('');
+                          searchInput.current?.focus();
                         }}
                       >
-                        {group === '前序步骤' ? choice.label : `${group} / ${choice.label}`}
+                        清除搜索
                       </Button>
-                    ))}
-                  </section>
-                ) : null;
-              })}
-              {!filtered.length && (
-                <div className="variable-picker-empty">
-                  <h3>{choices.length ? '没有匹配的变量' : '当前位置没有可用变量'}</h3>
-                  <p>
-                    {choices.length
-                      ? '尝试搜索其他名称或路径。已选来源会保留。'
-                      : '先添加流程参数或可访问的前序步骤，也可以返回填写固定值。'}
-                  </p>
-                  {search && (
-                    <Button
-                      htmlType="button"
-                      onClick={() => {
-                        setSearch('');
-                        searchInput.current?.focus();
-                      }}
-                    >
-                      清除搜索
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-            <p className="variable-picker-note">
-              当前循环变量只在循环体内出现。另一条件分支的输出不在候选中。
-            </p>
+                    )}
+                  </div>
+                )}
+              </div>
+              <p className="variable-picker-note">
+                当前循环变量只在循环体内出现。另一条件分支的输出不在候选中。
+              </p>
+            </Card>
           </section>
           <section className="variable-picker-detail" aria-label="引用详情">
-            {selected ? (
-              <>
-                <h3>{selected.label}</h3>
-                <Descriptions
-                  column={1}
-                  layout="vertical"
-                  size="small"
-                  items={[{ key: 'source', label: '来源', children: selected.hint }]}
-                />
-                <div className="variable-picker-path">
-                  <label htmlFor={titleId + '-path'}>引用路径</label>
-                  <Input
-                    id={titleId + '-path'}
-                    readOnly
-                    value={suffix ? `${base}.${suffix}` : base}
+            <Card className="variable-picker-detail-card">
+              {selected ? (
+                <>
+                  <h3>{selected.label}</h3>
+                  <Descriptions
+                    column={1}
+                    layout="vertical"
+                    size="small"
+                    items={[{ key: 'source', label: '来源', children: selected.hint }]}
+                  />
+                  <div className="variable-picker-path">
+                    <label htmlFor={titleId + '-path'}>引用路径</label>
+                    <Input
+                      id={titleId + '-path'}
+                      readOnly
+                      value={suffix ? `${base}.${suffix}` : base}
+                    />
+                  </div>
+                  <p className="variable-picker-note">
+                    不使用历史运行值作为默认数据；未知子路径在运行时核验。
+                  </p>
+                </>
+              ) : (
+                <div className="variable-picker-empty">
+                  <h3>{base || current ? '引用来源不可用' : '选择一个变量来源'}</h3>
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={
+                      base || current
+                        ? '原引用已缺失或不在当前作用域，请重新选择。取消不会修改原字段。'
+                        : '在左侧选择参数、前序输出或当前循环变量，核对路径后再应用到字段。'
+                    }
+                  />
+
+                  {current && <code>{current}</code>}
+                </div>
+              )}
+              {failure && (
+                <div ref={failureRef} tabIndex={-1}>
+                  <Alert type="error" showIcon title={failure} role="alert" />
+                </div>
+              )}
+              <footer className="variable-picker-actions">
+                <Button
+                  htmlType="button"
+                  type="primary"
+                  disabled={!path || undefined}
+                  onClick={() => apply(() => choose(path))}
+                >
+                  使用此变量
+                </Button>
+                <Button htmlType="button" onClick={() => apply(fixed)}>
+                  {fixedLabel}
+                </Button>
+                <Button htmlType="button" onClick={close} aria-label={'取消选择 · ' + label}>
+                  取消
+                </Button>
+              </footer>
+              {selected && (
+                <div onKeyDown={activateCollapseWithSpace}>
+                  <Collapse
+                    size="small"
+                    activeKey={advanced ? ['subpath'] : []}
+                    onChange={(keys) => setAdvanced(keys.includes('subpath'))}
+                    items={[
+                      {
+                        key: 'subpath',
+                        label: '编辑子路径（可选）',
+                        forceRender: true,
+                        children: (
+                          <div className="variable-picker-subpath">
+                            <label htmlFor={titleId + '-suffix'}>子路径</label>
+                            <Input
+                              status={!!invalid ? 'error' : undefined}
+                              id={titleId + '-suffix'}
+                              value={suffix}
+                              disabled={base === 'index' || undefined}
+                              placeholder={
+                                base === 'index' ? '循环序号没有子字段' : '例如 rows.0.name'
+                              }
+                              aria-invalid={!!invalid}
+                              aria-describedby={invalid ? titleId + '-invalid' : undefined}
+                              onChange={(event) => {
+                                setSuffix(event.target.value);
+                                setFailure('');
+                              }}
+                            />
+                            <p className="variable-picker-note">缺失字段会报错，不会执行表达式。</p>
+                          </div>
+                        ),
+                      },
+                    ]}
                   />
                 </div>
-                <p className="variable-picker-note">
-                  不使用历史运行值作为默认数据；未知子路径在运行时核验。
-                </p>
-              </>
-            ) : (
-              <div className="variable-picker-empty">
-                <h3>{base || current ? '引用来源不可用' : '选择一个变量来源'}</h3>
-                <p>
-                  {base || current
-                    ? '原引用已缺失或不在当前作用域，请重新选择。取消不会修改原字段。'
-                    : '在左侧选择参数、前序输出或当前循环变量，核对路径后再应用到字段。'}
-                </p>
-                {current && <code>{current}</code>}
-              </div>
-            )}
-            {failure && (
-              <div ref={failureRef} tabIndex={-1}>
-                <Alert type="error" showIcon title={failure} role="alert" />
-              </div>
-            )}
-            <footer className="variable-picker-actions">
-              <Button
-                htmlType="button"
-                type="primary"
-                disabled={!path || undefined}
-                onClick={() => apply(() => choose(path))}
-              >
-                使用此变量
-              </Button>
-              <Button htmlType="button" onClick={() => apply(fixed)}>
-                {fixedLabel}
-              </Button>
-              <Button htmlType="button" onClick={close} aria-label={'取消选择 · ' + label}>
-                取消
-              </Button>
-            </footer>
-            {selected && (
-              <div onKeyDown={activateCollapseWithSpace}>
-                <Collapse
-                  size="small"
-                  activeKey={advanced ? ['subpath'] : []}
-                  onChange={(keys) => setAdvanced(keys.includes('subpath'))}
-                  items={[
-                    {
-                      key: 'subpath',
-                      label: '编辑子路径（可选）',
-                      forceRender: true,
-                      children: (
-                        <div className="variable-picker-subpath">
-                          <label htmlFor={titleId + '-suffix'}>子路径</label>
-                          <Input
-                            status={!!invalid ? 'error' : undefined}
-                            id={titleId + '-suffix'}
-                            value={suffix}
-                            disabled={base === 'index' || undefined}
-                            placeholder={
-                              base === 'index' ? '循环序号没有子字段' : '例如 rows.0.name'
-                            }
-                            aria-invalid={!!invalid}
-                            aria-describedby={invalid ? titleId + '-invalid' : undefined}
-                            onChange={(event) => {
-                              setSuffix(event.target.value);
-                              setFailure('');
-                            }}
-                          />
-                          <p className="variable-picker-note">缺失字段会报错，不会执行表达式。</p>
-                        </div>
-                      ),
-                    },
-                  ]}
+              )}
+              {invalid && selected && (
+                <Alert
+                  id={titleId + '-invalid'}
+                  type="error"
+                  showIcon
+                  title={invalid}
+                  role="alert"
                 />
-              </div>
-            )}
-            {invalid && selected && (
-              <Alert id={titleId + '-invalid'} type="error" showIcon title={invalid} role="alert" />
-            )}
+              )}
+            </Card>
           </section>
         </div>
       </div>
