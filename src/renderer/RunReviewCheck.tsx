@@ -188,6 +188,8 @@ export default function RunReviewCheck({
   if (compact && check.passed)
     return (
       <Collapse
+        ghost
+        styles={{ header: { paddingInline: 0 }, body: { paddingInline: 0 } }}
         className="run-review-check-compact"
         items={[
           {
