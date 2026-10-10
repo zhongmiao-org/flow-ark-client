@@ -2,11 +2,12 @@
 .ai-task-columns.ai-task-review.ai-task-full-graph {
   grid-template-columns: minmax(0, 1fr);
 }
-.ai-task-full-graph > .ai-task-card.ai-task-result {
-  padding: 0;
-  border: 0;
+.ai-task-full-graph > section > .ai-task-card.ai-task-result {
   background: transparent;
   min-height: 0;
+}
+.ai-task-full-graph .ai-task-result > .ant-card-body {
+  padding: 0;
   gap: 24px;
 }
 .ai-task-full-graph .task-graph-toolbar {

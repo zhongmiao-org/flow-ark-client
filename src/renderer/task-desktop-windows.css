@@ -56,25 +56,22 @@
   font-size: 14px;
   line-height: 22px;
 }
-.task-desktop-selection > button.ant-btn-primary {
+.task-desktop-selection-card > .ant-card-body > button.ant-btn-primary {
   align-self: flex-start;
   min-width: 200px;
 }
-.task-desktop-selection {
+.task-desktop-selection-card > .ant-card-body {
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
-  padding: 16px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
 }
 .task-desktop-selection p {
   font-size: 13px;
   line-height: 21px;
   color: var(--fa-text-secondary);
 }
-.task-desktop-selection > .ant-alert {
+.task-desktop-selection-card > .ant-card-body > .ant-alert {
   width: 100%;
 }
 .task-web-columns .task-desktop-selection pre {

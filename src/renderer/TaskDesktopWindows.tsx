@@ -1,4 +1,4 @@
-import { Alert, Button, Checkbox, Collapse, type AlertRef } from 'antd';
+import { Alert, Button, Card, Checkbox, Collapse, type AlertRef } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useEffect, useRef, useState } from 'react';
 import useDesktopWindows from './useDesktopWindows';
@@ -73,18 +73,18 @@ export function DesktopWindowList({
         <>
           {selected ? (
             <>
-              <div className="task-web-object task-desktop-identity task-web-current">
+              <Card size="small" className="task-web-object task-desktop-identity task-web-current">
                 <h3 ref={title} tabIndex={-1}>
                   文本编辑 · {selected.title || '未命名窗口'}
                 </h3>
                 <p>窗口状态：{selected.minimized ? '已最小化' : '未最小化'} · 来自本次检查</p>
                 <p>任务状态：尚未绑定窗口 · 未授权修改</p>
-              </div>
-              <div className="task-web-object task-desktop-account">
+              </Card>
+              <Card size="small" className="task-web-object task-desktop-account">
                 <h3>工作区与账号</h3>
                 <p>本机 TextEdit · 只在明确点击后读取选中段落</p>
                 <p>未读取其他段落或文件路径；账号与文档归属尚未核对</p>
-              </div>
+              </Card>
               <div className="ai-task-actions">
                 <Button className="task-desktop-change" onClick={() => state.select(undefined)}>
                   更换窗口

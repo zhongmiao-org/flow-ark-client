@@ -2,7 +2,7 @@
 .ai-task-columns.ai-task-plan-review.ai-task-proposal-columns {
   grid-template-columns: minmax(0, 400fr) minmax(0, 728fr);
 }
-.ai-task-columns.ai-task-plan-review.ai-task-proposal-columns > .ai-task-card {
+.ai-task-columns.ai-task-plan-review.ai-task-proposal-columns > section > .ai-task-card {
   min-height: 700px;
 }
 .task-proposal-review {
@@ -51,7 +51,7 @@
   .ai-task-columns.ai-task-plan-review.ai-task-proposal-columns {
     grid-template-columns: minmax(0, 1fr);
   }
-  .ai-task-columns.ai-task-plan-review.ai-task-proposal-columns > .ai-task-card {
+  .ai-task-columns.ai-task-plan-review.ai-task-proposal-columns > section > .ai-task-card {
     min-height: auto;
   }
 }

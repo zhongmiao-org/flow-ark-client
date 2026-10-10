@@ -1,4 +1,4 @@
-import { Alert, Button, type AlertRef } from 'antd';
+import { Alert, Button, Card, type AlertRef } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type useDesktopWindows from './useDesktopWindows';
 
@@ -47,104 +47,108 @@ export default function DesktopSelectionPreview({
   if (!selected) return null;
   return (
     <section className="task-desktop-selection" aria-labelledby={titleId} aria-busy={reading}>
-      <h3 id={titleId} ref={heading} tabIndex={-1}>
-        核对选中的段落
-      </h3>
-      <p>先在这个 TextEdit 窗口选中文字，再明确读取。这里只在本地查看，不发送给 AI，不修改原文。</p>
-      <div className="ai-task-actions">
-        <Button
-          ref={readButton}
-          type="primary"
-          disabled={reading || expired || state.loading || state.settingsPending || undefined}
-          onClick={() => {
-            setClearNotice('');
-            void state.readSelection();
-          }}
-        >
-          {reading ? '正在读取选区…' : preview ? '重新读取选中段落' : '读取选中段落'}
-        </Button>
-        {(preview || reading) && (
+      <Card size="small" className="task-desktop-selection-card">
+        <h3 id={titleId} ref={heading} tabIndex={-1}>
+          核对选中的段落
+        </h3>
+        <p>
+          先在这个 TextEdit 窗口选中文字，再明确读取。这里只在本地查看，不发送给 AI，不修改原文。
+        </p>
+        <div className="ai-task-actions">
           <Button
+            ref={readButton}
+            type="primary"
+            disabled={reading || expired || state.loading || state.settingsPending || undefined}
             onClick={() => {
-              restoreReadFocus.current = true;
-              setClearNotice(
-                reading
-                  ? '已停止等待，本次迟到结果不会加入预览。可重新读取选区。'
-                  : '已清除本地预览，可重新选择并读取段落。',
-              );
-              state.clearPreview();
+              setClearNotice('');
+              void state.readSelection();
             }}
           >
-            {reading ? '停止等待' : '清除预览'}
+            {reading ? '正在读取选区…' : preview ? '重新读取选中段落' : '读取选中段落'}
+          </Button>
+          {(preview || reading) && (
+            <Button
+              onClick={() => {
+                restoreReadFocus.current = true;
+                setClearNotice(
+                  reading
+                    ? '已停止等待，本次迟到结果不会加入预览。可重新读取选区。'
+                    : '已清除本地预览，可重新选择并读取段落。',
+                );
+                state.clearPreview();
+              }}
+            >
+              {reading ? '停止等待' : '清除预览'}
+            </Button>
+          )}
+        </div>
+        {reading && <Alert type="info" showIcon role="status" title="正在核对窗口与当前选区…" />}
+        {clearNotice && !reading && !preview && !expired && (
+          <Alert type="info" showIcon role="status" ref={cleared} title={clearNotice} />
+        )}
+        {preview?.status === 'ready' && (
+          <>
+            <pre tabIndex={0} aria-label="选中段落内容">
+              {preview.text}
+            </pre>
+            <p className="task-desktop-observed">
+              本次显示 {Array.from(preview.text).length} 个字符 ·{' '}
+              {new Date(preview.readAt).toLocaleTimeString('zh-CN')} 读取
+            </p>
+            {preview.redacted && (
+              <Alert
+                type="warning"
+                showIcon
+                role="status"
+                title="显示内容已遮盖敏感信息；此预览不能作为原文直接写回。"
+              />
+            )}
+            <p>
+              这是本次读取的快照，之后的选区变化不会自动更新。有效至{' '}
+              {new Date(preview.expiresAt).toLocaleTimeString('zh-CN')}，继续前需重新核对。
+            </p>
+          </>
+        )}
+        {preview && preview.status !== 'ready' && (
+          <Alert type="error" showIcon role="alert" ref={failure} title={preview.reason} />
+        )}
+        {expired && (
+          <>
+            {!preview && (
+              <Alert
+                type="warning"
+                showIcon
+                role="status"
+                ref={cleared}
+                title="当前窗口检查已失效。请重新检查、选择窗口，再读取段落。"
+              />
+            )}
+            <Button
+              onClick={() => void state.refresh()}
+              disabled={state.loading || state.settingsPending || undefined}
+            >
+              重新检查窗口
+            </Button>
+          </>
+        )}
+        {preview?.status === 'ready' && (
+          <Button
+            type="primary"
+            onClick={plan}
+            disabled={
+              actionDisabled ||
+              expired ||
+              reading ||
+              state.loading ||
+              state.settingsPending ||
+              undefined
+            }
+          >
+            {actionLabel}
           </Button>
         )}
-      </div>
-      {reading && <Alert type="info" showIcon role="status" title="正在核对窗口与当前选区…" />}
-      {clearNotice && !reading && !preview && !expired && (
-        <Alert type="info" showIcon role="status" ref={cleared} title={clearNotice} />
-      )}
-      {preview?.status === 'ready' && (
-        <>
-          <pre tabIndex={0} aria-label="选中段落内容">
-            {preview.text}
-          </pre>
-          <p className="task-desktop-observed">
-            本次显示 {Array.from(preview.text).length} 个字符 ·{' '}
-            {new Date(preview.readAt).toLocaleTimeString('zh-CN')} 读取
-          </p>
-          {preview.redacted && (
-            <Alert
-              type="warning"
-              showIcon
-              role="status"
-              title="显示内容已遮盖敏感信息；此预览不能作为原文直接写回。"
-            />
-          )}
-          <p>
-            这是本次读取的快照，之后的选区变化不会自动更新。有效至{' '}
-            {new Date(preview.expiresAt).toLocaleTimeString('zh-CN')}，继续前需重新核对。
-          </p>
-        </>
-      )}
-      {preview && preview.status !== 'ready' && (
-        <Alert type="error" showIcon role="alert" ref={failure} title={preview.reason} />
-      )}
-      {expired && (
-        <>
-          {!preview && (
-            <Alert
-              type="warning"
-              showIcon
-              role="status"
-              ref={cleared}
-              title="当前窗口检查已失效。请重新检查、选择窗口，再读取段落。"
-            />
-          )}
-          <Button
-            onClick={() => void state.refresh()}
-            disabled={state.loading || state.settingsPending || undefined}
-          >
-            重新检查窗口
-          </Button>
-        </>
-      )}
-      {preview?.status === 'ready' && (
-        <Button
-          type="primary"
-          onClick={plan}
-          disabled={
-            actionDisabled ||
-            expired ||
-            reading ||
-            state.loading ||
-            state.settingsPending ||
-            undefined
-          }
-        >
-          {actionLabel}
-        </Button>
-      )}
-      <p className="task-desktop-observed">{note}</p>
+        <p className="task-desktop-observed">{note}</p>
+      </Card>
     </section>
   );
 }
