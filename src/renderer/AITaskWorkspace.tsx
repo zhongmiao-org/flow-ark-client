@@ -3080,7 +3080,11 @@ export default function AITaskWorkspace(props: Props) {
                             >
                               <Button
                                 aria-pressed={view === 'list'}
-                                onClick={() => setView('list')}
+                                onClick={() => {
+                                  if (view === 'graph' && selectedStep)
+                                    planStepList.current?.reveal(selectedStep.id);
+                                  setView('list');
+                                }}
                               >
                                 步骤清单
                               </Button>
