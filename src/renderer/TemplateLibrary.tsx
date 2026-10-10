@@ -1,4 +1,5 @@
 import { Alert, Badge, Card, Divider, Empty, Select, Button, Checkbox, Input, Tag } from 'antd';
+import type { InputRef } from 'antd';
 import { FileSpreadsheet, Folder, Globe, MousePointer2, Workflow } from 'lucide-react';
 import { usePageBack } from './use-page-back';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
@@ -79,6 +80,8 @@ export default function TemplateLibrary({
   const [removeReviewed, setRemoveReviewed] = useState(false);
   const locked = useRef(false),
     heading = useRef<HTMLHeadingElement>(null);
+  const templateSearch = useRef<InputRef>(null);
+  const instanceSearch = useRef<InputRef>(null);
   const errorHeading = useRef<HTMLElement>(null);
   useEffect(() => {
     if (active && error && !detail) errorHeading.current?.focus();
@@ -504,6 +507,7 @@ export default function TemplateLibrary({
               <label>
                 <span className="sr-only">搜索模板</span>
                 <Input
+                  ref={templateSearch}
                   type="search"
                   placeholder="名称、说明或作者"
                   value={query}
@@ -602,6 +606,7 @@ export default function TemplateLibrary({
                       onClick={() => {
                         setQuery('');
                         setCapability('');
+                        templateSearch.current?.focus();
                       }}
                     >
                       清除筛选
@@ -854,6 +859,7 @@ export default function TemplateLibrary({
               <label>
                 <span className="sr-only">搜索实例</span>
                 <Input
+                  ref={instanceSearch}
                   type="search"
                   value={instanceQuery}
                   onChange={(e) => setInstanceQuery(e.target.value)}
@@ -923,6 +929,7 @@ export default function TemplateLibrary({
                     onClick={() => {
                       setInstanceFilter('');
                       setInstanceQuery('');
+                      instanceSearch.current?.focus();
                     }}
                   >
                     查看全部实例

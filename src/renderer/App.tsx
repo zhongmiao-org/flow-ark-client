@@ -1888,7 +1888,7 @@ function WorkspaceApp() {
                 </Button>
               }
               homeRequest={templateHomeRequest}
-              refresh={refresh}
+              refresh={reloadSettingsData}
               navigation={templateNavigation}
               exportTemplate={(pkg, returnLabel) =>
                 setExportSource(
