@@ -205,14 +205,6 @@
 .editor-region .browser-viewport {
   border: 1px solid var(--fa-border-default);
 }
-.editor-region .browser-sidebar footer {
-  padding: 0;
-  border: 0;
-  color: var(--fa-text-secondary);
-  font-size: 12px;
-  line-height: 18px;
-  flex-wrap: wrap;
-}
 .editor-region.has-browser:not(.is-compact) .editor-layout {
   gap: 0;
 }

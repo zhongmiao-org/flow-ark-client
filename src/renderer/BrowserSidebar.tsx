@@ -1,4 +1,4 @@
-import { Button, Card, Descriptions, Input } from 'antd';
+import { Alert, Badge, Button, Card, Descriptions, Input, Tag, type AlertRef } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { Globe, X, ArrowRight, RefreshCw } from 'lucide-react';
 import './browser-observation.css';
@@ -57,8 +57,8 @@ export default function BrowserSidebar({
   const [rereading, setRereading] = useState(false);
   const rereadStatus = useRef<(() => Promise<void>) | undefined>(undefined);
   const statusSummary = useRef<HTMLDivElement>(null);
-  const statusFailure = useRef<HTMLDivElement>(null);
-  const operationError = useRef<HTMLDivElement>(null);
+  const statusFailure = useRef<AlertRef>(null);
+  const operationError = useRef<AlertRef>(null);
   const addressInput = useRef<HTMLInputElement>(null);
   const [invalidAddress, setInvalidAddress] = useState(false);
   const feedbackFocus = useRef<
@@ -181,11 +181,14 @@ export default function BrowserSidebar({
       return;
     const target =
       feedback.target === 'error'
-        ? operationError.current
+        ? operationError.current?.nativeElement
         : feedback.target === 'status-error'
-          ? statusFailure.current
+          ? statusFailure.current?.nativeElement
           : (statusSummary.current ?? returnButton.current ?? expandButton.current);
-    target?.focus({ preventScroll: true });
+    if (target) {
+      if (feedback.target !== 'status') target.tabIndex = -1;
+      target.focus({ preventScroll: true });
+    }
   });
   useEffect(() => {
     let live = true;
@@ -574,7 +577,11 @@ export default function BrowserSidebar({
                 拾取元素
               </Button>
             ) : (
-              <span className="badge">
+              <Tag
+                color={
+                  !statusKnown || status.blocked ? 'warning' : running ? 'processing' : 'default'
+                }
+              >
                 {!statusKnown
                   ? '会话状态未知'
                   : status.blocked
@@ -582,7 +589,7 @@ export default function BrowserSidebar({
                     : running
                       ? '任务执行中'
                       : `桌面宽度 ${desktopViewportWidth}`}
-              </span>
+              </Tag>
             )}
           </div>
         )}
@@ -770,57 +777,80 @@ export default function BrowserSidebar({
           </Card>
         )}
         {statusError && (
-          <div
+          <Alert
+            type="error"
+            showIcon
             className="browser-error browser-status-error"
             role="alert"
             ref={statusFailure}
-            tabIndex={-1}
-          >
-            <p>网页会话状态未取得：{statusError}</p>
-            <Button
-              disabled={rereading || loading || adjusting || undefined}
-              onClick={() => void rereadStatus.current?.()}
-            >
-              {rereading ? '正在读取…' : '重新读取会话'}
-            </Button>
-          </div>
+            description={
+              <div className="browser-error-content">
+                <p>网页会话状态未取得：{statusError}</p>
+                <Button
+                  disabled={rereading || loading || adjusting || undefined}
+                  onClick={() => void rereadStatus.current?.()}
+                >
+                  {rereading ? '正在读取…' : '重新读取会话'}
+                </Button>
+              </div>
+            }
+          />
         )}
         {statusKnown && status.blocked && (
-          <div className="browser-error" role="alert">
-            {status.blocked}
-          </div>
+          <Alert
+            type="error"
+            showIcon
+            className="browser-error"
+            role="alert"
+            description={status.blocked}
+          />
         )}
         {!adjusting && observation?.error && !error && (
-          <div className="browser-error" role="alert">
-            {observation.error}
-          </div>
+          <Alert
+            type="error"
+            showIcon
+            className="browser-error"
+            role="alert"
+            description={observation.error}
+          />
         )}
         {error && (
-          <div
+          <Alert
+            type="error"
+            showIcon
             className="browser-error"
             role="alert"
             id={`${addressId}-error`}
             ref={operationError}
-            tabIndex={-1}
-          >
-            {error}
-            <Button
-              onClick={() => {
-                setError('');
-                setInvalidAddress(false);
-                (addressInput.current ?? returnButton.current)?.focus({ preventScroll: true });
-              }}
-            >
-              关闭
-            </Button>
-          </div>
+            description={
+              <div className="browser-error-content">
+                {error}
+                <Button
+                  onClick={() => {
+                    setError('');
+                    setInvalidAddress(false);
+                    (addressInput.current ?? returnButton.current)?.focus({ preventScroll: true });
+                  }}
+                >
+                  关闭
+                </Button>
+              </div>
+            }
+          />
         )}
         {targetView && focusError && (
-          <div className="browser-error" role="alert">
-            {focusError}
-          </div>
+          <Alert
+            type="error"
+            showIcon
+            className="browser-error"
+            role="alert"
+            description={focusError}
+          />
         )}
-        <div className={`browser-page-area${targetView ? ' browser-focus-card' : ''}`}>
+        <Card
+          variant={targetView ? undefined : 'borderless'}
+          className={`browser-page-area${targetView ? ' browser-focus-card' : ''}`}
+        >
           <div className="browser-viewport" ref={viewport} data-testid="browser-viewport" />
           {targetView && (
             <>
@@ -843,7 +873,7 @@ export default function BrowserSidebar({
               </div>
             </>
           )}
-        </div>
+        </Card>
         {editing && !expanded && (
           <div className="browser-editor-scale">
             桌面布局宽度 {desktopViewportWidth} CSS px · {scaleLabel}
@@ -910,34 +940,44 @@ export default function BrowserSidebar({
           </div>
         )}
         <footer>
-          {targetView ? (
-            <span>
-              定位来自选择的真实元素；无法唯一匹配时不允许确认。返回选择来源时保留草稿与同一网页会话。
-            </span>
-          ) : (
-            <>
-              {statusKnown && status.started && !status.blocked && <span className="local-dot" />}
-              {!statusKnown
-                ? '正在等待网页会话状态'
-                : status.blocked
-                  ? '请完整退出并重开应用后核对结果'
-                  : loading
-                    ? '正在打开网页…'
-                    : status.started
-                      ? status.title ||
-                        (status.url === 'about:blank'
-                          ? '在上方输入网址，或运行浏览器流程'
-                          : '网页已就绪')
-                      : '运行流程或输入网址打开网页'}
-              {!status.blocked && (
-                <span>
-                  {expanded
-                    ? '这里只改变查看区域，不重排网页。macOS 清晰查看时，点入网页后按 ⌥⌘ 和方向键平移；滚轮上下查看。切换比例后请重新核对目标。'
-                    : '收起面板后任务继续'}
-                </span>
-              )}
-            </>
-          )}
+          <Alert
+            type="info"
+            className="browser-footer-notice"
+            description={
+              <div className="browser-footer-message">
+                {targetView ? (
+                  <span>
+                    定位来自选择的真实元素；无法唯一匹配时不允许确认。返回选择来源时保留草稿与同一网页会话。
+                  </span>
+                ) : (
+                  <>
+                    {statusKnown && status.started && !status.blocked && (
+                      <Badge status="processing" />
+                    )}
+                    {!statusKnown
+                      ? '正在等待网页会话状态'
+                      : status.blocked
+                        ? '请完整退出并重开应用后核对结果'
+                        : loading
+                          ? '正在打开网页…'
+                          : status.started
+                            ? status.title ||
+                              (status.url === 'about:blank'
+                                ? '在上方输入网址，或运行浏览器流程'
+                                : '网页已就绪')
+                            : '运行流程或输入网址打开网页'}
+                    {!status.blocked && (
+                      <span>
+                        {expanded
+                          ? '这里只改变查看区域，不重排网页。macOS 清晰查看时，点入网页后按 ⌥⌘ 和方向键平移；滚轮上下查看。切换比例后请重新核对目标。'
+                          : '收起面板后任务继续'}
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+            }
+          />
         </footer>
       </div>
     </aside>
