@@ -301,6 +301,11 @@
   border-radius: 12px;
   background: var(--fa-action-subtle);
 }
+.task-run-page .task-run-note {
+  min-height: 72px;
+  color: var(--fa-action-primary);
+  line-height: 22px;
+}
 .task-run-steps > .ant-card-body > ol {
   list-style: none;
   margin: 0;
