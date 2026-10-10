@@ -45,6 +45,10 @@
   padding: 12px;
   text-align: left;
   min-height: 64px;
+  min-width: 0;
+  width: 100%;
+  height: auto;
+  white-space: normal;
 }
 .tool-capability-list button > span:first-child {
   display: grid;
