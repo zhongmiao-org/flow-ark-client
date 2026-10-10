@@ -77,7 +77,10 @@ export function DesktopWindowList({
                 <h3 ref={title} tabIndex={-1}>
                   文本编辑 · {selected.title || '未命名窗口'}
                 </h3>
-                <p>窗口状态：{selected.minimized ? '已最小化' : '未最小化'} · 来自本次检查</p>
+                <p>
+                  窗口状态：{selected.minimized ? '已最小化' : '未最小化'} · 本次检查 · 窗口{' '}
+                  {snapshot.windows.findIndex((window) => window.id === selected.id) + 1}
+                </p>
                 <p>任务状态：尚未绑定窗口 · 未授权修改</p>
               </Card>
               <Card size="small" className="task-web-object task-desktop-account">
