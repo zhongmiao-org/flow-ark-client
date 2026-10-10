@@ -72,6 +72,7 @@ export default function TemplateEntry({
   const [choices, setChoices] = useState<Record<string, AIProviderId>>({});
   const scroll = useRef(0);
   const returnFocus = useRef<HTMLElement | null>(null),
+    restoredFocus = useRef<HTMLElement | null>(null),
     loadingResources = useRef(false);
   const inputFields = useRef<HTMLFieldSetElement>(null);
   const [invalidInput, setInvalidInput] = useState(false);
@@ -173,6 +174,7 @@ export default function TemplateEntry({
   // Restore only after React has committed the loaded resource card height.
   // Scrolling in the promise callback can clamp to the shorter loading page.
   useLayoutEffect(() => {
+    if (!active) restoredFocus.current = null;
     if (!active || checking || sourceChecking || loadingResources.current) return;
     document.querySelector('main')?.scrollTo({ top: scroll.current });
     if (returnFocus.current) {
@@ -181,7 +183,9 @@ export default function TemplateEntry({
             '[role="combobox"][aria-label="操作入口"]',
           )
         : returnFocus.current;
+      target?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       target?.focus({ preventScroll: true });
+      restoredFocus.current = target ?? null;
       returnFocus.current = null;
     }
   }, [active, checking, sourceChecking]);
@@ -192,17 +196,21 @@ export default function TemplateEntry({
     const main = document.querySelector('main');
     if (!pane || !target || !main) return;
     const ensureVisible = () => {
-      if (document.activeElement !== target || target.disabled) return;
-      const bounds = target.getBoundingClientRect();
+      const control = document.activeElement as HTMLElement | null;
+      if (!control || (control !== target && control !== restoredFocus.current)) return;
+      if (!control.isConnected || control.matches(':disabled')) return;
+      const bounds = control.getBoundingClientRect();
       const visible = main.getBoundingClientRect();
       if (bounds.top < visible.top || bounds.bottom > visible.bottom)
-        target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        control.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     };
     ensureVisible();
     const observer = new ResizeObserver(ensureVisible);
     observer.observe(pane);
     observer.observe(main);
     observer.observe(target);
+    if (restoredFocus.current && restoredFocus.current !== target)
+      observer.observe(restoredFocus.current);
     return () => observer.disconnect();
   }, [active, checking, inspection, sourceChecking]);
   const dirtyInput =
