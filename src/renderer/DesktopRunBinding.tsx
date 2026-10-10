@@ -1,4 +1,4 @@
-import { Alert, ConfigProvider, Button } from 'antd';
+import { Card, Alert, ConfigProvider, Button } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { TaskDetail } from '../shared/planning';
 import type { RunReviewInput } from '../shared/run-review';
@@ -79,45 +79,43 @@ export default function DesktopRunBinding({
     }
   };
   return (
-    <section
-      className="run-review-card desktop-run-binding"
-      aria-label="重新绑定应用窗口"
-      aria-busy={busy}
-    >
-      <h2>重新选择窗口与原选区</h2>
-      <p>请在 TextEdit 中选中采纳方案时的原文。核对一致后返回确认页，这一步不会修改文档。</p>
-      <ConfigProvider componentDisabled={busy || undefined}>
-        <fieldset disabled={busy}>
-          <DesktopWindowList state={windows} />
-          {windows.snapshot?.platform === 'macos' &&
-            windows.snapshot.accessibility !== 'granted' && (
-              <Button
-                onClick={() => void windows.openSettings()}
-                disabled={windows.settingsPending || undefined}
-              >
-                查看系统辅助功能设置
-              </Button>
-            )}
-          <DesktopSelectionPreview
-            state={windows}
-            plan={() => void bind()}
-            actionLabel="核对原文并绑定这个窗口"
-            actionDisabled={windows.preview?.status === 'ready' && windows.preview.redacted}
-            note="只绑定本次明确选择的原文；随后还需勾选授权并点击开始试运行。"
-          />
-          {windows.preview?.status === 'ready' && windows.preview.redacted && (
-            <Alert
-              type="warning"
-              showIcon
-              role="alert"
-              title="原文含已遮盖内容，不能用于修改绑定。"
+    <section className="desktop-run-binding" aria-label="重新绑定应用窗口" aria-busy={busy}>
+      <Card className="run-review-card">
+        <h2>重新选择窗口与原选区</h2>
+        <p>请在 TextEdit 中选中采纳方案时的原文。核对一致后返回确认页，这一步不会修改文档。</p>
+        <ConfigProvider componentDisabled={busy || undefined}>
+          <fieldset disabled={busy}>
+            <DesktopWindowList state={windows} />
+            {windows.snapshot?.platform === 'macos' &&
+              windows.snapshot.accessibility !== 'granted' && (
+                <Button
+                  onClick={() => void windows.openSettings()}
+                  disabled={windows.settingsPending || undefined}
+                >
+                  查看系统辅助功能设置
+                </Button>
+              )}
+            <DesktopSelectionPreview
+              state={windows}
+              plan={() => void bind()}
+              actionLabel="核对原文并绑定这个窗口"
+              actionDisabled={windows.preview?.status === 'ready' && windows.preview.redacted}
+              note="只绑定本次明确选择的原文；随后还需勾选授权并点击开始试运行。"
             />
-          )}
-        </fieldset>
-      </ConfigProvider>
-      {busy && <Alert type="info" showIcon role="status" title="正在核对原文与可用能力…" />}
-      {error && <Alert type="error" showIcon role="alert" title={error} />}
-      <Button onClick={close}>取消选择，返回确认</Button>
+            {windows.preview?.status === 'ready' && windows.preview.redacted && (
+              <Alert
+                type="warning"
+                showIcon
+                role="alert"
+                title="原文含已遮盖内容，不能用于修改绑定。"
+              />
+            )}
+          </fieldset>
+        </ConfigProvider>
+        {busy && <Alert type="info" showIcon role="status" title="正在核对原文与可用能力…" />}
+        {error && <Alert type="error" showIcon role="alert" title={error} />}
+        <Button onClick={close}>取消选择，返回确认</Button>
+      </Card>
     </section>
   );
 }

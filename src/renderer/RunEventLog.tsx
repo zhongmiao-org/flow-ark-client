@@ -1,5 +1,5 @@
 import { activateCollapseWithSpace } from './collapseKeyboard';
-import { Select, Button, Collapse, Descriptions } from 'antd';
+import { Card, Empty, Divider, Select, Button, Collapse, Descriptions } from 'antd';
 import {
   useId,
   useLayoutEffect,
@@ -66,6 +66,7 @@ function EventItem({ event, name }: { event: Event; name?: string }) {
   const output = event.data?.outputPreview;
   return (
     <li className="run-log-entry">
+      <Divider />
       <header>
         <time dateTime={event.time}>
           {Number.isFinite(Date.parse(event.time))
@@ -171,96 +172,102 @@ export default function RunEventLog({
       {run && (
         <div className="run-log-context">
           <section aria-label="日志来源与快照">
-            <h3>来源与快照</h3>
-            <Descriptions
-              size="small"
-              layout="vertical"
-              column={1}
-              items={[
-                { key: 'run', label: 'Run', children: run.id },
-                {
-                  key: 'source',
-                  label: '来源',
-                  children: runSourceLabels[runSource(run)] ?? run.source,
-                },
-                { key: 'version', label: '启动时固定版本', children: run.versionId },
-              ]}
-            />
-            {run.rerun && (
-              <p>
-                原运行：{run.rerun.runId} ·{' '}
-                {run.rerun.mode === 'snapshot' ? '原快照' : '当前已保存版本'}
-              </p>
-            )}
+            <Card className="run-log-context-card">
+              <h3>来源与快照</h3>
+              <Descriptions
+                size="small"
+                layout="vertical"
+                column={1}
+                items={[
+                  { key: 'run', label: 'Run', children: run.id },
+                  {
+                    key: 'source',
+                    label: '来源',
+                    children: runSourceLabels[runSource(run)] ?? run.source,
+                  },
+                  { key: 'version', label: '启动时固定版本', children: run.versionId },
+                ]}
+              />
+              {run.rerun && (
+                <p>
+                  原运行：{run.rerun.runId} ·{' '}
+                  {run.rerun.mode === 'snapshot' ? '原快照' : '当前已保存版本'}
+                </p>
+              )}
+            </Card>
           </section>
           <section aria-label="日志步骤实例">
-            <h3>步骤实例</h3>
-            <label htmlFor={instanceId}>位置</label>
-            <Select<string>
-              id={instanceId}
-              value={instance}
-              title={
-                instance === '*'
-                  ? '全部步骤与运行级记录'
-                  : instance === ''
-                    ? '仅运行级记录'
-                    : (instanceTitle(instance) ?? instance)
-              }
-              onChange={(value) => changeInstance(value)}
-              options={[
-                { value: '*', label: '全部步骤与运行级记录' },
-                { value: '', label: '仅运行级记录' },
-                ...(instance && instance !== '*' && !instances.includes(instance)
-                  ? [
-                      {
-                        value: instance,
-                        label: <>原选择 · {instanceTitle(instance) ?? instance}</>,
-                      },
-                    ]
-                  : []),
-                ...instances.map((value) => ({
-                  value: value,
-                  label: instanceTitle(value) ?? value,
-                })),
-              ]}
-            />
-            {instance && instance !== '*' && (
-              <p className="run-log-selected-instance">
-                {instanceTitle(instance) ?? '无法从固定快照确认此位置'}
-                <code>{instance}</code>
-              </p>
-            )}
-            <Descriptions
-              size="small"
-              layout="vertical"
-              column={1}
-              items={[
-                { key: 'instances', label: '已记录实例', children: `${instances.length} 个` },
-                { key: 'matching', label: '当前范围', children: `${matching.length} 条记录` },
-              ]}
-            />
+            <Card className="run-log-context-card">
+              <h3>步骤实例</h3>
+              <label htmlFor={instanceId}>位置</label>
+              <Select<string>
+                id={instanceId}
+                value={instance}
+                title={
+                  instance === '*'
+                    ? '全部步骤与运行级记录'
+                    : instance === ''
+                      ? '仅运行级记录'
+                      : (instanceTitle(instance) ?? instance)
+                }
+                onChange={(value) => changeInstance(value)}
+                options={[
+                  { value: '*', label: '全部步骤与运行级记录' },
+                  { value: '', label: '仅运行级记录' },
+                  ...(instance && instance !== '*' && !instances.includes(instance)
+                    ? [
+                        {
+                          value: instance,
+                          label: <>原选择 · {instanceTitle(instance) ?? instance}</>,
+                        },
+                      ]
+                    : []),
+                  ...instances.map((value) => ({
+                    value: value,
+                    label: instanceTitle(value) ?? value,
+                  })),
+                ]}
+              />
+              {instance && instance !== '*' && (
+                <p className="run-log-selected-instance">
+                  {instanceTitle(instance) ?? '无法从固定快照确认此位置'}
+                  <code>{instance}</code>
+                </p>
+              )}
+              <Descriptions
+                size="small"
+                layout="vertical"
+                column={1}
+                items={[
+                  { key: 'instances', label: '已记录实例', children: `${instances.length} 个` },
+                  { key: 'matching', label: '当前范围', children: `${matching.length} 条记录` },
+                ]}
+              />
+            </Card>
           </section>
           <section aria-label="脱敏日志阅读位置">
-            <h3>脱敏日志</h3>
-            <Descriptions
-              size="small"
-              layout="vertical"
-              column={1}
-              items={[
-                { key: 'saved', label: '已保存记录', children: `${records.length} 条` },
-                {
-                  key: 'range',
-                  label: '显示范围',
-                  children: shown.length
-                    ? `#${shown[0].sequence} — #${shown.at(-1)!.sequence}`
-                    : '暂无记录',
-                },
-              ]}
-            />
-            <Button disabled={!matching.length || undefined} onClick={showLatest}>
-              查看最新记录
-            </Button>
-            <p>只显示已保存内容，不重新执行步骤。</p>
+            <Card className="run-log-context-card">
+              <h3>脱敏日志</h3>
+              <Descriptions
+                size="small"
+                layout="vertical"
+                column={1}
+                items={[
+                  { key: 'saved', label: '已保存记录', children: `${records.length} 条` },
+                  {
+                    key: 'range',
+                    label: '显示范围',
+                    children: shown.length
+                      ? `#${shown[0].sequence} — #${shown.at(-1)!.sequence}`
+                      : '暂无记录',
+                  },
+                ]}
+              />
+              <Button disabled={!matching.length || undefined} onClick={showLatest}>
+                查看最新记录
+              </Button>
+              <p>只显示已保存内容，不重新执行步骤。</p>
+            </Card>
           </section>
           {summary}
         </div>
@@ -277,35 +284,43 @@ export default function RunEventLog({
       <p className="note">
         按记录顺序展示本次运行的事件、节点实例与脱敏内容。历史日志不代表当前执行状态。
       </p>
-      {matching.length ? (
-        <>
-          <ol>
-            {shown.map((event) => (
-              <EventItem
-                key={event.sequence}
-                event={event}
-                name={instanceTitle(event.nodeInstance) ?? undefined}
-              />
-            ))}
-          </ol>
-          {shown.length < available.length && (
-            <div className="run-log-more">
-              <p>
-                已显示 {shown.length} / {available.length} 条
-              </p>
-              <Button onClick={() => updateReading({ ...reading, limit: limit + 100 })}>
-                显示{latest !== null ? '较早' : '后续'}{' '}
-                {Math.min(100, available.length - shown.length)} 条记录
-              </Button>
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="run-log-empty">
-          <h4>{records.length ? '此范围尚无已保存记录' : '尚无已保存的运行事件'}</h4>
-          <p>收到记录后会显示在这里；没有日志不代表执行成功。</p>
-        </div>
-      )}
+      <Card className="run-log-records">
+        {matching.length ? (
+          <>
+            <ol>
+              {shown.map((event) => (
+                <EventItem
+                  key={event.sequence}
+                  event={event}
+                  name={instanceTitle(event.nodeInstance) ?? undefined}
+                />
+              ))}
+            </ol>
+            {shown.length < available.length && (
+              <div className="run-log-more">
+                <p>
+                  已显示 {shown.length} / {available.length} 条
+                </p>
+                <Button onClick={() => updateReading({ ...reading, limit: limit + 100 })}>
+                  显示{latest !== null ? '较早' : '后续'}{' '}
+                  {Math.min(100, available.length - shown.length)} 条记录
+                </Button>
+              </div>
+            )}
+          </>
+        ) : (
+          <Empty
+            className="run-log-empty"
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <>
+                <h4>{records.length ? '此范围尚无已保存记录' : '尚无已保存的运行事件'}</h4>
+                <p>收到记录后会显示在这里；没有日志不代表执行成功。</p>
+              </>
+            }
+          />
+        )}
+      </Card>
     </section>
   );
 }
