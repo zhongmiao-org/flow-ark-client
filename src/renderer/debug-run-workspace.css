@@ -15,14 +15,12 @@
 }
 .debug-run-steps,
 .debug-run-current {
+  min-width: 0;
+}
+.debug-run-steps-card,
+.debug-run-current-card {
   min-height: 592px;
   min-width: 0;
-  border: 1px solid var(--fa-border-default);
-  border-radius: 12px;
-  background: var(--fa-bg-surface);
-}
-.debug-run-steps {
-  padding: 24px;
 }
 .debug-run-steps ol {
   margin: 0;
@@ -44,10 +42,7 @@
   margin-bottom: 8px;
   overflow-wrap: anywhere;
 }
-.debug-run-current {
-  padding: 28px;
-}
-.debug-run-current > h2 {
+.debug-run-current-card > .ant-card-body > h2 {
   margin: 16px 0;
   font-size: 18px;
   line-height: 28px;
@@ -72,10 +67,10 @@
 .debug-run-current .run-controls button.danger {
   width: 120px;
 }
-.debug-run-current > section:not([hidden]) {
+.debug-run-current-card > .ant-card-body > section:not([hidden]) {
   margin-top: 24px;
 }
-.debug-run-current > .ant-alert,
+.debug-run-current-card > .ant-card-body > .ant-alert,
 .debug-run-details {
   margin-top: 16px;
 }
@@ -90,8 +85,8 @@
   .debug-run-columns {
     grid-template-columns: minmax(0, 1fr);
   }
-  .debug-run-steps,
-  .debug-run-current {
+  .debug-run-steps-card,
+  .debug-run-current-card {
     min-height: 0;
   }
 }
