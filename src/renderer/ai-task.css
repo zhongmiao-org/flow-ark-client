@@ -66,8 +66,7 @@
   align-items: center;
   gap: 12px;
 }
-.ai-task-actions button[aria-pressed='true'],
-.ai-task-options button[aria-pressed='true'] {
+.ai-task-actions button[aria-pressed='true'] {
   color: var(--fa-action-primary);
   border-color: var(--fa-action-primary);
   background: var(--fa-action-subtle);
