@@ -1,5 +1,5 @@
 import { runStateColors, runStepColors } from './theme';
-import { Alert, Button, Collapse, Tabs, Tag, Badge } from 'antd';
+import { Alert, Button, Collapse, Tabs, Tag, Badge, Card } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import McpRunReceipts from './McpRunReceipts';
 import DebugRunWorkspace from './DebugRunWorkspace';
@@ -434,13 +434,15 @@ export default function RunDetail({
               </section>
             </div>
             <div className="run-rerun-entry" hidden={tab === 'output' || tab === 'logs'}>
-              <div>
-                <h2>重新运行与关联记录</h2>
-                <p>先核对已保存输出和外部结果，再选择执行内容。查看不会创建运行。</p>
-              </div>
-              <Button htmlType="button" onClick={() => setTab('rerun')}>
-                核对后重新运行
-              </Button>
+              <Card className="run-rerun-entry-card">
+                <div>
+                  <h2>重新运行与关联记录</h2>
+                  <p>先核对已保存输出和外部结果，再选择执行内容。查看不会创建运行。</p>
+                </div>
+                <Button htmlType="button" onClick={() => setTab('rerun')}>
+                  核对后重新运行
+                </Button>
+              </Card>
             </div>
           </>
         )}
