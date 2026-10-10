@@ -18,10 +18,9 @@
   margin: 0;
 }
 .ai-task-card {
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-  padding: 24px;
-  background: var(--fa-bg-surface);
+  min-width: 0;
+}
+.ai-task-card > .ant-card-body {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -149,7 +148,10 @@
   gap: 24px;
   align-items: start;
 }
-.ai-task-columns > .ai-task-card {
+.ai-task-columns > section {
+  min-width: 0;
+}
+.ai-task-columns > section > .ai-task-card {
   min-height: 700px;
 }
 .ai-task-columns.ai-task-review {
@@ -160,10 +162,10 @@
   min-height: 116px;
   resize: vertical;
 }
-.ai-task-input > textarea {
+.ai-task-input > .ant-card-body > textarea {
   background: var(--fa-bg-canvas);
 }
-.ai-task-input > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.ai-task-input > .ant-card-body > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
   margin-bottom: -8px;
 }
 .ai-task-page fieldset {
@@ -439,13 +441,17 @@
   padding: 0;
   max-height: 240px;
 }
-.ai-task-scoped-diff .ai-task-result > .ai-task-actions .ant-btn-primary {
+.ai-task-scoped-diff .ai-task-result > .ant-card-body > .ai-task-actions .ant-btn-primary {
   min-width: 168px;
 }
-.ai-task-scoped-diff .ai-task-result > .ai-task-actions button:not(.ant-btn-primary) {
+.ai-task-scoped-diff
+  .ai-task-result
+  > .ant-card-body
+  > .ai-task-actions
+  button:not(.ant-btn-primary) {
   min-width: 144px;
 }
-.ai-task-scoped-diff .ai-task-result > button {
+.ai-task-scoped-diff .ai-task-result > .ant-card-body > button {
   align-self: flex-start;
   min-width: 192px;
 }
@@ -455,7 +461,7 @@
   .ai-task-scoped-diff .ai-task-columns.ai-task-review {
     grid-template-columns: minmax(0, 1fr);
   }
-  .ai-task-columns > .ai-task-card {
+  .ai-task-columns > section > .ai-task-card {
     min-height: 0;
   }
   .ai-task-examples,
@@ -471,7 +477,7 @@
   .ai-task-scoped-diff .ai-task-columns.ai-task-review {
     grid-template-columns: minmax(0, 1fr);
   }
-  .ai-task-scoped .ai-task-columns > .ai-task-card {
+  .ai-task-scoped .ai-task-columns > section > .ai-task-card {
     min-height: 0;
     height: auto;
   }
@@ -1329,14 +1335,14 @@
 .task-plan-approval-note {
   color: var(--fa-text-secondary);
 }
-.ai-task-columns.ai-task-plan-review > .ai-task-card {
+.ai-task-columns.ai-task-plan-review > section > .ai-task-card {
   min-height: 730px;
 }
 @container (max-width: 950px) {
   .ai-task-columns.ai-task-plan-review {
     grid-template-columns: minmax(0, 1fr);
   }
-  .ai-task-columns.ai-task-plan-review > .ai-task-card {
+  .ai-task-columns.ai-task-plan-review > section > .ai-task-card {
     min-height: auto;
   }
 }
@@ -1352,9 +1358,6 @@
 }
 
 /* Figma taskv2/list: saved identity and confirmation follow the readable plan. */
-.ai-task-readable-plan > .ai-task-card {
-  padding: 23px;
-}
 .task-plan-identity {
   min-height: 32px;
   display: flex;
