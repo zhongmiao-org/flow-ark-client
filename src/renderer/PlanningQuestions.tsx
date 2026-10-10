@@ -53,7 +53,7 @@ export default function PlanningQuestions({
         const limited = atLimit && !exists;
         const note = `${prefix}-answer-${index}`;
         return (
-          <ConfigProvider componentDisabled={busy || undefined} key={question.id}>
+          <ConfigProvider componentDisabled={busy} key={question.id}>
             <Card className="planning-question-card">
               <fieldset className="ai-task-question" disabled={busy}>
                 <legend>
@@ -128,7 +128,7 @@ export default function PlanningQuestions({
                     这些回答没有对应的当前问题，仍会随下一次请求发送。请核对是否继续保留。
                   </p>
                   {previous.map(([id, value], index) => (
-                    <ConfigProvider componentDisabled={busy || undefined} key={id}>
+                    <ConfigProvider componentDisabled={busy} key={id}>
                       <Card className="planning-question-card">
                         <fieldset className="ai-task-question" disabled={busy}>
                           <legend>先前补充 {index + 1}</legend>
