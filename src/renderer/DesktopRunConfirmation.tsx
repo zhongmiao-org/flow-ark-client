@@ -35,6 +35,7 @@ export default function DesktopRunConfirmation({ preview }: { preview: RunReview
         </Card>
       </section>
       <Alert
+        className="desktop-confirm-note"
         type="info"
         role="note"
         showIcon
