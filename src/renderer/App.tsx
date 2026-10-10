@@ -2794,7 +2794,7 @@ function Editor({
   const inspectorHeading = useRef<HTMLHeadingElement>(null);
   const canvasElement = useRef<HTMLDivElement>(null);
   const summaryEditButton = useRef<HTMLButtonElement>(null);
-  const keyboardStep = useRef<string | null>(null);
+  const focusStep = useRef<string | null>(null);
   const pendingStepFocus = useRef<'inspector' | 'canvas' | null>(null);
   const editorSteps = flatten(r.flow.steps);
   const selectedNode = editorSteps.find((n: Step) => n.id === selected);
@@ -2813,12 +2813,18 @@ function Editor({
       if (browserOpen && panel === 'canvas' && selectedNode) {
         summaryEditButton.current?.focus({ preventScroll: true });
       } else {
-        canvasElement.current
-          ?.querySelector<HTMLElement>(`[data-id="${CSS.escape(keyboardStep.current ?? '')}"]`)
-          ?.focus({ preventScroll: true });
+        const step = focusStep.current
+          ? canvasElement.current?.querySelector<HTMLElement>(
+              `.react-flow__node[data-id="${CSS.escape(focusStep.current)}"]`,
+            )
+          : null;
+        const target =
+          step ??
+          canvasElement.current?.querySelector<HTMLButtonElement>('[aria-label="显示完整流程"]');
+        target?.focus({ preventScroll: true });
       }
       pendingStepFocus.current = null;
-      keyboardStep.current = null;
+      focusStep.current = null;
     }
   }, [active, compact, outlineOpen, panel, selected, browserOpen]);
   useEffect(() => {
@@ -2891,7 +2897,7 @@ function Editor({
   const append = (node: Step, target: Destination) => {
     const added = structure(() => insertStep(r.flow.steps, node, target), node.id);
     if (added && compact && panel === 'actions') {
-      keyboardStep.current = node.id;
+      focusStep.current = node.id;
       pendingStepFocus.current = 'inspector';
     }
     if (added && target.side === 'after') setDestination(node.id + ':after');
@@ -2942,11 +2948,10 @@ function Editor({
     if (guardNodeInput()) {
       if (value === 'graph')
         setViewRequest((previous) => ({ key: (previous?.key ?? 0) + 1, mode: 'all' }));
-      if (compact && browserOpen && value === 'canvas' && selected) {
-        keyboardStep.current = selected;
+      if (compact && ['canvas', 'graph'].includes(value)) {
+        focusStep.current = selected || null;
         pendingStepFocus.current = 'canvas';
-      } else if (['canvas', 'graph'].includes(value) && keyboardStep.current)
-        pendingStepFocus.current = 'canvas';
+      }
       setPanel(value);
     }
   };
@@ -3442,10 +3447,10 @@ function Editor({
                 nodes={nodes}
                 edges={edges}
                 selected={selected}
-                select={(id, source) => {
+                select={(id) => {
                   if (!guardNodeInput()) return;
-                  keyboardStep.current = compact && source === 'keyboard' ? id : null;
-                  pendingStepFocus.current = keyboardStep.current ? 'inspector' : null;
+                  focusStep.current = compact ? id : null;
+                  pendingStepFocus.current = compact ? 'inspector' : null;
                   setSelected(id);
                   setTab('node');
                   if (compact) setPanel('node');
@@ -3595,7 +3600,7 @@ function Editor({
                                 mode,
                               }));
                               if (compact) {
-                                keyboardStep.current = selected;
+                                focusStep.current = selected;
                                 pendingStepFocus.current = 'canvas';
                                 setPanel('graph');
                               }
