@@ -175,6 +175,7 @@ export default function RunEventLog({
             <Card className="run-log-context-card">
               <h3>来源与快照</h3>
               <Descriptions
+                colon={false}
                 size="small"
                 layout="vertical"
                 column={1}
@@ -235,6 +236,7 @@ export default function RunEventLog({
                 </p>
               )}
               <Descriptions
+                colon={false}
                 size="small"
                 layout="vertical"
                 column={1}
@@ -249,6 +251,7 @@ export default function RunEventLog({
             <Card className="run-log-context-card">
               <h3>脱敏日志</h3>
               <Descriptions
+                colon={false}
                 size="small"
                 layout="vertical"
                 column={1}

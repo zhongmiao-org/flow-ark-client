@@ -129,6 +129,9 @@
 .run-log-context > section > .ant-card {
   min-width: 0;
 }
+.run-log-context > section > .ant-card > .ant-card-body {
+  padding: 20px;
+}
 .run-log-context h3 {
   margin: 0 0 16px;
   font-size: 18px;
@@ -144,6 +147,21 @@
 }
 .run-log-context .ant-descriptions {
   overflow-wrap: anywhere;
+}
+.run-log-context .ant-descriptions-item-label {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.run-log-context .ant-descriptions-item-content {
+  display: block;
+  min-height: 32px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--fa-bg-canvas);
+  color: var(--fa-text-primary);
+  font-size: 13px;
+  line-height: 20px;
 }
 .run-log-context .ant-select {
   margin: 0;

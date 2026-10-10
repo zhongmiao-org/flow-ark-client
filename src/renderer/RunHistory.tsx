@@ -279,7 +279,7 @@ export default function RunHistory({
             setFilterOpen(false);
           }}
         >
-          <Card className="history-filter-panel">
+          <Card className="history-filter-panel" styles={{ body: { padding: 28 } }}>
             <div className="history-primary-filters">
               <label>
                 搜索流程或运行编号
@@ -460,7 +460,7 @@ export default function RunHistory({
               )}
             </div>
           )}
-          <div className="table-wrap" aria-busy={loading}>
+          <Card className="table-wrap" styles={{ body: { padding: 0 } }} aria-busy={loading}>
             <Table<RunListPage['runs'][number]>
               aria-label="运行记录"
               rowKey="id"
@@ -572,7 +572,7 @@ export default function RunHistory({
                 },
               ]}
             />
-          </div>
+          </Card>
           <div className="history-pagination">
             <span id={pageSummaryId} aria-live="polite">
               {data

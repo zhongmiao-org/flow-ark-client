@@ -57,6 +57,16 @@
 .run-history .table-wrap {
   min-height: 572px;
   min-width: 0;
+  overflow: hidden;
+}
+.run-history .ant-table-thead > tr > th {
+  height: 52px;
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.run-history .ant-table-tbody > .ant-table-row > td {
+  height: 80px;
 }
 .history-run-source {
   display: flex;
@@ -111,6 +121,9 @@
 }
 .history-filter-panel {
   min-height: 620px;
+}
+.run-history.is-filtering .runs-heading {
+  margin-bottom: 24px;
 }
 .history-primary-filters {
   display: grid;
@@ -276,6 +289,9 @@
 }
 .run-detail-tabs > .ant-tabs-nav {
   margin-bottom: 16px;
+}
+.run-detail-tabs > .ant-tabs-nav .ant-tabs-tab {
+  padding: 9px 0;
 }
 /* Keep a measurable zero-width tab so Tabs does not offer it in the overflow menu. */
 .run-detail-tabs.is-output .ant-tabs-nav [data-node-key='current'] {
