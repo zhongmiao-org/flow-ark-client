@@ -1,4 +1,4 @@
-import { Button } from 'antd';
+import { Card, Alert, Button } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { Attention, Bootstrap } from '../shared/types';
 import AttentionDetails from './AttentionDetails';
@@ -11,7 +11,7 @@ export default function RunResultReview({ runId }: { runId: string }) {
   const sequence = useRef(0);
   const trigger = useRef<HTMLButtonElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
-  const feedback = useRef<HTMLParagraphElement>(null);
+  const feedback = useRef<HTMLDivElement>(null);
   const refresh = useRef<HTMLButtonElement>(null);
   const refreshFocus = useRef(false);
   const scroll = useRef(0);
@@ -92,9 +92,9 @@ export default function RunResultReview({ runId }: { runId: string }) {
           <p>只显示明确关联此运行的结果待核对提醒。已读不代表结果已确认；查看不会重试操作。</p>
           {busy && <p role="status">正在读取待核对记录…</p>}
           {error && (
-            <p className="field-error" role="alert" ref={feedback} tabIndex={-1}>
-              {error}
-            </p>
+            <div className="run-result-feedback" ref={feedback} tabIndex={-1}>
+              <Alert type="error" showIcon title={error} />
+            </div>
           )}
           {items && (
             <>
@@ -105,9 +105,11 @@ export default function RunResultReview({ runId }: { runId: string }) {
               </p>
               {items.map((item) => (
                 <article key={item.id} aria-label={item.title}>
-                  <h4>{item.title}</h4>
-                  <p>{item.read ? '已读 · 结果仍待核对' : '未读 · 结果待核对'}</p>
-                  <AttentionDetails item={item} />
+                  <Card size="small" className="run-result-review-card">
+                    <h4>{item.title}</h4>
+                    <p>{item.read ? '已读 · 结果仍待核对' : '未读 · 结果待核对'}</p>
+                    <AttentionDetails item={item} />
+                  </Card>
                 </article>
               ))}
             </>
