@@ -34,6 +34,15 @@
   color: var(--fa-text-secondary);
   overflow-wrap: anywhere;
 }
+.editor-more-menu .ant-alert.editor-more-menu-note {
+  min-height: 72px;
+  padding: var(--fa-space-12) var(--fa-space-16);
+  background: var(--fa-action-subtle);
+  border-color: var(--fa-border-default);
+}
+.editor-more-menu-note .ant-alert-title {
+  color: var(--fa-action-primary);
+}
 .editor-more-actions {
   display: flex;
   flex-direction: column;

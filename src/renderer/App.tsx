@@ -915,6 +915,12 @@ function WorkspaceApp() {
             trigger?.focus({ preventScroll: true });
             return;
           }
+          const scriptTrigger = moreOpen && source?.kind === 'script' ? source.trigger : undefined;
+          if (scriptTrigger?.isConnected && scriptTrigger.getClientRects().length) {
+            scriptTrigger.focus({ preventScroll: true });
+            scriptTrigger.scrollIntoView({ block: 'nearest' });
+            return;
+          }
           document
             .querySelector<HTMLElement>(
               moreOpen
@@ -1001,6 +1007,7 @@ function WorkspaceApp() {
       record: structuredClone(edit),
       nodeId,
       browserOpen,
+      trigger: document.activeElement instanceof HTMLElement ? document.activeElement : undefined,
       scroll: document.querySelector('main')?.scrollTop ?? 0,
     });
     setBrowserOpen(false);

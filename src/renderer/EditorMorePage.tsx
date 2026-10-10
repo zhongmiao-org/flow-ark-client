@@ -171,8 +171,8 @@ export default function EditorMorePage(props: Props) {
               </Button>
             </div>
             <Alert
+              className="editor-more-menu-note"
               type="info"
-              showIcon
               title="保存状态常驻任务顶部。显示网页只有一个入口，不在工具栏与属性区重复放置。"
             />
           </Card>
