@@ -74,7 +74,8 @@
 .task-desktop-selection-card > .ant-card-body > .ant-alert {
   width: 100%;
 }
-.task-web-columns .task-desktop-selection pre {
+.task-web-columns .task-desktop-selection pre,
+.desktop-run-binding .task-desktop-selection pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   margin: 0;
