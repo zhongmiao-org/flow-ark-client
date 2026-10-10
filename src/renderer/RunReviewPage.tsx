@@ -42,10 +42,12 @@ function Contents({
   preview,
   compact,
   repairRevision,
+  confirmationRejected,
 }: {
   preview: RunReviewPreview;
   compact: boolean;
   repairRevision?: number;
+  confirmationRejected: boolean;
 }) {
   if (preview.desktop) return <DesktopRunConfirmation preview={preview} />;
   const tools = preview.toolCalls ?? [];
@@ -178,13 +180,15 @@ function Contents({
           <h2>执行版本</h2>
           {versionSummary}
           <p>
-            {repairRevision !== undefined
-              ? preview.ready
-                ? `采用已检查的目标修复方案 · 任务修订 ${repairRevision}，运行中修改草稿不影响此次执行。`
-                : `目标修复方案 · 任务修订 ${repairRevision}；检查未通过，尚未固定执行版本。`
-              : preview.ready
-                ? '采用已检查的固定方案，运行中修改草稿不影响此次执行。'
-                : '当前显示已保存方案；检查尚未通过，还没有创建运行或固定执行版本。'}
+            {confirmationRejected
+              ? '本次确认未创建运行。这里保留上次检查的方案，请重新检查并核对当前对象与资源。'
+              : repairRevision !== undefined
+                ? preview.ready
+                  ? `采用已检查的目标修复方案 · 任务修订 ${repairRevision}，运行中修改草稿不影响此次执行。`
+                  : `目标修复方案 · 任务修订 ${repairRevision}；检查未通过，尚未固定执行版本。`
+                : preview.ready
+                  ? '采用已检查的固定方案，运行中修改草稿不影响此次执行。'
+                  : '当前显示已保存方案；检查尚未通过，还没有创建运行或固定执行版本。'}
           </p>
           <Collapse
             items={[
@@ -203,8 +207,10 @@ function Contents({
                       items={[
                         {
                           key: 'version',
-                          label: '版本',
-                          children: preview.flow.versionId || '检查通过后固定版本',
+                          label: confirmationRejected ? '上次检查版本' : '版本',
+                          children:
+                            preview.flow.versionId ||
+                            (confirmationRejected ? '上次检查未固定版本' : '检查通过后固定版本'),
                         },
                         {
                           key: 'parameters',
@@ -430,7 +436,12 @@ export default function RunReviewPage(props: Props) {
               }}
             />
           ) : preview ? (
-            <Contents preview={preview} compact={compactReview} repairRevision={repairRevision} />
+            <Contents
+              preview={preview}
+              compact={compactReview}
+              repairRevision={repairRevision}
+              confirmationRejected={attempt?.phase === 'rejected'}
+            />
           ) : (
             <Alert
               type="info"
