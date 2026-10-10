@@ -7,16 +7,8 @@
   min-height: 220px;
   resize: vertical;
 }
-.logic-configuration-workspace .resource-workspace-card {
-  padding-bottom: 50px;
-}
-.logic-configuration-workspace .resource-workspace-card > button:last-child {
+.logic-configuration-workspace .resource-workspace-card > .ant-card-body > button:last-child {
   margin-top: auto;
-}
-@container (max-width: 720px) {
-  .logic-configuration-workspace .resource-workspace-card {
-    padding-bottom: 20px;
-  }
 }
 .logic-configuration-fields {
   padding: 0;

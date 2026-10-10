@@ -30,13 +30,12 @@
 .browser-action-card {
   min-width: 0;
   min-height: 362px;
+}
+.browser-action-card > .ant-card-body {
+  min-height: 360px;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 20px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: 12px;
-  background: var(--fa-bg-surface);
 }
 .browser-action-card h2 {
   margin: 0 0 8px;
@@ -76,7 +75,7 @@
   width: 100%;
   min-width: 0;
 }
-.browser-action-card > .ant-btn-primary {
+.browser-action-card > .ant-card-body > .ant-btn-primary {
   margin-top: 6px;
 }
 .browser-action-description {
@@ -126,21 +125,8 @@
 .browser-action-card .reference-value {
   padding: 8px;
 }
-.browser-action-card .field-error,
-.browser-action-error p {
+.browser-action-card .field-error {
   color: var(--fa-status-error);
-}
-.browser-action-error {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
-  background: var(--fa-status-error-bg);
-  border-radius: 8px;
-}
-.browser-action-error button {
-  flex-shrink: 0;
 }
 @container (max-width:1050px) {
   .browser-action-grid {
@@ -151,7 +137,8 @@
   .browser-action-grid {
     grid-template-columns: minmax(0, 1fr);
   }
-  .browser-action-card {
+  .browser-action-card,
+  .browser-action-card > .ant-card-body {
     min-height: 0;
   }
 }

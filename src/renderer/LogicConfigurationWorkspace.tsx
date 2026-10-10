@@ -1,4 +1,4 @@
-import { Drawer, ConfigProvider, Select, Button, Descriptions, Alert } from 'antd';
+import { Card, Drawer, ConfigProvider, Select, Button, Descriptions, Alert } from 'antd';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
 import type { FlowRecord, Step } from '../shared/types';
@@ -165,131 +165,130 @@ export default function LogicConfigurationWorkspace(props: Props) {
             const node = matches.find((node) => node.id === props.selected) ?? matches[0];
             const active = node?.id === props.selected;
             return (
-              <section
-                key={group.type}
-                className="resource-workspace-card"
-                aria-label={group.title}
-                data-current={active || undefined}
-              >
-                <h2 tabIndex={-1}>
-                  {group.title}
-                  {active && <span>当前步骤</span>}
-                </h2>
-                {matches.length > 1 && (
-                  <>
-                    <label htmlFor={`${id}-${index}`}>流程步骤</label>
-                    <Select<string>
-                      id={`${id}-${index}`}
-                      value={node?.id}
-                      onChange={(value) => select(value)}
-                      options={[
-                        ...matches.map((step) => ({
-                          value: step.id,
-                          label: (
-                            <>
-                              {steps.findIndex((item) => item.id === step.id) + 1}.{' '}
-                              {stepTitle(step)}
-                            </>
-                          ),
-                        })),
-                      ]}
-                    />
-                  </>
-                )}
-                {node ? (
-                  active ? (
+              <section key={group.type} aria-label={group.title} data-current={active || undefined}>
+                <Card className="resource-workspace-card">
+                  <h2 tabIndex={-1}>
+                    {group.title}
+                    {active && <span>当前步骤</span>}
+                  </h2>
+                  {matches.length > 1 && (
                     <>
-                      <ConfigProvider componentDisabled={props.advancedInvalid}>
-                        <fieldset
-                          disabled={props.advancedInvalid}
-                          className="logic-configuration-fields"
-                        >
-                          <LogicNodeConfiguration
-                            compact
-                            guard={props.guard}
-                            key={node.id}
-                            node={node}
-                            choices={referenceChoices(props.record.flow, node.id)}
-                            change={props.change}
-                          />
-                        </fieldset>
-                      </ConfigProvider>
-                      {['condition', 'loop'].includes(node.type) && (
-                        <Button
-                          onClick={() => {
-                            if (props.guard()) props.openControl();
-                          }}
-                        >
-                          配置子步骤与分支
-                        </Button>
-                      )}
-                      <Button type="primary" onClick={finish}>
-                        应用配置
-                      </Button>
+                      <label htmlFor={`${id}-${index}`}>流程步骤</label>
+                      <Select<string>
+                        id={`${id}-${index}`}
+                        value={node?.id}
+                        onChange={(value) => select(value)}
+                        options={[
+                          ...matches.map((step) => ({
+                            value: step.id,
+                            label: (
+                              <>
+                                {steps.findIndex((item) => item.id === step.id) + 1}.{' '}
+                                {stepTitle(step)}
+                              </>
+                            ),
+                          })),
+                        ]}
+                      />
                     </>
+                  )}
+                  {node ? (
+                    active ? (
+                      <>
+                        <ConfigProvider componentDisabled={props.advancedInvalid}>
+                          <fieldset
+                            disabled={props.advancedInvalid}
+                            className="logic-configuration-fields"
+                          >
+                            <LogicNodeConfiguration
+                              compact
+                              guard={props.guard}
+                              key={node.id}
+                              node={node}
+                              choices={referenceChoices(props.record.flow, node.id)}
+                              change={props.change}
+                            />
+                          </fieldset>
+                        </ConfigProvider>
+                        {['condition', 'loop'].includes(node.type) && (
+                          <Button
+                            onClick={() => {
+                              if (props.guard()) props.openControl();
+                            }}
+                          >
+                            配置子步骤与分支
+                          </Button>
+                        )}
+                        <Button type="primary" onClick={finish}>
+                          应用配置
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Descriptions
+                          className="logic-configuration-summary"
+                          size="small"
+                          column={1}
+                          layout="vertical"
+                          items={fields(node, props.record).map(([label, text]) => ({
+                            key: label,
+                            label,
+                            children: <span title={text}>{text}</span>,
+                          }))}
+                        />
+                        <Button type="primary" onClick={() => select(node.id)}>
+                          配置此步骤
+                        </Button>
+                      </>
+                    )
                   ) : (
                     <>
-                      <Descriptions
-                        className="logic-configuration-summary"
-                        size="small"
-                        column={1}
-                        layout="vertical"
-                        items={fields(node, props.record).map(([label, text]) => ({
-                          key: label,
-                          label,
-                          children: <span title={text}>{text}</span>,
-                        }))}
-                      />
-                      <Button type="primary" onClick={() => select(node.id)}>
-                        配置此步骤
+                      <p className="resource-workspace-empty">当前流程尚无此类步骤。</p>
+                      <p>添加后配置输入，保存草稿不会执行步骤。</p>
+                      <Button
+                        onClick={() => {
+                          if (props.guard()) {
+                            props.add(newStep(group.type));
+                            focusCurrent();
+                          }
+                        }}
+                      >
+                        添加到主流程末尾
                       </Button>
                     </>
-                  )
-                ) : (
-                  <>
-                    <p className="resource-workspace-empty">当前流程尚无此类步骤。</p>
-                    <p>添加后配置输入，保存草稿不会执行步骤。</p>
-                    <Button
-                      onClick={() => {
-                        if (props.guard()) {
-                          props.add(newStep(group.type));
-                          focusCurrent();
-                        }
-                      }}
-                    >
-                      添加到主流程末尾
-                    </Button>
-                  </>
-                )}
+                  )}
+                </Card>
               </section>
             );
           })}
-          <section
-            className="resource-workspace-card logic-configuration-advanced"
-            aria-label="节点高级输入"
-          >
-            <h2>节点高级输入</h2>
-            {selected ? (
-              <>
-                <p>当前步骤：{stepTitle(selected)}</p>
-                <ConfigProvider componentDisabled={props.advancedInvalid}>
-                  <fieldset disabled={props.advancedInvalid} className="logic-configuration-fields">
-                    <NodeTiming
-                      compact
-                      key={selected.id}
-                      node={selected}
-                      change={props.changeTiming}
-                    />
-                  </fieldset>
-                </ConfigProvider>
-                {props.advanced}
-                <Button type="primary" onClick={finish}>
-                  应用配置
-                </Button>
-              </>
-            ) : (
-              <p>选择一个步骤后配置期限和高级输入。</p>
-            )}
+          <section aria-label="节点高级输入">
+            <Card className="resource-workspace-card logic-configuration-advanced">
+              <h2>节点高级输入</h2>
+              {selected ? (
+                <>
+                  <p>当前步骤：{stepTitle(selected)}</p>
+                  <ConfigProvider componentDisabled={props.advancedInvalid}>
+                    <fieldset
+                      disabled={props.advancedInvalid}
+                      className="logic-configuration-fields"
+                    >
+                      <NodeTiming
+                        compact
+                        key={selected.id}
+                        node={selected}
+                        change={props.changeTiming}
+                      />
+                    </fieldset>
+                  </ConfigProvider>
+                  {props.advanced}
+                  <Button type="primary" onClick={finish}>
+                    应用配置
+                  </Button>
+                </>
+              ) : (
+                <p>选择一个步骤后配置期限和高级输入。</p>
+              )}
+            </Card>
           </section>
         </div>
       </div>

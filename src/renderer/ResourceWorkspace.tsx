@@ -1,4 +1,4 @@
-import { Drawer, Select, Button, Descriptions } from 'antd';
+import { Alert, Card, Drawer, Select, Button, Descriptions } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef } from 'react';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
 import type { FlowRecord, Step } from '../shared/types';
@@ -172,10 +172,12 @@ export default function ResourceWorkspace(props: Props) {
           </p>
         </header>
         {props.error && (
-          <div className="resource-workspace-error" role="alert">
-            <p>{props.error}</p>
-            <Button onClick={props.clearError}>关闭提示</Button>
-          </div>
+          <Alert
+            type="error"
+            showIcon
+            title={props.error}
+            action={<Button onClick={props.clearError}>关闭提示</Button>}
+          />
         )}
         <div className="resource-workspace-grid">
           {groups.map((group, index) => {
@@ -185,115 +187,117 @@ export default function ResourceWorkspace(props: Props) {
             return (
               <section
                 key={group.title}
-                className="resource-workspace-card"
                 aria-label={group.title}
                 data-current={active || undefined}
               >
-                <h2 tabIndex={-1}>
-                  {group.title}
-                  {active && <span>当前步骤</span>}
-                </h2>
-                {node && matches.length === 1 && (
-                  <p className="resource-workspace-step">
-                    {String(steps.indexOf(node) + 1).padStart(2, '0')} {taskStepTitle(node)}
-                  </p>
-                )}
-                {matches.length > 1 && (
-                  <>
-                    <label htmlFor={`${id}-${index}`}>流程步骤</label>
-                    <Select<string>
-                      id={`${id}-${index}`}
-                      value={node?.id}
-                      onChange={(value) => select(value)}
-                      options={[
-                        ...matches.map((step) => ({
-                          value: step.id,
-                          label: (
-                            <>
-                              {String(steps.findIndex((item) => item.id === step.id) + 1).padStart(
-                                2,
-                                '0',
-                              )}{' '}
-                              {taskStepTitle(step)}
-                            </>
-                          ),
-                        })),
-                      ]}
-                    />
-                  </>
-                )}
-                {node ? (
-                  active ? (
+                <Card className="resource-workspace-card">
+                  <h2 tabIndex={-1}>
+                    {group.title}
+                    {active && <span>当前步骤</span>}
+                  </h2>
+                  {node && matches.length === 1 && (
+                    <p className="resource-workspace-step">
+                      {String(steps.indexOf(node) + 1).padStart(2, '0')} {taskStepTitle(node)}
+                    </p>
+                  )}
+                  {matches.length > 1 && (
                     <>
-                      <ResourceNodeConfiguration
-                        compact
-                        guard={props.guard}
-                        key={node.id}
-                        node={node}
-                        choices={referenceChoices(props.record.flow, node.id)}
-                        change={props.change}
-                        bindings={props.record.bindings}
-                        choose={(binding) => {
-                          if (props.guard()) props.choose(binding);
-                        }}
+                      <label htmlFor={`${id}-${index}`}>流程步骤</label>
+                      <Select<string>
+                        id={`${id}-${index}`}
+                        value={node?.id}
+                        onChange={(value) => select(value)}
+                        options={[
+                          ...matches.map((step) => ({
+                            value: step.id,
+                            label: (
+                              <>
+                                {String(
+                                  steps.findIndex((item) => item.id === step.id) + 1,
+                                ).padStart(2, '0')}{' '}
+                                {taskStepTitle(step)}
+                              </>
+                            ),
+                          })),
+                        ]}
                       />
-                      {node.type === 'excel' && node.operation === 'map' && (
-                        <Button
-                          onClick={() => {
-                            if (props.guard()) props.openExcel(node.id);
-                          }}
-                        >
-                          打开字段映射编辑器
-                        </Button>
-                      )}
-                      <Button type="primary" onClick={finish}>
-                        应用配置
-                      </Button>
                     </>
+                  )}
+                  {node ? (
+                    active ? (
+                      <>
+                        <ResourceNodeConfiguration
+                          compact
+                          guard={props.guard}
+                          key={node.id}
+                          node={node}
+                          choices={referenceChoices(props.record.flow, node.id)}
+                          change={props.change}
+                          bindings={props.record.bindings}
+                          choose={(binding) => {
+                            if (props.guard()) props.choose(binding);
+                          }}
+                        />
+                        {node.type === 'excel' && node.operation === 'map' && (
+                          <Button
+                            onClick={() => {
+                              if (props.guard()) props.openExcel(node.id);
+                            }}
+                          >
+                            打开字段映射编辑器
+                          </Button>
+                        )}
+                        <Button type="primary" onClick={finish}>
+                          应用配置
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Descriptions
+                          layout="vertical"
+                          column={1}
+                          size="small"
+                          colon={false}
+                          items={fields(node, props.record).map(([label, text]) => ({
+                            key: label,
+                            label,
+                            children: (
+                              <span title={text} style={{ overflowWrap: 'anywhere' }}>
+                                {text}
+                              </span>
+                            ),
+                          }))}
+                        />
+                        <Button type="primary" onClick={() => select(node.id)}>
+                          配置此步骤
+                        </Button>
+                      </>
+                    )
                   ) : (
                     <>
-                      <Descriptions
-                        layout="vertical"
-                        column={1}
-                        size="small"
-                        colon={false}
-                        items={fields(node, props.record).map(([label, text]) => ({
-                          key: label,
-                          label,
-                          children: (
-                            <span title={text} style={{ overflowWrap: 'anywhere' }}>
-                              {text}
-                            </span>
-                          ),
-                        }))}
-                      />
-                      <Button type="primary" onClick={() => select(node.id)}>
-                        配置此步骤
+                      <p className="resource-workspace-empty">当前流程尚无此类步骤。</p>
+                      <p>添加后先配置资源和输入，保存草稿不会执行步骤。</p>
+                      <Button
+                        onClick={() => {
+                          if (!props.guard()) return;
+                          const draft = newStep(group.type);
+                          props.add(
+                            group.type === 'http'
+                              ? draft
+                              : resourceOperation(draft as FileNode, group.operations[0]),
+                          );
+                          requestAnimationFrame(() =>
+                            dialog.current
+                              ?.querySelector<HTMLElement>('[data-current] h2')
+                              ?.focus(),
+                          );
+                        }}
+                      >
+                        添加到主流程末尾
                       </Button>
                     </>
-                  )
-                ) : (
-                  <>
-                    <p className="resource-workspace-empty">当前流程尚无此类步骤。</p>
-                    <p>添加后先配置资源和输入，保存草稿不会执行步骤。</p>
-                    <Button
-                      onClick={() => {
-                        if (!props.guard()) return;
-                        const draft = newStep(group.type);
-                        props.add(
-                          group.type === 'http'
-                            ? draft
-                            : resourceOperation(draft as FileNode, group.operations[0]),
-                        );
-                        requestAnimationFrame(() =>
-                          dialog.current?.querySelector<HTMLElement>('[data-current] h2')?.focus(),
-                        );
-                      }}
-                    >
-                      添加到主流程末尾
-                    </Button>
-                  </>
-                )}
+                  )}
+                </Card>
               </section>
             );
           })}
