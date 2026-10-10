@@ -469,6 +469,14 @@ export default function AITaskWorkspace(props: Props) {
                               : '先看看任务步骤';
 
   useEffect(() => {
+    if (props.active && attachmentPreview) {
+      props.onNavigation(
+        '附件预览',
+        closeAttachmentPreview,
+        page === 'brief' ? '描述与附件' : title,
+      );
+      return;
+    }
     if (props.active)
       props.onNavigation(
         title,
@@ -527,6 +535,7 @@ export default function AITaskWorkspace(props: Props) {
       );
   }, [
     props.active,
+    attachmentPreview,
     standaloneGraph,
     changesView,
     detail?.proposal?.id,
@@ -1983,6 +1992,8 @@ export default function AITaskWorkspace(props: Props) {
             </div>
             {attachmentPreview.kind === 'image' ? (
               <img src={attachmentPreview.dataUrl} alt={attachmentPreview.name} />
+            ) : attachmentPreview.text === '' ? (
+              <Alert type="info" showIcon role="status" title="附件已读取，内容为空" />
             ) : (
               <pre tabIndex={0} aria-label="附件完整文本">
                 {attachmentPreview.text}
