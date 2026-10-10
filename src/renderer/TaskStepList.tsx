@@ -33,7 +33,7 @@ export default function TaskStepList({
   const matches = terms.length
     ? entries.filter(({ step, ordinal }) => {
         const text =
-          `${ordinal} ${String(ordinal).padStart(2, '0')} ${taskStepTitle(step)} ${taskStepSummary(step, flow, context)}`.toLocaleLowerCase();
+          `${ordinal} ${String(ordinal).padStart(2, '0')} ${step.name ?? ''} ${taskStepTitle(step)} ${taskStepSummary(step, flow, context)}`.toLocaleLowerCase();
         return terms.every((term) => text.includes(term));
       })
     : [];
