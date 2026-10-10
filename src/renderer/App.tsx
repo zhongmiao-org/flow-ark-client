@@ -1437,7 +1437,10 @@ function WorkspaceApp() {
                           setTaskRunView('overview');
                         }}
                       >
-                        本次运行
+                        {taskRunPresentation({ ...detail, fault: detail.fault ?? data.fault })
+                          .success
+                          ? '可读结果'
+                          : '本次运行'}
                       </a>
                       <span aria-hidden="true">/</span>
                     </>
