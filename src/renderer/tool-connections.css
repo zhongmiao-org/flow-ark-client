@@ -267,9 +267,6 @@
 .tool-field .tool-field-error {
   color: var(--fa-status-error);
 }
-.tool-field :is(input, .ant-select, textarea)[aria-invalid='true'] {
-  border-color: var(--fa-status-error);
-}
 .tool-field {
   display: flex;
   flex-direction: column;

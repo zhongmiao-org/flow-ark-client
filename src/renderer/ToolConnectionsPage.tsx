@@ -148,6 +148,7 @@ export default function ToolConnectionsPage({
     }[field],
     'aria-invalid': fieldErrors[field] ? true : undefined,
     'aria-describedby': fieldErrors[field] ? `tool-config-${field}-error` : undefined,
+    status: fieldErrors[field] ? ('error' as const) : undefined,
   });
   const fieldError = (field: ConfigField) =>
     fieldErrors[field] && (
@@ -182,16 +183,16 @@ export default function ToolConnectionsPage({
   const [busy, setBusy] = useState<
     'discover' | 'authorize' | 'save' | 'manage' | 'inspect' | 'open-task' | null
   >(null);
-  const discoveryOrigin = useRef<Element | null | undefined>(undefined);
+  const operationOrigin = useRef<Element | null | undefined>(undefined);
   const operationError = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!active || view !== 'config') {
-      discoveryOrigin.current = undefined;
+    if (!active) {
+      operationOrigin.current = undefined;
       return;
     }
-    if (busy || discoveryOrigin.current === undefined) return;
-    const origin = discoveryOrigin.current;
-    discoveryOrigin.current = undefined;
+    if (busy || operationOrigin.current === undefined) return;
+    const origin = operationOrigin.current;
+    operationOrigin.current = undefined;
     if (error && (document.activeElement === origin || document.activeElement === document.body))
       operationError.current?.focus();
   }, [active, view, busy, error]);
@@ -290,7 +291,7 @@ export default function ToolConnectionsPage({
     [],
   );
   const cancel = async () => {
-    discoveryOrigin.current = undefined;
+    operationOrigin.current = undefined;
     epoch.current++;
     const requestId = request.current;
     if (requestId) await api('tool.connection.cancel', { requestId });
@@ -445,7 +446,7 @@ export default function ToolConnectionsPage({
       return;
     }
     locked.current = true;
-    discoveryOrigin.current = document.activeElement;
+    operationOrigin.current = document.activeElement;
     setBusy('discover');
     setOAuthInspection(undefined);
     setReviewBaseline(selected ? structuredClone(selected) : undefined);
@@ -495,7 +496,7 @@ export default function ToolConnectionsPage({
   const authorize = async (issuer: string, clientId: string, callbackPort: number) => {
     if (locked.current || !oauthInspection?.inspectionToken || !sourceReviewed) return;
     locked.current = true;
-    discoveryOrigin.current = document.activeElement;
+    operationOrigin.current = document.activeElement;
     setBusy('authorize');
     setError('');
     const ticket = ++epoch.current,
@@ -543,6 +544,7 @@ export default function ToolConnectionsPage({
   const save = async () => {
     if (locked.current || !candidate || !capabilitiesReviewed) return;
     locked.current = true;
+    operationOrigin.current = document.activeElement;
     setBusy('save');
     setError('');
     try {
@@ -571,6 +573,7 @@ export default function ToolConnectionsPage({
   const inspect = async (operation?: 'disconnect' | 'remove') => {
     if (locked.current || !selected) return;
     locked.current = true;
+    operationOrigin.current = document.activeElement;
     setBusy('inspect');
     setError('');
     try {
@@ -588,6 +591,7 @@ export default function ToolConnectionsPage({
   const openReference = async (task: ConnectionTaskReference) => {
     if (locked.current || !selected) return;
     locked.current = true;
+    operationOrigin.current = document.activeElement;
     setBusy('open-task');
     setError('');
     referenceReturn.current = {
@@ -607,6 +611,7 @@ export default function ToolConnectionsPage({
   const manage = async (operation: 'disconnect' | 'remove') => {
     if (locked.current || !selected) return;
     locked.current = true;
+    operationOrigin.current = document.activeElement;
     setBusy('manage');
     setError('');
     try {
