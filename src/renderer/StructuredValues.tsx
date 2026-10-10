@@ -1,4 +1,4 @@
-import { Button, Input, Table } from 'antd';
+import { Button, Card, Empty, Input, Table } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import './structured-values.css';
 import type { Json } from '../shared/types';
@@ -156,7 +156,11 @@ export function MappingValues({
                 ))}
               </div>
               {!keys.length && (
-                <p className="structured-values-empty">尚无条目。填写名称后添加，再编辑对应值。</p>
+                <Empty
+                  className="structured-values-empty"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description="尚无条目。填写名称后添加，再编辑对应值。"
+                />
               )}
               <label htmlFor={`${id}-new`}>新增{label}名称</label>
               <div className="resource-inline">
@@ -184,7 +188,7 @@ export function MappingValues({
               </div>
             </div>
             {active && (
-              <div className="mapping-current">
+              <Card size="small" className="mapping-current">
                 <h5>当前条目 · {active}</h5>
                 <label htmlFor={`${id}-rename`}>当前{label}名称</label>
                 <div className="resource-inline">
@@ -226,7 +230,7 @@ export function MappingValues({
                     choices={choices}
                   />
                 </div>
-              </div>
+              </Card>
             )}
           </div>
           {protectDraft && (name || rename !== active || error) && (
@@ -368,9 +372,11 @@ export function MatrixValues({
             />
           </div>
           {!rows.length && (
-            <p className="structured-values-empty">
-              尚无数据行。添加一行后，点击单元格编辑文本、数字、布尔、空值或变量。
-            </p>
+            <Empty
+              className="structured-values-empty"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description="尚无数据行。添加一行后，点击单元格编辑文本、数字、布尔、空值或变量。"
+            />
           )}
           <div className="matrix-pagination" aria-label="矩阵分页">
             <span role="status" ref={paginationStatus} tabIndex={-1}>
@@ -429,7 +435,7 @@ export function MatrixValues({
             </Button>
           </div>
           {active && (
-            <div className="matrix-current">
+            <Card size="small" className="matrix-current">
               <p className="note">
                 当前单元格 {columnName(active[1])}
                 {active[0] + 1}
@@ -464,7 +470,7 @@ export function MatrixValues({
                 change={(next) => change(setCell(rows, active[0], active[1], next))}
                 choices={choices}
               />
-            </div>
+            </Card>
           )}
           <p className="note">点击单元格编辑类型和变量。每页显示 10 行、6 列，翻页保留全部数据。</p>
         </div>
