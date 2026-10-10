@@ -250,7 +250,13 @@ export function DesktopWindowCapabilities({
         { label: '编辑选中段落并回读 · 需在试运行前核对能力与授权', checked: false },
         { label: '发送邮件 / 后台操作其他窗口 · 不支持', checked: false },
       ].map(({ label, checked }) => (
-        <Checkbox checked={checked} disabled className="ai-task-checkbox" key={label}>
+        <Checkbox
+          checked={checked}
+          disabled
+          styles={{ label: { color: 'var(--fa-text-primary)' } }}
+          className="ai-task-checkbox"
+          key={label}
+        >
           {label}
         </Checkbox>
       ))}
