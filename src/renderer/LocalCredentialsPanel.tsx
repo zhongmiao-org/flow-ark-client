@@ -55,7 +55,7 @@ function CredentialDialog({
     alive.current = true;
     return () => {
       alive.current = false;
-      if (origin?.isConnected) origin.focus({ preventScroll: true });
+      if (origin?.isConnected) origin.focus();
     };
   }, []);
   useEffect(() => {
