@@ -34,6 +34,7 @@
 .schedule-fixed-version > small {
   color: var(--fa-text-secondary);
   font-size: 12px;
+  line-height: 18px;
 }
 .schedule-workbench-form .schedule-history-trigger {
   align-self: flex-start;
