@@ -19,6 +19,9 @@
   flex-shrink: 0;
   scroll-margin-block: 8px;
 }
+.task-execution-steps > .ant-card-body > ol > li > div {
+  flex: 1;
+}
 .task-execution-steps > .ant-card-body > ol > li:focus {
   outline: 2px solid var(--fa-action-primary);
   outline-offset: -2px;
@@ -47,9 +50,6 @@
 }
 .task-execution-steps.is-compact > .ant-card-body > ol > li {
   min-height: 88px;
-}
-.task-execution-steps.is-compact > .ant-card-body > ol > li > div {
-  flex: 1;
 }
 .task-execution-steps.is-compact .task-execution-row-heading {
   display: flex;
@@ -84,7 +84,9 @@
 
 .task-execution-record-toggle {
   min-width: 0;
+  max-width: 100%;
   min-height: 0;
+  height: auto;
   padding: 0;
   border: 0;
   border-radius: 2px;
@@ -92,6 +94,7 @@
   color: inherit;
   font: inherit;
   text-align: left;
+  white-space: normal;
   overflow-wrap: anywhere;
 }
 .task-execution-record-toggle:hover {
