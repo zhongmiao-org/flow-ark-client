@@ -143,6 +143,7 @@
   overflow: hidden;
 }
 .outline-card > .ant-card-body {
+  padding: var(--fa-space-20);
   height: 100%;
   min-width: 0;
   overflow: auto;
@@ -155,6 +156,7 @@
   font-size: 18px;
   line-height: 28px;
   margin: 0;
+  overflow-wrap: anywhere;
 }
 .outline-center > .outline-card > .ant-card-body {
   overflow: hidden;
@@ -240,6 +242,7 @@
   font-size: 18px;
   line-height: 28px;
   margin: 0;
+  overflow-wrap: anywhere;
 }
 .outline-inspector p {
   margin: 0;
