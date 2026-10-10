@@ -128,6 +128,7 @@ export const flowArkTheme = {
     colorBgLayout: '#F6F7FB',
     colorFillQuaternary: '#EFF2F7',
     colorBorder: '#DFE4ED',
+    colorBorderSecondary: '#DFE4ED',
     colorBgSpotlight: '#121A2A',
     colorBgMask: 'rgba(18, 26, 42, 0.42)',
     fontFamily: "'Noto Sans SC Variable', sans-serif",
