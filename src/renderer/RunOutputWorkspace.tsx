@@ -48,7 +48,7 @@ function ArtifactCard({
           : 'warning';
   return (
     <article data-artifact-id={artifact.artifactId} aria-label={artifact.name}>
-      <Card className="run-artifact-card" size="small">
+      <Card className="run-artifact-card" size="small" styles={{ body: { padding: 16 } }}>
         <header>
           <h4>{artifact.name}</h4>
           <span>{fileSize(artifact.size)}</span>

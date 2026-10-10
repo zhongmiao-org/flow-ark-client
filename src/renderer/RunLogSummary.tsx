@@ -107,6 +107,7 @@ export default function RunLogSummary({
         <Card>
           <h3>{view.step.type === 'script' ? '脚本进度' : '步骤进度'}</h3>
           <Descriptions
+            colon={false}
             size="small"
             layout="vertical"
             column={1}
