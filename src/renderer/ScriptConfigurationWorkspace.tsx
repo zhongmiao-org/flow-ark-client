@@ -127,6 +127,7 @@ export default function ScriptConfigurationWorkspace(props: Props) {
                 />
               </div>
               <Descriptions
+                colon={false}
                 className="script-configuration-summary"
                 column={1}
                 layout="vertical"
@@ -154,6 +155,7 @@ export default function ScriptConfigurationWorkspace(props: Props) {
             <Card className="resource-workspace-card">
               <h2>脚本正文</h2>
               <Descriptions
+                colon={false}
                 className="script-configuration-summary"
                 column={1}
                 layout="vertical"
@@ -177,6 +179,7 @@ export default function ScriptConfigurationWorkspace(props: Props) {
             <Card className="resource-workspace-card">
               <h2>依赖检查</h2>
               <Descriptions
+                colon={false}
                 className="script-configuration-summary"
                 column={1}
                 layout="vertical"
@@ -236,6 +239,7 @@ export default function ScriptConfigurationWorkspace(props: Props) {
             <Card className="resource-workspace-card">
               <h2>模板内脚本</h2>
               <Descriptions
+                colon={false}
                 className="script-configuration-summary"
                 column={1}
                 layout="vertical"
@@ -263,6 +267,7 @@ export default function ScriptConfigurationWorkspace(props: Props) {
                       children: (
                         <>
                           <Descriptions
+                            colon={false}
                             className="script-configuration-summary"
                             column={1}
                             layout="vertical"
@@ -289,6 +294,7 @@ export default function ScriptConfigurationWorkspace(props: Props) {
             <Card className="resource-workspace-card">
               <h2>日志与进度</h2>
               <Descriptions
+                colon={false}
                 className="script-configuration-summary"
                 column={1}
                 layout="vertical"
@@ -312,6 +318,7 @@ export default function ScriptConfigurationWorkspace(props: Props) {
             <Card className="resource-workspace-card">
               <h2>AI 调用边界</h2>
               <Descriptions
+                colon={false}
                 className="script-configuration-summary"
                 column={1}
                 layout="vertical"
