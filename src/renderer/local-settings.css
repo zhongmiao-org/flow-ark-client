@@ -25,7 +25,7 @@
   color: var(--fa-text-secondary);
 }
 .local-settings-tabs > .ant-tabs-nav {
-  margin-bottom: 36px;
+  margin-bottom: 30px;
 }
 .local-resources-page .local-settings-tabs > .ant-tabs-nav,
 .local-browser-binding-page .local-settings-tabs > .ant-tabs-nav {
@@ -89,7 +89,7 @@
   margin: 0 0 46px;
   padding: 0 0 8px;
 }
-.local-environment .local-settings-health:last-of-type {
+.local-environment .local-settings-health:has(+ .local-settings-muted) {
   margin-bottom: 0;
 }
 .local-health-heading,
@@ -100,6 +100,7 @@
 }
 .local-health-link {
   padding: 0;
+  height: auto;
   min-height: 28px;
   border: 0;
   background: transparent;

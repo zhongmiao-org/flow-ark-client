@@ -560,6 +560,8 @@ export default function LocalSettingsPage({
                   <Collapse
                     className="local-session-details"
                     size="small"
+                    ghost
+                    styles={{ header: { padding: 0 } }}
                     items={[
                       {
                         key: 'session',
@@ -590,7 +592,10 @@ export default function LocalSettingsPage({
             </div>
           ) : (
             <section aria-busy={!!busy}>
-              <Card className="local-settings-card local-browser-binding">
+              <Card
+                className="local-settings-card local-browser-binding"
+                styles={{ body: { padding: 28 } }}
+              >
                 <div className="local-browser-binding-fields">
                   <div className="local-settings-field">
                     <label htmlFor="local-browser-mode">执行方式</label>
