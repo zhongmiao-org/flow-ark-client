@@ -1,4 +1,4 @@
-import { Button, Input } from 'antd';
+import { Alert, Button, Input } from 'antd';
 import {
   useCallback,
   useEffect,
@@ -38,6 +38,12 @@ export default function ParameterConfiguration({
   const addButton = useRef<HTMLButtonElement>(null);
   const root = useRef<HTMLElement>(null);
   const focusName = useRef<string | undefined>(undefined);
+  const removedFocus = useRef<{ name: string | null; origin: HTMLElement | null } | undefined>(
+    undefined,
+  );
+  const operationError = useRef<HTMLDivElement | null>(null);
+  const errorOrigin = useRef<HTMLElement | null>(null);
+  const [deleteFailure, setDeleteFailure] = useState(0);
   const [notice, setNotice] = useState('');
   const [incompleteFields, setIncompleteFields] = useState(new Set<string>());
   const markIncomplete = useCallback((key: string, incomplete: boolean) => {
@@ -63,14 +69,39 @@ export default function ParameterConfiguration({
     [onPendingNameChange, markIncomplete],
   );
   useLayoutEffect(() => {
-    if (focusName.current === undefined) return;
-    root.current
-      ?.querySelector<HTMLInputElement>(
-        `input[data-parameter-name="${CSS.escape(focusName.current)}"]`,
-      )
-      ?.focus({ preventScroll: true });
-    focusName.current = undefined;
+    if (focusName.current !== undefined) {
+      root.current
+        ?.querySelector<HTMLInputElement>(
+          `input[data-parameter-name="${CSS.escape(focusName.current)}"]`,
+        )
+        ?.focus({ preventScroll: true });
+      focusName.current = undefined;
+    }
+    const removed = removedFocus.current;
+    if (!removed) return;
+    removedFocus.current = undefined;
+    if (document.activeElement !== removed.origin && document.activeElement !== document.body)
+      return;
+    const row = removed.name
+      ? root.current?.querySelector<HTMLElement>(
+          `[data-parameter-key="${CSS.escape(removed.name)}"]`,
+        )
+      : undefined;
+    (
+      row?.querySelector<HTMLElement>('input,textarea,[tabindex="0"]') ??
+      addButton.current ??
+      nameInput.current
+    )?.focus();
   }, [value]);
+  useLayoutEffect(() => {
+    if (
+      error &&
+      errorOrigin.current?.isConnected &&
+      (document.activeElement === errorOrigin.current || document.activeElement === document.body)
+    )
+      operationError.current?.focus();
+    errorOrigin.current = null;
+  }, [error, deleteFailure]);
   useEffect(() => {
     if (columns && adding) nameInput.current?.focus();
   }, [columns, adding]);
@@ -105,7 +136,7 @@ export default function ParameterConfiguration({
   return (
     <section ref={root} aria-label="运行参数配置" className="parameter-fields">
       {Object.entries(value).map(([key, val]) => (
-        <div className="parameter-field" key={key}>
+        <div className="parameter-field" key={key} data-parameter-key={key}>
           <header>
             {columns ? (
               <ParameterName
@@ -129,11 +160,21 @@ export default function ParameterConfiguration({
               size={columns ? 'small' : 'middle'}
               aria-label={'删除参数 ' + key}
               onClick={() => {
+                const origin =
+                  document.activeElement instanceof HTMLElement ? document.activeElement : null;
                 try {
                   const next = { ...value };
                   delete next[key];
                   apply(next);
+                  const names = Object.keys(value);
+                  const index = names.indexOf(key);
+                  removedFocus.current = {
+                    name: names[index + 1] ?? names[index - 1] ?? null,
+                    origin,
+                  };
                 } catch (e: any) {
+                  errorOrigin.current = origin;
+                  setDeleteFailure((count) => count + 1);
                   setError(e.message);
                 }
               }}
@@ -199,9 +240,17 @@ export default function ParameterConfiguration({
         </div>
       )}
       {error && (
-        <p className="field-error" role="alert">
-          {error}
-        </p>
+        <Alert
+          ref={(instance) => {
+            operationError.current = instance?.nativeElement ?? null;
+            operationError.current?.setAttribute('tabindex', '-1');
+          }}
+          className="parameter-operation-error"
+          type="error"
+          showIcon
+          title="参数删除未完成"
+          description={error}
+        />
       )}
       {notice && (
         <p className="parameter-rename-notice" role="status">
