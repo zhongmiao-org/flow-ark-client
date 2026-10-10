@@ -243,13 +243,13 @@
   flex-shrink: 0;
   min-height: 72px;
   margin: 0;
-  padding: 16px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: 12px;
   background: var(--fa-action-subtle);
   color: var(--fa-action-primary);
   font-size: 14px;
   line-height: 22px;
+}
+.browser-pick-guidance p {
+  margin: 0;
 }
 .browser-editor-panel .browser-viewport {
   border-radius: 12px;
@@ -268,29 +268,21 @@
   flex-shrink: 0;
 }
 .browser-session-details {
+  margin-top: 12px;
+}
+.browser-session-card > .ant-card-body {
   max-height: 200px;
   overflow: auto;
-  margin-top: 12px;
-  padding: 12px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: 8px;
   font-size: 12px;
   line-height: 18px;
 }
-.browser-session-details dl {
-  margin: 0 0 12px;
+.browser-session-card .ant-descriptions {
+  margin-bottom: 12px;
 }
-.browser-session-details dl > div {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  gap: 12px;
-  margin-bottom: 8px;
+.browser-session-card .ant-descriptions-item-label {
+  min-width: 40px;
 }
-.browser-session-details dt {
-  color: var(--fa-text-secondary);
-}
-.browser-session-details dd {
-  margin: 0;
+.browser-session-card .ant-descriptions-item-content {
   overflow-wrap: anywhere;
 }
 @media (max-width: 1100px) {

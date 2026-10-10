@@ -1,4 +1,5 @@
-import { Button } from 'antd';
+import { Badge, Button, Card, Tag } from 'antd';
+import { elementPickerColors } from './theme';
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { Crosshair, Check, X } from 'lucide-react';
 import type { ElementTarget, PickerState } from '../shared/element-picker';
@@ -500,69 +501,86 @@ export default function ElementPicker({
       </div>
       {feedback && (
         <section
-          className={`element-picker-feedback is-${feedback.tone}${taskConfirmation ? ' is-task-confirmation' : ''}`}
+          className={`element-picker-feedback${taskConfirmation ? ' is-task-confirmation' : ''}`}
           role={error ? 'alert' : 'status'}
           aria-label={feedback.title}
           tabIndex={-1}
         >
-          {!taskConfirmation && <span className="element-picker-badge">{feedback.badge}</span>}
-          {!taskConfirmation && <h3>{feedback.title}</h3>}
-          <p>{feedback.detail}</p>
-          {taskConfirmation && candidate?.target.structural && (
-            <p>使用结构定位，页面布局变化后请重新选取。</p>
-          )}
-          {'next' in feedback && <p>{feedback.next}</p>}
-          {shownTarget && !error && !picking && !validating && !taskConfirmation && (
-            <div className="element-picker-target">
-              <span>目标</span>
-              <strong>{shownTarget.label || shownTarget.tag}</strong>
-              <span>
-                {shownTarget.tag} ·{' '}
-                {shownTarget.framePath.length ? `${shownTarget.framePath.length} 层框架` : '主页面'}
-              </span>
-              {shownTarget.structural && <span>使用结构定位，页面布局变化后请重新验证。</span>}
-            </div>
-          )}
-          {candidate && (
-            <div className="element-picker-apply-actions">
-              <Button
-                ref={applyButton}
-                type="primary"
-                disabled={!active || disabled || applying || focusing || undefined}
-                onClick={() => void apply()}
+          <Card
+            className="element-picker-card"
+            variant={taskConfirmation ? 'borderless' : 'outlined'}
+            styles={taskConfirmation ? { body: { padding: 0 } } : undefined}
+          >
+            {!taskConfirmation && (
+              <Tag
+                className="run-state-tag"
+                variant="filled"
+                color={elementPickerColors[feedback.tone]}
+                icon={<Badge status={elementPickerColors[feedback.tone]} />}
               >
-                {applying ? '正在核对目标…' : purpose === 'task' ? '使用这个目标' : '应用目标'}
-              </Button>
-              {browserFocus && (
+                {feedback.badge}
+              </Tag>
+            )}
+            {!taskConfirmation && <h3>{feedback.title}</h3>}
+            <p>{feedback.detail}</p>
+            {taskConfirmation && candidate?.target.structural && (
+              <p>使用结构定位，页面布局变化后请重新选取。</p>
+            )}
+            {'next' in feedback && <p>{feedback.next}</p>}
+            {shownTarget && !error && !picking && !validating && !taskConfirmation && (
+              <div className="element-picker-target">
+                <span>目标</span>
+                <strong>{shownTarget.label || shownTarget.tag}</strong>
+                <span>
+                  {shownTarget.tag} ·{' '}
+                  {shownTarget.framePath.length
+                    ? `${shownTarget.framePath.length} 层框架`
+                    : '主页面'}
+                </span>
+                {shownTarget.structural && <span>使用结构定位，页面布局变化后请重新验证。</span>}
+              </div>
+            )}
+            {candidate && (
+              <div className="element-picker-apply-actions">
                 <Button
+                  ref={applyButton}
+                  type="primary"
                   disabled={!active || disabled || applying || focusing || undefined}
-                  onClick={() => void focusCandidate()}
+                  onClick={() => void apply()}
                 >
-                  {focusing ? '正在核对目标…' : '聚焦选中目标'}
+                  {applying ? '正在核对目标…' : purpose === 'task' ? '使用这个目标' : '应用目标'}
                 </Button>
-              )}
-              <Button onClick={discard}>放弃此目标</Button>
-            </div>
-          )}
-          {busy && blockingRunId && onViewRun && (
-            <Button
-              ref={viewRunButton}
-              disabled={!active || disabled || viewingRun || undefined}
-              onClick={() => void openRun()}
-            >
-              {viewingRun ? '正在读取运行…' : '查看运行'}
-            </Button>
-          )}
-          {runError && (
-            <p className="field-error" role="alert">
-              {runError}
-            </p>
-          )}
-          {error && onAdjust && (
-            <Button disabled={!active || disabled || undefined} onClick={onAdjust}>
-              手动调整定位
-            </Button>
-          )}
+                {browserFocus && (
+                  <Button
+                    disabled={!active || disabled || applying || focusing || undefined}
+                    onClick={() => void focusCandidate()}
+                  >
+                    {focusing ? '正在核对目标…' : '聚焦选中目标'}
+                  </Button>
+                )}
+                <Button onClick={discard}>放弃此目标</Button>
+              </div>
+            )}
+            {busy && blockingRunId && onViewRun && (
+              <Button
+                ref={viewRunButton}
+                disabled={!active || disabled || viewingRun || undefined}
+                onClick={() => void openRun()}
+              >
+                {viewingRun ? '正在读取运行…' : '查看运行'}
+              </Button>
+            )}
+            {runError && (
+              <p className="field-error" role="alert">
+                {runError}
+              </p>
+            )}
+            {error && onAdjust && (
+              <Button disabled={!active || disabled || undefined} onClick={onAdjust}>
+                手动调整定位
+              </Button>
+            )}
+          </Card>
         </section>
       )}
       {message && !feedback && (
