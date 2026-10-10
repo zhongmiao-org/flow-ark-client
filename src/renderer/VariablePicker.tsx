@@ -13,6 +13,7 @@ export default function VariablePicker({
   choose,
   fixed,
   fixedLabel = '改用固定值',
+  restoreFocusAfterFixed = true,
   close,
 }: {
   label: string;
@@ -21,6 +22,7 @@ export default function VariablePicker({
   choose: (path: string) => void;
   fixed: () => void;
   fixedLabel?: string;
+  restoreFocusAfterFixed?: boolean;
   close: () => void;
 }) {
   const navigationContext = useContext(VariableNavigationContext);
@@ -50,6 +52,7 @@ export default function VariablePicker({
   const detailHeadingRef = useRef<HTMLHeadingElement>(null);
   const dialog = useRef<HTMLDivElement>(null);
   const origin = useRef(document.activeElement as HTMLElement | null);
+  const restoreOrigin = useRef(true);
   const searchInput = useRef<HTMLInputElement>(null);
   const titleId = useId();
   const failureRef = useRef<HTMLDivElement>(null);
@@ -88,13 +91,14 @@ export default function VariablePicker({
     const trigger = origin.current;
     return () => {
       requestAnimationFrame(() => {
-        if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+        if (restoreOrigin.current && trigger?.isConnected) trigger.focus({ preventScroll: true });
       });
     };
   }, []);
-  const apply = (operation: () => void) => {
+  const apply = (operation: () => void, restoreFocus = true) => {
     try {
       operation();
+      restoreOrigin.current = restoreFocus;
       close();
     } catch (error) {
       setFailure(error instanceof Error ? error.message : '字段尚未更新，请重试');
@@ -305,7 +309,7 @@ export default function VariablePicker({
                 >
                   使用此变量
                 </Button>
-                <Button htmlType="button" onClick={() => apply(fixed)}>
+                <Button htmlType="button" onClick={() => apply(fixed, restoreFocusAfterFixed)}>
                   {fixedLabel}
                 </Button>
                 <Button htmlType="button" onClick={close} aria-label={'取消选择 · ' + label}>

@@ -37,9 +37,11 @@ export default function ValueField({
       '.literal-value label:last-of-type',
     );
     const input =
-      valueLabel?.control ?? root.current?.querySelector<HTMLElement>('textarea, input');
+      valueLabel?.control ??
+      root.current?.querySelector<HTMLElement>('textarea, input') ??
+      root.current?.querySelector<HTMLElement>('button:not(:disabled)');
     if (input instanceof HTMLElement) input.focus();
-  }, [current]);
+  }, [current, open]);
   const available = choices ?? [];
   const source =
     available.find((choice) => choice.path === current) ??
@@ -123,7 +125,9 @@ export default function ValueField({
           choose={(path) => change({ $ref: path })}
           fixed={() => {
             if (current !== undefined) change(structuredClone(defaultValue));
+            focusFixedValue.current = true;
           }}
+          restoreFocusAfterFixed={false}
           close={() => setOpen(false)}
         />
       )}
