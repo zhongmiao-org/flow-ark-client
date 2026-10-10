@@ -38,6 +38,9 @@
 .local-browser-overview > aside > .local-settings-card {
   min-height: 582px;
 }
+.local-browser-options > .ant-card-body {
+  padding: var(--fa-space-32);
+}
 .local-browser-options > .ant-card-body > .local-browser-mode {
   display: flex;
   width: 100%;
