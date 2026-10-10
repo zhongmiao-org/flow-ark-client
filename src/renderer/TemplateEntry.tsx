@@ -185,6 +185,26 @@ export default function TemplateEntry({
       returnFocus.current = null;
     }
   }, [active, checking, sourceChecking]);
+  useLayoutEffect(() => {
+    if (inspection || !active || checking || sourceChecking) return;
+    const pane = inputFields.current?.closest('.template-entry-pane');
+    const target = pane?.querySelector<HTMLButtonElement>('.template-entry-open');
+    const main = document.querySelector('main');
+    if (!pane || !target || !main) return;
+    const ensureVisible = () => {
+      if (document.activeElement !== target || target.disabled) return;
+      const bounds = target.getBoundingClientRect();
+      const visible = main.getBoundingClientRect();
+      if (bounds.top < visible.top || bounds.bottom > visible.bottom)
+        target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    };
+    ensureVisible();
+    const observer = new ResizeObserver(ensureVisible);
+    observer.observe(pane);
+    observer.observe(main);
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [active, checking, inspection, sourceChecking]);
   const dirtyInput =
     invalidInput || !equal(entry.values, saved.entries.find((e) => e.id === entryId)?.values);
   const dirtyConfiguration = !equal(instance, saved.instance);
@@ -394,7 +414,10 @@ export default function TemplateEntry({
             (inspection ? ' template-entry-inspection' : '')
           }
         >
-          <Card className="template-entry-input">
+          <Card
+            className="template-entry-input"
+            styles={inspection ? { body: { padding: 32 } } : undefined}
+          >
             {!inspection && (
               <h2
                 tabIndex={-1}
