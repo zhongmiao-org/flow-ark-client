@@ -66,13 +66,6 @@
   font-size: 13px;
   line-height: 20px;
 }
-.template-shared-configuration
-  .template-field
-  > input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):not(
-    [type='checkbox']
-  ) {
-  line-height: 20px;
-}
 .template-entry-fields .template-boolean-field {
   display: grid;
   grid-template-columns: 16px minmax(0, 1fr);

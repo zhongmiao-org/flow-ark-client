@@ -191,6 +191,25 @@ export default function TemplateInstancePage({
     focusResourceError.current = false;
     if (active && error && !leaving && tab !== 'configuration') resourceError.current?.focus();
   }, [active, busy, error, leaving, tab]);
+  useLayoutEffect(() => {
+    if (!active || busy || !error || leaving || tab !== 'configuration') return;
+    const target = configurationError.current;
+    const main = document.querySelector('main');
+    if (!target || !main || !root.current) return;
+    const ensureVisible = () => {
+      if (document.activeElement !== target) return;
+      const bounds = target.getBoundingClientRect();
+      const visible = main.getBoundingClientRect();
+      if (bounds.top < visible.top || bounds.bottom > visible.bottom)
+        target.scrollIntoView({ block: 'center', inline: 'nearest' });
+    };
+    ensureVisible();
+    const observer = new ResizeObserver(ensureVisible);
+    observer.observe(main);
+    observer.observe(root.current);
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [active, busy, error, leaving, tab]);
   const rawInvalid = (scope: TemplateSaveScope = 'all', inputId?: string) => {
     const containers =
       scope === 'input'
@@ -443,7 +462,10 @@ export default function TemplateInstancePage({
       <div data-instance-tab="configuration" hidden={tab !== 'configuration'}>
         <div className="template-instance-columns">
           <section aria-busy={busy}>
-            <Card className="template-instance-form template-shared-configuration">
+            <Card
+              className="template-instance-form template-shared-configuration"
+              styles={{ body: { padding: 28 } }}
+            >
               <h2>共享配置</h2>
               <ConfigProvider
                 componentDisabled={busy}
@@ -793,7 +815,7 @@ export default function TemplateInstancePage({
             <h1 ref={entryHeading} tabIndex={-1}>
               {entryDetail
                 ? draft.entries.find((entry) => entry.id === entryId)?.name
-                : instance.name}
+                : `${draft.manifest.name} · ${instance.name}`}
             </h1>
             <p>
               实例 {instance.id.slice(0, 8)} · 固定包 v{draft.manifest.version} ·
@@ -879,7 +901,10 @@ export default function TemplateInstancePage({
           activeKey={tab}
           animated={false}
           destroyOnHidden={false}
-          styles={{ header: entryDetail ? { display: 'none' } : undefined }}
+          styles={{
+            header: entryDetail ? { display: 'none' } : undefined,
+            item: { paddingBlock: 5 },
+          }}
           onChange={(key) => switchTab(key as Tab)}
           renderTabBar={(props, DefaultTabBar) => (
             <>
