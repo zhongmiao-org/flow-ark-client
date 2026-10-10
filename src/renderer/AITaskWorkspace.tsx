@@ -217,7 +217,16 @@ export default function AITaskWorkspace(props: Props) {
       document.querySelector('main')?.scrollTo({ top: scroll });
     });
   }, [props.active]);
-  const backToBrief = useCallback(() => setPage('brief'), []);
+  const backToBrief = useCallback(() => {
+    setPage('brief');
+    requestAnimationFrame(() => {
+      if (!location.current.active || location.current.page !== 'brief') return;
+      document.querySelector('main')?.scrollTo({ top: 0 });
+      document
+        .querySelector<HTMLTextAreaElement>('#task-description')
+        ?.focus({ preventScroll: true });
+    });
+  }, []);
   useEffect(() => {
     attachmentRequest.current++;
     setAttachmentPreview(undefined);
@@ -902,6 +911,7 @@ export default function AITaskWorkspace(props: Props) {
         setTargetEntry({ key: crypto.randomUUID(), tab: entry });
         setPage('target');
       }
+      focusTaskHeading(entry === 'web' || entry === 'window' ? 'target' : 'brief');
     });
   }
   useEffect(() => {
@@ -999,7 +1009,7 @@ export default function AITaskWorkspace(props: Props) {
       });
       accept(generated);
       setPage(generationDestination(generated));
-      document.querySelector('main')?.scrollTo(0, 0);
+      focusTaskHeading(generationDestination(generated));
       setReviewed(false);
     });
   }
@@ -1112,9 +1122,10 @@ export default function AITaskWorkspace(props: Props) {
       await back();
     }
   }
-  function focusTaskHeading() {
+  function focusTaskHeading(destination?: typeof page) {
     requestAnimationFrame(() => {
-      if (!location.current.active) return;
+      if (!location.current.active || (destination && location.current.page !== destination))
+        return;
       document.querySelector('main')?.scrollTo({ top: 0 });
       document
         .querySelector<HTMLHeadingElement>('.ai-task-page:not([hidden]) .ai-task-heading h1')
@@ -1133,6 +1144,7 @@ export default function AITaskWorkspace(props: Props) {
       setReviewed(false);
       props.showBrowser(false);
       setPage('target');
+      focusTaskHeading('target');
     });
   }
   async function understand() {
@@ -1420,6 +1432,7 @@ export default function AITaskWorkspace(props: Props) {
         setDesktopPhase('window');
         setTargetEntry({ key: crypto.randomUUID(), tab: 'window' });
         setPage('target');
+        focusTaskHeading('target');
       } else if (
         intent === 'modify' &&
         current?.flow &&
@@ -2319,6 +2332,7 @@ export default function AITaskWorkspace(props: Props) {
             setView('list');
             setPage('review');
             props.showBrowser(false);
+            focusTaskHeading('review');
             void props.changed();
           }}
           phaseChanged={setDesktopPhase}
@@ -2339,6 +2353,7 @@ export default function AITaskWorkspace(props: Props) {
             setReviewed(false);
             setPage('understand');
             props.showBrowser(false);
+            focusTaskHeading('understand');
           }}
         />
       ) : (
