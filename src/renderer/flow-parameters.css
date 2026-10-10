@@ -227,6 +227,10 @@
 .flow-parameters-error {
   white-space: pre-line;
 }
+.parameter-operation-error .ant-alert-description {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
 @container flow-parameters (max-width: 1000px) {
   .flow-parameters-columns {
     grid-template-columns: minmax(0, 1fr);
