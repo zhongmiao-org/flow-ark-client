@@ -1,6 +1,6 @@
 import { Alert, Button, Card, Collapse, Descriptions, Modal, Tag } from 'antd';
 import './antd-layout.css';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Bindings, Step } from '../shared/types';
 import './script-packages.css';
 import { activateCollapseWithSpace } from './collapseKeyboard';
@@ -28,7 +28,10 @@ const fail = (reason: unknown) =>
     '',
   );
 export default function ScriptPackages(props: Props) {
-  const [error, setError] = useState('');
+  const [failure, setFailure] = useState<{ message: string; name?: string }>();
+  const error = failure?.message ?? '';
+  const reportError = (reason: unknown, name?: string) =>
+    setFailure({ message: fail(reason), name });
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState('');
   const [checks, setChecks] = useState<Record<string, Check>>({});
@@ -50,7 +53,7 @@ export default function ScriptPackages(props: Props) {
     };
   }, []);
   useEffect(() => {
-    setError('');
+    setFailure(undefined);
     setNotice('');
     setChecks({});
     setCandidate(undefined);
@@ -62,13 +65,16 @@ export default function ScriptPackages(props: Props) {
       else addButton.current?.focus();
     }
   }, [candidate]);
-  useEffect(() => {
-    if (candidate && error) errorElement.current?.focus();
-  }, [candidate, error]);
+  useLayoutEffect(() => {
+    const target = errorElement.current;
+    if (!failure || !target?.getClientRects().length) return;
+    target.focus();
+    target.scrollIntoView({ block: 'nearest' });
+  }, [candidate, failure]);
   const cancel = () => {
     restore.current = true;
     setCandidate(undefined);
-    setError('');
+    setFailure(undefined);
   };
   const refocus = (element: HTMLElement | null, source: string) =>
     requestAnimationFrame(() => {
@@ -101,7 +107,7 @@ export default function ScriptPackages(props: Props) {
     let opened = false;
     locked.current = true;
     setBusy(name ?? 'add');
-    setError('');
+    setFailure(undefined);
     setNotice('');
     try {
       const path = await window.flowark.request('file.choose', { kind: 'directory' });
@@ -117,7 +123,7 @@ export default function ScriptPackages(props: Props) {
       opened = true;
       setCandidate({ info, source, before: signature(latest.current, info.name) });
     } catch (reason) {
-      if (current()) setError(fail(reason));
+      if (current()) reportError(reason, name);
     } finally {
       locked.current = false;
       if (alive.current) setBusy('');
@@ -146,7 +152,7 @@ export default function ScriptPackages(props: Props) {
     let passed = 0;
     let failed = 0;
     locked.current = true;
-    setError('');
+    setFailure(undefined);
     setNotice('');
     try {
       for (const item of names) {
@@ -203,19 +209,19 @@ export default function ScriptPackages(props: Props) {
       setNotice(`已将 ${info.name}@${info.version} 应用到当前草稿，保存流程后生效。`);
       restore.current = true;
       setCandidate(undefined);
-      setError('');
+      setFailure(undefined);
       setChecks((values) => {
         const next = { ...values };
         delete next[info.name];
         return next;
       });
     } catch (reason) {
-      setError(fail(reason));
+      reportError(reason);
     }
   };
   const remove = (name: string) => {
     if (locked.current || props.guard?.() === false) return;
-    setError('');
+    setFailure(undefined);
     setNotice('');
     const buttons = Array.from(
       root.current?.querySelectorAll<HTMLButtonElement>('[data-dependency-remove]') ?? [],
@@ -230,7 +236,7 @@ export default function ScriptPackages(props: Props) {
         else addButton.current?.focus();
       });
     } catch (reason) {
-      setError(fail(reason));
+      reportError(reason, name);
     }
   };
   const old = candidate && props.node.dependencies.find((dep) => dep.name === candidate.info.name);
@@ -332,6 +338,11 @@ export default function ScriptPackages(props: Props) {
               </div>
             )}
             {check?.error && <Alert type="error" showIcon title={check.error} />}
+            {error && !candidate && failure?.name === dep.name && (
+              <div ref={errorElement} tabIndex={-1}>
+                <Alert type="error" showIcon title={error} />
+              </div>
+            )}
             {check && !check.error && (
               <p className="note">仅核对目录的包名与版本；完整依赖编译与运行前检查仍需通过。</p>
             )}
@@ -367,7 +378,11 @@ export default function ScriptPackages(props: Props) {
         {busy === 'add' ? '读取包信息…' : '绑定本地包'}
       </Button>
       {notice && <Alert type="info" showIcon role="status" title={notice} />}
-      {error && !candidate && <Alert type="error" showIcon title={error} />}
+      {error && !candidate && !failure?.name && (
+        <div ref={errorElement} tabIndex={-1}>
+          <Alert type="error" showIcon title={error} />
+        </div>
+      )}
       {candidate && (
         <Modal
           open
