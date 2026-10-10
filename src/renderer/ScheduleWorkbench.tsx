@@ -99,6 +99,7 @@ export default function ScheduleWorkbench({
     draftFocus = useRef<HTMLElement | null>(null);
   const historyFocus = useRef<HTMLElement | null>(null),
     focusAfter = useRef<HTMLElement | null>(null);
+  const visibleReturn = useRef<HTMLElement | null>(null);
   const lock = useRef(false),
     destination = useRef(false),
     initialized = useRef(false),
@@ -224,6 +225,45 @@ export default function ScheduleWorkbench({
     focusHistoryError.current = false;
     if (active && history) historyError.current?.focus();
   }, [active, history, reading, openingRun, runError]);
+  useLayoutEffect(() => {
+    const previous = visibleReturn.current;
+    const label = previous?.getAttribute('aria-label');
+    const target = previous?.isConnected
+      ? previous
+      : label
+        ? [...(fields.current?.querySelectorAll<HTMLElement>('[aria-label]') ?? [])].find(
+            (field) => field.getAttribute('aria-label') === label,
+          )
+        : previous?.matches('input[type="checkbox"]')
+          ? fields.current?.querySelector<HTMLInputElement>('.schedule-adoption input')
+          : undefined;
+    if (!active || busy || history || leaving || !target?.isConnected) return;
+    visibleReturn.current = null;
+    const main = target.closest('main');
+    const ensureVisible = () => {
+      if (document.activeElement !== target || !main) return;
+      const bounds = target.getBoundingClientRect();
+      const visible = main.getBoundingClientRect();
+      if (
+        bounds.top < visible.top ||
+        bounds.bottom > visible.bottom ||
+        bounds.left < visible.left ||
+        bounds.right > visible.right
+      )
+        target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    };
+    const frame = requestAnimationFrame(() => {
+      target.focus({ preventScroll: true });
+      ensureVisible();
+    });
+    const observer = new ResizeObserver(ensureVisible);
+    observer.observe(target);
+    if (main) observer.observe(main);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [active, busy, history, leaving]);
   const go: TemplateNavigation = (next, target = '本机计划') => {
     if (lock.current || destination.current) return;
     if (!dirty) {
@@ -260,9 +300,9 @@ export default function ScheduleWorkbench({
   };
   const stay = () => {
     if (lock.current) return;
+    visibleReturn.current = draftFocus.current;
     setLeaving(undefined);
     destination.current = false;
-    requestAnimationFrame(() => draftFocus.current?.focus({ preventScroll: true }));
   };
   usePageBack(() => go(() => assign()), active && !!draft);
   async function save() {
@@ -340,8 +380,8 @@ export default function ScheduleWorkbench({
   }
   const closeHistory = () => {
     cancelHistoryReads();
+    visibleReturn.current = historyFocus.current;
     setHistory(undefined);
-    requestAnimationFrame(() => historyFocus.current?.focus({ preventScroll: true }));
   };
   async function inspectActive() {
     if (!history?.result?.activeRun || reading || openingRun || history.error) return;
@@ -519,6 +559,7 @@ export default function ScheduleWorkbench({
                 >
                   <Card
                     size="small"
+                    styles={{ body: { padding: '20px 20px 12px' } }}
                     className={
                       'template-schedule-item' + (draft?.plan?.id === plan.id ? ' selected' : '')
                     }
