@@ -134,9 +134,7 @@ export default function FlowParametersPage({
   const stay = () => {
     if (locked.current) return;
     setPending(undefined);
-    requestAnimationFrame(
-      () => lastFocus.current?.isConnected && lastFocus.current.focus({ preventScroll: true }),
-    );
+    requestAnimationFrame(() => lastFocus.current?.isConnected && lastFocus.current.focus());
   };
   const parameters = (next: Record<string, Json>) => {
     const before = new Set(
