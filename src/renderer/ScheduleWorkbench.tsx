@@ -198,7 +198,9 @@ export default function ScheduleWorkbench({
     if (draft) {
       fields.current
         ?.querySelector<HTMLElement>(
-          draft.mode === 'create' ? 'select' : 'input[aria-label="计划间隔分钟"]',
+          draft.mode === 'create'
+            ? '[role="combobox"][aria-label="计划流程"]'
+            : 'input[aria-label="计划间隔分钟"]',
         )
         ?.focus();
     } else {
