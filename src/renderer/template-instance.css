@@ -114,7 +114,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px 12px;
 }
-.template-resource-file > .ai-settings-field {
+.template-resources-columns .template-resource-fields .template-resource-file > .ai-settings-field {
   display: contents;
 }
 .template-resource-file > .ai-settings-field > span {

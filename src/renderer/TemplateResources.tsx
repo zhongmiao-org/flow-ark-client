@@ -1,5 +1,12 @@
 import { Card, Badge, Tag, ConfigProvider, Select, Button, Input } from 'antd';
-import { useId, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import {
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
 import type { Bootstrap } from '../shared/types';
 import { equal, type TemplateDetail } from './template-draft';
 const api = (method: string, args: unknown = {}) => window.flowark.request(method, args);
@@ -32,6 +39,21 @@ export default function TemplateResources({
   const scopeId = useId();
   const chooseButtons = useRef(new Map<string, HTMLButtonElement>());
   const [choosing, setChoosing] = useState<string>();
+  const [returnedChoice, setReturnedChoice] = useState<HTMLButtonElement | null>(null);
+  useLayoutEffect(() => {
+    if (busy || !returnedChoice) return;
+    setReturnedChoice(null);
+    if (
+      returnedChoice.isConnected &&
+      !returnedChoice.disabled &&
+      !returnedChoice.closest('[hidden]') &&
+      returnedChoice.getClientRects().length &&
+      (document.activeElement === document.body || document.activeElement === returnedChoice)
+    ) {
+      returnedChoice.focus();
+      returnedChoice.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+  }, [busy, returnedChoice]);
   const patch = (
     id: string,
     binding: TemplateDetail['instance']['resources'][string] | undefined,
@@ -50,7 +72,7 @@ export default function TemplateResources({
   return (
     <div className="template-instance-columns template-resources-columns">
       <section>
-        <Card className="template-instance-form">
+        <Card className="template-instance-form" styles={{ body: { padding: 28 } }}>
           <h2 tabIndex={-1} data-navigation-heading>
             本机资源绑定
           </h2>
@@ -149,6 +171,7 @@ export default function TemplateResources({
                                 try {
                                   const path = await api('file.choose', { kind: resource.kind });
                                   if (path) patch(resource.id, { path });
+                                  setReturnedChoice(chooseButtons.current.get(resource.id) ?? null);
                                   return true;
                                 } finally {
                                   setChoosing(undefined);
