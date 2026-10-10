@@ -1,4 +1,4 @@
-import { Button, Input } from 'antd';
+import { Button, Card, Descriptions, Input } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { Globe, X, ArrowRight, RefreshCw } from 'lucide-react';
 import './browser-observation.css';
@@ -765,7 +765,9 @@ export default function BrowserSidebar({
           </form>
         )}
         {editing && !expanded && (
-          <p className="browser-pick-guidance">拾取只定位目标，不触发网页点击或提交。</p>
+          <Card size="small" className="browser-pick-guidance">
+            <p>拾取只定位目标，不触发网页点击或提交。</p>
+          </Card>
         )}
         {statusError && (
           <div
@@ -854,52 +856,55 @@ export default function BrowserSidebar({
             </Button>
             {sessionOpen && (
               <section aria-label="定位与会话状态" className="browser-session-details">
-                <dl>
-                  <div>
-                    <dt>会话</dt>
-                    <dd>
-                      {!statusKnown
-                        ? '状态未取得'
-                        : status.blocked
-                          ? '网页已停止'
-                          : running
-                            ? '任务执行中'
-                            : status.started
-                              ? '网页会话已打开'
-                              : '尚未打开网页'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>网页</dt>
-                    <dd>
-                      {statusKnown
-                        ? status.title || status.url || '尚无网页地址'
-                        : '等待重新取得当前状态'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>操作</dt>
-                    <dd>
-                      {running
-                        ? '任务执行中，暂停手动导航和拾取'
-                        : '拾取后需要确认目标；不会自动执行步骤'}
-                    </dd>
-                  </div>
-                </dl>
-                {onLocate ? (
-                  <Button
-                    onClick={() => {
-                      if (expanded) {
-                        restorePanel();
-                        requestAnimationFrame(() => onLocate());
-                      } else onLocate();
-                    }}
-                  >
-                    查看当前步骤定位
-                  </Button>
-                ) : (
-                  <p>在画布中选择需要网页目标的步骤后查看定位。</p>
-                )}
+                <Card size="small" className="browser-session-card">
+                  <Descriptions
+                    size="small"
+                    column={1}
+                    items={[
+                      {
+                        key: 'session',
+                        label: '会话',
+                        children: !statusKnown
+                          ? '状态未取得'
+                          : status.blocked
+                            ? '网页已停止'
+                            : running
+                              ? '任务执行中'
+                              : status.started
+                                ? '网页会话已打开'
+                                : '尚未打开网页',
+                      },
+                      {
+                        key: 'page',
+                        label: '网页',
+                        children: statusKnown
+                          ? status.title || status.url || '尚无网页地址'
+                          : '等待重新取得当前状态',
+                      },
+                      {
+                        key: 'operation',
+                        label: '操作',
+                        children: running
+                          ? '任务执行中，暂停手动导航和拾取'
+                          : '拾取后需要确认目标；不会自动执行步骤',
+                      },
+                    ]}
+                  />
+                  {onLocate ? (
+                    <Button
+                      onClick={() => {
+                        if (expanded) {
+                          restorePanel();
+                          requestAnimationFrame(() => onLocate());
+                        } else onLocate();
+                      }}
+                    >
+                      查看当前步骤定位
+                    </Button>
+                  ) : (
+                    <p>在画布中选择需要网页目标的步骤后查看定位。</p>
+                  )}
+                </Card>
               </section>
             )}
           </div>

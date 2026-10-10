@@ -31,6 +31,13 @@ export const runStepColors: Record<string, (typeof runStateColors)[string]> = {
   neutral: runStateColors.CANCELLED,
 };
 
+export const elementPickerColors: Record<string, (typeof runStateColors)[string]> = {
+  info: 'processing',
+  success: 'success',
+  warning: 'warning',
+  error: 'error',
+};
+
 export const toolConnectionColors: Record<
   ToolConnection['status'],
   (typeof runStateColors)[string]
