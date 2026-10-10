@@ -27,7 +27,19 @@ export default function ValueField({
   onIncompleteChange,
 }: Props) {
   const current = referenceOf(value);
+  const root = useRef<HTMLElement>(null);
+  const focusFixedValue = useRef(false);
   const [open, setOpen] = useState(false);
+  useLayoutEffect(() => {
+    if (!focusFixedValue.current || current !== undefined) return;
+    focusFixedValue.current = false;
+    const valueLabel = root.current?.querySelector<HTMLLabelElement>(
+      '.literal-value label:last-of-type',
+    );
+    const input =
+      valueLabel?.control ?? root.current?.querySelector<HTMLElement>('textarea, input');
+    if (input instanceof HTMLElement) input.focus();
+  }, [current]);
   const available = choices ?? [];
   const source =
     available.find((choice) => choice.path === current) ??
@@ -35,7 +47,7 @@ export default function ValueField({
       .filter((choice) => current?.startsWith(choice.path + '.'))
       .sort((a, b) => b.path.length - a.path.length)[0];
   return (
-    <section className="value-field" aria-label={label + '配置'}>
+    <section className="value-field" aria-label={label + '配置'} ref={root}>
       {current !== undefined && compactReference ? (
         <div className="reference-value-compact">
           <span className="value-field-label">{label}</span>
@@ -68,6 +80,7 @@ export default function ValueField({
             aria-label={'改为固定值 · ' + label}
             onClick={() => {
               change(structuredClone(defaultValue));
+              focusFixedValue.current = true;
               setOpen(false);
             }}
           >
