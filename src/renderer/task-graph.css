@@ -54,6 +54,16 @@
 .task-graph-workspace > .task-step-inspector > .task-step-inspector-card {
   min-height: 710px;
 }
+@container (min-width: 901px) {
+  .task-graph-workspace > .task-step-inspector > .task-step-inspector-card {
+    height: 710px;
+    overflow: hidden;
+  }
+  .task-graph-workspace > .task-step-inspector > .task-step-inspector-card > .ant-card-body {
+    min-height: 0;
+    overflow: auto;
+  }
+}
 .task-step-inspector h2 {
   font-size: 18px;
   line-height: 28px;
