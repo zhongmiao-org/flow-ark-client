@@ -1,4 +1,4 @@
-import { Collapse, Descriptions } from 'antd';
+import { Card, Collapse, Descriptions } from 'antd';
 import { useEffect, useState, type ReactNode } from 'react';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { TaskDetail } from '../shared/planning';
@@ -93,11 +93,13 @@ export default function TaskProposalReview({
               { step: oldStep, index: oldIndex, flow: before, side: 'before', label: '原条件' },
               { step: newStep, index: newIndex, flow: after, side: 'after', label: '新条件' },
             ].map(({ step, index, flow, side, label }) => (
-              <section key={side} className={`planning-change-${side}`}>
-                <h3>{label}</h3>
-                <p>
-                  第 {index + 1} 步 · {taskStepSummary(step, flow)}
-                </p>
+              <section key={side}>
+                <Card size="small" className={`task-condition-card planning-change-${side}`}>
+                  <h3>{label}</h3>
+                  <p>
+                    第 {index + 1} 步 · {taskStepSummary(step, flow)}
+                  </p>
+                </Card>
               </section>
             ))}
           </div>

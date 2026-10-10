@@ -32,7 +32,7 @@
 .task-proposal-review .planning-change-values {
   grid-template-columns: minmax(0, 1fr);
 }
-.task-proposal-review .planning-change-values > section {
+.task-proposal-review .planning-change-card {
   min-height: 108px;
 }
 .task-proposal-review h3 {
@@ -60,11 +60,10 @@
   display: grid;
   gap: 16px;
 }
-.task-condition-comparison > section {
+.task-condition-card {
   min-height: 108px;
-  padding: 16px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
+}
+.task-condition-card > .ant-card-body {
   display: flex;
   flex-direction: column;
   gap: 8px;

@@ -1,4 +1,4 @@
-import { Select, Button, Collapse, Descriptions } from 'antd';
+import { Select, Button, Card, Collapse, Descriptions } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
 import type { Flow, Step } from '../shared/types';
@@ -235,27 +235,108 @@ export default function TaskStepInspector({
   if (presentation === 'graph')
     return (
       <aside className="task-step-inspector task-step-graph" aria-label="当前方案步骤">
-        {longGraph && (
-          <div className="task-step-graph-navigation">
-            {picker}
-            <p className="task-step-position" role="status">
-              {step
-                ? `当前第 ${entry.ordinal} / ${entries.length} 步`
-                : `共 ${entries.length} 步，选择后聚焦图中位置。`}
-            </p>
-            {browse}
-            {step && focusInGraph && <Button onClick={focusInGraph}>回到图中此步</Button>}
-          </div>
-        )}
+        <Card className="task-step-inspector-card">
+          {longGraph && (
+            <div className="task-step-graph-navigation">
+              {picker}
+              <p className="task-step-position" role="status">
+                {step
+                  ? `当前第 ${entry.ordinal} / ${entries.length} 步`
+                  : `共 ${entries.length} 步，选择后聚焦图中位置。`}
+              </p>
+              {browse}
+              {step && focusInGraph && <Button onClick={focusInGraph}>回到图中此步</Button>}
+            </div>
+          )}
+          {step ? (
+            <>
+              <h2 ref={heading} tabIndex={-1} data-task-step-heading>
+                第 {entry.ordinal} 步 · {taskStepTitle(step)}
+              </h2>
+              <div className="task-step-field">
+                <h3>{step.type === 'condition' || step.type === 'assert' ? '条件' : '操作'}</h3>
+                <p>{taskStepSummary(step, flow, context)}</p>
+              </div>
+              {step.type === 'condition' && (
+                <>
+                  {branch('条件成立', step.then)}
+                  {branch('条件不成立', step.else)}
+                </>
+              )}
+              {step.type === 'loop' && branch('循环体', step.body)}
+              <div className="task-step-actions">{actions}</div>
+              <Collapse
+                className="task-step-graph-details"
+                items={[
+                  {
+                    key: 'parameters',
+                    label: '完整参数与步骤导航',
+                    forceRender: true,
+                    onKeyDown: activateCollapseWithSpace,
+                    children: (
+                      <div className="feedback-body">
+                        {!longGraph && picker}
+                        {location}
+                        {stepDetails}
+                        {!longGraph && browse}
+                        {!longGraph && focusInGraph && (
+                          <Button onClick={focusInGraph}>回到图中此步</Button>
+                        )}
+                        <p className="task-step-position">
+                          编号按流程定义排列，实际执行取决于条件与循环。
+                        </p>
+                        <Collapse
+                          className="task-step-original"
+                          items={[
+                            {
+                              key: 'original',
+                              label: '查看步骤原始配置',
+                              forceRender: true,
+                              onKeyDown: activateCollapseWithSpace,
+                              children: <pre>{JSON.stringify(step, null, 2)}</pre>,
+                            },
+                          ]}
+                        />
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+            </>
+          ) : (
+            <>
+              <div className="task-step-empty">
+                <h2>选择当前一步</h2>
+                <p>
+                  {entries.length
+                    ? '点击图中的步骤，或从列表选择，查看输入、条件和去向。'
+                    : '这份方案还没有步骤。'}
+                </p>
+              </div>
+              {!longGraph && picker}
+              <div className="task-step-actions">{actions}</div>
+            </>
+          )}
+        </Card>
+      </aside>
+    );
+  return (
+    <aside className="task-step-inspector" aria-label="当前方案步骤">
+      <Card className="task-step-inspector-card">
+        {picker}
         {step ? (
           <>
-            <h2 ref={heading} tabIndex={-1} data-task-step-heading>
-              第 {entry.ordinal} 步 · {taskStepTitle(step)}
-            </h2>
-            <div className="task-step-field">
-              <h3>{step.type === 'condition' || step.type === 'assert' ? '条件' : '操作'}</h3>
-              <p>{taskStepSummary(step, flow, context)}</p>
+            <div>
+              <p className="task-step-position">
+                第 {entry.ordinal} / {entries.length} 步 · {kinds[step.type].label}
+              </p>
+              <h2 ref={heading} tabIndex={-1} data-task-step-heading>
+                {taskStepTitle(step)}
+              </h2>
             </div>
+            <p className="task-step-summary">{taskStepSummary(step, flow, context)}</p>
+            {location}
+            {stepDetails}
             {step.type === 'condition' && (
               <>
                 {branch('条件成立', step.then)}
@@ -263,110 +344,33 @@ export default function TaskStepInspector({
               </>
             )}
             {step.type === 'loop' && branch('循环体', step.body)}
-            <div className="task-step-actions">{actions}</div>
+            {browse}
+            <p className="task-step-position">编号按流程定义排列，实际执行取决于条件与循环。</p>
             <Collapse
-              className="task-step-graph-details"
+              className="task-step-original"
               items={[
                 {
-                  key: 'parameters',
-                  label: '完整参数与步骤导航',
+                  key: 'original',
+                  label: '查看步骤原始配置',
                   forceRender: true,
                   onKeyDown: activateCollapseWithSpace,
-                  children: (
-                    <div className="feedback-body">
-                      {!longGraph && picker}
-                      {location}
-                      {stepDetails}
-                      {!longGraph && browse}
-                      {!longGraph && focusInGraph && (
-                        <Button onClick={focusInGraph}>回到图中此步</Button>
-                      )}
-                      <p className="task-step-position">
-                        编号按流程定义排列，实际执行取决于条件与循环。
-                      </p>
-                      <Collapse
-                        className="task-step-original"
-                        items={[
-                          {
-                            key: 'original',
-                            label: '查看步骤原始配置',
-                            forceRender: true,
-                            onKeyDown: activateCollapseWithSpace,
-                            children: <pre>{JSON.stringify(step, null, 2)}</pre>,
-                          },
-                        ]}
-                      />
-                    </div>
-                  ),
+                  children: <pre>{JSON.stringify(step, null, 2)}</pre>,
                 },
               ]}
             />
           </>
         ) : (
-          <>
-            <div className="task-step-empty">
-              <h2>选择当前一步</h2>
-              <p>
-                {entries.length
-                  ? '点击图中的步骤，或从列表选择，查看输入、条件和去向。'
-                  : '这份方案还没有步骤。'}
-              </p>
-            </div>
-            {!longGraph && picker}
-            <div className="task-step-actions">{actions}</div>
-          </>
-        )}
-      </aside>
-    );
-  return (
-    <aside className="task-step-inspector" aria-label="当前方案步骤">
-      {picker}
-      {step ? (
-        <>
-          <div>
-            <p className="task-step-position">
-              第 {entry.ordinal} / {entries.length} 步 · {kinds[step.type].label}
+          <div className="task-step-empty">
+            <h2>选择当前一步</h2>
+            <p>
+              {entries.length
+                ? '点击图中的步骤，或从上方列表选择，查看输入、条件和去向。'
+                : '这份方案还没有步骤。'}
             </p>
-            <h2 ref={heading} tabIndex={-1} data-task-step-heading>
-              {taskStepTitle(step)}
-            </h2>
           </div>
-          <p className="task-step-summary">{taskStepSummary(step, flow, context)}</p>
-          {location}
-          {stepDetails}
-          {step.type === 'condition' && (
-            <>
-              {branch('条件成立', step.then)}
-              {branch('条件不成立', step.else)}
-            </>
-          )}
-          {step.type === 'loop' && branch('循环体', step.body)}
-          {browse}
-          <p className="task-step-position">编号按流程定义排列，实际执行取决于条件与循环。</p>
-          <Collapse
-            className="task-step-original"
-            items={[
-              {
-                key: 'original',
-                label: '查看步骤原始配置',
-                forceRender: true,
-                onKeyDown: activateCollapseWithSpace,
-                children: <pre>{JSON.stringify(step, null, 2)}</pre>,
-              },
-            ]}
-          />
-        </>
-      ) : (
-        <div className="task-step-empty">
-          <h2>选择当前一步</h2>
-          <p>
-            {entries.length
-              ? '点击图中的步骤，或从上方列表选择，查看输入、条件和去向。'
-              : '这份方案还没有步骤。'}
-          </p>
-        </div>
-      )}
-      <div className="task-step-actions">{actions}</div>
+        )}
+        <div className="task-step-actions">{actions}</div>
+      </Card>
     </aside>
   );
 }

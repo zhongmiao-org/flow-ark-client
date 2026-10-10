@@ -1,4 +1,4 @@
-import { Button, Collapse, Descriptions, Input, Tag } from 'antd';
+import { Button, Card, Empty, Collapse, Descriptions, Input, Tag } from 'antd';
 import { useId, useRef, useState } from 'react';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { PlanningChange } from '../shared/planning';
@@ -203,39 +203,41 @@ export default function PlanningChanges({
             (change.kind === 'added' && side === 'before') ||
             (change.kind === 'removed' && side === 'after');
           return (
-            <section key={side} className={`planning-change-${side}`}>
-              <h4>{side === 'before' ? '原值' : '新值'}</h4>
-              {missing ? (
-                <p>{side === 'before' ? '原草稿没有此步骤' : '新方案移除此步骤'}</p>
-              ) : node && typeof node === 'object' ? (
-                <>
-                  <p>{position((value as { position?: unknown }).position, side)}</p>
-                  <Descriptions
-                    className="metadata-facts"
-                    bordered
-                    size="small"
-                    column={1}
-                    items={Object.entries(node).map(([field, item]) => ({
-                      key: field,
-                      label:
-                        field === 'id'
-                          ? '步骤标识'
-                          : field === 'name' &&
-                              'type' in node &&
-                              (node.type === 'file' || node.type === 'excel')
-                            ? '文件名'
-                            : (labels[field] ?? field),
-                      children: <pre>{displayValue(field, item, change, side)}</pre>,
-                    }))}
-                  />
-                </>
-              ) : (
-                <pre>
-                  {change.kind === 'moved'
-                    ? position(value, side)
-                    : displayValue(change.path.split('/').at(-1)!, value, change, side)}
-                </pre>
-              )}
+            <section key={side}>
+              <Card size="small" className={`planning-change-card planning-change-${side}`}>
+                <h4>{side === 'before' ? '原值' : '新值'}</h4>
+                {missing ? (
+                  <p>{side === 'before' ? '原草稿没有此步骤' : '新方案移除此步骤'}</p>
+                ) : node && typeof node === 'object' ? (
+                  <>
+                    <p>{position((value as { position?: unknown }).position, side)}</p>
+                    <Descriptions
+                      className="metadata-facts"
+                      bordered
+                      size="small"
+                      column={1}
+                      items={Object.entries(node).map(([field, item]) => ({
+                        key: field,
+                        label:
+                          field === 'id'
+                            ? '步骤标识'
+                            : field === 'name' &&
+                                'type' in node &&
+                                (node.type === 'file' || node.type === 'excel')
+                              ? '文件名'
+                              : (labels[field] ?? field),
+                        children: <pre>{displayValue(field, item, change, side)}</pre>,
+                      }))}
+                    />
+                  </>
+                ) : (
+                  <pre>
+                    {change.kind === 'moved'
+                      ? position(value, side)
+                      : displayValue(change.path.split('/').at(-1)!, value, change, side)}
+                  </pre>
+                )}
+              </Card>
             </section>
           );
         })}
@@ -352,12 +354,19 @@ export default function PlanningChanges({
             ))}
           </div>
           {!visible.length && (
-            <p className="planning-changes-empty">没有匹配的修改。清除筛选可查看完整清单。</p>
+            <div className="planning-changes-empty" role="status">
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description="没有匹配的修改。清除筛选可查看完整清单。"
+              />
+            </div>
           )}
           {!prioritizeDetail && detailContent}
         </>
       ) : (
-        <p className="planning-changes-empty">没有检测到草稿内容变化。</p>
+        <div className="planning-changes-empty" role="status">
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="没有检测到草稿内容变化。" />
+        </div>
       )}
     </section>
   );
