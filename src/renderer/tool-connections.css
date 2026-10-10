@@ -186,6 +186,13 @@
 .tool-assistant-managed .tool-assistant-capability {
   min-height: 111px;
 }
+.tool-assistant-managed .tool-assistant-capability > .ant-card-body {
+  padding: 16px;
+  gap: 8px;
+}
+.tool-assistant-managed .tool-assistant-capabilities h3 {
+  font-size: 18px;
+}
 .tool-assistant-capability {
   min-width: 0;
 }
