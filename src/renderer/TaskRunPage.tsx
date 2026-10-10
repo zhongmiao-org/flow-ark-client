@@ -178,7 +178,7 @@ export default function TaskRunPage({
         returnAction.current === 'rerun'
           ? rerunButton.current
           : previewButtons.current.get(returnAction.current ?? '');
-      (origin && !origin.disabled ? origin : detailsButton.current)?.focus({ preventScroll: true });
+      (origin && !origin.disabled ? origin : detailsButton.current)?.focus();
     } else heading.current?.focus({ preventScroll: true });
     previousPage.current = page;
   }, [run.id, page]);
