@@ -1151,12 +1151,15 @@ export default function AITaskWorkspace(props: Props) {
         if (stale) throw new Error('请重新读取任务后再修改输出目录');
         if (action === 'clear') {
           const next: TaskDetail = await api('task.output.clear', { id: taskId, revision });
-          // Keep unsaved answers while adopting the new output revision.
+          // Removing the directory must not discard this visit's answers or output preferences.
           const currentDraft = draft;
-          accept(next);
+          accept(next, true);
           setDraft(currentDraft);
           setReviewed(false);
-          feedback('cleared', '已移除当前任务的输出目录；已保存流程、运行和文件不会随之更改。');
+          feedback(
+            'cleared',
+            '已移除当前任务的输出目录；文件名和同名规则仍保留在本次编辑中，重新选择目录后生效。已保存流程、运行和文件不会随之更改。',
+          );
           return;
         }
         if (outputNameError) throw new Error(outputNameError);
