@@ -199,19 +199,58 @@ export default function ToolConnectionsPage({
   const [pendingLeave, setPendingLeave] = useState<{ next: () => void }>();
   const [confirm, setConfirm] = useState<'disconnect' | 'remove'>();
   const [clock, setClock] = useState(Date.now());
-  const referenceReturn = useRef<{ focus: HTMLElement | null; scroll: number } | undefined>(
-    undefined,
-  );
-  useEffect(() => {
-    if (!active || !referenceReturn.current) return;
+  const referenceReturn = useRef<
+    | {
+        focus: HTMLElement | null;
+        scroll: number;
+        list: HTMLElement | null;
+        listScroll: number;
+      }
+    | undefined
+  >(undefined);
+  useLayoutEffect(() => {
+    if (!active || view !== 'saved' || listLoading || !referenceReturn.current) return;
     const source = referenceReturn.current;
-    referenceReturn.current = undefined;
+    let visibilityFrame = 0;
+    let visibilityObserver: ResizeObserver | undefined;
     const frame = requestAnimationFrame(() => {
       document.querySelector('main')?.scrollTo({ top: source.scroll });
-      if (source.focus?.isConnected) source.focus.focus({ preventScroll: true });
+      if (source.list?.isConnected) source.list.scrollTop = source.listScroll;
+      const target = source.focus?.isConnected ? source.focus : pageHeading.current;
+      target?.focus({ preventScroll: true });
+      visibilityFrame = requestAnimationFrame(() => {
+        referenceReturn.current = undefined;
+        if (!target) return;
+        const containers = [
+          document.querySelector('main'),
+          source.list?.contains(target) ? source.list : null,
+        ];
+        const ensureVisible = () => {
+          if (document.activeElement !== target) return;
+          const bounds = target.getBoundingClientRect();
+          if (
+            containers.some((container) => {
+              if (!container) return false;
+              const visible = container.getBoundingClientRect();
+              return bounds.top < visible.top || bounds.bottom > visible.bottom;
+            })
+          )
+            target.scrollIntoView({ block: 'center', inline: 'nearest' });
+        };
+        ensureVisible();
+        visibilityObserver = new ResizeObserver(ensureVisible);
+        visibilityObserver.observe(target);
+        containers.forEach((container) => {
+          if (container) visibilityObserver?.observe(container);
+        });
+      });
     });
-    return () => cancelAnimationFrame(frame);
-  }, [active]);
+    return () => {
+      cancelAnimationFrame(frame);
+      cancelAnimationFrame(visibilityFrame);
+      visibilityObserver?.disconnect();
+    };
+  }, [active, view, listLoading, connections]);
   const pageHeading = useRef<HTMLHeadingElement>(null);
   useLayoutEffect(() => {
     if (active && view !== 'catalog' && !referenceReturn.current)
@@ -594,9 +633,12 @@ export default function ToolConnectionsPage({
     operationOrigin.current = document.activeElement;
     setBusy('open-task');
     setError('');
+    const list = document.activeElement?.closest<HTMLElement>('.tool-usage-list') ?? null;
     referenceReturn.current = {
       focus: document.activeElement instanceof HTMLElement ? document.activeElement : null,
       scroll: document.querySelector('main')?.scrollTop ?? 0,
+      list,
+      listScroll: list?.scrollTop ?? 0,
     };
     try {
       await openTask(task, selected);
