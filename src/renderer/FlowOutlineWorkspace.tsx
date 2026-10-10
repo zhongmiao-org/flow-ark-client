@@ -125,7 +125,11 @@ export default function FlowOutlineWorkspace({
     });
   }, [record.id, memory, mode, view, runSelected, collapsed, query, detail?.run.id]);
   useLayoutEffect(() => {
-    if (!visible || !entry) return;
+    if (!visible) {
+      lastSelection.current = undefined;
+      return;
+    }
+    if (!entry) return;
     const identity = `${mode}:${selectedId}:${entry.group}:${entry.ancestors.join('/')}`;
     if (lastSelection.current === identity) return;
     lastSelection.current = identity;
