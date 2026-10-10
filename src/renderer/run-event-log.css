@@ -41,14 +41,8 @@
   color: var(--fa-text-secondary);
   overflow-wrap: anywhere;
 }
-.run-event-log > ol {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
 .run-log-entry {
   padding: 16px 0;
-  border-top: 1px solid var(--fa-border-default);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -100,15 +94,26 @@
   flex-direction: column;
   gap: 8px;
 }
-.run-log-more,
-.run-log-empty {
+.run-log-more {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 12px;
-  padding: 20px;
-  border-radius: 12px;
-  background: var(--fa-bg-canvas);
+  margin-top: 20px;
+}
+.run-log-empty {
+  margin: 16px 0;
+}
+.run-log-records {
+  min-width: 0;
+}
+.run-log-records > .ant-card-body > ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.run-log-entry > .ant-divider {
+  margin: 0 0 8px;
 }
 
 .run-event-log:has(.run-log-context) {
@@ -120,12 +125,9 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px 16px;
 }
-.run-log-context > section {
+.run-log-context > section,
+.run-log-context > section > .ant-card {
   min-width: 0;
-  padding: 20px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: 12px;
-  background: var(--fa-bg-surface);
 }
 .run-log-context h3 {
   margin: 0 0 16px;
@@ -167,16 +169,11 @@
 .run-log-context p {
   margin-top: 8px;
 }
-.run-event-log:has(.run-log-context) > ol,
-.run-event-log:has(.run-log-context) > .run-log-empty {
-  padding: 20px;
-  border: 1px solid var(--fa-border-default);
-  border-radius: 12px;
-  background: var(--fa-bg-surface);
-}
-.run-event-log:has(.run-log-context) > ol > li:first-child {
+.run-log-records > .ant-card-body > ol > li:first-child {
   padding-top: 0;
-  border-top: 0;
+}
+.run-log-records > .ant-card-body > ol > li:first-child > .ant-divider {
+  display: none;
 }
 @container (max-width: 760px) {
   .run-log-context {
@@ -187,7 +184,7 @@
 .run-detail.is-logs .run-runtime-summary[hidden] {
   display: none;
 }
-.run-detail.is-logs .run-log-context > section {
+.run-detail.is-logs .run-log-context > section > .ant-card {
   min-height: 362px;
 }
 

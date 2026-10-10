@@ -1,3 +1,6 @@
+.desktop-run-binding > .ant-card > .ant-card-body {
+  gap: 16px;
+}
 .desktop-run-binding fieldset {
   display: flex;
   flex-direction: column;
