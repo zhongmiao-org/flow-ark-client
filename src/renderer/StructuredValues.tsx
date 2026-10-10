@@ -21,6 +21,20 @@ const shortValue = (value: Json | undefined) => {
   if (ref !== undefined) return '↳ ' + ref;
   return typeof value === 'string' ? value || '空文本' : JSON.stringify(value);
 };
+function focusValueInput(root: HTMLElement | null) {
+  const valueLabel = root?.querySelector<HTMLLabelElement>('.literal-value label:last-of-type');
+  const input = valueLabel?.control ?? root?.querySelector<HTMLElement>('textarea, input, button');
+  if (input instanceof HTMLElement) {
+    input.focus();
+    input.scrollIntoView({ block: 'nearest' });
+  }
+}
+function retainIncompleteValue(root: HTMLElement | null) {
+  const invalid = root?.querySelector<HTMLElement>('.literal-value[data-value-invalid]');
+  if (!invalid) return false;
+  focusValueInput(invalid);
+  return true;
+}
 export function MappingValues({
   label,
   value,
@@ -79,8 +93,17 @@ export function MappingValues({
     setNotice({ message, value: JSON.stringify(next) });
     setError('');
   };
+  const canLeaveEntry = () => {
+    if (retainIncompleteValue(root.current)) return false;
+    if (rename !== active) {
+      setError('请先应用当前条目的名称，或恢复原名称。');
+      root.current?.querySelector<HTMLInputElement>('.mapping-rename-input')?.focus();
+      return false;
+    }
+    return true;
+  };
   const add = () => {
-    if (!object) return;
+    if (!object || !canLeaveEntry()) return;
     try {
       const key = mapKey(kind, name, object);
       changed({ ...object, [key]: '' }, `已添加 ${key}，请填写对应值。`);
@@ -92,7 +115,7 @@ export function MappingValues({
     }
   };
   const renameCurrent = () => {
-    if (!object || !active) return;
+    if (!object || !active || retainIncompleteValue(root.current)) return;
     try {
       const next = renameEntry(object, active, rename, kind);
       const key = kind === 'cells' ? cellKey(rename) : rename;
@@ -131,6 +154,7 @@ export function MappingValues({
                       aria-pressed={active === key}
                       aria-label={label + '条目 ' + key}
                       onClick={() => {
+                        if (!canLeaveEntry()) return;
                         setSelected(key);
                         setError('');
                         focus.current = 'value';
@@ -143,6 +167,7 @@ export function MappingValues({
                       htmlType="button"
                       aria-label={'删除' + label + '条目 ' + key}
                       onClick={() => {
+                        if (!canLeaveEntry()) return;
                         const next = { ...object };
                         delete next[key];
                         changed(next, `已移除 ${key}。`);
@@ -273,6 +298,8 @@ export function MatrixValues({
     [selected, setSelected] = useState<[number, number] | null>(null);
   const paginationStatus = useRef<HTMLSpanElement>(null);
   const paginationTrigger = useRef<HTMLButtonElement | null>(null);
+  const root = useRef<HTMLDivElement>(null);
+  const focusEditor = useRef(false);
   const rows = isMatrix(value) ? value : null,
     width = rows ? matrixColumns(rows) : 1;
   const rowStart = Math.min(rowPage, Math.max(0, Math.ceil((rows?.length ?? 0) / 10) - 1)) * 10;
@@ -288,10 +315,17 @@ export function MatrixValues({
   }, [rowStart, columnStart]);
   const active =
     selected && rows && selected[0] < rows.length && selected[1] < width ? selected : null;
+  useLayoutEffect(() => {
+    if (!focusEditor.current) return;
+    const editor = root.current?.querySelector<HTMLElement>('.matrix-current .value-field');
+    if (!editor) return;
+    focusEditor.current = false;
+    focusValueInput(editor);
+  }, [selected, value]);
   return (
     <ValueField label="行列数据" value={value} change={change} choices={choices} defaultValue={[]}>
       {rows ? (
-        <div className="matrix-values">
+        <div className="matrix-values" ref={root}>
           <header className="structured-values-heading">
             <strong>行列数据</strong>
             <span>
@@ -303,6 +337,8 @@ export function MatrixValues({
               htmlType="button"
               disabled={rows.length >= 1048576 || undefined}
               onClick={() => {
+                if (retainIncompleteValue(root.current)) return;
+                focusEditor.current = true;
                 change([...rows, Array.from({ length: width }, () => null)]);
                 setRowPage(Math.floor(rows.length / 10));
                 setColumnPage(0);
@@ -315,6 +351,8 @@ export function MatrixValues({
               htmlType="button"
               disabled={!rows.length || width >= 16384 || undefined}
               onClick={() => {
+                if (retainIncompleteValue(root.current)) return;
+                focusEditor.current = true;
                 change(addColumn(rows));
                 setColumnPage(Math.floor(width / 6));
                 setRowPage(0);
@@ -362,7 +400,11 @@ export function MatrixValues({
                       aria-label={'编辑单元格 ' + columnName(column) + (row.index + 1)}
                       aria-pressed={active?.[0] === row.index && active?.[1] === column}
                       title={shortValue(row.values[column])}
-                      onClick={() => setSelected([row.index, column])}
+                      onClick={() => {
+                        if (retainIncompleteValue(root.current)) return;
+                        focusEditor.current = true;
+                        setSelected([row.index, column]);
+                      }}
                     >
                       {shortValue(row.values[column])}
                     </Button>
@@ -390,6 +432,7 @@ export function MatrixValues({
               aria-label="上一页数据行"
               disabled={!rowStart || undefined}
               onClick={(event) => {
+                if (retainIncompleteValue(root.current)) return;
                 paginationTrigger.current = event.currentTarget as HTMLButtonElement;
                 setRowPage(rowStart / 10 - 1);
                 setSelected(null);
@@ -402,6 +445,7 @@ export function MatrixValues({
               aria-label="下一页数据行"
               disabled={rowStart + 10 >= rows.length || undefined}
               onClick={(event) => {
+                if (retainIncompleteValue(root.current)) return;
                 paginationTrigger.current = event.currentTarget as HTMLButtonElement;
                 setRowPage(rowStart / 10 + 1);
                 setSelected(null);
@@ -414,6 +458,7 @@ export function MatrixValues({
               aria-label="上一组数据列"
               disabled={!columnStart || undefined}
               onClick={(event) => {
+                if (retainIncompleteValue(root.current)) return;
                 paginationTrigger.current = event.currentTarget as HTMLButtonElement;
                 setColumnPage(columnStart / 6 - 1);
                 setSelected(null);
@@ -426,6 +471,7 @@ export function MatrixValues({
               aria-label="下一组数据列"
               disabled={columnStart + 6 >= width || undefined}
               onClick={(event) => {
+                if (retainIncompleteValue(root.current)) return;
                 paginationTrigger.current = event.currentTarget as HTMLButtonElement;
                 setColumnPage(columnStart / 6 + 1);
                 setSelected(null);
@@ -445,6 +491,7 @@ export function MatrixValues({
                   htmlType="button"
                   aria-label="删除当前数据行"
                   onClick={() => {
+                    if (retainIncompleteValue(root.current)) return;
                     change(rows.filter((_, i) => i !== active[0]));
                     setSelected(null);
                   }}
@@ -456,6 +503,7 @@ export function MatrixValues({
                   aria-label="删除当前数据列"
                   disabled={width <= 1 || undefined}
                   onClick={() => {
+                    if (retainIncompleteValue(root.current)) return;
                     change(removeColumn(rows, active[1]));
                     setSelected(null);
                   }}
