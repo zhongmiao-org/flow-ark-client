@@ -61,6 +61,16 @@
   min-width: 0;
   min-height: 120px;
 }
+.desktop-confirm-card > .ant-card-body {
+  padding: var(--fa-space-16);
+}
+.desktop-confirm-note {
+  min-height: 72px;
+  padding: var(--fa-space-16);
+}
+.desktop-confirm-note .ant-alert-title {
+  color: var(--fa-action-primary);
+}
 .desktop-run-confirmation .desktop-confirm-card > .ant-card-body > p {
   margin-top: 8px;
 }
@@ -93,6 +103,12 @@
 }
 .desktop-task-run[data-task-run-mode='success'] .desktop-task-run-panel {
   min-height: 600px;
+}
+.desktop-task-run-panel > .ant-card-body {
+  padding: var(--fa-space-32);
+}
+.desktop-task-object > .ant-card-body {
+  padding: var(--fa-space-16);
 }
 .desktop-task-run .desktop-task-run-panel > .ant-card-body > h2 {
   font-size: 28px;
@@ -135,9 +151,13 @@
   border: 1px solid var(--fa-border-default);
   border-radius: var(--fa-radius-12);
   min-height: 140px;
+  max-height: 280px;
   background: var(--fa-bg-canvas);
   font-size: 14px;
   line-height: 22px;
+}
+.desktop-task-run .desktop-run-texts pre {
+  max-height: 280px;
 }
 .desktop-task-record {
   display: grid;
