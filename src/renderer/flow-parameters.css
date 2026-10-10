@@ -32,20 +32,19 @@
   min-width: 0;
 }
 .flow-parameters-card {
+  min-width: 0;
+}
+.flow-parameters-card > .ant-card {
+  height: 100%;
+  min-height: 680px;
+  display: flex;
+}
+.flow-parameters-card > .ant-card > .ant-card-body {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
   gap: 16px;
-  padding: 24px;
-  background: var(--fa-bg-surface);
-  border: 1px solid var(--fa-border-default);
-  border-radius: 12px;
   min-width: 0;
-  min-height: 680px;
-}
-.flow-parameters-input {
-  padding: 28px;
-  gap: 16px;
+  flex: 1;
 }
 .flow-parameters-card h2,
 .flow-parameters-card h3 {
@@ -232,7 +231,7 @@
   .flow-parameters-columns {
     grid-template-columns: minmax(0, 1fr);
   }
-  .flow-parameters-card {
+  .flow-parameters-card > .ant-card {
     min-height: 0;
   }
 }
