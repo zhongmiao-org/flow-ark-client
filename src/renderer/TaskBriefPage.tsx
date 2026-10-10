@@ -120,7 +120,11 @@ export default function TaskBriefPage({
             />
           )}
           <section className="task-brief-context" aria-label="已选上下文">
-            <Card className="task-brief-context-card" size="small">
+            <Card
+              className="task-brief-context-card"
+              size="small"
+              styles={{ body: { padding: 16 } }}
+            >
               <h2>已选上下文 · {count} 项</h2>
               <p className="task-context-budget" role="status">
                 全部资料 {count} / 20 项 · 图片 {images.length} / 4 张
@@ -210,6 +214,7 @@ export default function TaskBriefPage({
               {context.map((c, index) => (
                 <Collapse
                   className="task-brief-text-context"
+                  styles={{ title: { minWidth: 0 } }}
                   key={c.id}
                   activeKey={expandedContext.includes(c.id) ? [c.id] : []}
                   onChange={(keys) => {
@@ -344,19 +349,24 @@ export default function TaskBriefPage({
       <section className="task-brief-explainer">
         <Card className="task-brief-card">
           <h2>任务会怎样完成？</h2>
-          <Card className="task-brief-explanation is-intro" size="small">
+          <Card
+            className="task-brief-explanation is-intro"
+            size="small"
+            styles={{ body: { padding: 16 } }}
+          >
             <h3>先理解，再执行</h3>
             <p>AI 会先给出操作对象、输入、修改范围和结果。</p>
           </Card>
-          <Card className="task-brief-explanation" size="small">
+          <Card className="task-brief-explanation" size="small" styles={{ body: { padding: 16 } }}>
             <h3>先展示方案</h3>
             <p>你可以改步骤，也可以切换到流程图。</p>
           </Card>
-          <Card className="task-brief-explanation" size="small">
+          <Card className="task-brief-explanation" size="small" styles={{ body: { padding: 16 } }}>
             <h3>执行前再次检查</h3>
             <p>选对目标与权限后，由你点击试运行。</p>
           </Card>
           <Alert
+            className="task-brief-explanation-notice"
             type="info"
             showIcon
             role="status"
