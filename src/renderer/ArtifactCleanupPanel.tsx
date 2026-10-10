@@ -1,4 +1,4 @@
-import { Alert, Button, Checkbox, Modal } from 'antd';
+import { Alert, Button, Card, Checkbox, Modal } from 'antd';
 import './antd-layout.css';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ArtifactCleanupPreview, ArtifactCleanupRecord } from '../shared/artifact-cleanup';
@@ -321,35 +321,41 @@ export default function ArtifactCleanupPanel({
       className={'artifact-cleanup' + (compact ? ' is-compact' : '')}
       aria-label="运行产物管理"
     >
-      <div className="section-row">
-        <div hidden={compact}>
-          <h3>产物保留与清理</h3>
-          <p>默认保留。仅清理本次运行在应用内保存的副本。</p>
+      <Card
+        className="artifact-cleanup-card"
+        variant={compact ? 'borderless' : 'outlined'}
+        styles={compact ? { body: { padding: 0 } } : undefined}
+      >
+        <div className="section-row">
+          <div hidden={compact}>
+            <h3>产物保留与清理</h3>
+            <p>默认保留。仅清理本次运行在应用内保存的副本。</p>
+          </div>
+          <Button
+            disabled={!terminal || cleanup?.state === 'pending' || undefined}
+            onClick={() => setOpen(true)}
+          >
+            预览产物清理
+          </Button>
         </div>
-        <Button
-          disabled={!terminal || cleanup?.state === 'pending' || undefined}
-          onClick={() => setOpen(true)}
-        >
-          预览产物清理
-        </Button>
-      </div>
-      {!terminal && <p>运行尚未结束，暂不能清理产物。</p>}
-      {cleanup?.state === 'completed' && (
-        <p role="status">
-          已清理 · {cleanup.count} 个文件 · {size(cleanup.bytes)}，运行记录已保留
-        </p>
-      )}
-      {cleanup?.state === 'pending' && <p role="status">正在清理产物，等待实际结果…</p>}
-      {cleanup && ['failed', 'interrupted'].includes(cleanup.state) && (
-        <Alert
-          className="artifact-cleanup-feedback"
-          type="warning"
-          role="status"
-          showIcon
-          title={`清理未完成 · ${cleanup.error ?? ''}。请重新预览剩余范围。`}
-        />
-      )}
-      {open && <CleanupDialog run={run} changed={changed} close={() => setOpen(false)} />}
+        {!terminal && <p>运行尚未结束，暂不能清理产物。</p>}
+        {cleanup?.state === 'completed' && (
+          <p role="status">
+            已清理 · {cleanup.count} 个文件 · {size(cleanup.bytes)}，运行记录已保留
+          </p>
+        )}
+        {cleanup?.state === 'pending' && <p role="status">正在清理产物，等待实际结果…</p>}
+        {cleanup && ['failed', 'interrupted'].includes(cleanup.state) && (
+          <Alert
+            className="artifact-cleanup-feedback"
+            type="warning"
+            role="status"
+            showIcon
+            title={`清理未完成 · ${cleanup.error ?? ''}。请重新预览剩余范围。`}
+          />
+        )}
+        {open && <CleanupDialog run={run} changed={changed} close={() => setOpen(false)} />}
+      </Card>
     </section>
   );
 }
