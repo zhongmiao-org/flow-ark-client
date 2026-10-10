@@ -59,7 +59,13 @@ export default function FlowLibrary({
       entryLocked.current = false;
       setEntryAction('');
       requestAnimationFrame(() => {
-        if (!failed && trigger.isConnected && !trigger.closest('[hidden]')) trigger.focus();
+        if (
+          !failed &&
+          trigger.isConnected &&
+          !trigger.closest('[hidden]') &&
+          (document.activeElement === trigger || document.activeElement === document.body)
+        )
+          trigger.focus();
       });
     }
   };

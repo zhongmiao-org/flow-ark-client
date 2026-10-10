@@ -271,6 +271,7 @@
 .flow-search {
   width: 344px;
   margin: 0;
+  margin-inline-start: auto;
 }
 .flows-page .flow-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
