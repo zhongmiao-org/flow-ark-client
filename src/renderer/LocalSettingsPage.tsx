@@ -1,4 +1,17 @@
-import { Alert, Badge, Collapse, Descriptions, Select, Button, Input, Tabs, Tag } from 'antd';
+import {
+  Card,
+  Divider,
+  Empty,
+  Alert,
+  Badge,
+  Collapse,
+  Descriptions,
+  Select,
+  Button,
+  Input,
+  Tabs,
+  Tag,
+} from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { Bootstrap, BrowserBinding, FlowRecord } from '../shared/types';
 import type { AIProviderId } from '../shared/ai-settings';
@@ -352,53 +365,375 @@ export default function LocalSettingsPage({
         {tab === 'browser' &&
           (!local ? (
             <div className="local-settings-layout local-browser-overview">
-              <section className="local-settings-card local-browser-options">
-                <h2>浏览器执行方式</h2>
-                <Button
-                  className={`local-browser-mode${embedded ? ' is-ready' : ''}`}
-                  aria-label={embedded ? '打开右侧网页面板' : '启用内置浏览器'}
-                  disabled={!!busy || undefined}
-                  onClick={() =>
-                    embedded
-                      ? showBrowser()
-                      : void act('enable', async () => {
-                          await api('browser.embedded.enable');
-                          await refresh();
-                          setStatusRevision((v) => v + 1);
-                          setNotice('已启用内置浏览器，请在流程资源中选择。');
-                        })
-                  }
-                >
-                  <span className="local-browser-mode-title">
-                    内置浏览器
-                    <span>
-                      {busy === 'enable' ? '正在启用…' : embedded ? '打开网页 →' : '启用 →'}
+              <section>
+                <Card className="local-settings-card local-browser-options">
+                  <h2>浏览器执行方式</h2>
+                  <Button
+                    className={`local-browser-mode${embedded ? ' is-ready' : ''}`}
+                    aria-label={embedded ? '打开右侧网页面板' : '启用内置浏览器'}
+                    disabled={!!busy || undefined}
+                    onClick={() =>
+                      embedded
+                        ? showBrowser()
+                        : void act('enable', async () => {
+                            await api('browser.embedded.enable');
+                            await refresh();
+                            setStatusRevision((v) => v + 1);
+                            setNotice('已启用内置浏览器，请在流程资源中选择。');
+                          })
+                    }
+                  >
+                    <span className="local-browser-mode-title">
+                      内置浏览器
+                      <span>
+                        {busy === 'enable' ? '正在启用…' : embedded ? '打开网页 →' : '启用 →'}
+                      </span>
                     </span>
-                  </span>
-                  <span className="local-browser-mode-description">
-                    在主窗口右侧操作网页，复用应用内核。
-                  </span>
-                </Button>
-                <Button
-                  className="local-browser-mode"
-                  ref={bindingEntry}
-                  disabled={!!busy || undefined}
-                  aria-label="选择与管理本机浏览器"
-                  onClick={() => {
-                    setLocal(true);
-                    setError('');
-                    setNotice('');
-                  }}
-                >
-                  <span className="local-browser-mode-title">
-                    本机浏览器
-                    <span>{bound.length ? `${bound.length} 个绑定 · 管理 →` : '选择与管理 →'}</span>
-                  </span>
-                  <span className="local-browser-mode-description">
-                    使用你已安装并明确选择的浏览器。
-                  </span>
-                </Button>
-                <div className="local-settings-divider" />
+                    <span className="local-browser-mode-description">
+                      在主窗口右侧操作网页，复用应用内核。
+                    </span>
+                  </Button>
+                  <Button
+                    className="local-browser-mode"
+                    ref={bindingEntry}
+                    disabled={!!busy || undefined}
+                    aria-label="选择与管理本机浏览器"
+                    onClick={() => {
+                      setLocal(true);
+                      setError('');
+                      setNotice('');
+                    }}
+                  >
+                    <span className="local-browser-mode-title">
+                      本机浏览器
+                      <span>
+                        {bound.length ? `${bound.length} 个绑定 · 管理 →` : '选择与管理 →'}
+                      </span>
+                    </span>
+                    <span className="local-browser-mode-description">
+                      使用你已安装并明确选择的浏览器。
+                    </span>
+                  </Button>
+                  <Divider className="local-settings-divider" />
+                  {refreshError && (
+                    <div
+                      className="local-settings-feedback"
+                      role="alert"
+                      ref={refreshBanner}
+                      tabIndex={-1}
+                    >
+                      <Alert
+                        type="warning"
+                        role="presentation"
+                        showIcon
+                        title="设置列表刷新失败"
+                        description={refreshError}
+                        action={
+                          <Button
+                            disabled={!!busy || undefined}
+                            onClick={() => void act('refresh', refreshBindings)}
+                          >
+                            {busy === 'refresh' ? '正在读取列表…' : '重新读取设置列表'}
+                          </Button>
+                        }
+                      />
+                    </div>
+                  )}
+                  <h2>网页展示</h2>
+                  <Descriptions
+                    className="local-browser-display-facts"
+                    layout="vertical"
+                    column={1}
+                    size="small"
+                    items={[
+                      { key: 'layout', label: '页面布局', children: '桌面宽度 · 1920 CSS px' },
+                    ]}
+                  />
+                  <p className="local-browser-display-note">
+                    右侧面板等比缩放显示，展开与收起保留会话。
+                  </p>
+                  <p className="local-settings-muted">
+                    执行方式在每个流程的资源中选择；启用或绑定不会改动已有流程。
+                  </p>
+                </Card>
+              </section>
+              <aside>
+                <Card className="local-settings-card local-environment">
+                  <h2>环境状态</h2>
+                  <div className="local-settings-health">
+                    <div className="local-health-heading">
+                      <h3>浏览器</h3>
+                      <Tag
+                        className="run-state-tag"
+                        variant="filled"
+                        color={
+                          sessionError || session?.blocked
+                            ? 'warning'
+                            : session && embedded
+                              ? 'success'
+                              : 'default'
+                        }
+                        icon={
+                          <Badge
+                            status={
+                              sessionError || session?.blocked
+                                ? 'warning'
+                                : session && embedded
+                                  ? 'success'
+                                  : 'default'
+                            }
+                          />
+                        }
+                      >
+                        {sessionError
+                          ? '状态未取得'
+                          : !session
+                            ? '读取中'
+                            : session.blocked
+                              ? '待核对'
+                              : embedded
+                                ? '已启用'
+                                : '未启用'}
+                      </Tag>
+                    </div>
+                    <p role={sessionError ? 'alert' : undefined}>
+                      {sessionError || !session
+                        ? '会话状态尚未确认。'
+                        : session.blocked
+                          ? '原会话回收尚未确认。'
+                          : session.started
+                            ? session.visible
+                              ? '网页面板已显示'
+                              : '会话在后台运行'
+                            : '尚未打开网页会话'}
+                    </p>
+                  </div>
+                  <div className="local-settings-health">
+                    <Button
+                      className="local-health-link"
+                      onClick={() => changeTab('ai', true)}
+                      aria-label="管理 AI 服务"
+                    >
+                      <span>AI 服务</span>
+                      <Tag className="run-state-tag" variant="filled">
+                        {data.credentials.some((id) => id === 'deepseek' || id === 'openai-codex')
+                          ? '已配置 · 待核对'
+                          : '未配置'}
+                      </Tag>
+                    </Button>
+                    <p>
+                      {data.credentials.some((id) => id === 'deepseek' || id === 'openai-codex')
+                        ? '连接验证状态在 AI 服务中查看。'
+                        : '尚未配置服务密钥。'}
+                    </p>
+                  </div>
+                  <div className="local-settings-health">
+                    <Button
+                      className="local-health-link"
+                      onClick={() => changeTab('resources', true)}
+                      id="settings-file-resources"
+                      aria-label="查看文件与存储"
+                    >
+                      <span>输出与文件</span>
+                      <Tag className="run-state-tag" variant="filled">
+                        {fileFlows.length ? `${fileFlows.length} 个流程有绑定` : '未绑定'}
+                      </Tag>
+                    </Button>
+                    <p>按流程保存本机文件或目录绑定。</p>
+                  </div>
+                  <div className="local-settings-health">
+                    <Button
+                      className="local-health-link"
+                      onClick={() => changeTab('resources', true)}
+                      id="settings-credential-resources"
+                      aria-label="管理本机凭据"
+                    >
+                      <span>凭据保护</span>
+                      <Tag className="run-state-tag" variant="filled">
+                        保存时核验
+                      </Tag>
+                    </Button>
+                    <p>系统保护不可用时拒绝保存。</p>
+                  </div>
+                  <p className="local-settings-muted">只有使用相应资源的流程才需要完成绑定。</p>
+                  <Collapse
+                    className="local-session-details"
+                    size="small"
+                    items={[
+                      {
+                        key: 'session',
+                        onKeyDown: activateCollapseWithSpace,
+                        label: '网页会话详情',
+                        forceRender: true,
+                        children: (
+                          <>
+                            <p className="local-settings-path">
+                              {sessionError ||
+                                session?.blocked ||
+                                session?.url ||
+                                '打开网页或执行网页步骤时才创建会话。'}
+                            </p>
+                            <Button onClick={() => setStatusRevision((v) => v + 1)}>
+                              重新读取状态
+                            </Button>
+                            <p className="local-settings-muted">
+                              收起面板不会停止运行；最小化不阻止电脑休眠，退出后停止执行与调度。
+                            </p>
+                          </>
+                        ),
+                      },
+                    ]}
+                  />
+                </Card>
+              </aside>
+            </div>
+          ) : (
+            <section aria-busy={!!busy}>
+              <Card className="local-settings-card local-browser-binding">
+                <div className="local-browser-binding-fields">
+                  <div className="local-settings-field">
+                    <label htmlFor="local-browser-mode">执行方式</label>
+                    <Input
+                      id="local-browser-mode"
+                      variant="filled"
+                      readOnly
+                      value="本机已安装浏览器"
+                    />
+                  </div>
+                  <div className="local-settings-field">
+                    <label htmlFor="local-browser-choice">浏览器</label>
+                    <div className="local-browser-discovery-row">
+                      <Select<string>
+                        id="local-browser-choice"
+                        disabled={!!busy || undefined}
+                        value={picked?.id ?? ''}
+                        onChange={(value) => {
+                          const next = choices.find((item) => item.id === value);
+                          if (next) select(next);
+                        }}
+                        options={[
+                          {
+                            value: '',
+                            disabled: true,
+                            label: path
+                              ? '手动选择的安装 · 保存时识别'
+                              : '选择已发现或已绑定的浏览器',
+                          },
+                          ...choices.map((b) => ({
+                            value: b.id,
+                            label: (
+                              <>
+                                {browserName(b.product)} · {b.version} ·{' '}
+                                {bound.some((item) => item.id === b.id) ? '已保存' : '尚未绑定'}
+                              </>
+                            ),
+                          })),
+                        ]}
+                      />
+                      <Button
+                        disabled={!!busy || undefined}
+                        onClick={() =>
+                          void act('discover', async () => {
+                            setCandidates(await api('browser.discover'));
+                            setDiscovered(true);
+                          })
+                        }
+                      >
+                        {busy === 'discover' ? '正在发现…' : '发现已安装浏览器'}
+                      </Button>
+                    </div>
+                    {discovered && !choices.length && (
+                      <p role="status">未发现支持的安装，请通过下方选择应用。</p>
+                    )}
+                  </div>
+                  <div className="local-settings-field">
+                    <label htmlFor="local-browser-path">安装位置</label>
+                    <Button
+                      id="local-browser-path"
+                      className="local-browser-file-choice"
+                      disabled={!!busy || undefined}
+                      aria-label="选择应用"
+                      title={path || undefined}
+                      onClick={() => void choose('browser')}
+                    >
+                      {path || '[从这台 Mac 选择应用]'}
+                    </Button>
+                  </div>
+                  <div className="local-settings-field local-browser-driver-field">
+                    <label htmlFor="local-driver-path">驱动来源（Firefox 需要）</label>
+                    <Button
+                      id="local-driver-path"
+                      color="default"
+                      size="small"
+                      variant="filled"
+                      className="local-browser-file-choice"
+                      disabled={!!busy || picked?.product === 'safari' || undefined}
+                      aria-label="选择驱动"
+                      title={driver || undefined}
+                      onClick={() => void choose('driver')}
+                    >
+                      {picked?.product === 'safari'
+                        ? '使用系统 safaridriver'
+                        : driver || '手动选择已准备的驱动'}
+                    </Button>
+                    {driver && picked?.product !== 'safari' && (
+                      <Button
+                        className="local-browser-clear-driver"
+                        disabled={!!busy || undefined}
+                        onClick={() => {
+                          setDriver('');
+                          setReceipt(undefined);
+                        }}
+                      >
+                        清除驱动选择
+                      </Button>
+                    )}
+                  </div>
+                  <div
+                    className="local-browser-binding-receipt"
+                    role="status"
+                    ref={receiptBanner}
+                    tabIndex={-1}
+                  >
+                    <Tag
+                      className="run-state-tag"
+                      variant="filled"
+                      color={
+                        receipt
+                          ? receipt.product === 'firefox' && !receipt.driver
+                            ? 'warning'
+                            : 'success'
+                          : 'default'
+                      }
+                      icon={
+                        <Badge
+                          status={
+                            receipt
+                              ? receipt.product === 'firefox' && !receipt.driver
+                                ? 'warning'
+                                : 'success'
+                              : 'default'
+                          }
+                        />
+                      }
+                    >
+                      {receipt ? '绑定已保存' : path ? '尚未检测保存' : '尚未选择本机安装'}
+                    </Tag>
+                    {receipt && (
+                      <>
+                        <strong>
+                          {browserName(receipt.product)} · {receipt.version}
+                        </strong>
+                        <p>
+                          {receipt.product === 'firefox' && !receipt.driver
+                            ? '尚未选择 geckodriver，Firefox 任务仍会被阻止。'
+                            : '安装信息检测通过；网页操作与环境兼容性仍以实际运行为准。'}
+                        </p>
+                        {receipt.driverVersion && <p>{receipt.driverVersion}</p>}
+                      </>
+                    )}
+                  </div>
+                </div>
                 {refreshError && (
                   <div
                     className="local-settings-feedback"
@@ -423,426 +758,124 @@ export default function LocalSettingsPage({
                     />
                   </div>
                 )}
-                <h2>网页展示</h2>
-                <Descriptions
-                  className="local-browser-display-facts"
-                  layout="vertical"
-                  column={1}
-                  size="small"
-                  items={[{ key: 'layout', label: '页面布局', children: '桌面宽度 · 1920 CSS px' }]}
-                />
-                <p className="local-browser-display-note">
-                  右侧面板等比缩放显示，展开与收起保留会话。
-                </p>
+                <div className="local-settings-actions">
+                  <Button
+                    type="primary"
+                    disabled={!path || !!busy || !!receipt || undefined}
+                    onClick={() => void save()}
+                  >
+                    {busy === 'save' ? '正在检测并保存…' : receipt ? '绑定已保存' : '检测并保存'}
+                  </Button>
+                  <Button disabled={!!busy || undefined} onClick={back}>
+                    返回浏览器设置
+                  </Button>
+                </div>
                 <p className="local-settings-muted">
-                  执行方式在每个流程的资源中选择；启用或绑定不会改动已有流程。
+                  请在流程资源中明确选择浏览器。返回不修改已有绑定，也不关闭用户原有窗口。
                 </p>
-              </section>
-              <aside className="local-settings-card local-environment">
-                <h2>环境状态</h2>
-                <div className="local-settings-health">
-                  <div className="local-health-heading">
-                    <h3>浏览器</h3>
-                    <Tag
-                      className="run-state-tag"
-                      variant="filled"
-                      color={
-                        sessionError || session?.blocked
-                          ? 'warning'
-                          : session && embedded
-                            ? 'success'
-                            : 'default'
-                      }
-                      icon={
-                        <Badge
-                          status={
-                            sessionError || session?.blocked
-                              ? 'warning'
-                              : session && embedded
-                                ? 'success'
-                                : 'default'
-                          }
-                        />
-                      }
-                    >
-                      {sessionError
-                        ? '状态未取得'
-                        : !session
-                          ? '读取中'
-                          : session.blocked
-                            ? '待核对'
-                            : embedded
-                              ? '已启用'
-                              : '未启用'}
-                    </Tag>
-                  </div>
-                  <p role={sessionError ? 'alert' : undefined}>
-                    {sessionError || !session
-                      ? '会话状态尚未确认。'
-                      : session.blocked
-                        ? '原会话回收尚未确认。'
-                        : session.started
-                          ? session.visible
-                            ? '网页面板已显示'
-                            : '会话在后台运行'
-                          : '尚未打开网页会话'}
-                  </p>
-                </div>
-                <div className="local-settings-health">
-                  <Button
-                    className="local-health-link"
-                    onClick={() => changeTab('ai', true)}
-                    aria-label="管理 AI 服务"
-                  >
-                    <span>AI 服务</span>
-                    <Tag className="run-state-tag" variant="filled">
-                      {data.credentials.some((id) => id === 'deepseek' || id === 'openai-codex')
-                        ? '已配置 · 待核对'
-                        : '未配置'}
-                    </Tag>
-                  </Button>
-                  <p>
-                    {data.credentials.some((id) => id === 'deepseek' || id === 'openai-codex')
-                      ? '连接验证状态在 AI 服务中查看。'
-                      : '尚未配置服务密钥。'}
-                  </p>
-                </div>
-                <div className="local-settings-health">
-                  <Button
-                    className="local-health-link"
-                    onClick={() => changeTab('resources', true)}
-                    id="settings-file-resources"
-                    aria-label="查看文件与存储"
-                  >
-                    <span>输出与文件</span>
-                    <Tag className="run-state-tag" variant="filled">
-                      {fileFlows.length ? `${fileFlows.length} 个流程有绑定` : '未绑定'}
-                    </Tag>
-                  </Button>
-                  <p>按流程保存本机文件或目录绑定。</p>
-                </div>
-                <div className="local-settings-health">
-                  <Button
-                    className="local-health-link"
-                    onClick={() => changeTab('resources', true)}
-                    id="settings-credential-resources"
-                    aria-label="管理本机凭据"
-                  >
-                    <span>凭据保护</span>
-                    <Tag className="run-state-tag" variant="filled">
-                      保存时核验
-                    </Tag>
-                  </Button>
-                  <p>系统保护不可用时拒绝保存。</p>
-                </div>
-                <p className="local-settings-muted">只有使用相应资源的流程才需要完成绑定。</p>
                 <Collapse
-                  className="local-session-details"
+                  className="local-browser-binding-help"
                   size="small"
                   items={[
                     {
-                      key: 'session',
+                      key: 'drivers',
                       onKeyDown: activateCollapseWithSpace,
-                      label: '网页会话详情',
+                      label: '浏览器与驱动说明',
                       forceRender: true,
                       children: (
                         <>
-                          <p className="local-settings-path">
-                            {sessionError ||
-                              session?.blocked ||
-                              session?.url ||
-                              '打开网页或执行网页步骤时才创建会话。'}
-                          </p>
-                          <Button onClick={() => setStatusRevision((v) => v + 1)}>
-                            重新读取状态
-                          </Button>
-                          <p className="local-settings-muted">
-                            收起面板不会停止运行；最小化不阻止电脑休眠，退出后停止执行与调度。
+                          <p>发现只读取安装信息；检测并保存后才可在流程中选择。</p>
+                          <p>
+                            不自动下载驱动或浏览器。Safari 使用系统驱动；Chrome
+                            不需要驱动文件，Firefox 需显式选择 geckodriver。
                           </p>
                         </>
                       ),
                     },
                   ]}
                 />
-              </aside>
-            </div>
-          ) : (
-            <section className="local-settings-card local-browser-binding" aria-busy={!!busy}>
-              <div className="local-browser-binding-fields">
-                <div className="local-settings-field">
-                  <label htmlFor="local-browser-mode">执行方式</label>
-                  <Input
-                    id="local-browser-mode"
-                    variant="filled"
-                    readOnly
-                    value="本机已安装浏览器"
-                  />
-                </div>
-                <div className="local-settings-field">
-                  <label htmlFor="local-browser-choice">浏览器</label>
-                  <div className="local-browser-discovery-row">
-                    <Select<string>
-                      id="local-browser-choice"
-                      disabled={!!busy || undefined}
-                      value={picked?.id ?? ''}
-                      onChange={(value) => {
-                        const next = choices.find((item) => item.id === value);
-                        if (next) select(next);
-                      }}
-                      options={[
-                        {
-                          value: '',
-                          disabled: true,
-                          label: path
-                            ? '手动选择的安装 · 保存时识别'
-                            : '选择已发现或已绑定的浏览器',
-                        },
-                        ...choices.map((b) => ({
-                          value: b.id,
-                          label: (
-                            <>
-                              {browserName(b.product)} · {b.version} ·{' '}
-                              {bound.some((item) => item.id === b.id) ? '已保存' : '尚未绑定'}
-                            </>
-                          ),
-                        })),
-                      ]}
-                    />
-                    <Button
-                      disabled={!!busy || undefined}
-                      onClick={() =>
-                        void act('discover', async () => {
-                          setCandidates(await api('browser.discover'));
-                          setDiscovered(true);
-                        })
-                      }
-                    >
-                      {busy === 'discover' ? '正在发现…' : '发现已安装浏览器'}
-                    </Button>
-                  </div>
-                  {discovered && !choices.length && (
-                    <p role="status">未发现支持的安装，请通过下方选择应用。</p>
-                  )}
-                </div>
-                <div className="local-settings-field">
-                  <label htmlFor="local-browser-path">安装位置</label>
-                  <Button
-                    id="local-browser-path"
-                    className="local-browser-file-choice"
-                    disabled={!!busy || undefined}
-                    aria-label="选择应用"
-                    title={path || undefined}
-                    onClick={() => void choose('browser')}
-                  >
-                    {path || '[从这台 Mac 选择应用]'}
-                  </Button>
-                </div>
-                <div className="local-settings-field local-browser-driver-field">
-                  <label htmlFor="local-driver-path">驱动来源（Firefox 需要）</label>
-                  <Button
-                    id="local-driver-path"
-                    color="default"
-                    size="small"
-                    variant="filled"
-                    className="local-browser-file-choice"
-                    disabled={!!busy || picked?.product === 'safari' || undefined}
-                    aria-label="选择驱动"
-                    title={driver || undefined}
-                    onClick={() => void choose('driver')}
-                  >
-                    {picked?.product === 'safari'
-                      ? '使用系统 safaridriver'
-                      : driver || '手动选择已准备的驱动'}
-                  </Button>
-                  {driver && picked?.product !== 'safari' && (
-                    <Button
-                      className="local-browser-clear-driver"
-                      disabled={!!busy || undefined}
-                      onClick={() => {
-                        setDriver('');
-                        setReceipt(undefined);
-                      }}
-                    >
-                      清除驱动选择
-                    </Button>
-                  )}
-                </div>
-                <div
-                  className="local-browser-binding-receipt"
-                  role="status"
-                  ref={receiptBanner}
-                  tabIndex={-1}
-                >
-                  <Tag
-                    className="run-state-tag"
-                    variant="filled"
-                    color={
-                      receipt
-                        ? receipt.product === 'firefox' && !receipt.driver
-                          ? 'warning'
-                          : 'success'
-                        : 'default'
-                    }
-                    icon={
-                      <Badge
-                        status={
-                          receipt
-                            ? receipt.product === 'firefox' && !receipt.driver
-                              ? 'warning'
-                              : 'success'
-                            : 'default'
-                        }
-                      />
-                    }
-                  >
-                    {receipt ? '绑定已保存' : path ? '尚未检测保存' : '尚未选择本机安装'}
-                  </Tag>
-                  {receipt && (
-                    <>
-                      <strong>
-                        {browserName(receipt.product)} · {receipt.version}
-                      </strong>
-                      <p>
-                        {receipt.product === 'firefox' && !receipt.driver
-                          ? '尚未选择 geckodriver，Firefox 任务仍会被阻止。'
-                          : '安装信息检测通过；网页操作与环境兼容性仍以实际运行为准。'}
-                      </p>
-                      {receipt.driverVersion && <p>{receipt.driverVersion}</p>}
-                    </>
-                  )}
-                </div>
-              </div>
-              {refreshError && (
-                <div
-                  className="local-settings-feedback"
-                  role="alert"
-                  ref={refreshBanner}
-                  tabIndex={-1}
-                >
-                  <Alert
-                    type="warning"
-                    role="presentation"
-                    showIcon
-                    title="设置列表刷新失败"
-                    description={refreshError}
-                    action={
-                      <Button
-                        disabled={!!busy || undefined}
-                        onClick={() => void act('refresh', refreshBindings)}
-                      >
-                        {busy === 'refresh' ? '正在读取列表…' : '重新读取设置列表'}
-                      </Button>
-                    }
-                  />
-                </div>
-              )}
-              <div className="local-settings-actions">
-                <Button
-                  type="primary"
-                  disabled={!path || !!busy || !!receipt || undefined}
-                  onClick={() => void save()}
-                >
-                  {busy === 'save' ? '正在检测并保存…' : receipt ? '绑定已保存' : '检测并保存'}
-                </Button>
-                <Button disabled={!!busy || undefined} onClick={back}>
-                  返回浏览器设置
-                </Button>
-              </div>
-              <p className="local-settings-muted">
-                请在流程资源中明确选择浏览器。返回不修改已有绑定，也不关闭用户原有窗口。
-              </p>
-              <Collapse
-                className="local-browser-binding-help"
-                size="small"
-                items={[
-                  {
-                    key: 'drivers',
-                    onKeyDown: activateCollapseWithSpace,
-                    label: '浏览器与驱动说明',
-                    forceRender: true,
-                    children: (
-                      <>
-                        <p>发现只读取安装信息；检测并保存后才可在流程中选择。</p>
-                        <p>
-                          不自动下载驱动或浏览器。Safari 使用系统驱动；Chrome
-                          不需要驱动文件，Firefox 需显式选择 geckodriver。
-                        </p>
-                      </>
-                    ),
-                  },
-                ]}
-              />
+              </Card>
             </section>
           ))}
         {tab === 'ai' && active && <AISettingsSummary open={openAI} />}
         {resourcesPage && (
           <div className="local-resources-layout">
-            <LocalCredentialsPanel
-              active={active}
-              compact
-              data={data}
-              refresh={refresh}
-              openAI={() => changeTab('ai', true)}
-              openTools={openTools}
-              openFlow={openResourceFlow}
-            />
-            <LocalStoragePanel
-              compact
-              data={data}
-              busy={!!busy}
-              openFlow={(flow) => void act('flow', () => openResourceFlow(flow))}
-              openRuns={openRuns}
-              showData={() =>
-                void act('data', async () => {
-                  await api('app.showData');
-                  setNotice('已请求在文件管理器中打开数据目录。');
-                })
-              }
-            />
+            <Card className="local-resources-card">
+              <LocalCredentialsPanel
+                active={active}
+                compact
+                data={data}
+                refresh={refresh}
+                openAI={() => changeTab('ai', true)}
+                openTools={openTools}
+                openFlow={openResourceFlow}
+              />
+            </Card>
+            <Card className="local-resources-card">
+              <LocalStoragePanel
+                compact
+                data={data}
+                busy={!!busy}
+                openFlow={(flow) => void act('flow', () => openResourceFlow(flow))}
+                openRuns={openRuns}
+                showData={() =>
+                  void act('data', async () => {
+                    await api('app.showData');
+                    setNotice('已请求在文件管理器中打开数据目录。');
+                  })
+                }
+              />
+            </Card>
           </div>
         )}
         {tab === 'scripts' && (
-          <section className="local-settings-card">
-            <h2>脚本包绑定</h2>
-            <p>按流程保存本地包目录与精确版本。更改依赖需进入对应脚本步骤，不自动安装依赖。</p>
-            <label className="local-settings-search">
-              搜索脚本包
-              <Input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="按包名或流程名称筛选"
-              />
-            </label>
-            {packages
-              .filter((p) =>
+          <section>
+            <Card className="local-settings-card">
+              <h2>脚本包绑定</h2>
+              <p>按流程保存本地包目录与精确版本。更改依赖需进入对应脚本步骤，不自动安装依赖。</p>
+              <label className="local-settings-search">
+                搜索脚本包
+                <Input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="按包名或流程名称筛选"
+                />
+              </label>
+              {packages
+                .filter((p) =>
+                  `${p.name} ${p.flow.flow.name}`
+                    .toLocaleLowerCase()
+                    .includes(query.trim().toLocaleLowerCase()),
+                )
+                .map((p) => (
+                  <article className="local-settings-resource" key={`${p.flow.id}:${p.name}`}>
+                    <div className="local-settings-row">
+                      <h3>
+                        {p.name} · {p.version}
+                      </h3>
+                      {flowLink(p.flow)}
+                    </div>
+                    <p>{p.flow.flow.name}</p>
+                    <p className="local-settings-path">{p.path}</p>
+                  </article>
+                ))}
+              {!packages.some((p) =>
                 `${p.name} ${p.flow.flow.name}`
                   .toLocaleLowerCase()
                   .includes(query.trim().toLocaleLowerCase()),
-              )
-              .map((p) => (
-                <article className="local-settings-resource" key={`${p.flow.id}:${p.name}`}>
-                  <div className="local-settings-row">
-                    <h3>
-                      {p.name} · {p.version}
-                    </h3>
-                    {flowLink(p.flow)}
-                  </div>
-                  <p>{p.flow.flow.name}</p>
-                  <p className="local-settings-path">{p.path}</p>
-                </article>
-              ))}
-            {!packages.some((p) =>
-              `${p.name} ${p.flow.flow.name}`
-                .toLocaleLowerCase()
-                .includes(query.trim().toLocaleLowerCase()),
-            ) && (
-              <div className="local-settings-empty">
-                {query
-                  ? '没有匹配的脚本包。'
-                  : '尚未绑定本地脚本包，在脚本步骤中选择已安装的包目录。'}
-              </div>
-            )}
+              ) && (
+                <Empty
+                  className="local-settings-empty"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description={
+                    query
+                      ? '没有匹配的脚本包。'
+                      : '尚未绑定本地脚本包，在脚本步骤中选择已安装的包目录。'
+                  }
+                />
+              )}
+            </Card>
           </section>
         )}
       </div>
