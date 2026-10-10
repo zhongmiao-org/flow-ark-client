@@ -1,4 +1,4 @@
-import { Card, Alert, ConfigProvider, Button } from 'antd';
+import { Card, Alert, ConfigProvider, Button, type AlertRef } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { TaskDetail } from '../shared/planning';
 import type { RunReviewInput } from '../shared/run-review';
@@ -22,6 +22,24 @@ export default function DesktopRunBinding({
   const pending = useRef<string | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const failure = useRef<AlertRef>(null);
+  useEffect(() => {
+    const target = failure.current?.nativeElement;
+    if (!error || !target) return;
+    target.tabIndex = -1;
+    target.focus({ preventScroll: true });
+    const ensureVisible = () => {
+      if (document.activeElement === target) target.scrollIntoView({ block: 'nearest' });
+    };
+    ensureVisible();
+    const observer = new ResizeObserver(ensureVisible);
+    observer.observe(target);
+    window.addEventListener('resize', ensureVisible);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', ensureVisible);
+    };
+  }, [error]);
   useEffect(
     () => () => {
       const requestId = pending.current;
@@ -83,7 +101,7 @@ export default function DesktopRunBinding({
       <Card className="run-review-card">
         <h2>重新选择窗口与原选区</h2>
         <p>请在 TextEdit 中选中采纳方案时的原文。核对一致后返回确认页，这一步不会修改文档。</p>
-        <ConfigProvider componentDisabled={busy || undefined}>
+        <ConfigProvider componentDisabled={busy}>
           <fieldset disabled={busy}>
             <DesktopWindowList state={windows} />
             {windows.snapshot?.platform === 'macos' &&
@@ -113,7 +131,7 @@ export default function DesktopRunBinding({
           </fieldset>
         </ConfigProvider>
         {busy && <Alert type="info" showIcon role="status" title="正在核对原文与可用能力…" />}
-        {error && <Alert type="error" showIcon role="alert" title={error} />}
+        {error && <Alert ref={failure} type="error" showIcon role="alert" title={error} />}
         <Button onClick={close}>取消选择，返回确认</Button>
       </Card>
     </section>
