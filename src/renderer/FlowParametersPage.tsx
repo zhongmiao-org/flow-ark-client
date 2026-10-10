@@ -81,6 +81,7 @@ export default function FlowParametersPage({
     else selectionTrigger.current?.focus({ preventScroll: true });
   }, [busy, selection]);
   const [error, setError] = useState('');
+  const [errorKind, setErrorKind] = useState<'input' | 'save'>('save');
   const [incompleteInput, setIncompleteInput] = useState(false);
   const pageError = useRef<HTMLDivElement>(null);
   const focusPageError = useRef(false);
@@ -168,6 +169,7 @@ export default function FlowParametersPage({
   const persist = async (next?: () => void) => {
     if (locked.current) return;
     if (incomplete()) {
+      setErrorKind('input');
       setError('请先确认参数名称并修正未完成的参数值，再保存。');
       setPending(undefined);
       requestAnimationFrame(() => {
@@ -189,7 +191,8 @@ export default function FlowParametersPage({
       if (alive.current) close(next);
     } catch (reason) {
       if (alive.current) {
-        focusPageError.current = true;
+        focusPageError.current = !pending;
+        setErrorKind('save');
         setError(reason instanceof Error ? reason.message : '保存未完成，请重试');
       }
     } finally {
@@ -286,7 +289,38 @@ export default function FlowParametersPage({
       </header>
       {error && !pending && (
         <div className="flow-parameters-error" tabIndex={-1} ref={pageError}>
-          <Alert type="error" showIcon title={error} role="alert" />
+          <Alert
+            type="error"
+            showIcon
+            title={errorKind === 'input' ? '参数输入尚未完成' : '保存未完成'}
+            description={
+              <>
+                <p>{error}</p>
+                <p>当前输入已保留，修正后可再次保存。</p>
+              </>
+            }
+            action={
+              <Button
+                disabled={!!busy || undefined}
+                onClick={() => {
+                  const invalid = root.current?.querySelector<HTMLElement>('[data-value-invalid]');
+                  const input = invalid?.matches('input,textarea')
+                    ? invalid
+                    : (invalid?.querySelector<HTMLElement>(
+                        'input[aria-invalid="true"],textarea[aria-invalid="true"]',
+                      ) ?? invalid?.querySelector<HTMLElement>('input,textarea'));
+                  (
+                    input ??
+                    (lastFocus.current?.isConnected ? lastFocus.current : undefined) ??
+                    root.current?.querySelector<HTMLElement>('input,textarea,[role="combobox"]')
+                  )?.focus();
+                }}
+              >
+                返回编辑
+              </Button>
+            }
+            role="alert"
+          />
         </div>
       )}
       <ConfigProvider componentDisabled={!!busy}>
