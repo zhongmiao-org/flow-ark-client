@@ -1,4 +1,5 @@
-import { ConfigProvider, theme, type ThemeConfig } from 'antd';
+import { ConfigProvider, theme, type GlobalToken, type ThemeConfig } from 'antd';
+import type { editor } from 'monaco-editor';
 import type { RunState } from '../shared/types';
 import type { ToolConnection } from '../shared/tool-connections';
 import type { McpArgumentReview } from '../shared/mcp-argument-review';
@@ -147,6 +148,24 @@ export const flowArkTheme = {
     Button: { fontWeight: 500, primaryShadow: 'none', defaultShadow: 'none' },
   },
 } satisfies ThemeConfig;
+
+export function scriptEditorTheme(token: GlobalToken): editor.IStandaloneThemeData {
+  return {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [],
+    colors: {
+      'editor.background': token.colorBgSpotlight,
+      'editor.foreground': token.colorTextLightSolid,
+      'editorGutter.background': token.colorBgSpotlight,
+      'editorLineNumber.foreground': flowArkTheme.components.Menu.darkItemColor,
+      'editorLineNumber.activeForeground': token.colorTextLightSolid,
+      'editorCursor.foreground': token.colorTextLightSolid,
+      'editor.lineHighlightBackground': token.colorBgSpotlight,
+      'editor.lineHighlightBorder': token.colorBgSpotlight,
+    },
+  };
+}
 
 function WorkspaceTokens({ children }: { children: ReactNode }) {
   const { token } = theme.useToken();
