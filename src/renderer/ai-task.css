@@ -545,6 +545,9 @@
   gap: 8px;
   min-width: 0;
 }
+.run-review-page:not(.is-desktop) .run-review-card > .ant-card-body {
+  padding: var(--fa-space-16);
+}
 .run-review-resource-group {
   display: flex;
   flex-direction: column;
