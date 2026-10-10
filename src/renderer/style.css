@@ -1870,11 +1870,7 @@ main {
 }
 
 .run-rerun {
-  border: 1px solid #dbe5e0;
-  border-radius: 12px;
-  padding: 18px 20px;
   margin: 18px 0;
-  background: #fff;
 }
 .run-rerun p {
   margin: 8px 0;
