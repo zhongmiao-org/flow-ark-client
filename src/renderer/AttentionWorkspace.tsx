@@ -1,9 +1,11 @@
 import {
   Alert,
   Badge,
+  Card,
   Collapse,
   ConfigProvider,
   Descriptions,
+  Empty,
   Select,
   Button,
   Checkbox,
@@ -535,20 +537,22 @@ export default function AttentionWorkspace({
           const run = runRecords.get(id);
           return (
             <li key={id}>
-              <strong>{run?.name || `运行记录 ${index + 1}`}</strong>
-              <p className="attention-muted">
-                {run
-                  ? `保存状态：${runStateLabels[run.state]} · ${date(run.updatedAt)}`
-                  : '当前摘要未包含此记录，可打开详情核对。'}
-              </p>
-              <code>{id}</code>
-              <Button
-                disabled={busy || undefined}
-                aria-label={`查看第 ${index + 1} 个关联运行：${run?.name || id}`}
-                onClick={(event) => viewRun(id, event.currentTarget as HTMLButtonElement)}
-              >
-                {openingRunId === id ? '正在读取运行…' : '查看运行详情'}
-              </Button>
+              <Card size="small" className="attention-related-run-card">
+                <strong>{run?.name || `运行记录 ${index + 1}`}</strong>
+                <p className="attention-muted">
+                  {run
+                    ? `保存状态：${runStateLabels[run.state]} · ${date(run.updatedAt)}`
+                    : '当前摘要未包含此记录，可打开详情核对。'}
+                </p>
+                <code>{id}</code>
+                <Button
+                  disabled={busy || undefined}
+                  aria-label={`查看第 ${index + 1} 个关联运行：${run?.name || id}`}
+                  onClick={(event) => viewRun(id, event.currentTarget as HTMLButtonElement)}
+                >
+                  {openingRunId === id ? '正在读取运行…' : '查看运行详情'}
+                </Button>
+              </Card>
             </li>
           );
         })}
@@ -572,52 +576,54 @@ export default function AttentionWorkspace({
             key={item.id}
             aria-label={item.title}
           >
-            <div className="attention-card-heading">
-              <Tag
-                className="run-state-tag"
-                variant="filled"
-                color={tone(item)}
-                icon={<Badge status={tone(item)} />}
-              >
-                {label(item)}
-              </Tag>
-              {item.kind !== 'unknown-result' && <h2>{item.title}</h2>}
-              <time dateTime={item.time}>{date(item.time)}</time>
-            </div>
-            {item.kind === 'unknown-result' && <h2>{item.title}</h2>}
-            <p>{description(item)}</p>
-            {item.kind === 'unknown-result' && (
-              <p className="attention-muted">
-                FlowArk 不会自动重复提交。请先核对证据，再决定是否另建运行。
-              </p>
-            )}
-            <div className="attention-actions">
-              <Button
-                type={item.kind === 'unknown-result' ? 'primary' : 'default'}
-                data-attention-open={item.id}
-                onClick={() => open(item)}
-              >
-                {item.kind === 'unknown-result'
-                  ? '查看证据并核对'
-                  : human(item) && !completed(item)
-                    ? '查看本次请求'
-                    : '查看详情'}
-              </Button>
-              {sourceId(item) && (
-                <Button
-                  disabled={busy || undefined}
-                  onClick={(event) =>
-                    viewRun(sourceId(item)!, event.currentTarget as HTMLButtonElement)
-                  }
+            <Card className="attention-card-surface">
+              <div className="attention-card-heading">
+                <Tag
+                  className="run-state-tag"
+                  variant="filled"
+                  color={tone(item)}
+                  icon={<Badge status={tone(item)} />}
                 >
-                  查看运行详情
-                </Button>
+                  {label(item)}
+                </Tag>
+                {item.kind !== 'unknown-result' && <h2>{item.title}</h2>}
+                <time dateTime={item.time}>{date(item.time)}</time>
+              </div>
+              {item.kind === 'unknown-result' && <h2>{item.title}</h2>}
+              <p>{description(item)}</p>
+              {item.kind === 'unknown-result' && (
+                <p className="attention-muted">
+                  FlowArk 不会自动重复提交。请先核对证据，再决定是否另建运行。
+                </p>
               )}
-            </div>
+              <div className="attention-actions">
+                <Button
+                  type={item.kind === 'unknown-result' ? 'primary' : 'default'}
+                  data-attention-open={item.id}
+                  onClick={() => open(item)}
+                >
+                  {item.kind === 'unknown-result'
+                    ? '查看证据并核对'
+                    : human(item) && !completed(item)
+                      ? '查看本次请求'
+                      : '查看详情'}
+                </Button>
+                {sourceId(item) && (
+                  <Button
+                    disabled={busy || undefined}
+                    onClick={(event) =>
+                      viewRun(sourceId(item)!, event.currentTarget as HTMLButtonElement)
+                    }
+                  >
+                    查看运行详情
+                  </Button>
+                )}
+              </div>
+            </Card>
           </article>
         ))}
         {!visible.length && (
-          <div className="attention-empty">
+          <Card className="attention-empty">
             <h2>
               {query || kind !== 'all'
                 ? '没有匹配的提醒'
@@ -625,23 +631,27 @@ export default function AttentionWorkspace({
                   ? '暂时没有需要处理的事项'
                   : '还没有已处理记录'}
             </h2>
-            <p>
-              {query || kind !== 'all'
-                ? '调整关键词或提醒类型，再试一次。'
-                : '需要你的确认或出现异常时，提醒会保存在这里。'}
-            </p>
-            {(query || kind !== 'all') && (
-              <Button
-                onClick={() => {
-                  setQuery('');
-                  setKind('all');
-                  searchInput.current?.focus({ preventScroll: true });
-                }}
-              >
-                清除筛选
-              </Button>
-            )}
-          </div>
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={
+                query || kind !== 'all'
+                  ? '调整关键词或提醒类型，再试一次。'
+                  : '需要你的确认或出现异常时，提醒会保存在这里。'
+              }
+            >
+              {(query || kind !== 'all') && (
+                <Button
+                  onClick={() => {
+                    setQuery('');
+                    setKind('all');
+                    searchInput.current?.focus({ preventScroll: true });
+                  }}
+                >
+                  清除筛选
+                </Button>
+              )}
+            </Empty>
+          </Card>
         )}
       </div>
     </>
@@ -740,303 +750,310 @@ export default function AttentionWorkspace({
           <article
             className={`attention-detail-card${human(selected) ? ' attention-request-card' : ''}`}
           >
-            <Tag
-              className="run-state-tag"
-              variant="filled"
-              color={tone(selected)}
-              icon={<Badge status={tone(selected)} />}
-            >
-              {label(selected)}
-            </Tag>
-            <h2>{selected.title}</h2>
-            {state === 'answered' ? (
-              <Alert
-                className="attention-feedback"
-                type="success"
-                role="status"
-                showIcon
-                title="本次请求已回应"
-                description="不会重复提交。是否继续及执行结果以来源运行为准。"
-              />
-            ) : state === 'expired' ? (
-              <Alert
-                className="attention-feedback"
-                type="error"
-                showIcon
-                title="人工请求已失效"
-                description="请求已超时或来源运行已结束，旧确认不能继续执行。可查看来源运行和保留的证据。"
-              />
-            ) : state === 'unavailable' ? (
-              <Alert
-                className="attention-feedback"
-                type="warning"
-                showIcon
-                title="当前无法确认请求状态"
-                description="请查看来源运行，或刷新状态后重新核对。旧按钮不会继续执行。"
-              />
-            ) : null}
-            {human(selected) ? (
-              review === null ? (
+            <Card className="attention-detail-surface">
+              <Tag
+                className="run-state-tag"
+                variant="filled"
+                color={tone(selected)}
+                icon={<Badge status={tone(selected)} />}
+              >
+                {label(selected)}
+              </Tag>
+              <h2>{selected.title}</h2>
+              {state === 'answered' ? (
+                <Alert
+                  className="attention-feedback"
+                  type="success"
+                  role="status"
+                  showIcon
+                  title="本次请求已回应"
+                  description="不会重复提交。是否继续及执行结果以来源运行为准。"
+                />
+              ) : state === 'expired' ? (
                 <Alert
                   className="attention-feedback"
                   type="error"
                   showIcon
-                  title="本次核对内容格式无效"
-                  description="无法完整展示目标和拟执行内容，不能回应此请求。请查看来源运行并联系模板提供者。"
+                  title="人工请求已失效"
+                  description="请求已超时或来源运行已结束，旧确认不能继续执行。可查看来源运行和保留的证据。"
                 />
-              ) : review ? (
-                <>
-                  <Descriptions
-                    className="attention-review-content"
-                    layout="vertical"
-                    column={1}
-                    items={[
-                      {
-                        key: 'target',
-                        label: '目标',
-                        children: <span className="attention-fact-value">{review.target}</span>,
-                      },
-                      {
-                        key: 'content',
-                        label: '拟执行内容',
-                        children: (
-                          <div className="attention-review-preview">
-                            {review.content === '' ? (
-                              <span className="attention-muted">空内容</span>
-                            ) : (
-                              review.content
-                            )}
-                          </div>
-                        ),
-                      },
-                    ]}
+              ) : state === 'unavailable' ? (
+                <Alert
+                  className="attention-feedback"
+                  type="warning"
+                  showIcon
+                  title="当前无法确认请求状态"
+                  description="请查看来源运行，或刷新状态后重新核对。旧按钮不会继续执行。"
+                />
+              ) : null}
+              {human(selected) ? (
+                review === null ? (
+                  <Alert
+                    className="attention-feedback"
+                    type="error"
+                    showIcon
+                    title="本次核对内容格式无效"
+                    description="无法完整展示目标和拟执行内容，不能回应此请求。请查看来源运行并联系模板提供者。"
                   />
-                  {typeof selected.detail?.description === 'string' &&
-                    selected.detail.description.trim() && (
-                      <p className="attention-muted">{selected.detail.description}</p>
-                    )}
-                </>
+                ) : review ? (
+                  <>
+                    <Descriptions
+                      className="attention-review-content"
+                      layout="vertical"
+                      column={1}
+                      items={[
+                        {
+                          key: 'target',
+                          label: '目标',
+                          children: <span className="attention-fact-value">{review.target}</span>,
+                        },
+                        {
+                          key: 'content',
+                          label: '拟执行内容',
+                          children: (
+                            <Card size="small" className="attention-review-preview">
+                              {review.content === '' ? (
+                                <span className="attention-muted">空内容</span>
+                              ) : (
+                                review.content
+                              )}
+                            </Card>
+                          ),
+                        },
+                      ]}
+                    />
+                    {typeof selected.detail?.description === 'string' &&
+                      selected.detail.description.trim() && (
+                        <p className="attention-muted">{selected.detail.description}</p>
+                      )}
+                  </>
+                ) : (
+                  <div className="attention-request-content">
+                    <span>本次请求内容</span>
+                    <Card size="small" className="attention-request-content-card">
+                      {description(selected)}
+                    </Card>
+                  </div>
+                )
               ) : (
-                <div className="attention-request-content">
-                  <span>本次请求内容</span>
-                  <div>{description(selected)}</div>
-                </div>
-              )
-            ) : (
-              <AttentionDetails item={selected} omitRunReferences={runIds.length > 0} />
-            )}
-            {human(selected) && state !== 'answered' && review !== null && (
-              <AnswerForm
-                drafts={drafts.current}
-                key={selected.id}
-                item={selected}
-                state={state!}
-                busy={busy}
-                blocked={cancelRun}
-                cancel={
-                  state === 'waiting' && sourceId(selected) ? () => setCancelRun(true) : undefined
-                }
-                submit={(value) => {
-                  answerFocus.current = selected.id;
-                  return act(
-                    async () => {
-                      await api('template.answer', { id: selected.id, value });
-                      setAcknowledged((previous) => new Set(previous).add(selected.id));
-                    },
-                    '已回应本次请求，正在更新来源运行。',
-                    '请求已回应，但列表更新失败；请刷新状态，不要重复提交',
-                  );
-                }}
-              />
-            )}
-            {!human(selected) && (
-              <div className="attention-actions">
-                <Button
-                  disabled={busy || selected.read || undefined}
-                  type="primary"
-                  onClick={() =>
-                    void act(async () => {
-                      await api('attention.read', { id: selected.id });
-                    }, '已标为已读；不会更改运行或外部业务结果。')
+                <AttentionDetails item={selected} omitRunReferences={runIds.length > 0} />
+              )}
+              {human(selected) && state !== 'answered' && review !== null && (
+                <AnswerForm
+                  drafts={drafts.current}
+                  key={selected.id}
+                  item={selected}
+                  state={state!}
+                  busy={busy}
+                  blocked={cancelRun}
+                  cancel={
+                    state === 'waiting' && sourceId(selected) ? () => setCancelRun(true) : undefined
                   }
-                >
-                  {selected.read ? '已标为已读' : '标为已读'}
-                </Button>
+                  submit={(value) => {
+                    answerFocus.current = selected.id;
+                    return act(
+                      async () => {
+                        await api('template.answer', { id: selected.id, value });
+                        setAcknowledged((previous) => new Set(previous).add(selected.id));
+                      },
+                      '已回应本次请求，正在更新来源运行。',
+                      '请求已回应，但列表更新失败；请刷新状态，不要重复提交',
+                    );
+                  }}
+                />
+              )}
+              {!human(selected) && (
+                <div className="attention-actions">
+                  <Button
+                    disabled={busy || selected.read || undefined}
+                    type="primary"
+                    onClick={() =>
+                      void act(async () => {
+                        await api('attention.read', { id: selected.id });
+                      }, '已标为已读；不会更改运行或外部业务结果。')
+                    }
+                  >
+                    {selected.read ? '已标为已读' : '标为已读'}
+                  </Button>
+                  <Button
+                    disabled={busy || undefined}
+                    onClick={() =>
+                      void act(async () => {
+                        await api('clipboard.copy', {
+                          value:
+                            selected.kind === 'contact' &&
+                            typeof selected.detail?.value === 'string'
+                              ? selected.detail.value
+                              : JSON.stringify(selected.detail, null, 2),
+                        });
+                      }, '已复制提醒内容')
+                    }
+                  >
+                    复制内容
+                  </Button>
+                </div>
+              )}
+              {human(selected) && state === 'expired' && !selected.read && (
                 <Button
                   disabled={busy || undefined}
                   onClick={() =>
                     void act(async () => {
-                      await api('clipboard.copy', {
-                        value:
-                          selected.kind === 'contact' && typeof selected.detail?.value === 'string'
-                            ? selected.detail.value
-                            : JSON.stringify(selected.detail, null, 2),
-                      });
-                    }, '已复制提醒内容')
+                      await api('attention.read', { id: selected.id });
+                    }, '已归档失效提醒。')
                   }
                 >
-                  复制内容
+                  归档失效提醒
                 </Button>
-              </div>
-            )}
-            {human(selected) && state === 'expired' && !selected.read && (
-              <Button
-                disabled={busy || undefined}
-                onClick={() =>
-                  void act(async () => {
-                    await api('attention.read', { id: selected.id });
-                  }, '已归档失效提醒。')
-                }
-              >
-                归档失效提醒
-              </Button>
-            )}
-            {human(selected) && state === 'waiting' && sourceId(selected) && cancelRun && (
-              <div
-                ref={stopPanel}
-                tabIndex={-1}
-                className="attention-feedback attention-stop-confirm"
-                aria-label="停止运行确认"
-              >
-                <Alert
-                  type="warning"
-                  role="presentation"
-                  showIcon
-                  title="停止这个运行？"
-                  description={
-                    <div className="feedback-body">
-                      <p>已产生的结果会保留；尚未执行的步骤不会继续。</p>
-                      <div className="attention-actions">
-                        <Button
-                          danger
-                          disabled={busy || undefined}
-                          onClick={() =>
-                            void act(async () => {
-                              await api('run.control', {
-                                id: sourceId(selected),
-                                action: 'cancel',
-                              });
+              )}
+              {human(selected) && state === 'waiting' && sourceId(selected) && cancelRun && (
+                <div
+                  ref={stopPanel}
+                  tabIndex={-1}
+                  className="attention-feedback attention-stop-confirm"
+                  aria-label="停止运行确认"
+                >
+                  <Alert
+                    type="warning"
+                    role="presentation"
+                    showIcon
+                    title="停止这个运行？"
+                    description={
+                      <div className="feedback-body">
+                        <p>已产生的结果会保留；尚未执行的步骤不会继续。</p>
+                        <div className="attention-actions">
+                          <Button
+                            danger
+                            disabled={busy || undefined}
+                            onClick={() =>
+                              void act(async () => {
+                                await api('run.control', {
+                                  id: sourceId(selected),
+                                  action: 'cancel',
+                                });
+                                setCancelRun(false);
+                              }, '已请求停止，请查看运行最终状态。')
+                            }
+                          >
+                            确认停止
+                          </Button>
+                          <Button
+                            disabled={busy || undefined}
+                            onClick={() => {
                               setCancelRun(false);
-                            }, '已请求停止，请查看运行最终状态。')
-                          }
-                        >
-                          确认停止
-                        </Button>
-                        <Button
-                          disabled={busy || undefined}
-                          onClick={() => {
-                            setCancelRun(false);
-                            requestAnimationFrame(() =>
-                              document
-                                .querySelector<HTMLElement>('[data-attention-cancel]')
-                                ?.focus(),
-                            );
-                          }}
-                        >
-                          继续查看
-                        </Button>
+                              requestAnimationFrame(() =>
+                                document
+                                  .querySelector<HTMLElement>('[data-attention-cancel]')
+                                  ?.focus(),
+                              );
+                            }}
+                          >
+                            继续查看
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  }
+                    }
+                  />
+                </div>
+              )}
+              {human(selected) && (
+                <Collapse
+                  className="attention-request-technical"
+                  size="small"
+                  items={[
+                    {
+                      key: 'technical',
+                      label: '查看请求详情与格式',
+                      forceRender: true,
+                      onKeyDown: activateCollapseWithSpace,
+                      children: <AttentionDetails item={selected} />,
+                    },
+                  ]}
                 />
-              </div>
-            )}
-            {human(selected) && (
-              <Collapse
-                className="attention-request-technical"
-                size="small"
-                items={[
-                  {
-                    key: 'technical',
-                    label: '查看请求详情与格式',
-                    forceRender: true,
-                    onKeyDown: activateCollapseWithSpace,
-                    children: <AttentionDetails item={selected} />,
-                  },
-                ]}
-              />
-            )}
+              )}
+            </Card>
           </article>
           <aside
             className={`attention-detail-card attention-context${human(selected) ? ' attention-human-context' : ''}`}
           >
-            <h2>{human(selected) ? '仅对本次请求生效' : '查看来源与证据'}</h2>
-            <p>
-              {human(selected)
-                ? '确认不修改实例的默认权限，也不授权其他动作。'
-                : '查看原运行记录和保存的证据，再决定下一步。'}
-            </p>
-            <p className="attention-muted">
-              超时、取消或宿主退出后，人工请求失效。结果未知的操作不会自动重放。
-            </p>
-            {human(selected) ? (
-              <Collapse
-                className="attention-context-links"
-                key={selected.id}
-                items={[
-                  {
-                    key: 'state',
-                    label: '查看请求状态',
-                    forceRender: true,
-                    onKeyDown: activateCollapseWithSpace,
-                    children: (
-                      <div className="attention-context-body">
-                        <h3>{label(selected)}</h3>
-                        <p>
-                          {state === 'waiting'
-                            ? '来源运行正在等待本次回应。请核对左侧内容后再确认。'
-                            : state === 'answered'
-                              ? '本次请求已经回应，不会重复提交。后续结果请查看来源运行。'
-                              : state === 'expired'
-                                ? '请求已超时或来源运行已结束，无法继续回应。'
-                                : '当前无法核实来源运行是否仍在等待，暂时不能回应。'}
-                        </p>
-                        <Descriptions
-                          className="attention-source-facts"
-                          size="small"
-                          layout="vertical"
-                          column={1}
-                          items={[
-                            { key: 'created', label: '创建时间', children: date(selected.time) },
-                            {
-                              key: 'state',
-                              label: '来源运行保存状态',
-                              children: sourceRun
-                                ? runStateLabels[sourceRun.state]
-                                : '当前摘要未包含来源运行',
-                            },
-                          ]}
-                        />
-                        <p className="attention-muted">
-                          请求最长等待 10 分钟；取消或宿主退出会提前失效。
-                        </p>
-                        <Button
-                          disabled={busy || undefined}
-                          onClick={() => void act(async () => {}, '已刷新当前处理状态')}
-                        >
-                          {busy ? '正在处理…' : '刷新状态'}
-                        </Button>
-                      </div>
-                    ),
-                  },
-                  {
-                    key: 'source',
-                    label: '查看动作来源和证据',
-                    forceRender: true,
-                    onKeyDown: activateCollapseWithSpace,
-                    children: <div className="attention-context-body">{relatedRuns}</div>,
-                  },
-                ]}
-              />
-            ) : (
-              <>
-                {relatedRuns}
-                <Button disabled={busy || undefined} onClick={showBrowser}>
-                  查看当前网页
-                </Button>
-                <p className="attention-muted">当前网页可能已切换，请先核对地址与目标。</p>
-              </>
-            )}
+            <Card className="attention-detail-surface attention-context-card">
+              <h2>{human(selected) ? '仅对本次请求生效' : '查看来源与证据'}</h2>
+              <p>
+                {human(selected)
+                  ? '确认不修改实例的默认权限，也不授权其他动作。'
+                  : '查看原运行记录和保存的证据，再决定下一步。'}
+              </p>
+              <p className="attention-muted">
+                超时、取消或宿主退出后，人工请求失效。结果未知的操作不会自动重放。
+              </p>
+              {human(selected) ? (
+                <Collapse
+                  className="attention-context-links"
+                  key={selected.id}
+                  items={[
+                    {
+                      key: 'state',
+                      label: '查看请求状态',
+                      forceRender: true,
+                      onKeyDown: activateCollapseWithSpace,
+                      children: (
+                        <div className="attention-context-body">
+                          <h3>{label(selected)}</h3>
+                          <p>
+                            {state === 'waiting'
+                              ? '来源运行正在等待本次回应。请核对左侧内容后再确认。'
+                              : state === 'answered'
+                                ? '本次请求已经回应，不会重复提交。后续结果请查看来源运行。'
+                                : state === 'expired'
+                                  ? '请求已超时或来源运行已结束，无法继续回应。'
+                                  : '当前无法核实来源运行是否仍在等待，暂时不能回应。'}
+                          </p>
+                          <Descriptions
+                            className="attention-source-facts"
+                            size="small"
+                            layout="vertical"
+                            column={1}
+                            items={[
+                              { key: 'created', label: '创建时间', children: date(selected.time) },
+                              {
+                                key: 'state',
+                                label: '来源运行保存状态',
+                                children: sourceRun
+                                  ? runStateLabels[sourceRun.state]
+                                  : '当前摘要未包含来源运行',
+                              },
+                            ]}
+                          />
+                          <p className="attention-muted">
+                            请求最长等待 10 分钟；取消或宿主退出会提前失效。
+                          </p>
+                          <Button
+                            disabled={busy || undefined}
+                            onClick={() => void act(async () => {}, '已刷新当前处理状态')}
+                          >
+                            {busy ? '正在处理…' : '刷新状态'}
+                          </Button>
+                        </div>
+                      ),
+                    },
+                    {
+                      key: 'source',
+                      label: '查看动作来源和证据',
+                      forceRender: true,
+                      onKeyDown: activateCollapseWithSpace,
+                      children: <div className="attention-context-body">{relatedRuns}</div>,
+                    },
+                  ]}
+                />
+              ) : (
+                <>
+                  {relatedRuns}
+                  <Button disabled={busy || undefined} onClick={showBrowser}>
+                    查看当前网页
+                  </Button>
+                  <p className="attention-muted">当前网页可能已切换，请先核对地址与目标。</p>
+                </>
+              )}
+            </Card>
           </aside>
         </div>
       )}
