@@ -4,6 +4,8 @@
   --fa-bg-surface: var(--fa-raw-white);
   --fa-bg-subtle: var(--fa-raw-soft);
   --fa-bg-nav: var(--fa-raw-nav);
+  --fa-bg-mask: var(--fa-raw-mask);
+  --fa-shadow-floating: var(--fa-raw-floatingShadow);
   --fa-text-primary: var(--fa-raw-ink);
   --fa-text-secondary: var(--fa-raw-muted);
   --fa-text-inverse: var(--fa-raw-white);

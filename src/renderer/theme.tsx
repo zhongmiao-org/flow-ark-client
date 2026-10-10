@@ -169,6 +169,8 @@ function WorkspaceTokens({ children }: { children: ReactNode }) {
       red: token.colorError,
       redSoft: token.colorErrorBg,
       disabled: token.colorTextDisabled,
+      mask: token.colorBgMask,
+      floatingShadow: token.boxShadowSecondary,
     };
     const root = document.documentElement.style;
     const previous = Object.keys(values).map((key) => [
