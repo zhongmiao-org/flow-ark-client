@@ -57,15 +57,42 @@ export default function RunRerunPanel({
   const relatedButtons = useRef(new Map<string, HTMLButtonElement>());
   const restoringFocus = useRef(!!initialView?.focusRunId);
   useEffect(() => {
-    if (!initialView?.focusRunId) return;
+    if (!active || !initialView?.focusRunId) return;
+    let visibleFrame = 0;
+    let observer: ResizeObserver | undefined;
     const frame = requestAnimationFrame(() => {
       restoringFocus.current = false;
-      (relatedButtons.current.get(initialView.focusRunId!) ?? relationsHeading.current)?.focus({
-        preventScroll: true,
-      });
+      const target =
+        relatedButtons.current.get(initialView.focusRunId!) ?? relationsHeading.current;
+      const main = target?.closest('main');
+      if (!target || !main) return;
+      target.focus({ preventScroll: true });
+      const ensureVisible = () => {
+        if (!activeRef.current || document.activeElement !== target) return;
+        const bounds = target.getBoundingClientRect();
+        const viewport = main.getBoundingClientRect();
+        if (
+          bounds.top < viewport.top ||
+          bounds.bottom > viewport.bottom ||
+          bounds.left < viewport.left ||
+          bounds.right > viewport.right
+        )
+          target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      };
+      ensureVisible();
+      visibleFrame = requestAnimationFrame(ensureVisible);
+      observer = new ResizeObserver(ensureVisible);
+      observer.observe(target);
+      observer.observe(main);
+      const card = target.closest('.run-rerun-context-card');
+      if (card) observer.observe(card);
     });
-    return () => cancelAnimationFrame(frame);
-  }, []);
+    return () => {
+      cancelAnimationFrame(frame);
+      cancelAnimationFrame(visibleFrame);
+      observer?.disconnect();
+    };
+  }, [active, initialView?.focusRunId]);
   const reasonsHeading = useRef<HTMLHeadingElement>(null);
   const relationsHeading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
@@ -245,7 +272,7 @@ export default function RunRerunPanel({
             <Card
               className={`run-rerun-main-card${page ? '' : ' is-inline'}`}
               variant={page ? undefined : 'borderless'}
-              styles={page ? undefined : { body: { padding: 0 } }}
+              styles={{ body: { padding: page ? 28 : 0 } }}
             >
               {!terminal && (
                 <div className="run-rerun-unavailable" role="status">
@@ -360,7 +387,9 @@ export default function RunRerunPanel({
                   <Descriptions
                     className="metadata-facts run-rerun-summary"
                     column={1}
-                    bordered
+                    layout={page ? 'vertical' : 'horizontal'}
+                    bordered={!page}
+                    colon={false}
                     size="small"
                     items={[
                       {
