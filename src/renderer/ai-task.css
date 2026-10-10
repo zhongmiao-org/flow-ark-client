@@ -1464,6 +1464,17 @@
 .ai-task-readable-plan .task-plan-confirm > button:not(.ant-btn-primary) {
   min-width: 144px;
 }
+@container (min-width: 951px) {
+  .ai-task-readable-plan .task-graph-inline {
+    max-height: 404px;
+    overflow: auto;
+    padding: 2px;
+    margin: -2px;
+  }
+  .ai-task-readable-plan .task-graph-inline [data-task-step-heading] {
+    scroll-margin-bottom: 200px;
+  }
+}
 
 .task-step-list[hidden] {
   display: none;
