@@ -41,14 +41,12 @@ export function MappingValues({
   change,
   choices,
   kind,
-  protectDraft = false,
 }: {
   label: string;
   value: Json;
   change: (value: Json) => void;
   choices: ReferenceChoice[];
   kind: 'headers' | 'cells';
-  protectDraft?: boolean;
 }) {
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
@@ -134,7 +132,7 @@ export function MappingValues({
           className="mapping-values"
           ref={root}
           data-value-invalid={
-            protectDraft && (name || rename !== active || error)
+            name || rename !== active || error
               ? '请完成条目名称编辑，或放弃未应用的名称。'
               : undefined
           }
@@ -190,10 +188,10 @@ export function MappingValues({
               <label htmlFor={`${id}-new`}>新增{label}名称</label>
               <div className="resource-inline">
                 <Input
-                  status={protectDraft && !!name ? 'error' : undefined}
+                  status={name ? 'error' : undefined}
                   id={`${id}-new`}
                   className="mapping-new-input"
-                  aria-invalid={protectDraft && !!name}
+                  aria-invalid={!!name}
                   placeholder={kind === 'cells' ? 'A1' : 'Content-Type'}
                   value={name}
                   onChange={(event) => {
@@ -218,10 +216,10 @@ export function MappingValues({
                 <label htmlFor={`${id}-rename`}>当前{label}名称</label>
                 <div className="resource-inline">
                   <Input
-                    status={protectDraft && rename !== active ? 'error' : undefined}
+                    status={rename !== active ? 'error' : undefined}
                     id={`${id}-rename`}
                     className="mapping-rename-input"
-                    aria-invalid={protectDraft && rename !== active}
+                    aria-invalid={rename !== active}
                     value={rename}
                     onChange={(event) => {
                       setRename(event.target.value);
@@ -258,7 +256,7 @@ export function MappingValues({
               </Card>
             )}
           </div>
-          {protectDraft && (name || rename !== active || error) && (
+          {(name || rename !== active || error) && (
             <Button
               htmlType="button"
               onClick={() => {

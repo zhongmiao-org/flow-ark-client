@@ -75,7 +75,6 @@ export default function ResourceNodeConfiguration({
           title: '请求头',
           content: (
             <MappingValues
-              protectDraft={compact}
               label="请求头"
               kind="headers"
               value={node.headers}
@@ -114,7 +113,6 @@ export default function ResourceNodeConfiguration({
                 title: '单元格映射',
                 content: (
                   <MappingValues
-                    protectDraft={compact}
                     label="单元格映射"
                     kind="cells"
                     value={node.cells}
