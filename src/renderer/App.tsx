@@ -568,6 +568,30 @@ function WorkspaceApp() {
     leaveTemplateContext(next, destination);
   }
   const feedbackOrigin = useRef<HTMLElement | null>(null);
+  const actionErrorPanel = useRef<HTMLDivElement | null>(null);
+  const pendingActionError = useRef<{ origin: HTMLElement | null; message: string } | undefined>(
+    undefined,
+  );
+  const [actionFailure, setActionFailure] = useState(0);
+  useEffect(() => {
+    if (busy || !pendingActionError.current) return;
+    const pending = pendingActionError.current;
+    pendingActionError.current = undefined;
+    if (!error || error !== pending.message) return;
+    const frame = requestAnimationFrame(() => {
+      const origin = pending.origin;
+      const focused = document.activeElement;
+      if (
+        !origin?.isConnected ||
+        origin.closest('[hidden]') ||
+        !origin.getClientRects().length ||
+        (focused !== origin && focused !== document.body)
+      )
+        return;
+      actionErrorPanel.current?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [busy, error, actionFailure]);
   function dismissFeedback(clear: () => void) {
     clear();
     requestAnimationFrame(() => {
@@ -578,8 +602,9 @@ function WorkspaceApp() {
     });
   }
   async function action(fn: () => Promise<any>, message?: string) {
-    feedbackOrigin.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const origin = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    feedbackOrigin.current = origin;
+    pendingActionError.current = undefined;
     setBusy(true);
     setError('');
     try {
@@ -591,8 +616,12 @@ function WorkspaceApp() {
       if (
         document.activeElement instanceof HTMLElement &&
         document.activeElement.matches('[aria-invalid="true"]')
-      )
+      ) {
         feedbackOrigin.current = document.activeElement;
+      } else {
+        pendingActionError.current = { origin, message: e.message };
+        setActionFailure((count) => count + 1);
+      }
       setError(e.message);
     } finally {
       setBusy(false);
@@ -1654,6 +1683,10 @@ function WorkspaceApp() {
           )}
           {error && (
             <Alert
+              ref={(instance) => {
+                actionErrorPanel.current = instance?.nativeElement ?? null;
+                actionErrorPanel.current?.setAttribute('tabindex', '-1');
+              }}
               className="workspace-feedback"
               type="error"
               showIcon

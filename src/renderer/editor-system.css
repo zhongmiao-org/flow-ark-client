@@ -15,10 +15,21 @@
   background: var(--fa-text-secondary);
 }
 .editing-workspace > main {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
+.editing-workspace .topbar {
+  flex-shrink: 0;
+}
+.editing-workspace .workspace-feedback {
+  flex-shrink: 0;
+  max-height: 30vh;
+  overflow: auto;
+}
 .editor-page {
-  height: calc(100vh - 96px);
+  height: auto;
+  flex: 1;
   min-height: 0;
   padding: 32px;
   gap: 16px;
@@ -364,7 +375,6 @@
     padding-block: 5px;
   }
   .editing-workspace .editor-page {
-    height: calc(100vh - 84px);
     padding: 16px;
     gap: 12px;
   }
