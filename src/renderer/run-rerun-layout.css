@@ -187,7 +187,10 @@
   padding-bottom: 16px;
 }
 .run-rerun-page .run-rerun-mode {
-  gap: 16px;
+  gap: 24px;
+}
+.run-rerun-page .run-rerun-options {
+  gap: 24px;
 }
 .run-rerun-page .run-rerun-mode small {
   display: none;
@@ -232,6 +235,39 @@
 }
 .run-rerun-page .run-rerun-summary {
   margin-top: 0;
+}
+.run-rerun-page .run-rerun-summary .ant-descriptions-row > th,
+.run-rerun-page .run-rerun-summary .ant-descriptions-row > td {
+  padding: 0 0 30px;
+}
+.run-rerun-page .run-rerun-summary .ant-descriptions-row:has(th) > th {
+  padding-bottom: 8px;
+}
+.run-rerun-page .run-rerun-summary .ant-descriptions-row:last-child > td {
+  padding-bottom: 0;
+}
+.run-rerun-page .run-rerun-summary .ant-descriptions-item-label {
+  font-size: 12px;
+  line-height: 18px;
+}
+.run-rerun-page .run-rerun-summary .ant-descriptions-item-content {
+  font-size: 14px;
+  line-height: 22px;
+}
+.run-rerun-page .run-rerun-warning {
+  min-height: 72px;
+  padding: 16px;
+}
+.run-rerun-page .run-rerun-context-disclosure > .ant-collapse-item > .ant-collapse-header {
+  min-height: 40px;
+  padding: 8px 12px;
+}
+.run-rerun-page .run-rerun-context-disclosure {
+  background: var(--fa-bg-surface);
+}
+.run-rerun-relations button,
+.run-rerun-context-detail h4 {
+  scroll-margin-block: 6px;
 }
 
 .run-rerun-context-detail h4 {
