@@ -47,10 +47,14 @@ export default function TaskStepInspector({
   useLayoutEffect(() => {
     const target = navigationTarget.current;
     navigationTarget.current = null;
+    if (presentation === 'graph') {
+      const body = heading.current?.closest<HTMLElement>('.ant-card-body');
+      if (body && body.scrollHeight > body.clientHeight) body.scrollTop = 0;
+    }
     if (target !== selected || !heading.current) return;
     heading.current.scrollIntoView({ block: 'nearest' });
     heading.current.focus({ preventScroll: true });
-  }, [selected]);
+  }, [selected, presentation]);
   const value = (input: unknown) => (
     <ConfiguredValue key={selected} input={input} flow={flow} selected={selected} />
   );
