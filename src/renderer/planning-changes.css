@@ -69,8 +69,9 @@
   align-items: start;
 }
 .planning-change-values > section {
-  border-radius: var(--fa-radius-12);
-  padding: 16px;
+  min-width: 0;
+}
+.planning-change-card > .ant-card-body {
   display: grid;
   gap: 12px;
   min-width: 0;
@@ -93,10 +94,8 @@
   background: transparent;
   padding: 0;
 }
-.planning-changes-empty {
-  padding: 20px;
-  background: var(--fa-bg-canvas);
-  border-radius: var(--fa-radius-8);
+.planning-changes-empty .ant-empty {
+  margin: 0;
 }
 @container (max-width: 540px) {
   .planning-change-values {

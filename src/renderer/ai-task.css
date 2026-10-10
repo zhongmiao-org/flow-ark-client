@@ -407,7 +407,7 @@
   height: 700px;
   overflow: auto;
 }
-.ai-step-diff-values > section > p {
+.ai-step-diff-card > .ant-card-body > p {
   margin-top: 12px;
   color: var(--fa-text-secondary);
 }
@@ -419,10 +419,7 @@
   flex-direction: column;
   gap: 16px;
 }
-.ai-step-diff-values > section {
-  border: 1px solid var(--fa-border-default);
-  border-radius: var(--fa-radius-12);
-  padding: 16px;
+.ai-step-diff-card {
   min-height: 108px;
 }
 .ai-step-before {

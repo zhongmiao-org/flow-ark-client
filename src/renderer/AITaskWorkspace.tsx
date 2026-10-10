@@ -3417,22 +3417,24 @@ function ScopedChanges({
   return (
     <div className="ai-step-diff-values">
       {(['before', 'after'] as const).map((side) => (
-        <section key={side} className={`ai-step-${side}`}>
-          <h2>{side === 'before' ? '原配置' : '新配置'}</h2>
-          {before?.type === 'condition' &&
-          after?.type === 'condition' &&
-          changes.every((change) =>
-            ['actual', 'operator', 'expected'].includes(change.path.split('/').at(-1)!),
-          ) ? (
-            <p>{conditionText(side === 'before' ? before : after)}</p>
-          ) : (
-            changes.map((change) => (
-              <div key={change.path}>
-                <h3>{labels[change.path.split('/').at(-1)!] ?? change.path}</h3>
-                <pre>{text(change[side])}</pre>
-              </div>
-            ))
-          )}
+        <section key={side}>
+          <Card size="small" className={`ai-step-diff-card ai-step-${side}`}>
+            <h2>{side === 'before' ? '原配置' : '新配置'}</h2>
+            {before?.type === 'condition' &&
+            after?.type === 'condition' &&
+            changes.every((change) =>
+              ['actual', 'operator', 'expected'].includes(change.path.split('/').at(-1)!),
+            ) ? (
+              <p>{conditionText(side === 'before' ? before : after)}</p>
+            ) : (
+              changes.map((change) => (
+                <div key={change.path}>
+                  <h3>{labels[change.path.split('/').at(-1)!] ?? change.path}</h3>
+                  <pre>{text(change[side])}</pre>
+                </div>
+              ))
+            )}
+          </Card>
         </section>
       ))}
     </div>
