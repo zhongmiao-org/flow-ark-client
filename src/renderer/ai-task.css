@@ -305,7 +305,9 @@
   border: 1px solid transparent;
   border-radius: var(--fa-radius-8);
   padding: 16px;
+  height: auto;
   min-height: 88px;
+  white-space: normal;
   gap: 24px;
 }
 .ai-task-step[aria-pressed='true'] {
@@ -313,12 +315,14 @@
   background: var(--fa-action-subtle);
 }
 .ai-task-step > b {
+  flex: 0 0 auto;
   color: var(--fa-action-primary);
   font: 500 18px/28px var(--fa-font-latin);
 }
 .ai-task-step > span {
   display: flex;
   flex-direction: column;
+  flex: 1;
   gap: 8px;
   min-width: 0;
 }
