@@ -1,4 +1,4 @@
-import { Alert, Collapse, Descriptions, Tag, Badge, Card } from 'antd';
+import { Collapse, Descriptions, Tag, Badge, Card } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { ReactNode } from 'react';
 import type { taskRunPresentation } from './task-run-presentation';
@@ -77,7 +77,7 @@ export default function TaskRunFailure({
         需要处理
       </Tag>
       <h2 className="task-run-current">{reason.title}</h2>
-      <Alert type="warning" role="status" showIcon title={reason.explanation} />
+      <p role="status">{reason.explanation}</p>
       {model.current?.ended && (
         <p>最后记录的“{model.current.name}”已确认完成；当前记录未确认后续执行位置。</p>
       )}
@@ -90,9 +90,12 @@ export default function TaskRunFailure({
       <section aria-label="失败时尚未完成">
         <Card size="small" className="task-run-file task-failure-remaining">
           <h3>尚未完成</h3>
-          <p>已开始但未确认完成：{stepNames(model.unresolved, '无此类记录')}</p>
-          <p>尚未执行：{stepNames(model.unvisited, '无此类记录')}。</p>
-          {!!model.unvisited.length && (
+          <p>
+            已开始但未确认完成：{stepNames(model.unresolved, '无此类记录')}
+            <br />
+            尚未执行：{stepNames(model.unvisited, '无此类记录')}。
+          </p>
+          {!!model.unvisited.length && model.rows.some((row) => row.type === 'condition') && (
             <p className="task-run-path">未执行清单可能包含未选择的分支。</p>
           )}
         </Card>

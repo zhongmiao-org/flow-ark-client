@@ -523,6 +523,12 @@
 .task-run-failed > section > .task-run-card {
   min-height: 710px;
 }
+.task-run-failed .run-state-tag {
+  margin-bottom: 8px;
+}
+.task-run-failed .task-run-current {
+  line-height: 40px;
+}
 .task-failure-completed {
   min-height: 100px;
 }
