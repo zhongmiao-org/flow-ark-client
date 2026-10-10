@@ -1463,24 +1463,8 @@ main {
 }
 .browser-sidebar footer {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: stretch;
   flex-shrink: 0;
-  padding: 8px 12px;
-  font-size: 10px;
-  color: #7c8b83;
-  border-top: 1px solid var(--border);
-}
-.browser-sidebar footer > span:last-child {
-  margin-left: auto;
-  white-space: nowrap;
-}
-.browser-error {
-  font-size: 12px;
-  color: #923d30;
-  padding: 8px 12px;
-  background: #fff1ed;
-  overflow-wrap: anywhere;
 }
 .with-browser .sidebar {
   width: 174px;
