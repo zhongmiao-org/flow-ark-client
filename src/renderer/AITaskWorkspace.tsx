@@ -1761,11 +1761,13 @@ export default function AITaskWorkspace(props: Props) {
                 ? '确认并重试生成'
                 : page === 'understand' || result?.kind === 'clarify'
                   ? '确认并生成方案'
-                  : result || detail.flow
+                  : detail.flow
                     ? scope
                       ? '生成这一步的修改'
                       : '生成修改方案'
-                    : '理解我的任务'}
+                    : result?.kind === 'plan'
+                      ? '重新生成方案'
+                      : '理解我的任务'}
           </Button>
         )}
         {page !== 'modify' && (

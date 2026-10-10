@@ -1,5 +1,5 @@
 import { Alert, Button, Card, Collapse, Descriptions, Tag } from 'antd';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import type { PlanningTask, PlanningResult } from '../shared/planning';
 import { planningTaskColors } from './theme';
 import { activateCollapseWithSpace } from './collapseKeyboard';
@@ -39,6 +39,11 @@ export default function TaskGenerationPage({
   const heading = useRef<HTMLHeadingElement>(null);
   const review = useRef<HTMLDivElement>(null);
   const retryButton = useRef<HTMLButtonElement>(null);
+  const reviewId = useId();
+  function focusReview() {
+    review.current?.scrollIntoView({ block: 'nearest' });
+    review.current?.focus({ preventScroll: true });
+  }
   useEffect(() => {
     setRetry(false);
     heading.current?.focus({ preventScroll: true });
@@ -46,8 +51,7 @@ export default function TaskGenerationPage({
   }, [task.id, task.status]);
   useEffect(() => {
     if (!retry) return;
-    review.current?.scrollIntoView({ block: 'nearest' });
-    review.current?.focus({ preventScroll: true });
+    focusReview();
   }, [retry]);
   return (
     <section
@@ -148,9 +152,14 @@ export default function TaskGenerationPage({
                 type="primary"
                 ref={retryButton}
                 aria-expanded={retry}
+                aria-controls={retry ? reviewId : undefined}
                 disabled={busy || undefined}
                 onClick={() => {
-                  if (!retry) resetReview();
+                  if (retry) {
+                    focusReview();
+                    return;
+                  }
+                  resetReview();
                   setRetry(true);
                 }}
               >
@@ -192,6 +201,7 @@ export default function TaskGenerationPage({
         )}
         {retry && !generating && !unsupported && (
           <div
+            id={reviewId}
             className="task-generation-review"
             tabIndex={-1}
             ref={review}

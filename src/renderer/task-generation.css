@@ -118,7 +118,7 @@
   font-size: 13px;
 }
 @container (max-width: 760px) {
-  .task-generation .task-generation-surface {
+  .task-generation[data-generation-state] .task-generation-surface {
     min-height: 420px;
   }
   .task-generation h2 {
