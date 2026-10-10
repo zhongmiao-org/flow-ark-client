@@ -395,6 +395,28 @@ export default function AttentionWorkspace({
         : heading.current;
     target?.focus({ preventScroll: true });
     runReturn.current = null;
+    if (!target) return;
+    const ensureVisible = () => {
+      if (!main || document.activeElement !== target) return;
+      const bounds = target.getBoundingClientRect();
+      const visible = main.getBoundingClientRect();
+      if (
+        bounds.top < visible.top ||
+        bounds.bottom > visible.bottom ||
+        bounds.left < visible.left ||
+        bounds.right > visible.right
+      )
+        target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    };
+    ensureVisible();
+    const frame = requestAnimationFrame(ensureVisible);
+    const observer = new ResizeObserver(ensureVisible);
+    observer.observe(target);
+    if (main) observer.observe(main);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
   }, [selectedId, active]);
   useEffect(() => {
     if (active && error) errorPanel.current?.focus();
@@ -419,16 +441,22 @@ export default function AttentionWorkspace({
     if (busy || !actionFocus.current) return;
     const origin = actionFocus.current;
     actionFocus.current = null;
-    if (
-      !active ||
-      error ||
-      origin.visit !== visit.current ||
-      document.activeElement !== document.body
-    )
-      return;
-    const target =
-      origin.trigger.isConnected && !origin.trigger.disabled ? origin.trigger : noticePanel.current;
-    target?.focus({ preventScroll: true });
+    if (!active || error || origin.visit !== visit.current) return;
+    const frame = requestAnimationFrame(() => {
+      if (
+        origin.visit !== visit.current ||
+        (document.activeElement !== document.body &&
+          !(document.activeElement === origin.trigger && origin.trigger.disabled))
+      )
+        return;
+      const target =
+        origin.trigger.isConnected && !origin.trigger.disabled
+          ? origin.trigger
+          : noticePanel.current;
+      target?.focus({ preventScroll: true });
+      target?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    });
+    return () => cancelAnimationFrame(frame);
   }, [active, busy, error, notice, selectedId]);
   const act = async (operation: () => Promise<void>, message = '', acknowledgedMessage = '') => {
     if (locked.current) return;
@@ -576,7 +604,14 @@ export default function AttentionWorkspace({
             key={item.id}
             aria-label={item.title}
           >
-            <Card className="attention-card-surface">
+            <Card
+              className="attention-card-surface"
+              styles={{
+                body: {
+                  padding: item.kind === 'unknown-result' ? '24px 24px 16px' : '24px 24px 10px',
+                },
+              }}
+            >
               <div className="attention-card-heading">
                 <Tag
                   className="run-state-tag"
@@ -750,7 +785,7 @@ export default function AttentionWorkspace({
           <article
             className={`attention-detail-card${human(selected) ? ' attention-request-card' : ''}`}
           >
-            <Card className="attention-detail-surface">
+            <Card className="attention-detail-surface" styles={{ body: { padding: 28 } }}>
               <Tag
                 className="run-state-tag"
                 variant="filled"
@@ -799,6 +834,7 @@ export default function AttentionWorkspace({
                   <>
                     <Descriptions
                       className="attention-review-content"
+                      colon={false}
                       layout="vertical"
                       column={1}
                       items={[
@@ -1009,6 +1045,7 @@ export default function AttentionWorkspace({
                           </p>
                           <Descriptions
                             className="attention-source-facts"
+                            colon={false}
                             size="small"
                             layout="vertical"
                             column={1}

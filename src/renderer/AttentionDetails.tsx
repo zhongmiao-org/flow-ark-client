@@ -35,6 +35,7 @@ export default function AttentionDetails({
       {!!entries.length && (
         <Descriptions
           className="attention-facts"
+          colon={false}
           layout="vertical"
           column={1}
           items={entries.map(([key, value]) => ({
