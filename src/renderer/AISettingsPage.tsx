@@ -378,11 +378,15 @@ export default function AISettingsPage({
     setLeaving(undefined);
     setRemoving(false);
     requestAnimationFrame(() => {
-      if (removing) removeButton.current?.focus({ preventScroll: true });
-      else if (!dirty && !testing) {
-        resultHeading.current?.scrollIntoView({ block: 'nearest' });
-        resultHeading.current?.focus({ preventScroll: true });
-      } else if (lastInput.current?.isConnected) lastInput.current.focus({ preventScroll: true });
+      const target = removing
+        ? removeButton.current
+        : !dirty && !testing
+          ? resultHeading.current
+          : lastInput.current?.isConnected
+            ? lastInput.current
+            : undefined;
+      target?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      target?.focus({ preventScroll: true });
     });
   };
   usePageBack(
