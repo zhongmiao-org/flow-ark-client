@@ -56,6 +56,7 @@ export default function TemplateLibrary({
   const previewRef = useRef<Preview | undefined>(undefined);
   previewRef.current = preview;
   const [installed, setInstalled] = useState<InstalledPackage>();
+  const [removed, setRemoved] = useState<InstalledPackage[]>([]);
   const [selectedKey, setSelectedKey] = useState('');
   const [detail, setDetail] = useState<TemplateDetail>();
   const [adoption, setAdoption] = useState<{
@@ -103,15 +104,20 @@ export default function TemplateLibrary({
     setError('');
     consumePreview?.();
   }, [initialPreview, consumePreview]);
-  const pkg = data.templates.find((p) => p.key === selectedKey);
+  const templates = data.templates.filter((p) => !removed.some((item) => item.key === p.key));
+  const pkg = templates.find((p) => p.key === selectedKey);
   const shown = view === 'installed' ? installed : pkg;
   const installedRefreshFailure =
     view === 'installed' &&
     !!installed &&
     ['install', 'refresh-installed'].includes(failedOperation);
+  const removedRefreshFailure =
+    view === 'library' &&
+    removed.length > 0 &&
+    ['remove', 'refresh-removed'].includes(failedOperation);
   const same =
     preview &&
-    data.templates.find((p) => p.key === `${preview.manifest.id}@${preview.manifest.version}`);
+    templates.find((p) => p.key === `${preview.manifest.id}@${preview.manifest.version}`);
   const conflict =
     same && preview && same.manifest.contentDigest !== preview.manifest.contentDigest;
   const instances = data.instances
@@ -121,7 +127,7 @@ export default function TemplateLibrary({
         .toLocaleLowerCase()
         .includes(instanceQuery.trim().toLocaleLowerCase()),
     );
-  const matches = data.templates
+  const matches = templates
     .filter(
       (p) =>
         `${p.manifest.name} ${p.manifest.description} ${p.manifest.author}`
@@ -136,7 +142,7 @@ export default function TemplateLibrary({
           a.key.localeCompare(b.key),
     );
   const caps = [
-    ...new Set(data.templates.flatMap((p) => p.manifest.entries.flatMap((e) => e.capabilities))),
+    ...new Set(templates.flatMap((p) => p.manifest.entries.flatMap((e) => e.capabilities))),
   ].sort();
   const references = pkg ? data.instances.filter((i) => i.packageKey === pkg.key) : [];
   const flowRefs = pkg ? data.flows.filter((f) => f.bindings.template?.packageKey === pkg.key) : [];
@@ -145,7 +151,7 @@ export default function TemplateLibrary({
     view === 'instances' ? instancesOrigin : view === 'remove' ? 'package' : 'library';
   const backLabel =
     backView === 'remove' ? '返回版本引用' : backView === 'package' ? '返回模板详情' : '返回模板库';
-  const instancePackage = data.templates.find((item) => item.key === instanceFilter);
+  const instancePackage = templates.find((item) => item.key === instanceFilter);
   const title = {
     library: '模板库',
     inspect: '检查并安装模板',
@@ -264,7 +270,7 @@ export default function TemplateLibrary({
     work('create', async () => {
       remember();
       const original = data.instances.find((item) => item.id === copy);
-      const originalPackage = data.templates.find((item) => item.key === original?.packageKey);
+      const originalPackage = templates.find((item) => item.key === original?.packageKey);
       const instance = await api('template.create', {
         key: p.key,
         ...(copy ? { copyFrom: copy } : {}),
@@ -406,29 +412,51 @@ export default function TemplateLibrary({
         {error && (
           <Alert
             className="template-catalog-feedback"
-            type={installedRefreshFailure ? 'warning' : 'error'}
+            type={installedRefreshFailure || removedRefreshFailure ? 'warning' : 'error'}
             showIcon
             title={
               <strong ref={errorHeading} tabIndex={-1}>
-                {installedRefreshFailure
-                  ? '模板已安装，列表刷新失败'
-                  : failedOperation === 'inspect'
-                    ? '模板检查未完成'
-                    : failedOperation === 'install'
-                      ? '安装未完成'
-                      : '操作未完成'}
+                {removedRefreshFailure
+                  ? '模板版本已卸载，列表刷新失败'
+                  : installedRefreshFailure
+                    ? '模板已安装，列表刷新失败'
+                    : failedOperation === 'inspect'
+                      ? '模板检查未完成'
+                      : failedOperation === 'install'
+                        ? '安装未完成'
+                        : '操作未完成'}
               </strong>
             }
-            description={error}
+            description={
+              removedRefreshFailure ? (
+                <>
+                  <p>
+                    {removed.map((p) => `${p.manifest.name} · v${p.manifest.version}`).join('、')}
+                  </p>
+                  <p>{error}</p>
+                </>
+              ) : (
+                error
+              )
+            }
             action={
-              installedRefreshFailure ? (
+              installedRefreshFailure || removedRefreshFailure ? (
                 <Button
                   disabled={!!busy || undefined}
                   onClick={() =>
-                    void work('refresh-installed', async () => {
-                      await refresh();
-                      requestAnimationFrame(() => heading.current?.focus());
-                    })
+                    void work(
+                      removedRefreshFailure ? 'refresh-removed' : 'refresh-installed',
+                      async () => {
+                        await refresh();
+                        if (removedRefreshFailure) {
+                          setRemoved([]);
+                          setNotice(
+                            `${removed.map((p) => `${p.manifest.name} · v${p.manifest.version}`).join('、')}已卸载，其他版本保持不变。`,
+                          );
+                        }
+                        requestAnimationFrame(() => heading.current?.focus());
+                      },
+                    )
                   }
                 >
                   重新读取模板列表
@@ -503,7 +531,7 @@ export default function TemplateLibrary({
               <small>模板更新不覆盖已有实例、计划或运行快照。</small>
             </Card>
             <div className="template-catalog-toolbar">
-              <strong>已安装 {data.templates.length} 个版本</strong>
+              <strong>已安装 {templates.length} 个版本</strong>
               <label>
                 <span className="sr-only">搜索模板</span>
                 <Input
@@ -592,16 +620,16 @@ export default function TemplateLibrary({
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description={
                     <>
-                      <h2>{data.templates.length ? '没有匹配的模板' : '尚未安装模板'}</h2>
+                      <h2>{templates.length ? '没有匹配的模板' : '尚未安装模板'}</h2>
                       <p>
-                        {data.templates.length
+                        {templates.length
                           ? '调整关键词或能力筛选。'
                           : '选择标准 .flowark-template.zip 文件，先检查再安装。'}
                       </p>
                     </>
                   }
                 >
-                  {data.templates.length > 0 && (
+                  {templates.length > 0 && (
                     <Button
                       onClick={() => {
                         setQuery('');
@@ -668,29 +696,28 @@ export default function TemplateLibrary({
                     }
                   />
                 )}
-                {!same &&
-                  data.templates.some((item) => item.manifest.id === preview.manifest.id) && (
-                    <Alert
-                      className="template-install-feedback"
-                      type="info"
-                      role="status"
-                      showIcon
-                      title="发现新版本"
-                      description={
-                        <div className="feedback-body">
-                          <Tag
-                            variant="filled"
-                            color="processing"
-                            className="run-state-tag"
-                            icon={<Badge status="processing" />}
-                          >
-                            可并存安装
-                          </Tag>
-                          <p>新版本不会覆盖原实例、计划或运行；采用新版需创建独立实例。</p>
-                        </div>
-                      }
-                    />
-                  )}
+                {!same && templates.some((item) => item.manifest.id === preview.manifest.id) && (
+                  <Alert
+                    className="template-install-feedback"
+                    type="info"
+                    role="status"
+                    showIcon
+                    title="发现新版本"
+                    description={
+                      <div className="feedback-body">
+                        <Tag
+                          variant="filled"
+                          color="processing"
+                          className="run-state-tag"
+                          icon={<Badge status="processing" />}
+                        >
+                          可并存安装
+                        </Tag>
+                        <p>新版本不会覆盖原实例、计划或运行；采用新版需创建独立实例。</p>
+                      </div>
+                    }
+                  />
+                )}
                 {preview.consumed && busy !== 'install' && (
                   <Alert
                     className="template-install-feedback"
@@ -737,6 +764,7 @@ export default function TemplateLibrary({
                         const token = preview.token;
                         setPreview({ ...preview, consumed: true });
                         const result = await api('template.install', { token });
+                        setRemoved((current) => current.filter((p) => p.key !== result.key));
                         setInstalled(result);
                         setSelectedKey(result.key);
                         setPreview(undefined);
@@ -875,7 +903,7 @@ export default function TemplateLibrary({
                     { value: '', label: '全部版本' },
                     ...[
                       ...new Set([
-                        ...data.templates.map((item) => item.key),
+                        ...templates.map((item) => item.key),
                         ...data.instances.map((i) => i.packageKey),
                       ]),
                     ].map((key) => ({ value: key, label: key })),
@@ -885,7 +913,7 @@ export default function TemplateLibrary({
             </div>
             <div className="template-instance-list">
               {instances.map((i) => {
-                const source = data.templates.find((item) => item.key === i.packageKey);
+                const source = templates.find((item) => item.key === i.packageKey);
                 return (
                   <article className="template-instance-card" key={i.id}>
                     <Card className="template-catalog-card">
@@ -990,9 +1018,13 @@ export default function TemplateLibrary({
                     onClick={() =>
                       void work('remove', async () => {
                         await api('template.remove', { key: pkg.key });
-                        await refresh();
+                        setRemoved((current) => [...current, structuredClone(pkg)]);
                         home();
-                        setNotice('此版本已卸载，其他版本保持不变。');
+                        setNotice(
+                          `${pkg.manifest.name} · v${pkg.manifest.version}已卸载，其他版本保持不变。`,
+                        );
+                        await refresh();
+                        setRemoved([]);
                       })
                     }
                   >
