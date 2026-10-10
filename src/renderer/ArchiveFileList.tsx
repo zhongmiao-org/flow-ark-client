@@ -1,4 +1,4 @@
-import { Button, Input } from 'antd';
+import { Button, Card, Empty, Input } from 'antd';
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import type { Json } from '../shared/types';
 import ValueField from './ValueField';
@@ -66,57 +66,62 @@ export default function ArchiveFileList({
                   rows.current[index] = element;
                 }}
               >
-                <div className="archive-file-row-heading">
-                  <span>文件 {index + 1}</span>
-                  <Button
-                    htmlType="button"
-                    aria-label={`删除归档文件 ${index + 1}`}
-                    onClick={() => {
-                      focusIndex.current = Math.min(index, files.length - 2);
-                      const next = files.filter((_, i) => i !== index);
-                      change(next);
-                      setNotice({
-                        message: `已移除第 ${index + 1} 项，仅修改归档清单。`,
-                        value: JSON.stringify(next),
-                      });
-                    }}
+                <Card size="small" className="archive-file-card">
+                  <div className="archive-file-row-heading">
+                    <span>文件 {index + 1}</span>
+                    <Button
+                      size="small"
+                      htmlType="button"
+                      aria-label={`删除归档文件 ${index + 1}`}
+                      onClick={() => {
+                        focusIndex.current = Math.min(index, files.length - 2);
+                        const next = files.filter((_, i) => i !== index);
+                        change(next);
+                        setNotice({
+                          message: `已移除第 ${index + 1} 项，仅修改归档清单。`,
+                          value: JSON.stringify(next),
+                        });
+                      }}
+                    >
+                      移除
+                    </Button>
+                  </div>
+                  <ValueField
+                    label={`文件 ${index + 1}`}
+                    value={file}
+                    choices={choices}
+                    defaultValue=""
+                    change={(next) => update(index, next)}
                   >
-                    移除
-                  </Button>
-                </div>
-                <ValueField
-                  label={`文件 ${index + 1}`}
-                  value={file}
-                  choices={choices}
-                  defaultValue=""
-                  change={(next) => update(index, next)}
-                >
-                  {typeof file === 'string' ? (
-                    <>
-                      <label htmlFor={`${id}-${index}`}>相对文件名 {index + 1}</label>
-                      <Input
-                        id={`${id}-${index}`}
-                        value={file}
-                        placeholder="例如 reports/summary.txt"
-                        onChange={(event) => update(index, event.target.value)}
-                      />
-                    </>
-                  ) : undefined}
-                </ValueField>
-                {referenceOf(file) === undefined && (typeof file !== 'string' || !file) && (
-                  <p className="archive-file-hint">
-                    {typeof file === 'string'
-                      ? '请填写文件名或选择变量。'
-                      : '归档时需要文件名文本，请改为文本或选择变量。'}
-                  </p>
-                )}
+                    {typeof file === 'string' ? (
+                      <>
+                        <label htmlFor={`${id}-${index}`}>相对文件名 {index + 1}</label>
+                        <Input
+                          id={`${id}-${index}`}
+                          value={file}
+                          placeholder="例如 reports/summary.txt"
+                          onChange={(event) => update(index, event.target.value)}
+                        />
+                      </>
+                    ) : undefined}
+                  </ValueField>
+                  {referenceOf(file) === undefined && (typeof file !== 'string' || !file) && (
+                    <p className="archive-file-hint">
+                      {typeof file === 'string'
+                        ? '请填写文件名或选择变量。'
+                        : '归档时需要文件名文本，请改为文本或选择变量。'}
+                    </p>
+                  )}
+                </Card>
               </li>
             ))}
           </ol>
           {!files.length && (
-            <div className="archive-file-empty">
-              尚未添加文件。添加一项，或在下方选择整个文件列表变量。
-            </div>
+            <Empty
+              className="archive-file-empty"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description="尚未添加文件。添加一项，或在下方选择整个文件列表变量。"
+            />
           )}
           <Button
             ref={add}

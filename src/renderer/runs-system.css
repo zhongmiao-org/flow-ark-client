@@ -364,7 +364,6 @@
 .run-detail .artifact-row {
   flex-wrap: wrap;
 }
-.run-detail .artifact-cleanup,
 .run-detail .rerun-panel {
   background: var(--fa-bg-surface);
   border-color: var(--fa-border-default);
