@@ -330,6 +330,9 @@
   font-size: 28px;
   line-height: 40px;
 }
+.template-manifest > .template-catalog-card > .ant-card-body {
+  padding: 28px;
+}
 @container (max-width: 860px) {
   .template-catalog-layout > section > .template-catalog-card,
   .template-catalog-layout > aside > .template-catalog-card {
