@@ -1,4 +1,7 @@
 /* The control and resource boards share the same six-card Figma layout. */
+.logic-configuration-workspace .resource-workspace-card > .ant-card-body {
+  padding: var(--fa-space-20);
+}
 .logic-configuration-workspace .node-timing {
   padding: 0;
   border: 0;
@@ -21,4 +24,21 @@
 }
 .logic-configuration-summary .ant-descriptions-item-content {
   overflow-wrap: anywhere;
+  padding: 6px;
+  background: var(--fa-bg-canvas);
+  border-radius: var(--fa-radius-6);
+  color: var(--fa-text-primary);
+  font-size: 13px;
+  line-height: 20px;
+}
+.logic-configuration-summary .ant-descriptions-item-label {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.logic-configuration-summary .ant-descriptions-row > th {
+  padding-bottom: 6px;
+}
+.logic-configuration-summary .ant-descriptions-row:not(:last-child) > td {
+  padding-bottom: 14px;
 }

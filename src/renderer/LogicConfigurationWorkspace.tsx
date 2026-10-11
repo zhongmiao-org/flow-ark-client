@@ -230,6 +230,7 @@ export default function LogicConfigurationWorkspace(props: Props) {
                           size="small"
                           column={1}
                           layout="vertical"
+                          colon={false}
                           items={fields(node, props.record).map(([label, text]) => ({
                             key: label,
                             label,

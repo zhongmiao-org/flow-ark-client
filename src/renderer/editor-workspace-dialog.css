@@ -26,7 +26,7 @@
   overflow: auto;
   scrollbar-gutter: stable;
 }
-@media (max-width: 1439px) {
+@media (width < 1440px) {
   .editor-workspace-overlay {
     --fa-workspace-navigation-width: 72px;
   }
