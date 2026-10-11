@@ -10,6 +10,7 @@ import type { RunState } from '../shared/types';
 import { presentRun } from '../shared/run-presentation';
 import RunResultReview from './RunResultReview';
 import './run-output-workspace.css';
+import { keepFocusedElementVisible } from './keepFocusedElementVisible';
 
 function fileSize(bytes: number) {
   if (!Number.isFinite(bytes) || bytes < 0) return '大小未记录';
@@ -36,7 +37,10 @@ function ArtifactCard({
     setNotice('');
   }, [artifact.artifactId, artifact.available, artifact.integrity, artifact.path]);
   useEffect(() => {
-    if (error) errorPanel.current?.focus();
+    const target = errorPanel.current;
+    if (!error || !target) return;
+    target.focus({ preventScroll: true });
+    return keepFocusedElementVisible(target);
   }, [error]);
   const tone =
     artifact.integrity === 'cleared'
