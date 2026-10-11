@@ -7,6 +7,7 @@ import { browserActions } from './browser-actions';
 import { kinds } from './node-kinds';
 import './run-step-details.css';
 import { runEventMessage } from './run-event-presentation';
+import { runInstancePresenter } from './run-instance-presentation';
 
 const configured = (value: unknown): string => {
   if (value === undefined) return '未配置';
@@ -169,7 +170,10 @@ export default function RunStepDetails({
   step: RunStepPresentation;
   compact?: boolean;
 }) {
-  const node = flatten(detail.snapshot?.steps ?? []).find((item) => item.id === step.nodeId);
+  const node =
+    step.instance && runInstancePresenter(detail.snapshot)(step.instance)
+      ? flatten(detail.snapshot?.steps ?? []).find((item) => item.id === step.nodeId)
+      : undefined;
   const events = step.instance
     ? detail.events
         .filter((event) => event.runId === detail.run.id && event.nodeInstance === step.instance)

@@ -6,6 +6,7 @@ import { runDisplayLabels } from '../shared/run-history';
 import type { RunRerunDetails } from '../shared/run-rerun';
 import type { Run } from '../shared/types';
 import { RunOutput } from './RunObservation';
+import { runInstancePresenter } from './run-instance-presentation';
 
 export default function RunLogSummary({
   detail,
@@ -27,6 +28,8 @@ export default function RunLogSummary({
   const run: Run = detail.run;
   const related: RunRerunDetails | undefined = detail.rerun;
   const view = presentRun({ ...detail, output: undefined }, Date.now());
+  const unresolved =
+    !!view.step.instance && runInstancePresenter(detail.snapshot)(view.step.instance) === null;
   const [opening, setOpening] = useState('');
   const [error, setError] = useState('');
   const request = useRef(0);
@@ -105,7 +108,7 @@ export default function RunLogSummary({
       </section>
       <section aria-label="步骤进度说明">
         <Card>
-          <h3>{view.step.type === 'script' ? '脚本进度' : '步骤进度'}</h3>
+          <h3>{!unresolved && view.step.type === 'script' ? '脚本进度' : '步骤进度'}</h3>
           <Descriptions
             colon={false}
             size="small"
@@ -115,7 +118,9 @@ export default function RunLogSummary({
               {
                 key: 'position',
                 label: view.step.kind === 'last' ? '最后记录步骤' : '记录位置',
-                children: view.step.name ?? view.step.label,
+                children: unresolved
+                  ? `${view.step.instance}（位置待核对）`
+                  : (view.step.name ?? view.step.label),
               },
               {
                 key: 'progress',

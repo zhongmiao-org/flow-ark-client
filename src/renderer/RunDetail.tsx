@@ -19,6 +19,7 @@ import { runTimeline, runTimelineTitle } from './run-timeline';
 import RunEventLog, { type RunLogPosition } from './RunEventLog';
 import RunLogSummary from './RunLogSummary';
 import DesktopRunReceipt from './DesktopRunReceipt';
+import { runInstancePresenter } from './run-instance-presentation';
 
 export type RunDetailReturnContext = {
   runId: string;
@@ -116,8 +117,12 @@ export default function RunDetail({
   const lastSaved =
     !terminal && (Boolean(observed.fault) || (r.state !== 'QUEUED' && view.activity !== 'active'));
   const timeline = runTimeline(observed);
-  const results = d.events.filter((event: Event) => typeof event.data?.outputPreview === 'string');
-  const pause = [...d.events].reverse().find((event: Event) => event.type === 'debug-pause');
+  const results = d.events.filter(
+    (event: Event) => event.runId === r.id && typeof event.data?.outputPreview === 'string',
+  );
+  const pause = [...d.events]
+    .reverse()
+    .find((event: Event) => event.runId === r.id && event.type === 'debug-pause');
   const controller = useRunControl({ run: r, events: d.events, view, control, reload });
   const { controlBusy, controlPending, controlNote, command, sendControl } = controller;
   const runControls = (
@@ -352,7 +357,10 @@ export default function RunDetail({
                       ? '正在收尾'
                       : command?.action === 'pause' && command.accepted
                         ? '将在步骤边界暂停'
-                        : view.step.label}
+                        : view.step.instance &&
+                            runInstancePresenter(d.snapshot)(view.step.instance) === null
+                          ? `运行位置：${view.step.instance}（位置待核对）`
+                          : view.step.label}
                 </strong>
                 {runControls}
               </div>
@@ -383,7 +391,7 @@ export default function RunDetail({
                 {timeline.length ? (
                   <ol>
                     {timeline.map((step) => (
-                      <li key={step.instance} aria-current={step.current ? 'step' : undefined}>
+                      <li key={step.key} aria-current={step.current ? 'step' : undefined}>
                         <div>
                           <span
                             className="timeline-index"
