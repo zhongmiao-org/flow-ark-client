@@ -75,6 +75,7 @@ export default function DebugRunWorkspace(props: Props) {
         </div>
       </header>
       <Alert
+        className="debug-run-banner"
         type={props.lastSaved || props.view.statusNote ? 'warning' : 'info'}
         showIcon
         title={banner}
@@ -137,10 +138,12 @@ export default function DebugRunWorkspace(props: Props) {
             {run.error && <Alert type="error" showIcon title={run.error} />}
             <Collapse
               className="debug-run-details"
+              ghost
               items={[
                 {
                   key: 'outputs',
                   label: '查看步骤输出',
+                  showArrow: false,
                   forceRender: true,
                   onKeyDown: activateCollapseWithSpace,
                   children: (
@@ -178,6 +181,7 @@ export default function DebugRunWorkspace(props: Props) {
                 {
                   key: 'details',
                   label: '查看暂停 / 等待 / 收尾',
+                  showArrow: false,
                   forceRender: true,
                   onKeyDown: activateCollapseWithSpace,
                   children: (

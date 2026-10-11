@@ -156,6 +156,8 @@ export default function RunDetail({
       {!terminal && (controllable || (r.state === 'QUEUED' && !observed.fault)) && (
         <Button
           danger
+          color={r.debug ? 'danger' : undefined}
+          variant={r.debug ? 'filled' : undefined}
           disabled={controlBusy || (!!command && command.action === 'cancel') || undefined}
           onClick={() => void sendControl('cancel')}
         >
