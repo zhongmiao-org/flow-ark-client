@@ -67,6 +67,7 @@ export default function TemplateLibrary({
   const [error, setError] = useState('');
   const [failedOperation, setFailedOperation] = useState('');
   const [notice, setNotice] = useState('');
+  const [feedbackRevision, setFeedbackRevision] = useState(0);
   const [reviewed, setReviewed] = useState(false);
   const [query, setQuery] = useState('');
   const [capability, setCapability] = useState('');
@@ -84,9 +85,26 @@ export default function TemplateLibrary({
   const templateSearch = useRef<InputRef>(null);
   const instanceSearch = useRef<InputRef>(null);
   const errorHeading = useRef<HTMLElement>(null);
+  const noticeHeading = useRef<HTMLSpanElement>(null);
   useEffect(() => {
-    if (active && error && !detail) errorHeading.current?.focus();
-  }, [active, error, detail]);
+    if (active && !busy && error && !detail) errorHeading.current?.focus();
+    else if (active && !busy && notice && !detail) noticeHeading.current?.focus();
+  }, [active, busy, error, notice, detail, feedbackRevision]);
+  useEffect(() => {
+    if (!active || detail) return;
+    const main = document.querySelector('main');
+    if (!main) return;
+    const observer = new ResizeObserver(() => {
+      const focused = document.activeElement;
+      if (!(focused instanceof HTMLElement) || !main.contains(focused)) return;
+      const bounds = focused.getBoundingClientRect();
+      const visible = main.getBoundingClientRect();
+      if (bounds.top < visible.top || bounds.bottom > visible.bottom)
+        focused.scrollIntoView({ block: 'nearest' });
+    });
+    observer.observe(main);
+    return () => observer.disconnect();
+  }, [active, detail]);
   const locations = useRef(
     new Map<View, { scroll: number; focus: HTMLElement | null; key?: string }>(),
   );
@@ -180,6 +198,7 @@ export default function TemplateLibrary({
     } finally {
       locked.current = false;
       setBusy('');
+      setFeedbackRevision((revision) => revision + 1);
     }
   };
   const remember = () => {
@@ -291,6 +310,11 @@ export default function TemplateLibrary({
     });
   useEffect(() => {
     if (!active || detail) return;
+    if (view === 'inspect' && preview?.token) {
+      document.querySelector('main')?.scrollTo(0, 0);
+      heading.current?.focus({ preventScroll: true });
+      return;
+    }
     const saved = locations.current.get(view);
     document.querySelector('main')?.scrollTo(0, saved?.scroll ?? 0);
     const target = saved?.focus?.isConnected
@@ -299,7 +323,7 @@ export default function TemplateLibrary({
         ? document.querySelector<HTMLElement>(`[data-catalog-focus="${CSS.escape(saved.key)}"]`)
         : null;
     (target ?? heading.current)?.focus({ preventScroll: true });
-  }, [view, detail, active]);
+  }, [view, detail, active, preview?.token]);
   usePageBack(
     () => {
       if (!locked.current) back();
@@ -475,7 +499,11 @@ export default function TemplateLibrary({
             type="info"
             role="status"
             showIcon
-            title={notice}
+            title={
+              <span ref={noticeHeading} tabIndex={-1}>
+                {notice}
+              </span>
+            }
           />
         )}
         {resumeInstance && (
