@@ -6,6 +6,23 @@ import './script-packages.css';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 
 type Package = { name: string; version: string; path: string };
+export type ScriptPackageReview = {
+  source: string;
+  passed: number;
+  failed: number;
+  unchecked: number;
+  reading: boolean;
+};
+export const scriptPackageReviewSource = (
+  flowId: string,
+  node: Extract<Step, { type: 'script' }>,
+  bindings: Bindings,
+) =>
+  JSON.stringify([
+    flowId,
+    node.id,
+    node.dependencies.map((dep) => [dep, bindings.scriptPackages?.[dep.name]]),
+  ]);
 type Props = {
   flowId: string;
   node: Extract<Step, { type: 'script' }>;
@@ -13,6 +30,7 @@ type Props = {
   bind: (info: Package) => void | boolean;
   remove: (name: string) => void | boolean;
   guard?: () => boolean;
+  onReviewChange?: (review: ScriptPackageReview) => void;
 };
 type Check = { signature: string; error?: string };
 const identity = (props: Props) => `${props.flowId}:${props.node.id}`;
@@ -58,6 +76,31 @@ export default function ScriptPackages(props: Props) {
     setChecks({});
     setCandidate(undefined);
   }, [props.flowId, props.node.id]);
+  useEffect(() => {
+    let passed = 0;
+    let failed = 0;
+    for (const dep of props.node.dependencies) {
+      const check = checks[dep.name];
+      if (check?.signature !== signature(props, dep.name)) continue;
+      if (check.error) failed++;
+      else passed++;
+    }
+    props.onReviewChange?.({
+      source: scriptPackageReviewSource(props.flowId, props.node, props.bindings),
+      passed,
+      failed,
+      unchecked: props.node.dependencies.length - passed - failed,
+      reading: !!busy,
+    });
+  }, [
+    props.flowId,
+    props.node.id,
+    props.node.dependencies,
+    props.bindings.scriptPackages,
+    props.onReviewChange,
+    checks,
+    busy,
+  ]);
   useEffect(() => {
     if (!candidate && restore.current) {
       restore.current = false;

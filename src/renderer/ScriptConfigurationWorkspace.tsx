@@ -1,10 +1,13 @@
 import { Card, Alert, Drawer, Collapse, Descriptions, Select, Button } from 'antd';
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
 import type { FlowRecord } from '../shared/types';
 import type { ScriptNode } from './script-editor';
 import ValueField from './ValueField';
-import ScriptPackages from './ScriptPackages';
+import ScriptPackages, {
+  scriptPackageReviewSource,
+  type ScriptPackageReview,
+} from './ScriptPackages';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { flowOutline } from './flow-outline';
 import { taskStepTitle } from './task-step-title';
@@ -32,6 +35,12 @@ export default function ScriptConfigurationWorkspace(props: Props) {
   const dialog = useRef<HTMLDivElement>(null);
   const origin = useRef(document.activeElement as HTMLElement | null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const [packageReview, setPackageReview] = useState<ScriptPackageReview>();
+  const currentReview =
+    packageReview?.source ===
+    scriptPackageReviewSource(props.record.id, props.node, props.record.bindings)
+      ? packageReview
+      : undefined;
   const ordinal = flowOutline(props.record.flow.steps).byId.get(props.node.id)?.ordinal;
   const template = props.record.bindings.template;
   const resources = Object.entries(props.record.bindings.resources ?? {}).filter(
@@ -44,6 +53,25 @@ export default function ScriptConfigurationWorkspace(props: Props) {
     const binding = props.record.bindings.scriptPackages?.[dep.name];
     return binding?.path && binding.version !== dep.version;
   });
+  const bindingStatus =
+    [
+      missing.length ? `${missing.length} 个缺少目录` : '',
+      mismatched.length ? `${mismatched.length} 个版本不一致` : '',
+      currentReview?.reading
+        ? '正在读取包信息…'
+        : currentReview && (currentReview.passed || currentReview.failed)
+          ? [
+              currentReview.passed ? `${currentReview.passed} 个目录名称与版本已核对` : '',
+              currentReview.failed ? `${currentReview.failed} 个目录核对失败` : '',
+              currentReview.unchecked ? `${currentReview.unchecked} 个尚未核对` : '',
+            ]
+              .filter(Boolean)
+              .join('；')
+          : '',
+    ]
+      .filter(Boolean)
+      .join('；') ||
+    (props.node.dependencies.length ? '已绑定 · 本次尚未核对目录' : '未声明第三方依赖');
   const navigate = (next: () => void) => {
     if (props.guard()) next();
   };
@@ -191,19 +219,7 @@ export default function ScriptConfigurationWorkspace(props: Props) {
                       ? `${props.node.dependencies.length} 个精确版本依赖`
                       : '仅内置 SDK',
                   ],
-                  [
-                    '绑定状态',
-                    missing.length || mismatched.length
-                      ? [
-                          missing.length ? `${missing.length} 个缺少目录` : '',
-                          mismatched.length ? `${mismatched.length} 个版本不一致` : '',
-                        ]
-                          .filter(Boolean)
-                          .join('；')
-                      : props.node.dependencies.length
-                        ? '已绑定 · 目录尚需核对'
-                        : '未声明第三方依赖',
-                  ],
+                  ['绑定状态', bindingStatus],
                   ['运行中', '不自动安装依赖'],
                 ].map(([label, text]) => ({
                   key: label,
@@ -228,6 +244,7 @@ export default function ScriptConfigurationWorkspace(props: Props) {
                         guard={props.guard}
                         bind={props.bind}
                         remove={props.remove}
+                        onReviewChange={setPackageReview}
                       />
                     ),
                   },
