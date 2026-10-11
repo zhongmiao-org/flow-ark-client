@@ -16,6 +16,8 @@ const message = (reason: unknown) =>
     /^Error invoking remote method 'flowark:request': (?:Error: )?/,
     '',
   );
+const cleanupScope = (record: ArtifactCleanupRecord) =>
+  `上次确认范围：${record.count} 个文件 · ${size(record.bytes)}。此范围不代表实际已删除数量；剩余范围以新的预览为准。`;
 
 function CleanupDialog({
   run,
@@ -53,6 +55,8 @@ function CleanupDialog({
       const next: ArtifactCleanupPreview = await api('run.artifacts.preview', { id: run.id });
       if (!live.current) return;
       if (next.runId !== run.id) throw new Error('清理预览与当前运行不一致，请重新读取');
+      if (next.previousCleanup && next.previousCleanup.runId !== run.id)
+        throw new Error('上次清理记录与当前运行不一致，请重新读取');
       setPreview(next);
       setStage('review');
     } catch (reason) {
@@ -124,6 +128,9 @@ function CleanupDialog({
     if (!busy) close();
   };
   const empty = preview && !preview.count && !preview.indexedCount;
+  const previous = preview?.previousCleanup;
+  const incomplete =
+    previous && ['failed', 'interrupted'].includes(previous.state) ? previous : undefined;
   const title =
     stage === 'loading'
       ? '正在核对清理范围'
@@ -245,6 +252,17 @@ function CleanupDialog({
                 ? '确认后永久删除下列应用内副本。原业务文件、运行历史、快照与待办继续保留。'
                 : '原业务文件、运行历史、快照与待办继续保留。'
             }
+            description={
+              incomplete && (
+                <>
+                  <p>
+                    {incomplete.state === 'interrupted' ? '上次清理中断' : '上次清理未完成'}：
+                    {incomplete.error || '未取得完整清理结果'}
+                  </p>
+                  <p>{cleanupScope(incomplete)}</p>
+                </>
+              )
+            }
           />
           {!!preview.files.length && (
             <ul className="artifact-cleanup-files" aria-label="将清理的文件">
@@ -315,6 +333,7 @@ export default function ArtifactCleanupPanel({
   changed: () => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
+  const currentCleanup = cleanup?.runId === run.id ? cleanup : undefined;
   const terminal = ['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(run.state);
   return (
     <section
@@ -332,26 +351,42 @@ export default function ArtifactCleanupPanel({
             <p>默认保留。仅清理本次运行在应用内保存的副本。</p>
           </div>
           <Button
-            disabled={!terminal || cleanup?.state === 'pending' || undefined}
+            disabled={!terminal || currentCleanup?.state === 'pending' || undefined}
             onClick={() => setOpen(true)}
           >
             预览产物清理
           </Button>
         </div>
         {!terminal && <p>运行尚未结束，暂不能清理产物。</p>}
-        {cleanup?.state === 'completed' && (
-          <p role="status">
-            已清理 · {cleanup.count} 个文件 · {size(cleanup.bytes)}，运行记录已保留
-          </p>
-        )}
-        {cleanup?.state === 'pending' && <p role="status">正在清理产物，等待实际结果…</p>}
-        {cleanup && ['failed', 'interrupted'].includes(cleanup.state) && (
+        {cleanup && !currentCleanup && (
           <Alert
             className="artifact-cleanup-feedback"
             type="warning"
             role="status"
             showIcon
-            title={`清理未完成 · ${cleanup.error ?? ''}。请重新预览剩余范围。`}
+            title="清理记录来源不一致"
+            description="未将这条记录作为本次运行的清理结果。请重新预览当前范围。"
+          />
+        )}
+        {currentCleanup?.state === 'completed' && (
+          <p role="status">
+            已清理 · {currentCleanup.count} 个文件 · {size(currentCleanup.bytes)}，运行记录已保留
+          </p>
+        )}
+        {currentCleanup?.state === 'pending' && <p role="status">正在清理产物，等待实际结果…</p>}
+        {currentCleanup && ['failed', 'interrupted'].includes(currentCleanup.state) && (
+          <Alert
+            className="artifact-cleanup-feedback"
+            type="warning"
+            role="status"
+            showIcon
+            title={currentCleanup.state === 'interrupted' ? '上次清理中断' : '清理未完成'}
+            description={
+              <>
+                <p>{currentCleanup.error || '未取得完整清理结果，请重新预览剩余范围。'}</p>
+                <p>{cleanupScope(currentCleanup)}</p>
+              </>
+            }
           />
         )}
         {open && <CleanupDialog run={run} changed={changed} close={() => setOpen(false)} />}
