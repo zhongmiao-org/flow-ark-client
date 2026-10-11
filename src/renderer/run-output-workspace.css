@@ -164,7 +164,7 @@
   outline-offset: 4px;
 }
 .run-artifact-error {
-  scroll-margin: 8px;
+  scroll-margin: var(--fa-space-8);
 }
 .run-output-files .artifact-cleanup.is-compact {
   margin: 0;

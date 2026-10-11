@@ -264,5 +264,5 @@
 .run-log-error,
 .run-log-relations h3,
 .run-log-relations button:has(code) {
-  scroll-margin: 8px;
+  scroll-margin: var(--fa-space-8);
 }
