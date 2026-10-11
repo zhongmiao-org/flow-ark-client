@@ -52,6 +52,8 @@ export async function generatePlan(
         '例如 id 为 set-text 的 value 步骤输出固定文本后，非空断言使用 actual:{"$ref":"steps.set-text"}、operator:"notEquals"、expected:""；不能引用 steps.set-text.value。assert 成功输出 {"verified":true}，不会转发被检查的文本。',
         '生成前逐项核对引用与输出形状：只引用当前作用域中已执行的步骤；condition 输出所选分支的步骤结果对象，loop 输出每轮步骤结果对象的数组，分支/循环内部步骤不能直接当作外层步骤引用。修改已有方案时一并修正与所改输出不一致的后续引用。',
         '不要创建凭据、授权或本地路径绑定，不要把方案总结成已经完成的结果。',
+        '存在宿主已选网页上下文 _flowark_selected_web 时，只能规划该网页范围内的读取。若整页任务需要 browser navigate，value 必须是上下文中 url 的完整静态字符串，逐字符保留含末尾斜线、查询和片段；不要从需求猜测、删改、拼接地址或使用其他网址。也可直接读取已选页面，不必额外导航。',
+        '已选网页上下文 ID 不是运行中的参数或步骤输出，不得引用 params._flowark_selected_web、steps._flowark_selected_web 或虚构的网页地址参数。上下文里有 element 时，只能使用该 element 的静态 selector 和 framePath 做 browser read/wait，不能 navigate 或更换定位。所选来源、动作及完整流程仍须宿主独立校验，模型不能扩大权限。',
         '需要修改时返回完整新流程，不返回补丁。问题 ID 稳定且不重复。',
         '新建且不覆盖文本文件使用 file version 3 operation create，并声明 file-create-v1 能力；content 解析后必须是文本，不把 create 降级成可能覆盖的 write。',
         '用户选择同名自动加序号时使用 file version 4 operation create、onConflict:number，并声明 file-create-numbered-v1；保留原文件，实际名称由执行后的结果确定，不预先猜测序号。',
