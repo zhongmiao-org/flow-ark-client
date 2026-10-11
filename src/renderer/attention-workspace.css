@@ -96,6 +96,11 @@
   gap: 12px;
   margin-top: 20px;
 }
+.attention-heading h1,
+.attention-feedback,
+.attention-answer [aria-invalid='true'] {
+  scroll-margin: var(--fa-space-8);
+}
 .attention-actions button {
   min-width: 132px;
 }

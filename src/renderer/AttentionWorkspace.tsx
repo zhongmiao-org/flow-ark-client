@@ -32,6 +32,7 @@ import { validateHumanInputSchema } from './human-input-schema';
 import { Field, type ConfigurationFieldDraft } from './TemplateConfiguration';
 import './attention-workspace.css';
 import AttentionDetails from './AttentionDetails';
+import { keepFocusedElementVisible } from './keepFocusedElementVisible';
 
 export type AttentionNavigation = { title: string; back?: () => void };
 const api = (method: string, args: unknown = {}): Promise<any> =>
@@ -115,6 +116,21 @@ function AnswerForm({
   const form = useRef<HTMLFormElement>(null);
   const jsonInput = useRef<HTMLTextAreaElement>(null);
   const errorId = useId();
+  const invalidVisibility = useRef<(() => void) | undefined>(undefined);
+  const enabled = state === 'waiting' && !busy && !blocked;
+  useEffect(() => () => invalidVisibility.current?.(), []);
+  useEffect(() => {
+    if (error && enabled) return;
+    invalidVisibility.current?.();
+    invalidVisibility.current = undefined;
+  }, [error, enabled]);
+  const focusInvalid = (target: HTMLElement | null | undefined) => {
+    invalidVisibility.current?.();
+    invalidVisibility.current = undefined;
+    if (!target) return;
+    target.focus({ preventScroll: true });
+    invalidVisibility.current = keepFocusedElementVisible(target);
+  };
   const resetReview = () => {
     setReviewed(false);
     setError('');
@@ -122,7 +138,6 @@ function AnswerForm({
   useEffect(() => {
     setReviewed(false);
   }, [state]);
-  const enabled = state === 'waiting' && !busy && !blocked;
   return (
     <form
       ref={form}
@@ -138,7 +153,7 @@ function AnswerForm({
               invalid.querySelector<HTMLElement>(
                 'input:not(:disabled), textarea:not(:disabled), select:not(:disabled)',
               ));
-          input?.focus();
+          focusInvalid(input);
           setError('请先填写有效的输入内容');
           return;
         }
@@ -148,7 +163,7 @@ function AnswerForm({
             answer = JSON.parse(text);
           } catch {
             setError('请输入有效 JSON，或联系模板提供者核对所需格式');
-            jsonInput.current?.focus();
+            focusInvalid(jsonInput.current);
             return;
           }
         }
@@ -419,11 +434,17 @@ export default function AttentionWorkspace({
     };
   }, [selectedId, active]);
   useEffect(() => {
-    if (active && error) errorPanel.current?.focus();
+    const target = errorPanel.current;
+    if (!active || !error || !target) return;
+    target.focus({ preventScroll: true });
+    return keepFocusedElementVisible(target);
   }, [active, error]);
   useEffect(() => {
-    if (cancelRun) stopPanel.current?.focus();
-  }, [cancelRun]);
+    const target = stopPanel.current;
+    if (!active || !cancelRun || !target) return;
+    target.focus({ preventScroll: true });
+    return keepFocusedElementVisible(target);
+  }, [active, cancelRun]);
   useEffect(() => {
     if (busy || !answerFocus.current) return;
     const answeredId = answerFocus.current;
@@ -434,8 +455,12 @@ export default function AttentionWorkspace({
       state === 'answered' &&
       !error &&
       document.activeElement === document.body
-    )
-      heading.current?.focus({ preventScroll: true });
+    ) {
+      const target = heading.current;
+      if (!target) return;
+      target.focus({ preventScroll: true });
+      return keepFocusedElementVisible(target);
+    }
   }, [active, busy, error, selectedId, state]);
   useEffect(() => {
     if (busy || !actionFocus.current) return;
