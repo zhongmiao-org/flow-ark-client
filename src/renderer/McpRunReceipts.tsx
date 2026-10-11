@@ -35,7 +35,7 @@ export default function McpRunReceipts({
         {selected.map((receipt, index) => {
           const node = nodes.find((node) => node.id === receipt.nodeId);
           const status = receipt.status;
-          const waiting = status === 'unknown' && !receipt.completedAt && running;
+          const waiting = receipt.awaitingReply && running;
           const result = ['received', 'tool-error'].includes(status) ? receipt.result : undefined;
           const texts =
             result?.content.filter(
@@ -46,7 +46,11 @@ export default function McpRunReceipts({
             <article key={receipt.nodeInstance + ':' + index} data-mcp-result={status}>
               <Divider />
               <div className="mcp-receipt-heading">
-                <h3>{typeof node?.name === 'string' ? node.name : receipt.tool}</h3>
+                <h3>
+                  {receipt.instanceLabel && typeof node?.name === 'string'
+                    ? node.name
+                    : receipt.tool}
+                </h3>
                 <Tag
                   className="run-state-tag"
                   color={mcpReceiptColors[waiting ? 'waiting' : status]}
@@ -125,6 +129,8 @@ export default function McpRunReceipts({
                   ` · 回执时间：${new Date(receipt.completedAt).toLocaleString('zh-CN')}`}
               </p>
               <p className="mcp-receipt-time">
+                步骤位置：{receipt.instanceLabel ?? '无法与本次固定方案核对'}
+                <br />
                 步骤实例：<code>{receipt.nodeInstance}</code>
               </p>
             </article>
