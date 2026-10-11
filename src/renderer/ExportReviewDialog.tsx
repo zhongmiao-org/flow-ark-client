@@ -45,12 +45,12 @@ export default function ExportReviewDialog({
   const titleId = useId(),
     descriptionId = useId();
   const heading = useRef<HTMLHeadingElement>(null);
-  const confirmation = useRef<HTMLInputElement>(null);
   const feedback = useRef<HTMLDivElement>(null);
   const locked = useRef(false);
   const [reviewed, setReviewed] = useState(false);
   const [busy, setBusy] = useState<'export' | 'import'>();
   const [stage, setStage] = useState<'review' | 'done'>('review');
+  const [opened, setOpened] = useState(false);
   const [error, setError] = useState<{ operation: 'export' | 'import'; message: string }>();
   const [notice, setNotice] = useState('');
   const draft = source.kind === 'draft';
@@ -58,8 +58,13 @@ export default function ExportReviewDialog({
   const templateReturnLabel = source.kind === 'template' ? (source.returnLabel ?? '模板详情') : '';
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
+    const toolbar = previous?.closest('.editor-toolbar');
     return () => {
-      if (previous?.isConnected) previous.focus({ preventScroll: true });
+      const trigger =
+        previous?.isConnected && previous.getClientRects().length
+          ? previous
+          : toolbar?.querySelector<HTMLElement>('[aria-label="打开更多操作"]');
+      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
     };
   }, []);
   useEffect(() => {
@@ -68,6 +73,27 @@ export default function ExportReviewDialog({
   useEffect(() => {
     if (!busy && (error || notice)) feedback.current?.focus();
   }, [busy, error, notice]);
+  useEffect(() => {
+    if (!opened) return;
+    const body = heading.current?.closest('.ant-modal-body');
+    if (!body) return;
+    const ensureVisible = () => {
+      const focused = document.activeElement;
+      if (!(focused instanceof HTMLElement) || !body.contains(focused)) return;
+      const bounds = focused.getBoundingClientRect();
+      const visible = body.getBoundingClientRect();
+      if (
+        bounds.top < visible.top ||
+        bounds.bottom > visible.bottom ||
+        bounds.left < visible.left ||
+        bounds.right > visible.right
+      )
+        focused.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    };
+    const observer = new ResizeObserver(ensureVisible);
+    observer.observe(body);
+    return () => observer.disconnect();
+  }, [opened]);
   const fail = (reason: unknown) =>
     (reason instanceof Error ? reason.message : '导出未完成，请核对来源后重试').replace(
       /^Error invoking remote method 'flowark:request': (?:Error: )?/,
@@ -123,7 +149,8 @@ export default function ExportReviewDialog({
         if (!locked.current) close();
       }}
       afterOpenChange={(open) => {
-        if (open) (stage === 'done' ? heading.current : confirmation.current)?.focus();
+        setOpened(open);
+        if (open) heading.current?.focus();
       }}
     >
       <header className="export-review-heading">
@@ -285,9 +312,6 @@ export default function ExportReviewDialog({
           </div>
           <footer className="export-review-footer">
             <Checkbox
-              ref={(instance) => {
-                confirmation.current = instance?.input ?? null;
-              }}
               checked={reviewed}
               disabled={!!busy || undefined}
               onChange={(event) => setReviewed(event.target.checked)}
