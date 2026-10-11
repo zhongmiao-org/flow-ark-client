@@ -30,6 +30,7 @@ export default function StorageFaultNotice({
   const toggle = useRef<HTMLButtonElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const outcome = useRef<AlertRef>(null);
+  const faultVisibility = useRef<(() => void) | undefined>(undefined);
   const currentContext = useRef({ value: context, revision: 0 });
   if (currentContext.current.value !== context)
     currentContext.current = { value: context, revision: currentContext.current.revision + 1 };
@@ -40,7 +41,11 @@ export default function StorageFaultNotice({
   }, [context]);
   useEffect(() => {
     const target = heading.current;
-    if (!expanded || !target) return;
+    if (!expanded || !target) {
+      faultVisibility.current?.();
+      faultVisibility.current = undefined;
+      return;
+    }
     target.focus({ preventScroll: true });
     return keepFocusedElementVisible(target);
   }, [expanded]);
@@ -48,6 +53,7 @@ export default function StorageFaultNotice({
     live.current = true;
     return () => {
       live.current = false;
+      faultVisibility.current?.();
     };
   }, []);
   useEffect(() => {
@@ -193,7 +199,18 @@ export default function StorageFaultNotice({
               <section aria-labelledby={`${id}-reason`}>
                 <Card className="storage-fault-detail-card">
                   <h3 id={`${id}-reason`}>故障说明</h3>
-                  <pre tabIndex={0} aria-label="返回的故障说明">
+                  <pre
+                    tabIndex={0}
+                    aria-label="返回的故障说明"
+                    onFocus={(event) => {
+                      faultVisibility.current?.();
+                      faultVisibility.current = keepFocusedElementVisible(event.currentTarget);
+                    }}
+                    onBlur={() => {
+                      faultVisibility.current?.();
+                      faultVisibility.current = undefined;
+                    }}
+                  >
                     {data.fault}
                   </pre>
                   <h3>接下来如何核对</h3>

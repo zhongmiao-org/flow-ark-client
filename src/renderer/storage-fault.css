@@ -137,6 +137,7 @@
   margin-bottom: 16px;
 }
 .storage-fault-detail-card h3[tabindex],
+.storage-fault-detail-card pre,
 .storage-fault-details > .ant-alert {
   scroll-margin: var(--fa-space-8);
 }
