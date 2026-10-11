@@ -19,11 +19,26 @@ export default function FirstTaskGuide({
   start: (mode: 'continue' | 'restart') => void;
   skip: () => void;
 }) {
-  const feedback = useRef<HTMLDivElement>(null);
+  const feedback = useRef<HTMLSpanElement>(null);
   const actionButton = useRef<HTMLButtonElement>(null);
   const retrying = useRef(false);
   useEffect(() => {
     if (readError) feedback.current?.focus();
+  }, [readError]);
+  useEffect(() => {
+    const container = feedback.current?.closest('.learning-read-error');
+    const main = container?.closest('main');
+    if (!main || !container) return;
+    const observer = new ResizeObserver(() => {
+      const focused = document.activeElement;
+      if (!(focused instanceof HTMLElement) || !container.contains(focused)) return;
+      const bounds = focused.getBoundingClientRect();
+      const viewport = main.getBoundingClientRect();
+      if (bounds.top < viewport.top || bounds.bottom > viewport.bottom)
+        focused.scrollIntoView({ block: focused === feedback.current ? 'center' : 'nearest' });
+    });
+    observer.observe(main);
+    return () => observer.disconnect();
   }, [readError]);
   useEffect(() => {
     if (retrying.current && !busy) {
@@ -108,11 +123,15 @@ export default function FirstTaskGuide({
             </p>
           )}
           {readError ? (
-            <div className="learning-read-error" role="alert" tabIndex={-1} ref={feedback}>
+            <div className="learning-read-error">
               <Alert
                 type="error"
                 showIcon
-                title="暂时无法读取学习记录"
+                title={
+                  <span tabIndex={-1} ref={feedback}>
+                    暂时无法读取学习记录
+                  </span>
+                }
                 description={
                   <>
                     <p>{readError}</p>
