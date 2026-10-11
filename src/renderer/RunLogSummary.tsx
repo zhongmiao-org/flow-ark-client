@@ -7,6 +7,7 @@ import type { RunRerunDetails } from '../shared/run-rerun';
 import type { Run } from '../shared/types';
 import { RunOutput } from './RunObservation';
 import { runInstancePresenter } from './run-instance-presentation';
+import { keepFocusedElementVisible } from './keepFocusedElementVisible';
 
 export default function RunLogSummary({
   detail,
@@ -39,6 +40,7 @@ export default function RunLogSummary({
   const buttons = useRef(new Map<string, HTMLButtonElement>());
   const heading = useRef<HTMLHeadingElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
+  const restoredFocusApplied = useRef(false);
   useEffect(() => {
     if (!active) {
       request.current++;
@@ -51,15 +53,26 @@ export default function RunLogSummary({
     };
   }, [active]);
   useEffect(() => {
-    if (error && active) errorRef.current?.focus({ preventScroll: true });
+    const target = errorRef.current;
+    if (!error || !active || !target) return;
+    target.focus({ preventScroll: true });
+    return keepFocusedElementVisible(target);
   }, [error, active]);
   useEffect(() => {
-    if (!restoredRunId) return;
-    const frame = requestAnimationFrame(() =>
-      (buttons.current.get(restoredRunId) ?? heading.current)?.focus({ preventScroll: true }),
-    );
-    return () => cancelAnimationFrame(frame);
-  }, []);
+    if (!active || !restoredRunId || restoredFocusApplied.current) return;
+    let stop: (() => void) | undefined;
+    const frame = requestAnimationFrame(() => {
+      const target = buttons.current.get(restoredRunId) ?? heading.current;
+      if (!target) return;
+      restoredFocusApplied.current = true;
+      target.focus({ preventScroll: true });
+      stop = keepFocusedElementVisible(target);
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      stop?.();
+    };
+  }, [active, restoredRunId]);
   async function open(id: string) {
     if (busy.current || !activeRef.current) return;
     busy.current = true;

@@ -261,3 +261,8 @@
   outline: 2px solid var(--fa-status-error);
   outline-offset: 4px;
 }
+.run-log-error,
+.run-log-relations h3,
+.run-log-relations button:has(code) {
+  scroll-margin: 8px;
+}

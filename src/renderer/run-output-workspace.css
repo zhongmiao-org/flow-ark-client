@@ -163,6 +163,9 @@
   outline: 2px solid var(--fa-status-error);
   outline-offset: 4px;
 }
+.run-artifact-error {
+  scroll-margin: 8px;
+}
 .run-output-files .artifact-cleanup.is-compact {
   margin: 0;
 }
