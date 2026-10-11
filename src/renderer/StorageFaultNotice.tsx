@@ -2,6 +2,7 @@ import { Alert, Badge, Button, Card, Empty, Tag, type AlertRef } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { Bootstrap } from '../shared/types';
 import { runStateLabels } from '../shared/run-history';
+import { keepFocusedElementVisible } from './keepFocusedElementVisible';
 import './storage-fault.css';
 
 export default function StorageFaultNotice({
@@ -29,6 +30,7 @@ export default function StorageFaultNotice({
   const toggle = useRef<HTMLButtonElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const outcome = useRef<AlertRef>(null);
+  const faultVisibility = useRef<(() => void) | undefined>(undefined);
   const currentContext = useRef({ value: context, revision: 0 });
   if (currentContext.current.value !== context)
     currentContext.current = { value: context, revision: currentContext.current.revision + 1 };
@@ -38,12 +40,20 @@ export default function StorageFaultNotice({
     setNotice('');
   }, [context]);
   useEffect(() => {
-    if (expanded) heading.current?.focus({ preventScroll: true });
+    const target = heading.current;
+    if (!expanded || !target) {
+      faultVisibility.current?.();
+      faultVisibility.current = undefined;
+      return;
+    }
+    target.focus({ preventScroll: true });
+    return keepFocusedElementVisible(target);
   }, [expanded]);
   useEffect(() => {
     live.current = true;
     return () => {
       live.current = false;
+      faultVisibility.current?.();
     };
   }, []);
   useEffect(() => {
@@ -51,7 +61,8 @@ export default function StorageFaultNotice({
       const target = outcome.current?.nativeElement;
       if (target) {
         target.tabIndex = -1;
-        target.focus();
+        target.focus({ preventScroll: true });
+        return keepFocusedElementVisible(target);
       }
     }
   }, [busy, expanded, error, notice]);
@@ -72,16 +83,18 @@ export default function StorageFaultNotice({
   const ordered = records.sort(
     (a, b) => Number(b.id === owner?.runId) - Number(a.id === owner?.runId),
   );
-  const operate = async (key: string, work: () => Promise<void>) => {
+  const operate = async (key: string, work: () => Promise<void | string>) => {
     if (locked.current) return;
+    const origin = currentContext.current.revision;
     locked.current = true;
     setBusy(key);
     setError('');
     setNotice('');
     try {
-      await work();
+      const message = await work();
+      if (live.current && origin === currentContext.current.revision && message) setNotice(message);
     } catch (reason) {
-      if (live.current)
+      if (live.current && origin === currentContext.current.revision)
         setError(reason instanceof Error ? reason.message : '未取得最新记录，请稍后重试');
     } finally {
       locked.current = false;
@@ -186,7 +199,18 @@ export default function StorageFaultNotice({
               <section aria-labelledby={`${id}-reason`}>
                 <Card className="storage-fault-detail-card">
                   <h3 id={`${id}-reason`}>故障说明</h3>
-                  <pre tabIndex={0} aria-label="返回的故障说明">
+                  <pre
+                    tabIndex={0}
+                    aria-label="返回的故障说明"
+                    onFocus={(event) => {
+                      faultVisibility.current?.();
+                      faultVisibility.current = keepFocusedElementVisible(event.currentTarget);
+                    }}
+                    onBlur={() => {
+                      faultVisibility.current?.();
+                      faultVisibility.current = undefined;
+                    }}
+                  >
                     {data.fault}
                   </pre>
                   <h3>接下来如何核对</h3>
@@ -203,8 +227,7 @@ export default function StorageFaultNotice({
                     onClick={() =>
                       void operate('refresh', async () => {
                         await refresh();
-                        if (live.current)
-                          setNotice('已重新读取记录；这不代表存储已恢复或外部结果已确认。');
+                        return '已重新读取记录；这不代表存储已恢复或外部结果已确认。';
                       })
                     }
                   >
