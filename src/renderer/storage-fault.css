@@ -136,3 +136,7 @@
 .storage-fault-details > .ant-alert {
   margin-bottom: 16px;
 }
+.storage-fault-detail-card h3[tabindex],
+.storage-fault-details > .ant-alert {
+  scroll-margin: var(--fa-space-8);
+}
