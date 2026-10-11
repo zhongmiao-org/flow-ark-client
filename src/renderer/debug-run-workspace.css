@@ -42,6 +42,13 @@
   margin-bottom: 8px;
   overflow-wrap: anywhere;
 }
+.debug-run-instance-path {
+  margin: 0 0 8px;
+  color: var(--fa-text-secondary);
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
 .debug-run-current-card > .ant-card-body > h2 {
   margin: 16px 0;
   font-size: 18px;

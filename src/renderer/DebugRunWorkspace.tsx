@@ -8,6 +8,7 @@ import { formatRunDuration } from '../shared/run-presentation';
 import { runDisplayLabels } from '../shared/run-history';
 import { runTimeline, runTimelineTitle } from './run-timeline';
 import { RunObservation, RunStepOutput } from './RunObservation';
+import { runInstancePresenter } from './run-instance-presentation';
 import './debug-run-workspace.css';
 
 type Props = {
@@ -39,9 +40,12 @@ export default function DebugRunWorkspace(props: Props) {
     unknown: null,
   }[props.view.step.kind];
   const currentLabel =
-    current && current.ordinal !== null && stepPrefix
-      ? `${stepPrefix}：${runTimelineTitle(current)}`
-      : props.view.step.label;
+    props.view.step.instance &&
+    runInstancePresenter(props.detail.snapshot)(props.view.step.instance) === null
+      ? `${stepPrefix ? `${stepPrefix}：` : ''}${props.view.step.instance}（位置待核对）`
+      : current && current.ordinal !== null && stepPrefix
+        ? `${stepPrefix}：${runTimelineTitle(current)}`
+        : props.view.step.label;
   const banner =
     props.controlNote ||
     props.view.statusNote ||
@@ -82,8 +86,11 @@ export default function DebugRunWorkspace(props: Props) {
             {props.timeline.length ? (
               <ol>
                 {props.timeline.map((step) => (
-                  <li key={step.instance} aria-current={step.current ? 'step' : undefined}>
+                  <li key={step.key} aria-current={step.current ? 'step' : undefined}>
                     <h2>{runTimelineTitle(step)}</h2>
+                    {step.pathLabel && step.instance !== step.nodeId && (
+                      <p className="debug-run-instance-path">{step.pathLabel}</p>
+                    )}
                     {step.instance !== step.nodeId && <code>{step.instance}</code>}
                     <Tag
                       className="run-state-tag"

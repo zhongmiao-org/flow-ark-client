@@ -8,6 +8,7 @@ import RunStepDetails, { RunFileOperation, fileOperationTitle } from './RunStepD
 import { kinds } from './node-kinds';
 import { flatten } from './flow-editing';
 import { browserActions } from './browser-actions';
+import { runInstancePresenter } from './run-instance-presentation';
 
 export function RunObservation({ detail, compact = false }: { detail: any; compact?: boolean }) {
   const [, updateClock] = useState(0);
@@ -16,7 +17,11 @@ export function RunObservation({ detail, compact = false }: { detail: any; compa
     return () => clearInterval(timer);
   }, []);
   const view = presentRun({ ...detail, output: undefined }, Date.now());
-  const node = flatten(detail.snapshot?.steps ?? []).find((item) => item.id === view.step.nodeId);
+  const unresolved =
+    !!view.step.instance && runInstancePresenter(detail.snapshot)(view.step.instance) === null;
+  const node = unresolved
+    ? undefined
+    : flatten(detail.snapshot?.steps ?? []).find((item) => item.id === view.step.nodeId);
   const fileNode = node?.type === 'file' || node?.type === 'excel' ? node : undefined;
   const defaultName =
     node?.type === 'browser'
@@ -51,11 +56,13 @@ export function RunObservation({ detail, compact = false }: { detail: any; compa
           </span>
         )}
         <strong data-testid="run-current-step">
-          {fileNode
-            ? fileOperationTitle(fileNode)
-            : view.step.name === view.step.nodeId && view.step.type
-              ? (defaultName ?? view.step.name)
-              : (view.step.name ?? view.step.label)}
+          {unresolved
+            ? `${view.step.instance}（位置待核对）`
+            : fileNode
+              ? fileOperationTitle(fileNode)
+              : view.step.name === view.step.nodeId && view.step.type
+                ? (defaultName ?? view.step.name)
+                : (view.step.name ?? view.step.label)}
         </strong>
         {view.step.instance && !compact && <code>{view.step.instance}</code>}
       </div>
