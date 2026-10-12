@@ -1212,24 +1212,32 @@ main {
   padding: 30px;
 }
 .template-modal {
+  max-width: 90vw;
+}
+.template-modal .ant-modal-container {
   display: flex;
   flex-direction: column;
-  width: min(760px, 90vw);
   max-height: min(90vh, calc(100dvh - 60px));
+  padding: 0;
   background: var(--fa-bg-surface);
   border-radius: 18px;
   box-shadow: var(--fa-shadow-floating);
   overflow: hidden;
 }
-.template-modal > header {
+.template-modal .ant-modal-header {
   flex: none;
+  margin: 0;
 }
-.template-modal > form {
+.template-modal .ant-modal-title {
+  font: inherit;
+}
+.template-modal .ant-modal-body,
+.template-modal form {
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
-.template-modal > header,
+.template-modal header,
 .template-modal footer {
   display: flex;
   gap: 14px;
@@ -1237,14 +1245,30 @@ main {
   padding: 20px 26px;
   border-bottom: 1px solid var(--fa-border-default);
 }
-.template-modal > header > div {
+.template-modal header > div {
   flex: 1;
   min-width: 0;
+}
+.template-modal header {
+  padding-inline-end: 72px;
+}
+.template-modal .ant-modal-close {
+  width: 32px;
+  height: 32px;
+  inset-inline-end: 26px;
+  inset-block-start: 34px;
+  color: var(--fa-text-primary);
 }
 .template-modal h2,
 .template-modal header p {
   margin: 0 0 5px;
   overflow-wrap: anywhere;
+}
+.template-modal header p {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+  color: var(--fa-text-secondary);
 }
 .template-modal footer {
   flex: none;

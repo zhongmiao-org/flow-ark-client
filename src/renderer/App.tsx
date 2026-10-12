@@ -2235,7 +2235,19 @@ function WorkspaceApp() {
               key={`configuration:${edit.id}`}
               configuration={edit.bindings.configuration}
               name={edit.flow.name}
-              close={() => setConfigOpen(false)}
+              close={() => {
+                setConfigOpen(false);
+                requestAnimationFrame(() => {
+                  const trigger = Array.from(
+                    document.querySelectorAll<HTMLElement>('[aria-label="打开流程参数与资源"]'),
+                  ).find((element) => element.getClientRects().length);
+                  const target =
+                    trigger ??
+                    document.querySelector<HTMLElement>('main h1, [aria-label="流程名称"]');
+                  target?.focus({ preventScroll: true });
+                  target?.scrollIntoView({ block: 'nearest' });
+                });
+              }}
               apply={async (values) => {
                 checkEditorInput('保存实例配置');
                 setBusy(true);
