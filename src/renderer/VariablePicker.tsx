@@ -8,6 +8,7 @@ import './editor-workspace-dialog.css';
 
 export default function VariablePicker({
   label,
+  parameterSource = false,
   choices,
   current,
   choose,
@@ -17,6 +18,7 @@ export default function VariablePicker({
   close,
 }: {
   label: string;
+  parameterSource?: boolean;
   choices: ReferenceChoice[];
   current?: string;
   choose: (path: string) => void;
@@ -179,7 +181,12 @@ export default function VariablePicker({
         <header className="variable-picker-heading">
           <div>
             <h2 id={titleId}>选择变量</h2>
-            <p>用于「{label}」· 仅列出当前位置可访问的参数与前序输出。</p>
+            <p>
+              用于「{label}」·{' '}
+              {parameterSource
+                ? '运行前仅可引用其他流程参数及其子路径。'
+                : '仅列出当前位置可访问的参数与前序输出。'}
+            </p>
           </div>
         </header>
         <div className="variable-picker-columns">
@@ -251,7 +258,9 @@ export default function VariablePicker({
                 )}
               </div>
               <p className="variable-picker-note">
-                当前循环变量只在循环体内出现。另一条件分支的输出不在候选中。
+                {parameterSource
+                  ? '参数来源在首步之前解析，不能引用步骤输出或循环变量。'
+                  : '当前循环变量只在循环体内出现。另一条件分支的输出不在候选中。'}
               </p>
             </Card>
           </section>
@@ -288,7 +297,9 @@ export default function VariablePicker({
                     description={
                       base || current
                         ? '原引用已缺失或不在当前作用域，请重新选择。取消不会修改原字段。'
-                        : '在左侧选择参数、前序输出或当前循环变量，核对路径后再应用到字段。'
+                        : parameterSource
+                          ? '在左侧选择其他流程参数，核对路径后写入来源表达式。'
+                          : '在左侧选择参数、前序输出或当前循环变量，核对路径后再应用到字段。'
                     }
                   />
 

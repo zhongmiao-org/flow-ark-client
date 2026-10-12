@@ -1,3 +1,4 @@
+import { resolveParameterSources } from '../shared/parameter-sources';
 import type { TemplateSource } from '../shared/template-source';
 import { join, dirname, resolve, relative } from 'node:path';
 import { readFile, writeFile, realpath, stat, mkdir } from 'node:fs/promises';
@@ -306,7 +307,7 @@ export class Templates {
       jsonFile(pkg.files, pkg.manifest.configurationSchema),
       record.bindings.configuration?.values,
     );
-    validateData(jsonFile(pkg.files, entry.inputSchema), record.flow.parameters);
+    validateData(jsonFile(pkg.files, entry.inputSchema), resolveParameterSources(record.flow));
     for (const id of entry.actions)
       if (!record.bindings.grants?.[id] || record.bindings.grants[id] === 'deny')
         throw new Error('入口动作尚未授权：' + id);

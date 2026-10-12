@@ -284,7 +284,7 @@ export default function ScriptEditorPage({
       live = false;
     };
   }, [preview, runId, record.id, previewRevision]);
-  const input = scriptInputPreview(node.input, draft.flow.parameters);
+  const input = scriptInputPreview(node.input, draft.flow.parameters, draft.flow.parameterSources);
   const currentDetail = detail?.run.id === runId ? detail : undefined;
   const outputs = currentDetail
     ? scriptOutputs(currentDetail.snapshot.steps, currentDetail.output, nodeId)

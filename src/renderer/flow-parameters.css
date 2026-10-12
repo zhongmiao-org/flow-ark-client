@@ -261,3 +261,30 @@
 .flow-parameters-card .literal-value textarea {
   resize: vertical;
 }
+
+.flow-parameters-card .parameter-value-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.flow-parameters-card .parameter-source-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.flow-parameters-card .parameter-source-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.flow-parameters-card .parameter-source-field .note {
+  font-size: 12px;
+  line-height: 18px;
+}
+.flow-parameters-card .parameter-source-field .field-error {
+  color: var(--fa-status-error);
+  font-size: 12px;
+  line-height: 18px;
+}

@@ -23,6 +23,7 @@ export function planningDiff(before: Flow | null, after: Flow): PlanningChange[]
     'name',
     'description',
     'parameters',
+    'parameterSources',
     'requiredCapabilities',
     'sourceTemplate',
   ] as const) {

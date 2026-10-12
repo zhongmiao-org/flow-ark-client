@@ -2300,44 +2300,71 @@ function WorkspaceApp() {
             />
           )}
           {section === 'editor' && nodeSession?.kind === 'parameters' && (
-            <FlowParametersPage
-              returnLabel={
-                nodeSession.fromSettings ? '凭据与本机资源' : moreOpen ? '更多操作' : '流程编排'
-              }
-              key={nodeSession.record.id}
-              record={nodeSession.record}
-              browsers={data.browsers}
-              credentials={data.credentials}
-              onDirtyChange={setParametersDirty}
-              navigation={nodeNavigation}
-              close={closeNodeEditor}
-              configuration={() => {
-                if (nodeSession.record.bindings.template)
-                  requestAnimationFrame(() =>
-                    editorLeaveRequest.current(() => setSection('templates'), '模板实例'),
-                  );
-                else setConfigOpen(true);
+            <VariableNavigationContext.Provider
+              value={{
+                flowName: nodeSession.record.flow.name,
+                source: '流程参数与资源',
+                openFlow: () =>
+                  nodeNavigation.current?.(() => setEditorPanel('canvas'), '流程编排'),
+                openLibrary: () =>
+                  leaveNodeEditor(() => {
+                    setSection('templates');
+                    setTaskReturn(false);
+                  }, '模板库'),
+                showBrowser: () =>
+                  nodeNavigation.current?.(() => {
+                    setMoreOpen(false);
+                    setOutlineOpen(false);
+                    setEditorPanel('canvas');
+                    setBrowserOpen(true);
+                    requestAnimationFrame(() => {
+                      document.querySelector('main')?.scrollTo(0, 0);
+                      document
+                        .querySelector<HTMLElement>('.browser-editor-panel')
+                        ?.focus({ preventScroll: true });
+                    });
+                  }, '网页操作与拾取'),
               }}
-              save={async (record) => {
-                if (JSON.stringify(edit) !== JSON.stringify(nodeSession.record))
-                  throw new Error(
-                    '来源流程草稿已经变化，请保留输入并返回重新打开，避免覆盖其他修改',
-                  );
-                const saved = await api('flow.save', {
-                  flow: record.flow,
-                  bindings: record.bindings,
-                });
-                inputGroup.current = undefined;
-                setEdit(saved);
-                setNotice('已保存参数、资源绑定及流程草稿');
-                await refresh().catch((reason) => {
-                  setError(
-                    '参数已保存，但列表刷新失败：' +
-                      (reason instanceof Error ? reason.message : '请稍后刷新'),
-                  );
-                });
-              }}
-            />
+            >
+              <FlowParametersPage
+                returnLabel={
+                  nodeSession.fromSettings ? '凭据与本机资源' : moreOpen ? '更多操作' : '流程编排'
+                }
+                key={nodeSession.record.id}
+                record={nodeSession.record}
+                browsers={data.browsers}
+                credentials={data.credentials}
+                onDirtyChange={setParametersDirty}
+                navigation={nodeNavigation}
+                close={closeNodeEditor}
+                configuration={() => {
+                  if (nodeSession.record.bindings.template)
+                    requestAnimationFrame(() =>
+                      editorLeaveRequest.current(() => setSection('templates'), '模板实例'),
+                    );
+                  else setConfigOpen(true);
+                }}
+                save={async (record) => {
+                  if (JSON.stringify(edit) !== JSON.stringify(nodeSession.record))
+                    throw new Error(
+                      '来源流程草稿已经变化，请保留输入并返回重新打开，避免覆盖其他修改',
+                    );
+                  const saved = await api('flow.save', {
+                    flow: record.flow,
+                    bindings: record.bindings,
+                  });
+                  inputGroup.current = undefined;
+                  setEdit(saved);
+                  setNotice('已保存参数、资源绑定及流程草稿');
+                  await refresh().catch((reason) => {
+                    setError(
+                      '参数已保存，但列表刷新失败：' +
+                        (reason instanceof Error ? reason.message : '请稍后刷新'),
+                    );
+                  });
+                }}
+              />
+            </VariableNavigationContext.Provider>
           )}
           {section === 'editor' && nodeSession?.kind === 'script' && (
             <ScriptEditorPage

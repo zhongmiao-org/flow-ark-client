@@ -1,3 +1,4 @@
+import { changeParameterValues, resolveParameterSources } from '../shared/parameter-sources';
 import {
   ConfigProvider,
   Select,
@@ -146,7 +147,11 @@ export default function FlowParametersPage({
       (issue) => !before.has(JSON.stringify(issue)),
     );
     if (added.length) throw new Error(referenceFeedback(added));
-    setDraft({ ...draft, flow: { ...draft.flow, parameters: next } });
+    const removed = Object.keys(draft.flow.parameters).some((key) => !Object.hasOwn(next, key));
+    if (removed && root.current?.querySelector('.parameter-source-field[data-value-invalid]'))
+      throw new Error('请先修正未完成的来源表达式，再删除参数。');
+    const flow = changeParameterValues(draft.flow, next);
+    setDraft({ ...draft, flow });
     setError('');
   };
   const referenceFeedback = (issues: ReferenceIssue[]) => {
@@ -168,7 +173,7 @@ export default function FlowParametersPage({
     if (locked.current) return;
     if (incomplete()) {
       setErrorKind('input');
-      setError('请先确认参数名称并修正未完成的参数值，再保存。');
+      setError('请先确认参数名称并修正未完成的参数值或来源表达式，再保存。');
       setPending(undefined);
       requestAnimationFrame(() => {
         const invalid = root.current?.querySelector<HTMLElement>('[data-value-invalid]');
@@ -185,6 +190,7 @@ export default function FlowParametersPage({
     setBusy('save');
     setError('');
     try {
+      resolveParameterSources(draft.flow);
       await save(draft);
       if (alive.current) close(next);
     } catch (reason) {
@@ -351,6 +357,11 @@ export default function FlowParametersPage({
                     columns
                     actions={actions}
                     value={draft.flow.parameters}
+                    flow={draft.flow}
+                    sourceChange={(flow) => {
+                      setDraft({ ...draft, flow });
+                      setError('');
+                    }}
                     change={parameters}
                     onIncompleteChange={setIncompleteInput}
                     rename={(from, to) => {
@@ -360,7 +371,12 @@ export default function FlowParametersPage({
                         )
                       )
                         throw new Error('请先完成参数值和新参数输入，再确认改名。');
+                      if (
+                        root.current?.querySelector('.parameter-source-field[data-value-invalid]')
+                      )
+                        throw new Error('请先修正未完成的来源表达式，再重命名参数。');
                       const next = renameParameter(draft.flow, from, to);
+                      resolveParameterSources(next.flow);
                       const before = new Set(
                         referenceIssues(draft.flow.steps, draft.flow.parameters).map((issue) =>
                           JSON.stringify(issue),
@@ -418,40 +434,43 @@ export default function FlowParametersPage({
                 />
               </div>
               {!browsers.length && <p>尚未发现可用绑定，请先在本地设置中配置浏览器。</p>}
-              {fileBindingNames(draft.flow.steps, draft.bindings.files, draft.flow.parameters).map(
-                (binding) => (
-                  <div
-                    className="flow-parameters-resource"
-                    key={binding}
-                    aria-busy={busy === 'choose' && choosing === binding}
+              {fileBindingNames(
+                draft.flow.steps,
+                draft.bindings.files,
+                draft.flow.parameters,
+                draft.flow.parameterSources,
+              ).map((binding) => (
+                <div
+                  className="flow-parameters-resource"
+                  key={binding}
+                  aria-busy={busy === 'choose' && choosing === binding}
+                >
+                  <strong>{binding} 目录</strong>
+                  <Button
+                    htmlType="button"
+                    color="default"
+                    variant="filled"
+                    loading={busy === 'choose' && choosing === binding}
+                    onClick={() => void choose(binding)}
+                    aria-label={'选择 ' + binding + ' 目录'}
+                    title={draft.bindings.files[binding] ?? '尚未选择'}
                   >
-                    <strong>{binding} 目录</strong>
-                    <Button
-                      htmlType="button"
-                      color="default"
-                      variant="filled"
-                      loading={busy === 'choose' && choosing === binding}
-                      onClick={() => void choose(binding)}
-                      aria-label={'选择 ' + binding + ' 目录'}
-                      title={draft.bindings.files[binding] ?? '尚未选择'}
+                    {busy === 'choose' && choosing === binding
+                      ? '正在选择…'
+                      : (draft.bindings.files[binding] ?? '选择目录')}
+                  </Button>
+                  {selection?.binding === binding && (
+                    <p
+                      ref={selectionMessage}
+                      tabIndex={-1}
+                      role={selection.failed ? 'alert' : 'status'}
+                      className={selection.failed ? 'field-error' : undefined}
                     >
-                      {busy === 'choose' && choosing === binding
-                        ? '正在选择…'
-                        : (draft.bindings.files[binding] ?? '选择目录')}
-                    </Button>
-                    {selection?.binding === binding && (
-                      <p
-                        ref={selectionMessage}
-                        tabIndex={-1}
-                        role={selection.failed ? 'alert' : 'status'}
-                        className={selection.failed ? 'field-error' : undefined}
-                      >
-                        {selection.message}
-                      </p>
-                    )}
-                  </div>
-                ),
-              )}
+                      {selection.message}
+                    </p>
+                  )}
+                </div>
+              ))}
               <h3>凭据引用 · 允许脚本读取</h3>
               {!ids.length && <p>未使用凭据。可在本地设置的凭据、AI 服务或应用与工具中管理。</p>}
               {credentialError && <p role="status">{credentialError}</p>}
@@ -498,7 +517,7 @@ export default function FlowParametersPage({
               <Alert
                 type="info"
                 showIcon
-                title="删除被引用的参数会被阻止，并标出引用步骤。"
+                title="删除被引用的参数会被阻止，并标出引用步骤或参数来源。"
                 role="note"
               />
             </Card>

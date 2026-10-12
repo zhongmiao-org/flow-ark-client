@@ -1,3 +1,4 @@
+import { resolveParameterSources } from '../shared/parameter-sources';
 import { constants } from 'node:fs';
 import { access, realpath, stat } from 'node:fs/promises';
 import type { Store } from './store';
@@ -199,7 +200,7 @@ export class RunReview {
         if (!record.bindings.browserId) throw new Error('请先选择本机浏览器');
         browserIds.add(record.bindings.browserId);
         if (node.operation === 'upload') {
-          const fields = staticUploadFields(node.value, record.flow.parameters);
+          const fields = staticUploadFields(node.value, resolveParameterSources(record.flow));
           if (fields?.binding.known)
             directory(uploadText(fields.binding.value, 'binding'), true, false);
           else for (const name of Object.keys(record.bindings.files)) directory(name, true, false);

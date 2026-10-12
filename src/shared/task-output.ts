@@ -1,3 +1,4 @@
+import { resolveParameterSources } from './parameter-sources';
 import { z } from 'zod';
 import { staticUploadFields } from './upload-source';
 import { resolveValue } from '../core/engine';
@@ -78,7 +79,7 @@ export function assertOutputFlow(flow: Flow, target: TaskOutputTarget) {
       // Script SDK receives the complete binding map. Until it has a matching per-call
       // output guard it cannot run under this constrained output selection.
       if (node.type === 'browser' && node.operation === 'upload') {
-        const source = staticUploadFields(node.value, flow.parameters);
+        const source = staticUploadFields(node.value, resolveParameterSources(flow));
         if (!source?.binding.known || source.binding.value === OUTPUT_BINDING)
           throw new Error('网页上传不能读取所选输出目录');
       }
@@ -107,7 +108,8 @@ export function assertOutputFlow(flow: Flow, target: TaskOutputTarget) {
             '$ref' in content &&
             typeof content.$ref === 'string' &&
             /^(steps\.|item(?:\.|$)|index$)/.test(content.$ref);
-          if (!deferred) validateCreatedText(resolveValue(content, { params: flow.parameters }));
+          if (!deferred)
+            validateCreatedText(resolveValue(content, { params: resolveParameterSources(flow) }));
         }
         outputs++;
       }

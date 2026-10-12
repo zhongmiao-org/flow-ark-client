@@ -1,3 +1,4 @@
+import { resolveParameterSources } from './parameter-sources';
 import { z } from 'zod';
 import type { EmbeddedReview } from './run-review';
 import type { PlanningContext } from './planning';
@@ -148,7 +149,7 @@ export function assertWebFlow(flow: Flow, target: TaskWebTarget, output?: TaskOu
         if (n.operation === 'navigate') {
           let url: unknown;
           try {
-            url = resolveValue(n.value, { params: flow.parameters });
+            url = resolveValue(n.value, { params: resolveParameterSources(flow) });
           } catch {}
           if (url !== target.page.url)
             throw new Error('网页目标只允许打开已选地址，不能使用其他或动态网址');

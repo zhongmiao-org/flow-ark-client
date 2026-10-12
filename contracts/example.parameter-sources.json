@@ -1,0 +1,36 @@
+{
+  "formatVersion": "1.0",
+  "id": "parameter-source-example",
+  "name": "参数来源示例",
+  "description": "仅使用虚构本地参数，不读取凭据或外部对象。",
+  "parameters": {
+    "profile": {
+      "title": "本周记录"
+    },
+    "title": "固定标题",
+    "alias": "固定别名"
+  },
+  "parameterSources": {
+    "title": {
+      "$ref": "params.profile.title"
+    },
+    "alias": {
+      "$ref": "params.title"
+    }
+  },
+  "steps": [
+    {
+      "id": "result",
+      "type": "value",
+      "name": "读取最终标题",
+      "value": {
+        "$ref": "params.alias"
+      },
+      "version": 1
+    }
+  ],
+  "requiredCapabilities": [
+    "value",
+    "parameter-sources-v1"
+  ]
+}

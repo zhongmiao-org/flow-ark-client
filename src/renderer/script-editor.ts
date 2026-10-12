@@ -1,11 +1,17 @@
+import { resolveParameterSources } from '../shared/parameter-sources';
 import type { Flow, FlowRecord, Json, Step } from '../shared/types';
 import { resolveValue } from '../core/engine';
 import { changeSteps, flatten } from './flow-editing';
 
 export type ScriptNode = Extract<Step, { type: 'script' }>;
-export function scriptInputPreview(input: Json, parameters: Flow['parameters']) {
+export function scriptInputPreview(
+  input: Json,
+  parameters: Flow['parameters'],
+  parameterSources?: Flow['parameterSources'],
+) {
   try {
-    return { value: resolveValue(input, { params: parameters }), available: true as const };
+    const effective = resolveParameterSources({ parameters, parameterSources });
+    return { value: resolveValue(input, { params: effective }), available: true as const };
   } catch (error) {
     return { available: false as const, reason: (error as Error).message };
   }
