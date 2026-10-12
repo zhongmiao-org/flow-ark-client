@@ -2356,12 +2356,11 @@ function WorkspaceApp() {
                   inputGroup.current = undefined;
                   setEdit(saved);
                   setNotice('已保存参数、资源绑定及流程草稿');
-                  await refresh().catch((reason) => {
-                    setError(
-                      '参数已保存，但列表刷新失败：' +
-                        (reason instanceof Error ? reason.message : '请稍后刷新'),
-                    );
-                  });
+                  setData((current) => ({
+                    ...current,
+                    flows: [...current.flows.filter((record) => record.id !== saved.id), saved],
+                  }));
+                  await refresh();
                 }}
               />
             </VariableNavigationContext.Provider>
@@ -2402,6 +2401,9 @@ function WorkspaceApp() {
               key={nodeSession.record.id + ':' + nodeSession.nodeId}
               record={nodeSession.record}
               nodeId={nodeSession.nodeId}
+              returnLabel={
+                nodeSession.fromSettings ? '凭据与本机资源' : moreOpen ? '更多操作' : '流程编排'
+              }
               navigation={nodeNavigation}
               close={closeNodeEditor}
               save={async (record) => {
@@ -2416,6 +2418,10 @@ function WorkspaceApp() {
                 inputGroup.current = undefined;
                 setEdit(saved);
                 setNotice('已保存 Excel 映射及流程草稿');
+                setData((current) => ({
+                  ...current,
+                  flows: [...current.flows.filter((record) => record.id !== saved.id), saved],
+                }));
                 await refresh();
               }}
             />
