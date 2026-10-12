@@ -329,7 +329,10 @@ export default function FlowParametersPage({
       )}
       <ConfigProvider componentDisabled={!!busy}>
         <fieldset disabled={!!busy} className="flow-parameters-columns">
-          <section className="flow-parameters-card" aria-label="运行参数">
+          <section
+            className="flow-parameters-card flow-parameters-card--values"
+            aria-label="运行参数"
+          >
             <Card>
               <h2>运行参数</h2>
               {managed ? (
