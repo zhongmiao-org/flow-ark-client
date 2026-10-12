@@ -1,9 +1,10 @@
-import { ConfigProvider, Select, Button, Checkbox, Input } from 'antd';
+import { ConfigProvider, Select, Button, Checkbox, Input, Modal } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import type { Bindings, Json } from '../shared/types';
 import { schemaDefaults } from '../shared/template-config';
 import { LiteralValue, type LiteralValueDraftSlot } from './ValueField';
+import EditorLeaveDialog from './EditorLeaveDialog';
 import './template-fields.css';
 
 function sameOption(a: any, b: any): boolean {
@@ -339,81 +340,162 @@ export default function TemplateConfiguration({
   const [values, setValues] = useState(structuredClone(configuration.values));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [leaving, setLeaving] = useState(false);
+  const [touched, setTouched] = useState(false);
   const [feedbackRevision, setFeedbackRevision] = useState(0);
   const submitting = useRef(false);
   const form = useRef<HTMLFormElement>(null);
   const saveError = useRef<HTMLParagraphElement>(null);
   const focusFeedback = useRef(false);
-  useLayoutEffect(() => {
-    if (saving || !error || !focusFeedback.current) return;
-    focusFeedback.current = false;
+  const heading = useRef<HTMLHeadingElement>(null);
+  const lastField = useRef<HTMLElement | null>(null);
+  const restoreField = useRef(false);
+  const fieldDraft = useRef<ConfigurationFieldDraft>({});
+  const invalidControl = () => {
     const invalid = form.current?.querySelector<HTMLElement>('[data-value-invalid]');
-    const target = invalid
-      ? invalid.matches('input,textarea,select,[role="combobox"],button')
+    if (!invalid) return null;
+    if (invalid.matches('input,textarea,select,[role="combobox"],button')) return invalid;
+    return (
+      invalid.querySelector<HTMLElement>(
+        'input[aria-invalid="true"],textarea[aria-invalid="true"],[role="combobox"][aria-invalid="true"]',
+      ) ??
+      (invalid.hasAttribute('tabindex')
         ? invalid
-        : (invalid.querySelector<HTMLElement>('input,textarea,[role="combobox"],button') ?? invalid)
-      : saveError.current;
+        : invalid.querySelector<HTMLElement>('input,textarea,[role="combobox"],button'))
+    );
+  };
+  const focusControl = (target: HTMLElement | null | undefined) => {
     target?.focus({ preventScroll: true });
-    (target?.closest('.template-field') ?? target)?.scrollIntoView({
-      block: 'nearest',
+    (target?.closest('.template-field, .literal-value') ?? target)?.scrollIntoView({
+      block: target?.tagName === 'FIELDSET' ? 'start' : 'nearest',
       inline: 'nearest',
     });
-  }, [saving, error, feedbackRevision]);
+  };
+  const requestClose = () => {
+    if (submitting.current || leaving) return;
+    if (
+      JSON.stringify(values) !== JSON.stringify(configuration.values) ||
+      (touched && !!form.current?.querySelector('[data-value-invalid]'))
+    )
+      setLeaving(true);
+    else close();
+  };
+  useEffect(() => {
+    const keydown = (event: KeyboardEvent) => {
+      if (leaving || event.isComposing || event.ctrlKey || event.shiftKey) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target || !form.current?.closest('[role="dialog"]')?.contains(target)) return;
+      if (
+        target.closest(
+          'input,textarea,select,[contenteditable]:not([contenteditable="false"]),[role="textbox"]',
+        )
+      )
+        return;
+      if (
+        (event.altKey && !event.metaKey && event.key === 'ArrowLeft') ||
+        (event.metaKey && !event.altKey && event.key === '[')
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!event.repeat) requestClose();
+      }
+    };
+    window.addEventListener('keydown', keydown, true);
+    return () => window.removeEventListener('keydown', keydown, true);
+  }, [requestClose, leaving]);
+  useLayoutEffect(() => {
+    if (saving || leaving) return;
+    if (restoreField.current) {
+      restoreField.current = false;
+      focusFeedback.current = false;
+      focusControl(
+        invalidControl() ??
+          (lastField.current?.isConnected ? lastField.current : undefined) ??
+          form.current?.querySelector<HTMLElement>('input,textarea,[role="combobox"]'),
+      );
+      return;
+    }
+    if (!error || !focusFeedback.current) return;
+    focusFeedback.current = false;
+    focusControl(invalidControl() ?? saveError.current);
+  }, [saving, leaving, error, feedbackRevision]);
+  const persist = async () => {
+    if (submitting.current) return;
+    submitting.current = true;
+    setSaving(true);
+    setError('');
+    try {
+      if (form.current?.querySelector('[data-value-invalid]'))
+        throw new Error('请先修正未完成的字段值');
+      await apply(values);
+      close();
+    } catch (reason) {
+      focusFeedback.current = true;
+      setFeedbackRevision((revision) => revision + 1);
+      setError(reason instanceof Error ? reason.message : String(reason));
+      throw reason;
+    } finally {
+      submitting.current = false;
+      setSaving(false);
+    }
+  };
   return (
-    <div className="modal-backdrop" role="presentation">
-      <section
+    <>
+      <Modal
+        open
+        centered
+        width={760}
         className="template-modal"
-        role="dialog"
-        aria-modal="true"
         aria-labelledby="template-config-title"
+        footer={null}
+        mask={{ closable: false }}
+        keyboard={!saving && !leaving}
+        closable={{ disabled: saving || leaving, 'aria-label': '关闭实例配置' }}
+        closeIcon={<X size={20} />}
+        onCancel={requestClose}
+        afterOpenChange={(open) => {
+          if (open && !leaving && !form.current?.contains(document.activeElement))
+            heading.current?.focus();
+        }}
+        title={
+          <header>
+            <div>
+              <h2 id="template-config-title" ref={heading} tabIndex={-1}>
+                实例配置
+              </h2>
+              <p>{name}</p>
+            </div>
+          </header>
+        }
       >
-        <header>
-          <div>
-            <h2 id="template-config-title">实例配置</h2>
-            <p>{name}</p>
-          </div>
-          <Button
-            aria-label="关闭实例配置"
-            className="icon-button"
-            onClick={close}
-            disabled={saving || undefined}
-          >
-            <X size={20} />
-          </Button>
-        </header>
         <form
           ref={form}
+          onInputCapture={() => setTouched(true)}
+          onFocusCapture={(event) => {
+            const target = event.target as HTMLElement;
+            if (target.matches('input,textarea,select,[role="combobox"]'))
+              lastField.current = target;
+          }}
           onInvalid={(event) => {
             const field = event.target as HTMLInputElement | HTMLSelectElement;
             focusFeedback.current = true;
             setFeedbackRevision((revision) => revision + 1);
             setError(field.validationMessage);
           }}
-          onSubmit={async (e) => {
+          onSubmit={(e) => {
             e.preventDefault();
-            if (submitting.current) return;
-            submitting.current = true;
-            setSaving(true);
-            setError('');
-            try {
-              if (e.currentTarget.querySelector('[data-value-invalid]'))
-                throw new Error('请先修正未完成的字段值');
-              await apply(values);
-              close();
-            } catch (error: unknown) {
-              focusFeedback.current = true;
-              setFeedbackRevision((revision) => revision + 1);
-              setError(error instanceof Error ? error.message : String(error));
-            } finally {
-              submitting.current = false;
-              setSaving(false);
-            }
+            if (!leaving) void persist().catch(() => {});
           }}
         >
-          <ConfigProvider componentDisabled={saving || undefined}>
+          <ConfigProvider componentDisabled={saving || leaving}>
             <div className="template-form-scroll">
-              <fieldset className="template-form-fields" disabled={saving}>
-                <Field schema={configuration.schema} value={values} change={setValues} />
+              <fieldset className="template-form-fields" disabled={saving || leaving}>
+                <Field
+                  schema={configuration.schema}
+                  value={values}
+                  change={setValues}
+                  draft={fieldDraft.current}
+                />
               </fieldset>
             </div>
           </ConfigProvider>
@@ -429,15 +511,32 @@ export default function TemplateConfiguration({
           )}
           <footer>
             <span>只保存当前实例；不会开始运行</span>
-            <Button htmlType="button" onClick={close} disabled={saving || undefined}>
+            <Button
+              htmlType="button"
+              onClick={requestClose}
+              disabled={saving || leaving || undefined}
+            >
               取消
             </Button>
-            <Button type="primary" disabled={saving || undefined} htmlType="submit">
+            <Button type="primary" disabled={saving || leaving || undefined} htmlType="submit">
               保存配置
             </Button>
           </footer>
         </form>
-      </section>
-    </div>
+      </Modal>
+      {leaving && (
+        <EditorLeaveDialog
+          name={`${name} · 实例配置`}
+          draftLabel="实例配置"
+          destination="流程编排"
+          save={persist}
+          discard={close}
+          stay={() => {
+            restoreField.current = true;
+            setLeaving(false);
+          }}
+        />
+      )}
+    </>
   );
 }

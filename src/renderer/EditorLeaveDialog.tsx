@@ -7,12 +7,14 @@ export default function EditorLeaveDialog({
   save,
   discard,
   stay,
+  draftLabel = '草稿',
 }: {
   name: string;
   destination: string;
   save: () => Promise<void>;
   discard: () => void;
   stay: () => void;
+  draftLabel?: string;
 }) {
   const descriptionId = useId();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -21,9 +23,10 @@ export default function EditorLeaveDialog({
   const alive = useRef(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [failureRevision, setFailureRevision] = useState(0);
   useEffect(() => {
-    if (error) heading.current?.focus();
-  }, [error]);
+    if (error && !busy) heading.current?.focus();
+  }, [error, busy, failureRevision]);
   useEffect(() => {
     alive.current = true;
     return () => {
@@ -38,13 +41,15 @@ export default function EditorLeaveDialog({
     try {
       await save();
     } catch (reason) {
-      if (alive.current)
+      if (alive.current) {
+        setFailureRevision((revision) => revision + 1);
         setError(
           (reason instanceof Error ? reason.message : '保存未完成，请重试').replace(
             /^Error invoking remote method 'flowark:request': (?:Error: )?/,
             '',
           ),
         );
+      }
     } finally {
       locked.current = false;
       if (alive.current) setBusy(false);
@@ -103,7 +108,8 @@ export default function EditorLeaveDialog({
       }
     >
       <p id={descriptionId}>
-        “{name}”的当前输入尚未保存。保存成功后前往“{destination}”；不保存将放弃本次草稿更改。
+        “{name}”的当前输入尚未保存。保存成功后前往“{destination}”；不保存将放弃本次{draftLabel}
+        更改。
       </p>
       <p className="flowark-leave-note">已开始的运行和固定计划保持原版本。</p>
       {error && <Alert type="error" title="保存错误详情" description={error} role="alert" />}
