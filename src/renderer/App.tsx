@@ -2372,6 +2372,9 @@ function WorkspaceApp() {
               record={nodeSession.record}
               nodeId={nodeSession.nodeId}
               initialPreview={nodeSession.preview}
+              returnLabel={
+                nodeSession.fromSettings ? '凭据与本机资源' : moreOpen ? '更多操作' : '流程编排'
+              }
               navigation={nodeNavigation}
               close={closeNodeEditor}
               save={async (record) => {
@@ -2386,6 +2389,10 @@ function WorkspaceApp() {
                 inputGroup.current = undefined;
                 setEdit(saved);
                 setNotice('已保存脚本及流程草稿');
+                setData((current) => ({
+                  ...current,
+                  flows: [...current.flows.filter((record) => record.id !== saved.id), saved],
+                }));
                 await refresh();
               }}
             />
