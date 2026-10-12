@@ -331,7 +331,11 @@ export default function ScheduleWorkbench({
             flowUpdatedAt: draft.flow!.updatedAt,
           });
     if (!parsed.success) {
-      setError('请填写 1–525600 的整数分钟数和有效时区。');
+      setError('请修正间隔或时区后重试；当前输入已保留，计划尚未保存。');
+      if (!leaving)
+        requestAnimationFrame(() =>
+          fields.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
+        );
       return false;
     }
     const result = await perform(() =>
@@ -650,6 +654,7 @@ export default function ScheduleWorkbench({
           </section>
           {draft ? (
             <form
+              noValidate
               key={draft.mode + (draft.plan?.id ?? '')}
               className={
                 'template-schedule-form schedule-workbench-form ' +

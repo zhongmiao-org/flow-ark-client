@@ -136,7 +136,11 @@ export default function TemplateSchedulePage({
       timezone: timing.timezone,
     });
     if (!parsed.success) {
-      setError('请填写 1–525600 的整数分钟数和有效时区。');
+      setError('请修正间隔或时区后重试；当前输入已保留，计划尚未保存。');
+      if (!leaving)
+        requestAnimationFrame(() =>
+          form.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
+        );
       return false;
     }
     const result = await perform(() => api('schedule.save', parsed.data), 'create');
@@ -334,6 +338,7 @@ export default function TemplateSchedulePage({
             </Card>
           </section>
           <form
+            noValidate
             ref={form}
             className="template-schedule-form"
             onSubmit={(event) => {
