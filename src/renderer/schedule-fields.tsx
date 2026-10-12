@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { scheduleTiming } from '../shared/schedules';
 import { Input } from 'antd';
+export const timingValidationMessage = '请修正间隔或时区后重试；当前输入已保留，计划尚未保存。';
 export function inZone(time: number, timezone: string) {
   try {
     return new Intl.DateTimeFormat('zh-CN', {

@@ -30,7 +30,7 @@ import {
   type ScheduleInspection,
 } from '../shared/schedules';
 import { runDisplayLabels } from '../shared/run-history';
-import { Timing, inZone } from './schedule-fields';
+import { Timing, inZone, timingValidationMessage } from './schedule-fields';
 import type { TemplateNavigation } from './TemplateInstancePage';
 import ScheduleLeaveDialog from './ScheduleLeaveDialog';
 import './template-schedule.css';
@@ -214,8 +214,12 @@ export default function ScheduleWorkbench({
   useLayoutEffect(() => {
     if (!active || busy || leaving) return;
     if (error) {
-      visibleReturn.current = pageError.current;
-      pageError.current?.focus();
+      const invalid =
+        error === timingValidationMessage
+          ? fields.current?.querySelector<HTMLElement>('[aria-invalid="true"]')
+          : undefined;
+      visibleReturn.current = invalid ?? pageError.current;
+      (invalid ?? pageError.current)?.focus();
     } else if (notice) feedbackHeading.current?.focus();
   }, [active, busy, leaving, error, notice]);
   useLayoutEffect(() => {
@@ -331,7 +335,7 @@ export default function ScheduleWorkbench({
             flowUpdatedAt: draft.flow!.updatedAt,
           });
     if (!parsed.success) {
-      setError('请修正间隔或时区后重试；当前输入已保留，计划尚未保存。');
+      setError(timingValidationMessage);
       if (!leaving)
         requestAnimationFrame(() =>
           fields.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
