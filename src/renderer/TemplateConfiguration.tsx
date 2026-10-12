@@ -354,7 +354,10 @@ export default function TemplateConfiguration({
         : (invalid.querySelector<HTMLElement>('input,textarea,[role="combobox"],button') ?? invalid)
       : saveError.current;
     target?.focus({ preventScroll: true });
-    target?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    (target?.closest('.template-field') ?? target)?.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest',
+    });
   }, [saving, error, feedbackRevision]);
   return (
     <div className="modal-backdrop" role="presentation">
@@ -408,9 +411,11 @@ export default function TemplateConfiguration({
           }}
         >
           <ConfigProvider componentDisabled={saving || undefined}>
-            <fieldset className="template-form-scroll template-form-fields" disabled={saving}>
-              <Field schema={configuration.schema} value={values} change={setValues} />
-            </fieldset>
+            <div className="template-form-scroll">
+              <fieldset className="template-form-fields" disabled={saving}>
+                <Field schema={configuration.schema} value={values} change={setValues} />
+              </fieldset>
+            </div>
           </ConfigProvider>
           {error && (
             <p

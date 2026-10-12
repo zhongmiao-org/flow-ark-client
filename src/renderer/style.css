@@ -1212,12 +1212,22 @@ main {
   padding: 30px;
 }
 .template-modal {
+  display: flex;
+  flex-direction: column;
   width: min(760px, 90vw);
-  max-height: 90vh;
+  max-height: min(90vh, calc(100dvh - 60px));
   background: var(--fa-bg-surface);
   border-radius: 18px;
   box-shadow: var(--fa-shadow-floating);
   overflow: hidden;
+}
+.template-modal > header {
+  flex: none;
+}
+.template-modal > form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 .template-modal > header,
 .template-modal footer {
@@ -1229,21 +1239,26 @@ main {
 }
 .template-modal > header > div {
   flex: 1;
+  min-width: 0;
 }
 .template-modal h2,
 .template-modal header p {
   margin: 0 0 5px;
+  overflow-wrap: anywhere;
 }
 .template-modal footer {
+  flex: none;
+  flex-wrap: wrap;
   border-top: 1px solid var(--fa-border-default);
   border-bottom: 0;
 }
-.template-modal footer span {
+.template-modal footer > span {
   flex: 1;
   color: var(--fa-text-secondary);
   font-size: 12px;
 }
 .template-form-scroll {
+  min-height: 0;
   max-height: 61vh;
   overflow: auto;
   padding: 12px 26px;
@@ -1251,11 +1266,23 @@ main {
 .template-form-fields {
   border: 0;
   margin: 0;
+  padding: 0;
   min-width: 0;
 }
 .template-save-error {
+  flex: none;
+  max-height: 20vh;
+  overflow: auto;
   margin: 0 26px 14px;
   overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .template-modal footer {
+    justify-content: flex-end;
+  }
+  .template-modal footer > span {
+    flex-basis: 100%;
+  }
 }
 .template-parameters {
   margin-bottom: 18px;
