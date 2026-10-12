@@ -15,6 +15,20 @@ struct Discovery: Encodable {
     var availability: String
     var windows: [WindowInfo] = []
     var truncated = false
+    var metadataIssue: MetadataIssue? = nil
+}
+enum MetadataIssue: String, Encodable {
+    case processIdentityUnavailable = "process-identity-unavailable"
+    case processIdentityChanged = "process-identity-changed"
+    case windowLimit = "window-limit"
+    case timeLimit = "time-limit"
+    case windowTitleUnavailable = "window-title-unavailable"
+    case windowStateUnavailable = "window-state-unavailable"
+    case windowTitleShortened = "window-title-shortened"
+}
+func incomplete(_ result: inout Discovery, _ issue: MetadataIssue) {
+    result.truncated = true
+    if result.metadataIssue == nil { result.metadataIssue = issue }
 }
 struct WindowEntry {
     let app: NSRunningApplication
@@ -56,11 +70,11 @@ func discover() -> Discovery {
     for application in applications {
         if application.isTerminated { continue }
         guard let started = processStart(application.processIdentifier) else {
-            result.truncated = true
+            incomplete(&result, .processIdentityUnavailable)
             continue
         }
         if result.windows.count >= 30 || ProcessInfo.processInfo.systemUptime >= deadline {
-            result.truncated = true
+            incomplete(&result, result.windows.count >= 30 ? .windowLimit : .timeLimit)
             break
         }
         let element = AXUIElementCreateApplication(application.processIdentifier)
@@ -78,24 +92,27 @@ func discover() -> Discovery {
         guard error == .success, let windows = values as? [AXUIElement] else {
             return Discovery(accessibility: "granted", availability: "unavailable")
         }
-        if count > limit { result.truncated = true }
+        if count > limit { incomplete(&result, .windowLimit) }
         for window in windows {
             if ProcessInfo.processInfo.systemUptime >= deadline {
-                result.truncated = true
+                incomplete(&result, .timeLimit)
                 break
             }
             AXUIElementSetMessagingTimeout(window, 0.3)
             let (titleError, titleValue) = attribute(window, kAXTitleAttribute)
             let (minimizedError, minimizedValue) = attribute(window, kAXMinimizedAttribute)
-            guard titleError == .success, let title = titleValue as? String,
-                  minimizedError == .success, let minimized = minimizedValue as? Bool else {
-                result.truncated = true
+            guard titleError == .success, let title = titleValue as? String else {
+                incomplete(&result, .windowTitleUnavailable)
                 continue
             }
-            if title.utf16.count > 1024 { result.truncated = true }
+            guard minimizedError == .success, let minimized = minimizedValue as? Bool else {
+                incomplete(&result, .windowStateUnavailable)
+                continue
+            }
+            if title.utf16.count > 1024 { incomplete(&result, .windowTitleShortened) }
             let displayTitle = String(decoding: title.utf16.prefix(1024), as: UTF16.self)
             guard processStart(application.processIdentifier) == started else {
-                result.truncated = true
+                incomplete(&result, .processIdentityChanged)
                 continue
             }
             let id = UUID().uuidString.lowercased()

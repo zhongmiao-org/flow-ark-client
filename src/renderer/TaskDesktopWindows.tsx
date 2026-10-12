@@ -150,7 +150,7 @@ export function DesktopWindowList({
               type="warning"
               showIcon
               role="status"
-              title="清单可能不完整：部分窗口未能读取，或已达到本次显示上限。"
+              title={snapshot.reason ?? '清单可能不完整：部分窗口未能读取，或已达到本次显示上限。'}
             />
           )}
           {!ready && (

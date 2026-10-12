@@ -1,6 +1,19 @@
 import { z } from 'zod';
 
 const uuid = z.string().uuid();
+export const discoveryMetadataReasons = {
+  'process-identity-unavailable': '本次未能核对文本编辑的启动身份，请确认应用正常响应后重新检查。',
+  'process-identity-changed': '检查期间文本编辑的启动身份已变化，请重新检查并选择窗口。',
+  'window-limit': '本次窗口数量超过显示上限，清单可能不完整。',
+  'time-limit': '窗口检查达到本次时限，部分窗口尚未核对，请确认应用正常响应后重新检查。',
+  'window-title-unavailable': '部分窗口的标题未能核对，尚不能确认对应文档，请检查文本编辑后重试。',
+  'window-state-unavailable': '部分窗口的最小化状态未能核对，本次未将其列为可选窗口。',
+  'window-title-shortened': '部分窗口标题超过显示上限，已缩短显示；身份仍按完整原窗口核对。',
+} as const;
+type DiscoveryMetadataIssue = keyof typeof discoveryMetadataReasons;
+const discoveryMetadataIssue = z.enum(
+  Object.keys(discoveryMetadataReasons) as [DiscoveryMetadataIssue, ...DiscoveryMetadataIssue[]],
+);
 export const selectionIdentity = z.object({ observationId: uuid, windowId: uuid }).strict();
 export const selectionReference = selectionIdentity.extend({ previewId: uuid });
 export const desktopMethods = {
@@ -25,9 +38,11 @@ export const nativeWindowDiscovery = z
     availability,
     windows: z.array(windowInfo.extend({ id: uuid })).max(30),
     truncated: z.boolean(),
+    metadataIssue: discoveryMetadataIssue.optional(),
   })
   .strict()
   .refine(consistent)
+  .refine((value) => !value.metadataIssue || value.truncated)
   .refine((value) => new Set(value.windows.map((w) => w.id)).size === value.windows.length);
 export const desktopWindowDiscovery = z
   .object({
