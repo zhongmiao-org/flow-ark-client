@@ -459,6 +459,13 @@ function WorkspaceApp() {
   const inputTarget = useRef<Element | null>(null);
   const setEdit = (record: FlowRecord) =>
     dispatchDraft({ type: 'change', record, group: inputGroup.current });
+  function adoptSavedFlow(record: FlowRecord) {
+    dispatchDraft({ type: 'saved', record });
+    setData((current) => ({
+      ...current,
+      flows: [...current.flows.filter((flow) => flow.id !== record.id), record],
+    }));
+  }
   const setSelected = (selected: string) => {
     if (guardNodeInput()) dispatchDraft({ type: 'select', selected });
   };
@@ -698,9 +705,12 @@ function WorkspaceApp() {
   }
   async function save() {
     if (edit)
-      return action(() => {
+      return action(async () => {
         checkEditorInput();
-        return api('flow.save', { flow: edit.flow, bindings: edit.bindings });
+        const saved = await api('flow.save', { flow: edit.flow, bindings: edit.bindings });
+        inputGroup.current = undefined;
+        adoptSavedFlow(saved);
+        return saved;
       }, '已保存本地草稿');
   }
   function exportDraft() {
@@ -715,7 +725,9 @@ function WorkspaceApp() {
   async function run(r: FlowRecord, debug = false) {
     await action(async () => {
       checkEditorInput();
-      await api('flow.save', { flow: r.flow, bindings: r.bindings });
+      const saved = await api('flow.save', { flow: r.flow, bindings: r.bindings });
+      inputGroup.current = undefined;
+      adoptSavedFlow(saved);
       const run = await api('flow.run', { id: r.id, debug });
       const next = await api('run.detail', { id: run.id });
       if (!guardNodeInput()) return;
@@ -1052,11 +1064,7 @@ function WorkspaceApp() {
               flow: edit.flow,
               bindings: edit.bindings,
             })) as FlowRecord;
-            setEdit(saved);
-            setData((current) => ({
-              ...current,
-              flows: [...current.flows.filter((record) => record.id !== saved.id), saved],
-            }));
+            adoptSavedFlow(saved);
             setNotice('已保存本地草稿');
             finishEditorLeave();
           }}
@@ -2242,7 +2250,7 @@ function WorkspaceApp() {
                   });
                   inputGroup.current = undefined;
                   inputTarget.current = null;
-                  setEdit(saved);
+                  adoptSavedFlow(saved);
                   setNotice('已保存实例配置');
                   await refresh();
                 } finally {
@@ -2354,12 +2362,8 @@ function WorkspaceApp() {
                     bindings: record.bindings,
                   });
                   inputGroup.current = undefined;
-                  setEdit(saved);
+                  adoptSavedFlow(saved);
                   setNotice('已保存参数、资源绑定及流程草稿');
-                  setData((current) => ({
-                    ...current,
-                    flows: [...current.flows.filter((record) => record.id !== saved.id), saved],
-                  }));
                   await refresh();
                 }}
               />
@@ -2386,12 +2390,8 @@ function WorkspaceApp() {
                   bindings: record.bindings,
                 });
                 inputGroup.current = undefined;
-                setEdit(saved);
+                adoptSavedFlow(saved);
                 setNotice('已保存脚本及流程草稿');
-                setData((current) => ({
-                  ...current,
-                  flows: [...current.flows.filter((record) => record.id !== saved.id), saved],
-                }));
                 await refresh();
               }}
             />
@@ -2416,12 +2416,8 @@ function WorkspaceApp() {
                   bindings: record.bindings,
                 });
                 inputGroup.current = undefined;
-                setEdit(saved);
+                adoptSavedFlow(saved);
                 setNotice('已保存 Excel 映射及流程草稿');
-                setData((current) => ({
-                  ...current,
-                  flows: [...current.flows.filter((record) => record.id !== saved.id), saved],
-                }));
                 await refresh();
               }}
             />

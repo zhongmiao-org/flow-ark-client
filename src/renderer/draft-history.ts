@@ -11,7 +11,7 @@ export type DraftAction =
   | { type: 'clear' }
   | { type: 'open'; record: FlowRecord }
   | { type: 'select'; selected: string }
-  | { type: 'change'; record: FlowRecord; group?: string }
+  | { type: 'change' | 'saved'; record: FlowRecord; group?: string }
   | { type: 'undo' | 'redo' };
 export const emptyHistory: DraftHistory = { present: null, past: [], future: [], revision: 0 };
 export function draftHistory(state: DraftHistory, action: DraftAction): DraftHistory {
@@ -25,9 +25,19 @@ export function draftHistory(state: DraftHistory, action: DraftAction): DraftHis
   if (!state.present) return state;
   if (action.type === 'select')
     return { ...state, present: { ...state.present, selected: action.selected }, group: undefined };
-  if (action.type === 'change') {
+  if (action.type === 'change' || action.type === 'saved') {
     if (action.record.id !== state.present.record.id) throw new Error('编辑记录不属于当前流程');
     if (JSON.stringify(action.record) === JSON.stringify(state.present.record)) return state;
+    if (
+      action.type === 'saved' &&
+      JSON.stringify(action.record.flow) === JSON.stringify(state.present.record.flow) &&
+      JSON.stringify(action.record.bindings) === JSON.stringify(state.present.record.bindings)
+    )
+      return {
+        ...state,
+        present: { ...state.present, record: structuredClone(action.record) },
+        group: undefined,
+      };
     return {
       ...state,
       past:
