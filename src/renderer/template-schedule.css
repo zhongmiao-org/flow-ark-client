@@ -105,3 +105,10 @@
   min-height: 16px;
   flex: 0 0 16px;
 }
+
+.template-schedule-form .schedule-field-error {
+  color: var(--fa-status-error);
+  font-size: 12px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
