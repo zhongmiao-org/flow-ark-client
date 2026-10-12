@@ -16,7 +16,11 @@ import { activateCollapseWithSpace } from './collapseKeyboard';
 import './antd-layout.css';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { Bootstrap, FlowRecord } from '../shared/types';
-import type { LocalCredentialState } from '../shared/local-credentials';
+import {
+  localCredentialName,
+  localCredentialValue,
+  type LocalCredentialState,
+} from '../shared/local-credentials';
 import './local-credentials.css';
 const api = (method: string, args: unknown = {}) => window.flowark.request(method, args);
 const failure = (reason: unknown) =>
@@ -37,6 +41,13 @@ function CredentialDialog({
 }) {
   const id = useId();
   const nameInput = useRef<HTMLInputElement>(null);
+  const valueInput = useRef<HTMLInputElement>(null);
+  const lastField = useRef<{
+    kind: 'name' | 'value';
+    start: number | null;
+    end: number | null;
+    direction: 'forward' | 'backward' | 'none' | null;
+  }>({ kind: 'name', start: null, end: null, direction: null });
   const errorMessage = useRef<HTMLDivElement>(null);
   const stayButton = useRef<HTMLButtonElement>(null);
   const [name, setName] = useState(editor.entry?.name ?? '');
@@ -45,6 +56,7 @@ function CredentialDialog({
   const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [invalid, setInvalid] = useState<'name' | 'value'>();
   const locked = useRef(false),
     alive = useRef(true);
   const dirty = name !== (editor.entry?.name ?? '') || !!value;
@@ -62,8 +74,32 @@ function CredentialDialog({
     if (leaving) stayButton.current?.focus();
   }, [leaving]);
   useEffect(() => {
-    if (error && !busy) errorMessage.current?.focus();
-  }, [error, busy]);
+    if (error && !busy)
+      (invalid === 'name'
+        ? nameInput.current
+        : invalid === 'value'
+          ? valueInput.current
+          : errorMessage.current
+      )?.focus();
+  }, [error, busy, invalid]);
+  const rememberField = (kind: 'name' | 'value', input: HTMLInputElement) => {
+    lastField.current = {
+      kind,
+      start: input.selectionStart,
+      end: input.selectionEnd,
+      direction: input.selectionDirection,
+    };
+  };
+  const continueEditing = () => {
+    setLeaving(false);
+    requestAnimationFrame(() => {
+      const position = lastField.current;
+      const input = position.kind === 'value' ? valueInput.current : nameInput.current;
+      input?.focus();
+      if (input && position.start !== null && position.end !== null)
+        input.setSelectionRange(position.start, position.end, position.direction ?? undefined);
+    });
+  };
   const exit = () => {
     setValue('');
     close();
@@ -71,8 +107,7 @@ function CredentialDialog({
   const cancel = () => {
     if (locked.current) return;
     if (leaving) {
-      setLeaving(false);
-      requestAnimationFrame(() => nameInput.current?.focus());
+      continueEditing();
       return;
     }
     if (!removing && dirty) setLeaving(true);
@@ -80,15 +115,29 @@ function CredentialDialog({
   };
   const persist = async () => {
     if (locked.current || blocked) return;
-    if (!removing && (!name.trim() || (!editor.entry && !value))) {
-      setError('请填写名称；首次保存还需填写凭据值。');
+    const field = !localCredentialName.safeParse(name).success
+      ? 'name'
+      : (!editor.entry || value) && !localCredentialValue.safeParse(value).success
+        ? 'value'
+        : undefined;
+    if (!removing && field) {
+      setInvalid(field);
+      setError(
+        field === 'name'
+          ? '请填写 1–100 字符的凭据名称。'
+          : '请填写 1–8192 字符的凭据值，不能包含空字符。',
+      );
       setLeaving(false);
+      requestAnimationFrame(() =>
+        (field === 'name' ? nameInput.current : valueInput.current)?.focus(),
+      );
       return;
     }
     if (removing && !confirmed) return;
     locked.current = true;
     setBusy(true);
     setError('');
+    setInvalid(undefined);
     try {
       await api(removing ? 'credential.local.remove' : 'credential.local.save', {
         id: editor.id,
@@ -186,10 +235,7 @@ function CredentialDialog({
               htmlType="button"
               ref={stayButton}
               disabled={busy || undefined}
-              onClick={() => {
-                setLeaving(false);
-                requestAnimationFrame(() => nameInput.current?.focus());
-              }}
+              onClick={continueEditing}
             >
               继续编辑
             </Button>
@@ -244,23 +290,58 @@ function CredentialDialog({
                     }}
                     id={`${id}-name`}
                     value={name}
+                    status={invalid === 'name' ? 'error' : undefined}
+                    aria-invalid={invalid === 'name'}
+                    aria-describedby={invalid === 'name' ? `${id}-name-error` : undefined}
                     maxLength={100}
                     autoComplete="off"
-                    onChange={(event) => setName(event.target.value)}
+                    onFocus={(event) => rememberField('name', event.target)}
+                    onBlur={(event) => rememberField('name', event.target)}
+                    onChange={(event) => {
+                      setName(event.target.value);
+                      if (invalid === 'name') {
+                        setInvalid(undefined);
+                        setError('');
+                      }
+                    }}
                     placeholder="例如：资料接口"
                   />
+                  {invalid === 'name' && (
+                    <span id={`${id}-name-error`} className="field-error" role="alert">
+                      请填写 1–100 字符的凭据名称。
+                    </span>
+                  )}
                   <label htmlFor={`${id}-value`}>{editor.entry ? '替换凭据值' : '凭据值'}</label>
                   {editor.entry && <p className="local-credential-mask">已保存 · ••••••••</p>}
                   <Input
+                    ref={(instance) => {
+                      valueInput.current = instance?.input ?? null;
+                    }}
                     id={`${id}-value`}
                     type="password"
                     value={value}
+                    status={invalid === 'value' ? 'error' : undefined}
+                    aria-invalid={invalid === 'value'}
+                    aria-describedby={invalid === 'value' ? `${id}-value-error` : undefined}
                     maxLength={8192}
                     autoComplete="new-password"
                     spellCheck={false}
-                    onChange={(event) => setValue(event.target.value)}
+                    onFocus={(event) => rememberField('value', event.target)}
+                    onBlur={(event) => rememberField('value', event.target)}
+                    onChange={(event) => {
+                      setValue(event.target.value);
+                      if (invalid === 'value') {
+                        setInvalid(undefined);
+                        setError('');
+                      }
+                    }}
                     placeholder={editor.entry ? '留空保留已保存值' : '填写要保护的值'}
                   />
+                  {invalid === 'value' && (
+                    <span id={`${id}-value-error`} className="field-error" role="alert">
+                      请填写 1–8192 字符的凭据值，不能包含空字符。
+                    </span>
+                  )}
                   <p>系统保护不可用时会拒绝保存，不会改为明文存储。</p>
                 </fieldset>
               </ConfigProvider>
