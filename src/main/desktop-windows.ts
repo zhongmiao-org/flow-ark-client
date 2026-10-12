@@ -5,6 +5,7 @@ import {
   nativeSelectionInspection,
   desktopSelectionInspection,
   selectionReasons,
+  discoveryMetadataReasons,
   type DesktopWindowDiscovery,
   type DesktopSelectionPreview,
   type SelectionFailure,
@@ -370,7 +371,7 @@ export class DesktopWindows {
     });
     this.session = session;
     try {
-      const result = nativeWindowDiscovery.parse(await session.call('list'));
+      const { metadataIssue, ...result } = nativeWindowDiscovery.parse(await session.call('list'));
       if (this.session !== session || session.closed) throw new Error('已替换窗口观察');
       if (result.availability !== 'available') session.stop();
       return {
@@ -393,6 +394,9 @@ export class DesktopWindows {
         }),
         ...(result.availability === 'available'
           ? { observationId: session.id, expiresAt: session.expiresAt }
+          : {}),
+        ...(result.availability === 'available' && metadataIssue
+          ? { reason: discoveryMetadataReasons[metadataIssue] }
           : {}),
         ...(result.availability === 'unavailable'
           ? { reason: '文本编辑暂时无法提供窗口信息，请回到应用检查后重试。' }
