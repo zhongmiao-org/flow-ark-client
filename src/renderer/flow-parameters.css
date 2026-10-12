@@ -45,6 +45,11 @@
   gap: 16px;
   min-width: 0;
   flex: 1;
+  /* Figma card insets include the 1px Ant Design border. */
+  padding: 23px;
+}
+.flow-parameters-card--values > .ant-card > .ant-card-body {
+  padding: 27px;
 }
 .flow-parameters-card h2,
 .flow-parameters-card h3 {
@@ -57,14 +62,36 @@
   line-height: 16px;
   color: var(--fa-text-secondary);
 }
-.flow-parameters-card label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.flow-parameters-card
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item) {
   font-size: 12px;
   color: var(--fa-text-secondary);
   margin: 0;
+  line-height: 18px;
 }
 .flow-parameters-card .ant-select {
   width: 100%;
   min-width: 0;
+}
+.flow-parameters-card .ant-input,
+.flow-parameters-card .ant-select {
+  min-height: 32px;
+  height: 32px;
+  padding: 5px 6px;
+  border-radius: var(--fa-radius-6);
+  background: var(--fa-bg-canvas);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+}
+.flow-parameters-card .literal-value > textarea {
+  min-height: 32px;
+  height: 32px;
+  padding: 5px 6px;
+  font-family: var(--fa-font-body);
+  font-size: 13px;
+  line-height: 20px;
+  white-space: pre-wrap;
 }
 .flow-parameters-card .parameter-fields {
   display: flex;
@@ -84,7 +111,10 @@
   display: block;
   padding: 0;
 }
-.flow-parameters-card .parameter-name-field {
+.flow-parameters-card
+  label.parameter-name-field:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(
+    .ant-segmented-item
+  ) {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -263,12 +293,16 @@
 }
 
 .flow-parameters-card .parameter-value-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 6px 12px;
   min-width: 0;
 }
+.flow-parameters-card .parameter-value-fields > .literal-value {
+  grid-column: 1 / -1;
+}
 .flow-parameters-card .parameter-source-field {
+  grid-column: 2;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -282,6 +316,8 @@
 .flow-parameters-card .parameter-source-field .note {
   font-size: 12px;
   line-height: 18px;
+  padding: 0;
+  background: transparent;
 }
 .flow-parameters-card .parameter-source-field .field-error {
   color: var(--fa-status-error);
