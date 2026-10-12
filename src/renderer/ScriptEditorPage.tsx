@@ -51,10 +51,12 @@ export default function ScriptEditorPage({
   close,
   navigation,
   initialPreview = false,
+  returnLabel = '流程编排',
 }: {
   record: FlowRecord;
   nodeId: string;
   initialPreview?: boolean;
+  returnLabel?: string;
   save: (record: FlowRecord) => Promise<void>;
   close: (next?: () => void) => void;
   navigation: MutableRefObject<ScriptNavigation | undefined>;
@@ -89,10 +91,12 @@ export default function ScriptEditorPage({
     [detailLoading, setDetailLoading] = useState(false),
     [detailError, setDetailError] = useState('');
   const [inputIncomplete, setInputIncomplete] = useState(false);
-  const [pendingLeave, setPendingLeave] = useState<{ next?: () => void }>();
+  const [pendingLeave, setPendingLeave] = useState<{ next?: () => void; destination: string }>();
+  const [leaveFailureRevision, setLeaveFailureRevision] = useState(0);
   const root = useRef<HTMLElement>(null),
     leaveOrigin = useRef<HTMLElement | null>(null),
     continueButton = useRef<HTMLButtonElement>(null),
+    leaveHeading = useRef<HTMLHeadingElement>(null),
     resultFocus = useRef<HTMLElement | null>(null);
   const inputStateChanged = useCallback((_label: string, incomplete: boolean) => {
     setInputIncomplete(incomplete);
@@ -131,10 +135,12 @@ export default function ScriptEditorPage({
     setLocation(undefined);
   }, [node.code, node.language]);
   useLayoutEffect(() => {
-    navigation.current = (next) => {
-      if (persisting.current) return;
-      if (changed || incomplete()) setPendingLeave({ next });
-      else close(next);
+    navigation.current = (next, destination = returnLabel) => {
+      if (persisting.current || pendingLeave) return;
+      if (changed || incomplete()) {
+        setError('');
+        setPendingLeave({ next, destination });
+      } else close(next);
     };
     return () => {
       navigation.current = undefined;
@@ -143,6 +149,9 @@ export default function ScriptEditorPage({
   useLayoutEffect(() => {
     if (pendingLeave) leaveOrigin.current = document.activeElement as HTMLElement | null;
   }, [pendingLeave]);
+  useEffect(() => {
+    if (pendingLeave && error && !saving) leaveHeading.current?.focus();
+  }, [pendingLeave, error, saving, leaveFailureRevision]);
   const stayInEditor = () => {
     if (persisting.current) return;
     setPendingLeave(undefined);
@@ -180,9 +189,9 @@ export default function ScriptEditorPage({
     if (persisting.current) return;
     setError('');
     if (incomplete()) {
-      setPendingLeave(undefined);
       setFocusRequest({ selector: '[data-value-invalid]' });
       setError(incompleteInputMessage);
+      if (pendingLeave) setLeaveFailureRevision((revision) => revision + 1);
       return;
     }
     const milliseconds = Number(timeout);
@@ -192,10 +201,10 @@ export default function ScriptEditorPage({
       milliseconds < 100 ||
       milliseconds > 3600000
     ) {
-      setPendingLeave(undefined);
       setError('超时须为 100 至 3600000 毫秒的整数');
       setTimeoutError('超时须为 100 至 3600000 毫秒的整数');
       setFocusRequest({ selector: '#script-timeout' });
+      if (pendingLeave) setLeaveFailureRevision((revision) => revision + 1);
       return;
     }
     persisting.current = true;
@@ -210,9 +219,9 @@ export default function ScriptEditorPage({
       if (alive.current) close(next);
     } catch (e) {
       if (alive.current) {
-        setPendingLeave(undefined);
         setError((e as Error).message);
-        setFocusRequest({ selector: '[data-script-error]' });
+        if (pendingLeave) setLeaveFailureRevision((revision) => revision + 1);
+        else setFocusRequest({ selector: '[data-script-error]' });
       }
     } finally {
       persisting.current = false;
@@ -328,7 +337,7 @@ export default function ScriptEditorPage({
         <h1 tabIndex={-1}>脚本：编辑、检查、再试运行</h1>
         <p>可信 JS/TS · 独立进程执行 · 不是安全沙箱</p>
       </header>
-      {error && (
+      {error && !pendingLeave && (
         <div role="alert" tabIndex={-1} data-script-error>
           <Alert type="error" role="presentation" showIcon description={error} />
         </div>
@@ -646,19 +655,21 @@ export default function ScriptEditorPage({
           aria-busy={saving}
           onCancel={stayInEditor}
           afterOpenChange={(open) => {
-            if (open) continueButton.current?.focus();
+            if (open) (error ? leaveHeading.current : continueButton.current)?.focus();
           }}
           title={
             <Flex vertical gap={16} align="flex-start">
               <Tag
-                color="warning"
+                color={error ? 'error' : 'warning'}
                 variant="filled"
                 className="flowark-leave-status"
-                icon={<Badge status="warning" />}
+                icon={<Badge status={error ? 'error' : 'warning'} />}
               >
-                存在未保存更改
+                {error ? '保存未完成' : '存在未保存更改'}
               </Tag>
-              <h2>保存脚本修改？</h2>
+              <h2 ref={leaveHeading} tabIndex={-1}>
+                保存脚本修改？
+              </h2>
             </Flex>
           }
           footer={
@@ -680,14 +691,16 @@ export default function ScriptEditorPage({
                 disabled={saving || undefined}
                 onClick={() => void persist(pendingLeave?.next)}
               >
-                {saving ? '正在保存…' : '保存并离开'}
+                {saving ? '正在保存…' : error ? '重试保存并离开' : '保存并离开'}
               </Button>
             </Flex>
           }
         >
           <p id="script-leave-description">
-            代码、输入、超时和依赖将一起保存。放弃只撤销本次脚本编辑。
+            代码、输入、超时和依赖将一起保存。放弃只撤销本次脚本编辑。 保存成功后前往“
+            {pendingLeave.destination}”。
           </p>
+          {error && <Alert type="error" title="保存未完成" description={error} role="alert" />}
         </Modal>
       )}
     </section>
