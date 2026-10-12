@@ -339,7 +339,23 @@ export default function TemplateConfiguration({
   const [values, setValues] = useState(structuredClone(configuration.values));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [feedbackRevision, setFeedbackRevision] = useState(0);
   const submitting = useRef(false);
+  const form = useRef<HTMLFormElement>(null);
+  const saveError = useRef<HTMLParagraphElement>(null);
+  const focusFeedback = useRef(false);
+  useLayoutEffect(() => {
+    if (saving || !error || !focusFeedback.current) return;
+    focusFeedback.current = false;
+    const invalid = form.current?.querySelector<HTMLElement>('[data-value-invalid]');
+    const target = invalid
+      ? invalid.matches('input,textarea,select,[role="combobox"],button')
+        ? invalid
+        : (invalid.querySelector<HTMLElement>('input,textarea,[role="combobox"],button') ?? invalid)
+      : saveError.current;
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [saving, error, feedbackRevision]);
   return (
     <div className="modal-backdrop" role="presentation">
       <section
@@ -363,8 +379,11 @@ export default function TemplateConfiguration({
           </Button>
         </header>
         <form
+          ref={form}
           onInvalid={(event) => {
             const field = event.target as HTMLInputElement | HTMLSelectElement;
+            focusFeedback.current = true;
+            setFeedbackRevision((revision) => revision + 1);
             setError(field.validationMessage);
           }}
           onSubmit={async (e) => {
@@ -379,6 +398,8 @@ export default function TemplateConfiguration({
               await apply(values);
               close();
             } catch (error: unknown) {
+              focusFeedback.current = true;
+              setFeedbackRevision((revision) => revision + 1);
               setError(error instanceof Error ? error.message : String(error));
             } finally {
               submitting.current = false;
@@ -392,7 +413,12 @@ export default function TemplateConfiguration({
             </fieldset>
           </ConfigProvider>
           {error && (
-            <p className="field-error template-save-error" role="alert">
+            <p
+              className="field-error template-save-error"
+              role="alert"
+              tabIndex={-1}
+              ref={saveError}
+            >
               {error}
             </p>
           )}
