@@ -1,3 +1,4 @@
+import { resolveParameterSources } from '../shared/parameter-sources';
 import type { Flow, Step } from '../shared/types';
 import { flowOutline } from './flow-outline';
 import { taskStepTitle } from './task-step-title';
@@ -68,10 +69,17 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
       fields(child, path + '.' + key, label + ' / ' + key, group, depth + 1, budget);
     }
   }
-  for (const [key, value] of Object.entries(flow.parameters)) {
+  let parameters = flow.parameters;
+  let available = true;
+  try {
+    parameters = resolveParameterSources(flow);
+  } catch {
+    available = false;
+  }
+  for (const [key, value] of Object.entries(parameters)) {
     if (!referenceKey(key)) continue;
     add('params.' + key, key, '流程参数', '使用本次运行的参数值');
-    fields(value, 'params.' + key, key, '流程参数');
+    if (available) fields(value, 'params.' + key, key, '流程参数');
   }
   for (const node of scope.steps) {
     const ordinal = outline.byId.get(node.id)!.ordinal;

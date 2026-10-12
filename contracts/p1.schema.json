@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.16.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.17.1/p1.schema.json",
   "title": "FlowArk P1",
   "$defs": {
     "Json": {
@@ -1146,6 +1146,13 @@
             "digest"
           ],
           "additionalProperties": false
+        },
+        "parameterSources": {
+          "type": "object",
+          "maxProperties": 1000,
+          "additionalProperties": {
+            "$ref": "#/$defs/ParameterSource"
+          }
         }
       },
       "required": [
@@ -2207,6 +2214,21 @@
           "maxLength": 100000
         }
       }
+    },
+    "ParameterSource": {
+      "type": "object",
+      "properties": {
+        "$ref": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 2048,
+          "pattern": "^params\\.[^.\\s]+(?:\\.[^.\\s]+)*$"
+        }
+      },
+      "required": [
+        "$ref"
+      ],
+      "additionalProperties": false
     }
   }
 }

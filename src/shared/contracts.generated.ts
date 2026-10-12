@@ -456,6 +456,7 @@ export interface FlowArkP1 {
   ExcelColumnMapping?: ExcelColumnMapping;
   McpToolResult?: McpToolResult;
   TemplateHumanReview?: TemplateHumanReview;
+  ParameterSource?: ParameterSource;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -491,6 +492,12 @@ export interface FlowDefinition {
     version: string;
     digest: string;
   };
+  parameterSources?: {
+    [k: string]: ParameterSource;
+  };
+}
+export interface ParameterSource {
+  $ref: string;
 }
 export interface RunRequest {
   flowId: string;

@@ -1,3 +1,4 @@
+import { resolveParameterSources } from '../shared/parameter-sources';
 import {
   Alert,
   Card,
@@ -191,7 +192,7 @@ export default function ExcelMappingPage({
     if (incomplete()) {
       throw new Error(incompleteInputMessage);
     }
-    return mappingPreview(node, draft.flow.parameters);
+    return mappingPreview(node, resolveParameterSources(draft.flow));
   };
   const persist = async (next?: () => void) => {
     if (persisting.current || choosing.current) return;

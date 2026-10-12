@@ -1,11 +1,21 @@
-import type { Step } from '../shared/types';
+import { resolveParameterSources } from '../shared/parameter-sources';
+import type { Flow, Step } from '../shared/types';
 import { staticUploadFields } from '../shared/upload-source';
 /** Local names are collected recursively; no filesystem access or path inference. */
 export function fileBindingNames(
   steps: Step[],
   current: Record<string, string>,
   parameters: Record<string, unknown> = {},
+  parameterSources?: Flow['parameterSources'],
 ): string[] {
+  try {
+    parameters = resolveParameterSources({
+      parameters: parameters as Flow['parameters'],
+      parameterSources,
+    });
+  } catch {
+    parameters = {};
+  }
   const names = new Set(['workspace', ...Object.keys(current)]);
   const visit = (steps: Step[]) => {
     for (const step of steps) {

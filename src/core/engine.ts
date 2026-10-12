@@ -1,3 +1,4 @@
+import { resolveParameterSources } from '../shared/parameter-sources';
 import type { Flow, Step } from '../shared/types';
 import { NodeDeadline } from './node-deadline';
 export type Execution = {
@@ -53,6 +54,7 @@ export function compare(actual: any, op: string, expected: any): boolean {
   throw new Error('未知条件');
 }
 export async function execute(flow: Flow, params: any, ctx: Execution) {
+  params = resolveParameterSources(flow, params);
   let executions = 0;
   const root = new NodeDeadline(ctx.signal);
   async function block(

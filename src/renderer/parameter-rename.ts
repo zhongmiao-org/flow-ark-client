@@ -31,6 +31,16 @@ export function renameParameter(flow: Flow, from: string, to: string) {
       parameters: Object.fromEntries(
         Object.entries(flow.parameters).map(([key, value]) => [key === from ? to : key, value]),
       ),
+      ...(flow.parameterSources
+        ? {
+            parameterSources: Object.fromEntries(
+              Object.entries(flow.parameterSources).map(([key, value]) => [
+                key === from ? to : key,
+                rewrite(value),
+              ]),
+            ) as Flow['parameterSources'],
+          }
+        : {}),
       steps: rewrite(flow.steps) as Flow['steps'],
     },
     references,

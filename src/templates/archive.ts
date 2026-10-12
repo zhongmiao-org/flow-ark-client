@@ -1,5 +1,5 @@
 import yauzl from 'yauzl';
-import { validateFlow } from '../core/validate';
+import { capabilities, validateFlow } from '../core/validate';
 import { materializeFlow } from '../../contracts/package-format';
 import { transform } from 'esbuild';
 import { stat, copyFile, mkdtemp, rm, readFile, mkdir, rename, writeFile } from 'node:fs/promises';
@@ -140,7 +140,12 @@ export class PackageLibrary {
       this.compatible(pkg.manifest);
       for (const e of pkg.manifest.entries) {
         const flow = materializeFlow(pkg, e.id);
-        validateFlow({ ...flow, requiredCapabilities: [] });
+        validateFlow({
+          ...flow,
+          requiredCapabilities: flow.requiredCapabilities.filter((cap: string) =>
+            capabilities.includes(cap),
+          ),
+        });
       }
       for (const p of pkg.manifest.scripts)
         await transform(pkg.files.get(p)!.toString('utf8'), { loader: 'js', format: 'esm' });

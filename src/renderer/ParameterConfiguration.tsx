@@ -8,12 +8,15 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import type { Json } from '../shared/types';
+import type { Flow, Json } from '../shared/types';
+import ParameterSourceField from './ParameterSourceField';
 import { LiteralValue } from './ValueField';
 import { referenceKey } from './value-references';
 
 export default function ParameterConfiguration({
   value,
+  flow,
+  sourceChange,
   change,
   rename,
   onPendingNameChange,
@@ -22,6 +25,8 @@ export default function ParameterConfiguration({
   actions,
 }: {
   value: Record<string, Json>;
+  flow: Flow;
+  sourceChange: (flow: Flow) => void;
   change: (next: Record<string, Json>) => void;
   rename: (from: string, to: string) => number;
   onPendingNameChange?: (pending: boolean) => void;
@@ -182,14 +187,22 @@ export default function ParameterConfiguration({
               删除
             </Button>
           </header>
-          <LiteralValue
-            compact
-            displayLabels={columns ? { type: '类型', value: '值' } : undefined}
-            label={'参数 ' + key}
-            value={val}
-            onIncompleteChange={markIncomplete}
-            change={(next) => apply({ ...value, [key]: next })}
-          />
+          <div className="parameter-value-fields">
+            <LiteralValue
+              compact
+              displayLabels={columns ? { type: '类型', value: '值' } : undefined}
+              label={'参数 ' + key}
+              value={val}
+              onIncompleteChange={markIncomplete}
+              change={(next) => apply({ ...value, [key]: next })}
+            />
+            <ParameterSourceField
+              flow={flow}
+              name={key}
+              change={sourceChange}
+              incomplete={markIncomplete}
+            />
+          </div>
           {!referenceKey(key) && <p className="note">此名称无法用点路径引用；已有参数保持不变。</p>}
         </div>
       ))}

@@ -1,3 +1,4 @@
+import { resolveParameterSources } from '../shared/parameter-sources';
 import { DiscoveryError } from '../adapters/mcp-discovery';
 import type { Store } from './store';
 import type { ToolConnections } from './tool-connections';
@@ -122,7 +123,7 @@ export class McpRuns {
         if (node?.type !== 'mcp') throw new Error('此步骤不是工具调用');
         const target = record.toolTargets!.find((target) => target.selectionId === node.target)!;
         const definition = target.tools.find((tool) => tool.name === node.tool)!;
-        if (!matchesArguments(node.arguments, args.arguments, record.flow.parameters))
+        if (!matchesArguments(node.arguments, args.arguments, resolveParameterSources(record.flow)))
           throw new Error('工具参数与本次固定方案的常量或流程参数不一致');
         const input = reviewMcpArguments(definition.inputSchema, args.arguments, true);
         if (input.status !== 'valid') throw new Error('实际工具参数未通过输入定义核对');

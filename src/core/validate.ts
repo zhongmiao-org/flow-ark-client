@@ -1,3 +1,4 @@
+import { resolveParameterSources, parameterSourceCapability } from '../shared/parameter-sources';
 import Ajv2020 from 'ajv/dist/2020.js';
 import schema from '../../contracts/p1.schema.json';
 import type { Flow, Step } from '../shared/types';
@@ -17,6 +18,7 @@ export function validateObject<T>(name: string, value: unknown): T {
   return value as T;
 }
 export const capabilities = [
+  parameterSourceCapability,
   'desktop-selection-v1',
   'mcp-tool-v1',
   'value',
@@ -47,6 +49,12 @@ export function validateFlow(value: unknown): Flow {
   const flow = validateObject<Flow>('FlowDefinition', value);
   for (const c of flow.requiredCapabilities)
     if (!capabilities.includes(c)) throw new Error('缺少能力：' + c);
+  if (
+    Object.keys(flow.parameterSources ?? {}).length &&
+    !flow.requiredCapabilities.includes(parameterSourceCapability)
+  )
+    throw new Error('参数来源需要声明 parameter-sources-v1 能力');
+  const parameters = resolveParameterSources(flow);
   const all = new Set<string>();
   let count = 0;
   function block(steps: Step[], depth: number) {
@@ -70,12 +78,12 @@ export function validateFlow(value: unknown): Flow {
         const capability = n.version === 4 ? 'file-create-numbered-v1' : 'file-create-v1';
         if (!flow.requiredCapabilities.includes(capability))
           throw new Error('新建文本文件需要声明 ' + capability + ' 能力');
-        validateFileCreate(n, flow.parameters);
+        validateFileCreate(n, parameters);
       }
       if (n.type === 'excel' && n.operation === 'map') {
         if (!flow.requiredCapabilities.includes('excel-mapping-v1'))
           throw new Error('Excel 字段映射需要声明 excel-mapping-v1 能力');
-        mappingPreview(n, flow.parameters);
+        mappingPreview(n, parameters);
       }
       if (n.type === 'browser') {
         framePathOf(n);
@@ -89,7 +97,7 @@ export function validateFlow(value: unknown): Flow {
     }
   }
   block(flow.steps, 0);
-  const issue = referenceIssues(flow.steps, flow.parameters)[0];
+  const issue = referenceIssues(flow.steps, parameters)[0];
   if (issue) throw new Error(`${issue.message}：${issue.reference}（${issue.nodeId}）`);
   declaredDependencies(walk(flow.steps));
   return flow;

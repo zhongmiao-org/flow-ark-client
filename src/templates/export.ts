@@ -1,3 +1,4 @@
+import { resolveParameterSources } from '../shared/parameter-sources';
 import { randomUUID } from 'node:crypto';
 import { transform } from 'esbuild';
 import {
@@ -11,7 +12,7 @@ import {
 import { validateFlow, walk } from '../core/validate';
 import { declareNativeBoundaries, parameterSchema } from './export-boundaries';
 import { validateConfigurationSchema } from '../shared/template-config';
-import type { Flow } from '../shared/types';
+import type { Flow, Json } from '../shared/types';
 /** A local fork contains definitions only. Source values and author identity are not inherited. */
 export async function exportDefinition(
   flow: Flow,
@@ -22,7 +23,26 @@ export async function exportDefinition(
 ): Promise<PackageData> {
   const f = structuredClone(validateFlow(flow));
   delete f.sourceTemplate;
-  f.parameters = Object.fromEntries(Object.keys(f.parameters).map((k) => [k, null]));
+  // Sources need their declared object/array paths even after user values are cleared.
+  // Only neutral values and the same schema-visible shape travel in a definition ZIP.
+  const neutral = (value: Json): Json =>
+    Array.isArray(value)
+      ? value.map(neutral)
+      : value && typeof value === 'object'
+        ? Object.fromEntries(Object.entries(value).map(([key, child]) => [key, neutral(child)]))
+        : typeof value === 'string'
+          ? ''
+          : typeof value === 'number'
+            ? 0
+            : typeof value === 'boolean'
+              ? false
+              : null;
+  f.parameters = Object.fromEntries(
+    Object.entries(f.parameters).map(([key, value]) => [
+      key,
+      f.parameterSources ? neutral(value) : null,
+    ]),
+  );
   const files = source ? new Map(source.files) : new Map<string, Buffer>();
   files.delete('manifest.json');
   const json = (path: string, value: any) => files.set(path, Buffer.from(canonical(value)));
@@ -69,7 +89,7 @@ export async function exportDefinition(
   if (!source) {
     json(m.configurationSchema, configuration?.schema ?? { type: 'object', properties: {} });
     json(m.stateSchema, { type: 'object' });
-    json('schemas/input.json', parameterSchema(flow.parameters));
+    json('schemas/input.json', parameterSchema(resolveParameterSources(flow)));
     json('schemas/result.json', {});
   }
   if (configuration) {

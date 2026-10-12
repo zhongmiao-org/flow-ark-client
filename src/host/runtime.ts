@@ -1,3 +1,4 @@
+import { resolveParameterSources } from '../shared/parameter-sources';
 import { toolSecretValues } from '../shared/mcp-oauth-grant';
 import { redactMcpReceipt } from './mcp-redaction';
 import { McpRuns } from './mcp-runs';
@@ -482,7 +483,8 @@ export class Runtime {
       return prepared;
     };
     this.toolTargets.assertExecutable(record.id, record, !!desktopRun);
-    const flow = validateFlow(record.flow);
+    const validatedFlow = validateFlow(record.flow);
+    const flow = { ...validatedFlow, parameters: resolveParameterSources(validatedFlow) };
     if (walk(flow.steps).some((node) => node.type === 'desktop')) {
       if (!desktopRun) throw new Error('应用选区只能从原任务重新绑定窗口并明确确认单次试运行');
       await this.desktopRuns.verify(
@@ -929,7 +931,7 @@ export class Runtime {
           'execute',
           {
             ...s,
-            parameters: s.flow.parameters,
+            parameters: resolveParameterSources(s.flow),
             debug: Boolean(run.debug),
             ...prepared,
             executable: this.executable,
