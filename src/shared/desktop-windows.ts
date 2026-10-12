@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 const uuid = z.string().uuid();
 export const discoveryMetadataReasons = {
-  'process-identity-unavailable': '本次未能核对文本编辑的启动身份，请确认应用正常响应后重新检查。',
+  'process-identity-unavailable':
+    '本次未能核对文本编辑的启动身份。可先保存文档，正常退出并重新打开文本编辑，再重新检查。',
   'process-identity-changed': '检查期间文本编辑的启动身份已变化，请重新检查并选择窗口。',
   'window-limit': '本次窗口数量超过显示上限，清单可能不完整。',
   'time-limit': '窗口检查达到本次时限，部分窗口尚未核对，请确认应用正常响应后重新检查。',
