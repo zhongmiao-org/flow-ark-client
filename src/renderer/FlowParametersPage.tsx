@@ -87,6 +87,7 @@ export default function FlowParametersPage({
   const pageError = useRef<HTMLDivElement>(null);
   const focusPageError = useRef(false);
   const [pending, setPending] = useState<{ next?: () => void; destination: string }>();
+  const [failureRevision, setFailureRevision] = useState(0);
   useLayoutEffect(() => {
     if (error && !busy && !pending && focusPageError.current) {
       pageError.current?.focus();
@@ -106,6 +107,16 @@ export default function FlowParametersPage({
   }, [unsaved, onDirtyChange]);
   useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
   const incomplete = () => !!root.current?.querySelector('[data-value-invalid]');
+  const focusIncomplete = () => {
+    const invalid = root.current?.querySelector<HTMLElement>('[data-value-invalid]');
+    const target = invalid?.matches('input,textarea')
+      ? invalid
+      : (invalid?.querySelector<HTMLElement>(
+          'input[aria-invalid="true"],textarea[aria-invalid="true"]',
+        ) ?? invalid?.querySelector<HTMLElement>('input,textarea'));
+    target?.focus();
+    return !!target;
+  };
   const leave: ScriptNavigation = (next, destination = returnLabel) => {
     if (locked.current || pending) return;
     if (dirty || incomplete()) {
@@ -129,13 +140,16 @@ export default function FlowParametersPage({
   }, []);
 
   useEffect(() => {
-    if (pending && error) dialogHeading.current?.focus();
-  }, [pending, error]);
+    if (pending && error && !busy) dialogHeading.current?.focus();
+  }, [pending, error, busy, failureRevision]);
   usePageBack(leave);
   const stay = () => {
     if (locked.current) return;
     setPending(undefined);
-    requestAnimationFrame(() => lastFocus.current?.isConnected && lastFocus.current.focus());
+    requestAnimationFrame(() => {
+      if (errorKind === 'input' && focusIncomplete()) return;
+      if (lastFocus.current?.isConnected) lastFocus.current.focus();
+    });
   };
   const parameters = (next: Record<string, Json>) => {
     const before = new Set(
@@ -174,16 +188,8 @@ export default function FlowParametersPage({
     if (incomplete()) {
       setErrorKind('input');
       setError('请先确认参数名称并修正未完成的参数值或来源表达式，再保存。');
-      setPending(undefined);
-      requestAnimationFrame(() => {
-        const invalid = root.current?.querySelector<HTMLElement>('[data-value-invalid]');
-        (invalid?.matches('input,textarea')
-          ? invalid
-          : (invalid?.querySelector<HTMLElement>(
-              'input[aria-invalid="true"],textarea[aria-invalid="true"]',
-            ) ?? invalid?.querySelector<HTMLElement>('input,textarea'))
-        )?.focus();
-      });
+      if (pending) setFailureRevision((revision) => revision + 1);
+      else requestAnimationFrame(focusIncomplete);
       return;
     }
     locked.current = true;
@@ -307,14 +313,8 @@ export default function FlowParametersPage({
               <Button
                 disabled={!!busy || undefined}
                 onClick={() => {
-                  const invalid = root.current?.querySelector<HTMLElement>('[data-value-invalid]');
-                  const input = invalid?.matches('input,textarea')
-                    ? invalid
-                    : (invalid?.querySelector<HTMLElement>(
-                        'input[aria-invalid="true"],textarea[aria-invalid="true"]',
-                      ) ?? invalid?.querySelector<HTMLElement>('input,textarea'));
+                  if (focusIncomplete()) return;
                   (
-                    input ??
                     (lastFocus.current?.isConnected ? lastFocus.current : undefined) ??
                     root.current?.querySelector<HTMLElement>('input,textarea,[role="combobox"]')
                   )?.focus();

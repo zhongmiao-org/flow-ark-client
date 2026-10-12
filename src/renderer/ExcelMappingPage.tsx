@@ -46,12 +46,14 @@ export default function ExcelMappingPage({
   save,
   close,
   navigation,
+  returnLabel = '流程编排',
 }: {
   record: FlowRecord;
   nodeId: string;
   save: (record: FlowRecord) => Promise<void>;
   close: (next?: () => void) => void;
   navigation: MutableRefObject<ScriptNavigation | undefined>;
+  returnLabel?: string;
 }) {
   const [draft, setDraft] = useState(() => structuredClone(record));
   const node = flatten(draft.flow.steps).find((step) => step.id === nodeId) as MappedExcel;
@@ -73,9 +75,10 @@ export default function ExcelMappingPage({
     else if (!root.current?.querySelector('[data-value-invalid]'))
       setError((current) => (current === incompleteInputMessage ? '' : current));
   }, []);
-  const [pending, setPending] = useState<{ next?: () => void }>();
+  const [pending, setPending] = useState<{ next?: () => void; destination: string }>();
   const root = useRef<HTMLElement>(null),
     leaveOrigin = useRef<HTMLElement | null>(null),
+    leaveHeading = useRef<HTMLHeadingElement>(null),
     continueButton = useRef<HTMLButtonElement>(null);
   const alive = useRef(true),
     persisting = useRef(false),
@@ -100,10 +103,12 @@ export default function ExcelMappingPage({
     };
   }, []);
   useLayoutEffect(() => {
-    navigation.current = (next) => {
-      if (persisting.current || choosing.current) return;
-      if (dirty || incomplete()) setPending({ next });
-      else close(next);
+    navigation.current = (next, destination = returnLabel) => {
+      if (persisting.current || choosing.current || pending) return;
+      if (dirty || incomplete()) {
+        setError('');
+        setPending({ next, destination });
+      } else close(next);
     };
     return () => {
       navigation.current = undefined;
@@ -112,6 +117,9 @@ export default function ExcelMappingPage({
   useLayoutEffect(() => {
     if (pending) leaveOrigin.current = document.activeElement as HTMLElement | null;
   }, [pending]);
+  useEffect(() => {
+    if (pending && error && !saving) leaveHeading.current?.focus();
+  }, [pending, error, saving, focusRevision]);
   const stayInEditor = () => {
     if (persisting.current) return;
     setPending(undefined);
@@ -160,7 +168,6 @@ export default function ExcelMappingPage({
   const report = (reason: unknown) => {
     setFocusRevision((revision) => revision + 1);
     setError(reason instanceof Error ? reason.message : '配置未完成，请检查后重试');
-    setPending(undefined);
     setPreview(undefined);
     if (reason instanceof ExcelMappingError) {
       setIssue({ field: reason.field, mapping: reason.mapping });
@@ -264,7 +271,7 @@ export default function ExcelMappingPage({
         <h1 tabIndex={-1}>Excel：预览数据并映射字段</h1>
         <p>写入普通工作簿 · 修改草稿，不自动修改源文件</p>
       </header>
-      {error && (
+      {error && !pending && (
         <div role="alert" data-excel-error tabIndex={-1}>
           <Alert type="error" role="presentation" showIcon description={error} />
         </div>
@@ -602,19 +609,21 @@ export default function ExcelMappingPage({
           aria-busy={saving}
           onCancel={stayInEditor}
           afterOpenChange={(open) => {
-            if (open) continueButton.current?.focus();
+            if (open) (error ? leaveHeading.current : continueButton.current)?.focus();
           }}
           title={
             <Flex vertical gap={16} align="flex-start">
               <Tag
-                color="warning"
+                color={error ? 'error' : 'warning'}
                 variant="filled"
                 className="flowark-leave-status"
-                icon={<Badge status="warning" />}
+                icon={<Badge status={error ? 'error' : 'warning'} />}
               >
-                存在未保存更改
+                {error ? '保存未完成' : '存在未保存更改'}
               </Tag>
-              <h2>映射有未保存的修改</h2>
+              <h2 ref={leaveHeading} tabIndex={-1}>
+                映射有未保存的修改
+              </h2>
             </Flex>
           }
           footer={
@@ -636,12 +645,15 @@ export default function ExcelMappingPage({
                 disabled={saving || undefined}
                 onClick={() => void persist(pending?.next)}
               >
-                {saving ? '正在保存…' : '保存并离开'}
+                {saving ? '正在保存…' : error ? '重试保存并离开' : '保存并离开'}
               </Button>
             </Flex>
           }
         >
-          <p id={`${issueId}-leave-description`}>保存后离开，或放弃本次映射编辑。</p>
+          <p id={`${issueId}-leave-description`}>
+            保存成功后前往“{pending.destination}”，或放弃本次映射编辑。
+          </p>
+          {error && <Alert type="error" title="保存未完成" description={error} role="alert" />}
         </Modal>
       )}
     </section>
