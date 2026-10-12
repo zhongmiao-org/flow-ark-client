@@ -12,7 +12,7 @@ import type { Bootstrap, Schedule } from '../shared/types';
 import { scheduleCreateSchema } from '../shared/schedules';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
 import type { TemplateNavigation } from './TemplateInstancePage';
-import { Timing, inZone } from './Schedules';
+import { Timing, inZone, timingValidationMessage } from './schedule-fields';
 import ScheduleLeaveDialog from './ScheduleLeaveDialog';
 import './template-schedule.css';
 import './schedule-workbench.css';
@@ -89,8 +89,13 @@ export default function TemplateSchedulePage({
   }, [origin]);
   useLayoutEffect(() => {
     if (busy || checking || leaving) return;
-    if (sourceError || error) pageError.current?.focus();
-    else if (notice) feedbackHeading.current?.focus();
+    if (sourceError || error) {
+      const invalid =
+        !sourceError && error === timingValidationMessage
+          ? form.current?.querySelector<HTMLElement>('[aria-invalid="true"]')
+          : undefined;
+      (invalid ?? pageError.current)?.focus();
+    } else if (notice) feedbackHeading.current?.focus();
   }, [busy, checking, leaving, sourceError, error, notice]);
   useLayoutEffect(() => {
     if (created && !leaving) resultHeading.current?.focus();
@@ -136,7 +141,7 @@ export default function TemplateSchedulePage({
       timezone: timing.timezone,
     });
     if (!parsed.success) {
-      setError('请修正间隔或时区后重试；当前输入已保留，计划尚未保存。');
+      setError(timingValidationMessage);
       if (!leaving)
         requestAnimationFrame(() =>
           form.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
