@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import Darwin
 import Foundation
 
 // Window/selection references stay in this process. A retained selection permits one write.
@@ -17,9 +18,24 @@ struct Discovery: Encodable {
 }
 struct WindowEntry {
     let app: NSRunningApplication
-    let launched: Date
+    let processStart: ProcessStart
     let window: AXUIElement
     let title: String
+}
+struct ProcessStart: Equatable {
+    let seconds: UInt64
+    let microseconds: UInt64
+}
+// launchDate is absent for apps started without LaunchServices. Keep a kernel
+// birth identity instead of weakening the check to a reusable PID or title.
+func processStart(_ pid: pid_t) -> ProcessStart? {
+    guard pid > 0 else { return nil }
+    var info = proc_bsdinfo()
+    let size = Int32(MemoryLayout<proc_bsdinfo>.size)
+    guard proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, size) == size,
+          info.pbi_pid == UInt32(pid), info.pbi_uid == geteuid(),
+          info.pbi_start_tvsec > 0, info.pbi_start_tvusec < 1_000_000 else { return nil }
+    return ProcessStart(seconds: info.pbi_start_tvsec, microseconds: info.pbi_start_tvusec)
 }
 var entries: [String: WindowEntry] = [:]
 
@@ -39,7 +55,7 @@ func discover() -> Discovery {
     let deadline = ProcessInfo.processInfo.systemUptime + 5
     for application in applications {
         if application.isTerminated { continue }
-        guard application.processIdentifier > 0 else {
+        guard let started = processStart(application.processIdentifier) else {
             result.truncated = true
             continue
         }
@@ -78,9 +94,12 @@ func discover() -> Discovery {
             }
             if title.utf16.count > 1024 { result.truncated = true }
             let displayTitle = String(decoding: title.utf16.prefix(1024), as: UTF16.self)
-            guard let launched = application.launchDate else { result.truncated = true; continue }
+            guard processStart(application.processIdentifier) == started else {
+                result.truncated = true
+                continue
+            }
             let id = UUID().uuidString.lowercased()
-            entries[id] = WindowEntry(app: application, launched: launched, window: window, title: title)
+            entries[id] = WindowEntry(app: application, processStart: started, window: window, title: title)
             result.windows.append(WindowInfo(id: id, title: displayTitle, minimized: minimized))
         }
     }
@@ -108,7 +127,8 @@ func checkedWindow(_ entry: WindowEntry) throws {
     guard AXIsProcessTrusted() else { throw SelectionError.permission }
     guard !entry.app.isTerminated,
           let current = NSRunningApplication(processIdentifier: entry.app.processIdentifier),
-          current.bundleIdentifier == "com.apple.TextEdit", current.launchDate == entry.launched else {
+          current.bundleIdentifier == "com.apple.TextEdit",
+          processStart(current.processIdentifier) == entry.processStart else {
         throw SelectionError.windowChanged
     }
     let application = AXUIElementCreateApplication(current.processIdentifier)
