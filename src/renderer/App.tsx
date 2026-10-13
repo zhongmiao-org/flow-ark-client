@@ -1001,7 +1001,14 @@ function WorkspaceApp() {
             const current: Bootstrap = await api('bootstrap');
             const next = current.flows.find((flow) => flow.id === record.id);
             if (!fromSettings) {
-              if (!next || JSON.stringify(next.bindings.template) !== JSON.stringify(binding))
+              const source = next?.bindings.template;
+              if (
+                !next ||
+                source?.instanceId !== binding.instanceId ||
+                source.packageKey !== binding.packageKey ||
+                source.entryId !== binding.entryId ||
+                source.digest !== binding.digest
+              )
                 throw new Error('原流程或模板绑定已变化，请在模板实例中核对');
               if (!(await openFlow(next))) return;
             } else {
