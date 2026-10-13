@@ -1013,6 +1013,7 @@ function WorkspaceApp() {
       setError((reason as Error).message);
       return;
     }
+    setNotice('');
     setNodeSession({
       kind: 'script',
       preview,
@@ -2197,6 +2198,7 @@ function WorkspaceApp() {
                     setError((e as Error).message);
                     return;
                   }
+                  setNotice('');
                   setNodeSession({
                     kind: 'excel',
                     record: structuredClone(edit),
