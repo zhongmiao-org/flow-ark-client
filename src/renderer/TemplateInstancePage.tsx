@@ -71,6 +71,7 @@ export default function TemplateInstancePage({
   adoptedFrom,
   browserControl,
   initialEntryId,
+  initialTab,
   returnToSource,
 }: {
   initial: TemplateDetail;
@@ -89,11 +90,12 @@ export default function TemplateInstancePage({
   adoptedFrom?: TemplateAdoptionOrigin;
   browserControl?: ReactNode;
   initialEntryId?: string;
+  initialTab?: 'resources' | 'entry';
   returnToSource?: () => void;
 }) {
   const [draft, setDraft] = useState(initial),
     [saved, setSaved] = useState(structuredClone(initial));
-  const [tab, setTab] = useState<Tab>(initialEntryId ? 'entry' : 'configuration');
+  const [tab, setTab] = useState<Tab>(initialTab ?? (initialEntryId ? 'entry' : 'configuration'));
   const [entryId, setEntryId] = useState(initialEntryId ?? initial.entries[0]?.id ?? '');
   const [entryDetail, setEntryDetail] = useState(false);
   const entryHeading = useRef<HTMLHeadingElement>(null);
