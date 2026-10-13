@@ -325,7 +325,9 @@ export default function TemplateInstancePage({
             setSourceError('原实例的已保存内容已变化。当前输入仍保留，请核对后重新读取。');
           throw error;
         }),
-      scope === 'input' ? '入口参数已保存' : '实例配置已保存',
+      scope === 'input'
+        ? `已保存“${submitted.entries.find((entry) => entry.id === inputId)?.name ?? '当前入口'}”的参数`
+        : '实例配置已保存',
     );
     if (!next) return false;
     focusConfigurationError.current = false;
