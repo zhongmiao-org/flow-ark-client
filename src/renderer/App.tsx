@@ -27,7 +27,16 @@ import LocalSettingsPage, {
 import AttentionWorkspace, { type AttentionNavigation } from './AttentionWorkspace';
 import TemplateSchedulePage from './TemplateSchedulePage';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
-import { useState, useEffect, useCallback, useReducer, useRef, lazy, Suspense } from 'react';
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useReducer,
+  useRef,
+  lazy,
+  Suspense,
+} from 'react';
 import FlowLibrary from './FlowLibrary';
 import AITaskWorkspace, { type TaskOpener } from './AITaskWorkspace';
 import ToolConnectionsPage, { type ToolNavigation } from './ToolConnectionsPage';
@@ -947,8 +956,29 @@ function WorkspaceApp() {
       );
     }
   };
-  const openTemplateParameters = (record: FlowRecord, fromSettings = false) =>
-    action(async () => {
+  const templateReturnFocus = useRef<
+    { fromSettings: boolean; trigger: HTMLElement | null } | undefined
+  >(undefined);
+  useLayoutEffect(() => {
+    const pending = templateReturnFocus.current;
+    if (busy || !pending || section !== (pending.fromSettings ? 'settings' : 'editor')) return;
+    const trigger = pending.trigger;
+    const target =
+      trigger?.isConnected && trigger.getClientRects().length
+        ? trigger
+        : pending.fromSettings
+          ? document.querySelector<HTMLElement>('main h1')
+          : Array.from(
+              document.querySelectorAll<HTMLElement>('[aria-label="打开流程参数与资源"]'),
+            ).find((element) => element.getClientRects().length);
+    if (!target || target.matches(':disabled')) return;
+    templateReturnFocus.current = undefined;
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ block: 'nearest' });
+  }, [busy, section]);
+  const openTemplateParameters = (record: FlowRecord, fromSettings = false) => {
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    return action(async () => {
       const binding = record.bindings.template;
       if (!binding) throw new Error('原流程没有模板实例绑定');
       const detail: TemplateOpenRequest['detail'] = await api('template.detail', {
@@ -981,10 +1011,7 @@ function WorkspaceApp() {
             setData(current);
             setTemplateInstanceRequest(undefined);
             setTemplateHomeRequest(crypto.randomUUID());
-            requestAnimationFrame(() => {
-              if (!fromSettings)
-                document.querySelector<HTMLElement>('[aria-label="打开流程参数与资源"]')?.focus();
-            });
+            templateReturnFocus.current = { fromSettings, trigger };
           });
         },
       });
@@ -992,6 +1019,7 @@ function WorkspaceApp() {
       setBrowserOpen(false);
       setSection('templates');
     });
+  };
   const openParameters = () => {
     if (!edit) return;
     try {
