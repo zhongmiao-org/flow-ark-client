@@ -470,6 +470,7 @@ export default function TemplateEntry({
               >
                 <Field
                   schema={entry.input}
+                  required
                   value={entry.values}
                   change={(values: any) =>
                     change({

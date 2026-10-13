@@ -503,6 +503,7 @@ export default function TemplateInstancePage({
                   </label>
                   <Field
                     schema={draft.configurationSchema}
+                    required
                     value={instance.configuration}
                     change={(configuration: unknown) =>
                       setDraft({ ...draft, instance: { ...instance, configuration } })
