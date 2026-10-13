@@ -203,12 +203,31 @@ export class Templates {
       revision,
       manifest: pkg.manifest,
       configurationSchema: jsonFile(pkg.files, pkg.manifest.configurationSchema),
-      entries: pkg.manifest.entries.map((e) => ({
-        ...e,
-        input: jsonFile(pkg.files, e.inputSchema),
-        values: records[e.id]?.flow.parameters,
-        unavailable: e.capabilities.filter((c) => !capabilities.includes(c)),
-      })),
+      entries: pkg.manifest.entries.map((e) => {
+        const input = jsonFile(pkg.files, e.inputSchema);
+        const flow = records[e.id]?.flow;
+        const sources = Object.entries(flow?.parameterSources ?? {}).map(
+          ([name, source]) => `${name} ← ${source.$ref}`,
+        );
+        return {
+          ...e,
+          // Add presentation-only guidance to the existing schema description.
+          // Keep the package and its validation rules unchanged; never include values.
+          input: sources.length
+            ? {
+                ...input,
+                description: [
+                  input.description,
+                  `运行时以下参数由来源值覆盖：${sources.join('；')}。请修改对应来源参数；此处填写的固定值仍会保留。`,
+                ]
+                  .filter(Boolean)
+                  .join('\n'),
+              }
+            : input,
+          values: flow?.parameters,
+          unavailable: e.capabilities.filter((c) => !capabilities.includes(c)),
+        };
+      }),
     };
   }
   async detail(id: string) {
