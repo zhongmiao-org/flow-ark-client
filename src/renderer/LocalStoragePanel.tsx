@@ -30,7 +30,13 @@ function resourcesFor(flow: FlowRecord, templates: Bootstrap['templates']): Reso
     }));
   const ids = new Set([
     ...Object.entries(flow.bindings.resources ?? {})
-      .filter(([, item]) => item.path !== undefined)
+      .filter(
+        ([id, item]) =>
+          item.path !== undefined &&
+          (!entry ||
+            entry.resources.includes(id) ||
+            !manifest?.resources.some((resource) => resource.id === id)),
+      )
       .map(([id]) => id),
     ...(manifest?.resources
       .filter(

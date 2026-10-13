@@ -57,7 +57,12 @@ export function Field({ schema: s, value, change, label, required = false, draft
             required={s.required?.includes(key)}
             draft={childDraft(draft, 'property:' + key)}
             value={value?.[key]}
-            change={(next: Json) => change({ ...(value ?? schemaDefaults(s)), [key]: next })}
+            change={(next: Json | undefined) => {
+              const fields = { ...(value ?? schemaDefaults(s)) };
+              if (next === undefined) delete fields[key];
+              else fields[key] = next;
+              change(fields);
+            }}
           />
         ))}
       </fieldset>
@@ -238,6 +243,7 @@ function TemplateArray({ schema, value, change, title, draft }: any) {
         >
           <Field
             schema={schema.items}
+            required
             label={`${title} ${index + 1}`}
             value={item}
             draft={childDraft(draft, 'item:' + rows.keys[index])}
@@ -309,7 +315,8 @@ function TemplateNumber({ schema, value, change, labelId, required }: any) {
           const raw = event.target.value,
             parsed = Number(raw);
           setText(raw);
-          if (
+          if (!raw.trim() && !required) change(undefined);
+          else if (
             raw.trim() &&
             Number.isFinite(parsed) &&
             (schema.type !== 'integer' || Number.isInteger(parsed))
@@ -492,6 +499,7 @@ export default function TemplateConfiguration({
               <fieldset className="template-form-fields" disabled={saving || leaving}>
                 <Field
                   schema={configuration.schema}
+                  required
                   value={values}
                   change={setValues}
                   draft={fieldDraft.current}
