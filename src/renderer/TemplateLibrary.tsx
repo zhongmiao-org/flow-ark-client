@@ -32,6 +32,7 @@ export type TemplateOpenRequest = {
   key: string;
   detail: TemplateDetail;
   entryId: string;
+  initialTab: 'resources' | 'entry';
   returnLabel: string;
   back: () => void;
 };
@@ -364,6 +365,7 @@ export default function TemplateLibrary({
         key={`${detail.instance.id}:${externalOrigin?.key ?? ''}`}
         initial={detail}
         initialEntryId={externalOrigin?.entryId}
+        initialTab={externalOrigin?.initialTab}
         returnToSource={externalOrigin?.back}
         adoptedFrom={adoption?.instanceId === detail.instance.id ? adoption.from : undefined}
         active={active}

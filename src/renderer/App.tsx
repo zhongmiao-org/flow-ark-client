@@ -995,6 +995,7 @@ function WorkspaceApp() {
         key: crypto.randomUUID(),
         detail,
         entryId: binding.entryId,
+        initialTab: fromSettings ? 'resources' : 'entry',
         returnLabel: fromSettings ? '凭据与本机资源' : '流程编排',
         back: () => {
           void action(async () => {
