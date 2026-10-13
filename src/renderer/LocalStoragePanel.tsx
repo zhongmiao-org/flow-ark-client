@@ -11,13 +11,23 @@ function resourcesFor(flow: FlowRecord, templates: Bootstrap['templates']): Reso
   const binding = flow.bindings.template;
   const manifest = templates.find((item) => item.key === binding?.packageKey)?.manifest;
   const entry = manifest?.entries.find((item) => item.id === binding?.entryId);
-  const resources: Resource[] = Object.entries(flow.bindings.files).map(([name, path]) => ({
-    key: `directory:${name}`,
-    name,
-    path,
-    kind: '目录',
-    usage: '按流程步骤使用',
-  }));
+  const resources: Resource[] = Object.entries(flow.bindings.files)
+    .filter(
+      ([name, path]) =>
+        !manifest?.resources.some(
+          (resource) =>
+            resource.id === name &&
+            ['file', 'directory'].includes(resource.kind) &&
+            flow.bindings.resources?.[name]?.path === path,
+        ),
+    )
+    .map(([name, path]) => ({
+      key: `directory:${name}`,
+      name,
+      path,
+      kind: '目录',
+      usage: '按流程步骤使用',
+    }));
   const ids = new Set([
     ...Object.entries(flow.bindings.resources ?? {})
       .filter(([, item]) => item.path !== undefined)
