@@ -27,7 +27,16 @@ import LocalSettingsPage, {
 import AttentionWorkspace, { type AttentionNavigation } from './AttentionWorkspace';
 import TemplateSchedulePage from './TemplateSchedulePage';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
-import { useState, useEffect, useCallback, useReducer, useRef, lazy, Suspense } from 'react';
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useReducer,
+  useRef,
+  lazy,
+  Suspense,
+} from 'react';
 import FlowLibrary from './FlowLibrary';
 import AITaskWorkspace, { type TaskOpener } from './AITaskWorkspace';
 import ToolConnectionsPage, { type ToolNavigation } from './ToolConnectionsPage';
