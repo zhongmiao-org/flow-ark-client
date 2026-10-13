@@ -397,6 +397,11 @@ export class Runtime {
     if (previous?.bindings.template) {
       if (JSON.stringify(bindings) !== JSON.stringify(previous.bindings))
         throw new Error('模板实例资源与授权请在实例配置中修改');
+      if (
+        JSON.stringify(flow.parameters) !== JSON.stringify(previous.flow.parameters) ||
+        JSON.stringify(flow.parameterSources) !== JSON.stringify(previous.flow.parameterSources)
+      )
+        throw new Error('模板入口参数请在实例操作入口中修改；来源表达式由模板定义');
       bindings = previous.bindings;
     } else if (bindings.template) throw new Error('不能伪造模板实例绑定');
     bindings = normalizeBindings(bindings);

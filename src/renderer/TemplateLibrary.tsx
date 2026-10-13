@@ -3,7 +3,14 @@ import type { InputRef } from 'antd';
 import { FileSpreadsheet, Folder, Globe, MousePointer2, Workflow } from 'lucide-react';
 import { usePageBack } from './use-page-back';
 import type { TemplateEntryOrigin } from './template-entry-navigation';
-import { useState, useEffect, useRef, type MutableRefObject, type ReactNode } from 'react';
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type MutableRefObject,
+  type ReactNode,
+} from 'react';
 import type { Bootstrap } from '../shared/types';
 import type { AISettingsEntry } from './AISettingsPage';
 import type { TemplateDetail } from './template-draft';
@@ -21,6 +28,13 @@ const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
 type Preview = { token: string; manifest: TemplateManifest; consumed?: boolean };
 type View = 'library' | 'inspect' | 'installed' | 'package' | 'instances' | 'remove';
+export type TemplateOpenRequest = {
+  key: string;
+  detail: TemplateDetail;
+  entryId: string;
+  returnLabel: string;
+  back: () => void;
+};
 const date = (value: string) => (value ? new Date(value).toLocaleString('zh-CN') : '时间未记录');
 export default function TemplateLibrary({
   data,
@@ -36,6 +50,7 @@ export default function TemplateLibrary({
   exportTemplate,
   homeRequest,
   browserControl,
+  instanceRequest,
 }: {
   navigation: MutableRefObject<TemplateNavigation | undefined>;
   showRun: (detail: any, origin: TemplateEntryOrigin, output?: boolean) => void;
@@ -50,6 +65,7 @@ export default function TemplateLibrary({
   settings: (entry: AISettingsEntry) => void;
   homeRequest?: string;
   browserControl?: ReactNode;
+  instanceRequest?: TemplateOpenRequest;
 }) {
   const [view, setView] = useState<View>('library');
   const [preview, setPreview] = useState<Preview>();
@@ -59,6 +75,15 @@ export default function TemplateLibrary({
   const [removed, setRemoved] = useState<InstalledPackage[]>([]);
   const [selectedKey, setSelectedKey] = useState('');
   const [detail, setDetail] = useState<TemplateDetail>();
+  const [externalOrigin, setExternalOrigin] = useState<TemplateOpenRequest>();
+  useLayoutEffect(() => {
+    if (!instanceRequest) return;
+    setDetail(instanceRequest.detail);
+    setExternalOrigin(instanceRequest);
+    setAdoption(undefined);
+    setError('');
+    setNotice('');
+  }, [instanceRequest]);
   const [adoption, setAdoption] = useState<{
     instanceId: string;
     from: TemplateAdoptionOrigin;
@@ -217,6 +242,7 @@ export default function TemplateLibrary({
   useEffect(() => {
     if (!homeRequest) return;
     setDetail(undefined);
+    setExternalOrigin(undefined);
     home();
   }, [homeRequest]);
   const openPackage = (p: InstalledPackage) => {
@@ -281,6 +307,7 @@ export default function TemplateLibrary({
     work('detail', async () => {
       const next = await api('template.detail', { id });
       setDetail(next);
+      setExternalOrigin(undefined);
       setAdoption(adoptedFrom ? { instanceId: id, from: adoptedFrom } : undefined);
       setResumeInstance(undefined);
       return true;
@@ -298,6 +325,7 @@ export default function TemplateLibrary({
       await refresh();
       const next = await api('template.detail', { id: instance.id });
       setDetail(next);
+      setExternalOrigin(undefined);
       setAdoption(
         original && originalPackage
           ? {
@@ -333,8 +361,10 @@ export default function TemplateLibrary({
   if (detail)
     return (
       <TemplateInstancePage
-        key={detail.instance.id}
+        key={`${detail.instance.id}:${externalOrigin?.key ?? ''}`}
         initial={detail}
+        initialEntryId={externalOrigin?.entryId}
+        returnToSource={externalOrigin?.back}
         adoptedFrom={adoption?.instanceId === detail.instance.id ? adoption.from : undefined}
         active={active}
         data={data}
@@ -343,14 +373,18 @@ export default function TemplateLibrary({
         showRun={showRun}
         schedule={schedule}
         settings={settings}
-        returnLabel={title}
+        returnLabel={externalOrigin?.returnLabel ?? title}
         exportTemplate={exportTemplate}
         browserControl={browserControl}
         home={() => {
           setDetail(undefined);
+          setExternalOrigin(undefined);
           home();
         }}
-        close={() => setDetail(undefined)}
+        close={() => {
+          setDetail(undefined);
+          setExternalOrigin(undefined);
+        }}
         choose={async (id, adoptedFrom) => (await openInstance(id, adoptedFrom)) === true}
       />
     );

@@ -77,7 +77,7 @@ import {
   Search,
 } from 'lucide-react';
 import type { Bootstrap, FlowRecord, Step } from '../shared/types';
-import TemplateLibrary from './TemplateLibrary';
+import TemplateLibrary, { type TemplateOpenRequest } from './TemplateLibrary';
 import type { TemplateNavigation } from './TemplateInstancePage';
 import TemplateConfiguration from './TemplateConfiguration';
 import ScriptPackages from './ScriptPackages';
@@ -145,6 +145,7 @@ function WorkspaceApp() {
   const [attentionNavigation, setAttentionNavigation] = useState<AttentionNavigation>();
   const templateNavigation = useRef<TemplateNavigation | undefined>(undefined);
   const [templateHomeRequest, setTemplateHomeRequest] = useState<string>();
+  const [templateInstanceRequest, setTemplateInstanceRequest] = useState<TemplateOpenRequest>();
   const toolNavigation = useRef<ToolNavigation | undefined>(undefined);
   const toolDetails = useRef<((id: string) => void) | undefined>(undefined);
   const aiSettingsNavigation = useRef<AISettingsNavigation | undefined>(undefined);
@@ -946,12 +947,61 @@ function WorkspaceApp() {
       );
     }
   };
+  const openTemplateParameters = (record: FlowRecord, fromSettings = false) =>
+    action(async () => {
+      const binding = record.bindings.template;
+      if (!binding) throw new Error('原流程没有模板实例绑定');
+      const detail: TemplateOpenRequest['detail'] = await api('template.detail', {
+        id: binding.instanceId,
+      });
+      if (
+        detail.instance.id !== binding.instanceId ||
+        detail.instance.packageKey !== binding.packageKey ||
+        detail.instance.entryFlows[binding.entryId] !== record.id ||
+        !detail.entries.some((entry) => entry.id === binding.entryId)
+      )
+        throw new Error('模板实例或入口来源已变化，请重新打开原流程');
+      setTemplateInstanceRequest({
+        key: crypto.randomUUID(),
+        detail,
+        entryId: binding.entryId,
+        returnLabel: fromSettings ? '凭据与本机资源' : '流程编排',
+        back: () => {
+          void action(async () => {
+            const current: Bootstrap = await api('bootstrap');
+            const next = current.flows.find((flow) => flow.id === record.id);
+            if (!fromSettings) {
+              if (!next || JSON.stringify(next.bindings.template) !== JSON.stringify(binding))
+                throw new Error('原流程或模板绑定已变化，请在模板实例中核对');
+              if (!(await openFlow(next))) return;
+            } else {
+              setSection('settings');
+              setSettingsFlowId(undefined);
+            }
+            setData(current);
+            setTemplateInstanceRequest(undefined);
+            setTemplateHomeRequest(crypto.randomUUID());
+            requestAnimationFrame(() => {
+              if (!fromSettings)
+                document.querySelector<HTMLElement>('[aria-label="打开流程参数与资源"]')?.focus();
+            });
+          });
+        },
+      });
+      setNotice('');
+      setBrowserOpen(false);
+      setSection('templates');
+    });
   const openParameters = () => {
     if (!edit) return;
     try {
       checkEditorInput('打开流程参数与资源');
     } catch (reason) {
       setError((reason as Error).message);
+      return;
+    }
+    if (edit.bindings.template) {
+      requestEditorLeave(() => void openTemplateParameters(edit), '模板入口');
       return;
     }
     setNodeSession({
@@ -1907,6 +1957,7 @@ function WorkspaceApp() {
                 </Button>
               }
               homeRequest={templateHomeRequest}
+              instanceRequest={templateInstanceRequest}
               refresh={reloadSettingsData}
               navigation={templateNavigation}
               exportTemplate={(pkg, returnLabel) =>
@@ -2653,6 +2704,10 @@ function WorkspaceApp() {
               setBrowserOpen(false);
             }}
             openFlow={async (record, resources) => {
+              if (resources && record.bindings.template) {
+                await openTemplateParameters(record, true);
+                return;
+              }
               if (!(await openFlow(record, true)) || !resources) return;
               setNodeSession({
                 kind: 'parameters',

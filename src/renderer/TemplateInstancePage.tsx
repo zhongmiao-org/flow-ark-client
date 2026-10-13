@@ -70,6 +70,8 @@ export default function TemplateInstancePage({
   choose,
   adoptedFrom,
   browserControl,
+  initialEntryId,
+  returnToSource,
 }: {
   initial: TemplateDetail;
   active: boolean;
@@ -86,11 +88,13 @@ export default function TemplateInstancePage({
   choose: (id: string, adoptedFrom?: TemplateAdoptionOrigin) => Promise<boolean>;
   adoptedFrom?: TemplateAdoptionOrigin;
   browserControl?: ReactNode;
+  initialEntryId?: string;
+  returnToSource?: () => void;
 }) {
   const [draft, setDraft] = useState(initial),
     [saved, setSaved] = useState(structuredClone(initial));
-  const [tab, setTab] = useState<Tab>('configuration');
-  const [entryId, setEntryId] = useState(initial.entries[0]?.id ?? '');
+  const [tab, setTab] = useState<Tab>(initialEntryId ? 'entry' : 'configuration');
+  const [entryId, setEntryId] = useState(initialEntryId ?? initial.entries[0]?.id ?? '');
   const [entryDetail, setEntryDetail] = useState(false);
   const entryHeading = useRef<HTMLHeadingElement>(null);
   const adoptionHeading = useRef<HTMLHeadingElement>(null);
@@ -381,7 +385,7 @@ export default function TemplateInstancePage({
           )
           ?.focus();
       });
-    } else go(close);
+    } else go(returnToSource ?? close);
   };
   usePageBack(back, active);
   const switchTab = (next: Tab, focusContent = false) => {
