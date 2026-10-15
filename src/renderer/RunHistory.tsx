@@ -54,6 +54,7 @@ export default function RunHistory({
     error?: string;
   } | null>(null);
   const pageOrigin = useRef<{ element: HTMLElement | null; scroll: number } | null>(null);
+  const pageCompletion = useRef<'success' | 'cancel' | null>(null);
   const [revision, setRevision] = useState(0);
   const [data, setData] = useState<RunListPage | null>(null);
   const [error, setError] = useState('');
@@ -202,8 +203,7 @@ export default function RunHistory({
     }).then(
       (result: RunListPage) => {
         if (!live || generation.current !== id || !shown.current) return;
-        pageArrival.current = true;
-        pageOrigin.current = null;
+        pageCompletion.current = 'success';
         setData(result);
         setCursors(pageRequest.cursors);
         setPageRequest(null);
@@ -230,6 +230,7 @@ export default function RunHistory({
   }, [visible, filterOpen, scope?.id]);
   const requestPage = (next: (string | undefined)[], direction: '下一页' | '上一页') => {
     generation.current++;
+    pageCompletion.current = null;
     pageOrigin.current = {
       element: document.activeElement instanceof HTMLElement ? document.activeElement : null,
       scroll: root.current?.closest('main')?.scrollTop ?? 0,
@@ -241,13 +242,21 @@ export default function RunHistory({
   const cancelPage = () => {
     generation.current++;
     setPageRequest(null);
+    pageCompletion.current = 'cancel';
+  };
+  const finishPage = () => {
+    const completion = pageCompletion.current;
     const saved = pageOrigin.current;
+    pageCompletion.current = null;
     pageOrigin.current = null;
-    requestAnimationFrame(() => {
-      if (!shown.current || !saved) return;
+    if (!shown.current || !completion) return;
+    if (completion === 'success') {
+      (scope ? appliedFilters.current : heading.current)?.focus({ preventScroll: true });
+      root.current?.closest('main')?.scrollTo({ top: 0 });
+    } else if (saved) {
       root.current?.closest('main')?.scrollTo({ top: saved.scroll });
       saved.element?.focus({ preventScroll: true });
-    });
+    }
   };
   useEffect(() => {
     if (!visible || filterOpen || loading || !data || !restore.current) return;
@@ -650,6 +659,8 @@ export default function RunHistory({
             centered
             closable={false}
             maskClosable={false}
+            focusTriggerAfterClose={false}
+            afterClose={finishPage}
             onCancel={cancelPage}
             footer={
               <Flex gap={8} wrap>
