@@ -178,7 +178,15 @@ export function appearanceTheme(mode: 'light' | 'dark'): ThemeConfig {
         itemActiveColor: c['--fa-text-link'],
         inkBarColor: c['--fa-text-link'],
       },
-      Button: { fontWeight: 500, primaryShadow: 'none', defaultShadow: 'none' },
+      Button: {
+        fontWeight: 500,
+        primaryShadow: 'none',
+        defaultShadow: 'none',
+        defaultHoverColor: c['--fa-text-link'],
+        defaultHoverBorderColor: c['--fa-text-link'],
+        defaultActiveColor: c['--fa-text-link'],
+        defaultActiveBorderColor: c['--fa-text-link'],
+      },
     },
   };
 }
