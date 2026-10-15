@@ -53,17 +53,46 @@ async function atomicWrite(
   path: string,
   write: (temporary: string) => Promise<unknown>,
   createOnly = false,
+  signal?: AbortSignal,
 ) {
+  signal?.throwIfAborted();
   const temporary = join(dirname(path), '.flowark-' + randomUUID() + '.tmp');
-  const file = await open(temporary, 'wx', 0o600);
-  await file.close();
+  let created = false;
   try {
+    const file = await open(temporary, 'wx', 0o600);
+    created = true;
+    await file.close();
+    signal?.throwIfAborted();
     await write(temporary);
+    // Serializers may finish after cancellation. Commit only while this Run is current.
+    signal?.throwIfAborted();
     if (createOnly) await link(temporary, path);
     else await rename(temporary, path);
+  } catch (error) {
+    throw fileWriteFailure(error);
   } finally {
-    await rm(temporary, { force: true });
+    if (created)
+      try {
+        await rm(temporary, { force: true });
+      } catch {
+        throw new Error('本次临时文件未能清理，请恢复目录访问权限后核对；不要自动重跑写入');
+      }
   }
+}
+function fileWriteFailure(error: unknown) {
+  const message: Record<string, string> = {
+    EACCES: '没有目标目录的写入权限，请恢复权限或重新选择目录后重新检查',
+    EPERM: '系统阻止写入目标位置，请核对文件权限或占用情况后重新检查',
+    EROFS: '目标位置为只读，请选择可写目录后重新检查',
+    ENOSPC: '目标磁盘空间不足，请释放空间后重新检查；不会自动重试',
+    EDQUOT: '目标位置存储配额不足，请处理配额后重新检查',
+    EBUSY: '目标文件或目录正被占用，请关闭占用后重新检查',
+    EISDIR: '目标文件名已被目录占用，请更换文件名后重新检查',
+    ENOENT: '输出目录已不存在，请重新选择目录并保存后重新检查',
+    ENOTDIR: '输出路径中的目录已变化，请重新选择目录并保存后重新检查',
+  };
+  const code = (error as NodeJS.ErrnoException | undefined)?.code;
+  return code && message[code] ? new Error(message[code]) : error;
 }
 function cellAddress(address: string) {
   const match = /^([A-Z]{1,3})([1-9][0-9]{0,6})$/.exec(address.toUpperCase());
@@ -99,7 +128,7 @@ function assertRelativeName(name: unknown): asserts name is string {
   )
     throw new Error('文件名必须是安全的相对路径');
 }
-async function archiveFiles(root: string, output: string, names: unknown) {
+async function archiveFiles(root: string, output: string, names: unknown, signal?: AbortSignal) {
   if (!Array.isArray(names) || !names.length || names.length > 200)
     throw new Error('归档需明确选择 1～200 个文件');
   const zip = new JSZip();
@@ -119,8 +148,12 @@ async function archiveFiles(root: string, output: string, names: unknown) {
     if (total > 100 * 1024 * 1024) throw new Error('归档输入合计超过 100 MiB');
     zip.file(name, content, { date: info.mtime, createFolders: false });
   }
-  await atomicWrite(output, async (temporary) =>
-    writeFile(temporary, await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' })),
+  await atomicWrite(
+    output,
+    async (temporary) =>
+      writeFile(temporary, await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' })),
+    false,
+    signal,
   );
 }
 export async function fileOperation(
@@ -129,6 +162,7 @@ export async function fileOperation(
   artifact: (path: string) => Promise<any>,
   signal?: AbortSignal,
 ) {
+  signal?.throwIfAborted();
   if (n.type === 'file' && n.operation === 'create') {
     validateCreatedName(n.name);
     validateCreatedText(n.content);
@@ -161,7 +195,7 @@ export async function fileOperation(
       const rows = mappedRows(n, n.rows);
       workbook.addWorksheet(n.sheet).addRows(rows);
       try {
-        await atomicWrite(path, (temporary) => workbook.xlsx.writeFile(temporary), true);
+        await atomicWrite(path, (temporary) => workbook.xlsx.writeFile(temporary), true, signal);
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'EEXIST')
           throw new Error('输出文件已存在，请更换文件名；原文件未覆盖');
@@ -201,7 +235,7 @@ export async function fileOperation(
       const sheet = n.sheet ? workbook.getWorksheet(n.sheet) : workbook.worksheets[0];
       if (!sheet) throw new Error('模板中不存在指定工作表');
       for (const [address, value] of cells) sheet.getCell(address).value = value;
-      await atomicWrite(path, (temporary) => workbook.xlsx.writeFile(temporary));
+      await atomicWrite(path, (temporary) => workbook.xlsx.writeFile(temporary), false, signal);
       return artifact(path);
     }
     if (!Array.isArray(n.rows)) throw new Error('Excel rows 必须为数组');
@@ -212,7 +246,7 @@ export async function fileOperation(
       return Array.isArray(row) ? Array.from(row, (value) => value ?? null) : row;
     });
     workbook.addWorksheet('Sheet1').addRows(rows);
-    await atomicWrite(path, (temporary) => workbook.xlsx.writeFile(temporary));
+    await atomicWrite(path, (temporary) => workbook.xlsx.writeFile(temporary), false, signal);
     return artifact(path);
   }
   if (n.operation === 'read') {
@@ -220,14 +254,23 @@ export async function fileOperation(
     return readFile(path, 'utf8');
   }
   if (n.operation === 'write')
-    await atomicWrite(path, (temporary) =>
-      writeFile(temporary, typeof n.content === 'string' ? n.content : JSON.stringify(n.content)),
+    await atomicWrite(
+      path,
+      (temporary) =>
+        writeFile(temporary, typeof n.content === 'string' ? n.content : JSON.stringify(n.content)),
+      false,
+      signal,
     );
   else if (n.operation === 'copy')
-    await atomicWrite(path, async (temporary) =>
-      copyFile(await scopedPath(bindings.files[n.binding], String(n.content)), temporary),
+    await atomicWrite(
+      path,
+      async (temporary) =>
+        copyFile(await scopedPath(bindings.files[n.binding], String(n.content)), temporary),
+      false,
+      signal,
     );
-  else if (n.operation === 'archive') await archiveFiles(bindings.files[n.binding], path, n.files);
+  else if (n.operation === 'archive')
+    await archiveFiles(bindings.files[n.binding], path, n.files, signal);
   else throw new Error('文件操作不支持');
   return artifact(path);
 }
