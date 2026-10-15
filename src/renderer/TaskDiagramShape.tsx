@@ -1,10 +1,14 @@
 import type { FlowShape } from './flow-diagram';
+import processArtwork from './assets/task-graph/process.svg?raw';
+import decisionArtwork from './assets/task-graph/decision.svg?raw';
+import documentArtwork from './assets/task-graph/document.svg?raw';
+import joinArtwork from './assets/task-graph/join.svg?raw';
 
 const artwork = {
-  process: new URL('./assets/task-graph/process.svg?no-inline', import.meta.url).href,
-  decision: new URL('./assets/task-graph/decision.svg?no-inline', import.meta.url).href,
-  document: new URL('./assets/task-graph/document.svg?no-inline', import.meta.url).href,
-  join: new URL('./assets/task-graph/join.svg?no-inline', import.meta.url).href,
+  process: processArtwork,
+  decision: decisionArtwork,
+  document: documentArtwork,
+  join: joinArtwork,
 };
 
 export function hasTaskArtwork(shape: FlowShape) {
@@ -14,7 +18,14 @@ export function hasTaskArtwork(shape: FlowShape) {
 export default function TaskDiagramShape({ shape }: { shape: FlowShape }) {
   return (
     <div className={`task-node-art task-node-art--${shape}`} aria-hidden="true">
-      {shape !== 'terminal' && <img src={artwork[shape as keyof typeof artwork]} alt="" />}
+      {shape !== 'terminal' && (
+        // Only bundled, static artwork enters this slot. Inline SVG inherits the
+        // workspace's semantic colours; external image documents cannot do so.
+        <span
+          className="task-node-svg"
+          dangerouslySetInnerHTML={{ __html: artwork[shape as keyof typeof artwork] }}
+        />
+      )}
     </div>
   );
 }

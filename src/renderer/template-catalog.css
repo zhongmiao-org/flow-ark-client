@@ -41,7 +41,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  align-items: end;
+  align-items: center;
   margin-bottom: 24px;
 }
 .template-catalog-toolbar > strong {
@@ -344,11 +344,19 @@
 }
 
 .template-catalog-toolbar
-  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper):not(
+    .ant-segmented-item
+  ) {
   margin: 0;
+  gap: 0;
 }
-.template-catalog-toolbar .ant-select {
+.template-catalog-toolbar
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper):not(
+    .ant-segmented-item
+  )
+  > :is(.ant-select, .ant-input) {
   margin: 0;
+  height: 40px;
 }
 .template-catalog-toolbar
   input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
