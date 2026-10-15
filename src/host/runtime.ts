@@ -1696,7 +1696,7 @@ export class Runtime {
             versionId: this.version(r, prepared),
             intervalMinutes: args.intervalMinutes,
             timezone: args.timezone,
-            enabled: true,
+            enabled: false,
             nextAt: Date.now() + args.intervalMinutes * 60000,
             revision: uid(),
           };

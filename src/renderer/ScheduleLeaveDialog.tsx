@@ -89,7 +89,7 @@ export default function ScheduleLeaveDialog({
     >
       <p id={descriptionId}>
         {creating
-          ? '保存会创建并启用一个固定版本的计划'
+          ? '保存会创建一个初始暂停的固定版本计划，启用后才会执行'
           : '保存仅修改未来触发的计划，保留原启停状态'}
         ，成功后前往“{destination}”。不保存将放弃本次计划更改。
       </p>

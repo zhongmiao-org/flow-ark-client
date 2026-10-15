@@ -381,7 +381,7 @@ export default function TemplateSchedulePage({
                     <span>固定当前已保存版本与入口</span>
                   </Checkbox>
                   <p>
-                    不采用未保存草稿。创建后启用，首次运行在所选间隔之后；已排队或活动运行保持原样。
+                    不采用未保存草稿。创建后暂停，启用后首次运行在所选间隔之后；已排队或活动运行保持原样。
                   </p>
                 </fieldset>
               </ConfigProvider>
@@ -392,7 +392,7 @@ export default function TemplateSchedulePage({
                     role="status"
                     showIcon
                     title={<>计划已创建 · 固定版本 {created.versionId.slice(0, 8)}</>}
-                    description="尚未因本次创建立即运行。"
+                    description="已暂停，启用后才会执行。"
                   />
                   <Button htmlType="button" onClick={back}>
                     返回模板入口
