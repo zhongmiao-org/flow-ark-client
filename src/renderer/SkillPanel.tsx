@@ -14,6 +14,7 @@ import './skill.css';
 import SkillTrialSetup from './SkillTrialSetup';
 import ConversationPanel from './ConversationPanel';
 import { assertTrialPreview, type SkillTrialPreview } from '../shared/skill-trial';
+import SkillDataEditor from './SkillDataEditor';
 const api = (method: string, args: unknown = {}) => window.flowark.request(method, args);
 const labels: Record<SkillProposalSnapshot['status'], string> = {
   draft: '待核对草稿',
@@ -98,6 +99,7 @@ export default function SkillPanel({
     [relocation, setRelocation] = useState('');
   useEffect(() => setPublicationReviewed(false), [preview]);
   const [leave, setLeave] = useState<{ next: () => void; label: string }>();
+  const [structuredPending, setStructuredPending] = useState(false);
   const [trial, setTrial] = useState<SkillTrialPreview>(),
     [trialId, setTrialId] = useState<string>();
   const alive = useRef(true),
@@ -112,7 +114,8 @@ export default function SkillPanel({
     !!snapshot &&
     (title !== snapshot.draft.title ||
       markdown !== snapshot.draft.markdown ||
-      json !== bundle(snapshot.draft));
+      json !== bundle(snapshot.draft) ||
+      structuredPending);
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
   const accept = (s: SkillProposalSnapshot, replace = false) => {
@@ -161,6 +164,7 @@ export default function SkillPanel({
     setError('');
     setPreview(undefined);
     setRelocation('');
+    setStructuredPending(false);
     void api('skill.detail', { id })
       .then((v) => {
         if (live) {
@@ -221,6 +225,7 @@ export default function SkillPanel({
     }
   };
   const draft = (): SkillDraft => {
+    if (structuredPending) throw Error('请先应用当前字段，或放弃当前编辑，再保存整个草稿。');
     let parsed: any;
     try {
       parsed = JSON.parse(json);
@@ -373,21 +378,6 @@ export default function SkillPanel({
                   }}
                 />
               </div>
-              <div className="skill-field">
-                <label htmlFor={'skill-json-' + id}>data.json</label>
-                <Input.TextArea
-                  id={'skill-json-' + id}
-                  disabled={busy}
-                  readOnly={blocked}
-                  value={json}
-                  autoSize={{ minRows: 6, maxRows: 20 }}
-                  onChange={(e) => {
-                    setJson(e.target.value);
-                    setPreview(undefined);
-                    setReviewed(false);
-                  }}
-                />
-              </div>
               <p>
                 {dirty ? '有未保存编辑，失败或冲突时输入保留。' : '当前草稿已保存，可稍后继续。'}{' '}
                 不执行Markdown中的代码。
@@ -515,6 +505,21 @@ export default function SkillPanel({
               )}
             </Card>
           </div>
+          <Card title="结构化内容" className="skill-structured-card">
+            <SkillDataEditor
+              key={id}
+              json={json}
+              disabled={blocked}
+              pending={structuredPending}
+              onPendingChange={setStructuredPending}
+              change={(value) => {
+                setJson(value);
+                setError('');
+                setPreview(undefined);
+                setReviewed(false);
+              }}
+            />
+          </Card>
           {concurrent && (
             <Card title="服务端内容已变化，当前输入保留">
               <pre tabIndex={0}>{JSON.stringify(snapshot.draft, null, 2)}</pre>
@@ -738,7 +743,15 @@ export default function SkillPanel({
           }}
           stay={() => {
             setLeave(undefined);
-            requestAnimationFrame(() => textarea.current?.focus());
+            requestAnimationFrame(() => {
+              const incomplete = heading.current
+                ?.closest('section')
+                ?.querySelector<HTMLElement>(
+                  '.json-tree-editor[data-value-invalid] .json-current input.ant-input:not(:disabled), .json-tree-editor[data-value-invalid] .json-current textarea:not(:disabled), textarea[data-value-invalid]',
+                );
+              if (incomplete) incomplete.focus();
+              else textarea.current?.focus();
+            });
           }}
         />
       )}
