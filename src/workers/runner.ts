@@ -93,6 +93,7 @@ const rpc = new Rpc(
         if (n.type === 'conversation')
           return await rpc.call('conversation.open', {
             nodeId: n.id,
+            nodeInstance: instance,
             input: resolved.input,
             key: resolved.key,
           });

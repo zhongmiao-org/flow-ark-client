@@ -23,6 +23,8 @@ export function validateObject<T>(name: string, value: unknown): T {
   return value as T;
 }
 export const capabilities = [
+  'conversation-evidence-v1',
+  'skill-trial-v1',
   templateDataCapability,
   'context',
   skillCapability,

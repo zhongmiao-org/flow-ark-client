@@ -11,6 +11,9 @@ import type { SkillChoice } from './SkillPicker';
 import type { ConversationLeave } from './ConversationPanel';
 import EditorLeaveDialog from './EditorLeaveDialog';
 import './skill.css';
+import SkillTrialSetup from './SkillTrialSetup';
+import ConversationPanel from './ConversationPanel';
+import { assertTrialPreview, type SkillTrialPreview } from '../shared/skill-trial';
 const api = (method: string, args: unknown = {}) => window.flowark.request(method, args);
 const labels: Record<SkillProposalSnapshot['status'], string> = {
   draft: '待核对草稿',
@@ -95,6 +98,8 @@ export default function SkillPanel({
     [relocation, setRelocation] = useState('');
   useEffect(() => setPublicationReviewed(false), [preview]);
   const [leave, setLeave] = useState<{ next: () => void; label: string }>();
+  const [trial, setTrial] = useState<SkillTrialPreview>(),
+    [trialId, setTrialId] = useState<string>();
   const alive = useRef(true),
     locked = useRef(false),
     heading = useRef<HTMLHeadingElement>(null),
@@ -239,6 +244,7 @@ export default function SkillPanel({
     }
   };
   useLayoutEffect(() => {
+    if (trial || trialId) return;
     registerLeave((next, label) => {
       if (locked.current) return;
       if (dirtyRef.current) {
@@ -290,6 +296,32 @@ export default function SkillPanel({
   const version = versions.find(
     (v) => v.workspace === workspace && v.ref.sha256 === snapshot?.confirmed?.sha256,
   );
+  const returnToDraft = () => {
+    setTrialId(undefined);
+    setTrial(undefined);
+    void read().catch((e) => setError(e.message));
+  };
+  if (trialId)
+    return (
+      <ConversationPanel
+        id={trialId}
+        refresh={refresh}
+        registerLeave={registerLeave}
+        back={returnToDraft}
+        openFlow={openFlow}
+        openSkill={returnToDraft}
+      />
+    );
+  if (trial)
+    return (
+      <SkillTrialSetup
+        preview={trial}
+        open={setTrialId}
+        back={returnToDraft}
+        refresh={refresh}
+        registerLeave={registerLeave}
+      />
+    );
   return (
     <section className="page skill-panel" aria-label="个人Skill工作区">
       <header>
@@ -387,6 +419,21 @@ export default function SkillPanel({
                 </Button>
                 <Button disabled={busy} onClick={compare}>
                   查看版本差异
+                </Button>
+                <Button
+                  disabled={blocked || concurrent || !!pending.current}
+                  onClick={() =>
+                    void (async () => {
+                      const current = dirty ? await save() : snapshot;
+                      if (!current || !alive.current) return;
+                      await act('skill.trial.preview', { id, revision: current.revision }, (v) => {
+                        assertTrialPreview(v);
+                        setTrial(v);
+                      });
+                    })().catch(() => {})
+                  }
+                >
+                  {dirty ? '保存并准备试聊' : '试聊草稿'}
                 </Button>
                 <Button
                   type="primary"

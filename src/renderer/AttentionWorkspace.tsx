@@ -752,6 +752,14 @@ export default function AttentionWorkspace({
         }}
         back={directBack}
         openFlow={openFlow}
+        openSkill={(id) => {
+          const item = data.attention.find((a) => a.detail?.skillProposalId === id);
+          if (item) open(item);
+          else {
+            directBack();
+            setError('原草稿待办不可用，请核对当前记录；未打开其他草稿。');
+          }
+        }}
       />
     );
   return (

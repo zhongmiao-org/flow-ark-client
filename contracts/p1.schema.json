@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.23.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.24.0/p1.schema.json",
   "title": "FlowArk P1",
   "$defs": {
     "Json": {
@@ -2799,6 +2799,9 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 100
+        },
+        "skillTrial": {
+          "$ref": "#/$defs/SkillTrialSource"
         }
       },
       "required": [
@@ -2927,13 +2930,30 @@
             ],
             "additionalProperties": false
           }
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "evidence": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ConversationEvidence"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
         "sessionId",
         "status",
         "revision",
-        "transcript"
+        "transcript",
+        "sequence",
+        "evidence"
       ],
       "additionalProperties": false,
       "allOf": [
@@ -2947,13 +2967,16 @@
           },
           "then": {
             "properties": {
-              "transcript": {
-                "minItems": 2
+              "evidence": {
+                "$ref": "#/$defs/ConversationEvidence"
               }
             }
           },
           "else": {
             "properties": {
+              "evidence": {
+                "type": "null"
+              },
               "transcript": {
                 "maxItems": 0
               }
@@ -3351,44 +3374,7 @@
           "additionalProperties": false
         },
         {
-          "type": "object",
-          "properties": {
-            "kind": {
-              "const": "conversation"
-            },
-            "label": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 300
-            },
-            "sessionId": {
-              "type": "string",
-              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
-            },
-            "revision": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 9007199254740991
-            },
-            "sequence": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 9007199254740991
-            },
-            "sha256": {
-              "type": "string",
-              "pattern": "^[a-f0-9]{64}$"
-            }
-          },
-          "required": [
-            "kind",
-            "label",
-            "sessionId",
-            "revision",
-            "sequence",
-            "sha256"
-          ],
-          "additionalProperties": false
+          "$ref": "#/$defs/ConversationEvidence"
         },
         {
           "type": "object",
@@ -5127,6 +5113,249 @@
         "requestId",
         "context",
         "state"
+      ],
+      "additionalProperties": false
+    },
+    "ConversationEvidence": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "conversation"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "sessionId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "kind",
+        "label",
+        "sessionId",
+        "revision",
+        "sequence",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "SkillTrialSource": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "proposalId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "version",
+        "proposalId",
+        "revision",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "SkillTrialPreview": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "source": {
+          "$ref": "#/$defs/SkillTrialSource"
+        },
+        "key": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,63}$"
+        },
+        "base": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SkillVersionRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "draft": {
+          "$ref": "#/$defs/SkillDraft"
+        }
+      },
+      "required": [
+        "version",
+        "source",
+        "key",
+        "base",
+        "draft"
+      ],
+      "additionalProperties": false
+    },
+    "SkillTrialRequest": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "source": {
+          "$ref": "#/$defs/SkillTrialSource"
+        },
+        "provider": {
+          "enum": [
+            "deepseek",
+            "openai-codex"
+          ]
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "instructions": {
+          "type": "string",
+          "maxLength": 16000
+        }
+      },
+      "required": [
+        "version",
+        "requestId",
+        "source",
+        "provider",
+        "model",
+        "instructions"
+      ],
+      "additionalProperties": false
+    },
+    "SkillTrialResult": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "source": {
+          "$ref": "#/$defs/SkillTrialSource"
+        },
+        "sessionId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        }
+      },
+      "required": [
+        "version",
+        "requestId",
+        "source",
+        "sessionId"
+      ],
+      "additionalProperties": false
+    },
+    "SkillTrialStatus": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "source": {
+          "$ref": "#/$defs/SkillTrialSource"
+        },
+        "current": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "publishing",
+                    "confirmed",
+                    "conflict",
+                    "failed",
+                    "unknown",
+                    "discarded"
+                  ]
+                }
+              },
+              "required": [
+                "revision",
+                "sha256",
+                "status"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "usable": {
+          "type": "boolean"
+        },
+        "reason": {
+          "enum": [
+            "ready",
+            "changed",
+            "unavailable",
+            "workspace",
+            "blocked"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      },
+      "required": [
+        "version",
+        "source",
+        "current",
+        "usable",
+        "reason",
+        "message"
       ],
       "additionalProperties": false
     }

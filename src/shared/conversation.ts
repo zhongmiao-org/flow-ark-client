@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   conversation_snapshot_v1 as validateSnapshot,
   conversation_event_v1 as validateEvent,
+  conversation_output_v1 as validateOutput,
 } from './node-schema.generated.js';
 import type { Step } from './types';
 export type {
@@ -12,6 +13,12 @@ export type {
 import type { ConversationSnapshot, ConversationEvent } from './contracts.generated';
 export type ConversationNode = Extract<Step, { type: 'conversation' }>;
 export const conversationCapability = 'conversation-v1';
+export function assertConversationOutput(
+  v: unknown,
+): asserts v is import('./contracts.generated').ConversationOutput {
+  if (!validateOutput(v) || conversationBytes(v) > 2 * 1024 * 1024)
+    throw Error('会话来源结果格式无效');
+}
 export const conversationBytes = (v: unknown) => new TextEncoder().encode(JSON.stringify(v)).length;
 export function assertConversationNode(node: ConversationNode) {
   if (typeof node.key === 'string' && (!node.key.trim() || node.key.length > 100))

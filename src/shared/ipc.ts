@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { authorMethods } from './template-author';
 import { dataMethods } from './template-data';
 import { skillMethods, skillRefSchema } from './skill';
+import { trialMethods } from './skill-trial';
 import { conversationMethods } from './conversation';
 import { runListSchema } from './run-history';
 import { scheduleCreateSchema, scheduleUpdateSchema, scheduleInspectSchema } from './schedules';
@@ -83,6 +84,7 @@ export const templateSaveSchema = z
   .strict();
 export type TemplateSave = z.infer<typeof templateSaveSchema>;
 export const methods = {
+  ...trialMethods,
   ...authorMethods,
   ...dataMethods,
   ...skillMethods,

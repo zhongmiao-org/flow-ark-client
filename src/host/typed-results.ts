@@ -1,4 +1,5 @@
 import type { Store } from './store';
+import { validateConversationOutput } from '../../contracts/skill-trial';
 import type { FlowRecord, Run, PreparedScripts } from '../shared/types';
 import { assertDocumentResult } from '../shared/document';
 import { assertSkillVersion, skillBytes } from '../shared/skill';
@@ -11,7 +12,7 @@ export type TypedResultMeta = {
   id: string;
   nodeId: string;
   nodeInstance: string;
-  type: 'document' | 'skill' | 'context';
+  type: 'document' | 'skill' | 'context' | 'conversation';
   label: string;
   bytes: number;
   sha256: string;
@@ -29,6 +30,7 @@ export class TypedResults {
       throw Error('结构化结果步骤身份无效');
     if (type === 'document') assertDocumentResult(value);
     else if (type === 'skill') assertSkillVersion(value);
+    else if (type === 'conversation') this.conversationResult(value);
     else this.contextResult(runId, nodeInstance, value);
     const snapshot = this.store.get<FlowRecord>('snapshot', runId);
     const node = snapshot && walk(snapshot.flow.steps).find((n) => n.id === nodeId);
@@ -86,6 +88,7 @@ export class TypedResults {
     if (digest(r.value) !== r.meta.sha256) throw Error('结构化结果摘要不一致');
     if (r.meta.type === 'document') assertDocumentResult(r.value);
     else if (r.meta.type === 'context') this.contextResult(runId, r.meta.nodeInstance, r.value);
+    else if (r.meta.type === 'conversation') this.conversationResult(r.value);
     else {
       assertSkillVersion(r.value);
       const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', runId);
@@ -93,6 +96,14 @@ export class TypedResults {
         throw Error('Skill结果与运行快照不一致');
     }
     return { type: r.meta.type, value: r.value, nodeInstance: r.meta.nodeInstance };
+  }
+  private conversationResult(value: unknown) {
+    const v = validateConversationOutput(value);
+    if (v.evidence) {
+      const saved = this.store.get<{ snapshot: unknown }>('guided-conversation', v.sessionId);
+      if (!saved) throw Error('会话来源记录缺失，完整输出未核验');
+      validateConversationOutput(value, saved.snapshot);
+    }
   }
   private contextResult(runId: string, nodeInstance: string, value: unknown) {
     validateTemplateDataOutput(value);

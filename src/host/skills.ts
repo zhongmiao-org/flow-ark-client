@@ -1,4 +1,10 @@
 import { randomBytes } from 'node:crypto';
+import {
+  skillTrialPreview,
+  skillTrialDigest,
+  validateSkillTrialStatus,
+} from '../../contracts/skill-trial';
+import type { SkillTrialSource, SkillTrialPreview, SkillTrialStatus } from '../shared/skill-trial';
 import type { Store } from './store';
 import type { FlowRecord } from '../shared/types';
 import { canonical, digest, now, uid } from '../shared/utils';
@@ -65,7 +71,11 @@ export class Skills {
   private closed = false;
   constructor(
     private store: Store,
-    private deps: { available: () => void; notify: () => Promise<unknown> },
+    private deps: {
+      available: () => void;
+      notify: () => Promise<unknown>;
+      verifyConversation?: (evidence: unknown) => void;
+    },
   ) {
     for (const saved of store.list<Saved>('skill-proposal'))
       if (saved.snapshot.status === 'publishing') {
@@ -103,6 +113,89 @@ export class Skills {
     if (revision !== undefined && v.snapshot.revision !== revision)
       throw Error('Skill草稿已变化，当前输入保留；请重新读取后继续');
     return v;
+  }
+  private verifyEvidence(draft: SkillDraft) {
+    for (const e of draft.evidence)
+      if (e.kind === 'conversation') {
+        if (!this.deps.verifyConversation) throw Error('会话来源核对不可用，草稿未确认');
+        this.deps.verifyConversation(e);
+      }
+  }
+  trialUnchanged(source: SkillTrialSource) {
+    this.available();
+    const s = this.get(source.proposalId).snapshot;
+    if (
+      !['draft', 'failed', 'conflict'].includes(s.status) ||
+      s.revision !== source.revision ||
+      skillTrialDigest(s.key, s.base, s.draft) !== source.sha256
+    )
+      throw Error('试聊采用的草稿已变化或不可用，请返回当前草稿重新建立；未调用模型');
+  }
+  async trialPreview(id: string, revision: number): Promise<SkillTrialPreview> {
+    this.available();
+    const saved = this.get(id, revision);
+    const preview = skillTrialPreview(saved.snapshot) as SkillTrialPreview;
+    const current = await workspace(saved.workspace.path);
+    this.available();
+    if (!same(current, saved.workspace)) throw Error('Skill工作区身份已变化，请先核对');
+    this.get(id, revision);
+    this.trialUnchanged(preview.source);
+    return structuredClone(preview);
+  }
+  async trialInput(source: SkillTrialSource) {
+    const preview = await this.trialPreview(source.proposalId, source.revision);
+    if (!same(source, preview.source)) throw Error('试聊来源与当前核对草稿不一致');
+    const s = this.get(source.proposalId, source.revision).snapshot;
+    return { preview, flowId: s.sourceFlowId, nodeId: s.sourceNodeId };
+  }
+  async trialStatus(source: SkillTrialSource): Promise<SkillTrialStatus> {
+    this.available();
+    let saved: Saved;
+    try {
+      saved = this.get(source.proposalId);
+    } catch {
+      return validateSkillTrialStatus({
+        version: 1,
+        source,
+        current: null,
+        usable: false,
+        reason: 'unavailable',
+        message: '原草稿不可用；旧历史保留，停止新请求。',
+      });
+    }
+    let validWorkspace = false;
+    try {
+      validWorkspace = same(await workspace(saved.workspace.path), saved.workspace);
+    } catch {}
+    this.available();
+    const latest = this.get(source.proposalId);
+    const s = latest.snapshot;
+    const current = {
+      revision: s.revision,
+      sha256: skillTrialDigest(s.key, s.base, s.draft),
+      status: s.status,
+    };
+    const reason = !['draft', 'failed', 'conflict'].includes(s.status)
+      ? 'blocked'
+      : current.revision !== source.revision || current.sha256 !== source.sha256
+        ? 'changed'
+        : !validWorkspace || !same(latest.workspace, saved.workspace)
+          ? 'workspace'
+          : 'ready';
+    const messages = {
+      ready: '',
+      blocked: '草稿已确认、发布或待核对，旧试聊停止新请求。',
+      changed: '草稿已修改；旧历史保留，请返回当前草稿重新建立。',
+      workspace: '原工作区不可用或身份已变化，请先核对。',
+    };
+    return validateSkillTrialStatus({
+      version: 1,
+      source,
+      current,
+      usable: reason === 'ready',
+      reason,
+      message: messages[reason],
+    });
   }
   private attention(s: SkillProposalSnapshot) {
     const a = this.store.attention(
@@ -221,6 +314,7 @@ export class Skills {
     return this.exclusive(headKey(w, key), async () => {
       this.available();
       check();
+      this.verifyEvidence(draft);
       const old = this.store.get<{ id: string }>('skill-index', index);
       if (old) return this.output(this.get(old.id).snapshot);
       if (this.store.count('skill-proposal') >= 1000) throw Error('Skill草稿已达到本机上限');
@@ -260,6 +354,7 @@ export class Skills {
   save(id: string, revision: number, draft: unknown) {
     this.available();
     assertSkillDraft(draft);
+    this.verifyEvidence(draft);
     const saved = this.get(id, revision);
     if (['publishing', 'unknown', 'confirmed', 'discarded'].includes(saved.snapshot.status))
       throw Error('此Skill草稿正在保存、待核对或已经确认，请先核对状态');
@@ -317,6 +412,7 @@ export class Skills {
     }
     this.available();
     this.get(id, revision);
+    this.verifyEvidence(saved.snapshot.draft);
     for (const [key, value] of this.previews)
       if (value.expires < Date.now()) this.previews.delete(key);
     if (this.previews.size >= 1000) throw Error('待核对确认过多，请稍后重试');
@@ -369,6 +465,7 @@ export class Skills {
         throw Error('Skill确认已失效，请保留草稿并重新核对');
       const observation = await this.baseline(saved);
       this.get(args.id, args.revision);
+      this.verifyEvidence(s.draft);
       if (observation !== p.baseObservation) throw Error('确认期间基线已变化');
       this.available();
       if (this.store.count('skill-operation') >= 10000) throw Error('Skill确认操作已达到本机上限');

@@ -39,6 +39,27 @@
   gap: 12px;
   flex-wrap: wrap;
 }
+.skill-trial-setup .ant-card-head {
+  min-height: 0;
+  padding: 24px 24px 0;
+  border-bottom: 0;
+}
+.skill-trial-setup .ant-card-head-title {
+  font-size: 18px;
+  line-height: 28px;
+}
+.skill-trial-setup .ant-card-body {
+  padding: 16px 24px 24px;
+}
+.skill-trial-setup .skill-field {
+  align-items: center;
+}
+.skill-trial-setup .skill-field > .ant-select {
+  width: 100%;
+}
+.skill-trial-setup .skill-actions > .ant-btn {
+  min-width: 160px;
+}
 .skill-picker {
   display: flex;
   flex-direction: column;
