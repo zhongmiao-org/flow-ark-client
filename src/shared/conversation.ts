@@ -1,6 +1,8 @@
-import Ajv from 'ajv/dist/2020.js';
 import { z } from 'zod';
-import schema from '../../contracts/p1.schema.json';
+import {
+  conversation_snapshot_v1 as validateSnapshot,
+  conversation_event_v1 as validateEvent,
+} from './node-schema.generated.js';
 import type { Step } from './types';
 export type {
   ConversationSnapshot,
@@ -10,10 +12,6 @@ export type {
 import type { ConversationSnapshot, ConversationEvent } from './contracts.generated';
 export type ConversationNode = Extract<Step, { type: 'conversation' }>;
 export const conversationCapability = 'conversation-v1';
-const ajv = new Ajv({ strict: false, allErrors: true });
-ajv.addSchema(schema);
-const validateSnapshot = ajv.getSchema(schema.$id + '#/$defs/ConversationSnapshot')!;
-const validateEvent = ajv.getSchema(schema.$id + '#/$defs/ConversationEvent')!;
 export const conversationBytes = (v: unknown) => new TextEncoder().encode(JSON.stringify(v)).length;
 export function assertConversationNode(node: ConversationNode) {
   if (typeof node.key === 'string' && (!node.key.trim() || node.key.length > 100))
