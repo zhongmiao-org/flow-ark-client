@@ -19,6 +19,7 @@ import { runTimeline, runTimelineTitle } from './run-timeline';
 import RunEventLog, { type RunLogPosition } from './RunEventLog';
 import RunLogSummary from './RunLogSummary';
 import DesktopRunReceipt from './DesktopRunReceipt';
+import RunFileRecovery from './RunFileRecovery';
 import { runInstancePresenter } from './run-instance-presentation';
 
 export type RunDetailReturnContext = {
@@ -294,6 +295,7 @@ export default function RunDetail({
             rerun={() => setTab('rerun')}
             receipts={
               <>
+                <RunFileRecovery key={r.id} detail={observed} output={() => setTab('output')} />
                 <McpRunReceipts
                   runId={r.id}
                   receipts={d.mcpReceipts}
@@ -380,6 +382,9 @@ export default function RunDetail({
               {controlFeedbackContent}
               {r.error && <Alert type="error" showIcon title={r.error} />}
             </section>
+            {tab === 'current' && (
+              <RunFileRecovery key={r.id} detail={observed} output={() => setTab('output')} />
+            )}
             <McpRunReceipts
               runId={r.id}
               receipts={d.mcpReceipts}
@@ -465,6 +470,7 @@ export default function RunDetail({
             </h1>
             <p>{r.name} · 新建关联运行，从第一步执行；原记录与产物保留。</p>
           </header>
+          <RunFileRecovery key={r.id} detail={observed} output={() => setTab('output')} />
           <RunRerunPanel
             run={r}
             related={d.rerun}

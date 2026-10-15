@@ -1,0 +1,32 @@
+.run-file-recovery,
+.run-file-recovery-targets,
+.run-file-recovery-targets article {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fa-space-16);
+  min-width: 0;
+}
+.run-file-recovery {
+  margin-block: var(--fa-space-16);
+}
+.run-file-recovery p,
+.run-file-recovery h4,
+.run-file-recovery .ant-descriptions-item-content {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.run-file-recovery-targets article {
+  border-top: 1px solid var(--fa-border-default);
+  padding-block: var(--fa-space-16);
+}
+.run-file-recovery button {
+  align-self: flex-start;
+  min-height: 40px;
+  max-width: 100%;
+  height: auto;
+  white-space: normal;
+}
+.run-file-recovery-targets p {
+  color: var(--fa-text-secondary);
+}
