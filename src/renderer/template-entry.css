@@ -71,7 +71,8 @@
 .template-entry-page p {
   overflow-wrap: anywhere;
 }
-.template-entry-page .ai-task-actions button {
+/* Wrapped actions size their real button within the Tooltip trigger. */
+.template-entry-page .ai-task-actions > button {
   min-width: 180px;
 }
 @container (max-width: 1000px) {
