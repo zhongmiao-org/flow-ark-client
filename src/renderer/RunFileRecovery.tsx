@@ -174,7 +174,10 @@ export default function RunFileRecovery({
                         <Button
                           disabled={!!copying || undefined}
                           onClick={(event) => {
-                            copyOrigin.current = event.currentTarget;
+                            copyOrigin.current =
+                              event.currentTarget instanceof HTMLButtonElement
+                                ? event.currentTarget
+                                : null;
                             void copy(directory);
                           }}
                         >
