@@ -172,7 +172,16 @@ export default function TemplateAuthorWorkspace({
         setCheckouts(v.checkouts);
         setSelectedCheckout(checkoutId ?? '');
         setTab(checkoutId ? 'entries' : 'metadata');
-        setEntryIndex(0);
+        const returnedEntryId = v.checkouts.find(
+          (c: AuthorCheckout) => c.id === checkoutId,
+        )?.entryId;
+        const entries: AuthorDefinition['entries'] = v.draft.definition.entries;
+        setEntryIndex(
+          Math.max(
+            0,
+            entries.findIndex((e) => e.id === returnedEntryId),
+          ),
+        );
         setPromptIndex(0);
         setAssetIndex(0);
         setBinding(undefined);
