@@ -1,0 +1,73 @@
+.skill-data-editor,
+.json-tree-editor,
+.json-current,
+.json-review {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fa-space-12);
+  min-width: 0;
+}
+.json-tree-columns {
+  display: grid;
+  grid-template-columns: 256px minmax(0, 1fr);
+  gap: var(--fa-space-24);
+  align-items: start;
+}
+.json-field-tree {
+  padding: var(--fa-space-8) var(--fa-space-12);
+  background: var(--fa-bg-subtle);
+  min-width: 0;
+}
+.json-field-tree .ant-tree {
+  background: transparent;
+}
+.json-field-tree .ant-tree-node-content-wrapper {
+  min-width: 0;
+}
+.json-field-tree .ant-tree-title {
+  overflow-wrap: anywhere;
+}
+.json-name-type {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132px;
+  gap: var(--fa-space-12);
+}
+.json-current .skill-actions > .ant-btn {
+  min-width: 124px;
+}
+.json-path,
+.json-current p,
+.json-editor-status {
+  overflow-wrap: anywhere;
+}
+.json-current > .ant-select {
+  width: 100%;
+}
+.json-editor-status {
+  color: var(--fa-text-secondary);
+}
+.skill-structured-card .ant-card-head {
+  min-height: 0;
+  padding: var(--fa-space-24) var(--fa-space-24) 0;
+  border-bottom: 0;
+}
+.skill-structured-card .ant-card-head-title {
+  font-size: 18px;
+  line-height: 28px;
+}
+.skill-structured-card .ant-card-body {
+  padding: var(--fa-space-16) var(--fa-space-24) var(--fa-space-24);
+}
+.json-data-help {
+  color: var(--fa-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+@container (max-width:900px) {
+  .json-tree-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .json-field-tree .ant-tree-list-holder {
+    max-height: 180px !important;
+  }
+}

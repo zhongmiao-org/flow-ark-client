@@ -209,6 +209,7 @@ export default function FlowParametersPage({
       const result = await save(draft);
       if (alive.current) {
         setDraft(structuredClone(result));
+        setSelection(undefined);
         if (leaveAfterSave) close(next);
         else setSaved(true);
       }
