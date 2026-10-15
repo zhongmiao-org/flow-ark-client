@@ -10,7 +10,10 @@
   min-height: 220px;
   resize: vertical;
 }
-.logic-configuration-workspace .resource-workspace-card > .ant-card-body > button:last-child {
+.logic-configuration-workspace
+  .resource-workspace-card
+  > .ant-card-body
+  > :is(button, .action-trigger):last-child {
   margin-top: auto;
 }
 .logic-configuration-fields {
@@ -18,9 +21,6 @@
   margin: 0;
   border: 0;
   min-width: 0;
-}
-.logic-configuration-fields:disabled {
-  opacity: 0.65;
 }
 .logic-configuration-summary .ant-descriptions-item-content {
   overflow-wrap: anywhere;

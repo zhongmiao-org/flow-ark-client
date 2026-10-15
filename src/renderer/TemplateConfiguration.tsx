@@ -1,5 +1,5 @@
 import ActionButton from './ActionButton';
-import { ConfigProvider, Select, Button, Checkbox, Input, Modal } from 'antd';
+import { ConfigProvider, Select, Checkbox, Input, Modal } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import type { Bindings, Json } from '../shared/types';
@@ -250,7 +250,9 @@ function TemplateArray({ schema, value, change, title, draft }: any) {
             draft={childDraft(draft, 'item:' + rows.keys[index])}
             change={(next: Json) => change(values.map((v, i) => (i === index ? next : v)))}
           />
-          <Button
+          <ActionButton
+            hint={`移除 ${title} ${index + 1}，其他条目的输入保持不变`}
+            triggerClassName="template-array-remove"
             htmlType="button"
             className="icon-button"
             aria-label={`移除 ${title} ${index + 1}`}
@@ -263,10 +265,17 @@ function TemplateArray({ schema, value, change, title, draft }: any) {
             }}
           >
             <Trash2 size={14} />
-          </Button>
+          </ActionButton>
         </div>
       ))}
-      <Button
+      <ActionButton
+        hint={
+          values.length >= limit
+            ? `${title}已达到 ${limit} 项上限；移除条目后可继续添加`
+            : `向${title}添加一项，最多 ${limit} 项${minimum > 0 ? `，至少 ${minimum} 项` : ''}`
+        }
+        aria-label={`添加${title}`}
+        triggerClassName="template-array-add"
         ref={add}
         htmlType="button"
         disabled={values.length >= limit || undefined}
@@ -277,8 +286,8 @@ function TemplateArray({ schema, value, change, title, draft }: any) {
         }}
       >
         <Plus size={14} />
-        添加{title}
-      </Button>
+        添加一项
+      </ActionButton>
     </fieldset>
   );
 }
@@ -520,13 +529,14 @@ export default function TemplateConfiguration({
           )}
           <footer>
             <span>只保存当前实例；不会开始运行</span>
-            <Button
+            <ActionButton
+              hint={saving ? '正在保存，请等待完成' : '取消当前修改；有未保存内容时先核对'}
               htmlType="button"
               onClick={requestClose}
               disabled={saving || leaving || undefined}
             >
               取消
-            </Button>
+            </ActionButton>
             <ActionButton
               hint={saving ? '正在保存当前实例，请等待完成' : '保存当前实例配置，不会开始运行'}
               loading={saving}

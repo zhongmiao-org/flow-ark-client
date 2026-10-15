@@ -28,6 +28,7 @@ import { referenceChoices } from './value-references';
 import ValueField from './ValueField';
 import ScriptPackages from './ScriptPackages';
 import { activateCollapseWithSpace } from './collapseKeyboard';
+import ActionButton from './ActionButton';
 import type { CodeLocation } from './CodeEditor';
 import {
   editScriptPackage,
@@ -350,12 +351,31 @@ export default function ScriptEditorPage({
                 <span className="badge" title={node.id}>
                   {node.name || node.id}.{node.language}
                 </span>
-                <Button disabled={syntax.checking || undefined} onClick={check}>
-                  {syntax.checking ? '正在检查…' : '检查语法'}
-                </Button>
-                <Button aria-expanded={preview} onClick={refreshPreview}>
+                <ActionButton
+                  hint={
+                    saving
+                      ? '正在保存，请等待完成'
+                      : syntax.checking
+                        ? '正在检查脚本语法，不会执行脚本'
+                        : '仅检查语法，不安装依赖或执行脚本'
+                  }
+                  loading={!!syntax.checking}
+                  disabled={syntax.checking || undefined}
+                  onClick={check}
+                >
+                  检查语法
+                </ActionButton>
+                <ActionButton
+                  hint={
+                    saving
+                      ? '正在保存，请等待完成'
+                      : '查看当前输入与已保存运行的历史输出，不会执行脚本'
+                  }
+                  aria-expanded={preview}
+                  onClick={refreshPreview}
+                >
                   预览输入输出
-                </Button>
+                </ActionButton>
               </div>
               <Suspense fallback={<p>加载代码编辑器…</p>}>
                 <CodeEditor
@@ -481,12 +501,18 @@ export default function ScriptEditorPage({
                       </p>
                     )}
                     {(historyError || detailError) && (
-                      <Button
+                      <ActionButton
+                        hint={
+                          historyLoading || detailLoading
+                            ? '正在读取所选运行，请等待完成'
+                            : '重新读取当前脚本的历史运行结果，不会重跑脚本'
+                        }
+                        aria-label="重新读取历史结果"
                         disabled={historyLoading || detailLoading || undefined}
                         onClick={refreshPreview}
                       >
-                        重新读取历史结果
-                      </Button>
+                        重读历史
+                      </ActionButton>
                     )}
                     {currentDetail && (
                       <div
@@ -633,10 +659,26 @@ export default function ScriptEditorPage({
                 showIcon
                 description="保存会更新当前流程草稿。代码和依赖在运行前固定，不自动安装依赖；语法检查不代表业务结果通过。"
               />
-              <Button type="primary" onClick={() => persist()}>
-                {saving ? '正在保存…' : '保存并返回'}
-              </Button>
-              <Button onClick={() => navigation.current?.()}>取消</Button>
+              <ActionButton
+                stretch
+                hint={
+                  saving
+                    ? '正在保存，请等待完成'
+                    : `保存当前流程草稿并返回${returnLabel}，不会执行脚本`
+                }
+                type="primary"
+                loading={saving}
+                onClick={() => persist()}
+              >
+                保存并返回
+              </ActionButton>
+              <ActionButton
+                stretch
+                hint={saving ? '正在保存，请等待完成' : '取消编辑；未保存修改会先进行离开核对'}
+                onClick={() => navigation.current?.()}
+              >
+                取消
+              </ActionButton>
             </Card>
           </aside>
         </fieldset>

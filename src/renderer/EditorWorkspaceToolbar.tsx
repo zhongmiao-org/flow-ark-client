@@ -1,4 +1,5 @@
-import { Button } from 'antd';
+import { Tooltip } from 'antd';
+import ActionButton from './ActionButton';
 import { useContext } from 'react';
 import { VariableNavigationContext } from './variable-navigation';
 import './editor-workspace-toolbar.css';
@@ -18,23 +19,35 @@ export default function EditorWorkspaceToolbar({
 }) {
   const navigation = useContext(VariableNavigationContext);
   const openBrowser = showBrowser ?? navigation?.showBrowser;
+  const savingHint = '正在保存，请等待当前操作完成';
   return (
     <div className="editor-workspace-toolbar">
-      <Button htmlType="button" disabled={disabled || undefined} onClick={back}>
+      <ActionButton
+        hint={disabled ? savingHint : backLabel}
+        triggerClassName="editor-workspace-back"
+        htmlType="button"
+        disabled={disabled || undefined}
+        onClick={back}
+      >
         ← {backLabel}
-      </Button>
+      </ActionButton>
       <nav aria-label="当前位置">
         {navigation && (
           <>
-            <Button
+            <ActionButton
+              hint={disabled ? savingHint : '返回我的流程，保留原有离开核对'}
+              type="link"
               htmlType="button"
               disabled={disabled || undefined}
               onClick={navigation.openLibrary}
             >
               我的流程
-            </Button>
+            </ActionButton>
             <span aria-hidden="true">/</span>
-            <Button
+            <ActionButton
+              hint={disabled ? savingHint : navigation.flowName}
+              type="link"
+              triggerClassName="editor-workspace-flow-trigger"
               htmlType="button"
               className="editor-workspace-flow"
               disabled={disabled || undefined}
@@ -42,23 +55,26 @@ export default function EditorWorkspaceToolbar({
               onClick={navigation.openFlow}
             >
               {navigation.flowName}
-            </Button>
+            </ActionButton>
             <span aria-hidden="true">/</span>
           </>
         )}
-        <span aria-current="page" title={current}>
-          {current}
-        </span>
+        <Tooltip title={current} trigger={['hover', 'focus']}>
+          <span aria-current="page" tabIndex={0}>
+            {current}
+          </span>
+        </Tooltip>
       </nav>
       {openBrowser && (
-        <Button
+        <ActionButton
+          hint={disabled ? savingHint : '在主窗口右侧显示网页面板'}
+          triggerClassName="editor-workspace-browser"
           htmlType="button"
-          className="editor-workspace-browser"
           disabled={disabled || undefined}
           onClick={openBrowser}
         >
           显示网页
-        </Button>
+        </ActionButton>
       )}
     </div>
   );

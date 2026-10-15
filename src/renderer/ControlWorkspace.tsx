@@ -200,9 +200,19 @@ export default function ControlWorkspace(props: Props) {
                           })),
                         ]}
                       />
-                      <Button disabled={!destination || undefined} onClick={props.add}>
+                      <ActionButton
+                        hint={
+                          props.busy
+                            ? '正在保存，请等待完成'
+                            : destination
+                              ? `选择要添加至 ${destination.label} 的动作；选择后不会执行`
+                              : '原添加位置已失效，请先重新选择位置'
+                        }
+                        disabled={!destination || undefined}
+                        onClick={props.add}
+                      >
                         选择动作
-                      </Button>
+                      </ActionButton>
                     </div>
                     {!destination && (
                       <p id={titleId + '-destination-error'} className="field-error" role="alert">

@@ -1,4 +1,7 @@
-.script-configuration-workspace .resource-workspace-card > .ant-card-body > button:last-child,
+.script-configuration-workspace
+  .resource-workspace-card
+  > .ant-card-body
+  > :is(button, .action-trigger):last-child,
 .script-configuration-packages,
 .script-configuration-source,
 .script-configuration-footnote {
@@ -12,9 +15,6 @@
   margin: 16px 0 0;
   padding: 0;
   border: 0;
-}
-.script-configuration-workspace .script-package-actions {
-  flex-direction: column;
 }
 .script-configuration-summary .ant-descriptions-item-content {
   overflow-wrap: anywhere;

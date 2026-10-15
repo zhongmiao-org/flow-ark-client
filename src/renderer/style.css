@@ -1250,7 +1250,7 @@ main {
 .template-modal header,
 .template-modal footer {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   align-items: center;
   padding: 20px 26px;
   border-bottom: 1px solid var(--fa-border-default);
@@ -1286,7 +1286,7 @@ main {
   border-top: 1px solid var(--fa-border-default);
   border-bottom: 0;
 }
-.template-modal footer > span {
+.template-modal footer > span:not(.action-trigger) {
   flex: 1;
   color: var(--fa-text-secondary);
   font-size: 12px;
@@ -1314,7 +1314,7 @@ main {
   .template-modal footer {
     justify-content: flex-end;
   }
-  .template-modal footer > span {
+  .template-modal footer > span:not(.action-trigger) {
     flex-basis: 100%;
   }
 }

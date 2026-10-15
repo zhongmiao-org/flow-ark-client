@@ -1,9 +1,10 @@
-import { Alert, Button, Card, Collapse, Descriptions, Modal, Tag } from 'antd';
+import { Alert, Card, Collapse, Descriptions, Modal, Tag } from 'antd';
 import './antd-layout.css';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Bindings, Step } from '../shared/types';
 import './script-packages.css';
 import { activateCollapseWithSpace } from './collapseKeyboard';
+import ActionButton from './ActionButton';
 
 type Package = { name: string; version: string; path: string };
 export type ScriptPackageReview = {
@@ -292,7 +293,18 @@ export default function ScriptPackages(props: Props) {
       </header>
       <p className="note">选择已安装包的目录，使用精确版本。运行时不自动安装依赖。</p>
       {props.node.dependencies.length > 1 && (
-        <Button
+        <ActionButton
+          hint={
+            busy
+              ? '正在读取包信息，请等待当前操作完成'
+              : props.node.dependencies.some(
+                    (dep) => props.bindings.scriptPackages?.[dep.name]?.path,
+                  )
+                ? '逐项核对已绑定目录中的包名和精确版本；不会安装依赖或运行脚本'
+                : '请先为至少一个依赖选择本机目录'
+          }
+          aria-label="核对全部已绑定目录"
+          triggerClassName="script-package-bind"
           disabled={
             !!busy ||
             !props.node.dependencies.some(
@@ -302,8 +314,8 @@ export default function ScriptPackages(props: Props) {
           }
           onClick={() => void inspect()}
         >
-          核对全部已绑定目录
-        </Button>
+          核对已绑定
+        </ActionButton>
       )}
       {!props.node.dependencies.length && (
         <Alert type="info" showIcon title="当前步骤未声明第三方依赖。需要时绑定已有包目录。" />
@@ -389,17 +401,39 @@ export default function ScriptPackages(props: Props) {
             {check && !check.error && (
               <p className="note">仅核对目录的包名与版本；完整依赖编译与运行前检查仍需通过。</p>
             )}
-            <div className="script-package-actions">
-              <Button disabled={!!busy || undefined} onClick={() => void choose(dep.name)}>
-                {missing ? '选择包目录' : '重新选择目录'}
-              </Button>
-              <Button
+            <div className="script-package-actions flowark-actions">
+              <ActionButton
+                hint={
+                  busy
+                    ? '正在读取包信息，请等待当前操作完成'
+                    : `为 ${dep.name} 选择已安装的本机包目录，不会安装依赖`
+                }
+                aria-label={missing ? '选择包目录' : '重新选择目录'}
+                disabled={!!busy || undefined}
+                onClick={() => void choose(dep.name)}
+              >
+                {missing ? '选择目录' : '更换目录'}
+              </ActionButton>
+              <ActionButton
+                hint={
+                  busy
+                    ? '正在读取包信息，请等待当前操作完成'
+                    : missing
+                      ? `请先为 ${dep.name} 选择包目录`
+                      : `核对 ${dep.name} 的目录包名与版本，不运行脚本`
+                }
+                aria-label="核对当前目录"
                 disabled={!!busy || missing || undefined}
                 onClick={() => void inspect(dep.name)}
               >
-                核对当前目录
-              </Button>
-              <Button
+                核对目录
+              </ActionButton>
+              <ActionButton
+                hint={
+                  busy
+                    ? '正在读取包信息，请等待当前操作完成'
+                    : `从当前步骤移除 ${dep.name} 依赖，不会删除本机包目录`
+                }
                 danger
                 disabled={!!busy || undefined}
                 data-dependency-remove={dep.name}
@@ -407,19 +441,25 @@ export default function ScriptPackages(props: Props) {
                 onClick={() => remove(dep.name)}
               >
                 移除依赖
-              </Button>
+              </ActionButton>
             </div>
           </Card>
         );
       })}
-      <Button
+      <ActionButton
+        hint={
+          busy
+            ? '正在读取包信息，请等待当前操作完成；取消选择保留原依赖'
+            : '选择已有本机包目录并核对名称及版本后应用到草稿；不会安装依赖'
+        }
+        triggerClassName="script-package-bind"
         ref={addButton}
         onClick={() => void choose()}
         loading={busy === 'add'}
         disabled={!!busy || undefined}
       >
-        {busy === 'add' ? '读取包信息…' : '绑定本地包'}
-      </Button>
+        绑定本地包
+      </ActionButton>
       {notice && <Alert type="info" showIcon role="status" title={notice} />}
       {error && !candidate && !failure?.name && (
         <div ref={errorElement} tabIndex={-1}>
@@ -486,11 +526,17 @@ export default function ScriptPackages(props: Props) {
               <Alert type="error" showIcon title={error} />
             </div>
           )}
-          <footer className="script-package-actions">
-            <Button onClick={cancel}>取消</Button>
-            <Button type="primary" onClick={apply}>
+          <footer className="script-package-actions flowark-actions">
+            <ActionButton hint="取消本次选择，保留原依赖与草稿" onClick={cancel}>
+              取消
+            </ActionButton>
+            <ActionButton
+              hint="应用已核对的依赖绑定到草稿，保存后供新运行使用"
+              type="primary"
+              onClick={apply}
+            >
               应用到草稿
-            </Button>
+            </ActionButton>
           </footer>
         </Modal>
       )}
