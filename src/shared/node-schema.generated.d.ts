@@ -22,3 +22,5 @@ export const node_desktop_1: ValidateFunction;
 export const node_ai_1: ValidateFunction;
 export const node_conversation_1: ValidateFunction;
 export const template_human_review_v1: ValidateFunction;
+export const conversation_snapshot_v1: ValidateFunction;
+export const conversation_event_v1: ValidateFunction;
