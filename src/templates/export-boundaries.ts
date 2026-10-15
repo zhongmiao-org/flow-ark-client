@@ -24,6 +24,7 @@ export function parameterSchema(value: unknown): any {
 /** Native nodes expose logical resources; machine paths and grants never participate. */
 export function declareNativeBoundaries(flow: Flow, manifest: Manifest, entryId: string) {
   const entry = manifest.entries.find((e) => e.id === entryId)!;
+  const hadDeclaredActions = entry.actions.length > 0;
   const steps = walk(flow.steps);
   entry.capabilities = [
     ...new Set([...entry.capabilities, ...flow.requiredCapabilities, ...steps.map((n) => n.type)]),
@@ -50,6 +51,13 @@ export function declareNativeBoundaries(flow: Flow, manifest: Manifest, entryId:
   };
   let writes = false;
   for (const node of steps) {
+    if (node.type === 'context') {
+      for (const c of [
+        'template-data-v1',
+        ...(node.operation !== 'configuration' ? ['state'] : []),
+      ])
+        if (!entry.capabilities.includes(c)) entry.capabilities.push(c);
+    }
     if (node.type === 'file' || node.type === 'excel') {
       const access = node.operation === 'read' ? 'read' : 'write';
       node.binding = directory(node.binding, access);
@@ -134,7 +142,19 @@ export function declareNativeBoundaries(flow: Flow, manifest: Manifest, entryId:
       }
     }
   }
-  if (writes && !entry.actions.length) {
+  if (steps.some((n) => n.type === 'context' && n.operation === 'state.write')) {
+    let id = 'state-write',
+      i = 1;
+    while (manifest.actions.some((a) => a.id === id)) id = 'state-write-' + i++;
+    manifest.actions.push({
+      id,
+      name: '更新模板状态',
+      description: '按预期修订替换本实例的完整状态；提交后不因运行取消而撤销',
+      default: 'deny',
+    });
+    entry.actions.push(id);
+  }
+  if (writes && !hadDeclaredActions) {
     let id = 'workflow-write',
       i = 1;
     while (manifest.actions.some((a) => a.id === id)) id = 'workflow-write-' + i++;

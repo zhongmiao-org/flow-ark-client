@@ -12,6 +12,18 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
       detail,
     });
     switch (node.type) {
+      case 'context':
+        return node.operation === 'state.write'
+          ? effect(
+              'write',
+              '按预期修订替换本实例或本调试副本的完整状态；冲突时停止，提交后的状态不因运行取消而撤销。',
+            )
+          : effect(
+              'read',
+              node.operation === 'configuration'
+                ? '读取运行开始时固定的共享配置。'
+                : '读取本实例或本调试副本的最新状态及修订。',
+            );
       case 'desktop':
         return effect(
           'write',

@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "contextId": "example-context",
+  "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+  "requestSha256": "fe111c90147055216129cf6c3e382afc8b08f80aeda697ce57dfcd2462b9d149",
+  "createdAt": "2026-10-15T14:30:00Z",
+  "updatedAt": "2026-10-15T14:30:00Z",
+  "status": "written",
+  "result": {
+    "version": 1,
+    "operation": "state.write",
+    "contextId": "example-context",
+    "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+    "previousRevision": 0,
+    "revision": 1,
+    "value": {
+      "stage": "review"
+    },
+    "committedAt": "2026-10-15T14:30:00Z"
+  }
+}

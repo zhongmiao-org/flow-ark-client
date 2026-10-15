@@ -4,6 +4,7 @@ export type TemplateInstance = {
   packageKey: string;
   name: string;
   configuration: any;
+  configurationRevision?: number;
   resources: NonNullable<Bindings['resources']>;
   grants: NonNullable<Bindings['grants']>;
   entryFlows: Record<string, string>;

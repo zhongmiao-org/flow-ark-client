@@ -1,4 +1,6 @@
 import SkillNodeConfiguration from './SkillNodeConfiguration';
+import ContextNodeConfiguration from './ContextNodeConfiguration';
+import DebugContextPage from './DebugContextPage';
 import TemplateAuthorWorkspace, {
   type AuthorOpenRequest,
   type AuthorEditorOrigin,
@@ -350,6 +352,8 @@ function WorkspaceApp() {
   const [authorRequest, setAuthorRequest] = useState<AuthorOpenRequest>();
   const [authorEditorOrigin, setAuthorEditorOrigin] = useState<AuthorEditorOrigin>();
   const authorNavigation = useRef<TemplateNavigation | undefined>(undefined);
+  const contextNavigation = useRef<TemplateNavigation | undefined>(undefined);
+  const [contextRequest, setContextRequest] = useState<{ flowId: string; nonce: string }>();
   const authorFlowGeneration = useRef(0);
   useEffect(() => {
     const open = () => setBrowserOpen(true);
@@ -791,7 +795,9 @@ function WorkspaceApp() {
     ['settings', '本地设置'],
   ] as const;
   const selectedNavigation =
-    section === 'author' || (section === 'editor' && authorEditorOrigin?.flowId === edit?.id)
+    section === 'author' ||
+    section === 'context-debug' ||
+    (section === 'editor' && authorEditorOrigin?.flowId === edit?.id)
       ? 'templates'
       : section === 'runs' && detail && runOrigin === 'task'
         ? 'tasks'
@@ -869,6 +875,7 @@ function WorkspaceApp() {
       aiSettingsNavigation.current?.(() => leaveAIContext(navigate, label), label);
     else if (section === 'templates') templateNavigation.current?.(navigate, label);
     else if (section === 'author') authorNavigation.current?.(navigate, label);
+    else if (section === 'context-debug') contextNavigation.current?.(navigate, label);
     else if (section === 'schedules') plansNavigation.current?.(navigate, label);
     else if (section === 'template-schedule')
       scheduleNavigation.current?.(
@@ -1296,6 +1303,8 @@ function WorkspaceApp() {
                 else if (section === 'templates')
                   templateNavigation.current?.(navigate, '首次教学');
                 else if (section === 'author') authorNavigation.current?.(navigate, '首次教学');
+                else if (section === 'context-debug')
+                  contextNavigation.current?.(navigate, '首次教学');
                 else if (section === 'schedules') plansNavigation.current?.(navigate, '首次教学');
                 else if (section === 'runs' && runOrigin === 'schedule' && detail)
                   leaveScheduleContext(navigate, '首次教学');
@@ -1428,6 +1437,7 @@ function WorkspaceApp() {
               section === 'tools' ||
               section === 'templates' ||
               section === 'author' ||
+              section === 'context-debug' ||
               section === 'template-schedule' ||
               section === 'schedules' ||
               section === 'ai-settings' ||
@@ -2149,6 +2159,12 @@ function WorkspaceApp() {
               });
             }}
           />
+          <DebugContextPage
+            active={section === 'context-debug'}
+            request={contextRequest}
+            navigation={contextNavigation}
+            back={() => setSection('editor')}
+          />
           <RunReviewPage
             active={section === 'flow-review'}
             selection={flowReview?.selection}
@@ -2351,16 +2367,32 @@ function WorkspaceApp() {
                   title="模板入口编排副本"
                   description="保存和调试只影响此本机副本。带回时排除参数值、资源绑定与调试结果，并重新核对提示词和制作修订。"
                   action={
-                    <Button
-                      disabled={busy}
-                      onClick={() =>
-                        void save().then((result) => {
-                          if (result) returnToAuthor();
-                        })
-                      }
-                    >
-                      保存并核对带回
-                    </Button>
+                    <div className="author-actions">
+                      <Button
+                        disabled={busy}
+                        onClick={() =>
+                          void save().then((result) => {
+                            if (result) {
+                              setContextRequest({ flowId: edit.id, nonce: crypto.randomUUID() });
+                              setSection('context-debug');
+                              setBrowserOpen(false);
+                            }
+                          })
+                        }
+                      >
+                        保存并编辑调试值
+                      </Button>
+                      <Button
+                        disabled={busy}
+                        onClick={() =>
+                          void save().then((result) => {
+                            if (result) returnToAuthor();
+                          })
+                        }
+                      >
+                        保存并核对带回
+                      </Button>
+                    </div>
                   }
                 />
               )}
@@ -3173,6 +3205,7 @@ function Editor({
         requiredCapabilities: [
           ...new Set([
             ...r.flow.requiredCapabilities,
+            ...(flatten(steps).some((node) => node.type === 'context') ? ['template-data-v1'] : []),
             ...(mapped ? ['excel-mapping-v1'] : []),
             ...(flatten(steps).some((node) => node.type === 'ai') ? ['ai-node-v1'] : []),
             ...(flatten(steps).some((node) => node.type === 'document')
@@ -3207,6 +3240,9 @@ function Editor({
           requiredCapabilities: [
             ...new Set([
               ...r.flow.requiredCapabilities,
+              ...(flatten(steps).some((node) => node.type === 'context')
+                ? ['template-data-v1']
+                : []),
               ...(flatten(steps).some((node) => node.type === 'ai') ? ['ai-node-v1'] : []),
               ...(flatten(steps).some((node) => node.type === 'document')
                 ? ['document-extract-v1']
@@ -4296,6 +4332,13 @@ function Editor({
                                       )}
                                     {selectedNode.type === 'document' && (
                                       <DocumentNodeConfiguration
+                                        node={selectedNode}
+                                        choices={choices}
+                                        change={updateNode}
+                                      />
+                                    )}
+                                    {selectedNode.type === 'context' && (
+                                      <ContextNodeConfiguration
                                         node={selectedNode}
                                         choices={choices}
                                         change={updateNode}

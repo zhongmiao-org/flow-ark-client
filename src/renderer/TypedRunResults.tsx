@@ -4,6 +4,8 @@ import { assertDocumentResult } from '../shared/document';
 import { assertSkillVersion } from '../shared/skill';
 import { DocumentResultView } from './DocumentResults';
 import { SkillVersionView } from './SkillPanel';
+import { assertDataOutput } from '../shared/template-data';
+import ContextResultView from './ContextResultView';
 import type { TypedResultMeta } from '../host/typed-results';
 export default function TypedRunResults({
   runId,
@@ -27,6 +29,7 @@ export default function TypedRunResults({
       .then((v) => {
         if (v.type === 'document') assertDocumentResult(v.value);
         else if (v.type === 'skill') assertSkillVersion(v.value);
+        else if (v.type === 'context') assertDataOutput(v.value);
         else throw Error('结果类型无效');
         if (live) setValue(v);
       })
@@ -58,6 +61,7 @@ export default function TypedRunResults({
       )}{' '}
       {value?.type === 'document' && <DocumentResultView key={id} value={value.value} />}{' '}
       {value?.type === 'skill' && <SkillVersionView value={value.value} />}
+      {value?.type === 'context' && <ContextResultView value={value.value} />}
     </section>
   );
 }

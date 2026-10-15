@@ -432,6 +432,7 @@ export class RunReview {
         signature: captured.signature,
         authorization: after.authorization,
         bundles: prepared.scriptBundles,
+        ...(prepared.templateData ? { templateData: prepared.templateData } : {}),
       }),
     };
   }
@@ -468,6 +469,20 @@ export class RunReview {
       result.flow.versionId = executionVersion(prepared.record, prepared.prepared);
       result.flow.scriptBundles = prepared.prepared.scriptBundles;
       result.resources = prepared.resources;
+      if (prepared.prepared.templateData) {
+        const context = prepared.prepared.templateData;
+        result.resources.push({
+          id: 'template-data',
+          name: '配置与状态',
+          kind: 'action',
+          access: walk(prepared.record.flow.steps).some(
+            (n) => n.type === 'context' && n.operation === 'state.write',
+          )
+            ? '读写'
+            : '只读',
+          detail: `${context.owner.kind === 'author-checkout' ? '本制作副本的私有调试值' : '当前模板实例'}；配置固定修订 ${context.configurationRevision}；状态读取最新修订，写入须核对预期修订。`,
+        });
+      }
       if (result.desktop && prepared.desktop)
         result.desktop = {
           ...result.desktop,

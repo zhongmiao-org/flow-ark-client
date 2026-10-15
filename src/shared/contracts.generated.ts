@@ -293,6 +293,16 @@ export type Node =
       data?: Value;
       evidence?: Value;
       base?: Value;
+    }
+  | {
+      id: string;
+      type: 'context';
+      version: 1;
+      name?: string;
+      timeoutMs?: number;
+      operation: 'configuration' | 'state.read' | 'state.write';
+      expectedRevision?: Value;
+      value?: Value;
     };
 export type Value =
   | Json
@@ -318,6 +328,24 @@ export type RunState =
   | 'INTERRUPTED'
   | 'SUCCEEDED'
   | 'FAILED';
+export type TemplateDataOwner =
+  | {
+      kind: 'instance';
+      instanceId: string;
+      package: {
+        id: string;
+        version: string;
+        digest: string;
+      };
+      entryId: string;
+    }
+  | {
+      kind: 'author-checkout';
+      checkoutId: string;
+      draftId: string;
+      draftRevision: number;
+      entryId: string;
+    };
 export type AIPlanningResult = {
   formatVersion: '1.0';
   kind: 'plan' | 'clarify' | 'unsupported';
@@ -590,6 +618,39 @@ export type TemplateAuthorExportReceipt = {
   completedAt?: string;
   error?: string;
 };
+export type TemplateDataOutput = TemplateDataReadOutput | TemplateDataWriteOutput;
+export type TemplateDataWriteReceipt =
+  | {
+      version: 1;
+      contextId: string;
+      operationId: string;
+      requestSha256: string;
+      createdAt: string;
+      updatedAt: string;
+      status: 'written';
+      result: TemplateDataWriteOutput;
+    }
+  | {
+      version: 1;
+      contextId: string;
+      operationId: string;
+      requestSha256: string;
+      createdAt: string;
+      updatedAt: string;
+      status: 'prepared' | 'unknown' | 'cancelled';
+      error?: string;
+    }
+  | {
+      version: 1;
+      contextId: string;
+      operationId: string;
+      requestSha256: string;
+      createdAt: string;
+      updatedAt: string;
+      status: 'conflict';
+      currentRevision: number;
+      error?: string;
+    };
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -647,6 +708,16 @@ export interface FlowArkP1 {
   TemplateAuthorPackageMetadata?: TemplateAuthorPackageMetadata;
   TemplateAuthorCheckout?: TemplateAuthorCheckout;
   TemplateAuthorExportReceipt?: TemplateAuthorExportReceipt;
+  TemplateDataOwner?: TemplateDataOwner;
+  TemplateDataContext?: TemplateDataContext;
+  TemplateDataState?: TemplateDataState;
+  TemplateDataReadOutput?: TemplateDataReadOutput;
+  TemplateDataWriteOutput?: TemplateDataWriteOutput;
+  TemplateDataOutput?: TemplateDataOutput;
+  TemplateDataWriteRequest?: TemplateDataWriteRequest;
+  TemplateDataWriteReceipt?: TemplateDataWriteReceipt;
+  TemplateDataEditRequest?: TemplateDataEditRequest;
+  TemplateDataEditResult?: TemplateDataEditResult;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -706,6 +777,7 @@ export interface RunSnapshot {
    * @maxItems 1000
    */
   scriptBundles?: ScriptBundle[];
+  templateData?: TemplateDataContext;
 }
 export interface ScriptBundle {
   nodeId: string;
@@ -717,6 +789,21 @@ export interface ScriptBundle {
     name: string;
     version: string;
   }[];
+}
+export interface TemplateDataContext {
+  version: 1;
+  id: string;
+  owner: TemplateDataOwner;
+  configurationRevision: number;
+  configurationSchema: {
+    [k: string]: Json;
+  };
+  stateSchema: {
+    [k: string]: Json;
+  };
+  configuration: Json;
+  schemaSha256: string;
+  createdAt: string;
 }
 export interface RunEvent {
   runId: string;
@@ -1417,4 +1504,52 @@ export interface TemplateAuthorCheckout {
   flowId: string;
   baseFlowSha256: string;
   createdAt: string;
+}
+export interface TemplateDataState {
+  version: 1;
+  contextId: string;
+  revision: number;
+  value: Json;
+  updatedAt: string;
+}
+export interface TemplateDataReadOutput {
+  version: 1;
+  operation: 'configuration' | 'state.read';
+  contextId: string;
+  revision: number;
+  value: Json;
+}
+export interface TemplateDataWriteOutput {
+  version: 1;
+  operation: 'state.write';
+  contextId: string;
+  operationId: string;
+  previousRevision: number;
+  revision: number;
+  value: Json;
+  committedAt: string;
+}
+export interface TemplateDataWriteRequest {
+  version: 1;
+  contextId: string;
+  operationId: string;
+  runId: string;
+  nodeInstance: string;
+  expectedRevision: number;
+  value: Json;
+}
+export interface TemplateDataEditRequest {
+  version: 1;
+  checkoutId: string;
+  requestId: string;
+  expectedConfigurationRevision: number;
+  expectedStateRevision: number;
+  configuration: Json;
+  state: Json;
+}
+export interface TemplateDataEditResult {
+  version: 1;
+  requestId: string;
+  context: TemplateDataContext;
+  state: TemplateDataState;
 }

@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "contextId": "example-context",
+  "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+  "runId": "example-run",
+  "nodeInstance": "loop:0/update",
+  "expectedRevision": 0,
+  "value": {
+    "stage": "review"
+  }
+}

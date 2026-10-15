@@ -1,6 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { ConversationEvent } from '../shared/conversation';
 const allowed = new Set([
+  'context.debug.get',
+  'context.debug.save',
+  'context.operations',
+  'context.inspect',
   'author.schema.check',
   'author.list',
   'author.create',

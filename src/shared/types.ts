@@ -11,6 +11,7 @@ export type PreparedScripts = {
   scripts: Record<string, string>;
   scriptBundles: ScriptBundle[];
   skillSnapshots?: Record<string, import('./skill').SkillVersion>;
+  templateData?: import('./template-data').DataContext;
 };
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export type Bindings = {
@@ -30,7 +31,7 @@ export type Bindings = {
     }
   >;
   grants?: Record<string, 'deny' | 'confirm' | 'auto'>;
-  configuration?: { adapter: string; schema: Json; values: Json };
+  configuration?: { adapter: string; schema: Json; values: Json; revision?: number };
 };
 export type FlowRecord = {
   desktopTarget?: import('./desktop-planning').DesktopTaskTarget;

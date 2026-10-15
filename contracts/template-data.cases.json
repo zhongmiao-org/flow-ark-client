@@ -1,0 +1,2182 @@
+[
+  {
+    "name": "配置与状态节点",
+    "definition": "FlowDefinition",
+    "valid": true,
+    "value": {
+      "formatVersion": "1.0",
+      "id": "template-data-example",
+      "name": "配置与状态编排示例",
+      "description": "虚构字段；调试副本及正式实例的宿主上下文独立",
+      "parameters": {},
+      "requiredCapabilities": [
+        "template-data-v1"
+      ],
+      "steps": [
+        {
+          "id": "configuration",
+          "type": "context",
+          "version": 1,
+          "operation": "configuration"
+        },
+        {
+          "id": "state",
+          "type": "context",
+          "version": 1,
+          "operation": "state.read"
+        },
+        {
+          "id": "update",
+          "type": "context",
+          "version": 1,
+          "operation": "state.write",
+          "expectedRevision": {
+            "$ref": "steps.state.revision"
+          },
+          "value": {
+            "stage": "review"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "配置与状态节点缺少formatVersion",
+    "definition": "FlowDefinition",
+    "valid": false,
+    "value": {
+      "id": "template-data-example",
+      "name": "配置与状态编排示例",
+      "description": "虚构字段；调试副本及正式实例的宿主上下文独立",
+      "parameters": {},
+      "requiredCapabilities": [
+        "template-data-v1"
+      ],
+      "steps": [
+        {
+          "id": "configuration",
+          "type": "context",
+          "version": 1,
+          "operation": "configuration"
+        },
+        {
+          "id": "state",
+          "type": "context",
+          "version": 1,
+          "operation": "state.read"
+        },
+        {
+          "id": "update",
+          "type": "context",
+          "version": 1,
+          "operation": "state.write",
+          "expectedRevision": {
+            "$ref": "steps.state.revision"
+          },
+          "value": {
+            "stage": "review"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "配置与状态节点缺少id",
+    "definition": "FlowDefinition",
+    "valid": false,
+    "value": {
+      "formatVersion": "1.0",
+      "name": "配置与状态编排示例",
+      "description": "虚构字段；调试副本及正式实例的宿主上下文独立",
+      "parameters": {},
+      "requiredCapabilities": [
+        "template-data-v1"
+      ],
+      "steps": [
+        {
+          "id": "configuration",
+          "type": "context",
+          "version": 1,
+          "operation": "configuration"
+        },
+        {
+          "id": "state",
+          "type": "context",
+          "version": 1,
+          "operation": "state.read"
+        },
+        {
+          "id": "update",
+          "type": "context",
+          "version": 1,
+          "operation": "state.write",
+          "expectedRevision": {
+            "$ref": "steps.state.revision"
+          },
+          "value": {
+            "stage": "review"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "配置与状态节点缺少name",
+    "definition": "FlowDefinition",
+    "valid": false,
+    "value": {
+      "formatVersion": "1.0",
+      "id": "template-data-example",
+      "description": "虚构字段；调试副本及正式实例的宿主上下文独立",
+      "parameters": {},
+      "requiredCapabilities": [
+        "template-data-v1"
+      ],
+      "steps": [
+        {
+          "id": "configuration",
+          "type": "context",
+          "version": 1,
+          "operation": "configuration"
+        },
+        {
+          "id": "state",
+          "type": "context",
+          "version": 1,
+          "operation": "state.read"
+        },
+        {
+          "id": "update",
+          "type": "context",
+          "version": 1,
+          "operation": "state.write",
+          "expectedRevision": {
+            "$ref": "steps.state.revision"
+          },
+          "value": {
+            "stage": "review"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "配置与状态节点缺少description",
+    "definition": "FlowDefinition",
+    "valid": false,
+    "value": {
+      "formatVersion": "1.0",
+      "id": "template-data-example",
+      "name": "配置与状态编排示例",
+      "parameters": {},
+      "requiredCapabilities": [
+        "template-data-v1"
+      ],
+      "steps": [
+        {
+          "id": "configuration",
+          "type": "context",
+          "version": 1,
+          "operation": "configuration"
+        },
+        {
+          "id": "state",
+          "type": "context",
+          "version": 1,
+          "operation": "state.read"
+        },
+        {
+          "id": "update",
+          "type": "context",
+          "version": 1,
+          "operation": "state.write",
+          "expectedRevision": {
+            "$ref": "steps.state.revision"
+          },
+          "value": {
+            "stage": "review"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "配置与状态节点缺少parameters",
+    "definition": "FlowDefinition",
+    "valid": false,
+    "value": {
+      "formatVersion": "1.0",
+      "id": "template-data-example",
+      "name": "配置与状态编排示例",
+      "description": "虚构字段；调试副本及正式实例的宿主上下文独立",
+      "requiredCapabilities": [
+        "template-data-v1"
+      ],
+      "steps": [
+        {
+          "id": "configuration",
+          "type": "context",
+          "version": 1,
+          "operation": "configuration"
+        },
+        {
+          "id": "state",
+          "type": "context",
+          "version": 1,
+          "operation": "state.read"
+        },
+        {
+          "id": "update",
+          "type": "context",
+          "version": 1,
+          "operation": "state.write",
+          "expectedRevision": {
+            "$ref": "steps.state.revision"
+          },
+          "value": {
+            "stage": "review"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "配置与状态节点缺少requiredCapabilities",
+    "definition": "FlowDefinition",
+    "valid": false,
+    "value": {
+      "formatVersion": "1.0",
+      "id": "template-data-example",
+      "name": "配置与状态编排示例",
+      "description": "虚构字段；调试副本及正式实例的宿主上下文独立",
+      "parameters": {},
+      "steps": [
+        {
+          "id": "configuration",
+          "type": "context",
+          "version": 1,
+          "operation": "configuration"
+        },
+        {
+          "id": "state",
+          "type": "context",
+          "version": 1,
+          "operation": "state.read"
+        },
+        {
+          "id": "update",
+          "type": "context",
+          "version": 1,
+          "operation": "state.write",
+          "expectedRevision": {
+            "$ref": "steps.state.revision"
+          },
+          "value": {
+            "stage": "review"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "配置与状态节点缺少steps",
+    "definition": "FlowDefinition",
+    "valid": false,
+    "value": {
+      "formatVersion": "1.0",
+      "id": "template-data-example",
+      "name": "配置与状态编排示例",
+      "description": "虚构字段；调试副本及正式实例的宿主上下文独立",
+      "parameters": {},
+      "requiredCapabilities": [
+        "template-data-v1"
+      ]
+    }
+  },
+  {
+    "name": "配置与状态节点多余字段",
+    "definition": "FlowDefinition",
+    "valid": false,
+    "value": {
+      "formatVersion": "1.0",
+      "id": "template-data-example",
+      "name": "配置与状态编排示例",
+      "description": "虚构字段；调试副本及正式实例的宿主上下文独立",
+      "parameters": {},
+      "requiredCapabilities": [
+        "template-data-v1"
+      ],
+      "steps": [
+        {
+          "id": "configuration",
+          "type": "context",
+          "version": 1,
+          "operation": "configuration"
+        },
+        {
+          "id": "state",
+          "type": "context",
+          "version": 1,
+          "operation": "state.read"
+        },
+        {
+          "id": "update",
+          "type": "context",
+          "version": 1,
+          "operation": "state.write",
+          "expectedRevision": {
+            "$ref": "steps.state.revision"
+          },
+          "value": {
+            "stage": "review"
+          }
+        }
+      ],
+      "unexpected": true
+    }
+  },
+  {
+    "name": "作者副本上下文",
+    "definition": "TemplateDataContext",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "id": "example-context",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "example-checkout",
+        "draftId": "example-draft",
+        "draftRevision": 2,
+        "entryId": "prepare"
+      },
+      "configurationRevision": 1,
+      "configurationSchema": {
+        "type": "object",
+        "properties": {
+          "concise": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "stateSchema": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage"
+        ],
+        "additionalProperties": false
+      },
+      "configuration": {
+        "concise": true
+      },
+      "schemaSha256": "d2042532a6987164a715f7f721ea71d3b1cebfc9f4054ba6e2688ee4733f116a",
+      "createdAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "作者副本上下文缺少version",
+    "definition": "TemplateDataContext",
+    "valid": false,
+    "value": {
+      "id": "example-context",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "example-checkout",
+        "draftId": "example-draft",
+        "draftRevision": 2,
+        "entryId": "prepare"
+      },
+      "configurationRevision": 1,
+      "configurationSchema": {
+        "type": "object",
+        "properties": {
+          "concise": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "stateSchema": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage"
+        ],
+        "additionalProperties": false
+      },
+      "configuration": {
+        "concise": true
+      },
+      "schemaSha256": "d2042532a6987164a715f7f721ea71d3b1cebfc9f4054ba6e2688ee4733f116a",
+      "createdAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "作者副本上下文缺少id",
+    "definition": "TemplateDataContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "example-checkout",
+        "draftId": "example-draft",
+        "draftRevision": 2,
+        "entryId": "prepare"
+      },
+      "configurationRevision": 1,
+      "configurationSchema": {
+        "type": "object",
+        "properties": {
+          "concise": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "stateSchema": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage"
+        ],
+        "additionalProperties": false
+      },
+      "configuration": {
+        "concise": true
+      },
+      "schemaSha256": "d2042532a6987164a715f7f721ea71d3b1cebfc9f4054ba6e2688ee4733f116a",
+      "createdAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "作者副本上下文缺少owner",
+    "definition": "TemplateDataContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "example-context",
+      "configurationRevision": 1,
+      "configurationSchema": {
+        "type": "object",
+        "properties": {
+          "concise": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "stateSchema": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage"
+        ],
+        "additionalProperties": false
+      },
+      "configuration": {
+        "concise": true
+      },
+      "schemaSha256": "d2042532a6987164a715f7f721ea71d3b1cebfc9f4054ba6e2688ee4733f116a",
+      "createdAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "作者副本上下文缺少configurationRevision",
+    "definition": "TemplateDataContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "example-context",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "example-checkout",
+        "draftId": "example-draft",
+        "draftRevision": 2,
+        "entryId": "prepare"
+      },
+      "configurationSchema": {
+        "type": "object",
+        "properties": {
+          "concise": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "stateSchema": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage"
+        ],
+        "additionalProperties": false
+      },
+      "configuration": {
+        "concise": true
+      },
+      "schemaSha256": "d2042532a6987164a715f7f721ea71d3b1cebfc9f4054ba6e2688ee4733f116a",
+      "createdAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "作者副本上下文缺少configurationSchema",
+    "definition": "TemplateDataContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "example-context",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "example-checkout",
+        "draftId": "example-draft",
+        "draftRevision": 2,
+        "entryId": "prepare"
+      },
+      "configurationRevision": 1,
+      "stateSchema": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage"
+        ],
+        "additionalProperties": false
+      },
+      "configuration": {
+        "concise": true
+      },
+      "schemaSha256": "d2042532a6987164a715f7f721ea71d3b1cebfc9f4054ba6e2688ee4733f116a",
+      "createdAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "作者副本上下文缺少stateSchema",
+    "definition": "TemplateDataContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "example-context",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "example-checkout",
+        "draftId": "example-draft",
+        "draftRevision": 2,
+        "entryId": "prepare"
+      },
+      "configurationRevision": 1,
+      "configurationSchema": {
+        "type": "object",
+        "properties": {
+          "concise": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "configuration": {
+        "concise": true
+      },
+      "schemaSha256": "d2042532a6987164a715f7f721ea71d3b1cebfc9f4054ba6e2688ee4733f116a",
+      "createdAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "作者副本上下文缺少configuration",
+    "definition": "TemplateDataContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "example-context",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "example-checkout",
+        "draftId": "example-draft",
+        "draftRevision": 2,
+        "entryId": "prepare"
+      },
+      "configurationRevision": 1,
+      "configurationSchema": {
+        "type": "object",
+        "properties": {
+          "concise": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "stateSchema": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage"
+        ],
+        "additionalProperties": false
+      },
+      "schemaSha256": "d2042532a6987164a715f7f721ea71d3b1cebfc9f4054ba6e2688ee4733f116a",
+      "createdAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "作者副本上下文缺少schemaSha256",
+    "definition": "TemplateDataContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "example-context",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "example-checkout",
+        "draftId": "example-draft",
+        "draftRevision": 2,
+        "entryId": "prepare"
+      },
+      "configurationRevision": 1,
+      "configurationSchema": {
+        "type": "object",
+        "properties": {
+          "concise": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "stateSchema": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage"
+        ],
+        "additionalProperties": false
+      },
+      "configuration": {
+        "concise": true
+      },
+      "createdAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "作者副本上下文缺少createdAt",
+    "definition": "TemplateDataContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "example-context",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "example-checkout",
+        "draftId": "example-draft",
+        "draftRevision": 2,
+        "entryId": "prepare"
+      },
+      "configurationRevision": 1,
+      "configurationSchema": {
+        "type": "object",
+        "properties": {
+          "concise": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "stateSchema": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage"
+        ],
+        "additionalProperties": false
+      },
+      "configuration": {
+        "concise": true
+      },
+      "schemaSha256": "d2042532a6987164a715f7f721ea71d3b1cebfc9f4054ba6e2688ee4733f116a"
+    }
+  },
+  {
+    "name": "作者副本上下文多余字段",
+    "definition": "TemplateDataContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "example-context",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "example-checkout",
+        "draftId": "example-draft",
+        "draftRevision": 2,
+        "entryId": "prepare"
+      },
+      "configurationRevision": 1,
+      "configurationSchema": {
+        "type": "object",
+        "properties": {
+          "concise": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "stateSchema": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage"
+        ],
+        "additionalProperties": false
+      },
+      "configuration": {
+        "concise": true
+      },
+      "schemaSha256": "d2042532a6987164a715f7f721ea71d3b1cebfc9f4054ba6e2688ee4733f116a",
+      "createdAt": "2026-10-15T14:30:00Z",
+      "unexpected": true
+    }
+  },
+  {
+    "name": "状态记录",
+    "definition": "TemplateDataState",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "revision": 0,
+      "value": {
+        "stage": "new"
+      },
+      "updatedAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "状态记录缺少version",
+    "definition": "TemplateDataState",
+    "valid": false,
+    "value": {
+      "contextId": "example-context",
+      "revision": 0,
+      "value": {
+        "stage": "new"
+      },
+      "updatedAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "状态记录缺少contextId",
+    "definition": "TemplateDataState",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "revision": 0,
+      "value": {
+        "stage": "new"
+      },
+      "updatedAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "状态记录缺少revision",
+    "definition": "TemplateDataState",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "value": {
+        "stage": "new"
+      },
+      "updatedAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "状态记录缺少value",
+    "definition": "TemplateDataState",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "revision": 0,
+      "updatedAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "状态记录缺少updatedAt",
+    "definition": "TemplateDataState",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "revision": 0,
+      "value": {
+        "stage": "new"
+      }
+    }
+  },
+  {
+    "name": "状态记录多余字段",
+    "definition": "TemplateDataState",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "revision": 0,
+      "value": {
+        "stage": "new"
+      },
+      "updatedAt": "2026-10-15T14:30:00Z",
+      "unexpected": true
+    }
+  },
+  {
+    "name": "写入请求",
+    "definition": "TemplateDataWriteRequest",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "runId": "example-run",
+      "nodeInstance": "loop:0/update",
+      "expectedRevision": 0,
+      "value": {
+        "stage": "review"
+      }
+    }
+  },
+  {
+    "name": "写入请求缺少version",
+    "definition": "TemplateDataWriteRequest",
+    "valid": false,
+    "value": {
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "runId": "example-run",
+      "nodeInstance": "loop:0/update",
+      "expectedRevision": 0,
+      "value": {
+        "stage": "review"
+      }
+    }
+  },
+  {
+    "name": "写入请求缺少contextId",
+    "definition": "TemplateDataWriteRequest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "runId": "example-run",
+      "nodeInstance": "loop:0/update",
+      "expectedRevision": 0,
+      "value": {
+        "stage": "review"
+      }
+    }
+  },
+  {
+    "name": "写入请求缺少operationId",
+    "definition": "TemplateDataWriteRequest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "runId": "example-run",
+      "nodeInstance": "loop:0/update",
+      "expectedRevision": 0,
+      "value": {
+        "stage": "review"
+      }
+    }
+  },
+  {
+    "name": "写入请求缺少runId",
+    "definition": "TemplateDataWriteRequest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "nodeInstance": "loop:0/update",
+      "expectedRevision": 0,
+      "value": {
+        "stage": "review"
+      }
+    }
+  },
+  {
+    "name": "写入请求缺少nodeInstance",
+    "definition": "TemplateDataWriteRequest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "runId": "example-run",
+      "expectedRevision": 0,
+      "value": {
+        "stage": "review"
+      }
+    }
+  },
+  {
+    "name": "写入请求缺少expectedRevision",
+    "definition": "TemplateDataWriteRequest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "runId": "example-run",
+      "nodeInstance": "loop:0/update",
+      "value": {
+        "stage": "review"
+      }
+    }
+  },
+  {
+    "name": "写入请求缺少value",
+    "definition": "TemplateDataWriteRequest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "runId": "example-run",
+      "nodeInstance": "loop:0/update",
+      "expectedRevision": 0
+    }
+  },
+  {
+    "name": "写入请求多余字段",
+    "definition": "TemplateDataWriteRequest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "runId": "example-run",
+      "nodeInstance": "loop:0/update",
+      "expectedRevision": 0,
+      "value": {
+        "stage": "review"
+      },
+      "unexpected": true
+    }
+  },
+  {
+    "name": "写入回执",
+    "definition": "TemplateDataWriteReceipt",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "requestSha256": "fe111c90147055216129cf6c3e382afc8b08f80aeda697ce57dfcd2462b9d149",
+      "createdAt": "2026-10-15T14:30:00Z",
+      "updatedAt": "2026-10-15T14:30:00Z",
+      "status": "written",
+      "result": {
+        "version": 1,
+        "operation": "state.write",
+        "contextId": "example-context",
+        "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+        "previousRevision": 0,
+        "revision": 1,
+        "value": {
+          "stage": "review"
+        },
+        "committedAt": "2026-10-15T14:30:00Z"
+      }
+    }
+  },
+  {
+    "name": "写入回执缺少version",
+    "definition": "TemplateDataWriteReceipt",
+    "valid": false,
+    "value": {
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "requestSha256": "fe111c90147055216129cf6c3e382afc8b08f80aeda697ce57dfcd2462b9d149",
+      "createdAt": "2026-10-15T14:30:00Z",
+      "updatedAt": "2026-10-15T14:30:00Z",
+      "status": "written",
+      "result": {
+        "version": 1,
+        "operation": "state.write",
+        "contextId": "example-context",
+        "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+        "previousRevision": 0,
+        "revision": 1,
+        "value": {
+          "stage": "review"
+        },
+        "committedAt": "2026-10-15T14:30:00Z"
+      }
+    }
+  },
+  {
+    "name": "写入回执缺少contextId",
+    "definition": "TemplateDataWriteReceipt",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "requestSha256": "fe111c90147055216129cf6c3e382afc8b08f80aeda697ce57dfcd2462b9d149",
+      "createdAt": "2026-10-15T14:30:00Z",
+      "updatedAt": "2026-10-15T14:30:00Z",
+      "status": "written",
+      "result": {
+        "version": 1,
+        "operation": "state.write",
+        "contextId": "example-context",
+        "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+        "previousRevision": 0,
+        "revision": 1,
+        "value": {
+          "stage": "review"
+        },
+        "committedAt": "2026-10-15T14:30:00Z"
+      }
+    }
+  },
+  {
+    "name": "写入回执缺少operationId",
+    "definition": "TemplateDataWriteReceipt",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "requestSha256": "fe111c90147055216129cf6c3e382afc8b08f80aeda697ce57dfcd2462b9d149",
+      "createdAt": "2026-10-15T14:30:00Z",
+      "updatedAt": "2026-10-15T14:30:00Z",
+      "status": "written",
+      "result": {
+        "version": 1,
+        "operation": "state.write",
+        "contextId": "example-context",
+        "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+        "previousRevision": 0,
+        "revision": 1,
+        "value": {
+          "stage": "review"
+        },
+        "committedAt": "2026-10-15T14:30:00Z"
+      }
+    }
+  },
+  {
+    "name": "写入回执缺少requestSha256",
+    "definition": "TemplateDataWriteReceipt",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "createdAt": "2026-10-15T14:30:00Z",
+      "updatedAt": "2026-10-15T14:30:00Z",
+      "status": "written",
+      "result": {
+        "version": 1,
+        "operation": "state.write",
+        "contextId": "example-context",
+        "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+        "previousRevision": 0,
+        "revision": 1,
+        "value": {
+          "stage": "review"
+        },
+        "committedAt": "2026-10-15T14:30:00Z"
+      }
+    }
+  },
+  {
+    "name": "写入回执缺少createdAt",
+    "definition": "TemplateDataWriteReceipt",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "requestSha256": "fe111c90147055216129cf6c3e382afc8b08f80aeda697ce57dfcd2462b9d149",
+      "updatedAt": "2026-10-15T14:30:00Z",
+      "status": "written",
+      "result": {
+        "version": 1,
+        "operation": "state.write",
+        "contextId": "example-context",
+        "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+        "previousRevision": 0,
+        "revision": 1,
+        "value": {
+          "stage": "review"
+        },
+        "committedAt": "2026-10-15T14:30:00Z"
+      }
+    }
+  },
+  {
+    "name": "写入回执缺少updatedAt",
+    "definition": "TemplateDataWriteReceipt",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "requestSha256": "fe111c90147055216129cf6c3e382afc8b08f80aeda697ce57dfcd2462b9d149",
+      "createdAt": "2026-10-15T14:30:00Z",
+      "status": "written",
+      "result": {
+        "version": 1,
+        "operation": "state.write",
+        "contextId": "example-context",
+        "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+        "previousRevision": 0,
+        "revision": 1,
+        "value": {
+          "stage": "review"
+        },
+        "committedAt": "2026-10-15T14:30:00Z"
+      }
+    }
+  },
+  {
+    "name": "写入回执缺少status",
+    "definition": "TemplateDataWriteReceipt",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "requestSha256": "fe111c90147055216129cf6c3e382afc8b08f80aeda697ce57dfcd2462b9d149",
+      "createdAt": "2026-10-15T14:30:00Z",
+      "updatedAt": "2026-10-15T14:30:00Z",
+      "result": {
+        "version": 1,
+        "operation": "state.write",
+        "contextId": "example-context",
+        "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+        "previousRevision": 0,
+        "revision": 1,
+        "value": {
+          "stage": "review"
+        },
+        "committedAt": "2026-10-15T14:30:00Z"
+      }
+    }
+  },
+  {
+    "name": "写入回执缺少result",
+    "definition": "TemplateDataWriteReceipt",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "requestSha256": "fe111c90147055216129cf6c3e382afc8b08f80aeda697ce57dfcd2462b9d149",
+      "createdAt": "2026-10-15T14:30:00Z",
+      "updatedAt": "2026-10-15T14:30:00Z",
+      "status": "written"
+    }
+  },
+  {
+    "name": "写入回执多余字段",
+    "definition": "TemplateDataWriteReceipt",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "requestSha256": "fe111c90147055216129cf6c3e382afc8b08f80aeda697ce57dfcd2462b9d149",
+      "createdAt": "2026-10-15T14:30:00Z",
+      "updatedAt": "2026-10-15T14:30:00Z",
+      "status": "written",
+      "result": {
+        "version": 1,
+        "operation": "state.write",
+        "contextId": "example-context",
+        "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+        "previousRevision": 0,
+        "revision": 1,
+        "value": {
+          "stage": "review"
+        },
+        "committedAt": "2026-10-15T14:30:00Z"
+      },
+      "unexpected": true
+    }
+  },
+  {
+    "name": "调试表单保存",
+    "definition": "TemplateDataEditRequest",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "checkoutId": "example-checkout",
+      "requestId": "example-edit",
+      "expectedConfigurationRevision": 1,
+      "expectedStateRevision": 0,
+      "configuration": {
+        "concise": false
+      },
+      "state": {
+        "stage": "new"
+      }
+    }
+  },
+  {
+    "name": "调试表单保存缺少version",
+    "definition": "TemplateDataEditRequest",
+    "valid": false,
+    "value": {
+      "checkoutId": "example-checkout",
+      "requestId": "example-edit",
+      "expectedConfigurationRevision": 1,
+      "expectedStateRevision": 0,
+      "configuration": {
+        "concise": false
+      },
+      "state": {
+        "stage": "new"
+      }
+    }
+  },
+  {
+    "name": "调试表单保存缺少checkoutId",
+    "definition": "TemplateDataEditRequest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "requestId": "example-edit",
+      "expectedConfigurationRevision": 1,
+      "expectedStateRevision": 0,
+      "configuration": {
+        "concise": false
+      },
+      "state": {
+        "stage": "new"
+      }
+    }
+  },
+  {
+    "name": "调试表单保存缺少requestId",
+    "definition": "TemplateDataEditRequest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "checkoutId": "example-checkout",
+      "expectedConfigurationRevision": 1,
+      "expectedStateRevision": 0,
+      "configuration": {
+        "concise": false
+      },
+      "state": {
+        "stage": "new"
+      }
+    }
+  },
+  {
+    "name": "调试表单保存缺少expectedConfigurationRevision",
+    "definition": "TemplateDataEditRequest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "checkoutId": "example-checkout",
+      "requestId": "example-edit",
+      "expectedStateRevision": 0,
+      "configuration": {
+        "concise": false
+      },
+      "state": {
+        "stage": "new"
+      }
+    }
+  },
+  {
+    "name": "调试表单保存缺少expectedStateRevision",
+    "definition": "TemplateDataEditRequest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "checkoutId": "example-checkout",
+      "requestId": "example-edit",
+      "expectedConfigurationRevision": 1,
+      "configuration": {
+        "concise": false
+      },
+      "state": {
+        "stage": "new"
+      }
+    }
+  },
+  {
+    "name": "调试表单保存缺少configuration",
+    "definition": "TemplateDataEditRequest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "checkoutId": "example-checkout",
+      "requestId": "example-edit",
+      "expectedConfigurationRevision": 1,
+      "expectedStateRevision": 0,
+      "state": {
+        "stage": "new"
+      }
+    }
+  },
+  {
+    "name": "调试表单保存缺少state",
+    "definition": "TemplateDataEditRequest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "checkoutId": "example-checkout",
+      "requestId": "example-edit",
+      "expectedConfigurationRevision": 1,
+      "expectedStateRevision": 0,
+      "configuration": {
+        "concise": false
+      }
+    }
+  },
+  {
+    "name": "调试表单保存多余字段",
+    "definition": "TemplateDataEditRequest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "checkoutId": "example-checkout",
+      "requestId": "example-edit",
+      "expectedConfigurationRevision": 1,
+      "expectedStateRevision": 0,
+      "configuration": {
+        "concise": false
+      },
+      "state": {
+        "stage": "new"
+      },
+      "unexpected": true
+    }
+  },
+  {
+    "name": "只读输出",
+    "definition": "TemplateDataOutput",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "operation": "configuration",
+      "contextId": "example-context",
+      "revision": 1,
+      "value": {
+        "concise": true
+      }
+    }
+  },
+  {
+    "name": "只读输出缺少version",
+    "definition": "TemplateDataOutput",
+    "valid": false,
+    "value": {
+      "operation": "configuration",
+      "contextId": "example-context",
+      "revision": 1,
+      "value": {
+        "concise": true
+      }
+    }
+  },
+  {
+    "name": "只读输出缺少operation",
+    "definition": "TemplateDataOutput",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "revision": 1,
+      "value": {
+        "concise": true
+      }
+    }
+  },
+  {
+    "name": "只读输出缺少contextId",
+    "definition": "TemplateDataOutput",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "configuration",
+      "revision": 1,
+      "value": {
+        "concise": true
+      }
+    }
+  },
+  {
+    "name": "只读输出缺少revision",
+    "definition": "TemplateDataOutput",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "configuration",
+      "contextId": "example-context",
+      "value": {
+        "concise": true
+      }
+    }
+  },
+  {
+    "name": "只读输出缺少value",
+    "definition": "TemplateDataOutput",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "configuration",
+      "contextId": "example-context",
+      "revision": 1
+    }
+  },
+  {
+    "name": "只读输出多余字段",
+    "definition": "TemplateDataOutput",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "configuration",
+      "contextId": "example-context",
+      "revision": 1,
+      "value": {
+        "concise": true
+      },
+      "unexpected": true
+    }
+  },
+  {
+    "name": "写入输出",
+    "definition": "TemplateDataOutput",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "operation": "state.write",
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "previousRevision": 0,
+      "revision": 1,
+      "value": {
+        "stage": "review"
+      },
+      "committedAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "写入输出缺少version",
+    "definition": "TemplateDataOutput",
+    "valid": false,
+    "value": {
+      "operation": "state.write",
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "previousRevision": 0,
+      "revision": 1,
+      "value": {
+        "stage": "review"
+      },
+      "committedAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "写入输出缺少operation",
+    "definition": "TemplateDataOutput",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "previousRevision": 0,
+      "revision": 1,
+      "value": {
+        "stage": "review"
+      },
+      "committedAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "写入输出缺少contextId",
+    "definition": "TemplateDataOutput",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "state.write",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "previousRevision": 0,
+      "revision": 1,
+      "value": {
+        "stage": "review"
+      },
+      "committedAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "写入输出缺少operationId",
+    "definition": "TemplateDataOutput",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "state.write",
+      "contextId": "example-context",
+      "previousRevision": 0,
+      "revision": 1,
+      "value": {
+        "stage": "review"
+      },
+      "committedAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "写入输出缺少previousRevision",
+    "definition": "TemplateDataOutput",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "state.write",
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "revision": 1,
+      "value": {
+        "stage": "review"
+      },
+      "committedAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "写入输出缺少revision",
+    "definition": "TemplateDataOutput",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "state.write",
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "previousRevision": 0,
+      "value": {
+        "stage": "review"
+      },
+      "committedAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "写入输出缺少value",
+    "definition": "TemplateDataOutput",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "state.write",
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "previousRevision": 0,
+      "revision": 1,
+      "committedAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "写入输出缺少committedAt",
+    "definition": "TemplateDataOutput",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "state.write",
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "previousRevision": 0,
+      "revision": 1,
+      "value": {
+        "stage": "review"
+      }
+    }
+  },
+  {
+    "name": "写入输出多余字段",
+    "definition": "TemplateDataOutput",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "state.write",
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "previousRevision": 0,
+      "revision": 1,
+      "value": {
+        "stage": "review"
+      },
+      "committedAt": "2026-10-15T14:30:00Z",
+      "unexpected": true
+    }
+  },
+  {
+    "name": "调试保存结果",
+    "definition": "TemplateDataEditResult",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "requestId": "example-edit",
+      "context": {
+        "version": 1,
+        "id": "example-context",
+        "owner": {
+          "kind": "author-checkout",
+          "checkoutId": "example-checkout",
+          "draftId": "example-draft",
+          "draftRevision": 2,
+          "entryId": "prepare"
+        },
+        "configurationRevision": 1,
+        "configurationSchema": {
+          "type": "object",
+          "properties": {
+            "concise": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "stateSchema": {
+          "type": "object",
+          "properties": {
+            "stage": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "stage"
+          ],
+          "additionalProperties": false
+        },
+        "configuration": {
+          "concise": true
+        },
+        "schemaSha256": "d2042532a6987164a715f7f721ea71d3b1cebfc9f4054ba6e2688ee4733f116a",
+        "createdAt": "2026-10-15T14:30:00Z"
+      },
+      "state": {
+        "version": 1,
+        "contextId": "example-context",
+        "revision": 0,
+        "value": {
+          "stage": "new"
+        },
+        "updatedAt": "2026-10-15T14:30:00Z"
+      }
+    }
+  },
+  {
+    "name": "调试保存结果缺少version",
+    "definition": "TemplateDataEditResult",
+    "valid": false,
+    "value": {
+      "requestId": "example-edit",
+      "context": {
+        "version": 1,
+        "id": "example-context",
+        "owner": {
+          "kind": "author-checkout",
+          "checkoutId": "example-checkout",
+          "draftId": "example-draft",
+          "draftRevision": 2,
+          "entryId": "prepare"
+        },
+        "configurationRevision": 1,
+        "configurationSchema": {
+          "type": "object",
+          "properties": {
+            "concise": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "stateSchema": {
+          "type": "object",
+          "properties": {
+            "stage": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "stage"
+          ],
+          "additionalProperties": false
+        },
+        "configuration": {
+          "concise": true
+        },
+        "schemaSha256": "d2042532a6987164a715f7f721ea71d3b1cebfc9f4054ba6e2688ee4733f116a",
+        "createdAt": "2026-10-15T14:30:00Z"
+      },
+      "state": {
+        "version": 1,
+        "contextId": "example-context",
+        "revision": 0,
+        "value": {
+          "stage": "new"
+        },
+        "updatedAt": "2026-10-15T14:30:00Z"
+      }
+    }
+  },
+  {
+    "name": "调试保存结果缺少requestId",
+    "definition": "TemplateDataEditResult",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "context": {
+        "version": 1,
+        "id": "example-context",
+        "owner": {
+          "kind": "author-checkout",
+          "checkoutId": "example-checkout",
+          "draftId": "example-draft",
+          "draftRevision": 2,
+          "entryId": "prepare"
+        },
+        "configurationRevision": 1,
+        "configurationSchema": {
+          "type": "object",
+          "properties": {
+            "concise": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "stateSchema": {
+          "type": "object",
+          "properties": {
+            "stage": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "stage"
+          ],
+          "additionalProperties": false
+        },
+        "configuration": {
+          "concise": true
+        },
+        "schemaSha256": "d2042532a6987164a715f7f721ea71d3b1cebfc9f4054ba6e2688ee4733f116a",
+        "createdAt": "2026-10-15T14:30:00Z"
+      },
+      "state": {
+        "version": 1,
+        "contextId": "example-context",
+        "revision": 0,
+        "value": {
+          "stage": "new"
+        },
+        "updatedAt": "2026-10-15T14:30:00Z"
+      }
+    }
+  },
+  {
+    "name": "调试保存结果缺少context",
+    "definition": "TemplateDataEditResult",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "requestId": "example-edit",
+      "state": {
+        "version": 1,
+        "contextId": "example-context",
+        "revision": 0,
+        "value": {
+          "stage": "new"
+        },
+        "updatedAt": "2026-10-15T14:30:00Z"
+      }
+    }
+  },
+  {
+    "name": "调试保存结果缺少state",
+    "definition": "TemplateDataEditResult",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "requestId": "example-edit",
+      "context": {
+        "version": 1,
+        "id": "example-context",
+        "owner": {
+          "kind": "author-checkout",
+          "checkoutId": "example-checkout",
+          "draftId": "example-draft",
+          "draftRevision": 2,
+          "entryId": "prepare"
+        },
+        "configurationRevision": 1,
+        "configurationSchema": {
+          "type": "object",
+          "properties": {
+            "concise": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "stateSchema": {
+          "type": "object",
+          "properties": {
+            "stage": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "stage"
+          ],
+          "additionalProperties": false
+        },
+        "configuration": {
+          "concise": true
+        },
+        "schemaSha256": "d2042532a6987164a715f7f721ea71d3b1cebfc9f4054ba6e2688ee4733f116a",
+        "createdAt": "2026-10-15T14:30:00Z"
+      }
+    }
+  },
+  {
+    "name": "调试保存结果多余字段",
+    "definition": "TemplateDataEditResult",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "requestId": "example-edit",
+      "context": {
+        "version": 1,
+        "id": "example-context",
+        "owner": {
+          "kind": "author-checkout",
+          "checkoutId": "example-checkout",
+          "draftId": "example-draft",
+          "draftRevision": 2,
+          "entryId": "prepare"
+        },
+        "configurationRevision": 1,
+        "configurationSchema": {
+          "type": "object",
+          "properties": {
+            "concise": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "stateSchema": {
+          "type": "object",
+          "properties": {
+            "stage": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "stage"
+          ],
+          "additionalProperties": false
+        },
+        "configuration": {
+          "concise": true
+        },
+        "schemaSha256": "d2042532a6987164a715f7f721ea71d3b1cebfc9f4054ba6e2688ee4733f116a",
+        "createdAt": "2026-10-15T14:30:00Z"
+      },
+      "state": {
+        "version": 1,
+        "contextId": "example-context",
+        "revision": 0,
+        "value": {
+          "stage": "new"
+        },
+        "updatedAt": "2026-10-15T14:30:00Z"
+      },
+      "unexpected": true
+    }
+  },
+  {
+    "name": "正式实例上下文",
+    "definition": "TemplateDataContext",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "id": "example-context",
+      "owner": {
+        "kind": "instance",
+        "instanceId": "example-instance",
+        "package": {
+          "id": "local-example",
+          "version": "1.0.0",
+          "digest": "2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        "entryId": "prepare"
+      },
+      "configurationRevision": 1,
+      "configurationSchema": {
+        "type": "object",
+        "properties": {
+          "concise": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "stateSchema": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage"
+        ],
+        "additionalProperties": false
+      },
+      "configuration": {
+        "concise": true
+      },
+      "schemaSha256": "d2042532a6987164a715f7f721ea71d3b1cebfc9f4054ba6e2688ee4733f116a",
+      "createdAt": "2026-10-15T14:30:00Z"
+    }
+  },
+  {
+    "name": "写入回执prepared",
+    "definition": "TemplateDataWriteReceipt",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "requestSha256": "fe111c90147055216129cf6c3e382afc8b08f80aeda697ce57dfcd2462b9d149",
+      "createdAt": "2026-10-15T14:30:00Z",
+      "updatedAt": "2026-10-15T14:30:00Z",
+      "status": "prepared"
+    }
+  },
+  {
+    "name": "写入回执unknown",
+    "definition": "TemplateDataWriteReceipt",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "requestSha256": "fe111c90147055216129cf6c3e382afc8b08f80aeda697ce57dfcd2462b9d149",
+      "createdAt": "2026-10-15T14:30:00Z",
+      "updatedAt": "2026-10-15T14:30:00Z",
+      "status": "unknown"
+    }
+  },
+  {
+    "name": "写入回执cancelled",
+    "definition": "TemplateDataWriteReceipt",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "requestSha256": "fe111c90147055216129cf6c3e382afc8b08f80aeda697ce57dfcd2462b9d149",
+      "createdAt": "2026-10-15T14:30:00Z",
+      "updatedAt": "2026-10-15T14:30:00Z",
+      "status": "cancelled"
+    }
+  },
+  {
+    "name": "并发冲突回执",
+    "definition": "TemplateDataWriteReceipt",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "requestSha256": "fe111c90147055216129cf6c3e382afc8b08f80aeda697ce57dfcd2462b9d149",
+      "createdAt": "2026-10-15T14:30:00Z",
+      "updatedAt": "2026-10-15T14:30:00Z",
+      "status": "conflict",
+      "currentRevision": 3
+    }
+  },
+  {
+    "name": "configuration节点",
+    "definition": "Node",
+    "valid": true,
+    "value": {
+      "id": "read",
+      "type": "context",
+      "version": 1,
+      "operation": "configuration"
+    }
+  },
+  {
+    "name": "configuration不接收写值",
+    "definition": "Node",
+    "valid": false,
+    "value": {
+      "id": "read",
+      "type": "context",
+      "version": 1,
+      "operation": "configuration",
+      "value": {}
+    }
+  },
+  {
+    "name": "state.read节点",
+    "definition": "Node",
+    "valid": true,
+    "value": {
+      "id": "read",
+      "type": "context",
+      "version": 1,
+      "operation": "state.read"
+    }
+  },
+  {
+    "name": "state.read不接收写值",
+    "definition": "Node",
+    "valid": false,
+    "value": {
+      "id": "read",
+      "type": "context",
+      "version": 1,
+      "operation": "state.read",
+      "value": {}
+    }
+  },
+  {
+    "name": "写入请求 expectedRevision=-1",
+    "definition": "TemplateDataWriteRequest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "runId": "example-run",
+      "nodeInstance": "loop:0/update",
+      "expectedRevision": -1,
+      "value": {
+        "stage": "review"
+      }
+    }
+  },
+  {
+    "name": "写入请求 expectedRevision=0.5",
+    "definition": "TemplateDataWriteRequest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "runId": "example-run",
+      "nodeInstance": "loop:0/update",
+      "expectedRevision": 0.5,
+      "value": {
+        "stage": "review"
+      }
+    }
+  },
+  {
+    "name": "写入请求 expectedRevision=9007199254740990",
+    "definition": "TemplateDataWriteRequest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "runId": "example-run",
+      "nodeInstance": "loop:0/update",
+      "expectedRevision": 9007199254740990,
+      "value": {
+        "stage": "review"
+      }
+    }
+  },
+  {
+    "name": "写入请求 operationId=invalid",
+    "definition": "TemplateDataWriteRequest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "invalid",
+      "runId": "example-run",
+      "nodeInstance": "loop:0/update",
+      "expectedRevision": 0,
+      "value": {
+        "stage": "review"
+      }
+    }
+  },
+  {
+    "name": "写入请求 value=None",
+    "definition": "TemplateDataWriteRequest",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "contextId": "example-context",
+      "operationId": "1111111111111111111111111111111111111111111111111111111111111111",
+      "runId": "example-run",
+      "nodeInstance": "loop:0/update",
+      "expectedRevision": 0,
+      "value": null
+    }
+  }
+]

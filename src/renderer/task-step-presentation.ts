@@ -69,6 +69,12 @@ export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext
     return `${value(node.actual)} ${operators[node.operator]}${node.operator === 'exists' ? '' : ' ' + value(node.expected)}`;
   };
   switch (step.type) {
+    case 'context':
+      return step.operation === 'configuration'
+        ? '读取本次运行固定的共享配置'
+        : step.operation === 'state.read'
+          ? '读取最新状态与修订；同实例共享，调试副本独立'
+          : `按预期修订 ${value(step.expectedRevision)} 替换完整状态；冲突时停止`;
     case 'desktop':
       return `替换已核对的应用选区 · ${step.text.length} 个字符 · 单次授权后修改并回读`;
     case 'value':

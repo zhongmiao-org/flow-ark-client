@@ -1,4 +1,5 @@
 import { assertSkillRef } from '../shared/skill';
+import { setInstanceState } from '../host/template-data';
 import { resolveParameterSources } from '../shared/parameter-sources';
 import type { TemplateSource } from '../shared/template-source';
 import { join, dirname, resolve, relative } from 'node:path';
@@ -97,6 +98,7 @@ export class Templates {
       packageKey: key,
       name: m.name.slice(0, 100),
       configuration,
+      configurationRevision: 1,
       resources: {},
       grants: Object.fromEntries(m.actions.map((a) => [a.id, 'deny'])),
       entryFlows: Object.fromEntries(m.entries.map((e) => [e.id, randomUUID()])),
@@ -110,6 +112,10 @@ export class Templates {
         instance.id,
         schemaDefaults(jsonFile(pkg.files, m.stateSchema)),
       );
+      this.store.put('template-state-meta', instance.id, {
+        revision: 0,
+        updatedAt: new Date().toISOString(),
+      });
     });
     return instance;
   }
@@ -155,6 +161,7 @@ export class Templates {
           adapter: 'template-instance-v1',
           schema: jsonFile(pkg.files, pkg.manifest.configurationSchema),
           values: structuredClone(instance.configuration),
+          revision: instance.configurationRevision ?? 1,
         },
       };
       const next = { ...(previous?.flow ?? flow), name: flow.name };
@@ -297,12 +304,20 @@ export class Templates {
         ...current.instance,
         name: args.name,
         configuration: args.configuration,
+        configurationRevision:
+          (current.instance.configurationRevision ?? 1) +
+          (canonical(current.instance.configuration) === canonical(args.configuration) ? 0 : 1),
         resources: args.resources,
         grants: {
           ...Object.fromEntries(manifest.actions.map((a) => [a.id, 'deny' as const])),
           ...args.grants,
         },
       };
+      if (
+        !Number.isSafeInteger(next.configurationRevision) ||
+        next.configurationRevision! > Number.MAX_SAFE_INTEGER - 1
+      )
+        throw Error('配置修订已达上限，未保存');
       this.store.put('template-instance', args.id, next);
       this.writeFlows(pkg, next, args.inputs);
       return this.describe(pkg, this.snapshot(args.id));
@@ -497,7 +512,7 @@ export class Templates {
         need('state');
         validateData(jsonFile(pkg.files, pkg.manifest.stateSchema), args.value);
         signal.throwIfAborted();
-        this.store.put('template-state', ref.instanceId, args.value);
+        setInstanceState(this.store, ref.instanceId, args.value);
         return true;
       case 'browser': {
         need('browser');
