@@ -1,5 +1,5 @@
 import { runStateColors } from './theme';
-import { Select, Button, Input, Table, Tag, Badge, Collapse, Card } from 'antd';
+import { Select, Button, Input, Table, Tag, Badge, Collapse, Card, Modal, Alert, Flex } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useEffect, useId, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
@@ -47,6 +47,13 @@ export default function RunHistory({
     limit: 6,
   });
   const [cursors, setCursors] = useState<(string | undefined)[]>([undefined]);
+  const [pageRequest, setPageRequest] = useState<{
+    cursors: (string | undefined)[];
+    direction: '下一页' | '上一页';
+    attempt: number;
+    error?: string;
+  } | null>(null);
+  const pageOrigin = useRef<{ element: HTMLElement | null; scroll: number } | null>(null);
   const [revision, setRevision] = useState(0);
   const [data, setData] = useState<RunListPage | null>(null);
   const [error, setError] = useState('');
@@ -87,6 +94,8 @@ export default function RunHistory({
   );
   useEffect(() => setPage(cursors.length), [cursors.length, setPage]);
   const resetView = () => {
+    generation.current++;
+    setPageRequest(null);
     setData(null);
     setLoading(true);
     setError('');
@@ -145,14 +154,15 @@ export default function RunHistory({
   }, [visible, filterOpen]);
   useEffect(() => {
     const id = ++generation.current;
-    if (!visible || filterOpen) return;
+    if (!visible || filterOpen || pageRequest) return;
     let live = true,
-      pending = false;
+      pending = false,
+      failed = false;
     setError('');
     setLoading(true);
     setOpening(null);
     const refresh = async () => {
-      if (pending) return;
+      if (pending || failed) return;
       pending = true;
       try {
         const result = await api('run.list', {
@@ -160,15 +170,16 @@ export default function RunHistory({
           ...(cursor ? { cursor } : {}),
           ...(scope ? { flowId: scope.id } : {}),
         });
-        if (live) {
+        if (live && generation.current === id) {
           setData(result);
           setError('');
         }
       } catch (e: any) {
-        if (live) setError(e.message);
+        failed = true;
+        if (live && generation.current === id) setError(e.message);
       } finally {
         pending = false;
-        if (live) setLoading(false);
+        if (live && generation.current === id) setLoading(false);
       }
     };
     void refresh();
@@ -178,7 +189,66 @@ export default function RunHistory({
       if (generation.current === id) generation.current++;
       clearInterval(timer);
     };
-  }, [query, cursor, revision, visible, filterOpen, scope?.id]);
+  }, [query, cursor, revision, visible, filterOpen, scope?.id, pageRequest]);
+  useEffect(() => {
+    if (!pageRequest || pageRequest.error || !visible || filterOpen) return;
+    const id = ++generation.current;
+    let live = true;
+    const target = pageRequest.cursors.at(-1);
+    void api('run.list', {
+      ...query,
+      ...(target ? { cursor: target } : {}),
+      ...(scope ? { flowId: scope.id } : {}),
+    }).then(
+      (result: RunListPage) => {
+        if (!live || generation.current !== id || !shown.current) return;
+        pageArrival.current = true;
+        pageOrigin.current = null;
+        setData(result);
+        setCursors(pageRequest.cursors);
+        setPageRequest(null);
+        setLoading(false);
+      },
+      (failure: unknown) => {
+        if (!live || generation.current !== id || !shown.current) return;
+        setPageRequest({
+          ...pageRequest,
+          error: failure instanceof Error ? failure.message : '暂时无法读取运行记录',
+        });
+      },
+    );
+    return () => {
+      live = false;
+      if (generation.current === id) generation.current++;
+    };
+  }, [pageRequest, query, visible, filterOpen, scope?.id]);
+  useEffect(() => {
+    if (!visible || filterOpen) {
+      setPageRequest(null);
+      pageOrigin.current = null;
+    }
+  }, [visible, filterOpen, scope?.id]);
+  const requestPage = (next: (string | undefined)[], direction: '下一页' | '上一页') => {
+    generation.current++;
+    pageOrigin.current = {
+      element: document.activeElement instanceof HTMLElement ? document.activeElement : null,
+      scroll: root.current?.closest('main')?.scrollTop ?? 0,
+    };
+    setOpening(null);
+    setOpenError(null);
+    setPageRequest({ cursors: next, direction, attempt: 0 });
+  };
+  const cancelPage = () => {
+    generation.current++;
+    setPageRequest(null);
+    const saved = pageOrigin.current;
+    pageOrigin.current = null;
+    requestAnimationFrame(() => {
+      if (!shown.current || !saved) return;
+      root.current?.closest('main')?.scrollTo({ top: saved.scroll });
+      saved.element?.focus({ preventScroll: true });
+    });
+  };
   useEffect(() => {
     if (!visible || filterOpen || loading || !data || !restore.current) return;
     const saved = restore.current;
@@ -573,6 +643,46 @@ export default function RunHistory({
               ]}
             />
           </Card>
+          <Modal
+            open={!!pageRequest}
+            title={`${pageRequest?.direction ?? '下一页'}${pageRequest?.error ? '加载失败' : '加载中'}`}
+            width={620}
+            centered
+            closable={false}
+            maskClosable={false}
+            onCancel={cancelPage}
+            footer={
+              <Flex gap={8} wrap>
+                {pageRequest?.error && (
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      generation.current++;
+                      setPageRequest((current) =>
+                        current
+                          ? { ...current, error: undefined, attempt: current.attempt + 1 }
+                          : null,
+                      );
+                    }}
+                  >
+                    重试同一页
+                  </Button>
+                )}
+                <Button onClick={cancelPage}>取消并留在原页</Button>
+              </Flex>
+            }
+          >
+            <Alert
+              showIcon
+              type={pageRequest?.error ? 'error' : 'info'}
+              title={pageRequest?.error ? `${pageRequest.direction}加载失败` : '正在读取目标页'}
+              description={
+                pageRequest?.error
+                  ? `原页数据、页码、筛选与滚动保持。重试只加载同一目标页，取消留在原页。${pageRequest.error}`
+                  : '成功后才切换页码。取消保留原页，迟到结果不会覆盖当前列表。'
+              }
+            />
+          </Modal>
           <div className="history-pagination">
             <span id={pageSummaryId} aria-live="polite">
               {data
@@ -585,11 +695,7 @@ export default function RunHistory({
             <div className="history-page-actions">
               <Button
                 disabled={loading || cursors.length < 2 || undefined}
-                onClick={() => {
-                  pageArrival.current = true;
-                  resetView();
-                  setCursors((c) => c.slice(0, -1));
-                }}
+                onClick={() => requestPage(cursors.slice(0, -1), '上一页')}
               >
                 上一页
               </Button>
@@ -597,9 +703,7 @@ export default function RunHistory({
                 disabled={loading || !!error || !data?.nextCursor || undefined}
                 onClick={() => {
                   if (data?.nextCursor) {
-                    pageArrival.current = true;
-                    resetView();
-                    setCursors((c) => [...c, data.nextCursor!]);
+                    requestPage([...cursors, data.nextCursor], '下一页');
                   }
                 }}
               >
