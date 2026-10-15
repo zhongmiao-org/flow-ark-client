@@ -484,3 +484,61 @@
   margin-top: 0;
   padding: 12px 20px 20px;
 }
+
+/* Figma 467:5120: concise actions retain full hover/focus descriptions. */
+.inspector {
+  container-type: inline-size;
+}
+.inspector-heading {
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.inspector-heading h3 {
+  margin: 0;
+}
+.inspector-node-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.inspector-action-trigger {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+}
+.inspector-action-trigger > .ant-btn {
+  width: 100%;
+}
+.inspector-icon-trigger {
+  width: 40px;
+}
+.inspector-icon-trigger > .icon-button {
+  height: 40px;
+  padding: 0;
+}
+.inspector-action-trigger:focus-visible {
+  outline: 2px solid var(--fa-action-focus);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.inspector .inspector-node-meta {
+  margin: 0 0 16px;
+  overflow-wrap: anywhere;
+}
+.inspector-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.inspector-actions .ant-btn {
+  min-width: 0;
+  padding-inline: 8px;
+}
+@container (max-width: 220px) {
+  .inspector-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
