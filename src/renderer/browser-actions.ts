@@ -5,8 +5,35 @@ export type BrowserOperation = BrowserNode['operation'];
 // Editor presets only; execution remains the versioned browser node contract.
 export const browserActions: Record<
   BrowserOperation,
-  { label: string; detail: string; keywords: string; value: BrowserNode['value']; version: 2 | 3 }
+  {
+    label: string;
+    detail: string;
+    keywords: string;
+    value: BrowserNode['value'];
+    version: 2 | 3 | 4;
+  }
 > = {
+  url: {
+    label: '读取当前网址',
+    detail: '读取所选浏览器顶层页面的实际地址，不进行导航',
+    keywords: 'url location 当前地址 只读',
+    value: null,
+    version: 4,
+  },
+  count: {
+    label: '统计匹配元素',
+    detail: '读取当前目标的匹配数量，无匹配返回0',
+    keywords: 'count selector 列表 数量 只读',
+    value: null,
+    version: 4,
+  },
+  attribute: {
+    label: '读取元素属性',
+    detail: '读取唯一目标的原始属性，属性不存在返回null',
+    keywords: 'attribute href src 属性 链接 只读',
+    value: 'href',
+    version: 4,
+  },
   navigate: {
     label: '打开网页',
     detail: '访问指定网址',
@@ -92,6 +119,28 @@ export const browserActions: Record<
     version: 3,
   },
 };
+
+export function changeBrowserOperation(
+  node: BrowserNode,
+  operation: BrowserOperation,
+): BrowserNode {
+  const preset = browserActions[operation];
+  const topLevel = ['navigate', 'screenshot', 'url'].includes(operation);
+  return {
+    ...node,
+    operation,
+    version: preset.version === 4 ? 4 : node.version === 3 ? 3 : preset.version,
+    selector: topLevel
+      ? ''
+      : preset.version === 4
+        ? node.selector
+        : typeof node.selector === 'string'
+          ? node.selector
+          : '',
+    value: structuredClone(preset.value),
+    framePath: topLevel ? [] : 'framePath' in node ? node.framePath : [],
+  } as BrowserNode;
+}
 
 export function newBrowserStep(operation: BrowserOperation): BrowserNode {
   const preset = browserActions[operation];

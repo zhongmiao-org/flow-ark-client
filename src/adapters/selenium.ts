@@ -92,6 +92,28 @@ export class SeleniumDriver implements BrowserDriver {
       case 'download':
         throw new Error('本机 Selenium 下载能力尚未验证');
     }
+    if (c.operation === 'attribute') {
+      const found = await this.driver.wait(
+        async () => {
+          const observed = await this.driver.executeScript<{
+            found: boolean;
+            value: string | null;
+          }>(
+            `const matches = document.querySelectorAll(arguments[0]);
+           if (matches.length > 1) throw new Error('选择器匹配多个元素');
+           if (!matches.length) return { found: false, value: null };
+           return { found: true, value: matches[0].getAttribute(arguments[1]) };`,
+            c.selector || 'body',
+            String(c.value),
+          );
+          return observed.found ? observed : false;
+        },
+        remaining(),
+        '未找到唯一属性读取目标',
+      );
+      if (!found) throw Error('未找到唯一属性读取目标');
+      return found.value;
+    }
     const element = await this.driver.wait(until.elementLocated(by), remaining());
     if (c.operation === 'inputValue') {
       if (!['input', 'textarea', 'select'].includes((await element.getTagName()).toLowerCase()))
@@ -174,7 +196,6 @@ export class SeleniumDriver implements BrowserDriver {
       return { pressed: true };
     }
     if (c.operation === 'read') return element.getText();
-    if (c.operation === 'attribute') return element.getAttribute(String(c.value));
     if (c.operation === 'wait') {
       await this.driver.wait(until.elementIsVisible(element), remaining());
       return true;

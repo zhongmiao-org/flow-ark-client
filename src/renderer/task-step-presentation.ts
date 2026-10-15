@@ -130,6 +130,7 @@ export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext
     }
     case 'browser': {
       if (step.operation === 'navigate') return `打开地址：${value(step.value)}`;
+      if (step.operation === 'url') return '读取当前浏览器顶层页面地址 · 只读，不导航';
       const page = context.webTarget?.page.title
         ? concise(context.webTarget.page.title)
         : context.snapshot
@@ -151,8 +152,14 @@ export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext
         ? `已选元素「${concise(element.label || element.tag)}」`
         : step.selector === 'title'
           ? '页面标题'
-          : '目标：' + concise(step.selector || '未设置');
+          : '目标：' +
+            (typeof step.selector === 'string'
+              ? concise(step.selector || '未设置')
+              : value(step.selector));
       const target = `${page} · ${targetName}${frame}`;
+      if (step.operation === 'count') return `${target} · 统计匹配数量，无匹配为0`;
+      if (step.operation === 'attribute')
+        return `${target} · 原始属性：${value(step.value)} · 缺失为null`;
       if (step.operation === 'read' || step.operation === 'inputValue') return `${target} · 仅读取`;
       if (step.operation === 'wait') return `${target} · 等待元素就绪`;
       if (step.operation === 'click') return `${target} · 点击此元素`;

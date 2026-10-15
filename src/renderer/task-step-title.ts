@@ -3,6 +3,9 @@ import { kinds } from './node-kinds';
 import { contextOperations } from '../shared/template-data';
 
 export const browserLabels = {
+  url: '读取当前网址',
+  count: '统计匹配元素',
+  attribute: '读取元素属性',
   navigate: '打开网页',
   read: '读取网页文字',
   click: '点击网页元素',

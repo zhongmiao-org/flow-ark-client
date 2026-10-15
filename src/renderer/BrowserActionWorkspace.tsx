@@ -4,7 +4,12 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
 import type { FlowRecord } from '../shared/types';
 import type { FramePath } from '../shared/contracts.generated';
-import { browserActions, type BrowserNode, type BrowserOperation } from './browser-actions';
+import {
+  browserActions,
+  changeBrowserOperation,
+  type BrowserNode,
+  type BrowserOperation,
+} from './browser-actions';
 import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 import NodeTiming from './NodeTiming';
 import { referenceChoices } from './value-references';
@@ -14,6 +19,11 @@ import './editor-workspace-dialog.css';
 import './browser-action-workspace.css';
 
 const groups: { title: string; operations: BrowserOperation[]; detail: string }[] = [
+  {
+    title: '网页只读核对',
+    operations: ['url', 'count', 'attribute'],
+    detail: '读取当前网址、统计匹配元素或读取唯一元素的原始属性。',
+  },
   {
     title: '导航 / 等待',
     operations: ['navigate', 'wait'],
@@ -62,12 +72,11 @@ export default function BrowserActionWorkspace(props: Props) {
   const frameInput = useRef<HTMLTextAreaElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const ordinal = flowOutline(props.record.flow.steps).byId.get(node.id)?.ordinal;
-  const path =
-    node.version >= 2 ? (node as Extract<BrowserNode, { version: 2 | 3 }>).framePath : [];
+  const path = 'framePath' in node ? node.framePath : [];
   const pathKey = JSON.stringify(path);
   const [frames, setFrames] = useState(path.join('\n'));
   const [frameError, setFrameError] = useState('');
-  const topLevel = ['navigate', 'screenshot'].includes(node.operation);
+  const topLevel = ['navigate', 'screenshot', 'url'].includes(node.operation);
   const currentGroup = groups.findIndex((group) => group.operations.includes(node.operation));
   const previousGroup = useRef(currentGroup);
   useLayoutEffect(() => {
@@ -95,13 +104,7 @@ export default function BrowserActionWorkspace(props: Props) {
   }, [props.error]);
   const operation = (value: BrowserOperation) => {
     if (value === node.operation || !props.guard()) return;
-    props.change({
-      ...node,
-      version: node.version === 3 ? 3 : browserActions[value].version,
-      operation: value,
-      value: structuredClone(browserActions[value].value),
-      framePath: ['navigate', 'screenshot'].includes(value) ? [] : path,
-    } as BrowserNode);
+    props.change(changeBrowserOperation(node, value));
   };
   const finish = () => {
     if (props.guard()) props.close();
@@ -199,7 +202,7 @@ export default function BrowserActionWorkspace(props: Props) {
                   />
                   {active ? (
                     <>
-                      {!topLevel && (
+                      {!topLevel && node.version !== 4 && (
                         <div className="browser-action-target">
                           <span>目标元素</span>
                           <Button onClick={() => locator.current?.focus()}>
@@ -239,17 +242,21 @@ export default function BrowserActionWorkspace(props: Props) {
             <Card className="browser-action-card browser-action-locator">
               <h2>定位与期限</h2>
               {topLevel && <p>此动作作用于顶层网页，不使用元素定位和 iframe 路径。</p>}
-              <label htmlFor={id + '-selector'}>选择器</label>
-              <Input
-                ref={(instance) => {
-                  locator.current = instance?.input ?? null;
-                }}
-                id={id + '-selector'}
-                disabled={topLevel || undefined}
-                value={node.selector}
-                placeholder="目标元素的 CSS 选择器"
-                onChange={(event) => props.change({ ...node, selector: event.target.value })}
-              />
+              {node.version !== 4 && (
+                <>
+                  <label htmlFor={id + '-selector'}>选择器</label>
+                  <Input
+                    ref={(instance) => {
+                      locator.current = instance?.input ?? null;
+                    }}
+                    id={id + '-selector'}
+                    disabled={topLevel || undefined}
+                    value={typeof node.selector === 'string' ? node.selector : ''}
+                    placeholder="目标元素的 CSS 选择器"
+                    onChange={(event) => props.change({ ...node, selector: event.target.value })}
+                  />
+                </>
+              )}
               <label htmlFor={id + '-frames'}>iframe 路径</label>
               <Input.TextArea
                 status={!!frameError ? 'error' : undefined}
@@ -277,7 +284,7 @@ export default function BrowserActionWorkspace(props: Props) {
                   setFrameError('');
                   props.change({
                     ...node,
-                    version: node.version === 3 ? 3 : 2,
+                    version: node.version === 4 ? 4 : node.version === 3 ? 3 : 2,
                     framePath: next as FramePath,
                   } as BrowserNode);
                 }}

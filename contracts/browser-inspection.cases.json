@@ -1,0 +1,265 @@
+[
+  {
+    "name": "顶层当前网址",
+    "definition": "BrowserInspectionNode",
+    "valid": true,
+    "value": {
+      "id": "inspect",
+      "type": "browser",
+      "version": 4,
+      "operation": "url",
+      "selector": "",
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "统计动态目标",
+    "definition": "BrowserInspectionNode",
+    "valid": true,
+    "value": {
+      "id": "inspect",
+      "type": "browser",
+      "version": 4,
+      "operation": "count",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "跨框架原始属性",
+    "definition": "BrowserInspectionNode",
+    "valid": true,
+    "value": {
+      "id": "inspect",
+      "type": "browser",
+      "version": 4,
+      "operation": "attribute",
+      "selector": "a.result-link",
+      "value": "href",
+      "framePath": [
+        "iframe#outer"
+      ]
+    }
+  },
+  {
+    "name": "属性名引用",
+    "definition": "BrowserInspectionNode",
+    "valid": true,
+    "value": {
+      "id": "inspect",
+      "type": "browser",
+      "version": 4,
+      "operation": "attribute",
+      "selector": {
+        "$ref": "item.selector"
+      },
+      "value": {
+        "$ref": "params.attribute"
+      },
+      "framePath": []
+    }
+  },
+  {
+    "name": "网址不接受框架",
+    "definition": "BrowserInspectionNode",
+    "valid": false,
+    "value": {
+      "id": "inspect",
+      "type": "browser",
+      "version": 4,
+      "operation": "url",
+      "selector": "",
+      "value": null,
+      "framePath": [
+        "iframe"
+      ]
+    }
+  },
+  {
+    "name": "网址不接受定位",
+    "definition": "BrowserInspectionNode",
+    "valid": false,
+    "value": {
+      "id": "inspect",
+      "type": "browser",
+      "version": 4,
+      "operation": "url",
+      "selector": "body",
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "网址不接受属性名",
+    "definition": "BrowserInspectionNode",
+    "valid": false,
+    "value": {
+      "id": "inspect",
+      "type": "browser",
+      "version": 4,
+      "operation": "url",
+      "selector": "",
+      "value": "href",
+      "framePath": []
+    }
+  },
+  {
+    "name": "统计必须有目标",
+    "definition": "BrowserInspectionNode",
+    "valid": false,
+    "value": {
+      "id": "inspect",
+      "type": "browser",
+      "version": 4,
+      "operation": "count",
+      "selector": "",
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "统计不能纯空白目标",
+    "definition": "BrowserInspectionNode",
+    "valid": false,
+    "value": {
+      "id": "inspect",
+      "type": "browser",
+      "version": 4,
+      "operation": "count",
+      "selector": "  ",
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "统计不接受值",
+    "definition": "BrowserInspectionNode",
+    "valid": false,
+    "value": {
+      "id": "inspect",
+      "type": "browser",
+      "version": 4,
+      "operation": "count",
+      "selector": "a",
+      "value": "href",
+      "framePath": []
+    }
+  },
+  {
+    "name": "目标不接受数组",
+    "definition": "BrowserInspectionNode",
+    "valid": false,
+    "value": {
+      "id": "inspect",
+      "type": "browser",
+      "version": 4,
+      "operation": "count",
+      "selector": [
+        "a"
+      ],
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "引用只能单键",
+    "definition": "BrowserInspectionNode",
+    "valid": false,
+    "value": {
+      "id": "inspect",
+      "type": "browser",
+      "version": 4,
+      "operation": "count",
+      "selector": {
+        "$ref": "params.selector",
+        "fallback": "a"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "属性名不能为空",
+    "definition": "BrowserInspectionNode",
+    "valid": false,
+    "value": {
+      "id": "inspect",
+      "type": "browser",
+      "version": 4,
+      "operation": "attribute",
+      "selector": "a",
+      "value": "",
+      "framePath": []
+    }
+  },
+  {
+    "name": "属性名不接受表达式",
+    "definition": "BrowserInspectionNode",
+    "valid": false,
+    "value": {
+      "id": "inspect",
+      "type": "browser",
+      "version": 4,
+      "operation": "attribute",
+      "selector": "a",
+      "value": "href || value",
+      "framePath": []
+    }
+  },
+  {
+    "name": "只读版本不含点击",
+    "definition": "BrowserInspectionNode",
+    "valid": false,
+    "value": {
+      "id": "inspect",
+      "type": "browser",
+      "version": 4,
+      "operation": "click",
+      "selector": "",
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "属性不存在保留空值",
+    "definition": "BrowserInspectionResult",
+    "valid": true,
+    "value": null
+  },
+  {
+    "name": "空属性保留空文本",
+    "definition": "BrowserInspectionResult",
+    "valid": true,
+    "value": ""
+  },
+  {
+    "name": "无匹配保留零",
+    "definition": "BrowserInspectionResult",
+    "valid": true,
+    "value": 0
+  },
+  {
+    "name": "计数不能负数",
+    "definition": "BrowserInspectionResult",
+    "valid": false,
+    "value": -1
+  },
+  {
+    "name": "计数不能小数",
+    "definition": "BrowserInspectionResult",
+    "valid": false,
+    "value": 1.5
+  },
+  {
+    "name": "结果不接受任意对象",
+    "definition": "BrowserInspectionResult",
+    "valid": false,
+    "value": {
+      "url": "https://example.org"
+    }
+  }
+]

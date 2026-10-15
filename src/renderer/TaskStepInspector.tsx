@@ -95,17 +95,29 @@ export default function TaskStepInspector({
       );
     if (step.type === 'browser') {
       if (step.operation === 'navigate') facts.push(['目标网址', value(step.value)]);
+      else if (step.operation === 'url') facts.push(['读取范围', '顶层页面实际地址，不进行导航']);
       else if (step.operation !== 'screenshot')
         facts.push(
-          ['元素定位', step.selector || '尚未设置'],
+          [
+            '元素定位',
+            typeof step.selector === 'string' ? step.selector || '尚未设置' : value(step.selector),
+          ],
           ['选取时的页面', context.webTarget?.page.title || '未提供页面来源'],
         );
       if (
-        !['navigate', 'screenshot', 'read', 'inputValue', 'click', 'wait', 'download'].includes(
-          step.operation,
-        )
+        ![
+          'navigate',
+          'screenshot',
+          'read',
+          'inputValue',
+          'click',
+          'wait',
+          'download',
+          'url',
+          'count',
+        ].includes(step.operation)
       )
-        facts.push(['操作内容', value(step.value)]);
+        facts.push([step.operation === 'attribute' ? '属性名' : '操作内容', value(step.value)]);
       facts.push([
         '内嵌页面',
         'framePath' in step && step.framePath.length ? step.framePath.join(' → ') : '页面主文档',

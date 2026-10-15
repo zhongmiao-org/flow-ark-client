@@ -9,6 +9,7 @@ export const capabilityLabel = (name: string) =>
       browser: '网页操作',
       'browser-frames-v1': '网页框架',
       'browser-forms-v1': '网页表单',
+      'browser-observe-v1': '网页只读核对',
       file: '文件操作',
       'file-create-v1': '创建文件',
       'file-create-numbered-v1': '同名文件编号',

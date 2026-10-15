@@ -150,7 +150,12 @@ const rpc = new Rpc(
             },
             signal,
           );
-        if (n.type === 'browser') return rpc.call('browser', resolved, timeout + 5000);
+        if (n.type === 'browser')
+          return rpc.call(
+            'browser',
+            n.version === 4 ? { ...resolved, nodeInstance: instance } : resolved,
+            timeout + 5000,
+          );
         if (n.type === 'mcp') {
           const cancel = () => {
             void rpc.call('mcp.cancel', { nodeInstance: instance }, 65000).catch(() => {});

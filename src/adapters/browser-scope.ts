@@ -14,7 +14,7 @@ export function commandBudget(timeoutMs = 15000): () => number {
 
 export function assertBrowserOperations(
   binding: Pick<BrowserBinding, 'product'> & Partial<Pick<BrowserBinding, 'version'>>,
-  commands: BrowserCommand[],
+  commands: Pick<BrowserCommand, 'operation' | 'framePath'>[],
 ) {
   for (const command of commands) {
     framePathOf(command);

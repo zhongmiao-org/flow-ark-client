@@ -3208,6 +3208,9 @@ function Editor({
             ...(flatten(steps).some((node) => node.type === 'context') ? ['template-data-v1'] : []),
             ...(mapped ? ['excel-mapping-v1'] : []),
             ...(flatten(steps).some((node) => node.type === 'ai') ? ['ai-node-v1'] : []),
+            ...(flatten(steps).some((node) => node.type === 'browser' && node.version === 4)
+              ? ['browser-observe-v1']
+              : []),
             ...(flatten(steps).some((node) => node.type === 'document')
               ? ['document-extract-v1']
               : []),
@@ -3244,6 +3247,9 @@ function Editor({
                 ? ['template-data-v1']
                 : []),
               ...(flatten(steps).some((node) => node.type === 'ai') ? ['ai-node-v1'] : []),
+              ...(flatten(steps).some((node) => node.type === 'browser' && node.version === 4)
+                ? ['browser-observe-v1']
+                : []),
               ...(flatten(steps).some((node) => node.type === 'document')
                 ? ['document-extract-v1']
                 : []),

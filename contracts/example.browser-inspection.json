@@ -1,0 +1,48 @@
+{
+  "formatVersion": "1.0",
+  "id": "browser-inspection-example",
+  "name": "网页只读核对",
+  "description": "虚构通用页面。只读取已选择浏览器，不发消息、不跳转或提交。",
+  "parameters": {
+    "selector": "a.result-link",
+    "attribute": "href"
+  },
+  "steps": [
+    {
+      "id": "page_url",
+      "type": "browser",
+      "version": 4,
+      "operation": "url",
+      "selector": "",
+      "value": null,
+      "framePath": []
+    },
+    {
+      "id": "match_count",
+      "type": "browser",
+      "version": 4,
+      "operation": "count",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": null,
+      "framePath": []
+    },
+    {
+      "id": "target_attribute",
+      "type": "browser",
+      "version": 4,
+      "operation": "attribute",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": {
+        "$ref": "params.attribute"
+      },
+      "framePath": []
+    }
+  ],
+  "requiredCapabilities": [
+    "browser-observe-v1"
+  ]
+}

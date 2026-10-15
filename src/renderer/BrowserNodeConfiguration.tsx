@@ -6,7 +6,7 @@ import type { Step } from '../shared/types';
 import ElementPicker, { type ElementPickerControls } from './ElementPicker';
 import type { ElementTarget } from '../shared/element-picker';
 import { formKeys } from '../core/browser-command';
-import { browserActions } from './browser-actions';
+import { browserActions, changeBrowserOperation } from './browser-actions';
 import ValueField from './ValueField';
 import type { ReferenceChoice } from './value-references';
 import './node-configuration.css';
@@ -40,11 +40,13 @@ export default function BrowserNodeConfiguration({
   const [locatorFocusRevision, setLocatorFocusRevision] = useState(0);
   const focusLocator = useRef(false);
   const selectorInput = useRef<HTMLInputElement>(null);
+  const staticSelector = typeof node.selector === 'string' ? node.selector : '';
+  const selectorDisplay =
+    typeof node.selector === 'string' ? node.selector : `引用：${node.selector.$ref}`;
   const fieldId = fieldsOnly ? instanceId + '-' : '';
   const [inspected, setInspected] = useState(false);
   const [target, setTarget] = useState<ElementTarget | null>(null);
-  const path: FramePath =
-    node.version >= 2 ? (node as Extract<BrowserNode, { version: 2 | 3 }>).framePath : [];
+  const path: FramePath = 'framePath' in node ? node.framePath : [];
   const pathKey = JSON.stringify(path);
   const [frames, setFrames] = useState(path.join('\n'));
   useEffect(() => {
@@ -87,7 +89,7 @@ export default function BrowserNodeConfiguration({
     JSON.stringify(target.framePath) === pathKey
       ? target
       : null;
-  const topLevel = ['navigate', 'screenshot'].includes(node.operation);
+  const topLevel = ['navigate', 'screenshot', 'url'].includes(node.operation);
   const picker = (
     <Fragment key="picker">
       <ElementPicker
@@ -95,10 +97,10 @@ export default function BrowserNodeConfiguration({
         controls={pickerControls}
         confirmBeforeApply
         pickLabel={readInspector ? (node.selector ? '重新拾取目标' : '拾取目标') : undefined}
-        active={active}
+        active={active && typeof node.selector === 'string'}
         blockingRunId={blockingRunId}
         onViewRun={onViewRun}
-        selector={node.selector}
+        selector={staticSelector}
         framePath={path}
         onStart={() => setTarget(null)}
         onInspect={(picked) => {
@@ -115,7 +117,7 @@ export default function BrowserNodeConfiguration({
           setTarget(picked);
           change({
             ...node,
-            version: node.version === 3 ? 3 : 2,
+            version: node.version === 4 ? 4 : node.version === 3 ? 3 : 2,
             selector: picked.selector,
             framePath: picked.framePath,
             ...(!node.name
@@ -134,6 +136,9 @@ export default function BrowserNodeConfiguration({
                       upload: '上传到',
                       download: '下载',
                       press: '按键',
+                      url: '读取地址',
+                      count: '统计',
+                      attribute: '读取属性',
                     }[node.operation] ?? '') +
                     ' ' +
                     picked.label,
@@ -172,17 +177,21 @@ export default function BrowserNodeConfiguration({
           forceRender: true,
           children: (
             <Space orientation="vertical" size={12} style={{ width: '100%' }}>
-              <label htmlFor={fieldId + 'browser-selector'}>目标元素选择器</label>
-              <Input
-                ref={(instance) => {
-                  selectorInput.current = instance?.input ?? null;
-                }}
-                id={fieldId + 'browser-selector'}
-                disabled={topLevel || undefined}
-                value={node.selector}
-                placeholder="#submit"
-                onChange={(e) => change({ ...node, selector: e.target.value })}
-              />
+              {node.version !== 4 && (
+                <>
+                  <label htmlFor={fieldId + 'browser-selector'}>目标元素选择器</label>
+                  <Input
+                    ref={(instance) => {
+                      selectorInput.current = instance?.input ?? null;
+                    }}
+                    id={fieldId + 'browser-selector'}
+                    disabled={topLevel || undefined}
+                    value={staticSelector}
+                    placeholder="#submit"
+                    onChange={(e) => change({ ...node, selector: e.target.value })}
+                  />
+                </>
+              )}
               <label htmlFor={fieldId + 'browser-frame-path'}>iframe 路径</label>
               <Input.TextArea
                 id={fieldId + 'browser-frame-path'}
@@ -195,14 +204,14 @@ export default function BrowserNodeConfiguration({
                   setFrames(e.target.value);
                   change({
                     ...node,
-                    version: node.version === 3 ? 3 : 2,
+                    version: node.version === 4 ? 4 : node.version === 3 ? 3 : 2,
                     framePath: parseFrames(e.target.value) as FramePath,
                   } as BrowserNode);
                 }}
               />
               <p id={fieldId + 'browser-frame-help'} className="note">
                 {topLevel
-                  ? '打开网页和页面截图作用于顶层页面。'
+                  ? '此动作作用于顶层页面，不使用目标元素或框架路径。'
                   : '留空表示顶层页面。每行一个 CSS 选择器，从外到内，最多 8 层；每层必须唯一匹配。'}
               </p>
             </Space>
@@ -232,15 +241,7 @@ export default function BrowserNodeConfiguration({
             value={node.operation}
             onChange={(selectedOperation) => {
               const operation = selectedOperation as BrowserNode['operation'];
-              const nextPath: FramePath = ['navigate', 'screenshot'].includes(operation)
-                ? []
-                : path;
-              const value = structuredClone(browserActions[operation].value);
-              const version =
-                node.version === 3 || ['select', 'check', 'inputValue', 'press'].includes(operation)
-                  ? 3
-                  : 2;
-              change({ ...node, version, operation, value, framePath: nextPath } as BrowserNode);
+              change(changeBrowserOperation(node, operation));
             }}
             options={[
               ...Object.entries(browserActions).map(([value, { label }]) => ({
@@ -251,9 +252,64 @@ export default function BrowserNodeConfiguration({
           />
           <p className="node-operation-description">
             {browserActions[node.operation].detail}
-            。切换动作会恢复该动作的默认输入，可通过草稿撤销恢复。
+            。切换动作会恢复默认输入；离开只读动作会清除动态目标，请重新配置。可通过草稿撤销恢复。
           </p>
         </>
+      )}
+      {node.version === 4 && node.operation !== 'url' && (
+        <ValueField
+          label="目标选择器"
+          value={node.selector}
+          choices={choices}
+          compactReference={fieldsOnly}
+          defaultValue=""
+          change={(value) => change({ ...node, selector: value } as BrowserNode)}
+        >
+          {typeof node.selector === 'string' ? (
+            <>
+              <label htmlFor={fieldId + 'inspection-selector'}>目标选择器</label>
+              <Input
+                id={fieldId + 'inspection-selector'}
+                value={node.selector}
+                maxLength={2000}
+                placeholder="例如 a.result-link"
+                onChange={(e) => change({ ...node, selector: e.target.value })}
+              />
+            </>
+          ) : undefined}
+        </ValueField>
+      )}
+      {node.version === 4 && node.operation === 'attribute' && (
+        <ValueField
+          label="属性名"
+          value={node.value}
+          choices={choices}
+          compactReference={fieldsOnly}
+          defaultValue="href"
+          change={(value) => change({ ...node, value } as BrowserNode)}
+        >
+          {typeof node.value === 'string' ? (
+            <>
+              <label htmlFor={fieldId + 'inspection-attribute'}>属性名</label>
+              <Input
+                id={fieldId + 'inspection-attribute'}
+                value={node.value}
+                maxLength={128}
+                placeholder="href"
+                onChange={(e) => change({ ...node, value: e.target.value })}
+              />
+            </>
+          ) : undefined}
+        </ValueField>
+      )}
+      {node.version === 4 && (
+        <p className="note">
+          {node.operation === 'url'
+            ? '只读取当前顶层页面地址，不进行导航或操作元素。'
+            : node.operation === 'count'
+              ? '无匹配返回0；框架或读取失败会报错。每次统计是独立观察。'
+              : '目标必须唯一。属性不存在返回null，空属性保留空文本；链接保留原始属性值。'}
+        </p>
       )}
       {node.operation === 'navigate' && (
         <ValueField
@@ -288,14 +344,14 @@ export default function BrowserNodeConfiguration({
                 title={
                   observedTarget
                     ? `${observedTarget.label || observedTarget.tag}\n${[...path, node.selector].join(' → ')}`
-                    : node.selector
+                    : selectorDisplay
                 }
               >
                 {observedTarget
                   ? observedTarget.label || observedTarget.tag
                   : readInspector && node.selector === 'title'
                     ? '页面标题 · title'
-                    : node.selector || '尚未选择目标元素'}
+                    : selectorDisplay || '尚未选择目标元素'}
               </p>
               {observedTarget && (
                 <div className="node-target-observation">
@@ -309,8 +365,18 @@ export default function BrowserNodeConfiguration({
             </div>
           )}
           {compact && readInspector
-            ? [inspectorTiming, picker, inspectorOutput, locatorEditor]
-            : [picker, inspectorOutput, locatorEditor, inspectorTiming]}
+            ? [
+                inspectorTiming,
+                typeof node.selector === 'string' ? picker : null,
+                inspectorOutput,
+                locatorEditor,
+              ]
+            : [
+                typeof node.selector === 'string' ? picker : null,
+                inspectorOutput,
+                locatorEditor,
+                inspectorTiming,
+              ]}
         </>
       )}
       {node.operation === 'fill' && (
