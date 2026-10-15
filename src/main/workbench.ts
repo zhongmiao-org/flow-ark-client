@@ -40,6 +40,8 @@ let tray: Tray;
 let quitting = false;
 let quitPending = false;
 let outputDialogPending = false;
+const authorExports = new Map<string, Promise<unknown>>();
+let authorDialogPending = false;
 let rpc: Rpc;
 let host: Electron.UtilityProcess;
 let startupError = '';
@@ -344,6 +346,61 @@ app
           if (r.canceled || !r.filePath) return false;
           await rpc.call(method, { ...args, identity, path: zipExportPath(r.filePath) });
           return true;
+        }
+        if (method === 'author.export') {
+          const requestKey = JSON.stringify(args);
+          const existing = authorExports.get(requestKey);
+          if (existing) return await existing;
+          if (authorDialogPending || quitting || hostStopped)
+            throw Error('导出位置选择正在处理，请稍后核对原操作');
+          const task = (async () => {
+            authorDialogPending = true;
+            let began = false;
+            try {
+              const begin = await rpc.call('author.export.begin', args);
+              if (!begin.choose) return begin.receipt;
+              began = true;
+              const picked = await dialog.showSaveDialog(win, {
+                defaultPath: templateFilename(
+                  begin.receipt.package.id,
+                  begin.receipt.package.version,
+                ),
+                filters: [{ name: 'FlowArk 模板包', extensions: ['zip'] }],
+              });
+              if (picked.canceled || !picked.filePath) {
+                return (
+                  await rpc.call('author.export.cancel', {
+                    id: args.id,
+                    requestId: args.requestId,
+                    reviewed: true,
+                  })
+                ).receipt;
+              }
+              return await rpc.call(
+                'author.export.write',
+                { id: args.id, requestId: args.requestId, path: zipExportPath(picked.filePath) },
+                65000,
+              );
+            } catch (error) {
+              if (began)
+                await rpc
+                  .call('author.export.cancel', {
+                    id: args.id,
+                    requestId: args.requestId,
+                    reviewed: true,
+                  })
+                  .catch(() => {});
+              throw error;
+            } finally {
+              authorDialogPending = false;
+            }
+          })();
+          authorExports.set(requestKey, task);
+          try {
+            return await task;
+          } finally {
+            authorExports.delete(requestKey);
+          }
         }
         if (method === 'template.inspect') {
           const picked = await dialog.showOpenDialog(win, {

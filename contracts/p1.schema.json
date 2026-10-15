@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.21.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.22.0/p1.schema.json",
   "title": "FlowArk P1",
   "$defs": {
     "Json": {
@@ -3775,6 +3775,747 @@
                 "type": "null"
               }
             }
+          }
+        }
+      ]
+    },
+    "TemplateAuthorNeutralValue": {
+      "anyOf": [
+        {
+          "enum": [
+            null,
+            "",
+            0,
+            false
+          ]
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TemplateAuthorNeutralValue"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/TemplateAuthorNeutralValue"
+          }
+        }
+      ]
+    },
+    "TemplateAuthorResource": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,99}$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "kind": {
+          "enum": [
+            "file",
+            "directory",
+            "browser",
+            "ai",
+            "skill"
+          ]
+        },
+        "access": {
+          "enum": [
+            "read",
+            "write",
+            "readwrite",
+            "use"
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "access",
+        "required"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "skill"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "access": {
+                "const": "read"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "TemplateAuthorAction": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,99}$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "default": {
+          "const": "deny"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "default"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateAuthorPrompt": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,99}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60000
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateAuthorPromptBinding": {
+      "type": "object",
+      "properties": {
+        "nodeId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "field": {
+          "const": "instructions"
+        },
+        "promptId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,99}$"
+        }
+      },
+      "required": [
+        "nodeId",
+        "field",
+        "promptId"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateAuthorEntry": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,99}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "flow": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/FlowDefinition"
+            },
+            {
+              "properties": {
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/$defs/TemplateAuthorNeutralValue"
+                  }
+                }
+              },
+              "not": {
+                "required": [
+                  "sourceTemplate"
+                ]
+              }
+            }
+          ]
+        },
+        "inputSchema": {
+          "type": "object"
+        },
+        "resultSchema": {
+          "type": "object"
+        },
+        "schedulable": {
+          "type": "boolean"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "minItems": 0,
+          "maxItems": 100,
+          "uniqueItems": true
+        },
+        "resourceIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,99}$"
+          },
+          "minItems": 0,
+          "maxItems": 100,
+          "uniqueItems": true
+        },
+        "actionIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,99}$"
+          },
+          "minItems": 0,
+          "maxItems": 100,
+          "uniqueItems": true
+        },
+        "promptBindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TemplateAuthorPromptBinding"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "flow",
+        "inputSchema",
+        "resultSchema",
+        "schedulable",
+        "capabilities",
+        "resourceIds",
+        "actionIds",
+        "promptBindings"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateAuthorAsset": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^(?!assets/template-author\\.json$)(assets|prompts|scripts|schemas|flows)/[a-zA-Z0-9][a-zA-Z0-9._/-]{0,220}$"
+        },
+        "encoding": {
+          "enum": [
+            "utf8",
+            "base64"
+          ]
+        },
+        "body": {
+          "type": "string",
+          "maxLength": 1048576
+        }
+      },
+      "required": [
+        "path",
+        "encoding",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateAuthorDefinition": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{0,99}$"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "version": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[a-zA-Z0-9.-]+)?$"
+            },
+            "author": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "source": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "minimumClientVersion": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[a-zA-Z0-9.-]+)?$"
+            }
+          },
+          "required": [
+            "id",
+            "name",
+            "description",
+            "version",
+            "author",
+            "source",
+            "minimumClientVersion"
+          ],
+          "additionalProperties": false
+        },
+        "configurationSchema": {
+          "type": "object"
+        },
+        "stateSchema": {
+          "type": "object"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TemplateAuthorEntry"
+          },
+          "minItems": 0,
+          "maxItems": 50
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TemplateAuthorResource"
+          },
+          "minItems": 0,
+          "maxItems": 100
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TemplateAuthorAction"
+          },
+          "minItems": 0,
+          "maxItems": 100
+        },
+        "prompts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TemplateAuthorPrompt"
+          },
+          "minItems": 0,
+          "maxItems": 100
+        },
+        "readme": {
+          "type": "string",
+          "maxLength": 60000
+        },
+        "assets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TemplateAuthorAsset"
+          },
+          "minItems": 0,
+          "maxItems": 100
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "maxLength": 214
+              },
+              "version": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[a-zA-Z0-9.-]+)?$"
+              },
+              "license": {
+                "type": "string",
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "name",
+              "version",
+              "license"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 512
+        }
+      },
+      "required": [
+        "version",
+        "metadata",
+        "configurationSchema",
+        "stateSchema",
+        "entries",
+        "resources",
+        "actions",
+        "prompts",
+        "readme",
+        "assets",
+        "dependencies"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateAuthorDraft": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740990
+        },
+        "definition": {
+          "$ref": "#/$defs/TemplateAuthorDefinition"
+        },
+        "createdAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+        },
+        "updatedAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+        }
+      },
+      "required": [
+        "version",
+        "id",
+        "revision",
+        "definition",
+        "createdAt",
+        "updatedAt"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateAuthorPackageMetadata": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "prompts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,99}$"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "path": {
+                "type": "string",
+                "pattern": "^prompts/[a-z][a-z0-9-]{0,99}\\.md$"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "path"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0,
+          "maxItems": 100
+        },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "entryId": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,99}$"
+              },
+              "nodeId": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+              },
+              "field": {
+                "const": "instructions"
+              },
+              "promptId": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,99}$"
+              }
+            },
+            "required": [
+              "entryId",
+              "nodeId",
+              "field",
+              "promptId"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        }
+      },
+      "required": [
+        "version",
+        "prompts",
+        "bindings"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateAuthorCheckout": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "draftId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "entryId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,99}$"
+        },
+        "baseRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740990
+        },
+        "flowId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "baseFlowSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "createdAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+        }
+      },
+      "required": [
+        "version",
+        "id",
+        "draftId",
+        "entryId",
+        "baseRevision",
+        "flowId",
+        "baseFlowSha256",
+        "createdAt"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateAuthorExportReceipt": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "draftId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740990
+        },
+        "status": {
+          "enum": [
+            "choosing",
+            "writing",
+            "written",
+            "cancelled",
+            "failed",
+            "unknown"
+          ]
+        },
+        "package": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{0,99}$"
+            },
+            "version": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[a-zA-Z0-9.-]+)?$"
+            },
+            "contentDigest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "id",
+            "version",
+            "contentDigest"
+          ],
+          "additionalProperties": false
+        },
+        "archiveSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20971520
+        },
+        "createdAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+        },
+        "updatedAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+        },
+        "destination": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "completedAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+        },
+        "error": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      },
+      "required": [
+        "version",
+        "id",
+        "draftId",
+        "revision",
+        "status",
+        "package",
+        "archiveSha256",
+        "bytes",
+        "createdAt",
+        "updatedAt"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "writing",
+                  "written",
+                  "unknown"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "destination"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "written"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "completedAt"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "unknown",
+                  "failed"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "error"
+            ]
           }
         }
       ]

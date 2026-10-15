@@ -1,8 +1,9 @@
-/** Normative package validation for contracts 0.21.0, derived from package 2.0. No application imports. */
+/** Normative package validation for contracts 0.22.0, derived from package 2.0. No application imports. */
 import { createHash } from 'node:crypto';
 import Ajv from 'ajv/dist/2020.js';
 import schema from './p1.schema.json';
 import {validateConfigurationSchema} from './configuration-schema';
+import { validateAuthorMetadata } from './template-authoring';
 export const LIMITS = { archive: 20*1024*1024, total: 100*1024*1024, file: 10*1024*1024, files: 512 };
 export type Entry = { id:string; name:string; flow:string; inputSchema:string; resultSchema:string; schedulable:boolean; capabilities:string[]; resources:string[]; actions:string[] };
 export type Manifest = { packageFormat:'2.0'; id:string; name:string; description:string; version:string; author:string; source:string; minimumClientVersion:string; sdkVersion:'1.0'; configurationSchema:string; stateSchema:string; entries:Entry[]; resources:{id:string;name:string;kind:'file'|'directory'|'browser'|'ai'|'skill';access:'read'|'write'|'readwrite'|'use';required:boolean}[]; actions:{id:string;name:string;description:string;default:'deny'}[]; files:{path:string;size:number;sha256:string}[]; scripts:string[]; dependencies:{name:string;version:string;license:string}[];contentDigest:string };
@@ -63,6 +64,7 @@ export function validatePackage(files:Map<string,Buffer>):PackageData {
    if(!p||!manifest.scripts.includes(p))throw new Error('脚本必须引用清单中的 @package:scripts/ 资源');
   }if(n.type==='condition'){walk(n.then,depth+1);walk(n.else,depth+1);}if(n.type==='loop')walk(n.body,depth+1);}};walk(flow.steps);
  }
+ validateAuthorMetadata(files,manifest);
  return {manifest,files};
 }
 export function materializeFlow(pkg:PackageData,entryId:string):any {

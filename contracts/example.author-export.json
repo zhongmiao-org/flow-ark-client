@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "id": "example-export",
+  "draftId": "example-author-draft",
+  "revision": 1,
+  "status": "choosing",
+  "package": {
+    "id": "local-example-author",
+    "version": "1.0.0",
+    "contentDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "archiveSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "bytes": 2048,
+  "createdAt": "2026-10-15T00:00:00.000Z",
+  "updatedAt": "2026-10-15T00:00:00.000Z"
+}

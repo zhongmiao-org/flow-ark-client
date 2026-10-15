@@ -95,6 +95,9 @@ export async function readArchive(path: string): Promise<PackageData> {
   });
 }
 export async function writeArchive(pkg: PackageData, path: string) {
+  await writeFile(path, await archiveBytes(pkg), { mode: 0o600 });
+}
+export async function archiveBytes(pkg: PackageData) {
   validatePackage(pkg.files);
   const zip = new JSZip();
   for (const [name, content] of [...pkg.files].sort(([a], [b]) => a.localeCompare(b)))
@@ -105,7 +108,7 @@ export async function writeArchive(pkg: PackageData, path: string) {
     platform: 'UNIX',
   });
   if (bytes.length > LIMITS.archive) throw new Error('模板包超过上限');
-  await writeFile(path, bytes, { mode: 0o600 });
+  return bytes;
 }
 export type InstalledPackage = { key: string; manifest: Manifest; installedAt: string };
 export class PackageLibrary {

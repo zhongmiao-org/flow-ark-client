@@ -558,6 +558,38 @@ export type SkillProposeOutput = {
   status: 'pending' | 'confirmed';
   ref: SkillVersionRef | null;
 };
+export type TemplateAuthorNeutralValue =
+  | (null | '' | 0 | false)
+  | TemplateAuthorNeutralValue[]
+  | {
+      [k: string]: TemplateAuthorNeutralValue;
+    };
+export type TemplateAuthorResource = {
+  id: string;
+  name: string;
+  kind: 'file' | 'directory' | 'browser' | 'ai' | 'skill';
+  access: 'read' | 'write' | 'readwrite' | 'use';
+  required: boolean;
+};
+export type TemplateAuthorExportReceipt = {
+  version: 1;
+  id: string;
+  draftId: string;
+  revision: number;
+  status: 'choosing' | 'writing' | 'written' | 'cancelled' | 'failed' | 'unknown';
+  package: {
+    id: string;
+    version: string;
+    contentDigest: string;
+  };
+  archiveSha256: string;
+  bytes: number;
+  createdAt: string;
+  updatedAt: string;
+  destination?: string;
+  completedAt?: string;
+  error?: string;
+};
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -603,6 +635,18 @@ export interface FlowArkP1 {
   SkillVersion?: SkillVersion;
   SkillProposalSnapshot?: SkillProposalSnapshot;
   SkillProposeOutput?: SkillProposeOutput;
+  TemplateAuthorNeutralValue?: TemplateAuthorNeutralValue;
+  TemplateAuthorResource?: TemplateAuthorResource;
+  TemplateAuthorAction?: TemplateAuthorAction;
+  TemplateAuthorPrompt?: TemplateAuthorPrompt;
+  TemplateAuthorPromptBinding?: TemplateAuthorPromptBinding;
+  TemplateAuthorEntry?: TemplateAuthorEntry;
+  TemplateAuthorAsset?: TemplateAuthorAsset;
+  TemplateAuthorDefinition?: TemplateAuthorDefinition;
+  TemplateAuthorDraft?: TemplateAuthorDraft;
+  TemplateAuthorPackageMetadata?: TemplateAuthorPackageMetadata;
+  TemplateAuthorCheckout?: TemplateAuthorCheckout;
+  TemplateAuthorExportReceipt?: TemplateAuthorExportReceipt;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -1223,4 +1267,154 @@ export interface SkillVersion {
    * @maxItems 100
    */
   evidence: SkillEvidence[];
+}
+export interface TemplateAuthorAction {
+  id: string;
+  name: string;
+  description: string;
+  default: 'deny';
+}
+export interface TemplateAuthorPrompt {
+  id: string;
+  name: string;
+  body: string;
+}
+export interface TemplateAuthorPromptBinding {
+  nodeId: string;
+  field: 'instructions';
+  promptId: string;
+}
+export interface TemplateAuthorEntry {
+  id: string;
+  name: string;
+  flow: FlowDefinition & {
+    parameters?: {
+      [k: string]: TemplateAuthorNeutralValue;
+    };
+    [k: string]: any;
+  };
+  inputSchema: {
+    [k: string]: any;
+  };
+  resultSchema: {
+    [k: string]: any;
+  };
+  schedulable: boolean;
+  /**
+   * @minItems 0
+   * @maxItems 100
+   */
+  capabilities: string[];
+  /**
+   * @minItems 0
+   * @maxItems 100
+   */
+  resourceIds: string[];
+  /**
+   * @minItems 0
+   * @maxItems 100
+   */
+  actionIds: string[];
+  /**
+   * @minItems 0
+   * @maxItems 1000
+   */
+  promptBindings: TemplateAuthorPromptBinding[];
+}
+export interface TemplateAuthorAsset {
+  path: string;
+  encoding: 'utf8' | 'base64';
+  body: string;
+}
+export interface TemplateAuthorDefinition {
+  version: 1;
+  metadata: {
+    id: string;
+    name: string;
+    description: string;
+    version: string;
+    author: string;
+    source: string;
+    minimumClientVersion: string;
+  };
+  configurationSchema: {
+    [k: string]: any;
+  };
+  stateSchema: {
+    [k: string]: any;
+  };
+  /**
+   * @minItems 0
+   * @maxItems 50
+   */
+  entries: TemplateAuthorEntry[];
+  /**
+   * @minItems 0
+   * @maxItems 100
+   */
+  resources: TemplateAuthorResource[];
+  /**
+   * @minItems 0
+   * @maxItems 100
+   */
+  actions: TemplateAuthorAction[];
+  /**
+   * @minItems 0
+   * @maxItems 100
+   */
+  prompts: TemplateAuthorPrompt[];
+  readme: string;
+  /**
+   * @minItems 0
+   * @maxItems 100
+   */
+  assets: TemplateAuthorAsset[];
+  /**
+   * @maxItems 512
+   */
+  dependencies: {
+    name: string;
+    version: string;
+    license: string;
+  }[];
+}
+export interface TemplateAuthorDraft {
+  version: 1;
+  id: string;
+  revision: number;
+  definition: TemplateAuthorDefinition;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface TemplateAuthorPackageMetadata {
+  version: 1;
+  /**
+   * @minItems 0
+   * @maxItems 100
+   */
+  prompts: {
+    id: string;
+    name: string;
+    path: string;
+  }[];
+  /**
+   * @minItems 0
+   * @maxItems 1000
+   */
+  bindings: {
+    entryId: string;
+    nodeId: string;
+    field: 'instructions';
+    promptId: string;
+  }[];
+}
+export interface TemplateAuthorCheckout {
+  version: 1;
+  id: string;
+  draftId: string;
+  entryId: string;
+  baseRevision: number;
+  flowId: string;
+  baseFlowSha256: string;
+  createdAt: string;
 }
