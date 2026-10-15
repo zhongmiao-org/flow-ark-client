@@ -190,7 +190,7 @@ export default function ParameterConfiguration({
           <div className="parameter-value-fields">
             <LiteralValue
               compact
-              displayLabels={columns ? { type: '类型', value: '值' } : undefined}
+              displayLabels={columns ? { type: '固定值类型', value: '固定值' } : undefined}
               label={'参数 ' + key}
               value={val}
               onIncompleteChange={markIncomplete}
@@ -199,7 +199,11 @@ export default function ParameterConfiguration({
             <ParameterSourceField
               flow={flow}
               name={key}
-              change={sourceChange}
+              change={(next) => {
+                sourceChange(next);
+                setError('');
+                setNotice('');
+              }}
               incomplete={markIncomplete}
             />
           </div>

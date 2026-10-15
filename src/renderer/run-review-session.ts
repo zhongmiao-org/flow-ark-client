@@ -71,9 +71,10 @@ export class RunReviewSession {
     this.generation++;
     const key = context(selection);
     let attempt = this.attempts.get(key);
-    // A rejected confirmation created no Run. Changed inputs need a new check;
-    // pending, unknown and created receipts remain tied to their original request.
-    if (attempt?.phase === 'rejected' && attempt.source !== next) {
+    // Changed inputs or versions need a fresh check after a resolved request.
+    // Pending/unknown receipts must first be resolved, so re-entry cannot send twice.
+    // Returning to the identical source still shows its existing receipt.
+    if (attempt && ['rejected', 'created'].includes(attempt.phase) && attempt.source !== next) {
       this.attempts.delete(key);
       attempt = undefined;
     }

@@ -129,7 +129,9 @@ export default function ParameterSourceField({
       >
         {error ||
           (saved
-            ? '运行值：' + JSON.stringify(effective)?.slice(0, 240) + '。清空来源后使用上方固定值。'
+            ? '草稿预览：' +
+              JSON.stringify(effective)?.slice(0, 240) +
+              ' · 尚未运行。清空来源后使用上方固定值。'
             : '未设置来源，运行使用上方固定值。只支持其他流程参数及其子路径。')}
       </p>
       {open && (

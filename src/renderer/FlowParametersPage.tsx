@@ -42,7 +42,7 @@ export default function FlowParametersPage({
   credentials: string[];
   navigation: MutableRefObject<ScriptNavigation | undefined>;
   close: (next?: () => void) => void;
-  save: (record: FlowRecord) => Promise<void>;
+  save: (record: FlowRecord) => Promise<FlowRecord>;
   configuration: () => void;
   onDirtyChange?: (dirty: boolean) => void;
   returnLabel?: string;
@@ -82,6 +82,8 @@ export default function FlowParametersPage({
     else selectionTrigger.current?.focus({ preventScroll: true });
   }, [busy, selection]);
   const [error, setError] = useState('');
+  const [saved, setSaved] = useState(false);
+  const saveFeedback = useRef<HTMLDivElement>(null);
   const [errorKind, setErrorKind] = useState<'input' | 'save'>('save');
   const [incompleteInput, setIncompleteInput] = useState(false);
   const pageError = useRef<HTMLDivElement>(null);
@@ -102,6 +104,9 @@ export default function FlowParametersPage({
     lastFocus = useRef<HTMLElement | null>(null);
   const dirty = JSON.stringify(record) !== JSON.stringify(draft);
   const unsaved = dirty || incompleteInput;
+  useLayoutEffect(() => {
+    if (saved && !unsaved && !busy) saveFeedback.current?.focus();
+  }, [saved, unsaved, busy]);
   useLayoutEffect(() => {
     onDirtyChange?.(unsaved);
   }, [unsaved, onDirtyChange]);
@@ -183,7 +188,7 @@ export default function FlowParametersPage({
     ];
     return `参数尚未修改，以下步骤仍使用这些引用：\n${references.join('\n')}\n请先在对应步骤中调整引用，再修改参数。`;
   };
-  const persist = async (next?: () => void) => {
+  const persist = async (leaveAfterSave = false, next?: () => void) => {
     if (locked.current) return;
     if (incomplete()) {
       setErrorKind('input');
@@ -195,10 +200,15 @@ export default function FlowParametersPage({
     locked.current = true;
     setBusy('save');
     setError('');
+    setSaved(false);
     try {
       resolveParameterSources(draft.flow);
-      await save(draft);
-      if (alive.current) close(next);
+      const result = await save(draft);
+      if (alive.current) {
+        setDraft(structuredClone(result));
+        if (leaveAfterSave) close(next);
+        else setSaved(true);
+      }
     } catch (reason) {
       if (alive.current) {
         focusPageError.current = !pending;
@@ -270,7 +280,7 @@ export default function FlowParametersPage({
         type="primary"
         loading={busy === 'save'}
         disabled={!!busy || undefined}
-        title={`保存参数、资源及当前流程草稿，并返回${returnLabel}`}
+        title="保存参数、资源及当前流程草稿，留在本页"
         onClick={() => void persist()}
       >
         {busy === 'save' ? '正在保存…' : error ? '重试保存参数' : '保存参数'}
@@ -297,6 +307,17 @@ export default function FlowParametersPage({
           <p>普通流程自由编辑参数；模板实例使用独立共享配置与入口输入。</p>
         </div>
       </header>
+      {saved && !unsaved && (
+        <div ref={saveFeedback} tabIndex={-1}>
+          <Alert
+            type="success"
+            showIcon
+            title="参数与资源已保存"
+            description="保存不会运行；当前编辑不影响已开始的运行或固定计划。可继续编辑或返回。"
+            role="status"
+          />
+        </div>
+      )}
       {error && !pending && (
         <div className="flow-parameters-error" tabIndex={-1} ref={pageError}>
           <Alert
@@ -575,7 +596,7 @@ export default function FlowParametersPage({
                 type="primary"
                 loading={busy === 'save'}
                 disabled={!!busy || undefined}
-                onClick={() => void persist(pending.next)}
+                onClick={() => void persist(true, pending.next)}
               >
                 {busy === 'save' ? '正在保存…' : error ? '重试保存并离开' : '保存并离开'}
               </Button>

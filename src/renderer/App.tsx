@@ -109,6 +109,8 @@ import FlowParametersPage from './FlowParametersPage';
 import NodeTiming from './NodeTiming';
 import RunHistory from './RunHistory';
 import RunDetail, { type RunTab, type RunDetailReturnContext } from './RunDetail';
+import RunReviewPage from './RunReviewPage';
+import type { RunReviewInput } from '../shared/run-review';
 import TaskRunPage, { type TaskRunReturnContext } from './TaskRunPage';
 import { taskRunPresentation, type TaskRunIntent, type TaskRunView } from './task-run-presentation';
 import { referenceChoices } from './value-references';
@@ -220,6 +222,10 @@ function WorkspaceApp() {
   }>();
   const nodeNavigation = useRef<ScriptNavigation | undefined>(undefined);
   const [parametersDirty, setParametersDirty] = useState(false);
+  const [flowReview, setFlowReview] = useState<{
+    selection: RunReviewInput;
+    source: string;
+  }>();
   const [settingsTabRequest, setSettingsTabRequest] = useState<SettingsTabRequest>();
   const [editorPanel, setEditorPanel] = useState('canvas');
   const [editorOverviewRequest, setEditorOverviewRequest] = useState(0);
@@ -738,15 +744,13 @@ function WorkspaceApp() {
       const saved = await api('flow.save', { flow: r.flow, bindings: r.bindings });
       inputGroup.current = undefined;
       adoptSavedFlow(saved);
-      const run = await api('flow.run', { id: r.id, debug });
-      const next = await api('run.detail', { id: run.id });
-      if (!guardNodeInput()) return;
-      setDetail(next);
-      setRunOrigin('editor');
-      setRunTab('current');
-      setRunFilter(false);
-      setSection('runs');
-    }, '已生成快照并加入队列');
+      setFlowReview({
+        selection: { id: saved.id, debug },
+        source: JSON.stringify([saved.id, saved.versionId, saved.updatedAt]),
+      });
+      setBrowserOpen(false);
+      setSection('flow-review');
+    });
   }
   const unread = data.attention.filter((a) => !a.read).length;
   const nav = [
@@ -894,6 +898,7 @@ function WorkspaceApp() {
     section === 'editor' && !!nodeSession && nodeSession.kind !== 'parameters',
   );
   usePageBack(taskNavigation.back, section === 'tasks');
+  usePageBack(() => setSection('editor'), section === 'flow-review');
   usePageBack(attentionNavigation?.back, section === 'inbox');
   usePageBack(
     settingsNavigation?.back ?? (taskReturn ? returnToTaskEditor : undefined),
@@ -1466,12 +1471,41 @@ function WorkspaceApp() {
                 ← 返回本地设置
               </Button>
             )}
+            {section === 'flow-review' && (
+              <Button className="context-back" onClick={() => setSection('editor')}>
+                ← 返回流程编排
+              </Button>
+            )}
             {section === 'inbox' && attentionNavigation?.back && (
               <Button className="context-back" onClick={attentionNavigation.back}>
                 ← 返回待办列表
               </Button>
             )}
             <nav className="breadcrumbs" aria-label="当前位置">
+              {section === 'flow-review' && (
+                <>
+                  <a
+                    href="#flows"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      returnHome();
+                    }}
+                  >
+                    我的流程
+                  </a>
+                  <span aria-hidden="true">/</span>
+                  <a
+                    href="#editor"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      setSection('editor');
+                    }}
+                  >
+                    {edit?.flow.name}
+                  </a>
+                  <span aria-hidden="true">/</span>
+                </>
+              )}
               {section === 'settings' && settingsNavigation?.back && (
                 <>
                   <a
@@ -1714,19 +1748,21 @@ function WorkspaceApp() {
                       : compactEditor
                         ? '紧凑窗口与网页'
                         : '网页操作与拾取'
-                    : section === 'editor'
-                      ? moreOpen
-                        ? '更多操作'
-                        : edit?.flow.name || '流程编排'
-                      : welcomePage
-                        ? '首次使用'
-                        : section === 'tasks'
-                          ? taskTitle
-                          : section === 'inbox'
-                            ? (attentionNavigation?.title ?? '待办与提醒')
-                            : section === 'settings'
-                              ? (settingsNavigation?.title ?? '本地设置')
-                              : nav.find((n) => n[0] === section)?.[1]}
+                    : section === 'flow-review'
+                      ? '运行前检查'
+                      : section === 'editor'
+                        ? moreOpen
+                          ? '更多操作'
+                          : edit?.flow.name || '流程编排'
+                        : welcomePage
+                          ? '首次使用'
+                          : section === 'tasks'
+                            ? taskTitle
+                            : section === 'inbox'
+                              ? (attentionNavigation?.title ?? '待办与提醒')
+                              : section === 'settings'
+                                ? (settingsNavigation?.title ?? '本地设置')
+                                : nav.find((n) => n[0] === section)?.[1]}
               </span>
             </nav>
             {section !== 'editor' && (
@@ -2034,6 +2070,23 @@ function WorkspaceApp() {
               }}
             />
           </div>
+          <RunReviewPage
+            active={section === 'flow-review'}
+            selection={flowReview?.selection}
+            source={flowReview?.source ?? ''}
+            back={() => setSection('editor')}
+            edit={() => {
+              setSection('editor');
+              openParameters();
+            }}
+            openDetail={(next) => {
+              setDetail(next);
+              setRunOrigin('editor');
+              setRunTab('current');
+              setRunFilter(false);
+              setSection('runs');
+            }}
+          />
           {section === 'editor' && edit && (
             <div
               className={'editor-page' + (outlineOpen ? ' is-outline' : '')}
@@ -2417,9 +2470,9 @@ function WorkspaceApp() {
                   nodeNavigation.current?.(() => setEditorPanel('canvas'), '流程编排'),
                 openLibrary: () =>
                   leaveNodeEditor(() => {
-                    setSection('templates');
+                    setSection('flows');
                     setTaskReturn(false);
-                  }, '模板库'),
+                  }, '我的流程'),
                 showBrowser: () =>
                   nodeNavigation.current?.(() => {
                     setMoreOpen(false);
@@ -2464,8 +2517,14 @@ function WorkspaceApp() {
                   });
                   inputGroup.current = undefined;
                   adoptSavedFlow(saved);
+                  setNodeSession((current) =>
+                    current?.kind === 'parameters' && current.record.id === record.id
+                      ? { ...current, record: saved }
+                      : current,
+                  );
                   setNotice('已保存参数、资源绑定及流程草稿');
                   await refresh();
+                  return saved;
                 }}
               />
             </VariableNavigationContext.Provider>
