@@ -23,6 +23,10 @@ export async function exportDefinition(
 ): Promise<PackageData> {
   const f = structuredClone(validateFlow(flow));
   delete f.sourceTemplate;
+  if (
+    walk(f.steps).some((n) => 'instructions' in n && n.instructions.startsWith('@author:prompt/'))
+  )
+    throw Error('作者提示词标记须在模板制作工作区编译后导出');
   // Sources need their declared object/array paths even after user values are cleared.
   // Only neutral values and the same schema-visible shape travel in a definition ZIP.
   const neutral = (value: Json): Json =>
@@ -45,6 +49,8 @@ export async function exportDefinition(
   );
   const files = source ? new Map(source.files) : new Map<string, Buffer>();
   files.delete('manifest.json');
+  // A normal flow fork edits literal instructions independently of the author registry.
+  files.delete('assets/template-author.json');
   const json = (path: string, value: any) => files.set(path, Buffer.from(canonical(value)));
   const m: Manifest = source
     ? structuredClone(source.manifest)

@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "metadata": {
+    "id": "local-example-author",
+    "name": "公开资料整理示例",
+    "description": "仅作通用格式示例，不含个人资料",
+    "version": "1.0.0",
+    "author": "Example author",
+    "source": "local",
+    "minimumClientVersion": "0.3.0"
+  },
+  "configurationSchema": {
+    "type": "object",
+    "properties": {
+      "concise": {
+        "type": "boolean",
+        "title": "简短表达",
+        "default": true
+      }
+    },
+    "additionalProperties": false
+  },
+  "stateSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "entries": [
+    {
+      "id": "review",
+      "name": "核对资料",
+      "flow": {
+        "formatVersion": "1.0",
+        "id": "structured-ai",
+        "name": "结构化整理",
+        "description": "只生成结果，不执行外部动作",
+        "parameters": {
+          "source": null
+        },
+        "requiredCapabilities": [
+          "ai-node-v1"
+        ],
+        "steps": [
+          {
+            "id": "summarize",
+            "type": "ai",
+            "version": 1,
+            "binding": "ai",
+            "instructions": "@author:prompt/review-guide",
+            "input": {
+              "source": {
+                "$ref": "params.source"
+              }
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "answer": {
+                  "type": "string"
+                },
+                "needsHuman": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "answer",
+                "needsHuman"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "id": "answer",
+            "type": "value",
+            "version": 1,
+            "value": {
+              "$ref": "steps.summarize.output.answer"
+            }
+          }
+        ]
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "选定正文"
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "additionalProperties": false
+      },
+      "resultSchema": {},
+      "schedulable": false,
+      "capabilities": [],
+      "resourceIds": [
+        "ai"
+      ],
+      "actionIds": [],
+      "promptBindings": [
+        {
+          "nodeId": "summarize",
+          "field": "instructions",
+          "promptId": "review-guide"
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "id": "ai",
+      "name": "自己的AI服务",
+      "kind": "ai",
+      "access": "use",
+      "required": true
+    }
+  ],
+  "actions": [],
+  "prompts": [
+    {
+      "id": "review-guide",
+      "name": "资料核对规程",
+      "body": "仅依据用户选定资料；无法确定的事实标为待核实。"
+    }
+  ],
+  "readme": "# 公开示例\n使用者绑定自己的AI服务，运行前核对发送范围。\n",
+  "assets": [],
+  "dependencies": []
+}

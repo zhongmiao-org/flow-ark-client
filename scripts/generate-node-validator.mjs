@@ -36,6 +36,8 @@ for (const name of [
   validators['skill_' + name.replace(/^Skill/, '').toLowerCase() + '_v1'] =
     `${schema.$id}#/$defs/${name}`;
 const digest = createHash('sha256').update(source).digest('hex');
+for (const name of ['Definition', 'Draft', 'PackageMetadata', 'Checkout', 'ExportReceipt'])
+  validators['author_' + name.toLowerCase() + '_v1'] = `${schema.$id}#/$defs/TemplateAuthor${name}`;
 const banner = `/* Generated from contracts/p1.schema.json (${digest}). Do not edit. */`;
 await build({
   stdin: { contents: standaloneCode(ajv, validators), resolveDir: process.cwd(), loader: 'js' },

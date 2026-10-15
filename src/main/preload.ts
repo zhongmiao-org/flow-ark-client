@@ -1,6 +1,22 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { ConversationEvent } from '../shared/conversation';
 const allowed = new Set([
+  'author.schema.check',
+  'author.list',
+  'author.create',
+  'author.detail',
+  'author.save',
+  'author.fork',
+  'author.checkout',
+  'author.checkout.origin',
+  'author.adopt.preview',
+  'author.adopt.confirm',
+  'author.flow.source',
+  'author.preview',
+  'author.file',
+  'author.export',
+  'author.export.inspect',
+  'author.export.cancel',
   'desktop.windows.list',
   'desktop.windows.release',
   'desktop.selection.preview',

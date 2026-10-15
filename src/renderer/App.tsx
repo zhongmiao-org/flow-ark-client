@@ -1,4 +1,8 @@
 import SkillNodeConfiguration from './SkillNodeConfiguration';
+import TemplateAuthorWorkspace, {
+  type AuthorOpenRequest,
+  type AuthorEditorOrigin,
+} from './TemplateAuthorWorkspace';
 import ActionButton from './ActionButton';
 import { Alert, Collapse, ConfigProvider, Button, Input, Segmented, Tag } from 'antd';
 import { VariableNavigationContext } from './variable-navigation';
@@ -343,6 +347,10 @@ function WorkspaceApp() {
     model: 'deepseek-flash',
   });
   const [importPreview, setImportPreview] = useState<any>();
+  const [authorRequest, setAuthorRequest] = useState<AuthorOpenRequest>();
+  const [authorEditorOrigin, setAuthorEditorOrigin] = useState<AuthorEditorOrigin>();
+  const authorNavigation = useRef<TemplateNavigation | undefined>(undefined);
+  const authorFlowGeneration = useRef(0);
   useEffect(() => {
     const open = () => setBrowserOpen(true);
     window.addEventListener('flowark:open-browser', open);
@@ -668,6 +676,19 @@ function WorkspaceApp() {
     dispatchDraft({ type: 'open', record: r });
     setSection('editor');
     setDetail(null);
+    const visit = ++authorFlowGeneration.current;
+    setAuthorEditorOrigin(undefined);
+    void api('author.checkout.origin', { flowId: r.id })
+      .then((origin) => {
+        if (visit === authorFlowGeneration.current && origin)
+          setAuthorEditorOrigin({
+            draftId: origin.draft.id,
+            checkoutId: origin.checkout.id,
+            flowId: r.id,
+            name: origin.draft.definition.metadata.name,
+          });
+      })
+      .catch(() => {});
     return true;
   }
   async function create() {
@@ -770,15 +791,17 @@ function WorkspaceApp() {
     ['settings', '本地设置'],
   ] as const;
   const selectedNavigation =
-    section === 'runs' && detail && runOrigin === 'task'
-      ? 'tasks'
-      : section === 'editor'
-        ? 'flows'
-        : section === 'ai-settings'
-          ? 'settings'
-          : section === 'template-schedule'
-            ? 'schedules'
-            : section;
+    section === 'author' || (section === 'editor' && authorEditorOrigin?.flowId === edit?.id)
+      ? 'templates'
+      : section === 'runs' && detail && runOrigin === 'task'
+        ? 'tasks'
+        : section === 'editor'
+          ? 'flows'
+          : section === 'ai-settings'
+            ? 'settings'
+            : section === 'template-schedule'
+              ? 'schedules'
+              : section;
   const observedActive = data.execution?.active;
   const active = observedActive
     ? ([data.runOverview.active, ...data.runs].find((run) => run?.id === observedActive.runId) ??
@@ -845,6 +868,7 @@ function WorkspaceApp() {
     else if (section === 'ai-settings')
       aiSettingsNavigation.current?.(() => leaveAIContext(navigate, label), label);
     else if (section === 'templates') templateNavigation.current?.(navigate, label);
+    else if (section === 'author') authorNavigation.current?.(navigate, label);
     else if (section === 'schedules') plansNavigation.current?.(navigate, label);
     else if (section === 'template-schedule')
       scheduleNavigation.current?.(
@@ -898,8 +922,22 @@ function WorkspaceApp() {
         setSection('settings');
         setSettingsFlowId(undefined);
       }, '本地设置');
+    else if (authorEditorOrigin?.flowId === edit?.id) returnToAuthor();
     else returnHome();
   };
+  function returnToAuthor() {
+    const origin = authorEditorOrigin;
+    if (!origin) return;
+    requestEditorLeave(() => {
+      setAuthorRequest({
+        nonce: crypto.randomUUID(),
+        id: origin.draftId,
+        checkoutId: origin.checkoutId,
+      });
+      setBrowserOpen(false);
+      setSection('author');
+    }, '模板制作');
+  }
   usePageBack(returnEditor, section === 'editor' && !nodeSession);
   usePageBack(
     () => nodeNavigation.current?.(),
@@ -1257,6 +1295,7 @@ function WorkspaceApp() {
                   );
                 else if (section === 'templates')
                   templateNavigation.current?.(navigate, '首次教学');
+                else if (section === 'author') authorNavigation.current?.(navigate, '首次教学');
                 else if (section === 'schedules') plansNavigation.current?.(navigate, '首次教学');
                 else if (section === 'runs' && runOrigin === 'schedule' && detail)
                   leaveScheduleContext(navigate, '首次教学');
@@ -1388,6 +1427,7 @@ function WorkspaceApp() {
               nodeSession ||
               section === 'tools' ||
               section === 'templates' ||
+              section === 'author' ||
               section === 'template-schedule' ||
               section === 'schedules' ||
               section === 'ai-settings' ||
@@ -1469,7 +1509,9 @@ function WorkspaceApp() {
                       ? '← 返回流程编排'
                       : section === 'editor' && !!settingsFlowId && settingsFlowId === edit?.id
                         ? '← 返回本地设置'
-                        : '← 返回我的流程'}
+                        : authorEditorOrigin?.flowId === edit?.id
+                          ? '← 返回模板制作'
+                          : '← 返回我的流程'}
               </Button>
             )}
             {section === 'settings' && settingsNavigation?.back && (
@@ -2028,6 +2070,11 @@ function WorkspaceApp() {
           />
           <div hidden={section !== 'templates'}>
             <TemplateLibrary
+              authorOpen={() => {
+                setAuthorRequest({ nonce: crypto.randomUUID() });
+                setSection('author');
+                setBrowserOpen(false);
+              }}
               browserControl={
                 <Button
                   className="embedded-show"
@@ -2080,6 +2127,28 @@ function WorkspaceApp() {
               }}
             />
           </div>
+          <TemplateAuthorWorkspace
+            active={section === 'author'}
+            request={authorRequest}
+            data={data}
+            refresh={reloadSettingsData}
+            navigation={authorNavigation}
+            back={() => setSection('templates')}
+            openEditor={(record, origin) => {
+              void openFlow(record).then((opened) => {
+                if (opened) setAuthorEditorOrigin(origin);
+              });
+            }}
+            inspectZip={() => {
+              void action(async () => {
+                const preview = await api('template.inspect');
+                if (preview) {
+                  setImportPreview(preview);
+                  setSection('templates');
+                }
+              });
+            }}
+          />
           <RunReviewPage
             active={section === 'flow-review'}
             selection={flowReview?.selection}
@@ -2274,6 +2343,26 @@ function WorkspaceApp() {
                 <p className="note" role="status">
                   应用选区与工具方案须从原任务核对对象及影响，并明确确认本次试运行。
                 </p>
+              )}
+              {authorEditorOrigin?.flowId === edit.id && (
+                <Alert
+                  type="info"
+                  showIcon
+                  title="模板入口编排副本"
+                  description="保存和调试只影响此本机副本。带回时排除参数值、资源绑定与调试结果，并重新核对提示词和制作修订。"
+                  action={
+                    <Button
+                      disabled={busy}
+                      onClick={() =>
+                        void save().then((result) => {
+                          if (result) returnToAuthor();
+                        })
+                      }
+                    >
+                      保存并核对带回
+                    </Button>
+                  }
+                />
               )}
               <Editor
                 key={edit.id}

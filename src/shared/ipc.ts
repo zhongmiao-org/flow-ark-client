@@ -1,5 +1,6 @@
 import { templateSourceSchema } from './template-source';
 import { z } from 'zod';
+import { authorMethods } from './template-author';
 import { skillMethods, skillRefSchema } from './skill';
 import { conversationMethods } from './conversation';
 import { runListSchema } from './run-history';
@@ -71,6 +72,7 @@ export const templateSaveSchema = z
   .strict();
 export type TemplateSave = z.infer<typeof templateSaveSchema>;
 export const methods = {
+  ...authorMethods,
   ...skillMethods,
   ...conversationMethods,
   ...desktopMethods,

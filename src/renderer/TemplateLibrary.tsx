@@ -52,6 +52,7 @@ export default function TemplateLibrary({
   homeRequest,
   browserControl,
   instanceRequest,
+  authorOpen,
 }: {
   navigation: MutableRefObject<TemplateNavigation | undefined>;
   showRun: (detail: any, origin: TemplateEntryOrigin, output?: boolean) => void;
@@ -67,6 +68,7 @@ export default function TemplateLibrary({
   homeRequest?: string;
   browserControl?: ReactNode;
   instanceRequest?: TemplateOpenRequest;
+  authorOpen: () => void;
 }) {
   const [view, setView] = useState<View>('library');
   const [preview, setPreview] = useState<Preview>();
@@ -464,9 +466,18 @@ export default function TemplateLibrary({
           </div>
           {view === 'instances' && instancePackage && createButton(instancePackage)}
           {view === 'library' && (
-            <Button type="primary" disabled={!!busy || undefined} onClick={() => void selectZip()}>
-              {busy === 'inspect' ? '正在检查 ZIP…' : '导入 ZIP 模板'}
-            </Button>
+            <div className="author-actions">
+              <Button disabled={!!busy} onClick={authorOpen}>
+                制作模板
+              </Button>
+              <Button
+                type="primary"
+                disabled={!!busy || undefined}
+                onClick={() => void selectZip()}
+              >
+                {busy === 'inspect' ? '正在检查 ZIP…' : '导入 ZIP 模板'}
+              </Button>
+            </div>
           )}
         </header>
         {error && (

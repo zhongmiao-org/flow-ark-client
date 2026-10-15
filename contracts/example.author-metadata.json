@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "prompts": [
+    {
+      "id": "review-guide",
+      "name": "资料核对规程",
+      "path": "prompts/review-guide.md"
+    }
+  ],
+  "bindings": [
+    {
+      "entryId": "review",
+      "nodeId": "summarize",
+      "field": "instructions",
+      "promptId": "review-guide"
+    }
+  ]
+}

@@ -1,4 +1,6 @@
 import { methods } from '../shared/ipc';
+import { TemplateAuthor } from './template-author';
+import { authorMethods } from '../shared/template-author';
 import { TypedResults } from './typed-results';
 import { Skills } from './skills';
 import { skillMethods, skillBinding } from '../shared/skill';
@@ -141,6 +143,7 @@ export class Runtime {
   private documents: DocumentProcesses;
   private skills: Skills;
   private typedResults: TypedResults;
+  private author: TemplateAuthor;
   private admissions: Promise<void> = Promise.resolve();
   constructor(
     readonly dataPath: string,
@@ -373,6 +376,9 @@ export class Runtime {
     });
     this.templates = new Templates(this.store, dataPath, clientVersion, () =>
       this.system('notification', { title: 'FlowArk 有新的待办' }),
+    );
+    this.author = new TemplateAuthor(this.store, this.templates.library, () =>
+      this.assertAdmitting(),
     );
     this.sessions = new Sessions(dir, executable, dataPath, system);
     this.runReview = new RunReview(this.store, {
@@ -1596,6 +1602,56 @@ export class Runtime {
     return true;
   }
   async request(method: string, args: any = {}): Promise<any> {
+    if (method.startsWith('author.')) {
+      await this.ready;
+      if (method === 'author.export.begin') {
+        const v = authorMethods['author.export'].parse(args);
+        return this.author.begin(v);
+      }
+      if (method === 'author.export.write') {
+        const { path, ...base } = args;
+        const v = authorMethods['author.export.inspect'].parse(base);
+        if (typeof path !== 'string' || path.length > 4096) throw Error('导出路径由Main选择');
+        return this.author.write(v.id, v.requestId, path);
+      }
+      const rule = authorMethods[method as keyof typeof authorMethods];
+      if (!rule) throw Error('模板制作方法未授权');
+      const v = rule.parse(args) as any;
+      switch (method) {
+        case 'author.schema.check':
+          return this.author.schema(v.schema, v.form);
+        case 'author.list':
+          return this.author.list();
+        case 'author.create':
+          return this.author.create(v.requestId);
+        case 'author.fork':
+          return this.author.create(v.requestId, v.key);
+        case 'author.detail':
+          return this.author.detail(v.id);
+        case 'author.save':
+          return this.author.save(v.id, v.revision, v.definition);
+        case 'author.checkout':
+          return this.author.checkout(v.id, v.revision, v.entryId, v.requestId);
+        case 'author.checkout.origin':
+          return this.author.origin(v.flowId);
+        case 'author.flow.source':
+          return this.author.source(v.flowId);
+        case 'author.adopt.preview':
+          return this.author.adoption(v.checkoutId, v.revision, v.detach);
+        case 'author.adopt.confirm':
+          return this.author.adopt(v.id, v.revision, v.token, v.requestId);
+        case 'author.preview':
+          return this.author.preview(v.id, v.revision);
+        case 'author.file':
+          return this.author.file(v.id, v.token, v.path);
+        case 'author.export.inspect':
+          return this.author.inspect(v.id, v.requestId);
+        case 'author.export.cancel':
+          return this.author.cancel(v.id, v.requestId);
+        default:
+          throw Error('模板导出位置须由Main选择');
+      }
+    }
     if (method === 'run.typedResult') {
       await this.ready;
       const v = methods['run.typedResult'].parse(args);
@@ -2058,6 +2114,7 @@ export class Runtime {
       this.planning.cancelAll();
       await this.conversations.cancelAll();
       await this.skills.stop();
+      await this.author.stop();
     } catch (error) {
       planningError = error;
     }
