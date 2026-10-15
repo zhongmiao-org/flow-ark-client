@@ -175,7 +175,10 @@
   place-items: center;
   pointer-events: none;
 }
-.task-node-art img {
+.task-node-art .task-node-svg {
+  display: contents;
+}
+.task-node-art svg {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -183,7 +186,7 @@
   display: block;
   max-width: none;
 }
-.task-node-art--document img {
+.task-node-art--document svg {
   top: -1px;
   left: -1px;
   transform: none;
@@ -195,6 +198,10 @@
 .flow-task-node.is-selected .task-node-art,
 .react-flow__node-semantic:focus-visible .flow-task-node .task-node-art {
   filter: drop-shadow(0 0 1px var(--fa-action-primary));
+}
+.flow-task-node:is(.is-selected, :hover) .task-node-svg path,
+.react-flow__node-semantic:focus-visible .flow-task-node .task-node-svg path {
+  stroke: var(--fa-action-primary);
 }
 .flow-task-node .react-flow__handle {
   opacity: 0;
