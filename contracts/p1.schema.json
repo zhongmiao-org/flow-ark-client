@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.22.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.23.0/p1.schema.json",
   "title": "FlowArk P1",
   "$defs": {
     "Json": {
@@ -1361,6 +1361,84 @@
               }
             }
           ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "type": {
+              "const": "context"
+            },
+            "version": {
+              "const": 1
+            },
+            "name": {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 1000
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 3600000
+            },
+            "operation": {
+              "enum": [
+                "configuration",
+                "state.read",
+                "state.write"
+              ]
+            },
+            "expectedRevision": {
+              "$ref": "#/$defs/Value"
+            },
+            "value": {
+              "$ref": "#/$defs/Value"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "version",
+            "operation"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "operation": {
+                    "const": "state.write"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "expectedRevision",
+                  "value"
+                ]
+              },
+              "else": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "expectedRevision"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "value"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ]
         }
       ]
     },
@@ -1520,6 +1598,9 @@
             "$ref": "#/$defs/ScriptBundle"
           },
           "maxItems": 1000
+        },
+        "templateData": {
+          "$ref": "#/$defs/TemplateDataContext"
         }
       },
       "required": [
@@ -4519,6 +4600,535 @@
           }
         }
       ]
+    },
+    "TemplateDataOwner": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "instance"
+            },
+            "instanceId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "package": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{0,99}$"
+                },
+                "version": {
+                  "type": "string",
+                  "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+                },
+                "digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "id",
+                "version",
+                "digest"
+              ],
+              "additionalProperties": false
+            },
+            "entryId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            }
+          },
+          "required": [
+            "kind",
+            "instanceId",
+            "package",
+            "entryId"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "author-checkout"
+            },
+            "checkoutId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "draftId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "draftRevision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740990
+            },
+            "entryId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            }
+          },
+          "required": [
+            "kind",
+            "checkoutId",
+            "draftId",
+            "draftRevision",
+            "entryId"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "TemplateDataContext": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "owner": {
+          "$ref": "#/$defs/TemplateDataOwner"
+        },
+        "configurationRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740990
+        },
+        "configurationSchema": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Json"
+          }
+        },
+        "stateSchema": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Json"
+          }
+        },
+        "configuration": {
+          "$ref": "#/$defs/Json"
+        },
+        "schemaSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "createdAt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        }
+      },
+      "required": [
+        "version",
+        "id",
+        "owner",
+        "configurationRevision",
+        "configurationSchema",
+        "stateSchema",
+        "configuration",
+        "schemaSha256",
+        "createdAt"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateDataState": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "contextId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740990
+        },
+        "value": {
+          "$ref": "#/$defs/Json"
+        },
+        "updatedAt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        }
+      },
+      "required": [
+        "version",
+        "contextId",
+        "revision",
+        "value",
+        "updatedAt"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateDataReadOutput": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "operation": {
+          "enum": [
+            "configuration",
+            "state.read"
+          ]
+        },
+        "contextId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740990
+        },
+        "value": {
+          "$ref": "#/$defs/Json"
+        }
+      },
+      "required": [
+        "version",
+        "operation",
+        "contextId",
+        "revision",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateDataWriteOutput": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "operation": {
+          "const": "state.write"
+        },
+        "contextId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "operationId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "previousRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740989
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740990
+        },
+        "value": {
+          "$ref": "#/$defs/Json"
+        },
+        "committedAt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        }
+      },
+      "required": [
+        "version",
+        "operation",
+        "contextId",
+        "operationId",
+        "previousRevision",
+        "revision",
+        "value",
+        "committedAt"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateDataOutput": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/TemplateDataReadOutput"
+        },
+        {
+          "$ref": "#/$defs/TemplateDataWriteOutput"
+        }
+      ]
+    },
+    "TemplateDataWriteRequest": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "contextId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "operationId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "runId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "nodeInstance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740989
+        },
+        "value": {
+          "$ref": "#/$defs/Json"
+        }
+      },
+      "required": [
+        "version",
+        "contextId",
+        "operationId",
+        "runId",
+        "nodeInstance",
+        "expectedRevision",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateDataWriteReceipt": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "contextId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "operationId": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "requestSha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "createdAt": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "updatedAt": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "status": {
+              "const": "written"
+            },
+            "result": {
+              "$ref": "#/$defs/TemplateDataWriteOutput"
+            }
+          },
+          "required": [
+            "version",
+            "contextId",
+            "operationId",
+            "requestSha256",
+            "createdAt",
+            "updatedAt",
+            "status",
+            "result"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "contextId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "operationId": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "requestSha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "createdAt": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "updatedAt": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "status": {
+              "enum": [
+                "prepared",
+                "unknown",
+                "cancelled"
+              ]
+            },
+            "error": {
+              "type": "string",
+              "maxLength": 4000
+            }
+          },
+          "required": [
+            "version",
+            "contextId",
+            "operationId",
+            "requestSha256",
+            "createdAt",
+            "updatedAt",
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "contextId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "operationId": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "requestSha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "createdAt": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "updatedAt": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "status": {
+              "const": "conflict"
+            },
+            "currentRevision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740990
+            },
+            "error": {
+              "type": "string",
+              "maxLength": 4000
+            }
+          },
+          "required": [
+            "version",
+            "contextId",
+            "operationId",
+            "requestSha256",
+            "createdAt",
+            "updatedAt",
+            "status",
+            "currentRevision"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "TemplateDataEditRequest": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "checkoutId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "expectedConfigurationRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740989
+        },
+        "expectedStateRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740989
+        },
+        "configuration": {
+          "$ref": "#/$defs/Json"
+        },
+        "state": {
+          "$ref": "#/$defs/Json"
+        }
+      },
+      "required": [
+        "version",
+        "checkoutId",
+        "requestId",
+        "expectedConfigurationRevision",
+        "expectedStateRevision",
+        "configuration",
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateDataEditResult": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "context": {
+          "$ref": "#/$defs/TemplateDataContext"
+        },
+        "state": {
+          "$ref": "#/$defs/TemplateDataState"
+        }
+      },
+      "required": [
+        "version",
+        "requestId",
+        "context",
+        "state"
+      ],
+      "additionalProperties": false
     }
   }
 }

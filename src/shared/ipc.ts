@@ -1,6 +1,7 @@
 import { templateSourceSchema } from './template-source';
 import { z } from 'zod';
 import { authorMethods } from './template-author';
+import { dataMethods } from './template-data';
 import { skillMethods, skillRefSchema } from './skill';
 import { conversationMethods } from './conversation';
 import { runListSchema } from './run-history';
@@ -54,7 +55,17 @@ const bindings = z
       .optional(),
     grants: z.record(z.string(), z.enum(['deny', 'confirm', 'auto'])).optional(),
     configuration: z
-      .object({ adapter: z.string().max(100), schema: z.unknown(), values: z.unknown() })
+      .object({
+        adapter: z.string().max(100),
+        schema: z.unknown(),
+        values: z.unknown(),
+        revision: z
+          .number()
+          .int()
+          .min(1)
+          .max(Number.MAX_SAFE_INTEGER - 1)
+          .optional(),
+      })
       .strict()
       .optional(),
   })
@@ -73,6 +84,7 @@ export const templateSaveSchema = z
 export type TemplateSave = z.infer<typeof templateSaveSchema>;
 export const methods = {
   ...authorMethods,
+  ...dataMethods,
   ...skillMethods,
   ...conversationMethods,
   ...desktopMethods,

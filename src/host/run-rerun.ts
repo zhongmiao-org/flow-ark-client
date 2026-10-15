@@ -29,6 +29,7 @@ export function executionVersion(record: FlowRecord, prepared: PreparedScripts) 
     ...(record.toolTargets?.length ? { toolTargets: record.toolTargets } : {}),
     ...(record.desktopTarget ? { desktopTarget: record.desktopTarget } : {}),
     scriptBundles: prepared.scriptBundles,
+    ...(prepared.templateData ? { templateData: prepared.templateData } : {}),
   });
 }
 

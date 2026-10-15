@@ -1,6 +1,8 @@
 import { methods } from '../shared/ipc';
 import { TemplateAuthor } from './template-author';
 import { authorMethods } from '../shared/template-author';
+import { TemplateData } from './template-data';
+import { dataMethods } from '../shared/template-data';
 import { TypedResults } from './typed-results';
 import { Skills } from './skills';
 import { skillMethods, skillBinding } from '../shared/skill';
@@ -84,6 +86,7 @@ import { PlanningRepair } from './planning-repair';
 import { TaskWebTargets } from './task-web-target';
 const terminal = new Set(['SUCCEEDED', 'FAILED', 'INTERRUPTED', 'CANCELLED']);
 type Active = {
+  nodeInstances?: Set<string>;
   id: string;
   child: ChildProcess;
   rpc: Rpc;
@@ -144,6 +147,7 @@ export class Runtime {
   private skills: Skills;
   private typedResults: TypedResults;
   private author: TemplateAuthor;
+  private templateData: TemplateData;
   private admissions: Promise<void> = Promise.resolve();
   constructor(
     readonly dataPath: string,
@@ -377,8 +381,24 @@ export class Runtime {
     this.templates = new Templates(this.store, dataPath, clientVersion, () =>
       this.system('notification', { title: 'FlowArk 有新的待办' }),
     );
-    this.author = new TemplateAuthor(this.store, this.templates.library, () =>
-      this.assertAdmitting(),
+    this.templateData = new TemplateData(this.store, {
+      available: () => this.assertAdmitting(),
+      formal: (record) => this.templates.context(record),
+      authorize: (record, runId, signal) => {
+        const live = this.store.get<any>('template-instance', record.bindings.template!.instanceId);
+        if (!live) throw Error('模板实例不存在');
+        return this.templates.canWrite(
+          { ...record, bindings: { ...record.bindings, grants: live.grants } },
+          runId,
+          signal,
+        );
+      },
+    });
+    this.author = new TemplateAuthor(
+      this.store,
+      this.templates.library,
+      () => this.assertAdmitting(),
+      this.templateData,
     );
     this.sessions = new Sessions(dir, executable, dataPath, system);
     this.runReview = new RunReview(this.store, {
@@ -411,6 +431,7 @@ export class Runtime {
         // interval are skipped before any timer or queued admission can proceed.
         this.skipMissed('application-restart');
         this.lastTick = Date.now();
+        this.templateData.recover();
         this.recovering = false;
         if (!this.stopping)
           this.timer = setInterval(
@@ -551,6 +572,7 @@ export class Runtime {
     };
     this.toolTargets.assertExecutable(record.id, record, !!desktopRun);
     const validatedFlow = validateFlow(record.flow);
+    const templateData = await this.templateData.prepare(record);
     const flow = { ...validatedFlow, parameters: resolveParameterSources(validatedFlow) };
     if (walk(flow.steps).some((node) => node.type === 'desktop')) {
       if (!desktopRun) throw new Error('应用选区只能从原任务重新绑定窗口并明确确认单次试运行');
@@ -646,11 +668,17 @@ export class Runtime {
         scripts: record.scripts,
         scriptBundles: record.scriptBundles,
         skillSnapshots,
+        templateData,
       });
     }
     if (record.versionId && scriptNodes.some((n) => n.dependencies.length))
       throw new Error('旧计划没有固定脚本依赖，请重新保存计划');
-    const prepared: PreparedScripts = { scripts: {}, scriptBundles: [], skillSnapshots };
+    const prepared: PreparedScripts = {
+      scripts: {},
+      scriptBundles: [],
+      skillSnapshots,
+      templateData,
+    };
     for (const n of steps)
       if (n.type === 'script') {
         const bundle = await compileScript({
@@ -935,6 +963,8 @@ export class Runtime {
     };
     check();
     const prepared = await this.preflight(record);
+    if (scheduleId && prepared.templateData?.owner.kind === 'author-checkout')
+      throw Error('制作副本的配置与状态仅供明确试运行，请在正式模板实例中配置计划');
     check();
     this.credentialChecks.get(prepared)?.();
     const id = uid();
@@ -1097,6 +1127,7 @@ export class Runtime {
       this.secrets = [];
       if (this.active === active) this.active = undefined;
       this.aiNodes.release(run.id);
+      this.templateData.release(run.id);
       await this.documents.release(run.id);
       this.scripts.finishRun(run.id);
       settled();
@@ -1120,12 +1151,36 @@ export class Runtime {
     if (method === 'mcp.cancel') return this.mcpRuns.cancel(id, args.nodeInstance);
     if (method === 'document.cancel')
       return this.active?.id === id ? this.documents.cancel(id, args.invocationId) : false;
+    if (method === 'context.cancel') return this.templateData.cancel(id, args.nodeInstance);
     if (method === 'ai.cancel')
       return this.active?.id === id ? this.aiNodes.cancel(id, args.invocationId) : false;
     if (this.active?.id !== id) throw new Error('运行已停止');
     this.checkActive(this.active);
     const runSignal = this.active.abort.signal;
     const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', id)!;
+    if (method === 'context.node') {
+      const active = this.active,
+        node = walk(snapshot.flow.steps).find((n) => n.id === args.nodeId);
+      if (
+        !node ||
+        node.type !== 'context' ||
+        typeof args.nodeInstance !== 'string' ||
+        !active.nodeInstances?.has(args.nodeInstance) ||
+        !(args.nodeInstance === node.id || args.nodeInstance.endsWith('/' + node.id))
+      )
+        throw Error('配置与状态节点不属于当前执行实例');
+      const result = await this.templateData.perform(
+        snapshot,
+        id,
+        node,
+        args.nodeInstance,
+        args.input,
+        runSignal,
+        () => this.checkActive(active),
+      );
+      this.typedResults.save(id, node.id, args.nodeInstance, 'context', result);
+      return result;
+    }
     if (method === 'skill.node') {
       const active = this.active;
       const node = walk(snapshot.flow.steps).find((n) => n.id === args.nodeId);
@@ -1310,6 +1365,16 @@ export class Runtime {
           preview.length > 4000 ? preview.slice(0, 4000) + '…（已截断）' : preview;
       }
       this.store.tx(() => this.store.event(id, args.type, args.nodeInstance, data));
+      if (args.type === 'node-start') {
+        if (
+          typeof args.nodeInstance !== 'string' ||
+          !args.nodeInstance ||
+          args.nodeInstance.length > 2048
+        )
+          throw Error('节点实例身份无效');
+        this.active.nodeInstances ??= new Set();
+        this.active.nodeInstances.add(args.nodeInstance);
+      } else if (args.type === 'node-end') this.active.nodeInstances?.delete(args.nodeInstance);
       return true;
     }
     if (method === 'state') {
@@ -1602,6 +1667,16 @@ export class Runtime {
     return true;
   }
   async request(method: string, args: any = {}): Promise<any> {
+    if (method.startsWith('context.')) {
+      await this.ready;
+      const rule = dataMethods[method as keyof typeof dataMethods];
+      if (!rule) throw Error('配置与状态方法未授权');
+      const v = rule.parse(args) as any;
+      if (method === 'context.debug.get') return this.templateData.debugGet(v.flowId);
+      if (method === 'context.debug.save') return this.templateData.debugSave(v.edit);
+      if (method === 'context.operations') return this.templateData.operations(v.runId);
+      return this.templateData.inspect(v.runId, v.operationId);
+    }
     if (method.startsWith('author.')) {
       await this.ready;
       if (method === 'author.export.begin') {
@@ -1838,7 +1913,9 @@ export class Runtime {
           events: this.store.events(id),
           artifacts,
           output: redact(this.store.get('output', id)),
-          typedResults: run?.state === 'SUCCEEDED' ? this.typedResults.list(id) : [],
+          typedResults: this.typedResults
+            .list(id)
+            .filter((r) => run?.state === 'SUCCEEDED' || r.type === 'context'),
           snapshot: snapshot?.flow,
           scriptBundles: snapshot?.scriptBundles ?? [],
           fault: this.store.fault ? redact(this.store.fault, this.secrets) : undefined,

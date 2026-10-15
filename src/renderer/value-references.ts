@@ -105,6 +105,23 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
           '前序步骤',
           '创建草稿须先判断status；读取固定确认版本不会授予模型或发送权限',
         );
+    if (node.type === 'context')
+      for (const key of [
+        'value',
+        'revision',
+        'contextId',
+        ...(node.operation === 'state.write'
+          ? ['operationId', 'previousRevision', 'committedAt']
+          : []),
+      ])
+        add(
+          path + '.' + key,
+          label + ' / ' + key,
+          '前序步骤',
+          key === 'revision'
+            ? '状态写入须选择读取结果的修订；配置修订不能用作状态修订'
+            : '完整配置或状态的输出字段',
+        );
     if (node.type === 'document')
       for (const key of ['status', 'source', 'text', 'units', 'warnings'])
         add(

@@ -40,6 +40,23 @@ const operations: Record<string, string> = {
 
 function fields(node: Step): [string, string][] {
   switch (node.type) {
+    case 'context':
+      return [
+        [
+          '操作',
+          node.operation === 'configuration'
+            ? '读取本次配置'
+            : node.operation === 'state.read'
+              ? '读取最新状态'
+              : '按修订更新状态',
+        ],
+        ...(node.operation === 'state.write'
+          ? ([
+              ['预期修订', configured(node.expectedRevision)],
+              ['完整新值', configured(node.value)],
+            ] as [string, string][])
+          : []),
+      ];
     case 'desktop':
       return [
         ['应用目标', node.target],

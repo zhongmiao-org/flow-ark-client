@@ -38,6 +38,8 @@ for (const name of [
 const digest = createHash('sha256').update(source).digest('hex');
 for (const name of ['Definition', 'Draft', 'PackageMetadata', 'Checkout', 'ExportReceipt'])
   validators['author_' + name.toLowerCase() + '_v1'] = `${schema.$id}#/$defs/TemplateAuthor${name}`;
+for (const name of ['Context', 'State', 'Output', 'WriteReceipt', 'EditResult'])
+  validators['data_' + name.toLowerCase() + '_v1'] = `${schema.$id}#/$defs/TemplateData${name}`;
 const banner = `/* Generated from contracts/p1.schema.json (${digest}). Do not edit. */`;
 await build({
   stdin: { contents: standaloneCode(ajv, validators), resolveDir: process.cwd(), loader: 'js' },

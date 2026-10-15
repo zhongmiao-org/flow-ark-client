@@ -1,5 +1,6 @@
 import type { Step } from '../shared/types';
 import { kinds } from './node-kinds';
+import { contextOperations } from '../shared/template-data';
 
 export const browserLabels = {
   navigate: '打开网页',
@@ -33,7 +34,11 @@ export function taskStepTitle(step: Step): string {
   if (step.type === 'excel') return excelLabels[step.operation];
   const title = (
     step.name?.trim() ||
-    (step.type === 'browser' ? browserLabels[step.operation] : kinds[step.type].label)
+    (step.type === 'browser'
+      ? browserLabels[step.operation]
+      : step.type === 'context'
+        ? contextOperations[step.operation]
+        : kinds[step.type].label)
   )
     .replace(/\s+/g, ' ')
     .trim();

@@ -1,0 +1,61 @@
+.context-operations,
+.context-debug-columns,
+.context-debug-page {
+  display: flex;
+  gap: var(--fa-space-16);
+}
+.context-operations,
+.context-debug-page {
+  flex-direction: column;
+}
+.context-debug-columns {
+  align-items: flex-start;
+  gap: var(--fa-space-24);
+}
+.context-debug-columns > * {
+  flex: 1;
+  min-width: 0;
+}
+.context-debug-page {
+  padding: var(--fa-space-24);
+  overflow: auto;
+}
+.context-json {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 28rem;
+  overflow: auto;
+  padding: var(--fa-space-16);
+  color: var(--fa-text-primary);
+  background: var(--fa-bg-canvas);
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+}
+@media (max-width: 1100px) {
+  .context-debug-columns {
+    flex-direction: column;
+  }
+  .context-debug-columns > * {
+    width: 100%;
+  }
+}
+
+.context-debug-root[hidden] {
+  display: none;
+}
+.context-debug-page h1,
+.context-debug-page p {
+  margin: 0;
+}
+.context-debug-columns .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fa-space-16);
+}
+.context-debug-page .template-fieldset {
+  border: 0;
+  padding: 0;
+}
+.context-debug-page .template-field {
+  width: 100%;
+}

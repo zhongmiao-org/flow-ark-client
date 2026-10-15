@@ -1,4 +1,5 @@
 import TypedRunResults from './TypedRunResults';
+import RunContextOperations from './RunContextOperations';
 import ActionButton from './ActionButton';
 import DocumentResults from './DocumentResults';
 import { activateCollapseWithSpace } from './collapseKeyboard';
@@ -167,6 +168,11 @@ export default function RunOutputWorkspace({
             ) : (
               <DocumentResults snapshot={detail.snapshot} output={detail.output} />
             )}
+            <RunContextOperations
+              key={`context:${detail.run.id}`}
+              runId={detail.run.id}
+              runState={detail.run.state}
+            />
             <RunOutput detail={detail} layout="result" />
             <RunFileRecovery key={`file-recovery:${detail.run.id}`} detail={detail} />
             <RunResultReview key={detail.run.id} runId={detail.run.id} />

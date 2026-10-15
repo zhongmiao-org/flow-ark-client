@@ -43,6 +43,25 @@ const rpc = new Rpc(
         signal.throwIfAborted();
         if (args.bindings.template)
           await rpc.call('node.authorize', { id: n.id, binding: resolved.binding });
+        if (n.type === 'context') {
+          const cancel = () => {
+            void rpc.call('context.cancel', { nodeInstance: instance }).catch(() => {});
+          };
+          signal.addEventListener('abort', cancel, { once: true });
+          try {
+            signal.throwIfAborted();
+            return await rpc.call(
+              'context.node',
+              { nodeId: n.id, nodeInstance: instance, input: resolved },
+              timeout + 5000,
+            );
+          } catch (e) {
+            cancel();
+            throw e;
+          } finally {
+            signal.removeEventListener('abort', cancel);
+          }
+        }
         if (n.type === 'skill') {
           signal.throwIfAborted();
           return rpc.call(

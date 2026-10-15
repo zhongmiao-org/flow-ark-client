@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "checkoutId": "example-checkout",
+  "requestId": "example-edit",
+  "expectedConfigurationRevision": 1,
+  "expectedStateRevision": 0,
+  "configuration": {
+    "concise": false
+  },
+  "state": {
+    "stage": "new"
+  }
+}

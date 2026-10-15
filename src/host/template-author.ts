@@ -28,6 +28,7 @@ import { validateFlow, walk } from '../core/validate';
 import type { FlowRecord, Flow } from '../shared/types';
 import { parameterSchema } from '../templates/export-boundaries';
 import { resolveParameterSources } from '../shared/parameter-sources';
+import type { TemplateData } from './template-data';
 import { exportTarget, writeExport, readExport, type ExportTarget } from './author-export-files';
 type ExportOperation = { receipt: AuthorReceipt; token: string; target?: ExportTarget };
 type Preview = { id: string; revision: number; expires: number; pkg: PackageData; bytes: Buffer };
@@ -63,6 +64,7 @@ export class TemplateAuthor {
     private store: Store,
     private library: PackageLibrary,
     private available: () => void,
+    private data?: TemplateData,
   ) {
     for (const op of store.list<ExportOperation>('author-export')) {
       if (op.receipt.status === 'choosing') {
@@ -223,6 +225,7 @@ export class TemplateAuthor {
     this.store.tx(() => {
       this.store.put('flow', record.id, record);
       this.store.put('author-checkout', checkout.id, checkout);
+      this.data?.createDebug(checkout, d);
     });
     return { checkout, record };
   }

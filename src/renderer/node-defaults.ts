@@ -3,6 +3,7 @@ import type { Step } from '../shared/types';
 
 export function newStep(type: string): Step {
   const defaults: Record<string, object> = {
+    context: { operation: 'configuration' },
     skill: {
       operation: 'propose',
       binding: 'workspace',

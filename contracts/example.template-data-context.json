@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "id": "example-context",
+  "owner": {
+    "kind": "author-checkout",
+    "checkoutId": "example-checkout",
+    "draftId": "example-draft",
+    "draftRevision": 2,
+    "entryId": "prepare"
+  },
+  "configurationRevision": 1,
+  "configurationSchema": {
+    "type": "object",
+    "properties": {
+      "concise": {
+        "type": "boolean",
+        "default": true
+      }
+    },
+    "additionalProperties": false
+  },
+  "stateSchema": {
+    "type": "object",
+    "properties": {
+      "stage": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "stage"
+    ],
+    "additionalProperties": false
+  },
+  "configuration": {
+    "concise": true
+  },
+  "schemaSha256": "d2042532a6987164a715f7f721ea71d3b1cebfc9f4054ba6e2688ee4733f116a",
+  "createdAt": "2026-10-15T14:30:00Z"
+}

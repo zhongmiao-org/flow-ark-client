@@ -1,0 +1,36 @@
+{
+  "formatVersion": "1.0",
+  "id": "template-data-example",
+  "name": "配置与状态编排示例",
+  "description": "虚构字段；调试副本及正式实例的宿主上下文独立",
+  "parameters": {},
+  "requiredCapabilities": [
+    "template-data-v1"
+  ],
+  "steps": [
+    {
+      "id": "configuration",
+      "type": "context",
+      "version": 1,
+      "operation": "configuration"
+    },
+    {
+      "id": "state",
+      "type": "context",
+      "version": 1,
+      "operation": "state.read"
+    },
+    {
+      "id": "update",
+      "type": "context",
+      "version": 1,
+      "operation": "state.write",
+      "expectedRevision": {
+        "$ref": "steps.state.revision"
+      },
+      "value": {
+        "stage": "review"
+      }
+    }
+  ]
+}
