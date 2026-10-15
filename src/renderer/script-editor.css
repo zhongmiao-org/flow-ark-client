@@ -62,7 +62,8 @@
   font-size: 18px;
   line-height: 28px;
 }
-.script-editor-settings label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.script-editor-settings
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   margin: 0;
 }
 .script-editor-settings .ant-select,

@@ -17,8 +17,11 @@
   margin-bottom: 20px;
 }
 .read-step-identity-fields > label,
-.read-step-inspector .node-configuration > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper),
-.read-step-output > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.read-step-inspector
+  .node-configuration
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper),
+.read-step-output
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   display: block;
   margin: 0 0 6px;
   font-size: 12px;

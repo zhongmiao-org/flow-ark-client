@@ -67,8 +67,8 @@
   gap: 12px;
 }
 .ai-task-actions button[aria-pressed='true'] {
-  color: var(--fa-action-primary);
-  border-color: var(--fa-action-primary);
+  color: var(--fa-text-link);
+  border-color: var(--fa-text-link);
   background: var(--fa-action-subtle);
 }
 .ai-task-examples {
@@ -164,7 +164,9 @@
 .ai-task-input > .ant-card-body > textarea {
   background: var(--fa-bg-canvas);
 }
-.ai-task-input > .ant-card-body > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.ai-task-input
+  > .ant-card-body
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   margin-bottom: -8px;
 }
 .ai-task-page fieldset {
@@ -173,17 +175,20 @@
   min-width: 0;
   border: 0;
 }
-.ai-task-page label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.ai-task-page
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   display: flex;
   flex-direction: column;
   gap: 8px;
   margin: 0;
 }
-.ai-task-page label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) .ant-select {
+.ai-task-page
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper)
+  .ant-select {
   margin-top: 0;
 }
 .ai-task-page
-  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper)
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper)
   input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   margin-top: 0;
 }
@@ -214,7 +219,7 @@
 .ai-task-note {
   padding: 16px;
   background: var(--fa-action-subtle);
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   border-radius: var(--fa-radius-12);
   border: 1px solid var(--fa-border-default);
 }
@@ -241,7 +246,7 @@
   height: 16px;
   margin: 3px 0 0;
   flex: 0 0 16px;
-  accent-color: var(--fa-action-primary);
+  accent-color: var(--fa-text-link);
 }
 .ai-task-diff {
   border: 1px solid var(--fa-border-default);
@@ -251,7 +256,7 @@
 }
 .ai-task-diff summary {
   cursor: pointer;
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   overflow-wrap: anywhere;
 }
 .ai-task-page pre {
@@ -321,12 +326,12 @@
   gap: 24px;
 }
 .ai-task-step[aria-pressed='true'] {
-  border-color: var(--fa-action-primary);
+  border-color: var(--fa-text-link);
   background: var(--fa-action-subtle);
 }
 .ai-task-step > b {
   flex: 0 0 auto;
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   font: 500 18px/28px var(--fa-font-latin);
 }
 .ai-task-step > span {
@@ -620,7 +625,7 @@
   height: 16px;
   flex: 0 0 16px;
   margin: 3px 0 0;
-  accent-color: var(--fa-action-primary);
+  accent-color: var(--fa-text-link);
 }
 .run-review-confirm > .ant-card-body > button {
   width: 100%;
@@ -898,7 +903,7 @@
   gap: 16px;
 }
 .learning-step > .ant-card-body > span {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   font-size: 18px;
   line-height: 26px;
   width: 28px;
@@ -962,7 +967,7 @@
   color: var(--fa-text-secondary);
 }
 .learning-progress span[data-done='true'] {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }
 @container (max-width: 850px) {
   .learning-columns {
@@ -1007,7 +1012,7 @@
   line-height: 22px;
 }
 .task-understanding-reply > .ant-card-body > b {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   font-weight: 500;
 }
 .task-understanding-reply > .ant-card-body > p {
@@ -1019,7 +1024,8 @@
   flex-direction: column;
   gap: 8px;
 }
-.task-understanding-directory > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.task-understanding-directory
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   font-size: 13px;
   line-height: 20px;
 }
@@ -1042,7 +1048,9 @@
   font-size: 13px;
   line-height: 20px;
 }
-.ai-task-page .task-output-policy label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.ai-task-page
+  .task-output-policy
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   flex-direction: row;
   align-items: center;
   font-weight: 400;
@@ -1172,7 +1180,7 @@
 .task-brief-input
   > .task-brief-card
   > .ant-card-body
-  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   color: var(--fa-text-secondary);
   font-size: 12px;
   line-height: 18px;
@@ -1337,7 +1345,7 @@
   color: var(--fa-text-primary);
 }
 .task-plan-conversation .ai-step-reply h2 {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }
 .task-plan-answers ol {
   display: grid;
@@ -1422,7 +1430,7 @@
   color: var(--fa-text-secondary);
 }
 .ai-task-readable-plan .task-plan-tabs > button[aria-pressed='true'] {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }
 .ai-task-readable-plan .task-plan-tabs > .task-plan-more {
   margin-left: auto;
@@ -1452,7 +1460,7 @@
   margin: 0;
   font-size: 13px;
   line-height: 20px;
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }
 .ai-task-readable-plan .task-plan-scope-compact .ant-collapse-body > p {
   margin-top: 12px;
@@ -1504,7 +1512,8 @@
   gap: 8px;
   align-items: end;
 }
-.task-step-search > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.task-step-search
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   flex: 1 1 220px;
   min-width: 0;
 }

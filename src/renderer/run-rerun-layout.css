@@ -100,7 +100,7 @@
   line-height: 24px;
 }
 .run-rerun-workspace .run-rerun-preview h3:focus {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 4px;
 }
 .run-rerun-workspace .note {
@@ -156,7 +156,7 @@
   min-height: 40px;
 }
 .run-rerun-page h1:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 4px;
 }
 @container (max-width: 740px) {
@@ -230,7 +230,7 @@
   padding-top: 0;
 }
 .run-rerun-page .run-rerun-preview:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 8px;
 }
 .run-rerun-page .run-rerun-summary {
@@ -276,7 +276,7 @@
   line-height: 22px;
 }
 .run-rerun-context-detail h4:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 4px;
 }
 .run-rerun-context-detail .run-rerun-source-actions {

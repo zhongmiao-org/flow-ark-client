@@ -57,8 +57,8 @@
   white-space: nowrap;
 }
 .browser-observation-modes button[aria-pressed='true'] {
-  border-color: var(--fa-action-primary);
-  color: var(--fa-action-primary);
+  border-color: var(--fa-text-link);
+  color: var(--fa-text-link);
   background: var(--fa-action-subtle);
 }
 .browser-observation-expanded .browser-viewport {
@@ -228,7 +228,9 @@
   grid-template-columns: minmax(0, 1fr) 32px 32px;
   gap: 6px;
 }
-.browser-editor-panel .browser-address > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.browser-editor-panel
+  .browser-address
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   grid-column: 1 / -1;
   margin: 0;
   font-size: 12px;
@@ -255,7 +257,7 @@
   min-height: 72px;
   margin: 0;
   background: var(--fa-action-subtle);
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   font-size: 14px;
   line-height: 22px;
 }

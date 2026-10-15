@@ -48,7 +48,8 @@
   line-height: 28px;
   overflow-wrap: anywhere;
 }
-.step-position-card label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.step-position-card
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   display: flex;
   flex-direction: column;
   gap: 6px;

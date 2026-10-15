@@ -1,0 +1,28 @@
+.appearance-card > .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fa-space-16);
+  padding: var(--fa-space-24);
+}
+.appearance-card h2,
+.appearance-card p {
+  margin: 0;
+}
+.appearance-card .ant-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fa-space-12);
+}
+.appearance-card .ant-radio-button-wrapper {
+  width: 176px;
+  max-width: 100%;
+  text-align: center;
+  border: 1px solid var(--fa-border-control);
+  border-radius: var(--fa-radius-8);
+}
+.appearance-card .ant-radio-button-wrapper::before {
+  display: none;
+}
+.appearance-settings-page .local-settings-tabs > .ant-tabs-nav {
+  display: none;
+}

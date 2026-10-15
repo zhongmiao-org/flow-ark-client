@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import { ApplicationTheme } from './theme';
+import { AppearanceProvider } from './appearance';
 import '@fontsource-variable/inter';
 import '@fontsource-variable/noto-sans-sc';
 import './style.css';
@@ -16,8 +17,10 @@ import './excel-mapping.css';
 import './antd-layout.css';
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ApplicationTheme>
-      <App />
-    </ApplicationTheme>
+    <AppearanceProvider>
+      <ApplicationTheme>
+        <App />
+      </ApplicationTheme>
+    </AppearanceProvider>
   </React.StrictMode>,
 );

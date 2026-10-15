@@ -7,7 +7,7 @@
   margin-bottom: 24px;
 }
 .export-review-kicker {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   font-size: 12px;
 }
 .export-review-heading h1 {
@@ -82,7 +82,7 @@
   overflow-wrap: anywhere;
 }
 .export-review-message:focus {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 3px;
 }
 .export-review-footer {

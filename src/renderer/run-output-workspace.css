@@ -138,7 +138,7 @@
 }
 .run-result-review h3:focus-visible,
 .run-result-review .run-result-feedback:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 4px;
 }
 .run-output-result .run-output {

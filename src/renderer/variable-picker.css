@@ -69,7 +69,8 @@
   gap: 16px;
   min-width: 0;
 }
-.variable-picker-dialog label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.variable-picker-dialog
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   color: var(--fa-text-secondary);
   font-size: 12px;
   line-height: 18px;

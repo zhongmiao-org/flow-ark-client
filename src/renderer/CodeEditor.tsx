@@ -2,6 +2,7 @@ import Editor, { loader } from '@monaco-editor/react';
 import { theme as antdTheme } from 'antd';
 import { useEffect, useMemo, useRef } from 'react';
 import { scriptEditorTheme } from './theme';
+import { useAppearance } from './appearance';
 import * as monaco from 'monaco-editor';
 import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker';
 import TypeScriptWorker from 'monaco-editor/language/typescript/ts.worker.js?worker';
@@ -47,7 +48,7 @@ export default function CodeEditor({
   language = 'json',
   height = '300px',
   label = '流程配置编辑器',
-  theme = 'light',
+  theme,
   readOnly = false,
   location,
 }: {
@@ -61,12 +62,14 @@ export default function CodeEditor({
   location?: CodeLocation;
 }) {
   const { token } = antdTheme.useToken();
+  const { resolved } = useAppearance();
   const darkTheme = useMemo(() => scriptEditorTheme(token), [token]);
-  const editorTheme = theme === 'vs-dark' ? 'flowark-script-dark' : theme;
+  const dark = theme === 'vs-dark' || resolved === 'dark';
+  const editorTheme = dark ? 'flowark-script-dark' : 'light';
   const editor = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   useEffect(() => {
-    if (theme === 'vs-dark') monaco.editor.defineTheme(editorTheme, darkTheme);
-  }, [theme, editorTheme, darkTheme]);
+    if (dark) monaco.editor.defineTheme(editorTheme, darkTheme);
+  }, [dark, editorTheme, darkTheme]);
   const reveal = (target?: CodeLocation) => {
     const instance = editor.current;
     const model = instance?.getModel();
@@ -84,7 +87,7 @@ export default function CodeEditor({
       value={value}
       theme={editorTheme}
       beforeMount={(instance) => {
-        if (theme === 'vs-dark') instance.editor.defineTheme(editorTheme, darkTheme);
+        if (dark) instance.editor.defineTheme(editorTheme, darkTheme);
       }}
       onMount={(instance) => {
         editor.current = instance;

@@ -41,5 +41,5 @@
   color: var(--fa-text-secondary);
 }
 .task-plan-scope-list small {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }

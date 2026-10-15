@@ -20,6 +20,7 @@ import './local-settings.css';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import LocalStoragePanel from './LocalStoragePanel';
 import LocalCredentialsPanel from './LocalCredentialsPanel';
+import AppearancePage from './AppearancePage';
 
 const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
@@ -32,6 +33,7 @@ const tabs = [
   ['ai', 'AI 服务'],
   ['resources', '凭据与本机资源'],
   ['scripts', '脚本包'],
+  ['appearance', '外观'],
 ] as const;
 type Tab = (typeof tabs)[number][0];
 export type SettingsDestination = Tab;
@@ -65,6 +67,8 @@ export default function LocalSettingsPage({
   const [tab, setTab] = useState<Tab>('browser');
   const [local, setLocal] = useState(false);
   const resourcesPage = tab === 'resources';
+  const appearancePage = tab === 'appearance';
+  const appearanceOrigin = useRef<Tab>('browser');
   const resourceEntry = useRef('settings-tab-resources');
   const resourceOrigin = useRef<{
     tab: Exclude<Tab, 'resources'>;
@@ -144,7 +148,10 @@ export default function LocalSettingsPage({
   );
   const back = () => {
     if (locked.current) return;
-    if (resourcesPage) {
+    if (appearancePage) {
+      setTab(appearanceOrigin.current);
+      requestAnimationFrame(() => document.getElementById('settings-tab-appearance')?.focus());
+    } else if (resourcesPage) {
       returningResources.current = true;
       setTab(resourceOrigin.current.tab);
       setLocal(resourceOrigin.current.local);
@@ -159,12 +166,14 @@ export default function LocalSettingsPage({
   useEffect(() => {
     if (!active) return;
     navigation({
-      title: resourcesPage
-        ? '凭据与本机资源'
-        : local && tab === 'browser'
-          ? '本机浏览器绑定'
-          : '本地设置',
-      back: resourcesPage || (local && tab === 'browser') ? back : undefined,
+      title: appearancePage
+        ? '外观'
+        : resourcesPage
+          ? '凭据与本机资源'
+          : local && tab === 'browser'
+            ? '本机浏览器绑定'
+            : '本地设置',
+      back: appearancePage || resourcesPage || (local && tab === 'browser') ? back : undefined,
       busy: !!busy,
     });
     return () => navigation(undefined);
@@ -220,7 +229,7 @@ export default function LocalSettingsPage({
       restoreEntry.current = false;
       bindingEntry.current?.focus({ preventScroll: true });
     } else heading.current?.focus({ preventScroll: true });
-  }, [active, local, resourcesPage]);
+  }, [active, local, resourcesPage, appearancePage]);
   useEffect(() => {
     if (busy || !focusAfter.current) return;
     const pending = focusAfter.current;
@@ -310,6 +319,7 @@ export default function LocalSettingsPage({
   };
   const changeTab = (next: Tab, focusTab = false) => {
     if (locked.current) return;
+    if (next === 'appearance' && tab !== 'appearance') appearanceOrigin.current = tab;
     if (next === 'resources' && tab !== 'resources') {
       resourceEntry.current = document.activeElement?.id || 'settings-tab-resources';
       resourceOrigin.current = {
@@ -363,6 +373,7 @@ export default function LocalSettingsPage({
         />
       )}
       <div id="settings-content">
+        {appearancePage && <AppearancePage />}
         {tab === 'browser' &&
           (!local ? (
             <div className="local-settings-layout local-browser-overview">
@@ -889,25 +900,29 @@ export default function LocalSettingsPage({
   );
   return (
     <section
-      className={`page local-settings-page${local && tab === 'browser' ? ' local-browser-binding-page' : ''}${resourcesPage ? ' local-resources-page' : ''}`}
+      className={`page local-settings-page${local && tab === 'browser' ? ' local-browser-binding-page' : ''}${resourcesPage ? ' local-resources-page' : ''}${appearancePage ? ' appearance-settings-page' : ''}`}
       hidden={!active}
       aria-label="本地设置"
     >
       <header className="local-settings-heading">
         <div>
           <h1 ref={heading} tabIndex={-1}>
-            {resourcesPage
-              ? '凭据与本机资源'
-              : local && tab === 'browser'
-                ? '选择本机浏览器'
-                : '本地设置'}
+            {appearancePage
+              ? '外观'
+              : resourcesPage
+                ? '凭据与本机资源'
+                : local && tab === 'browser'
+                  ? '选择本机浏览器'
+                  : '本地设置'}
           </h1>
           <p>
-            {resourcesPage
-              ? '本地路径与密钥不随 ZIP 导出；资源只提供给明确绑定的流程。'
-              : local && tab === 'browser'
-                ? '实际使用你选择的安装；失效时阻止运行，不下载或自动切换。'
-                : '管理运行环境、模型接口和这台 Mac 的资源。'}
+            {appearancePage
+              ? '本地设置 / 外观 · 默认跟随系统，选择只影响本机界面'
+              : resourcesPage
+                ? '本地路径与密钥不随 ZIP 导出；资源只提供给明确绑定的流程。'
+                : local && tab === 'browser'
+                  ? '实际使用你选择的安装；失效时阻止运行，不下载或自动切换。'
+                  : '管理运行环境、模型接口和这台 Mac 的资源。'}
           </p>
         </div>
       </header>

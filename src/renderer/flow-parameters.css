@@ -49,7 +49,7 @@
   padding: 23px;
 }
 .flow-parameters-card--values > .ant-card > .ant-card-body {
-  padding: 27px;
+  padding: 23px;
 }
 .flow-parameters-card h2,
 .flow-parameters-card h3 {
@@ -63,7 +63,9 @@
   color: var(--fa-text-secondary);
 }
 .flow-parameters-card
-  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item) {
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper):not(
+    .ant-segmented-item
+  ) {
   font-size: 12px;
   color: var(--fa-text-secondary);
   margin: 0;
@@ -75,35 +77,39 @@
 }
 .flow-parameters-card .ant-input,
 .flow-parameters-card .ant-select {
-  min-height: 32px;
-  height: 32px;
-  padding: 5px 6px;
-  border-radius: var(--fa-radius-6);
-  background: var(--fa-bg-canvas);
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 20px;
+  min-height: 40px;
+  height: 40px;
+  padding: 8px 12px;
+  border-radius: var(--fa-radius-8);
+  background: var(--fa-bg-surface);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+}
+.flow-parameters-card .ant-select {
+  padding: 0;
 }
 .flow-parameters-card .literal-value > textarea {
-  min-height: 32px;
-  height: 32px;
-  padding: 5px 6px;
+  min-height: 40px;
+  height: 40px;
+  padding: 8px 12px;
   font-family: var(--fa-font-body);
-  font-size: 13px;
-  line-height: 20px;
+  font-size: 14px;
+  line-height: 22px;
   white-space: pre-wrap;
 }
 .flow-parameters-card .parameter-fields {
   display: flex;
   flex-direction: column;
-  gap: 36px;
+  gap: 12px;
 }
 .flow-parameters-card .parameter-field {
   display: grid;
-  grid-template-columns: 176px minmax(0, 1fr);
+  grid-template-columns: 164px minmax(0, 1fr);
   gap: 12px;
-  padding: 0;
-  border: 0;
+  padding: 12px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
   align-items: start;
 }
 .flow-parameters-card .parameter-field > header {
@@ -113,8 +119,8 @@
 }
 .flow-parameters-card
   label.parameter-name-field:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(
-    .ant-segmented-item
-  ) {
+    .ant-radio-button-wrapper
+  ):not(.ant-segmented-item) {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -152,16 +158,20 @@
 }
 .flow-parameters-card .literal-value {
   display: grid;
-  grid-template-columns: 120px minmax(0, 1fr);
+  grid-template-columns: 104px minmax(0, 1fr);
   gap: 6px 12px;
   align-items: start;
 }
-.flow-parameters-card .literal-value > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.flow-parameters-card
+  .literal-value
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   line-height: 18px;
 }
 .flow-parameters-card
   .literal-value
-  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):first-child {
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(
+    .ant-radio-button-wrapper
+  ):first-child {
   grid-column: 1;
   grid-row: 1;
 }
@@ -171,7 +181,9 @@
 }
 .flow-parameters-card
   .literal-value
-  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):nth-of-type(2) {
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(
+    .ant-radio-button-wrapper
+  ):nth-of-type(2) {
   grid-column: 2;
   grid-row: 1;
 }
@@ -225,7 +237,8 @@
   gap: 6px;
   min-height: 58px;
 }
-.flow-parameters-binding label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.flow-parameters-binding
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   line-height: 18px;
 }
 .parameter-add-fields {
@@ -293,16 +306,14 @@
 }
 
 .flow-parameters-card .parameter-value-fields {
-  display: grid;
-  grid-template-columns: 120px minmax(0, 1fr);
-  gap: 6px 12px;
-  min-width: 0;
+  display: contents;
 }
 .flow-parameters-card .parameter-value-fields > .literal-value {
-  grid-column: 1 / -1;
+  grid-column: 2;
+  min-width: 0;
 }
 .flow-parameters-card .parameter-source-field {
-  grid-column: 2;
+  grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -323,4 +334,9 @@
   color: var(--fa-status-error);
   font-size: 12px;
   line-height: 18px;
+}
+@media (max-width: 800px) {
+  .flow-parameters-card .parameter-value-fields > .literal-value {
+    grid-column: 1;
+  }
 }

@@ -5,7 +5,10 @@
 .ant-select {
   min-width: 0;
 }
-label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item) > .ant-select,
+label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper):not(
+    .ant-segmented-item
+  )
+  > .ant-select,
 .template-field > .ant-select {
   display: flex;
   width: 100%;
@@ -120,4 +123,61 @@ label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item
 .metadata-facts .ant-descriptions-item-content {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+/* Solid action colours and readable text colours have distinct dark-mode roles. */
+.ant-btn-color-primary.ant-btn-variant-outlined:not(:disabled),
+.ant-btn-color-primary.ant-btn-variant-text:not(:disabled) {
+  color: var(--fa-text-link);
+}
+.ant-btn-color-primary.ant-btn-variant-outlined:not(:disabled) {
+  border-color: var(--fa-text-link);
+}
+.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled) {
+  color: var(--fa-text-inverse);
+  background: var(--fa-action-primary);
+  border-color: var(--fa-action-primary);
+}
+.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled):hover {
+  background: var(--fa-action-hover);
+  border-color: var(--fa-action-hover);
+}
+.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled):active {
+  background: var(--fa-action-active);
+  border-color: var(--fa-action-active);
+}
+.ant-tag-success {
+  --fa-tag-ink: var(--fa-status-success);
+  --fa-tag-bg: var(--fa-status-success-bg);
+  --fa-tag-solid: var(--fa-status-success-solid);
+}
+.ant-tag-warning {
+  --fa-tag-ink: var(--fa-status-warning);
+  --fa-tag-bg: var(--fa-status-warning-bg);
+  --fa-tag-solid: var(--fa-status-warning-solid);
+}
+.ant-tag-error {
+  --fa-tag-ink: var(--fa-status-error);
+  --fa-tag-bg: var(--fa-status-error-bg);
+  --fa-tag-solid: var(--fa-status-error-solid);
+}
+.ant-tag-processing {
+  --fa-tag-ink: var(--fa-status-info);
+  --fa-tag-bg: var(--fa-status-info-bg);
+  --fa-tag-solid: var(--fa-action-primary);
+}
+.ant-tag:is(.ant-tag-success, .ant-tag-warning, .ant-tag-error, .ant-tag-processing):not(
+    .ant-tag-disabled
+  ):is(.ant-tag-filled, .ant-tag-outlined) {
+  color: var(--fa-tag-ink);
+  background: var(--fa-tag-bg);
+}
+.ant-tag:is(.ant-tag-success, .ant-tag-warning, .ant-tag-error, .ant-tag-processing):not(
+    .ant-tag-disabled
+  ).ant-tag-solid {
+  color: var(--fa-text-inverse);
+  background: var(--fa-tag-solid);
+  border-color: var(--fa-tag-solid);
+}
+.ant-btn-color-dangerous:not(:disabled):is(.ant-btn-variant-outlined, .ant-btn-variant-text) {
+  color: var(--fa-status-error);
 }

@@ -70,7 +70,7 @@
 }
 .mapping-values .mapping-row button.selected {
   background: var(--fa-action-subtle);
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }
 .mapping-values .mapping-row button.selected {
   box-shadow: inset 3px 0 0 var(--fa-action-primary);
@@ -83,7 +83,8 @@
   font-size: 12px;
   padding: 8px 12px;
 }
-.mapping-values label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.mapping-values
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   display: block;
   font-size: 12px;
   color: var(--fa-text-secondary);
@@ -113,7 +114,7 @@
   margin: 0;
 }
 .node-configuration .structured-values-feedback {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }
 .structured-values-feedback:empty {
   display: none;

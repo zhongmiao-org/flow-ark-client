@@ -272,7 +272,8 @@
   min-width: 0;
   max-width: 100%;
 }
-.task-step-graph-navigation > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.task-step-graph-navigation
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   min-width: 0;
   max-width: 100%;
 }

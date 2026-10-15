@@ -88,7 +88,7 @@
 }
 .app .sidebar nav button:hover {
   color: var(--fa-text-inverse);
-  background: #ffffff10;
+  background: color-mix(in srgb, var(--fa-text-inverse) 6%, transparent);
 }
 .app .sidebar nav button.selected {
   color: var(--fa-text-inverse);
@@ -106,7 +106,7 @@
 }
 .app .sidebar nav button b {
   background: var(--fa-bg-surface);
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }
 .app .sidebar-bottom {
   padding: 0;
@@ -171,7 +171,7 @@
 }
 .breadcrumbs a {
   text-decoration: none;
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   background: transparent;
   border: 0;
   flex-shrink: 0;
@@ -293,7 +293,7 @@
   height: 32px;
   min-height: 32px;
   margin: 0;
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }
 .flows-page .card-top .run-state-tag {
   margin-left: auto;
@@ -366,7 +366,7 @@
   padding: 48px;
 }
 .first-flow > .ant-card-body > svg {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   flex-shrink: 0;
 }
 .first-flow h2 {

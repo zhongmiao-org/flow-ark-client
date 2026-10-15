@@ -38,8 +38,10 @@
 .node-configuration p.field-error {
   color: var(--fa-status-error);
 }
-.node-timing label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper),
-.node-configuration > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.node-timing
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper),
+.node-configuration
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   font-size: 12px;
   color: var(--fa-text-secondary);
   margin: 0;
@@ -102,6 +104,7 @@
   flex-direction: column;
   gap: 6px;
 }
-.resource-binding-field > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.resource-binding-field
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   margin: 0;
 }

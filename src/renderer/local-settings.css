@@ -56,7 +56,7 @@
 }
 .local-browser-options > .ant-card-body > .local-browser-mode.is-ready {
   background: var(--fa-action-subtle);
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }
 .local-browser-mode-title {
   display: flex;
@@ -169,11 +169,11 @@
   margin-top: 16px;
 }
 .local-browser-mode.is-ready {
-  border-color: var(--fa-action-primary);
+  border-color: var(--fa-text-link);
   background: var(--fa-action-subtle);
 }
 .local-browser-mode.is-ready h3 {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }
 .local-settings-status {
   display: inline-block;
@@ -230,7 +230,7 @@
   gap: 8px;
 }
 .local-browser-choices button[aria-pressed='true'] {
-  border-color: var(--fa-action-primary);
+  border-color: var(--fa-text-link);
   background: var(--fa-action-subtle);
 }
 .local-browser-choices small,
@@ -242,7 +242,8 @@
 .local-settings-field {
   margin-bottom: 24px;
 }
-.local-settings-field > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.local-settings-field
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   display: block;
   font-size: 13px;
   margin-bottom: 8px;
@@ -324,7 +325,7 @@
 }
 .local-browser-binding
   .local-settings-field
-  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   font-size: 13px;
   line-height: 20px;
   margin: 0 0 8px;
@@ -362,7 +363,7 @@
 }
 .local-browser-binding
   .local-browser-driver-field
-  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   font-size: 12px;
   line-height: 18px;
   margin: 0 0 6px;

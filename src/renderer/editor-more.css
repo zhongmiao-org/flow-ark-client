@@ -41,7 +41,7 @@
   border-color: var(--fa-border-default);
 }
 .editor-more-menu-note .ant-alert-title {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }
 .editor-more-actions {
   display: flex;
@@ -64,7 +64,8 @@
   color: var(--fa-text-secondary);
   font-size: 12px;
 }
-.editor-more-card label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.editor-more-card
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   display: flex;
   flex-direction: column;
   gap: 8px;

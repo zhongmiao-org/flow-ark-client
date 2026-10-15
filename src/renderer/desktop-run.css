@@ -69,7 +69,7 @@
   padding: var(--fa-space-16);
 }
 .desktop-confirm-note .ant-alert-title {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }
 .desktop-run-confirmation .desktop-confirm-card > .ant-card-body > p {
   margin-top: 8px;
