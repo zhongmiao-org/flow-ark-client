@@ -172,6 +172,12 @@ export function appearanceTheme(mode: 'light' | 'dark'): ThemeConfig {
       Menu: { darkItemColor: c['--fa-text-nav'] },
       Modal: { titleFontSize: 28, titleLineHeight: 40 / 28, borderRadiusLG: 16 },
       Tag: { borderRadiusSM: 999, lineHeightSM: 26 / 12 },
+      Tabs: {
+        itemSelectedColor: c['--fa-text-link'],
+        itemHoverColor: c['--fa-text-link'],
+        itemActiveColor: c['--fa-text-link'],
+        inkBarColor: c['--fa-text-link'],
+      },
       Button: { fontWeight: 500, primaryShadow: 'none', defaultShadow: 'none' },
     },
   };
