@@ -95,3 +95,7 @@
 .step-position-add-target button {
   flex-shrink: 0;
 }
+
+.step-position-draft > .ant-card-body > .action-trigger {
+  width: 100%;
+}

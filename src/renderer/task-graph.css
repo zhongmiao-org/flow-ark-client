@@ -16,7 +16,7 @@
 .ai-task-full-graph .task-graph-toolbar > button {
   min-width: 144px;
 }
-.ai-task-full-graph .task-graph-toolbar > button[aria-pressed='true'] {
+.ai-task-full-graph .task-graph-toolbar > button[aria-pressed='true']:not(:disabled) {
   color: var(--fa-text-inverse);
   background: var(--fa-action-primary);
 }

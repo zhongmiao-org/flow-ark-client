@@ -1,3 +1,4 @@
+import ActionButton from './ActionButton';
 import { runStateColors, runStepColors } from './theme';
 import { Alert, Button, Collapse, Tabs, Tag, Badge, Card } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
@@ -129,33 +130,48 @@ export default function RunDetail({
   const runControls = (
     <div className="run-controls">
       {controllable && !observed.fault && r.state === 'RUNNING' && (
-        <Button disabled={controlPending || undefined} onClick={() => void sendControl('pause')}>
+        <ActionButton
+          hint="请求在步骤边界暂停当前运行，等待本次回执"
+          disabled={controlPending || undefined}
+          onClick={() => void sendControl('pause')}
+        >
           {command?.action === 'pause' ? '暂停请求中' : '请求暂停'}
-        </Button>
+        </ActionButton>
       )}
       {controllable && !observed.fault && r.state === 'PAUSED' && (
-        <Button
+        <ActionButton
+          hint="执行当前运行的下一步，保持启动时的固定版本"
           type={r.debug ? 'primary' : 'default'}
           disabled={controlPending || undefined}
           onClick={() => void sendControl('step')}
         >
           执行下一步
-        </Button>
+        </ActionButton>
       )}
       {controllable &&
         !observed.fault &&
         ['PAUSED', 'WAITING_INPUT'].includes(r.state) &&
         (r.state === 'WAITING_INPUT' && humanRequest ? (
-          <Button type="primary" onClick={humanRequest}>
-            查看本次人工请求
-          </Button>
+          <ActionButton
+            hint="查看本次运行的人工请求；确认只对当前对象生效"
+            aria-label="查看本次人工请求"
+            type="primary"
+            onClick={humanRequest}
+          >
+            人工请求
+          </ActionButton>
         ) : (
-          <Button disabled={controlPending || undefined} onClick={() => void sendControl('resume')}>
+          <ActionButton
+            hint="继续当前运行，保持启动时的固定版本"
+            disabled={controlPending || undefined}
+            onClick={() => void sendControl('resume')}
+          >
             继续运行
-          </Button>
+          </ActionButton>
         ))}
       {!terminal && (controllable || (r.state === 'QUEUED' && !observed.fault)) && (
-        <Button
+        <ActionButton
+          hint="请求取消当前运行；已发生的外部操作不会自动撤销"
           danger
           color={r.debug ? 'danger' : undefined}
           variant={r.debug ? 'filled' : undefined}
@@ -163,7 +179,7 @@ export default function RunDetail({
           onClick={() => void sendControl('cancel')}
         >
           取消运行
-        </Button>
+        </ActionButton>
       )}
     </div>
   );

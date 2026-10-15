@@ -1,3 +1,4 @@
+import ActionButton from './ActionButton';
 import {
   Card,
   Divider,
@@ -349,12 +350,14 @@ export default function LocalSettingsPage({
     }
   };
   const flowLink = (flow: FlowRecord) => (
-    <Button
+    <ActionButton
+      hint="打开对应流程的参数与资源配置"
+      aria-label="打开流程配置"
       disabled={!!busy || undefined}
       onClick={() => void act('flow', () => openSettingsFlow(flow, false))}
     >
-      打开流程配置
-    </Button>
+      流程配置
+    </ActionButton>
   );
   const settingsContent = (
     <>
@@ -665,7 +668,9 @@ export default function LocalSettingsPage({
                   </div>
                   <div className="local-settings-field">
                     <label htmlFor="local-browser-path">安装位置</label>
-                    <Button
+                    <ActionButton
+                      hint={path || '从这台 Mac 选择浏览器应用'}
+                      stretch
                       id="local-browser-path"
                       className="local-browser-file-choice"
                       disabled={!!busy || undefined}
@@ -674,11 +679,17 @@ export default function LocalSettingsPage({
                       onClick={() => void choose('browser')}
                     >
                       {path || '[从这台 Mac 选择应用]'}
-                    </Button>
+                    </ActionButton>
                   </div>
                   <div className="local-settings-field local-browser-driver-field">
                     <label htmlFor="local-driver-path">驱动来源（Firefox 需要）</label>
-                    <Button
+                    <ActionButton
+                      hint={
+                        picked?.product === 'safari'
+                          ? 'Safari 使用系统 safaridriver'
+                          : driver || '手动选择已准备的驱动，不会下载浏览器'
+                      }
+                      stretch
                       id="local-driver-path"
                       color="default"
                       size="small"
@@ -692,7 +703,7 @@ export default function LocalSettingsPage({
                       {picked?.product === 'safari'
                         ? '使用系统 safaridriver'
                         : driver || '手动选择已准备的驱动'}
-                    </Button>
+                    </ActionButton>
                     {driver && picked?.product !== 'safari' && (
                       <Button
                         className="local-browser-clear-driver"

@@ -169,7 +169,7 @@
   gap: 8px;
   overflow-wrap: anywhere;
 }
-.template-entry-choices button[aria-pressed='true'] {
+.template-entry-choices button[aria-pressed='true']:not(:disabled) {
   border-color: var(--fa-text-link);
   background: var(--fa-action-subtle);
 }

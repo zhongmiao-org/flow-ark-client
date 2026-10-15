@@ -1,3 +1,4 @@
+import ActionButton from './ActionButton';
 import { Card, Drawer, ConfigProvider, Select, Button, Alert } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { FlowRecord, Step } from '../shared/types';
@@ -213,16 +214,32 @@ export default function ControlWorkspace(props: Props) {
                     )}
                     {node.type === 'condition' && <p>空分支直接汇合，不会创建或执行额外步骤。</p>}
                     {related && (
-                      <Button onClick={() => selectRelated(related.id)}>
-                        配置 {taskStepTitle(related)}
-                      </Button>
+                      <ActionButton
+                        stretch
+                        hint={`配置关联步骤：${taskStepTitle(related)}`}
+                        aria-label={`配置 ${taskStepTitle(related)}`}
+                        onClick={() => selectRelated(related.id)}
+                      >
+                        配置关联步骤
+                      </ActionButton>
                     )}
                     {dataSource && (
-                      <Button onClick={() => selectRelated(dataSource.id)}>
-                        配置数据 · {taskStepTitle(dataSource)}
-                      </Button>
+                      <ActionButton
+                        stretch
+                        hint={`配置数据来源：${taskStepTitle(dataSource)}`}
+                        aria-label={`配置数据 · ${taskStepTitle(dataSource)}`}
+                        onClick={() => selectRelated(dataSource.id)}
+                      >
+                        配置数据
+                      </ActionButton>
                     )}
-                    <Button onClick={props.edit}>编辑当前步骤与期限</Button>
+                    <ActionButton
+                      hint="编辑当前步骤的配置与执行期限"
+                      aria-label="编辑当前步骤与期限"
+                      onClick={props.edit}
+                    >
+                      步骤与期限
+                    </ActionButton>
                   </>
                 ) : (
                   <>
@@ -230,7 +247,12 @@ export default function ControlWorkspace(props: Props) {
                     <p>在左侧流程图选择条件、循环或其他步骤。</p>
                   </>
                 )}
-                <Button
+                <ActionButton
+                  stretch
+                  hint={
+                    props.busy ? '正在保存，请等待当前操作完成' : '保存当前流程草稿，不会开始运行'
+                  }
+                  aria-label="保存草稿"
                   ref={saveButton}
                   type="primary"
                   loading={props.busy}
@@ -244,7 +266,7 @@ export default function ControlWorkspace(props: Props) {
                     : attemptedSave && props.error
                       ? '重试保存草稿'
                       : '保存草稿'}
-                </Button>
+                </ActionButton>
                 <p role="status">
                   {props.saved ? '草稿已保存' : '有未保存的更改'} · 修改不影响已开始的运行。
                 </p>
