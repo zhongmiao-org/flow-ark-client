@@ -479,7 +479,14 @@ export default function FlowParametersPage({
                   aria-busy={busy === 'choose' && choosing === binding}
                 >
                   <strong>{binding} 目录</strong>
-                  <Button
+                  <ActionButton
+                    stretch
+                    triggerClassName="parameter-resource-action"
+                    hint={
+                      busy === 'choose' && choosing === binding
+                        ? '正在选择目录，取消后保留原绑定'
+                        : (draft.bindings.files[binding] ?? '选择本机目录作为当前流程的资源绑定')
+                    }
                     htmlType="button"
                     color="default"
                     variant="filled"
@@ -488,10 +495,8 @@ export default function FlowParametersPage({
                     aria-label={'选择 ' + binding + ' 目录'}
                     title={draft.bindings.files[binding] ?? '尚未选择'}
                   >
-                    {busy === 'choose' && choosing === binding
-                      ? '正在选择…'
-                      : (draft.bindings.files[binding] ?? '选择目录')}
-                  </Button>
+                    {draft.bindings.files[binding] ?? '选择目录'}
+                  </ActionButton>
                   {selection?.binding === binding && (
                     <p
                       ref={selectionMessage}

@@ -344,3 +344,15 @@
 .parameter-actions > .action-trigger {
   min-width: min(160px, 100%);
 }
+
+/* Keep a wrapped directory label unchanged while the native picker is pending. */
+.parameter-resource-action > .ant-btn {
+  position: relative;
+  padding-inline-start: 36px;
+}
+.parameter-resource-action > .ant-btn > .ant-btn-icon {
+  position: absolute;
+  inset-inline-start: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+}
