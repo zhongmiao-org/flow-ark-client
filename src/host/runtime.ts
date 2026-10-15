@@ -1,4 +1,9 @@
 import { methods } from '../shared/ipc';
+import {
+  assertBrowserInspectionNode,
+  assertBrowserInspectionResult,
+  browserInspectionCapability,
+} from '../shared/browser-inspection';
 import { TemplateAuthor } from './template-author';
 import { authorMethods } from '../shared/template-author';
 import { TemplateData } from './template-data';
@@ -1396,6 +1401,30 @@ export class Runtime {
       return true;
     }
     if (method === 'browser') {
+      const active = this.active;
+      const inspection = args.version === 4;
+      if (inspection) {
+        const { nodeInstance, ...nodeInput } = args;
+        assertBrowserInspectionNode(nodeInput, true);
+        const source = walk(snapshot.flow.steps).find((n) => n.id === args.id);
+        if (
+          !source ||
+          source.type !== 'browser' ||
+          source.version !== 4 ||
+          source.operation !== args.operation ||
+          !snapshot.flow.requiredCapabilities.includes(browserInspectionCapability) ||
+          typeof nodeInstance !== 'string' ||
+          !active?.nodeInstances?.has(nodeInstance) ||
+          nodeInstance.split('/').at(-1) !== source.id
+        )
+          throw Error('网页只读节点不在当前固定运行中');
+        if (snapshot.bindings.template) {
+          const { entry } = await this.templates.context(snapshot);
+          if (!entry.capabilities.includes(browserInspectionCapability))
+            throw Error('模板入口未声明网页只读能力');
+          this.checkActive(active);
+        }
+      }
       if (['click', 'fill', 'select', 'check', 'press', 'upload'].includes(args.operation))
         await this.templates.canWrite(snapshot, id, runSignal);
       const binding = this.store.get<BrowserBinding>('browser', snapshot.bindings.browserId ?? '');
@@ -1419,6 +1448,13 @@ export class Runtime {
           args.operation === 'screenshot' ? uid() + '.png' : String(args.value),
         );
       const result = await this.sessions.use(binding, id, command, runSignal, snapshot.webTarget);
+      this.checkActive(active);
+      runSignal.throwIfAborted();
+      if (inspection) {
+        assertBrowserInspectionResult(args.operation, result);
+        this.typedResults.save(id, args.id, args.nodeInstance, 'browser', result);
+        return result;
+      }
       if (args.operation === 'screenshot' || args.operation === 'download')
         return this.registerArtifact(id, command.value, runSignal);
       return result;

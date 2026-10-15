@@ -303,6 +303,26 @@ export type Node =
       operation: 'configuration' | 'state.read' | 'state.write';
       expectedRevision?: Value;
       value?: Value;
+    }
+  | {
+      id: string;
+      type: 'browser';
+      version: 4;
+      name?: string;
+      timeoutMs?: number;
+      operation: 'url' | 'count' | 'attribute';
+      selector:
+        | string
+        | {
+            $ref: string;
+          };
+      value:
+        | null
+        | string
+        | {
+            $ref: string;
+          };
+      framePath: FramePath;
     };
 export type Value =
   | Json
@@ -646,6 +666,27 @@ export type TemplateDataWriteReceipt =
       currentRevision: number;
       error?: string;
     };
+export type BrowserInspectionNode = {
+  id: string;
+  type: 'browser';
+  version: 4;
+  name?: string;
+  timeoutMs?: number;
+  operation: 'url' | 'count' | 'attribute';
+  selector:
+    | string
+    | {
+        $ref: string;
+      };
+  value:
+    | null
+    | string
+    | {
+        $ref: string;
+      };
+  framePath: FramePath;
+};
+export type BrowserInspectionResult = string | number | null;
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -719,6 +760,8 @@ export interface FlowArkP1 {
   SkillTrialRequest?: SkillTrialRequest;
   SkillTrialResult?: SkillTrialResult;
   SkillTrialStatus?: SkillTrialStatus;
+  BrowserInspectionNode?: BrowserInspectionNode;
+  BrowserInspectionResult?: BrowserInspectionResult;
 }
 export interface CredentialRef {
   credentialId: string;

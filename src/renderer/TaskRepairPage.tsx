@@ -354,7 +354,7 @@ export default function TaskRepairPage({
                   onKeyDown: activateCollapseWithSpace,
                   children: (
                     <div className="feedback-body">
-                      {node?.type === 'browser' && (
+                      {node?.type === 'browser' && node.version !== 4 && (
                         <ElementPicker
                           selector={node.selector}
                           framePath={'framePath' in node ? node.framePath : []}
@@ -569,7 +569,11 @@ export default function TaskRepairPage({
                   label={preview?.source.nodeName || stepName}
                   selector={
                     preview?.source.selector ||
-                    (node?.type === 'browser' ? node.selector : undefined)
+                    (node?.type === 'browser'
+                      ? typeof node.selector === 'string'
+                        ? node.selector
+                        : '引用：' + node.selector.$ref
+                      : undefined)
                   }
                   framePath={
                     preview?.source.framePath ??

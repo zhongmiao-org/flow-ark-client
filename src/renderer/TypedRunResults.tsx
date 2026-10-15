@@ -8,6 +8,7 @@ import { DocumentResultView } from './DocumentResults';
 import { SkillVersionView } from './SkillPanel';
 import { assertDataOutput } from '../shared/template-data';
 import ContextResultView from './ContextResultView';
+import { assertBrowserInspectionResult } from '../shared/browser-inspection';
 import type { TypedResultMeta } from '../host/typed-results';
 export default function TypedRunResults({
   runId,
@@ -33,6 +34,7 @@ export default function TypedRunResults({
         else if (v.type === 'skill') assertSkillVersion(v.value);
         else if (v.type === 'context') assertDataOutput(v.value);
         else if (v.type === 'conversation') assertConversationOutput(v.value);
+        else if (v.type === 'browser') assertBrowserInspectionResult(v.operation, v.value);
         else throw Error('结果类型无效');
         if (live) setValue(v);
       })
@@ -66,6 +68,32 @@ export default function TypedRunResults({
       {value?.type === 'skill' && <SkillVersionView value={value.value} />}
       {value?.type === 'context' && <ContextResultView value={value.value} />}
       {value?.type === 'conversation' && <ConversationResultView value={value.value} />}
+      {value?.type === 'browser' && (
+        <section aria-label="完整网页只读结果">
+          <p>
+            {value.operation === 'url'
+              ? '当前顶层页面实际地址'
+              : value.operation === 'count'
+                ? '匹配数量；0表示当前范围没有匹配'
+                : value.value === null
+                  ? '该元素没有此属性（null）'
+                  : value.value === ''
+                    ? '属性存在，值为空文本（""）'
+                    : '唯一元素的原始DOM属性'}
+          </p>
+          <pre
+            style={{
+              whiteSpace: 'pre-wrap',
+              overflowWrap: 'anywhere',
+              maxHeight: 320,
+              overflow: 'auto',
+            }}
+          >
+            {JSON.stringify(value.value, null, 2)}
+          </pre>
+          <p>本次独立观察不代表账号、职位或外部动作已核对。</p>
+        </section>
+      )}
     </section>
   );
 }

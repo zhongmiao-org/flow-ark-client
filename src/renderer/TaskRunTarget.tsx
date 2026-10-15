@@ -64,8 +64,14 @@ export default function TaskRunTarget({
           ['当时的地址', browser.page.url],
         );
       if (node.operation === 'navigate') facts.push(['配置的打开地址', value(node.value)]);
+      else if (node.operation === 'url') facts.push(['读取范围', '顶层页面实际地址，不进行导航']);
       else if (node.operation !== 'screenshot')
-        facts.push(['步骤定位', node.selector || '未设置元素定位']);
+        facts.push([
+          '步骤定位',
+          typeof node.selector === 'string'
+            ? node.selector || '未设置元素定位'
+            : value(node.selector),
+        ]);
       if ('framePath' in node && node.framePath.length)
         facts.push(['内嵌页面路径', node.framePath.join(' → ')]);
       note = '网页信息来自运行快照；后续跳转、账号与页面当前内容未在此核对。';

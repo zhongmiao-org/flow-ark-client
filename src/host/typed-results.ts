@@ -8,11 +8,12 @@ import { walk } from '../core/validate';
 import { validateTemplateDataOutput } from '../../contracts/template-data';
 import type { DataOutput, DataReceipt } from '../shared/template-data';
 import { contextOperations } from '../shared/template-data';
+import { assertBrowserInspectionResult } from '../shared/browser-inspection';
 export type TypedResultMeta = {
   id: string;
   nodeId: string;
   nodeInstance: string;
-  type: 'document' | 'skill' | 'context' | 'conversation';
+  type: 'document' | 'skill' | 'context' | 'conversation' | 'browser';
   label: string;
   bytes: number;
   sha256: string;
@@ -28,13 +29,14 @@ export class TypedResults {
   ) {
     if (typeof nodeInstance !== 'string' || !nodeInstance || nodeInstance.length > 4000)
       throw Error('结构化结果步骤身份无效');
-    if (type === 'document') assertDocumentResult(value);
-    else if (type === 'skill') assertSkillVersion(value);
-    else if (type === 'conversation') this.conversationResult(value);
-    else this.contextResult(runId, nodeInstance, value);
     const snapshot = this.store.get<FlowRecord>('snapshot', runId);
     const node = snapshot && walk(snapshot.flow.steps).find((n) => n.id === nodeId);
     if (!node || node.type !== type) throw Error('结构化结果不属于当前快照');
+    if (type === 'document') assertDocumentResult(value);
+    else if (type === 'skill') assertSkillVersion(value);
+    else if (type === 'conversation') this.conversationResult(value);
+    else if (type === 'browser') this.browserResult(runId, nodeId, value);
+    else this.contextResult(runId, nodeInstance, value);
     const id = digest({ runId, nodeId, nodeInstance, type }),
       sha256 = digest(value),
       bytes = skillBytes(value);
@@ -89,13 +91,29 @@ export class TypedResults {
     if (r.meta.type === 'document') assertDocumentResult(r.value);
     else if (r.meta.type === 'context') this.contextResult(runId, r.meta.nodeInstance, r.value);
     else if (r.meta.type === 'conversation') this.conversationResult(r.value);
+    else if (r.meta.type === 'browser') this.browserResult(runId, r.meta.nodeId, r.value);
     else {
       assertSkillVersion(r.value);
       const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', runId);
       if (digest(snapshot?.skillSnapshots?.[r.meta.nodeId]) !== digest(r.value))
         throw Error('Skill结果与运行快照不一致');
     }
-    return { type: r.meta.type, value: r.value, nodeInstance: r.meta.nodeInstance };
+    return {
+      type: r.meta.type,
+      value: r.value,
+      nodeInstance: r.meta.nodeInstance,
+      ...(r.meta.type === 'browser'
+        ? { operation: this.browserResult(runId, r.meta.nodeId, r.value) }
+        : {}),
+    };
+  }
+  private browserResult(runId: string, nodeId: string, value: unknown) {
+    const snapshot = this.store.get<FlowRecord>('snapshot', runId);
+    const node = snapshot && walk(snapshot.flow.steps).find((n) => n.id === nodeId);
+    if (!node || node.type !== 'browser' || node.version !== 4)
+      throw Error('网页只读结果不属于固定节点');
+    assertBrowserInspectionResult(node.operation, value);
+    return node.operation;
   }
   private conversationResult(value: unknown) {
     const v = validateConversationOutput(value);

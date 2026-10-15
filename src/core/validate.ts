@@ -1,4 +1,8 @@
 import { skillCapability, skillBudget } from '../shared/skill';
+import {
+  browserInspectionCapability,
+  assertBrowserInspectionNode,
+} from '../shared/browser-inspection';
 import { templateDataCapability } from '../shared/template-data';
 import { conversationCapability, assertConversationNode } from '../shared/conversation';
 import { documentCapability, assertDocumentNode } from '../shared/document';
@@ -23,6 +27,7 @@ export function validateObject<T>(name: string, value: unknown): T {
   return value as T;
 }
 export const capabilities = [
+  browserInspectionCapability,
   'conversation-evidence-v1',
   'skill-trial-v1',
   templateDataCapability,
@@ -124,6 +129,11 @@ export function validateFlow(value: unknown): Flow {
         mappingPreview(n, parameters);
       }
       if (n.type === 'browser') {
+        if (n.version === 4) {
+          if (!flow.requiredCapabilities.includes(browserInspectionCapability))
+            throw Error('网页只读节点需要声明browser-observe-v1能力');
+          assertBrowserInspectionNode(n);
+        }
         framePathOf(n);
         validateFormCommand(n, true);
       }

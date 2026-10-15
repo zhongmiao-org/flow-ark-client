@@ -125,6 +125,12 @@ export function declareNativeBoundaries(flow: Flow, manifest: Manifest, entryId:
     }
     if (node.type === 'http') writes ||= node.method !== 'GET';
     if (node.type === 'browser') {
+      if (node.version === 4) {
+        if (!entry.capabilities.includes('browser-observe-v1'))
+          entry.capabilities.push('browser-observe-v1');
+        if (!flow.requiredCapabilities.includes('browser-observe-v1'))
+          flow.requiredCapabilities.push('browser-observe-v1');
+      }
       let browser = manifest.resources.find(
         (r) => r.kind === 'browser' && entry.resources.includes(r.id),
       );

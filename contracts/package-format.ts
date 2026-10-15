@@ -1,5 +1,6 @@
-/** Normative package validation for contracts 0.22.0, derived from package 2.0. No application imports. */
+/** Normative package validation for contracts 0.25.0, derived from package 2.0. No application imports. */
 import { createHash } from 'node:crypto';
+import { assertBrowserInspectionNode, browserInspectionCapability } from './browser-inspection';
 import Ajv from 'ajv/dist/2020.js';
 import schema from './p1.schema.json';
 import {validateConfigurationSchema} from './configuration-schema';
@@ -62,7 +63,8 @@ export function validatePackage(files:Map<string,Buffer>):PackageData {
    if(n.dependencies.length)throw new Error('正式包脚本必须在开发阶段静态打包');
    const p=n.code.startsWith('@package:')?n.code.slice(9):null;
    if(!p||!manifest.scripts.includes(p))throw new Error('脚本必须引用清单中的 @package:scripts/ 资源');
-  }if(n.type==='condition'){walk(n.then,depth+1);walk(n.else,depth+1);}if(n.type==='loop')walk(n.body,depth+1);}};walk(flow.steps);
+  }if(n.type==='browser'&&n.version===4){assertBrowserInspectionNode(n);if(!flow.requiredCapabilities.includes(browserInspectionCapability))throw new Error('网页只读节点未声明browser-observe-v1能力');}
+  if(n.type==='condition'){walk(n.then,depth+1);walk(n.else,depth+1);}if(n.type==='loop')walk(n.body,depth+1);}};walk(flow.steps);
  }
  validateAuthorMetadata(files,manifest);
  return {manifest,files};

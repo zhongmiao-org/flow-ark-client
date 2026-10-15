@@ -78,6 +78,11 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
         if (node.operation === 'screenshot')
           return effect('write', '读取网页画面并保存截图到本次运行产物目录。');
         if (node.operation === 'read') return effect('read', '读取本步骤指定的网页文字。');
+        if (node.operation === 'url') return effect('read', '读取当前顶层页面地址，不进行导航。');
+        if (node.operation === 'count')
+          return effect('read', '统计指定范围的匹配数量，无匹配为0；不点击或填写。');
+        if (node.operation === 'attribute')
+          return effect('read', '读取唯一目标的原始DOM属性，属性缺失为null；不点击或填写。');
         if (node.operation === 'inputValue')
           return effect('read', '读取本步骤指定的表单输入内容。');
         if (node.operation === 'wait') return effect('read', '等待本步骤指定的网页元素出现。');
