@@ -105,7 +105,10 @@ export type Bootstrap = {
   runtimeBlock?: string;
   dataPath: string;
 };
-export type Bridge = { request(method: string, args?: any): Promise<any> };
+export type Bridge = {
+  request(method: string, args?: any): Promise<any>;
+  onmessage(listener: (event: import('./conversation').ConversationEvent) => void): () => void;
+};
 export type BrowserCommand = {
   operation: string;
   selector?: string;

@@ -13,7 +13,7 @@ import './action-library.css';
 const groups = [
   { id: 'browser', label: '网页操作', types: ['browser'] },
   { id: 'value', label: '数据与变量', types: ['value'] },
-  { id: 'ai', label: 'AI 调用', types: ['ai'] },
+  { id: 'ai', label: 'AI 调用', types: ['ai', 'conversation'] },
   { id: 'http', label: 'HTTP 请求', types: ['http'] },
   { id: 'script', label: 'JS / TS 脚本', types: ['script'] },
   { id: 'file', label: '文件处理 / Excel', types: ['file', 'excel'] },
@@ -23,6 +23,7 @@ const groups = [
 const descriptions: Record<string, string> = {
   value: '准备文本、数字或结构化数据',
   assert: '核对结果，不满足时停止运行',
+  conversation: '保存多轮对话并在待办继续，确认后供流程读取',
   ai: '使用用户自己的 AI 服务生成可校验的结构化结果',
   http: '发送 HTTP 请求并读取响应',
   script: '编写 JavaScript 或 TypeScript 处理逻辑',

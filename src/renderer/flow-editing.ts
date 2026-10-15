@@ -166,17 +166,19 @@ export function duplicateStep(
     return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, refs(v)]));
   };
   const cloneNode = (node: Step): Step =>
-    node.type === 'ai'
-      ? { ...structuredClone(node), input: refs(node.input) }
-      : node.type === 'condition'
-        ? {
-            ...refs({ ...node, then: [], else: [] }),
-            then: node.then.map(cloneNode),
-            else: node.else.map(cloneNode),
-          }
-        : node.type === 'loop'
-          ? { ...refs({ ...node, body: [] }), body: node.body.map(cloneNode) }
-          : refs(node);
+    node.type === 'conversation'
+      ? { ...structuredClone(node), input: refs(node.input), key: refs(node.key) }
+      : node.type === 'ai'
+        ? { ...structuredClone(node), input: refs(node.input) }
+        : node.type === 'condition'
+          ? {
+              ...refs({ ...node, then: [], else: [] }),
+              then: node.then.map(cloneNode),
+              else: node.else.map(cloneNode),
+            }
+          : node.type === 'loop'
+            ? { ...refs({ ...node, body: [] }), body: node.body.map(cloneNode) }
+            : refs(node);
   const cloned = cloneNode(original);
   for (const node of flatten([cloned])) node.id = ids.get(node.id)!;
   if (original.name && !['file', 'excel'].includes(original.type))

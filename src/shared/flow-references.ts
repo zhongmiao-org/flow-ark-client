@@ -4,6 +4,7 @@ const badKeys = new Set(['__proto__', 'constructor', 'prototype']);
 /** Only control-flow children are structural; an HTTP body is an input value. */
 export function nodeReferenceValues(node: Step) {
   if (node.type === 'ai') return { input: node.input };
+  if (node.type === 'conversation') return { input: node.input, key: node.key };
   if (node.type === 'condition') {
     const { then, else: otherwise, ...values } = node;
     return values;

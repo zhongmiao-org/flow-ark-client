@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import type { ConversationEvent } from '../shared/conversation';
 const allowed = new Set([
   'desktop.windows.list',
   'desktop.windows.release',
@@ -21,6 +22,12 @@ const allowed = new Set([
   'tool.connection.disconnect',
   'tool.connection.remove',
   'bootstrap',
+  'conversation.detail',
+  'conversation.draft',
+  'conversation.send',
+  'conversation.retry',
+  'conversation.cancel',
+  'conversation.confirm',
   'learning.status',
   'learning.start',
   'learning.skip',
@@ -106,6 +113,12 @@ const allowed = new Set([
   'app.showData',
 ]);
 contextBridge.exposeInMainWorld('flowark', {
+  onmessage: (listener: (event: ConversationEvent) => void) => {
+    const receive = (_event: Electron.IpcRendererEvent, value: ConversationEvent) =>
+      listener(value);
+    ipcRenderer.on('flowark:conversation', receive);
+    return () => ipcRenderer.removeListener('flowark:conversation', receive);
+  },
   request: (method: string, args: unknown = {}) => {
     if (!allowed.has(method)) return Promise.reject(new Error('方法未授权'));
     return ipcRenderer.invoke('flowark:request', method, args);

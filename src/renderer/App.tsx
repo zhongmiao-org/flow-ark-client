@@ -103,6 +103,7 @@ import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 import ReadStepInspector from './ReadStepInspector';
 import type { ElementPickerControls } from './ElementPicker';
 import { browserActions } from './browser-actions';
+import ConversationNodeConfiguration from './ConversationNodeConfiguration';
 import AINodeConfiguration from './AINodeConfiguration';
 import LogicNodeConfiguration from './LogicNodeConfiguration';
 import { revealDraftInput } from './revealDraftInput';
@@ -836,6 +837,8 @@ function WorkspaceApp() {
       return;
     }
     if (section === 'editor') requestEditorLeave(navigate, label);
+    else if (section === 'inbox' && attentionNavigation?.leave)
+      attentionNavigation.leave(navigate, label);
     else if (section === 'tools') toolNavigation.current?.(navigate);
     else if (section === 'ai-settings')
       aiSettingsNavigation.current?.(() => leaveAIContext(navigate, label), label);
@@ -1242,6 +1245,8 @@ function WorkspaceApp() {
                   setBrowserOpen(false);
                 };
                 if (section === 'editor') requestEditorLeave(navigate, '首次教学');
+                else if (section === 'inbox' && attentionNavigation?.leave)
+                  attentionNavigation.leave(navigate, '首次教学');
                 else if (section === 'tools') toolNavigation.current?.(navigate);
                 else if (section === 'ai-settings')
                   aiSettingsNavigation.current?.(
@@ -2768,6 +2773,11 @@ function WorkspaceApp() {
             />
           </div>
           <AttentionWorkspace
+            openFlow={(id) => {
+              const record = data.flows.find((f) => f.id === id);
+              if (record) void openFlow(record);
+              else setError('来源流程已不存在，请在我的流程中核对。');
+            }}
             request={attentionRequest}
             data={data}
             active={section === 'inbox'}
@@ -3074,6 +3084,9 @@ function Editor({
             ...r.flow.requiredCapabilities,
             ...(mapped ? ['excel-mapping-v1'] : []),
             ...(flatten(steps).some((node) => node.type === 'ai') ? ['ai-node-v1'] : []),
+            ...(flatten(steps).some((node) => node.type === 'conversation')
+              ? ['conversation-v1']
+              : []),
             ...(flatten(steps).some((node) => node.type === 'mcp') ? ['mcp-tool-v1'] : []),
             ...(flatten(steps).some((node) => node.type === 'desktop')
               ? ['desktop-selection-v1']
@@ -3100,6 +3113,9 @@ function Editor({
             ...new Set([
               ...r.flow.requiredCapabilities,
               ...(flatten(steps).some((node) => node.type === 'ai') ? ['ai-node-v1'] : []),
+              ...(flatten(steps).some((node) => node.type === 'conversation')
+                ? ['conversation-v1']
+                : []),
             ]),
           ],
         },
@@ -4179,6 +4195,15 @@ function Editor({
                                           />
                                         </>
                                       )}
+                                    {selectedNode.type === 'conversation' && (
+                                      <ConversationNodeConfiguration
+                                        node={selectedNode}
+                                        bindings={r.bindings}
+                                        choices={choices}
+                                        change={updateNode}
+                                        changeBindings={(bindings) => setRecord({ ...r, bindings })}
+                                      />
+                                    )}
                                     {selectedNode.type === 'ai' && (
                                       <AINodeConfiguration
                                         key={selectedNode.id + ':ai:' + revision}

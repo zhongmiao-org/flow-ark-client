@@ -1,0 +1,27 @@
+{
+  "formatVersion": "1.0",
+  "id": "conversation-example",
+  "name": "持久引导会话",
+  "description": "创建会话后结束本批；确认后再次运行读取完整对话。",
+  "parameters": {
+    "source": "虚构资料"
+  },
+  "requiredCapabilities": [
+    "conversation-v1"
+  ],
+  "steps": [
+    {
+      "id": "interview",
+      "type": "conversation",
+      "version": 1,
+      "binding": "ai",
+      "key": "example-session",
+      "title": "补充材料",
+      "instructions": "围绕用户提供的材料提问；未知信息保留未知。",
+      "input": {
+        "材料": "虚构说明"
+      },
+      "maxRequests": 20
+    }
+  ]
+}

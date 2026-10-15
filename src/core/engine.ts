@@ -117,9 +117,11 @@ export async function execute(flow: Flow, params: any, ctx: Execution) {
           } else if (n.type === 'human') output = await ctx.human(n.message, deadline.signal);
           else {
             const resolved =
-              n.type === 'ai'
-                ? { ...n, input: resolveValue(n.input, local) }
-                : resolveValue(n, local);
+              n.type === 'conversation'
+                ? { ...n, key: resolveValue(n.key, local), input: resolveValue(n.input, local) }
+                : n.type === 'ai'
+                  ? { ...n, input: resolveValue(n.input, local) }
+                  : resolveValue(n, local);
             deadline.check();
             output = await ctx.perform(n, resolved, instance, deadline.signal);
           }

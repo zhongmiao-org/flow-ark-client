@@ -256,6 +256,19 @@ export type Node =
         type: 'object';
         [k: string]: Json | 'object';
       };
+    }
+  | {
+      id: string;
+      type: 'conversation';
+      version: 1;
+      name?: string;
+      timeoutMs?: number;
+      binding: string;
+      key: Value;
+      title: string;
+      instructions: string;
+      input: Value;
+      maxRequests: number;
     };
 export type Value =
   | Json
@@ -443,6 +456,18 @@ export type AIPlanningResult = {
         string
       ];
 };
+export type ConversationOutput = {
+  sessionId: string;
+  status: 'draft' | 'generating' | 'ready' | 'failed' | 'cancelled' | 'confirmed';
+  revision: number;
+  /**
+   * @maxItems 100
+   */
+  transcript: {
+    role: 'user' | 'assistant';
+    text: string;
+  }[];
+};
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -471,6 +496,11 @@ export interface FlowArkP1 {
   McpToolResult?: McpToolResult;
   TemplateHumanReview?: TemplateHumanReview;
   ParameterSource?: ParameterSource;
+  ConversationMessage?: ConversationMessage;
+  ConversationAttempt?: ConversationAttempt;
+  ConversationSnapshot?: ConversationSnapshot;
+  ConversationEvent?: ConversationEvent;
+  ConversationOutput?: ConversationOutput;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -970,4 +1000,57 @@ export interface TemplateHumanReview {
   version: 1;
   target: string;
   content: string;
+}
+export interface ConversationMessage {
+  id: string;
+  turnId: string;
+  role: 'user' | 'assistant';
+  text: string;
+  state: 'complete' | 'partial';
+  requestId?: string;
+}
+export interface ConversationAttempt {
+  id: string;
+  turnId: string;
+  state: 'generating' | 'complete' | 'failed' | 'cancelled';
+  providerRequestId: string;
+  model: string;
+  usage: Json;
+}
+export interface ConversationSnapshot {
+  formatVersion: '1.0';
+  id: string;
+  flowId: string;
+  nodeId: string;
+  title: string;
+  fingerprint: string;
+  provider: 'deepseek' | 'openai-codex';
+  model: string;
+  instructions: string;
+  context: Json;
+  maxRequests: number;
+  status: 'draft' | 'generating' | 'ready' | 'failed' | 'cancelled' | 'confirmed';
+  revision: number;
+  sequence: number;
+  draft: string;
+  /**
+   * @maxItems 100
+   */
+  messages: ConversationMessage[];
+  /**
+   * @maxItems 50
+   */
+  attempts: ConversationAttempt[];
+  updatedAt: string;
+  error: string;
+  confirmedAt?: string;
+}
+export interface ConversationEvent {
+  kind: 'conversation.snapshot';
+  eventId: string;
+  sessionId: string;
+  sequence: number;
+  requestId: string | null;
+  turnId: string | null;
+  snapshot: ConversationSnapshot;
 }

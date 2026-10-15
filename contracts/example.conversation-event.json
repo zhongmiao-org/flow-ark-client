@@ -1,0 +1,31 @@
+{
+  "kind": "conversation.snapshot",
+  "eventId": "session-example:1",
+  "sessionId": "session-example",
+  "sequence": 1,
+  "requestId": null,
+  "turnId": null,
+  "snapshot": {
+    "formatVersion": "1.0",
+    "id": "session-example",
+    "flowId": "conversation-example",
+    "nodeId": "interview",
+    "title": "补充材料",
+    "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "provider": "deepseek",
+    "model": "explicit-user-model",
+    "instructions": "围绕用户提供的材料提问；未知信息保留未知。",
+    "context": {
+      "材料": "虚构说明"
+    },
+    "maxRequests": 20,
+    "status": "draft",
+    "revision": 1,
+    "sequence": 1,
+    "draft": "",
+    "messages": [],
+    "attempts": [],
+    "updatedAt": "2026-10-15T00:00:00Z",
+    "error": ""
+  }
+}

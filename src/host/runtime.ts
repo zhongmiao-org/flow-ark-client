@@ -1,3 +1,5 @@
+import { Conversations } from './conversations';
+import { conversationMethods } from '../shared/conversation';
 import { AINodes } from './ai-nodes';
 import { aiProviders } from '../shared/ai-node';
 import { resolveParameterSources } from '../shared/parameter-sources';
@@ -130,6 +132,7 @@ export class Runtime {
   private lastTick = Date.now();
   private timer?: NodeJS.Timeout;
   private secrets: string[] = [];
+  private conversations: Conversations;
   private admissions: Promise<void> = Promise.resolve();
   constructor(
     readonly dataPath: string,
@@ -141,6 +144,13 @@ export class Runtime {
     this.artifactFiles = new ArtifactFiles(dataPath);
     this.store = new Store(join(dataPath, 'flowark.sqlite'), key);
     this.store.recover();
+    this.conversations = new Conversations(this.store, {
+      available: () => this.assertAdmitting(),
+      configuration: (provider) => this.system('ai.configuration.read', { provider }),
+      key: (provider, revision) => this.system('credentials.get', { id: provider, revision }),
+      publish: (event) => this.system('conversation.message', event),
+      notify: () => this.system('notification', { title: 'FlowArk 有新的引导会话' }),
+    });
     this.aiSettings = new AISettings(this.store, {
       assertAvailable: () => {
         if (this.stopping || this.suspended) throw new Error('应用正在退出或休眠');
@@ -149,6 +159,7 @@ export class Runtime {
       inUse: (provider) =>
         this.planning?.usesProvider(provider) ||
         this.desktopPlanning?.usesProvider(provider) ||
+        this.conversations?.usesProvider(provider) ||
         this.store.list<Run>('run').some(
           (run) =>
             (run.id === this.active?.id || run.state === 'QUEUED') &&
@@ -542,6 +553,7 @@ export class Runtime {
     await this.outputs.record(record);
     await this.templates.preflight(record);
     await this.aiNodes.preflight(record);
+    await this.aiNodes.preflightConversations(record);
     const steps = walk(flow.steps);
     if (steps.some((n) => n.type === 'browser')) {
       const b = this.store.get<BrowserBinding>('browser', record.bindings.browserId ?? '');
@@ -1069,6 +1081,27 @@ export class Runtime {
     this.checkActive(this.active);
     const runSignal = this.active.abort.signal;
     const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', id)!;
+    if (method === 'conversation.open') {
+      const active = this.active;
+      const node = walk(snapshot.flow.steps).find((n) => n.id === args.nodeId);
+      if (!node || node.type !== 'conversation') throw new Error('会话节点不在当前快照中');
+      if (snapshot.bindings.template) {
+        const { entry, pkg } = await this.templates.context(snapshot);
+        const resource = pkg.manifest.resources.find((r) => r.id === node.binding);
+        if (
+          !entry.capabilities.includes('conversation-v1') ||
+          !entry.capabilities.includes('conversation') ||
+          !entry.capabilities.includes('ai') ||
+          !entry.resources.includes(node.binding) ||
+          resource?.kind !== 'ai' ||
+          resource.access !== 'use'
+        )
+          throw new Error('模板入口未声明会话能力与AI资源');
+      }
+      return this.conversations.open(snapshot, node, args.input, args.key, () =>
+        this.checkActive(active),
+      );
+    }
     if (method === 'ai.call') {
       const active = this.active;
       const node = walk(snapshot.flow.steps).find((n) => n.id === args.nodeId);
@@ -1401,6 +1434,7 @@ export class Runtime {
       this.desktopPlanning.invalidate();
       this.desktopRuns.cancelAll();
       this.planning.cancelAll();
+      await this.conversations.cancelAll();
     } catch (error) {
       errors.push(error);
     }
@@ -1463,6 +1497,23 @@ export class Runtime {
     return true;
   }
   async request(method: string, args: any = {}): Promise<any> {
+    if (method.startsWith('conversation.')) {
+      await this.ready;
+      const rule = conversationMethods[method as keyof typeof conversationMethods];
+      if (!rule) throw new Error('会话IPC方法未授权');
+      const value = rule.parse(args) as any;
+      if (method === 'conversation.detail') return this.conversations.detail(value.id);
+      if (method === 'conversation.draft')
+        return this.conversations.draft(value.id, value.revision, value.text);
+      if (method === 'conversation.send')
+        return this.conversations.send(value.id, value.revision, value.requestId, value.text);
+      if (method === 'conversation.retry')
+        return this.conversations.send(value.id, value.revision, value.requestId);
+      if (method === 'conversation.cancel')
+        return this.conversations.cancel(value.id, value.requestId);
+      if (method === 'conversation.confirm')
+        return this.conversations.confirm(value.id, value.revision);
+    }
     if (method.startsWith('credential.local.')) {
       await this.ready;
       return this.localCredentials.request(method, args);
@@ -1879,6 +1930,7 @@ export class Runtime {
       this.desktopPlanning.invalidate();
       this.desktopRuns.cancelAll();
       this.planning.cancelAll();
+      await this.conversations.cancelAll();
     } catch (error) {
       planningError = error;
     }

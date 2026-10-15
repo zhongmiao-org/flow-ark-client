@@ -54,6 +54,8 @@ function operationLabel(node: Step) {
             : node.operation === 'screenshot'
               ? '网页截图'
               : '操作网页';
+    case 'conversation':
+      return '创建或读取引导会话';
     case 'ai':
       return '结构化 AI 调用';
     case 'http':

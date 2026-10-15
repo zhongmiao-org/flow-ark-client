@@ -43,6 +43,12 @@ const rpc = new Rpc(
         signal.throwIfAborted();
         if (args.bindings.template)
           await rpc.call('node.authorize', { id: n.id, binding: resolved.binding });
+        if (n.type === 'conversation')
+          return await rpc.call('conversation.open', {
+            nodeId: n.id,
+            input: resolved.input,
+            key: resolved.key,
+          });
         if (n.type === 'ai') {
           const invocationId = randomUUID();
           const cancel = () => {

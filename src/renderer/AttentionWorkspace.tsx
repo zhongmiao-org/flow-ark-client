@@ -31,10 +31,11 @@ import { schemaDefaults } from '../shared/template-config';
 import { validateHumanInputSchema } from './human-input-schema';
 import { Field, type ConfigurationFieldDraft } from './TemplateConfiguration';
 import './attention-workspace.css';
+import ConversationPanel, { type ConversationLeave } from './ConversationPanel';
 import AttentionDetails from './AttentionDetails';
 import { keepFocusedElementVisible } from './keepFocusedElementVisible';
 
-export type AttentionNavigation = { title: string; back?: () => void };
+export type AttentionNavigation = { title: string; back?: () => void; leave?: ConversationLeave };
 const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
 const date = (value: string) => new Date(value).toLocaleString('zh-CN');
@@ -287,8 +288,10 @@ export default function AttentionWorkspace({
   showBrowser,
   navigation,
   request,
+  openFlow,
 }: {
   request?: { id: string };
+  openFlow?: (id: string) => void;
   data: Bootstrap;
   active: boolean;
   refresh: () => Promise<void>;
@@ -296,6 +299,7 @@ export default function AttentionWorkspace({
   showBrowser: () => void;
   navigation: Dispatch<SetStateAction<AttentionNavigation | undefined>>;
 }) {
+  const conversationLeave = useRef<ConversationLeave | undefined>(undefined);
   const [tab, setTab] = useState<'pending' | 'done'>('pending');
   const [query, setQuery] = useState('');
   const [kind, setKind] = useState('all');
@@ -379,16 +383,23 @@ export default function AttentionWorkspace({
       : '提醒详情'
     : '待办与提醒';
   const sourceRun = selected ? data.runs.find((run) => run.id === sourceId(selected)) : undefined;
-  const back = () => {
+  const directBack = () => {
     if (locked.current) return;
     setSelectedId('');
     setError('');
     setNotice('');
     setCancelRun(false);
   };
+  const back = () =>
+    conversationLeave.current ? conversationLeave.current(directBack, '待办列表') : directBack();
   useEffect(() => {
     if (!active) return;
-    navigation({ title, back: selected ? back : undefined });
+    navigation({
+      title,
+      back: selected ? back : undefined,
+      leave: (next, label) =>
+        conversationLeave.current ? conversationLeave.current(next, label) : next(),
+    });
     return () => navigation(undefined);
   }, [active, selected?.id, title, navigation]);
   useEffect(() => {
@@ -716,6 +727,19 @@ export default function AttentionWorkspace({
       </div>
     </>
   );
+  if (active && typeof selected?.detail?.conversationId === 'string')
+    return (
+      <ConversationPanel
+        key={selected.detail.conversationId}
+        id={selected.detail.conversationId}
+        refresh={refresh}
+        registerLeave={(fn) => {
+          conversationLeave.current = fn;
+        }}
+        back={directBack}
+        openFlow={openFlow}
+      />
+    );
   return (
     <section className="page attention-page" hidden={!active} aria-label="待办与提醒">
       <header className="attention-heading">

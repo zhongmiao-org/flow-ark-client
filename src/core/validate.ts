@@ -1,3 +1,4 @@
+import { conversationCapability, assertConversationNode } from '../shared/conversation';
 import { aiNodeCapability, assertAIRequest } from '../shared/ai-node';
 import { resolveParameterSources, parameterSourceCapability } from '../shared/parameter-sources';
 import Ajv2020 from 'ajv/dist/2020.js';
@@ -19,6 +20,8 @@ export function validateObject<T>(name: string, value: unknown): T {
   return value as T;
 }
 export const capabilities = [
+  conversationCapability,
+  'conversation',
   aiNodeCapability,
   parameterSourceCapability,
   'desktop-selection-v1',
@@ -64,6 +67,11 @@ export function validateFlow(value: unknown): Flow {
     for (const n of steps) {
       if (++count > 1000 || all.has(n.id)) throw new Error('节点数量过多或 ID 重复：' + n.id);
       all.add(n.id);
+      if (n.type === 'conversation') {
+        if (!flow.requiredCapabilities.includes(conversationCapability))
+          throw new Error('引导会话需要声明 conversation-v1 能力');
+        assertConversationNode(n);
+      }
       if (n.type === 'ai') {
         if (!flow.requiredCapabilities.includes(aiNodeCapability))
           throw new Error('AI 节点需要声明 ai-node-v1 能力');

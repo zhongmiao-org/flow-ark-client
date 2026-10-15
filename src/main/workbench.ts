@@ -1,3 +1,4 @@
+import { conversationEvent } from '../shared/conversation';
 import { oauthGrant, toolSecretValues } from '../shared/mcp-oauth-grant';
 import {
   app,
@@ -400,6 +401,12 @@ app
         rpc = new Rpc(
           (m) => host.postMessage(m),
           async (method, args) => {
+            if (method === 'conversation.message') {
+              const event = conversationEvent(args);
+              if (win && !win.isDestroyed() && !win.webContents.isDestroyed())
+                win.webContents.send('flowark:conversation', event);
+              return true;
+            }
             if (method === 'browser.embedded.binding')
               return {
                 id: 'embedded',
