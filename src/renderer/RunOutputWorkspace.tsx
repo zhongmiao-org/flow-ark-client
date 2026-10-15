@@ -187,6 +187,7 @@ export default function RunOutputWorkspace({
             <ArtifactCleanupPanel
               key={detail.run.id}
               run={detail.run}
+              artifactCount={artifacts.length}
               cleanup={detail.artifactCleanup}
               changed={reload}
               compact

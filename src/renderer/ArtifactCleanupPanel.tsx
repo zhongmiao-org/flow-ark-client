@@ -323,17 +323,20 @@ function CleanupDialog({
 
 export default function ArtifactCleanupPanel({
   run,
+  artifactCount,
   cleanup,
   changed,
   compact = false,
 }: {
   run: Run;
+  artifactCount: number;
   cleanup?: ArtifactCleanupRecord;
   compact?: boolean;
   changed: () => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const currentCleanup = cleanup?.runId === run.id ? cleanup : undefined;
+  const empty = artifactCount === 0 && (!currentCleanup || currentCleanup.state === 'completed');
   const terminal = ['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(run.state);
   return (
     <section
@@ -351,13 +354,14 @@ export default function ArtifactCleanupPanel({
             <p>默认保留。仅清理本次运行在应用内保存的副本。</p>
           </div>
           <Button
-            disabled={!terminal || currentCleanup?.state === 'pending' || undefined}
+            disabled={!terminal || empty || currentCleanup?.state === 'pending' || undefined}
             onClick={() => setOpen(true)}
           >
             预览产物清理
           </Button>
         </div>
         {!terminal && <p>运行尚未结束，暂不能清理产物。</p>}
+        {terminal && empty && <p>本次运行没有已保存产物，无需清理。</p>}
         {cleanup && !currentCleanup && (
           <Alert
             className="artifact-cleanup-feedback"
