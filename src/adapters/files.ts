@@ -188,7 +188,13 @@ export async function fileOperation(
     assertRelativeName(n.name);
     if (n.operation === 'fill') assertRelativeName(n.templateName);
   }
-  const path = await scopedPath(bindings.files[n.binding], String(n.name), n.operation !== 'read');
+  const path = await scopedPath(
+    bindings.files[n.binding],
+    String(n.name),
+    n.operation !== 'read',
+  ).catch((error: unknown) => {
+    throw n.operation === 'read' ? error : fileWriteFailure(error);
+  });
   if (n.type === 'excel') {
     const workbook = new ExcelJS.Workbook();
     if (n.operation === 'map') {
