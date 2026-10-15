@@ -47,6 +47,8 @@ export function draftHistory(state: DraftHistory, action: DraftAction): DraftHis
       present: { ...state.present, record: structuredClone(action.record) },
       future: [],
       group: action.group,
+      // Dedicated editors can save new node content while the inspector stays mounted.
+      revision: state.revision + Number(action.type === 'saved'),
     };
   }
   const from = action.type === 'undo' ? state.past : state.future;
