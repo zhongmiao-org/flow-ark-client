@@ -88,15 +88,16 @@
 }
 .control-workspace-add {
   display: flex;
-  gap: 8px;
+  gap: 12px;
+  flex-wrap: wrap;
   align-items: center;
   margin-top: -10px;
 }
 .control-workspace-add .ant-select {
-  flex: 1;
+  flex: 1 1 200px;
 }
-.control-workspace-add button {
-  flex-shrink: 0;
+.control-workspace-add > .action-trigger {
+  flex: 0 1 160px;
 }
 .control-workspace-card .field-error {
   color: var(--fa-status-error);

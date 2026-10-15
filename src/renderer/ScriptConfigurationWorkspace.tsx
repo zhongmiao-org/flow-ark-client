@@ -175,9 +175,13 @@ export default function ScriptConfigurationWorkspace(props: Props) {
                 defaultValue={{}}
                 change={(input) => props.change({ ...props.node, input })}
               />
-              <Button type="primary" onClick={() => navigate(props.close)}>
+              <ActionButton
+                hint="应用配置到当前草稿并返回编排；仍需保存草稿，不会运行脚本"
+                type="primary"
+                onClick={() => navigate(props.close)}
+              >
                 应用配置
-              </Button>
+              </ActionButton>
             </Card>
           </section>
           <section aria-label="脚本正文">

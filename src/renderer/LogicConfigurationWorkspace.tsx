@@ -1,6 +1,7 @@
 import { Card, Drawer, ConfigProvider, Select, Button, Descriptions, Alert } from 'antd';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
+import ActionButton from './ActionButton';
 import type { FlowRecord, Step } from '../shared/types';
 import { flatten } from './flow-editing';
 import { stepTitle } from './flow-outline';
@@ -211,17 +212,23 @@ export default function LogicConfigurationWorkspace(props: Props) {
                           </fieldset>
                         </ConfigProvider>
                         {['condition', 'loop'].includes(node.type) && (
-                          <Button
+                          <ActionButton
+                            hint="配置当前条件或循环内的子步骤与分支，不会执行流程"
+                            aria-label="配置子步骤与分支"
                             onClick={() => {
                               if (props.guard()) props.openControl();
                             }}
                           >
-                            配置子步骤与分支
-                          </Button>
+                            配置子步骤
+                          </ActionButton>
                         )}
-                        <Button type="primary" onClick={finish}>
+                        <ActionButton
+                          hint="应用当前配置并返回编排；仍需保存草稿，不会开始运行"
+                          type="primary"
+                          onClick={finish}
+                        >
                           应用配置
-                        </Button>
+                        </ActionButton>
                       </>
                     ) : (
                       <>
@@ -237,16 +244,22 @@ export default function LogicConfigurationWorkspace(props: Props) {
                             children: <span title={text}>{text}</span>,
                           }))}
                         />
-                        <Button type="primary" onClick={() => select(node.id)}>
+                        <ActionButton
+                          hint={`选择并配置 ${stepTitle(node)}`}
+                          type="primary"
+                          onClick={() => select(node.id)}
+                        >
                           配置此步骤
-                        </Button>
+                        </ActionButton>
                       </>
                     )
                   ) : (
                     <>
                       <p className="resource-workspace-empty">当前流程尚无此类步骤。</p>
                       <p>添加后配置输入，保存草稿不会执行步骤。</p>
-                      <Button
+                      <ActionButton
+                        hint={`将${group.title}添加到主流程末尾，添加后仍需保存，不会执行`}
+                        aria-label="添加到主流程末尾"
                         onClick={() => {
                           if (props.guard()) {
                             props.add(newStep(group.type));
@@ -254,8 +267,8 @@ export default function LogicConfigurationWorkspace(props: Props) {
                           }
                         }}
                       >
-                        添加到主流程末尾
-                      </Button>
+                        添加步骤
+                      </ActionButton>
                     </>
                   )}
                 </Card>
@@ -282,9 +295,13 @@ export default function LogicConfigurationWorkspace(props: Props) {
                     </fieldset>
                   </ConfigProvider>
                   {props.advanced}
-                  <Button type="primary" onClick={finish}>
+                  <ActionButton
+                    hint="应用当前配置并返回编排；仍需保存草稿，不会开始运行"
+                    type="primary"
+                    onClick={finish}
+                  >
                     应用配置
-                  </Button>
+                  </ActionButton>
                 </>
               ) : (
                 <p>选择一个步骤后配置期限和高级输入。</p>

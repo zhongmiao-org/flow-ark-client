@@ -39,8 +39,11 @@
   max-width: 100%;
   overflow-wrap: anywhere;
 }
-.script-editor-toolbar > button {
-  min-width: 144px;
+.script-editor-toolbar > :is(button, .action-trigger) {
+  min-width: min(160px, 100%);
+}
+.script-editor-toolbar > .action-trigger {
+  width: 160px;
 }
 .script-editor-card {
   min-height: 708px;

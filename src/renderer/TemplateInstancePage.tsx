@@ -26,6 +26,7 @@ import type { Bootstrap } from '../shared/types';
 import type { InstalledPackage } from '../templates/archive';
 import type { AISettingsEntry } from './AISettingsPage';
 import { Field } from './TemplateConfiguration';
+import ActionButton from './ActionButton';
 import TemplateEntry from './TemplateEntry';
 import TemplateResources from './TemplateResources';
 import {
@@ -533,19 +534,37 @@ export default function TemplateInstancePage({
                   />
                 </div>
               )}
-              <div className="ai-task-actions">
-                <Button
+              <div className="ai-task-actions flowark-actions template-configuration-actions">
+                <ActionButton
+                  hint={
+                    busy
+                      ? '正在保存，请等待完成'
+                      : checking
+                        ? '正在核对原实例来源，请等待完成'
+                        : sourceError
+                          ? '请先处理实例来源读取问题，当前输入仍保留'
+                          : '只保存当前实例的共享配置，不会运行入口'
+                  }
+                  loading={busy}
                   type="primary"
                   disabled={blocked || undefined}
                   onClick={(event) =>
                     void save('configuration', undefined, event.currentTarget as HTMLButtonElement)
                   }
                 >
-                  {busy ? '正在保存…' : error ? '重试保存配置' : '保存配置'}
-                </Button>
-                <Button disabled={busy || undefined} onClick={() => reset('configuration')}>
+                  {error ? '重试保存配置' : '保存配置'}
+                </ActionButton>
+                <ActionButton
+                  hint={
+                    busy
+                      ? '正在保存，请等待完成'
+                      : '恢复当前实例已保存的共享配置，其他范围的草稿保持'
+                  }
+                  disabled={busy || undefined}
+                  onClick={() => reset('configuration')}
+                >
                   取消更改
-                </Button>
+                </ActionButton>
               </div>
             </Card>
           </section>
@@ -554,21 +573,33 @@ export default function TemplateInstancePage({
               <h2>实例与入口</h2>
               <p>共享配置适用于本实例所有入口；每次运行仍有独立的入口输入。</p>
               <p>另一个实例保留自己的配置、状态、资源和授权。</p>
-              <Button disabled={busy || undefined} onClick={() => setOthers((value) => !value)}>
+              <ActionButton
+                stretch
+                hint={busy ? '正在保存，请等待完成' : '查看独立实例；切换前仍核对未保存修改'}
+                aria-expanded={others}
+                disabled={busy || undefined}
+                onClick={() => setOthers((value) => !value)}
+              >
                 查看其他实例
-              </Button>
+              </ActionButton>
               {others && (
                 <div className="template-other-instances">
                   {data.instances
                     .filter((other) => other.id !== instance.id)
                     .map((other) => (
-                      <Button
+                      <ActionButton
+                        stretch
+                        hint={
+                          busy
+                            ? '正在保存，请等待完成'
+                            : `${other.name} · ${other.id}；切换前核对当前未保存修改`
+                        }
                         key={other.id}
                         disabled={busy || undefined}
                         onClick={() => go(() => choose(other.id), `实例 · ${other.name}`)}
                       >
                         {other.name} · {other.id.slice(0, 8)}
-                      </Button>
+                      </ActionButton>
                     ))}
                   {data.instances.every((other) => other.id === instance.id) && (
                     <p>尚无其他实例。</p>

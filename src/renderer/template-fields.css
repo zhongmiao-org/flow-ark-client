@@ -21,3 +21,21 @@
 .template-array-row > :first-child {
   min-width: 0;
 }
+.template-field > span,
+.template-fieldset legend {
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.template-array-row > .template-array-remove {
+  flex: 0 0 40px;
+}
+.template-array-remove > .ant-btn {
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+}
+.template-array-add {
+  width: 160px;
+  margin-top: 12px;
+}

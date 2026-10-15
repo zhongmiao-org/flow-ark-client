@@ -38,9 +38,16 @@
 }
 .script-package-actions {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   flex-wrap: wrap;
   margin-top: 16px;
+}
+.script-package-bind {
+  width: 160px;
+  margin-top: 12px;
+}
+.script-packages-heading {
+  flex-wrap: wrap;
 }
 .script-package-dialog h2 {
   margin: 0 0 12px;

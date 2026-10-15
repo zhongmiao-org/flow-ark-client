@@ -174,7 +174,16 @@
 .template-other-instances {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+}
+.template-other-instances .ant-btn > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.template-configuration-actions > .action-trigger {
+  min-width: 0;
 }
 .template-source-details .ant-descriptions-item-content {
   overflow-wrap: anywhere;
