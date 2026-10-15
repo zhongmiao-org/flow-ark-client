@@ -132,6 +132,15 @@ label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-w
 .ant-btn-color-primary.ant-btn-variant-outlined:not(:disabled) {
   border-color: var(--fa-text-link);
 }
+.ant-btn.ant-btn-color-primary:not(:disabled):is(
+    .ant-btn-variant-outlined,
+    .ant-btn-variant-text
+  ):is(:hover, :active) {
+  color: var(--fa-text-link);
+}
+.ant-btn.ant-btn-color-primary.ant-btn-variant-outlined:not(:disabled):is(:hover, :active) {
+  border-color: var(--fa-text-link);
+}
 .ant-btn-color-primary.ant-btn-variant-solid:not(:disabled) {
   color: var(--fa-text-inverse);
   background: var(--fa-action-primary);
@@ -180,4 +189,13 @@ label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-w
 }
 .ant-btn-color-dangerous:not(:disabled):is(.ant-btn-variant-outlined, .ant-btn-variant-text) {
   color: var(--fa-status-error);
+}
+.ant-btn.ant-btn-color-dangerous:not(:disabled):is(
+    .ant-btn-variant-outlined,
+    .ant-btn-variant-text
+  ):is(:hover, :active) {
+  color: var(--fa-status-error);
+}
+.ant-btn.ant-btn-color-dangerous.ant-btn-variant-outlined:not(:disabled):is(:hover, :active) {
+  border-color: var(--fa-status-error);
 }
