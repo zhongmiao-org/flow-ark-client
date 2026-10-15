@@ -135,6 +135,10 @@
   min-width: 0;
   flex-shrink: 0;
 }
+.excel-preview-scroll:focus-visible {
+  outline: 2px solid var(--fa-action-focus);
+  outline-offset: 2px;
+}
 .excel-data-preview .note {
   background: none;
   padding: 0;

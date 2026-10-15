@@ -39,6 +39,7 @@ import { columnName } from './resource-form-model';
 import type { ScriptNavigation } from './ScriptEditorPage';
 
 const incompleteInputMessage = '请先修正未完成的输入配置';
+const previewColumnWidth = 200;
 
 export default function ExcelMappingPage({
   record,
@@ -546,13 +547,14 @@ export default function ExcelMappingPage({
                         size="small"
                         pagination={false}
                         rowKey="index"
+                        style={{ minWidth: columns.length * previewColumnWidth }}
                         scroll={{ x: 'max-content' }}
                         dataSource={rows.map((values, index) => ({ index, values }))}
                         locale={{ emptyText: '来源记录为空；当前预览没有数据行。' }}
                         columns={columns.map((item) => ({
                           key: item.column,
                           title: item.column + (node.includeHeaders ? ` · ${item.header}` : ''),
-                          width: 200,
+                          width: previewColumnWidth,
                           render: (_, row) =>
                             row.values[columnIndex(item.column)] === null ? (
                               <span className="muted">空</span>
