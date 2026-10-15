@@ -30,7 +30,13 @@ export const capabilityLabel = (name: string) =>
       'template-sdk-v1': '模板 SDK',
     }) as Record<string, string>
   )[name] ?? name;
-const resourceKind = { file: '文件', directory: '目录', browser: '浏览器', ai: 'AI 服务' };
+const resourceKind = {
+  skill: '确认Skill',
+  file: '文件',
+  directory: '目录',
+  browser: '浏览器',
+  ai: 'AI 服务',
+};
 const accessLabel = { read: '读取', write: '写入', readwrite: '读写', use: '使用' };
 export default function TemplateManifestOverview({
   manifest,

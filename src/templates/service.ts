@@ -1,3 +1,4 @@
+import { assertSkillRef } from '../shared/skill';
 import { resolveParameterSources } from '../shared/parameter-sources';
 import type { TemplateSource } from '../shared/template-source';
 import { join, dirname, resolve, relative } from 'node:path';
@@ -134,7 +135,7 @@ export class Templates {
         const r = pkg.manifest.resources.find((r) => r.id === id)!;
         const v = instance.resources[id];
         if (!v) continue;
-        if (v.path) files[id] = v.path;
+        if (v.path && ['file', 'directory'].includes(r.kind)) files[id] = v.path;
         if (r.kind === 'browser') browserId = v.browserId;
         if (v.provider) credentials.push(v.provider);
       }
@@ -257,7 +258,14 @@ export class Templates {
           ? ['provider', 'model']
           : declaration.kind === 'browser'
             ? ['browserId']
-            : ['path'];
+            : declaration.kind === 'skill'
+              ? ['path', 'skill']
+              : ['path'];
+      if (declaration.kind === 'skill') {
+        if (declaration.access !== 'read' || !value.path)
+          throw Error('Skill资源需要确认版本及工作区');
+        assertSkillRef(value.skill);
+      }
       if (Object.keys(value).some((field) => !fields.includes(field)))
         throw new Error('资源绑定类型不符');
     }
@@ -342,6 +350,10 @@ export class Templates {
         const info = await stat(binding.path);
         if (declaration.kind === 'file' ? !info.isFile() : !info.isDirectory())
           throw new Error('绑定资源类型不符');
+      }
+      if (declaration.kind === 'skill') {
+        assertSkillRef(binding.skill);
+        if (!binding.path) throw Error('Skill工作区未选择');
       }
       if (declaration.kind === 'ai' && (!binding.provider || !binding.model))
         throw new Error('AI 供应商和模型未配置');

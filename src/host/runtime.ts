@@ -1,3 +1,7 @@
+import { methods } from '../shared/ipc';
+import { TypedResults } from './typed-results';
+import { Skills } from './skills';
+import { skillMethods, skillBinding } from '../shared/skill';
 import { Conversations } from './conversations';
 import { DocumentProcesses } from './document-processes';
 import { conversationMethods } from '../shared/conversation';
@@ -135,6 +139,8 @@ export class Runtime {
   private secrets: string[] = [];
   private conversations: Conversations;
   private documents: DocumentProcesses;
+  private skills: Skills;
+  private typedResults: TypedResults;
   private admissions: Promise<void> = Promise.resolve();
   constructor(
     readonly dataPath: string,
@@ -146,7 +152,12 @@ export class Runtime {
     this.artifactFiles = new ArtifactFiles(dataPath);
     this.store = new Store(join(dataPath, 'flowark.sqlite'), key);
     this.store.recover();
+    this.typedResults = new TypedResults(this.store);
     this.documents = new DocumentProcesses(dir, executable);
+    this.skills = new Skills(this.store, {
+      available: () => this.assertAdmitting(),
+      notify: () => this.system('notification', { title: 'FlowArk 有待核对的Skill草稿' }),
+    });
     this.conversations = new Conversations(this.store, {
       available: () => this.assertAdmitting(),
       configuration: (provider) => this.system('ai.configuration.read', { provider }),
@@ -557,6 +568,17 @@ export class Runtime {
     await this.templates.preflight(record);
     await this.aiNodes.preflight(record);
     await this.aiNodes.preflightConversations(record);
+    if (record.bindings.template) {
+      const { entry, pkg } = await this.templates.context(record);
+      for (const resource of pkg.manifest.resources.filter(
+        (r) => r.kind === 'skill' && entry.resources.includes(r.id),
+      )) {
+        if (!record.bindings.resources?.[resource.id] && !resource.required) continue;
+        const b = skillBinding(record.bindings, resource.id);
+        await this.skills.read(b.path, b.skill);
+      }
+    }
+    const skillSnapshots = await this.skills.snapshot(record, record.skillSnapshots);
     const steps = walk(flow.steps);
     if (steps.some((n) => n.type === 'browser')) {
       const b = this.store.get<BrowserBinding>('browser', record.bindings.browserId ?? '');
@@ -571,7 +593,12 @@ export class Runtime {
       );
     }
     for (const n of steps) {
-      if (n.type === 'file' || n.type === 'excel' || n.type === 'document')
+      if (
+        n.type === 'file' ||
+        n.type === 'excel' ||
+        n.type === 'document' ||
+        (n.type === 'skill' && n.operation === 'propose')
+      )
         await this.fileDirectory(record.bindings, n.binding);
       if (n.type === 'browser' && n.operation === 'upload') {
         try {
@@ -609,11 +636,15 @@ export class Runtime {
       this.toolTargets.assertExecutable(record.id, record, !!desktopRun);
       await this.webTargets.record(record);
       await this.outputs.record(record);
-      return checked({ scripts: record.scripts, scriptBundles: record.scriptBundles });
+      return checked({
+        scripts: record.scripts,
+        scriptBundles: record.scriptBundles,
+        skillSnapshots,
+      });
     }
     if (record.versionId && scriptNodes.some((n) => n.dependencies.length))
       throw new Error('旧计划没有固定脚本依赖，请重新保存计划');
-    const prepared: PreparedScripts = { scripts: {}, scriptBundles: [] };
+    const prepared: PreparedScripts = { scripts: {}, scriptBundles: [], skillSnapshots };
     for (const n of steps)
       if (n.type === 'script') {
         const bundle = await compileScript({
@@ -1089,6 +1120,35 @@ export class Runtime {
     this.checkActive(this.active);
     const runSignal = this.active.abort.signal;
     const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', id)!;
+    if (method === 'skill.node') {
+      const active = this.active;
+      const node = walk(snapshot.flow.steps).find((n) => n.id === args.nodeId);
+      if (!node || node.type !== 'skill') throw Error('Skill节点不在当前快照中');
+      if (snapshot.bindings.template) {
+        const { entry, pkg } = await this.templates.context(snapshot);
+        const r = pkg.manifest.resources.find((r) => r.id === node.binding);
+        if (
+          !entry.capabilities.includes('skill') ||
+          !entry.capabilities.includes('skill-v1') ||
+          !entry.resources.includes(node.binding) ||
+          (node.operation === 'propose'
+            ? r?.kind !== 'directory' || r.access !== 'readwrite'
+            : r?.kind !== 'skill' || r.access !== 'read')
+        )
+          throw Error('模板入口未声明Skill能力与准确资源');
+      }
+      if (node.operation === 'read') {
+        const b = skillBinding(snapshot.bindings, node.binding);
+        const current = await this.skills.read(b.path, b.skill);
+        this.checkActive(active);
+        const fixed = snapshot.skillSnapshots?.[node.id];
+        if (!fixed || digest(fixed) !== digest(current)) throw Error('Skill固定快照不匹配');
+        this.typedResults.save(id, node.id, args.nodeInstance, 'skill', fixed);
+        return fixed;
+      }
+      const root = await this.fileDirectory(snapshot.bindings, node.binding);
+      return this.skills.propose(snapshot, node, root, args.input, () => this.checkActive(active));
+    }
     if (method === 'document.extract') {
       const active = this.active;
       const node = walk(snapshot.flow.steps).find((n) => n.id === args.nodeId);
@@ -1107,9 +1167,18 @@ export class Runtime {
       }
       const root = await this.fileDirectory(snapshot.bindings, node.binding);
       this.checkActive(active);
-      return this.documents.extract(id, args.invocationId, node, root, args.file, runSignal, () =>
-        this.checkActive(active),
+      const result = await this.documents.extract(
+        id,
+        args.invocationId,
+        node,
+        root,
+        args.file,
+        runSignal,
+        () => this.checkActive(active),
       );
+      this.checkActive(active);
+      this.typedResults.save(id, node.id, args.nodeInstance, 'document', result);
+      return result;
     }
     if (method === 'conversation.open') {
       const active = this.active;
@@ -1527,6 +1596,32 @@ export class Runtime {
     return true;
   }
   async request(method: string, args: any = {}): Promise<any> {
+    if (method === 'run.typedResult') {
+      await this.ready;
+      const v = methods['run.typedResult'].parse(args);
+      return this.typedResults.read(v.runId, v.id);
+    }
+    if (method.startsWith('skill.')) {
+      await this.ready;
+      const rule = skillMethods[method as keyof typeof skillMethods];
+      if (!rule) throw Error('Skill IPC方法未授权');
+      const v = rule.parse(args) as any;
+      if (method === 'skill.list') return this.skills.list();
+      if (method === 'skill.inspectBinding') {
+        const r = await this.skills.read(v.path, v.ref);
+        return { ref: r.ref, title: r.title, confirmedAt: r.confirmedAt };
+      }
+      if (method === 'skill.detail') return this.skills.detail(v.id);
+      if (method === 'skill.base') return this.skills.base(v.id);
+      if (method === 'skill.save') return this.skills.save(v.id, v.revision, v.draft);
+      if (method === 'skill.preview') return this.skills.preview(v.id, v.revision);
+      if (method === 'skill.confirm') return this.skills.confirm(v);
+      if (method === 'skill.cancelUnstarted') return this.skills.cancelUnstarted(v.id, v.requestId);
+      if (method === 'skill.inspect') return this.skills.inspect(v.id, v.requestId);
+      if (method === 'skill.rebase') return this.skills.rebase(v);
+      if (method === 'skill.fork') return this.skills.fork(v.id);
+      if (method === 'skill.relocate') return this.skills.relocate(v.id, v.path);
+    }
     if (method.startsWith('conversation.')) {
       await this.ready;
       const rule = conversationMethods[method as keyof typeof conversationMethods];
@@ -1687,6 +1782,7 @@ export class Runtime {
           events: this.store.events(id),
           artifacts,
           output: redact(this.store.get('output', id)),
+          typedResults: run?.state === 'SUCCEEDED' ? this.typedResults.list(id) : [],
           snapshot: snapshot?.flow,
           scriptBundles: snapshot?.scriptBundles ?? [],
           fault: this.store.fault ? redact(this.store.fault, this.secrets) : undefined,
@@ -1961,6 +2057,7 @@ export class Runtime {
       this.desktopRuns.cancelAll();
       this.planning.cancelAll();
       await this.conversations.cancelAll();
+      await this.skills.stop();
     } catch (error) {
       planningError = error;
     }

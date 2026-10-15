@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "key": "example-profile",
+  "versionId": "sv_11111111111111111111111111111111",
+  "operationId": "confirm-example-1",
+  "title": "虚构资料的沟通规则",
+  "parent": null,
+  "confirmedAt": "2026-10-15T12:00:00.000Z",
+  "files": [
+    {
+      "path": "SKILL.md",
+      "byteLength": 118,
+      "sha256": "3125e8a1dd6025fa69d41a0dcf56c1be6c7721d391af5486f9e59a2c4a3cfd04"
+    },
+    {
+      "path": "data.json",
+      "byteLength": 144,
+      "sha256": "05f10e5349c05411e2127cb45f472d8d1773639d6a1682b4bedac1ca1c0c9c60"
+    }
+  ]
+}

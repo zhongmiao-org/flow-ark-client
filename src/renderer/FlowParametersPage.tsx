@@ -1,3 +1,5 @@
+import SkillPicker from './SkillPicker';
+import { flatten } from './flow-editing';
 import ActionButton from './ActionButton';
 import { changeParameterValues, resolveParameterSources } from '../shared/parameter-sources';
 import {
@@ -507,6 +509,29 @@ export default function FlowParametersPage({
                       {selection.message}
                     </p>
                   )}
+                </div>
+              ))}
+              {[
+                ...new Set(
+                  flatten(draft.flow.steps)
+                    .filter((n) => n.type === 'skill' && n.operation === 'read')
+                    .map((n) => (n as import('../shared/skill').SkillNode).binding),
+                ),
+              ].map((binding) => (
+                <div key={'skill:' + binding}>
+                  <h3>{binding} · 固定Skill版本</h3>
+                  <SkillPicker
+                    disabled={!!busy}
+                    value={draft.bindings.resources?.[binding]}
+                    change={(value) =>
+                      setDraft((current) => {
+                        const resources = { ...current.bindings.resources };
+                        if (value) resources[binding] = value;
+                        else delete resources[binding];
+                        return { ...current, bindings: { ...current.bindings, resources } };
+                      })
+                    }
+                  />
                 </div>
               ))}
               <h3>凭据引用 · 允许脚本读取</h3>

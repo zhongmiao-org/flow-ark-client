@@ -35,7 +35,7 @@ export function declareNativeBoundaries(flow: Flow, manifest: Manifest, entryId:
     while (manifest.resources.some((r) => r.id === id)) id = prefix + '-' + i++;
     return id;
   };
-  const directory = (logical: string, access: 'read' | 'write') => {
+  const directory = (logical: string, access: 'read' | 'write' | 'readwrite') => {
     const old = manifest.resources.find((r) => r.id === (mapped.get(logical) ?? logical));
     if (old && old.kind !== 'directory') throw new Error('资源类型冲突：' + logical);
     let resource = old;
@@ -54,6 +54,42 @@ export function declareNativeBoundaries(flow: Flow, manifest: Manifest, entryId:
       const access = node.operation === 'read' ? 'read' : 'write';
       node.binding = directory(node.binding, access);
       writes ||= access === 'write';
+    }
+    if (node.type === 'skill') {
+      if (node.operation === 'propose') {
+        for (const key of ['markdown', 'data', 'evidence', 'base'] as const) {
+          const value = node[key];
+          const reference =
+            value &&
+            typeof value === 'object' &&
+            !Array.isArray(value) &&
+            Object.keys(value).length === 1 &&
+            typeof (value as any).$ref === 'string';
+          const neutral =
+            value === null ||
+            value === '' ||
+            (Array.isArray(value) && !value.length) ||
+            (value && typeof value === 'object' && !Object.keys(value).length);
+          if (!reference && !neutral)
+            throw Error(
+              `Skill步骤${node.id}的${key}含固定个人内容，请改为参数或前序结果引用后导出`,
+            );
+        }
+        node.binding = directory(node.binding, 'readwrite');
+      } else {
+        const old = manifest.resources.find((r) => r.id === node.binding);
+        if (old && (old.kind !== 'skill' || old.access !== 'read'))
+          throw Error('Skill资源类型冲突：' + node.binding);
+        if (!old)
+          manifest.resources.push({
+            id: node.binding,
+            name: node.binding,
+            kind: 'skill',
+            access: 'read',
+            required: true,
+          });
+        if (!entry.resources.includes(node.binding)) entry.resources.push(node.binding);
+      }
     }
     if (node.type === 'document') node.binding = directory(node.binding, 'read');
     if (node.type === 'ai' || node.type === 'conversation') {

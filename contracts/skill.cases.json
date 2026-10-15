@@ -1,0 +1,934 @@
+[
+  {
+    "name": "确认版本引用",
+    "definition": "SkillVersionRef",
+    "valid": true,
+    "value": {
+      "key": "example-profile",
+      "versionId": "sv_11111111111111111111111111111111",
+      "sha256": "13dad1893106295dd7120c32e28e837f10c706d0270eaf3dcb45af209f9eae8d"
+    }
+  },
+  {
+    "name": "禁止隐式最新版本",
+    "definition": "SkillVersionRef",
+    "valid": false,
+    "value": {
+      "key": "example-profile",
+      "versionId": "latest",
+      "sha256": "13dad1893106295dd7120c32e28e837f10c706d0270eaf3dcb45af209f9eae8d"
+    }
+  },
+  {
+    "name": "引用不含本机路径",
+    "definition": "SkillVersionRef",
+    "valid": false,
+    "value": {
+      "key": "example-profile",
+      "versionId": "sv_11111111111111111111111111111111",
+      "sha256": "13dad1893106295dd7120c32e28e837f10c706d0270eaf3dcb45af209f9eae8d",
+      "path": "/private/example"
+    }
+  },
+  {
+    "name": "拒绝危险Skill键",
+    "definition": "SkillVersionRef",
+    "valid": false,
+    "value": {
+      "key": "../profile",
+      "versionId": "sv_11111111111111111111111111111111",
+      "sha256": "13dad1893106295dd7120c32e28e837f10c706d0270eaf3dcb45af209f9eae8d"
+    }
+  },
+  {
+    "name": "摘要不可缺省",
+    "definition": "SkillVersionRef",
+    "valid": false,
+    "value": {
+      "key": "example-profile",
+      "versionId": "sv_11111111111111111111111111111111",
+      "sha256": "unknown"
+    }
+  },
+  {
+    "name": "待确认草稿",
+    "definition": "SkillProposalSnapshot",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "id": "sp_example",
+      "revision": 1,
+      "key": "example-profile",
+      "workspaceBinding": "workspace",
+      "sourceFlowId": "skill-example",
+      "sourceNodeId": "propose",
+      "sourceFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base": null,
+      "status": "draft",
+      "draft": {
+        "title": "虚构资料的沟通规则",
+        "markdown": "---\nname: example-profile\ndescription: 虚构资料核对示例\n---\n\n先回答重点。未知事实先询问本人。\n",
+        "data": {
+          "preferences": {},
+          "facts": []
+        },
+        "evidence": [
+          {
+            "kind": "manual",
+            "label": "用户核对示例",
+            "note": "仅虚构内容，不是个人履历"
+          }
+        ]
+      },
+      "createdAt": "2026-10-15T12:00:00.000Z",
+      "updatedAt": "2026-10-15T12:00:00.000Z"
+    }
+  },
+  {
+    "name": "仅改状态不能确认",
+    "definition": "SkillProposalSnapshot",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "sp_example",
+      "revision": 1,
+      "key": "example-profile",
+      "workspaceBinding": "workspace",
+      "sourceFlowId": "skill-example",
+      "sourceNodeId": "propose",
+      "sourceFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base": null,
+      "status": "confirmed",
+      "draft": {
+        "title": "虚构资料的沟通规则",
+        "markdown": "---\nname: example-profile\ndescription: 虚构资料核对示例\n---\n\n先回答重点。未知事实先询问本人。\n",
+        "data": {
+          "preferences": {},
+          "facts": []
+        },
+        "evidence": [
+          {
+            "kind": "manual",
+            "label": "用户核对示例",
+            "note": "仅虚构内容，不是个人履历"
+          }
+        ]
+      },
+      "createdAt": "2026-10-15T12:00:00.000Z",
+      "updatedAt": "2026-10-15T12:00:00.000Z"
+    }
+  },
+  {
+    "name": "结果未知须有操作身份与原因",
+    "definition": "SkillProposalSnapshot",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "sp_example",
+      "revision": 1,
+      "key": "example-profile",
+      "workspaceBinding": "workspace",
+      "sourceFlowId": "skill-example",
+      "sourceNodeId": "propose",
+      "sourceFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base": null,
+      "status": "unknown",
+      "draft": {
+        "title": "虚构资料的沟通规则",
+        "markdown": "---\nname: example-profile\ndescription: 虚构资料核对示例\n---\n\n先回答重点。未知事实先询问本人。\n",
+        "data": {
+          "preferences": {},
+          "facts": []
+        },
+        "evidence": [
+          {
+            "kind": "manual",
+            "label": "用户核对示例",
+            "note": "仅虚构内容，不是个人履历"
+          }
+        ]
+      },
+      "createdAt": "2026-10-15T12:00:00.000Z",
+      "updatedAt": "2026-10-15T12:00:00.000Z"
+    }
+  },
+  {
+    "name": "结果未知保留同一操作",
+    "definition": "SkillProposalSnapshot",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "id": "sp_example",
+      "revision": 1,
+      "key": "example-profile",
+      "workspaceBinding": "workspace",
+      "sourceFlowId": "skill-example",
+      "sourceNodeId": "propose",
+      "sourceFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base": null,
+      "status": "unknown",
+      "draft": {
+        "title": "虚构资料的沟通规则",
+        "markdown": "---\nname: example-profile\ndescription: 虚构资料核对示例\n---\n\n先回答重点。未知事实先询问本人。\n",
+        "data": {
+          "preferences": {},
+          "facts": []
+        },
+        "evidence": [
+          {
+            "kind": "manual",
+            "label": "用户核对示例",
+            "note": "仅虚构内容，不是个人履历"
+          }
+        ]
+      },
+      "createdAt": "2026-10-15T12:00:00.000Z",
+      "updatedAt": "2026-10-15T12:00:00.000Z",
+      "publication": {
+        "requestId": "confirm-example-1",
+        "versionId": "sv_11111111111111111111111111111111",
+        "draftSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "error": "待核对保存结果"
+    }
+  },
+  {
+    "name": "未知不能携带可采用引用",
+    "definition": "SkillProposalSnapshot",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "sp_example",
+      "revision": 1,
+      "key": "example-profile",
+      "workspaceBinding": "workspace",
+      "sourceFlowId": "skill-example",
+      "sourceNodeId": "propose",
+      "sourceFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base": null,
+      "status": "unknown",
+      "draft": {
+        "title": "虚构资料的沟通规则",
+        "markdown": "---\nname: example-profile\ndescription: 虚构资料核对示例\n---\n\n先回答重点。未知事实先询问本人。\n",
+        "data": {
+          "preferences": {},
+          "facts": []
+        },
+        "evidence": [
+          {
+            "kind": "manual",
+            "label": "用户核对示例",
+            "note": "仅虚构内容，不是个人履历"
+          }
+        ]
+      },
+      "createdAt": "2026-10-15T12:00:00.000Z",
+      "updatedAt": "2026-10-15T12:00:00.000Z",
+      "publication": {
+        "requestId": "confirm-example-1",
+        "versionId": "sv_11111111111111111111111111111111",
+        "draftSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "error": "待核对保存结果",
+      "confirmed": {
+        "key": "example-profile",
+        "versionId": "sv_11111111111111111111111111111111",
+        "sha256": "13dad1893106295dd7120c32e28e837f10c706d0270eaf3dcb45af209f9eae8d"
+      }
+    }
+  },
+  {
+    "name": "完整确认回执",
+    "definition": "SkillProposalSnapshot",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "id": "sp_example",
+      "revision": 1,
+      "key": "example-profile",
+      "workspaceBinding": "workspace",
+      "sourceFlowId": "skill-example",
+      "sourceNodeId": "propose",
+      "sourceFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base": null,
+      "status": "confirmed",
+      "draft": {
+        "title": "虚构资料的沟通规则",
+        "markdown": "---\nname: example-profile\ndescription: 虚构资料核对示例\n---\n\n先回答重点。未知事实先询问本人。\n",
+        "data": {
+          "preferences": {},
+          "facts": []
+        },
+        "evidence": [
+          {
+            "kind": "manual",
+            "label": "用户核对示例",
+            "note": "仅虚构内容，不是个人履历"
+          }
+        ]
+      },
+      "createdAt": "2026-10-15T12:00:00.000Z",
+      "updatedAt": "2026-10-15T12:00:00.000Z",
+      "publication": {
+        "requestId": "confirm-example-1",
+        "versionId": "sv_11111111111111111111111111111111",
+        "draftSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "confirmed": {
+        "key": "example-profile",
+        "versionId": "sv_11111111111111111111111111111111",
+        "sha256": "13dad1893106295dd7120c32e28e837f10c706d0270eaf3dcb45af209f9eae8d"
+      }
+    }
+  },
+  {
+    "name": "确认版本正文与数据",
+    "definition": "SkillVersion",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "ref": {
+        "key": "example-profile",
+        "versionId": "sv_11111111111111111111111111111111",
+        "sha256": "13dad1893106295dd7120c32e28e837f10c706d0270eaf3dcb45af209f9eae8d"
+      },
+      "title": "虚构资料的沟通规则",
+      "parent": null,
+      "confirmedAt": "2026-10-15T12:00:00.000Z",
+      "markdown": "---\nname: example-profile\ndescription: 虚构资料核对示例\n---\n\n先回答重点。未知事实先询问本人。\n",
+      "data": {
+        "preferences": {},
+        "facts": []
+      },
+      "evidence": [
+        {
+          "kind": "manual",
+          "label": "用户核对示例",
+          "note": "仅虚构内容，不是个人履历"
+        }
+      ]
+    }
+  },
+  {
+    "name": "空白正文不可确认",
+    "definition": "SkillVersion",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "ref": {
+        "key": "example-profile",
+        "versionId": "sv_11111111111111111111111111111111",
+        "sha256": "13dad1893106295dd7120c32e28e837f10c706d0270eaf3dcb45af209f9eae8d"
+      },
+      "title": "虚构资料的沟通规则",
+      "parent": null,
+      "confirmedAt": "2026-10-15T12:00:00.000Z",
+      "markdown": "  \n ",
+      "data": {
+        "preferences": {},
+        "facts": []
+      },
+      "evidence": [
+        {
+          "kind": "manual",
+          "label": "用户核对示例",
+          "note": "仅虚构内容，不是个人履历"
+        }
+      ]
+    }
+  },
+  {
+    "name": "结构化内容需根对象",
+    "definition": "SkillVersion",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "ref": {
+        "key": "example-profile",
+        "versionId": "sv_11111111111111111111111111111111",
+        "sha256": "13dad1893106295dd7120c32e28e837f10c706d0270eaf3dcb45af209f9eae8d"
+      },
+      "title": "虚构资料的沟通规则",
+      "parent": null,
+      "confirmedAt": "2026-10-15T12:00:00.000Z",
+      "markdown": "---\nname: example-profile\ndescription: 虚构资料核对示例\n---\n\n先回答重点。未知事实先询问本人。\n",
+      "data": [
+        "unexpected"
+      ],
+      "evidence": [
+        {
+          "kind": "manual",
+          "label": "用户核对示例",
+          "note": "仅虚构内容，不是个人履历"
+        }
+      ]
+    }
+  },
+  {
+    "name": "两文件清单",
+    "definition": "SkillManifest",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "key": "example-profile",
+      "versionId": "sv_11111111111111111111111111111111",
+      "operationId": "confirm-example-1",
+      "title": "虚构资料的沟通规则",
+      "parent": null,
+      "confirmedAt": "2026-10-15T12:00:00.000Z",
+      "files": [
+        {
+          "path": "SKILL.md",
+          "byteLength": 118,
+          "sha256": "3125e8a1dd6025fa69d41a0dcf56c1be6c7721d391af5486f9e59a2c4a3cfd04"
+        },
+        {
+          "path": "data.json",
+          "byteLength": 144,
+          "sha256": "05f10e5349c05411e2127cb45f472d8d1773639d6a1682b4bedac1ca1c0c9c60"
+        }
+      ]
+    }
+  },
+  {
+    "name": "不得两次声明同名文件",
+    "definition": "SkillManifest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "key": "example-profile",
+      "versionId": "sv_11111111111111111111111111111111",
+      "operationId": "confirm-example-1",
+      "title": "虚构资料的沟通规则",
+      "parent": null,
+      "confirmedAt": "2026-10-15T12:00:00.000Z",
+      "files": [
+        {
+          "path": "SKILL.md",
+          "byteLength": 118,
+          "sha256": "3125e8a1dd6025fa69d41a0dcf56c1be6c7721d391af5486f9e59a2c4a3cfd04"
+        },
+        {
+          "path": "SKILL.md",
+          "byteLength": 118,
+          "sha256": "3125e8a1dd6025fa69d41a0dcf56c1be6c7721d391af5486f9e59a2c4a3cfd04"
+        }
+      ]
+    }
+  },
+  {
+    "name": "确认清单固定文件名",
+    "definition": "SkillManifest",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "key": "example-profile",
+      "versionId": "sv_11111111111111111111111111111111",
+      "operationId": "confirm-example-1",
+      "title": "虚构资料的沟通规则",
+      "parent": null,
+      "confirmedAt": "2026-10-15T12:00:00.000Z",
+      "files": [
+        {
+          "path": "../SKILL.md",
+          "byteLength": 118,
+          "sha256": "3125e8a1dd6025fa69d41a0dcf56c1be6c7721d391af5486f9e59a2c4a3cfd04"
+        },
+        {
+          "path": "data.json",
+          "byteLength": 144,
+          "sha256": "05f10e5349c05411e2127cb45f472d8d1773639d6a1682b4bedac1ca1c0c9c60"
+        }
+      ]
+    }
+  },
+  {
+    "name": "创建草稿节点",
+    "definition": "Node",
+    "valid": true,
+    "value": {
+      "id": "propose",
+      "type": "skill",
+      "version": 1,
+      "operation": "propose",
+      "binding": "workspace",
+      "key": {
+        "$ref": "params.key"
+      },
+      "title": {
+        "$ref": "params.title"
+      },
+      "markdown": {
+        "$ref": "params.markdown"
+      },
+      "data": {
+        "$ref": "params.data"
+      },
+      "evidence": {
+        "$ref": "params.evidence"
+      },
+      "base": {
+        "$ref": "params.base"
+      }
+    }
+  },
+  {
+    "name": "读取节点",
+    "definition": "Node",
+    "valid": true,
+    "value": {
+      "id": "read",
+      "type": "skill",
+      "version": 1,
+      "operation": "read",
+      "binding": "profile"
+    }
+  },
+  {
+    "name": "读取节点不携带正文",
+    "definition": "Node",
+    "valid": false,
+    "value": {
+      "id": "read",
+      "type": "skill",
+      "version": 1,
+      "operation": "read",
+      "binding": "profile",
+      "markdown": "private"
+    }
+  },
+  {
+    "name": "创建草稿须明确基线",
+    "definition": "Node",
+    "valid": false,
+    "value": {
+      "id": "propose",
+      "type": "skill",
+      "version": 1,
+      "operation": "propose",
+      "binding": "workspace",
+      "key": {
+        "$ref": "params.key"
+      },
+      "title": {
+        "$ref": "params.title"
+      },
+      "markdown": {
+        "$ref": "params.markdown"
+      },
+      "data": {
+        "$ref": "params.data"
+      },
+      "evidence": {
+        "$ref": "params.evidence"
+      }
+    }
+  },
+  {
+    "name": "pending无确认引用",
+    "definition": "SkillProposeOutput",
+    "valid": true,
+    "value": {
+      "proposalId": "sp_example",
+      "revision": 1,
+      "status": "pending",
+      "ref": null
+    }
+  },
+  {
+    "name": "confirmed携带准确引用",
+    "definition": "SkillProposeOutput",
+    "valid": true,
+    "value": {
+      "proposalId": "sp_example",
+      "revision": 2,
+      "status": "confirmed",
+      "ref": {
+        "key": "example-profile",
+        "versionId": "sv_11111111111111111111111111111111",
+        "sha256": "13dad1893106295dd7120c32e28e837f10c706d0270eaf3dcb45af209f9eae8d"
+      }
+    }
+  },
+  {
+    "name": "pending不能冒充已确认",
+    "definition": "SkillProposeOutput",
+    "valid": false,
+    "value": {
+      "proposalId": "sp_example",
+      "revision": 1,
+      "status": "pending",
+      "ref": {
+        "key": "example-profile",
+        "versionId": "sv_11111111111111111111111111111111",
+        "sha256": "13dad1893106295dd7120c32e28e837f10c706d0270eaf3dcb45af209f9eae8d"
+      }
+    }
+  },
+  {
+    "name": "manual来源声明",
+    "definition": "SkillEvidence",
+    "valid": true,
+    "value": {
+      "kind": "manual",
+      "label": "用户核对示例",
+      "note": "仅虚构内容，不是个人履历"
+    }
+  },
+  {
+    "name": "资料来源定位",
+    "definition": "SkillEvidence",
+    "valid": true,
+    "value": {
+      "kind": "document",
+      "label": "虚构资料第1页",
+      "source": {
+        "binding": "materials",
+        "name": "示例资料.pdf",
+        "format": "pdf",
+        "byteLength": 20,
+        "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "units": [
+        1
+      ]
+    }
+  },
+  {
+    "name": "来源单元不得重复",
+    "definition": "SkillEvidence",
+    "valid": false,
+    "value": {
+      "kind": "document",
+      "label": "虚构资料第1页",
+      "source": {
+        "binding": "materials",
+        "name": "示例资料.pdf",
+        "format": "pdf",
+        "byteLength": 20,
+        "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "units": [
+        1,
+        1
+      ]
+    }
+  },
+  {
+    "name": "会话来源修订",
+    "definition": "SkillEvidence",
+    "valid": true,
+    "value": {
+      "kind": "conversation",
+      "label": "已确认会话",
+      "sessionId": "conversation-example",
+      "revision": 3,
+      "sequence": 5,
+      "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    }
+  },
+  {
+    "name": "Skill资源访问 read",
+    "definition": "TemplateArchiveManifest",
+    "valid": true,
+    "value": {
+      "packageFormat": "2.0",
+      "id": "skill-resource-example",
+      "name": "Skill逻辑资源格式示例",
+      "description": "仅虚构结构，模板不携带个人Skill",
+      "version": "1.0.0",
+      "author": "FlowArk example",
+      "source": "example",
+      "minimumClientVersion": "0.3.0",
+      "sdkVersion": "1.0",
+      "configurationSchema": "schemas/configuration.json",
+      "stateSchema": "schemas/state.json",
+      "entries": [
+        {
+          "id": "read",
+          "name": "读取确认版本",
+          "flow": "flows/read.json",
+          "inputSchema": "schemas/input.json",
+          "resultSchema": "schemas/result.json",
+          "schedulable": false,
+          "capabilities": [
+            "skill",
+            "skill-v1"
+          ],
+          "resources": [
+            "profile"
+          ],
+          "actions": []
+        }
+      ],
+      "resources": [
+        {
+          "id": "profile",
+          "name": "确认的本机Skill",
+          "kind": "skill",
+          "access": "read",
+          "required": true
+        }
+      ],
+      "actions": [],
+      "files": [
+        {
+          "path": "flows/read.json",
+          "size": 280,
+          "sha256": "37582ed8b73f64d07175a6be1f4b1a3a3a76a1fce054a875abf22039a00bf431"
+        },
+        {
+          "path": "schemas/configuration.json",
+          "size": 17,
+          "sha256": "a2c799262a3ce3c19ef5cdd983bf3d12b43ab3c426227091b909dcb7054738c0"
+        },
+        {
+          "path": "schemas/state.json",
+          "size": 17,
+          "sha256": "a2c799262a3ce3c19ef5cdd983bf3d12b43ab3c426227091b909dcb7054738c0"
+        },
+        {
+          "path": "schemas/input.json",
+          "size": 17,
+          "sha256": "a2c799262a3ce3c19ef5cdd983bf3d12b43ab3c426227091b909dcb7054738c0"
+        },
+        {
+          "path": "schemas/result.json",
+          "size": 17,
+          "sha256": "a2c799262a3ce3c19ef5cdd983bf3d12b43ab3c426227091b909dcb7054738c0"
+        }
+      ],
+      "scripts": [],
+      "dependencies": [],
+      "contentDigest": "dee1b07f2791e39ef94b1b2137180d7f41e696c955384e01370b8262b319518e"
+    }
+  },
+  {
+    "name": "Skill资源访问 write",
+    "definition": "TemplateArchiveManifest",
+    "valid": false,
+    "value": {
+      "packageFormat": "2.0",
+      "id": "skill-resource-example",
+      "name": "Skill逻辑资源格式示例",
+      "description": "仅虚构结构，模板不携带个人Skill",
+      "version": "1.0.0",
+      "author": "FlowArk example",
+      "source": "example",
+      "minimumClientVersion": "0.3.0",
+      "sdkVersion": "1.0",
+      "configurationSchema": "schemas/configuration.json",
+      "stateSchema": "schemas/state.json",
+      "entries": [
+        {
+          "id": "read",
+          "name": "读取确认版本",
+          "flow": "flows/read.json",
+          "inputSchema": "schemas/input.json",
+          "resultSchema": "schemas/result.json",
+          "schedulable": false,
+          "capabilities": [
+            "skill",
+            "skill-v1"
+          ],
+          "resources": [
+            "profile"
+          ],
+          "actions": []
+        }
+      ],
+      "resources": [
+        {
+          "id": "profile",
+          "name": "确认的本机Skill",
+          "kind": "skill",
+          "access": "write",
+          "required": true
+        }
+      ],
+      "actions": [],
+      "files": [
+        {
+          "path": "flows/read.json",
+          "size": 280,
+          "sha256": "37582ed8b73f64d07175a6be1f4b1a3a3a76a1fce054a875abf22039a00bf431"
+        },
+        {
+          "path": "schemas/configuration.json",
+          "size": 17,
+          "sha256": "a2c799262a3ce3c19ef5cdd983bf3d12b43ab3c426227091b909dcb7054738c0"
+        },
+        {
+          "path": "schemas/state.json",
+          "size": 17,
+          "sha256": "a2c799262a3ce3c19ef5cdd983bf3d12b43ab3c426227091b909dcb7054738c0"
+        },
+        {
+          "path": "schemas/input.json",
+          "size": 17,
+          "sha256": "a2c799262a3ce3c19ef5cdd983bf3d12b43ab3c426227091b909dcb7054738c0"
+        },
+        {
+          "path": "schemas/result.json",
+          "size": 17,
+          "sha256": "a2c799262a3ce3c19ef5cdd983bf3d12b43ab3c426227091b909dcb7054738c0"
+        }
+      ],
+      "scripts": [],
+      "dependencies": [],
+      "contentDigest": "dee1b07f2791e39ef94b1b2137180d7f41e696c955384e01370b8262b319518e"
+    }
+  },
+  {
+    "name": "Skill资源访问 readwrite",
+    "definition": "TemplateArchiveManifest",
+    "valid": false,
+    "value": {
+      "packageFormat": "2.0",
+      "id": "skill-resource-example",
+      "name": "Skill逻辑资源格式示例",
+      "description": "仅虚构结构，模板不携带个人Skill",
+      "version": "1.0.0",
+      "author": "FlowArk example",
+      "source": "example",
+      "minimumClientVersion": "0.3.0",
+      "sdkVersion": "1.0",
+      "configurationSchema": "schemas/configuration.json",
+      "stateSchema": "schemas/state.json",
+      "entries": [
+        {
+          "id": "read",
+          "name": "读取确认版本",
+          "flow": "flows/read.json",
+          "inputSchema": "schemas/input.json",
+          "resultSchema": "schemas/result.json",
+          "schedulable": false,
+          "capabilities": [
+            "skill",
+            "skill-v1"
+          ],
+          "resources": [
+            "profile"
+          ],
+          "actions": []
+        }
+      ],
+      "resources": [
+        {
+          "id": "profile",
+          "name": "确认的本机Skill",
+          "kind": "skill",
+          "access": "readwrite",
+          "required": true
+        }
+      ],
+      "actions": [],
+      "files": [
+        {
+          "path": "flows/read.json",
+          "size": 280,
+          "sha256": "37582ed8b73f64d07175a6be1f4b1a3a3a76a1fce054a875abf22039a00bf431"
+        },
+        {
+          "path": "schemas/configuration.json",
+          "size": 17,
+          "sha256": "a2c799262a3ce3c19ef5cdd983bf3d12b43ab3c426227091b909dcb7054738c0"
+        },
+        {
+          "path": "schemas/state.json",
+          "size": 17,
+          "sha256": "a2c799262a3ce3c19ef5cdd983bf3d12b43ab3c426227091b909dcb7054738c0"
+        },
+        {
+          "path": "schemas/input.json",
+          "size": 17,
+          "sha256": "a2c799262a3ce3c19ef5cdd983bf3d12b43ab3c426227091b909dcb7054738c0"
+        },
+        {
+          "path": "schemas/result.json",
+          "size": 17,
+          "sha256": "a2c799262a3ce3c19ef5cdd983bf3d12b43ab3c426227091b909dcb7054738c0"
+        }
+      ],
+      "scripts": [],
+      "dependencies": [],
+      "contentDigest": "dee1b07f2791e39ef94b1b2137180d7f41e696c955384e01370b8262b319518e"
+    }
+  },
+  {
+    "name": "Skill资源访问 use",
+    "definition": "TemplateArchiveManifest",
+    "valid": false,
+    "value": {
+      "packageFormat": "2.0",
+      "id": "skill-resource-example",
+      "name": "Skill逻辑资源格式示例",
+      "description": "仅虚构结构，模板不携带个人Skill",
+      "version": "1.0.0",
+      "author": "FlowArk example",
+      "source": "example",
+      "minimumClientVersion": "0.3.0",
+      "sdkVersion": "1.0",
+      "configurationSchema": "schemas/configuration.json",
+      "stateSchema": "schemas/state.json",
+      "entries": [
+        {
+          "id": "read",
+          "name": "读取确认版本",
+          "flow": "flows/read.json",
+          "inputSchema": "schemas/input.json",
+          "resultSchema": "schemas/result.json",
+          "schedulable": false,
+          "capabilities": [
+            "skill",
+            "skill-v1"
+          ],
+          "resources": [
+            "profile"
+          ],
+          "actions": []
+        }
+      ],
+      "resources": [
+        {
+          "id": "profile",
+          "name": "确认的本机Skill",
+          "kind": "skill",
+          "access": "use",
+          "required": true
+        }
+      ],
+      "actions": [],
+      "files": [
+        {
+          "path": "flows/read.json",
+          "size": 280,
+          "sha256": "37582ed8b73f64d07175a6be1f4b1a3a3a76a1fce054a875abf22039a00bf431"
+        },
+        {
+          "path": "schemas/configuration.json",
+          "size": 17,
+          "sha256": "a2c799262a3ce3c19ef5cdd983bf3d12b43ab3c426227091b909dcb7054738c0"
+        },
+        {
+          "path": "schemas/state.json",
+          "size": 17,
+          "sha256": "a2c799262a3ce3c19ef5cdd983bf3d12b43ab3c426227091b909dcb7054738c0"
+        },
+        {
+          "path": "schemas/input.json",
+          "size": 17,
+          "sha256": "a2c799262a3ce3c19ef5cdd983bf3d12b43ab3c426227091b909dcb7054738c0"
+        },
+        {
+          "path": "schemas/result.json",
+          "size": 17,
+          "sha256": "a2c799262a3ce3c19ef5cdd983bf3d12b43ab3c426227091b909dcb7054738c0"
+        }
+      ],
+      "scripts": [],
+      "dependencies": [],
+      "contentDigest": "dee1b07f2791e39ef94b1b2137180d7f41e696c955384e01370b8262b319518e"
+    }
+  }
+]

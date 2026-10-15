@@ -1,3 +1,4 @@
+import SkillNodeConfiguration from './SkillNodeConfiguration';
 import ActionButton from './ActionButton';
 import { Alert, Collapse, ConfigProvider, Button, Input, Segmented, Tag } from 'antd';
 import { VariableNavigationContext } from './variable-navigation';
@@ -3088,6 +3089,7 @@ function Editor({
             ...(flatten(steps).some((node) => node.type === 'document')
               ? ['document-extract-v1']
               : []),
+            ...(flatten(steps).some((node) => node.type === 'skill') ? ['skill-v1'] : []),
             ...(flatten(steps).some((node) => node.type === 'conversation')
               ? ['conversation-v1']
               : []),
@@ -3120,6 +3122,7 @@ function Editor({
               ...(flatten(steps).some((node) => node.type === 'document')
                 ? ['document-extract-v1']
                 : []),
+              ...(flatten(steps).some((node) => node.type === 'skill') ? ['skill-v1'] : []),
               ...(flatten(steps).some((node) => node.type === 'conversation')
                 ? ['conversation-v1']
                 : []),
@@ -4207,6 +4210,15 @@ function Editor({
                                         node={selectedNode}
                                         choices={choices}
                                         change={updateNode}
+                                      />
+                                    )}
+                                    {selectedNode.type === 'skill' && (
+                                      <SkillNodeConfiguration
+                                        node={selectedNode}
+                                        bindings={r.bindings}
+                                        choices={choices}
+                                        change={updateNode}
+                                        changeBindings={(bindings) => setRecord({ ...r, bindings })}
                                       />
                                     )}
                                     {selectedNode.type === 'conversation' && (

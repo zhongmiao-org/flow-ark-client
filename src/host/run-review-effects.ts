@@ -46,6 +46,13 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
           ? effect('read', `读取目录“${node.binding}”中的${file}。`)
           : effect('write', `在目录“${node.binding}”${operation}${file}，可能覆盖同名文件。`);
       }
+      case 'skill':
+        return node.operation === 'read'
+          ? effect('read', `读取Skill资源“${node.binding}”的固定确认版本，不调用模型。`)
+          : effect(
+              'write',
+              '在本机保存待确认Skill草稿，结束本批；工作区文件须用户另行核对确认，不自动发布。',
+            );
       case 'document':
         return effect(
           'read',

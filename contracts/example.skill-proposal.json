@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "id": "sp_example",
+  "revision": 1,
+  "key": "example-profile",
+  "workspaceBinding": "workspace",
+  "sourceFlowId": "skill-example",
+  "sourceNodeId": "propose",
+  "sourceFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "base": null,
+  "status": "draft",
+  "draft": {
+    "title": "虚构资料的沟通规则",
+    "markdown": "---\nname: example-profile\ndescription: 虚构资料核对示例\n---\n\n先回答重点。未知事实先询问本人。\n",
+    "data": {
+      "preferences": {},
+      "facts": []
+    },
+    "evidence": [
+      {
+        "kind": "manual",
+        "label": "用户核对示例",
+        "note": "仅虚构内容，不是个人履历"
+      }
+    ]
+  },
+  "createdAt": "2026-10-15T12:00:00.000Z",
+  "updatedAt": "2026-10-15T12:00:00.000Z"
+}

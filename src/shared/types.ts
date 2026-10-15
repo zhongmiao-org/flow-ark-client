@@ -7,7 +7,11 @@ export type AIRequest = NonNullable<P1Contracts['AIRequest']>;
 export type AIResult = NonNullable<P1Contracts['AIResult']>;
 export type RunState = NonNullable<P1Contracts['RunState']>;
 export type ScriptBundle = NonNullable<P1Contracts['ScriptBundle']>;
-export type PreparedScripts = { scripts: Record<string, string>; scriptBundles: ScriptBundle[] };
+export type PreparedScripts = {
+  scripts: Record<string, string>;
+  scriptBundles: ScriptBundle[];
+  skillSnapshots?: Record<string, import('./skill').SkillVersion>;
+};
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export type Bindings = {
   browserId?: string;
@@ -17,7 +21,13 @@ export type Bindings = {
   template?: { instanceId: string; packageKey: string; entryId: string; digest: string };
   resources?: Record<
     string,
-    { path?: string; browserId?: string; provider?: 'deepseek' | 'openai-codex'; model?: string }
+    {
+      path?: string;
+      browserId?: string;
+      provider?: 'deepseek' | 'openai-codex';
+      model?: string;
+      skill?: import('./skill').SkillVersionRef;
+    }
   >;
   grants?: Record<string, 'deny' | 'confirm' | 'auto'>;
   configuration?: { adapter: string; schema: Json; values: Json };

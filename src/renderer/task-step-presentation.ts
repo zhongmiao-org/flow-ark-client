@@ -96,6 +96,10 @@ export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext
       const tool = target?.tools.find((entry) => entry.name === step.tool);
       return `${target ? concise(target.displayName) : context.snapshot ? '工具对象引用：' + concise(step.target) : '工具对象尚未匹配'} · ${concise(tool?.title || step.tool)} · ${context.snapshot ? '外部影响以调用回执为准' : '试运行前核对外部影响'}`;
     }
+    case 'skill':
+      return step.operation === 'read'
+        ? `Skill资源「${step.binding}」 · 固定确认版本`
+        : `工作区「${step.binding}」 · 仅创建待确认草稿`;
     case 'document':
       return `${resource(step.binding)} · 文件：${value(step.file)} · 本机文本提取，缺口须核对`;
     case 'file': {

@@ -26,6 +26,15 @@ validators.template_human_review_v1 = `${schema.$id}#/$defs/TemplateHumanReview`
 validators.conversation_snapshot_v1 = `${schema.$id}#/$defs/ConversationSnapshot`;
 validators.conversation_event_v1 = `${schema.$id}#/$defs/ConversationEvent`;
 validators.document_result_v1 = `${schema.$id}#/$defs/DocumentResult`;
+for (const name of [
+  'SkillVersionRef',
+  'SkillDraft',
+  'SkillManifest',
+  'SkillVersion',
+  'SkillProposalSnapshot',
+])
+  validators['skill_' + name.replace(/^Skill/, '').toLowerCase() + '_v1'] =
+    `${schema.$id}#/$defs/${name}`;
 const digest = createHash('sha256').update(source).digest('hex');
 const banner = `/* Generated from contracts/p1.schema.json (${digest}). Do not edit. */`;
 await build({

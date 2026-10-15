@@ -1,0 +1,44 @@
+{
+  "formatVersion": "1.0",
+  "id": "skill-example",
+  "name": "通用Skill草稿示例",
+  "description": "虚构引用，只创建草稿，不自动确认",
+  "parameters": {
+    "key": null,
+    "title": null,
+    "markdown": null,
+    "data": null,
+    "evidence": null,
+    "base": null
+  },
+  "requiredCapabilities": [
+    "skill-v1"
+  ],
+  "steps": [
+    {
+      "id": "propose",
+      "type": "skill",
+      "version": 1,
+      "operation": "propose",
+      "binding": "workspace",
+      "key": {
+        "$ref": "params.key"
+      },
+      "title": {
+        "$ref": "params.title"
+      },
+      "markdown": {
+        "$ref": "params.markdown"
+      },
+      "data": {
+        "$ref": "params.data"
+      },
+      "evidence": {
+        "$ref": "params.evidence"
+      },
+      "base": {
+        "$ref": "params.base"
+      }
+    }
+  ]
+}
