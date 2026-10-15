@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "status": "ready",
+  "source": {
+    "binding": "materials",
+    "name": "示例资料.pdf",
+    "format": "pdf",
+    "byteLength": 1200,
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "text": "虚构项目说明：负责接口开发。",
+  "units": [
+    {
+      "index": 1,
+      "kind": "page",
+      "locator": "第 1 页",
+      "text": "虚构项目说明：负责接口开发。"
+    }
+  ],
+  "warnings": [
+    {
+      "code": "text-only",
+      "unit": null,
+      "message": "仅提取文字，不保留原排版或识别图片。"
+    }
+  ]
+}

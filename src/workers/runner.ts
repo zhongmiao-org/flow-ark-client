@@ -43,6 +43,26 @@ const rpc = new Rpc(
         signal.throwIfAborted();
         if (args.bindings.template)
           await rpc.call('node.authorize', { id: n.id, binding: resolved.binding });
+        if (n.type === 'document') {
+          const invocationId = randomUUID();
+          const cancel = () => {
+            void rpc.call('document.cancel', { invocationId }).catch(() => {});
+          };
+          signal.addEventListener('abort', cancel, { once: true });
+          try {
+            signal.throwIfAborted();
+            return await rpc.call(
+              'document.extract',
+              { nodeId: n.id, invocationId, file: resolved.file },
+              Math.min(timeout, 30000) + 6000,
+            );
+          } catch (e) {
+            cancel();
+            throw e;
+          } finally {
+            signal.removeEventListener('abort', cancel);
+          }
+        }
         if (n.type === 'conversation')
           return await rpc.call('conversation.open', {
             nodeId: n.id,

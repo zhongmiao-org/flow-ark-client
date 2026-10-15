@@ -269,6 +269,15 @@ export type Node =
       instructions: string;
       input: Value;
       maxRequests: number;
+    }
+  | {
+      id: string;
+      type: 'document';
+      version: 1;
+      name?: string;
+      timeoutMs?: number;
+      binding: string;
+      file: Value;
     };
 export type Value =
   | Json
@@ -468,6 +477,20 @@ export type ConversationOutput = {
     text: string;
   }[];
 };
+export type DocumentResult = {
+  version: 1;
+  status: 'ready' | 'partial' | 'empty';
+  source: DocumentSource;
+  text: string;
+  /**
+   * @maxItems 1000
+   */
+  units: DocumentUnit[];
+  /**
+   * @maxItems 1100
+   */
+  warnings: DocumentWarning[];
+};
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -501,6 +524,10 @@ export interface FlowArkP1 {
   ConversationSnapshot?: ConversationSnapshot;
   ConversationEvent?: ConversationEvent;
   ConversationOutput?: ConversationOutput;
+  DocumentSource?: DocumentSource;
+  DocumentUnit?: DocumentUnit;
+  DocumentWarning?: DocumentWarning;
+  DocumentResult?: DocumentResult;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -1053,4 +1080,22 @@ export interface ConversationEvent {
   requestId: string | null;
   turnId: string | null;
   snapshot: ConversationSnapshot;
+}
+export interface DocumentSource {
+  binding: string;
+  name: string;
+  format: 'text' | 'pdf' | 'docx';
+  byteLength: number;
+  sha256: string;
+}
+export interface DocumentUnit {
+  index: number;
+  kind: 'line' | 'page' | 'paragraph';
+  locator: string;
+  text: string;
+}
+export interface DocumentWarning {
+  code: 'empty-unit' | 'text-only' | 'body-only' | 'tracked-changes' | 'embedded-content';
+  message: string;
+  unit: number | null;
 }

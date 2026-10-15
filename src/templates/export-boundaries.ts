@@ -55,6 +55,7 @@ export function declareNativeBoundaries(flow: Flow, manifest: Manifest, entryId:
       node.binding = directory(node.binding, access);
       writes ||= access === 'write';
     }
+    if (node.type === 'document') node.binding = directory(node.binding, 'read');
     if (node.type === 'ai' || node.type === 'conversation') {
       const old = manifest.resources.find((r) => r.id === node.binding);
       if (old && (old.kind !== 'ai' || old.access !== 'use'))

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.19.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.20.0/p1.schema.json",
   "title": "FlowArk P1",
   "$defs": {
     "Json": {
@@ -1201,6 +1201,46 @@
             "instructions",
             "input",
             "maxRequests"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "type": {
+              "const": "document"
+            },
+            "version": {
+              "const": 1
+            },
+            "name": {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 100000
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 3600000
+            },
+            "binding": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{0,99}$"
+            },
+            "file": {
+              "$ref": "#/$defs/Value"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "version",
+            "binding",
+            "file"
           ],
           "additionalProperties": false
         }
@@ -2698,6 +2738,335 @@
             "properties": {
               "transcript": {
                 "maxItems": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "DocumentSource": {
+      "type": "object",
+      "properties": {
+        "binding": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,99}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^(?!/)(?![A-Za-z]:)(?!.*[\\\\\\u0000])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\/$).+$"
+        },
+        "format": {
+          "enum": [
+            "text",
+            "pdf",
+            "docx"
+          ]
+        },
+        "byteLength": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8388608
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "binding",
+        "name",
+        "format",
+        "byteLength",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "DocumentUnit": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "kind": {
+          "enum": [
+            "line",
+            "page",
+            "paragraph"
+          ]
+        },
+        "locator": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "text": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 50000
+        }
+      },
+      "required": [
+        "index",
+        "kind",
+        "locator",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "DocumentWarning": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "enum": [
+            "empty-unit",
+            "text-only",
+            "body-only",
+            "tracked-changes",
+            "embedded-content"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "unit"
+      ],
+      "additionalProperties": false
+    },
+    "DocumentResult": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "status": {
+          "enum": [
+            "ready",
+            "partial",
+            "empty"
+          ]
+        },
+        "source": {
+          "$ref": "#/$defs/DocumentSource"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 50000
+        },
+        "units": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/DocumentUnit"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "maxItems": 1100,
+          "items": {
+            "$ref": "#/$defs/DocumentWarning"
+          }
+        }
+      },
+      "required": [
+        "version",
+        "status",
+        "source",
+        "text",
+        "units",
+        "warnings"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "source": {
+                "properties": {
+                  "format": {
+                    "const": "text"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "units": {
+                "items": {
+                  "properties": {
+                    "kind": {
+                      "const": "line"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source": {
+                "properties": {
+                  "format": {
+                    "const": "pdf"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "units": {
+                "items": {
+                  "properties": {
+                    "kind": {
+                      "const": "page"
+                    }
+                  }
+                },
+                "maxItems": 100
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source": {
+                "properties": {
+                  "format": {
+                    "const": "docx"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "units": {
+                "items": {
+                  "properties": {
+                    "kind": {
+                      "const": "paragraph"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "empty"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "text": {
+                "pattern": "^\\s*$"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "ready",
+                  "partial"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "text": {
+                "pattern": "\\S"
+              },
+              "units": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "ready"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "warnings": {
+                "not": {
+                  "contains": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "empty-unit",
+                          "tracked-changes",
+                          "embedded-content"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "partial"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "warnings": {
+                "contains": {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "empty-unit",
+                        "tracked-changes",
+                        "embedded-content"
+                      ]
+                    }
+                  }
+                }
               }
             }
           }

@@ -1,4 +1,5 @@
 import { Conversations } from './conversations';
+import { DocumentProcesses } from './document-processes';
 import { conversationMethods } from '../shared/conversation';
 import { AINodes } from './ai-nodes';
 import { aiProviders } from '../shared/ai-node';
@@ -133,6 +134,7 @@ export class Runtime {
   private timer?: NodeJS.Timeout;
   private secrets: string[] = [];
   private conversations: Conversations;
+  private documents: DocumentProcesses;
   private admissions: Promise<void> = Promise.resolve();
   constructor(
     readonly dataPath: string,
@@ -144,6 +146,7 @@ export class Runtime {
     this.artifactFiles = new ArtifactFiles(dataPath);
     this.store = new Store(join(dataPath, 'flowark.sqlite'), key);
     this.store.recover();
+    this.documents = new DocumentProcesses(dir, executable);
     this.conversations = new Conversations(this.store, {
       available: () => this.assertAdmitting(),
       configuration: (provider) => this.system('ai.configuration.read', { provider }),
@@ -568,7 +571,7 @@ export class Runtime {
       );
     }
     for (const n of steps) {
-      if (n.type === 'file' || n.type === 'excel')
+      if (n.type === 'file' || n.type === 'excel' || n.type === 'document')
         await this.fileDirectory(record.bindings, n.binding);
       if (n.type === 'browser' && n.operation === 'upload') {
         try {
@@ -654,6 +657,7 @@ export class Runtime {
     if (this.recovering) return '正在核对上次运行的脚本资源，请稍候';
     if (this.scripts.recoveryError) this.blockExecution(this.scripts.recoveryError);
     if (this.sessions.recoveryError) this.blockExecution(this.sessions.recoveryError);
+    if (this.documents.recoveryError) this.blockExecution(this.documents.recoveryError);
     return this.runtimeBlock;
   }
   private recordExecutionBlock(runId?: string) {
@@ -1008,6 +1012,7 @@ export class Runtime {
         results.push(await this.releaseSession(active, true));
       }
       results.push(await this.mcpRuns.release(run.id));
+      results.push(await this.documents.release(run.id));
       const desktopSnapshot = this.store.get<FlowRecord>('snapshot', run.id);
       if (desktopSnapshot?.desktopTarget?.binding)
         results.push(await this.desktopRuns.release(desktopSnapshot, run.id));
@@ -1055,6 +1060,7 @@ export class Runtime {
       this.secrets = [];
       if (this.active === active) this.active = undefined;
       this.aiNodes.release(run.id);
+      await this.documents.release(run.id);
       this.scripts.finishRun(run.id);
       settled();
       if (!this.stopping && !this.store.fault && !this.executionBlock()) this.dispatch();
@@ -1075,12 +1081,36 @@ export class Runtime {
     // Its exact invocation tombstone must be recorded before normal owner checks.
     if (method === 'script.cancel') return this.scripts.cancel(id, args.invocationId);
     if (method === 'mcp.cancel') return this.mcpRuns.cancel(id, args.nodeInstance);
+    if (method === 'document.cancel')
+      return this.active?.id === id ? this.documents.cancel(id, args.invocationId) : false;
     if (method === 'ai.cancel')
       return this.active?.id === id ? this.aiNodes.cancel(id, args.invocationId) : false;
     if (this.active?.id !== id) throw new Error('运行已停止');
     this.checkActive(this.active);
     const runSignal = this.active.abort.signal;
     const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', id)!;
+    if (method === 'document.extract') {
+      const active = this.active;
+      const node = walk(snapshot.flow.steps).find((n) => n.id === args.nodeId);
+      if (!node || node.type !== 'document') throw new Error('资料节点不在当前快照中');
+      if (snapshot.bindings.template) {
+        const { entry, pkg } = await this.templates.context(snapshot);
+        const resource = pkg.manifest.resources.find((r) => r.id === node.binding);
+        if (
+          !entry.capabilities.includes('document') ||
+          !entry.capabilities.includes('document-extract-v1') ||
+          !entry.resources.includes(node.binding) ||
+          resource?.kind !== 'directory' ||
+          !['read', 'readwrite'].includes(resource.access)
+        )
+          throw new Error('模板入口未声明资料读取资源与能力');
+      }
+      const root = await this.fileDirectory(snapshot.bindings, node.binding);
+      this.checkActive(active);
+      return this.documents.extract(id, args.invocationId, node, root, args.file, runSignal, () =>
+        this.checkActive(active),
+      );
+    }
     if (method === 'conversation.open') {
       const active = this.active;
       const node = walk(snapshot.flow.steps).find((n) => n.id === args.nodeId);

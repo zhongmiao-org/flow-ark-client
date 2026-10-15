@@ -1,0 +1,23 @@
+{
+  "formatVersion": "1.0",
+  "id": "document-example",
+  "name": "本机资料文本提取",
+  "description": "虚构资料示例。明确目录与文件，不调用AI；后续按status核对。",
+  "parameters": {
+    "documentName": "示例资料.pdf"
+  },
+  "requiredCapabilities": [
+    "document-extract-v1"
+  ],
+  "steps": [
+    {
+      "id": "extract",
+      "type": "document",
+      "version": 1,
+      "binding": "materials",
+      "file": {
+        "$ref": "params.documentName"
+      }
+    }
+  ]
+}

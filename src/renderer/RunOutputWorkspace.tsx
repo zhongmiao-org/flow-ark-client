@@ -1,4 +1,5 @@
 import ActionButton from './ActionButton';
+import DocumentResults from './DocumentResults';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { runStateColors } from './theme';
 import { Card, Empty, Alert, Button, Collapse, Tag, Badge } from 'antd';
@@ -160,6 +161,7 @@ export default function RunOutputWorkspace({
             {view.statusNote && (
               <Alert type="warning" showIcon title={view.statusNote} role="status" />
             )}
+            <DocumentResults snapshot={detail.snapshot} output={detail.output} />
             <RunOutput detail={detail} layout="result" />
             <RunFileRecovery key={`file-recovery:${detail.run.id}`} detail={detail} />
             <RunResultReview key={detail.run.id} runId={detail.run.id} />

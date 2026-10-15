@@ -46,6 +46,7 @@ export function shapeOf(step: Step): FlowShape {
       return 'manual';
     case 'script':
       return 'subprocess';
+    case 'document':
     case 'file':
       return 'document';
     case 'excel':

@@ -46,6 +46,11 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
           ? effect('read', `读取目录“${node.binding}”中的${file}。`)
           : effect('write', `在目录“${node.binding}”${operation}${file}，可能覆盖同名文件。`);
       }
+      case 'document':
+        return effect(
+          'read',
+          `仅读取目录“${node.binding}”中明确指定的资料，提取PDF/DOCX/UTF-8文本与来源；不调用AI，不自动OCR，缺口须核对。`,
+        );
       case 'browser':
         if (node.operation === 'upload')
           return effect('network', '读取所绑定文件并上传到网页，可能向网站发送文件内容。');

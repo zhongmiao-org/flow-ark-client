@@ -3,6 +3,7 @@ import type { Step } from '../shared/types';
 
 export function newStep(type: string): Step {
   const defaults: Record<string, object> = {
+    document: { binding: 'materials', file: '示例资料.pdf' },
     value: { value: '你好，序舟' },
     assert: { actual: true, operator: 'equals', expected: true },
     conversation: {

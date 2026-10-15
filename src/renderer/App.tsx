@@ -104,6 +104,7 @@ import ReadStepInspector from './ReadStepInspector';
 import type { ElementPickerControls } from './ElementPicker';
 import { browserActions } from './browser-actions';
 import ConversationNodeConfiguration from './ConversationNodeConfiguration';
+import DocumentNodeConfiguration from './DocumentNodeConfiguration';
 import AINodeConfiguration from './AINodeConfiguration';
 import LogicNodeConfiguration from './LogicNodeConfiguration';
 import { revealDraftInput } from './revealDraftInput';
@@ -3084,6 +3085,9 @@ function Editor({
             ...r.flow.requiredCapabilities,
             ...(mapped ? ['excel-mapping-v1'] : []),
             ...(flatten(steps).some((node) => node.type === 'ai') ? ['ai-node-v1'] : []),
+            ...(flatten(steps).some((node) => node.type === 'document')
+              ? ['document-extract-v1']
+              : []),
             ...(flatten(steps).some((node) => node.type === 'conversation')
               ? ['conversation-v1']
               : []),
@@ -3113,6 +3117,9 @@ function Editor({
             ...new Set([
               ...r.flow.requiredCapabilities,
               ...(flatten(steps).some((node) => node.type === 'ai') ? ['ai-node-v1'] : []),
+              ...(flatten(steps).some((node) => node.type === 'document')
+                ? ['document-extract-v1']
+                : []),
               ...(flatten(steps).some((node) => node.type === 'conversation')
                 ? ['conversation-v1']
                 : []),
@@ -4195,6 +4202,13 @@ function Editor({
                                           />
                                         </>
                                       )}
+                                    {selectedNode.type === 'document' && (
+                                      <DocumentNodeConfiguration
+                                        node={selectedNode}
+                                        choices={choices}
+                                        change={updateNode}
+                                      />
+                                    )}
                                     {selectedNode.type === 'conversation' && (
                                       <ConversationNodeConfiguration
                                         node={selectedNode}
