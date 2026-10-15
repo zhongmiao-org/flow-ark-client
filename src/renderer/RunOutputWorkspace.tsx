@@ -9,6 +9,7 @@ import { runDisplayLabels } from '../shared/run-history';
 import type { RunState } from '../shared/types';
 import { presentRun } from '../shared/run-presentation';
 import RunResultReview from './RunResultReview';
+import RunFileRecovery from './RunFileRecovery';
 import './run-output-workspace.css';
 import { keepFocusedElementVisible } from './keepFocusedElementVisible';
 
@@ -159,6 +160,7 @@ export default function RunOutputWorkspace({
               <Alert type="warning" showIcon title={view.statusNote} role="status" />
             )}
             <RunOutput detail={detail} layout="result" />
+            <RunFileRecovery key={detail.run.id} detail={detail} />
             <RunResultReview key={detail.run.id} runId={detail.run.id} />
           </Card>
         </section>

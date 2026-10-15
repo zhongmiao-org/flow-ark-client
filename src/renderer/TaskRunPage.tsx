@@ -11,6 +11,7 @@ import { artifactLabel, taskRunPresentation } from './task-run-presentation';
 import { RunOutput } from './RunObservation';
 import { runDisplayLabels } from '../shared/run-history';
 import RunRerunPanel from './RunRerunPanel';
+import RunFileRecovery from './RunFileRecovery';
 import TaskRepairPage from './TaskRepairPage';
 import './task-run.css';
 import TaskExecutionSteps, { type TaskExecutionView } from './TaskExecutionSteps';
@@ -463,6 +464,7 @@ export default function TaskRunPage({
           receipts={detail.desktopReceipts}
           snapshot={detail.snapshot}
         />
+        <RunFileRecovery key={run.id} detail={detail} />
         {page === 'rerun' ? (
           <section>
             <Card className="task-run-card task-run-restart">
