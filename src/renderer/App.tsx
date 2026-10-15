@@ -1,6 +1,7 @@
 import { Alert, Collapse, ConfigProvider, Button, Input, Segmented, Tag } from 'antd';
 import { VariableNavigationContext } from './variable-navigation';
 import StructureReferenceRecovery from './StructureReferenceRecovery';
+import InspectorAction from './InspectorAction';
 import type { ReferenceIssue } from '../shared/flow-references';
 import { usePageBack } from './use-page-back';
 import DesktopStepDetails from './DesktopStepDetails';
@@ -3933,64 +3934,176 @@ function Editor({
                                       >
                                         {kinds[selectedNode.type].label}
                                       </h3>
-                                      <Button
-                                        className="icon-button"
-                                        aria-label="节点上移"
-                                        title="在当前分支上移"
-                                        disabled={!location || location.index === 0 || undefined}
-                                        onClick={() =>
-                                          structure(() => moveSibling(r.flow.steps, selected, -1))
-                                        }
+                                      <div
+                                        className="inspector-node-tools"
+                                        role="group"
+                                        aria-label="步骤快捷操作"
                                       >
-                                        <ArrowUp size={16} />
-                                      </Button>
-                                      <Button
-                                        className="icon-button"
-                                        aria-label="节点下移"
-                                        title="在当前分支下移"
-                                        disabled={
-                                          !location ||
-                                          location.index === location.siblings.length - 1 ||
-                                          undefined
-                                        }
-                                        onClick={() =>
-                                          structure(() => moveSibling(r.flow.steps, selected, 1))
-                                        }
-                                      >
-                                        <ArrowDown size={16} />
-                                      </Button>
-                                      <Button
-                                        className="icon-button"
-                                        aria-label="复制节点"
-                                        title="复制到后面（包含子步骤）"
-                                        onClick={duplicate}
-                                      >
-                                        <Copy size={16} />
-                                      </Button>
-                                      <Button
-                                        className="icon-button"
-                                        aria-label="删除节点"
-                                        title="删除步骤（包含子步骤）"
-                                        onClick={() =>
-                                          structure(
-                                            () => changeSteps(r.flow.steps, selected, () => null),
-                                            '',
-                                          )
-                                        }
-                                      >
-                                        <Trash2 size={16} />
-                                      </Button>
+                                        <InspectorAction
+                                          iconOnly
+                                          className="icon-button"
+                                          aria-label="节点上移"
+                                          hint={
+                                            !location || location.index === 0
+                                              ? '已在当前分支首位，无法上移'
+                                              : '在当前分支上移'
+                                          }
+                                          disabled={!location || location.index === 0 || undefined}
+                                          onClick={() =>
+                                            structure(() => moveSibling(r.flow.steps, selected, -1))
+                                          }
+                                        >
+                                          <ArrowUp size={16} />
+                                        </InspectorAction>
+                                        <InspectorAction
+                                          iconOnly
+                                          className="icon-button"
+                                          aria-label="节点下移"
+                                          hint={
+                                            !location ||
+                                            location.index === location.siblings.length - 1
+                                              ? '已在当前分支末位，无法下移'
+                                              : '在当前分支下移'
+                                          }
+                                          disabled={
+                                            !location ||
+                                            location.index === location.siblings.length - 1 ||
+                                            undefined
+                                          }
+                                          onClick={() =>
+                                            structure(() => moveSibling(r.flow.steps, selected, 1))
+                                          }
+                                        >
+                                          <ArrowDown size={16} />
+                                        </InspectorAction>
+                                        <InspectorAction
+                                          iconOnly
+                                          className="icon-button"
+                                          aria-label="复制节点"
+                                          hint="复制到后面（包含子步骤）"
+                                          onClick={duplicate}
+                                        >
+                                          <Copy size={16} />
+                                        </InspectorAction>
+                                        <InspectorAction
+                                          iconOnly
+                                          className="icon-button"
+                                          aria-label="删除节点"
+                                          hint="删除步骤（包含子步骤）"
+                                          onClick={() =>
+                                            structure(
+                                              () => changeSteps(r.flow.steps, selected, () => null),
+                                              '',
+                                            )
+                                          }
+                                        >
+                                          <Trash2 size={16} />
+                                        </InspectorAction>
+                                      </div>
                                     </div>
-                                    <Button
-                                      onClick={() => {
-                                        if (!guardNodeInput()) return;
-                                        setStructureError('');
-                                        setPanel('node');
-                                        setPositionOpen(true);
-                                      }}
+                                    <p className="muted inspector-node-meta">
+                                      {selectedNode.id} · 保存后，下次运行生效
+                                    </p>
+                                    <div
+                                      className="inspector-actions"
+                                      role="group"
+                                      aria-label="步骤编辑操作"
                                     >
-                                      步骤编辑与位置
-                                    </Button>
+                                      <InspectorAction
+                                        hint="编辑步骤与位置，调整插入、移动或复制目标"
+                                        aria-label="步骤编辑与位置"
+                                        onClick={() => {
+                                          if (!guardNodeInput()) return;
+                                          setStructureError('');
+                                          setPanel('node');
+                                          setPositionOpen(true);
+                                        }}
+                                      >
+                                        编辑位置
+                                      </InspectorAction>
+                                      <InspectorAction
+                                        hint={
+                                          draftSaved
+                                            ? '使用 AI 修改当前步骤'
+                                            : '保存草稿后可使用 AI 单步修改'
+                                        }
+                                        aria-label="用 AI 修改此步"
+                                        data-ai-edit-step
+                                        disabled={!draftSaved || undefined}
+                                        onClick={() => openStepAI(selectedNode.id)}
+                                      >
+                                        AI 修改
+                                      </InspectorAction>
+                                      {['value', 'condition', 'assert', 'loop', 'human'].includes(
+                                        selectedNode.type,
+                                      ) && (
+                                        <InspectorAction
+                                          hint="打开流程控制的完整配置"
+                                          aria-label="流程控制配置"
+                                          onClick={() => {
+                                            if (!guardNodeInput()) return;
+                                            setPanel('node');
+                                            setLogicConfigurationOpen(true);
+                                          }}
+                                        >
+                                          控制配置
+                                        </InspectorAction>
+                                      )}
+                                      {['http', 'file', 'excel'].includes(selectedNode.type) && (
+                                        <InspectorAction
+                                          hint="打开 HTTP、文件与表格的完整配置"
+                                          aria-label="HTTP文件与表格配置"
+                                          onClick={() => {
+                                            if (!guardNodeInput()) return;
+                                            setPanel('node');
+                                            setResourceOpen(true);
+                                          }}
+                                        >
+                                          {selectedNode.type === 'http'
+                                            ? '请求配置'
+                                            : selectedNode.type === 'file'
+                                              ? '文件配置'
+                                              : '表格配置'}
+                                        </InspectorAction>
+                                      )}
+                                      {selectedNode.type === 'browser' && (
+                                        <InspectorAction
+                                          hint="打开网页动作的完整配置"
+                                          aria-label="网页动作配置"
+                                          onClick={() => {
+                                            if (!guardNodeInput()) return;
+                                            setPanel('node');
+                                            setBrowserActionOpen(true);
+                                          }}
+                                        >
+                                          网页配置
+                                        </InspectorAction>
+                                      )}
+                                      {['loop', 'condition'].includes(selectedNode.type) && (
+                                        <InspectorAction
+                                          hint="编辑条件、串行循环及其结构"
+                                          aria-label="条件与串行循环"
+                                          onClick={() => {
+                                            if (!guardNodeInput()) return;
+                                            setPanel('node');
+                                            setControlOpen(true);
+                                          }}
+                                        >
+                                          条件与循环
+                                        </InspectorAction>
+                                      )}
+                                      {selectedNode.type === 'excel' &&
+                                        selectedNode.operation === 'map' && (
+                                          <InspectorAction
+                                            hint="打开 Excel 映射编辑器，预览并编辑字段映射"
+                                            type="primary"
+                                            aria-label="打开 Excel 映射编辑器"
+                                            onClick={() => openExcel(selectedNode.id)}
+                                          >
+                                            编辑映射
+                                          </InspectorAction>
+                                        )}
+                                    </div>
                                     {structureError && (
                                       <p className="field-error" role="alert">
                                         {structureError}
@@ -4007,16 +4120,6 @@ function Editor({
                                         {referenceNotice.message}
                                       </p>
                                     )}
-                                    <p className="muted">
-                                      {selectedNode.id} · 修改后保存，下一次运行生效
-                                    </p>
-                                    <Button
-                                      data-ai-edit-step
-                                      disabled={!draftSaved || undefined}
-                                      onClick={() => openStepAI(selectedNode.id)}
-                                    >
-                                      用 AI 修改此步
-                                    </Button>
                                     {!draftSaved && (
                                       <p className="muted">保存草稿后可使用 AI 单步修改。</p>
                                     )}
@@ -4037,52 +4140,6 @@ function Editor({
                                         />
                                       </>
                                     )}
-                                    {['value', 'condition', 'assert', 'loop', 'human'].includes(
-                                      selectedNode.type,
-                                    ) && (
-                                      <Button
-                                        onClick={() => {
-                                          if (!guardNodeInput()) return;
-                                          setPanel('node');
-                                          setLogicConfigurationOpen(true);
-                                        }}
-                                      >
-                                        流程控制配置
-                                      </Button>
-                                    )}
-                                    {['http', 'file', 'excel'].includes(selectedNode.type) && (
-                                      <Button
-                                        onClick={() => {
-                                          if (!guardNodeInput()) return;
-                                          setPanel('node');
-                                          setResourceOpen(true);
-                                        }}
-                                      >
-                                        HTTP文件与表格配置
-                                      </Button>
-                                    )}
-                                    {selectedNode.type === 'browser' && (
-                                      <Button
-                                        onClick={() => {
-                                          if (!guardNodeInput()) return;
-                                          setPanel('node');
-                                          setBrowserActionOpen(true);
-                                        }}
-                                      >
-                                        网页动作配置
-                                      </Button>
-                                    )}
-                                    {['loop', 'condition'].includes(selectedNode.type) && (
-                                      <Button
-                                        onClick={() => {
-                                          if (!guardNodeInput()) return;
-                                          setPanel('node');
-                                          setControlOpen(true);
-                                        }}
-                                      >
-                                        条件与串行循环
-                                      </Button>
-                                    )}
                                     {selectedNode.type !== 'browser' &&
                                       !logicConfigurationOpen &&
                                       !scriptConfigurationOpen && (
@@ -4102,16 +4159,6 @@ function Editor({
                                             change={updateNode}
                                           />
                                         </>
-                                      )}
-                                    {selectedNode.type === 'excel' &&
-                                      selectedNode.operation === 'map' && (
-                                        <Button
-                                          type="primary"
-                                          aria-label="打开 Excel 映射编辑器"
-                                          onClick={() => openExcel(selectedNode.id)}
-                                        >
-                                          打开 Excel 映射编辑器
-                                        </Button>
                                       )}
                                     {selectedNode.type === 'mcp' && (
                                       <McpNodeConfiguration
