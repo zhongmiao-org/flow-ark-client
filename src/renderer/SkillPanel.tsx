@@ -308,6 +308,7 @@ export default function SkillPanel({
         refresh={refresh}
         registerLeave={registerLeave}
         back={returnToDraft}
+        backLabel="当前草稿"
         openFlow={openFlow}
         openSkill={returnToDraft}
       />

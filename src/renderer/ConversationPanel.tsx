@@ -35,6 +35,7 @@ export default function ConversationPanel({
   refresh,
   registerLeave,
   back,
+  backLabel = '待办',
   openFlow,
   openSkill,
 }: {
@@ -42,6 +43,7 @@ export default function ConversationPanel({
   refresh: () => Promise<void>;
   registerLeave: (fn: ConversationLeave | undefined) => void;
   back: () => void;
+  backLabel?: string;
   openFlow?: (id: string) => void;
   openSkill?: (id: string) => void;
 }) {
@@ -489,7 +491,7 @@ export default function ConversationPanel({
           {trialSource ? '内部试聊' : '引导会话'} · {snapshot?.title ?? '正在读取'}
         </h1>
         <p>保存后可稍后继续。全部模型请求消耗你自己的 API Key 额度。</p>
-        <Button onClick={() => navigate(back, '待办列表')}>返回待办</Button>
+        <Button onClick={() => navigate(back, backLabel)}>返回{backLabel}</Button>
       </header>
       {recovering && (
         <Alert
