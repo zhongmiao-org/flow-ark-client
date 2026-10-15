@@ -1,5 +1,6 @@
 import { templateSourceSchema } from './template-source';
 import { z } from 'zod';
+import { conversationMethods } from './conversation';
 import { runListSchema } from './run-history';
 import { scheduleCreateSchema, scheduleUpdateSchema, scheduleInspectSchema } from './schedules';
 import { flowExportSchema } from './flow-export';
@@ -68,6 +69,7 @@ export const templateSaveSchema = z
   .strict();
 export type TemplateSave = z.infer<typeof templateSaveSchema>;
 export const methods = {
+  ...conversationMethods,
   ...desktopMethods,
   ...desktopPlanMethods,
   ...desktopRunMethods,

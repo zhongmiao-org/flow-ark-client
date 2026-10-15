@@ -15,6 +15,7 @@ export const kinds: Record<string, { label: string; icon: LucideIcon; color: str
   mcp: { label: '已连接工具', icon: Workflow, color: '#526b87' },
   value: { label: '数据', icon: Workflow, color: '#526b87' },
   assert: { label: '结果断言', icon: Check, color: '#428574' },
+  conversation: { label: '持久引导会话', icon: Workflow, color: '#456bd0' },
   ai: { label: '结构化 AI 调用', icon: Workflow, color: '#456bd0' },
   http: { label: 'HTTP 请求', icon: Globe, color: '#456bd0' },
   script: { label: 'JS / TS 脚本', icon: Code, color: '#bc873d' },

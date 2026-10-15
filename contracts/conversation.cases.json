@@ -1,0 +1,195 @@
+[
+  {
+    "name": "初始会话",
+    "definition": "ConversationEvent",
+    "valid": true,
+    "value": {
+      "kind": "conversation.snapshot",
+      "eventId": "session-example:1",
+      "sessionId": "session-example",
+      "sequence": 1,
+      "requestId": null,
+      "turnId": null,
+      "snapshot": {
+        "formatVersion": "1.0",
+        "id": "session-example",
+        "flowId": "conversation-example",
+        "nodeId": "interview",
+        "title": "补充材料",
+        "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "provider": "deepseek",
+        "model": "explicit-user-model",
+        "instructions": "围绕用户提供的材料提问；未知信息保留未知。",
+        "context": {
+          "材料": "虚构说明"
+        },
+        "maxRequests": 20,
+        "status": "draft",
+        "revision": 1,
+        "sequence": 1,
+        "draft": "",
+        "messages": [],
+        "attempts": [],
+        "updatedAt": "2026-10-15T00:00:00Z",
+        "error": ""
+      }
+    }
+  },
+  {
+    "name": "不允许零序号",
+    "definition": "ConversationEvent",
+    "valid": false,
+    "value": {
+      "kind": "conversation.snapshot",
+      "eventId": "session-example:1",
+      "sessionId": "session-example",
+      "sequence": 0,
+      "requestId": null,
+      "turnId": null,
+      "snapshot": {
+        "formatVersion": "1.0",
+        "id": "session-example",
+        "flowId": "conversation-example",
+        "nodeId": "interview",
+        "title": "补充材料",
+        "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "provider": "deepseek",
+        "model": "explicit-user-model",
+        "instructions": "围绕用户提供的材料提问；未知信息保留未知。",
+        "context": {
+          "材料": "虚构说明"
+        },
+        "maxRequests": 20,
+        "status": "draft",
+        "revision": 1,
+        "sequence": 1,
+        "draft": "",
+        "messages": [],
+        "attempts": [],
+        "updatedAt": "2026-10-15T00:00:00Z",
+        "error": ""
+      }
+    }
+  },
+  {
+    "name": "不允许携带Key",
+    "definition": "ConversationEvent",
+    "valid": false,
+    "value": {
+      "kind": "conversation.snapshot",
+      "eventId": "session-example:1",
+      "sessionId": "session-example",
+      "sequence": 1,
+      "requestId": null,
+      "turnId": null,
+      "snapshot": {
+        "formatVersion": "1.0",
+        "id": "session-example",
+        "flowId": "conversation-example",
+        "nodeId": "interview",
+        "title": "补充材料",
+        "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "provider": "deepseek",
+        "model": "explicit-user-model",
+        "instructions": "围绕用户提供的材料提问；未知信息保留未知。",
+        "context": {
+          "材料": "虚构说明"
+        },
+        "maxRequests": 20,
+        "status": "draft",
+        "revision": 1,
+        "sequence": 1,
+        "draft": "",
+        "messages": [],
+        "attempts": [],
+        "updatedAt": "2026-10-15T00:00:00Z",
+        "error": ""
+      },
+      "apiKey": "fake-placeholder"
+    }
+  },
+  {
+    "name": "不允许任意状态",
+    "definition": "ConversationSnapshot",
+    "valid": false,
+    "value": {
+      "formatVersion": "1.0",
+      "id": "session-example",
+      "flowId": "conversation-example",
+      "nodeId": "interview",
+      "title": "补充材料",
+      "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "provider": "deepseek",
+      "model": "explicit-user-model",
+      "instructions": "围绕用户提供的材料提问；未知信息保留未知。",
+      "context": {
+        "材料": "虚构说明"
+      },
+      "maxRequests": 20,
+      "status": "sent",
+      "revision": 1,
+      "sequence": 1,
+      "draft": "",
+      "messages": [],
+      "attempts": [],
+      "updatedAt": "2026-10-15T00:00:00Z",
+      "error": ""
+    }
+  },
+  {
+    "name": "确认对话输出",
+    "definition": "ConversationOutput",
+    "valid": true,
+    "value": {
+      "sessionId": "session-example",
+      "status": "confirmed",
+      "revision": 4,
+      "transcript": [
+        {
+          "role": "user",
+          "text": "虚构输入"
+        },
+        {
+          "role": "assistant",
+          "text": "虚构问题"
+        }
+      ]
+    }
+  },
+  {
+    "name": "不允许无限请求",
+    "definition": "Node",
+    "valid": false,
+    "value": {
+      "id": "interview",
+      "type": "conversation",
+      "version": 1,
+      "binding": "ai",
+      "key": "example-session",
+      "title": "补充材料",
+      "instructions": "围绕用户提供的材料提问；未知信息保留未知。",
+      "input": {
+        "材料": "虚构说明"
+      },
+      "maxRequests": 51
+    }
+  },
+  {
+    "name": "节点格式",
+    "definition": "Node",
+    "valid": true,
+    "value": {
+      "id": "interview",
+      "type": "conversation",
+      "version": 1,
+      "binding": "ai",
+      "key": "example-session",
+      "title": "补充材料",
+      "instructions": "围绕用户提供的材料提问；未知信息保留未知。",
+      "input": {
+        "材料": "虚构说明"
+      },
+      "maxRequests": 20
+    }
+  }
+]

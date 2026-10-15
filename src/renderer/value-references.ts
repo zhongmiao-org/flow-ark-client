@@ -95,6 +95,9 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
           ? '结果为每次迭代的输出数组；索引取决于实际迭代次数'
           : '本步骤的完整输出；未知字段可在高级子路径中指定',
     );
+    if (node.type === 'conversation')
+      for (const key of ['sessionId', 'status', 'revision', 'transcript'])
+        add(path + '.' + key, label + ' / ' + key, '前序步骤', '确认后才有完整对话；先判断 status');
     if (node.type === 'ai') {
       const schema = node.schema as { properties?: Record<string, unknown> };
       for (const key of ['output', 'provider', 'model', 'requestId', 'usage'])

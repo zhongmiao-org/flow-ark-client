@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.18.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.19.0/p1.schema.json",
   "title": "FlowArk P1",
   "$defs": {
     "Json": {
@@ -1139,6 +1139,68 @@
             "instructions",
             "input",
             "schema"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "type": {
+              "const": "conversation"
+            },
+            "version": {
+              "const": 1
+            },
+            "name": {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 100000
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 3600000
+            },
+            "binding": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{0,99}$"
+            },
+            "key": {
+              "$ref": "#/$defs/Value"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "instructions": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100000
+            },
+            "input": {
+              "$ref": "#/$defs/Value"
+            },
+            "maxRequests": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "version",
+            "binding",
+            "key",
+            "title",
+            "instructions",
+            "input",
+            "maxRequests"
           ],
           "additionalProperties": false
         }
@@ -2289,6 +2351,358 @@
         "$ref"
       ],
       "additionalProperties": false
+    },
+    "ConversationMessage": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "turnId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "role": {
+          "enum": [
+            "user",
+            "assistant"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 100000
+        },
+        "state": {
+          "enum": [
+            "complete",
+            "partial"
+          ]
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        }
+      },
+      "required": [
+        "id",
+        "turnId",
+        "role",
+        "text",
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "ConversationAttempt": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "turnId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "state": {
+          "enum": [
+            "generating",
+            "complete",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "providerRequestId": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 200
+        },
+        "model": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 100
+        },
+        "usage": {
+          "$ref": "#/$defs/Json"
+        }
+      },
+      "required": [
+        "id",
+        "turnId",
+        "state",
+        "providerRequestId",
+        "model",
+        "usage"
+      ],
+      "additionalProperties": false
+    },
+    "ConversationSnapshot": {
+      "type": "object",
+      "properties": {
+        "formatVersion": {
+          "const": "1.0"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "flowId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "nodeId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "fingerprint": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "provider": {
+          "enum": [
+            "deepseek",
+            "openai-codex"
+          ]
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "instructions": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100000
+        },
+        "context": {
+          "$ref": "#/$defs/Json"
+        },
+        "maxRequests": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "generating",
+            "ready",
+            "failed",
+            "cancelled",
+            "confirmed"
+          ]
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "draft": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 4000
+        },
+        "messages": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/ConversationMessage"
+          }
+        },
+        "attempts": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/ConversationAttempt"
+          }
+        },
+        "updatedAt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "error": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 2000
+        },
+        "confirmedAt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        }
+      },
+      "required": [
+        "formatVersion",
+        "id",
+        "flowId",
+        "nodeId",
+        "title",
+        "fingerprint",
+        "provider",
+        "model",
+        "instructions",
+        "context",
+        "maxRequests",
+        "status",
+        "revision",
+        "sequence",
+        "draft",
+        "messages",
+        "attempts",
+        "updatedAt",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "ConversationEvent": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "conversation.snapshot"
+        },
+        "eventId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 140
+        },
+        "sessionId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "requestId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "turnId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "snapshot": {
+          "$ref": "#/$defs/ConversationSnapshot"
+        }
+      },
+      "required": [
+        "kind",
+        "eventId",
+        "sessionId",
+        "sequence",
+        "requestId",
+        "turnId",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    "ConversationOutput": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "generating",
+            "ready",
+            "failed",
+            "cancelled",
+            "confirmed"
+          ]
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "transcript": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": {
+                "enum": [
+                  "user",
+                  "assistant"
+                ]
+              },
+              "text": {
+                "type": "string",
+                "minLength": 0,
+                "maxLength": 100000
+              }
+            },
+            "required": [
+              "role",
+              "text"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "sessionId",
+        "status",
+        "revision",
+        "transcript"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "confirmed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "transcript": {
+                "minItems": 2
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "transcript": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

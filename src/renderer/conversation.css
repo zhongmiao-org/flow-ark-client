@@ -1,0 +1,69 @@
+.conversation-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  container-type: inline-size;
+}
+.conversation-page[hidden] {
+  display: none;
+}
+.conversation-page header h1 {
+  margin-top: 0;
+}
+.conversation-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.conversation-columns > .ant-card {
+  min-width: 0;
+}
+.conversation-columns .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+.conversation-columns p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.conversation-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.conversation-message p {
+  white-space: pre-wrap;
+}
+.conversation-message {
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--fa-bg-subtle);
+}
+.conversation-message.is-user {
+  background: var(--fa-action-subtle);
+}
+.conversation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.conversation-actions > .ant-btn {
+  min-width: 120px;
+}
+.conversation-columns label:not(.ant-checkbox-wrapper) {
+  margin: 0;
+}
+.conversation-columns pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 280px;
+  overflow: auto;
+}
+@container (max-width:900px) {
+  .conversation-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

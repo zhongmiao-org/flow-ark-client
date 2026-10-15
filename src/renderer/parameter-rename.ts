@@ -28,6 +28,12 @@ export function renameParameter(flow: Flow, from: string, to: string) {
   const rewriteSteps = (steps: Step[]): Step[] =>
     steps.map((node) => {
       if (node.type === 'ai') return { ...node, input: rewrite(node.input) as typeof node.input };
+      if (node.type === 'conversation')
+        return {
+          ...node,
+          input: rewrite(node.input) as typeof node.input,
+          key: rewrite(node.key) as typeof node.key,
+        };
       if (node.type === 'condition')
         return {
           ...node,

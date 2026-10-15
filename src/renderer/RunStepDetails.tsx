@@ -64,6 +64,15 @@ function fields(node: Step): [string, string][] {
                 ['框架层级', `${'framePath' in node ? (node.framePath?.length ?? 0) : 0} 层`],
               ]),
       ] as [string, string][];
+    case 'conversation':
+      return [
+        ['会话标题', node.title],
+        ['会话键', configured(node.key)],
+        ['AI资源', node.binding],
+        ['请求上限', String(node.maxRequests)],
+        ['指令', configured(node.instructions)],
+        ['上下文', configured(node.input)],
+      ];
     case 'ai':
       return [
         ['AI资源', node.binding],

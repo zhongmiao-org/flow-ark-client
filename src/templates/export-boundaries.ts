@@ -55,7 +55,7 @@ export function declareNativeBoundaries(flow: Flow, manifest: Manifest, entryId:
       node.binding = directory(node.binding, access);
       writes ||= access === 'write';
     }
-    if (node.type === 'ai') {
+    if (node.type === 'ai' || node.type === 'conversation') {
       const old = manifest.resources.find((r) => r.id === node.binding);
       if (old && (old.kind !== 'ai' || old.access !== 'use'))
         throw new Error('AI 资源类型冲突：' + node.binding);
@@ -68,7 +68,9 @@ export function declareNativeBoundaries(flow: Flow, manifest: Manifest, entryId:
           required: true,
         });
       if (!entry.resources.includes(node.binding)) entry.resources.push(node.binding);
-      if (!entry.capabilities.includes('ai-node-v1')) entry.capabilities.push('ai-node-v1');
+      const capability = node.type === 'ai' ? 'ai-node-v1' : 'conversation-v1';
+      if (!entry.capabilities.includes(capability)) entry.capabilities.push(capability);
+      if (!entry.capabilities.includes('ai')) entry.capabilities.push('ai');
     }
     if (node.type === 'http') writes ||= node.method !== 'GET';
     if (node.type === 'browser') {

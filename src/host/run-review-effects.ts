@@ -66,6 +66,11 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
           'network',
           `${{ click: '点击网页元素', fill: '填写网页表单', select: '选择表单选项', check: '更改勾选状态', press: '向网页发送按键' }[node.operation]}，可能改变表单或触发网站操作。`,
         );
+      case 'conversation':
+        return effect(
+          'write',
+          '在本机创建或读取持久引导会话，本批不调用模型；等待用户不占运行槽，用户在待办核对自有 Key 费用后显式发送。仅确认后返回完整对话。',
+        );
       case 'ai':
         return effect(
           'network',

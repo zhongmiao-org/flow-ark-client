@@ -207,7 +207,10 @@ export class RunReview {
           else for (const name of Object.keys(record.bindings.files)) directory(name, true, false);
         }
       }
-      if (node.type === 'ai' && !resources.some((r) => r.id === 'ai:' + node.binding)) {
+      if (
+        (node.type === 'ai' || node.type === 'conversation') &&
+        !resources.some((r) => r.id === 'ai:' + node.binding)
+      ) {
         const binding = aiBinding(record.bindings, node.binding);
         resources.push({
           id: 'ai:' + node.binding,

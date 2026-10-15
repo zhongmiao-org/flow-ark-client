@@ -1,6 +1,6 @@
 import Ajv from 'ajv/dist/2020.js';
 import { generate } from '../ai/providers';
-import { aiBinding, aiNodes, assertAIRequest } from '../shared/ai-node';
+import { aiBinding, aiNodes, assertAIRequest, conversationNodes } from '../shared/ai-node';
 import type { AIConfiguration } from '../shared/ai-settings';
 import type { AIResult, FlowRecord, Json } from '../shared/types';
 
@@ -40,6 +40,14 @@ export class AINodes {
       const config = await this.deps.configuration(binding.provider);
       if (!config.configured || !config.revision)
         throw new Error(`AI 资源「${node.binding}」需要先配置用户自己的 Key`);
+    }
+  }
+  async preflightConversations(record: FlowRecord) {
+    for (const node of conversationNodes(record.flow.steps)) {
+      const binding = aiBinding(record.bindings, node.binding);
+      const config = await this.deps.configuration(binding.provider);
+      if (!config.configured || !config.revision)
+        throw new Error('引导会话需要先配置用户自己的 AI Key');
     }
   }
   private entry(runId: string, invocationId: string) {

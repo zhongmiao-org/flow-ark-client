@@ -84,10 +84,22 @@ export function aiBinding(bindings: Bindings, id: string) {
 export function aiProviders(record: Pick<{ flow: Flow; bindings: Bindings }, 'flow' | 'bindings'>) {
   return [
     ...new Set(
-      aiNodes(record.flow.steps).flatMap((node) => {
+      [...aiNodes(record.flow.steps), ...conversationNodes(record.flow.steps)].flatMap((node) => {
         const provider = record.bindings.resources?.[node.binding]?.provider;
         return provider ? [provider] : [];
       }),
     ),
   ];
+}
+
+export function conversationNodes(steps: Step[]): Extract<Step, { type: 'conversation' }>[] {
+  return steps.flatMap((n) =>
+    n.type === 'conversation'
+      ? [n]
+      : n.type === 'condition'
+        ? [...conversationNodes(n.then), ...conversationNodes(n.else)]
+        : n.type === 'loop'
+          ? conversationNodes(n.body)
+          : [],
+  );
 }
