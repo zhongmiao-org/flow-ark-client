@@ -31,6 +31,8 @@ for (const font of ['inter', 'noto-sans-sc']) {
     `dist/licenses/${font}-OFL.txt`,
   );
 }
+await copyFile('node_modules/pdfjs-dist/LICENSE', 'dist/licenses/pdfjs-dist-LICENSE.txt');
+await copyFile('third-party/saxes-LICENSE.txt', 'dist/licenses/saxes-LICENSE.txt');
 await build({
   entryPoints: {
     main: 'src/main/main.ts',
@@ -40,12 +42,23 @@ await build({
     browser: 'src/workers/browser.ts',
     script: 'src/workers/script.ts',
     'script-supervisor': 'src/workers/script-supervisor.ts',
+    'document-supervisor': 'src/workers/document-supervisor.ts',
   },
   outdir: 'dist',
   outExtension: { '.js': '.cjs' },
   bundle: true,
   platform: 'node',
   format: 'cjs',
+  target: 'node24',
+  packages: 'external',
+  sourcemap: true,
+});
+await build({
+  entryPoints: ['src/workers/document-parser.ts'],
+  outfile: 'dist/document-parser.mjs',
+  bundle: true,
+  platform: 'node',
+  format: 'esm',
   target: 'node24',
   packages: 'external',
   sourcemap: true,

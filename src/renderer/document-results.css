@@ -1,0 +1,55 @@
+.document-results,
+.document-result {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  container-type: inline-size;
+}
+.document-result-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+}
+.document-result-columns > .ant-card {
+  min-width: 0;
+}
+.document-result .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.document-result .ant-descriptions-item-content {
+  overflow-wrap: anywhere;
+}
+.document-result label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+body .document-result label:not(.ant-checkbox-wrapper) {
+  margin: 0;
+}
+.document-results > .ant-select,
+.document-result .ant-select {
+  width: 100%;
+}
+.document-result pre {
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 480px;
+  overflow: auto;
+  margin: 0;
+  padding: 16px;
+  background: var(--fa-bg-subtle);
+  color: var(--fa-text-primary);
+  border: 1px solid var(--fa-border-default);
+  border-radius: 8px;
+}
+@container (max-width:900px) {
+  .document-result-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

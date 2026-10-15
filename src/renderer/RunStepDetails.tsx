@@ -87,6 +87,12 @@ function fields(node: Step): [string, string][] {
         ['请求头', configured(node.headers)],
         ['请求体', node.method === 'GET' ? 'GET 不发送请求体' : configured(node.body)],
       ];
+    case 'document':
+      return [
+        ['来源目录', node.binding],
+        ['相对文件名', configured(node.file)],
+        ['操作', '本机文字提取，来源及缺口见输出与产物'],
+      ];
     case 'file':
     case 'excel':
       return [

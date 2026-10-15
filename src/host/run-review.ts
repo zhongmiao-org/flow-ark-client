@@ -189,6 +189,7 @@ export class RunReview {
     };
     const steps = walk(record.flow.steps);
     for (const node of steps) {
+      if (node.type === 'document') directory(node.binding, true, false);
       if (node.type === 'file' || node.type === 'excel')
         directory(
           node.binding,
