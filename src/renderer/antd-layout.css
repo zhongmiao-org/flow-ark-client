@@ -1,4 +1,4 @@
-/* Layout integration only; component appearance is owned by ConfigProvider. */
+/* Layout and semantic integration with the shared ConfigProvider theme. */
 .ant-btn {
   flex-shrink: 0;
 }
@@ -22,8 +22,7 @@ label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-w
 .ant-radio-wrapper {
   margin: 0;
 }
-/* Existing compound rows contain their own layout and may wrap long content. */
-.ant-btn:has(> div),
+/* Compound content may wrap; Ant Design's temporary wave div is not content. */
 .ant-btn:has(> article),
 .ant-btn:has(> strong) {
   height: auto;
