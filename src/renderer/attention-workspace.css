@@ -180,7 +180,7 @@
 }
 .attention-raw pre:focus-visible,
 .attention-fields .ant-collapse pre:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 2px;
 }
 .attention-page pre {
@@ -206,7 +206,8 @@
   padding: 0 6px;
   font-size: 13px;
 }
-.attention-fields label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.attention-fields
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   display: grid;
   gap: 8px;
 }
@@ -226,7 +227,7 @@
   width: 16px;
   height: 16px;
   margin: 4px 0;
-  accent-color: var(--fa-action-primary);
+  accent-color: var(--fa-text-link);
   flex: 0 0 auto;
 }
 .attention-page {
@@ -299,13 +300,17 @@
 }
 
 .attention-toolbar
-  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item)
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper):not(
+    .ant-segmented-item
+  )
   > .ant-select {
   margin: 0;
 }
 
 .attention-toolbar
-  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item),
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper):not(
+    .ant-segmented-item
+  ),
 .attention-toolbar input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
   margin: 0;
 }

@@ -130,7 +130,8 @@
   gap: 30px;
   max-width: 720px;
 }
-.history-filter-panel label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.history-filter-panel
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -468,7 +469,7 @@
   background: var(--fa-bg-canvas);
 }
 .run-saved-step-output pre:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 2px;
 }
 .script-bundles {

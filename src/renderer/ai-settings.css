@@ -110,7 +110,10 @@
 .ai-model-value > span:last-child {
   flex-shrink: 0;
 }
-.ai-settings-page label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper).ai-settings-field {
+.ai-settings-page
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(
+    .ant-radio-button-wrapper
+  ).ai-settings-field {
   color: var(--fa-text-primary);
 }
 .ai-settings-page input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']) {
@@ -128,7 +131,7 @@
 }
 .ai-settings-page .ai-provider-card > .ant-card-body > .ai-provider-scope {
   margin: 0;
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   min-height: 72px;
   display: flex;
   align-items: center;
@@ -271,7 +274,9 @@
 }
 .ai-provider-card.is-editing
   > .ant-card-body
-  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper).ai-settings-field {
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(
+    .ant-radio-button-wrapper
+  ).ai-settings-field {
   min-height: 82px;
   gap: 8px;
 }
@@ -305,7 +310,9 @@
 
 .ai-provider-card.is-editing
   > .ant-card-body
-  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper).ai-settings-field {
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(
+    .ant-radio-button-wrapper
+  ).ai-settings-field {
   line-height: 20px;
 }
 .ai-settings-page .ai-provider-card > .ant-card-body > p,

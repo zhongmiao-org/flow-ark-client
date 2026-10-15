@@ -29,7 +29,7 @@
   position: relative;
 }
 .control-workspace-canvas .flow-route-label.is-returning {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }
 .control-workspace-fields {
   min-width: 0;
@@ -61,7 +61,8 @@
 .control-workspace-card .node-configuration > header {
   display: none;
 }
-.control-workspace-card label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+.control-workspace-card
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   margin: 0;
   font-size: 12px;
   line-height: 18px;

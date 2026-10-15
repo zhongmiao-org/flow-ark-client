@@ -1,26 +1,6 @@
 /* Figma sVciNUZHG9yx81gCpYzjH9: FlowArk primitives and semantic variables. */
 :root {
-  --fa-bg-canvas: var(--fa-raw-fog);
-  --fa-bg-surface: var(--fa-raw-white);
-  --fa-bg-subtle: var(--fa-raw-soft);
-  --fa-bg-nav: var(--fa-raw-nav);
-  --fa-bg-mask: var(--fa-raw-mask);
-  --fa-shadow-floating: var(--fa-raw-floatingShadow);
-  --fa-text-primary: var(--fa-raw-ink);
-  --fa-text-secondary: var(--fa-raw-muted);
-  --fa-text-inverse: var(--fa-raw-white);
-  --fa-text-nav: var(--fa-raw-navMuted);
-  --fa-border-default: var(--fa-raw-line);
-  --fa-action-primary: var(--fa-raw-blue);
-  --fa-action-hover: var(--fa-raw-blueHover);
-  --fa-action-subtle: var(--fa-raw-blueSoft);
-  --fa-action-disabled: var(--fa-raw-disabled);
-  --fa-status-success: var(--fa-raw-green);
-  --fa-status-success-bg: var(--fa-raw-greenSoft);
-  --fa-status-warning: var(--fa-raw-amber);
-  --fa-status-warning-bg: var(--fa-raw-amberSoft);
-  --fa-status-error: var(--fa-raw-red);
-  --fa-status-error-bg: var(--fa-raw-redSoft);
+  /* Mode colours are installed by WorkspaceTokens from appearance-tokens.ts. */
   --fa-space-0: 0px;
   --fa-space-4: 4px;
   --fa-space-8: 8px;
@@ -59,10 +39,12 @@ input:not(.ant-input):not(.ant-checkbox-input):not(.ant-radio-input):not(
 textarea:focus-visible,
 a:focus-visible,
 summary:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 2px;
 }
-label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item) {
+label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper):not(
+    .ant-segmented-item
+  ) {
   font-size: 13px;
   line-height: 20px;
   color: var(--fa-text-secondary);
@@ -116,7 +98,7 @@ small {
 }
 .state-RUNNING,
 .state-QUEUED {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   background: var(--fa-action-subtle);
 }
 .state-PAUSED,

@@ -62,7 +62,7 @@
   background: var(--fa-bg-canvas);
 }
 .task-repair-page pre:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 2px;
 }
 .task-repair-adoption > button {
@@ -72,7 +72,7 @@
   min-width: 208px;
 }
 .task-repair-speaker {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }
 .task-repair-chat {
   min-height: 152px;
@@ -114,11 +114,11 @@
   color: var(--fa-text-secondary);
 }
 .task-restart-history ol:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 2px;
 }
 .task-repair-page .task-run-note {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }
 .task-repair-page
   input:not(.ant-checkbox-input):not(.ant-radio-input):not([class*='ant-select']):not(
@@ -174,7 +174,7 @@
   border: 0;
   border-radius: 2px;
   background: transparent;
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   font: inherit;
   overflow-wrap: anywhere;
   text-align: start;
@@ -183,7 +183,7 @@
   text-decoration: underline;
 }
 .task-run-source > button:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 3px;
 }
 .task-run-page h2 {
@@ -261,7 +261,7 @@
   width: 100%;
 }
 .task-file-preview:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 2px;
 }
 .task-run-path {
@@ -303,7 +303,7 @@
 }
 .task-run-page .task-run-note {
   min-height: 72px;
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   line-height: 22px;
 }
 .task-run-steps > .ant-card-body > ol {
@@ -332,7 +332,7 @@
   margin: 8px 0 0;
 }
 .task-run-index {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   font-size: 18px;
 }
 .task-run-page pre {
@@ -431,7 +431,7 @@
   line-height: 22px;
 }
 .task-run-output pre:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 2px;
 }
 .task-run-evidence dl {
@@ -548,7 +548,7 @@
   background: var(--fa-bg-canvas);
 }
 .task-failure-details pre:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 2px;
 }
 @container (max-width: 850px) {
@@ -592,7 +592,7 @@
   color: var(--fa-status-error);
 }
 .task-artifact-location p:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 2px;
 }
 

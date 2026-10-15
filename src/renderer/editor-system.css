@@ -115,8 +115,8 @@
   flex-wrap: wrap;
 }
 .editor-views button[aria-pressed='true'] {
-  color: var(--fa-action-primary);
-  border-color: var(--fa-action-primary);
+  color: var(--fa-text-link);
+  border-color: var(--fa-text-link);
 }
 .editor-region:not(.has-browser):not(.is-compact) .editor-views {
   display: none;

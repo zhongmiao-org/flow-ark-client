@@ -23,7 +23,7 @@
   flex: 1;
 }
 .task-execution-steps > .ant-card-body > ol > li:focus {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: -2px;
 }
 .task-execution-steps small {
@@ -103,7 +103,7 @@
   text-underline-offset: 4px;
 }
 .task-execution-record-toggle[aria-expanded='true'] {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }
 .task-execution-steps .run-step-details {
   margin-top: 16px;

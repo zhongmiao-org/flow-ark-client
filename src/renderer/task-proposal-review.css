@@ -43,8 +43,8 @@
   margin-bottom: 8px;
 }
 .task-proposal-tabs [aria-pressed='true'] {
-  color: var(--fa-action-primary);
-  border-color: var(--fa-action-primary);
+  color: var(--fa-text-link);
+  border-color: var(--fa-text-link);
   background: var(--fa-action-subtle);
 }
 @container (max-width: 950px) {

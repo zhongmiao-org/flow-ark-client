@@ -86,7 +86,7 @@
   overflow-wrap: anywhere;
 }
 .run-log-text pre:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 2px;
 }
 .run-log-output {
@@ -137,7 +137,8 @@
   font-size: 18px;
   line-height: 28px;
 }
-.run-log-context label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper),
+.run-log-context
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper),
 .run-log-context p {
   margin: 0 0 4px;
   color: var(--fa-text-secondary);

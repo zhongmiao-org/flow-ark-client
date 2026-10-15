@@ -13,7 +13,7 @@ input:not(.ant-input):not(.ant-checkbox-input):not(.ant-radio-input):not(
     .ant-segmented-item-input
   ):not([class*='ant-select']):focus-visible,
 textarea:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 2px;
 }
 h1,
@@ -55,13 +55,17 @@ pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item) {
+label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper):not(
+    .ant-segmented-item
+  ) {
   font-size: 12px;
   display: block;
   margin: 16px 0 8px;
   color: var(--fa-text-secondary);
 }
-label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item)
+label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper):not(
+    .ant-segmented-item
+  )
   input:not(.ant-input):not(.ant-checkbox-input):not(.ant-radio-input):not(
     .ant-segmented-item-input
   ):not([class*='ant-select']) {
@@ -162,7 +166,7 @@ nav button.selected {
 nav button b {
   margin-left: auto;
   background: var(--fa-action-subtle);
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   font-size: 10px;
   border-radius: 5px;
   padding: 2px 5px;
@@ -246,7 +250,7 @@ main {
   font-weight: 600;
 }
 .heading-dot {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }
 .overview {
   border: 1px solid var(--border);
@@ -292,7 +296,7 @@ main {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   background-image: radial-gradient(
     color-mix(in srgb, var(--fa-action-primary) 16%, transparent) 1px,
     transparent 1px
@@ -303,7 +307,7 @@ main {
   font-size: 10px;
   line-height: 1.9;
   letter-spacing: 1.8px;
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   font-weight: 600;
 }
 .section-row {
@@ -374,7 +378,7 @@ main {
   height: 42px;
   background: var(--fa-action-subtle);
   border: 1px solid var(--fa-border-default);
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   border-radius: 9px;
 }
 .card-top .badge {
@@ -469,7 +473,7 @@ main {
   align-items: center;
   justify-content: center;
   background: var(--fa-action-subtle);
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   border-radius: 8px;
   padding: 12px;
   font-size: 16px;
@@ -651,7 +655,7 @@ main {
   display: grid;
   place-items: center;
   border-radius: 7px;
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   background: var(--fa-action-subtle);
 }
 .flow-node-text {
@@ -973,7 +977,10 @@ main {
 .form-grid .row {
   margin-bottom: 9px;
 }
-.form-grid label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item) {
+.form-grid
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper):not(
+    .ant-segmented-item
+  ) {
   margin-top: 8px;
 }
 .settings-page {
@@ -1012,7 +1019,7 @@ main {
 }
 .schedule > svg,
 .attention > svg {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }
 .schedule > div,
 .attention > div {
@@ -1042,7 +1049,7 @@ main {
   flex-wrap: wrap;
 }
 .schedule-summary > svg {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   flex-shrink: 0;
 }
 .schedule-description {
@@ -1085,7 +1092,10 @@ main {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
   gap: 16px;
 }
-.schedule-fields label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item) {
+.schedule-fields
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper):not(
+    .ant-segmented-item
+  ) {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1407,7 +1417,7 @@ main {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: var(--accent);
+  color: var(--fa-text-link);
 }
 .browser-sidebar > header strong {
   font-size: 14px;
@@ -1481,7 +1491,7 @@ main {
   padding: 8px 10px;
 }
 .picker-message {
-  color: var(--accent);
+  color: var(--fa-text-link);
   font-size: 12px;
   margin: 10px 0;
 }
@@ -1805,7 +1815,7 @@ main {
 }
 .mapping-row button.selected {
   background: var(--fa-action-subtle);
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
 }
 .mapping-current,
 .matrix-current {
@@ -1850,7 +1860,9 @@ main {
   gap: 10px;
 }
 .run-rerun-options
-  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item):first-child {
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper):not(
+    .ant-segmented-item
+  ):first-child {
   display: grid;
   gap: 6px;
   min-width: 180px;
@@ -1903,7 +1915,10 @@ main {
   gap: 12px;
   margin-bottom: 16px;
 }
-.history-filters label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item) {
+.history-filters
+  label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper):not(
+    .ant-segmented-item
+  ) {
   display: grid;
   gap: 6px;
   font-size: 12px;
@@ -2108,7 +2123,9 @@ main {
 }
 .templates-page
   .field
-  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-segmented-item),
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper):not(
+    .ant-segmented-item
+  ),
 .templates-page .field > small {
   flex-basis: 100%;
 }

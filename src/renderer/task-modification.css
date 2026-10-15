@@ -17,7 +17,7 @@
 }
 .task-modification-card
   > .ant-card-body
-  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper) {
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper) {
   margin-bottom: -8px;
   font-size: 12px;
   line-height: 18px;
@@ -51,7 +51,7 @@
   min-width: 0;
 }
 .task-modification-review:focus {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 6px;
 }
 @container (max-width: 1000px) {

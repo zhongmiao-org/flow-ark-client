@@ -31,7 +31,7 @@
   padding: 4px;
   border: 0;
   background: transparent;
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   font-size: inherit;
   line-height: inherit;
   white-space: nowrap;

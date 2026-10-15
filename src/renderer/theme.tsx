@@ -9,6 +9,8 @@ import type { DesktopReceipt } from '../shared/desktop-run';
 import type { DesktopPlanInspection } from '../shared/desktop-planning';
 import zhCN from 'antd/locale/zh_CN';
 import { useLayoutEffect, type ReactNode } from 'react';
+import { useAppearance } from './appearance';
+import { semanticColors } from './appearance-tokens';
 
 export const runStateColors: Record<
   string,
@@ -107,47 +109,74 @@ export const desktopReceiptColors: Record<
   unknown: 'warning',
 };
 
-// Figma semantic tokens. All shared controls and workspace colours derive from this theme.
-export const flowArkTheme = {
-  token: {
-    colorPrimary: '#315EF5',
-    colorPrimaryHover: '#244BDC',
-    colorPrimaryBg: '#EDF2FF',
-    colorInfo: '#315EF5',
-    colorSuccess: '#147D61',
-    colorSuccessBg: '#E8F6EF',
-    colorWarning: '#946200',
-    colorWarningBg: '#FFF5DB',
-    colorError: '#B83B48',
-    colorErrorBg: '#FDEDF0',
-    colorText: '#172033',
-    colorTextSecondary: '#637089',
-    colorTextPlaceholder: '#637089',
-    colorTextDisabled: '#B9C3D3',
-    colorTextLightSolid: '#FFFFFF',
-    colorBgContainer: '#FFFFFF',
-    colorBgLayout: '#F6F7FB',
-    colorFillQuaternary: '#EFF2F7',
-    colorBorder: '#DFE4ED',
-    colorBorderSecondary: '#DFE4ED',
-    colorBgSpotlight: '#121A2A',
-    colorBgMask: 'rgba(18, 26, 42, 0.42)',
-    fontFamily: "'Noto Sans SC Variable', sans-serif",
-    fontSize: 14,
-    lineHeight: 22 / 14,
-    controlHeight: 40,
-    borderRadius: 8,
-    borderRadiusLG: 16,
-    controlOutlineWidth: 2,
-  },
-  components: {
-    Card: { borderRadiusLG: 12, boxShadowTertiary: 'none' },
-    Menu: { darkItemColor: '#A8B4CA' },
-    Modal: { titleFontSize: 28, titleLineHeight: 40 / 28, borderRadiusLG: 12 },
-    Tag: { borderRadiusSM: 999, lineHeightSM: 26 / 12 },
-    Button: { fontWeight: 500, primaryShadow: 'none', defaultShadow: 'none' },
-  },
-} satisfies ThemeConfig;
+// Resolve Ant Design aliases and workspace CSS from the same Figma mode.
+export function appearanceTheme(mode: 'light' | 'dark'): ThemeConfig {
+  const c = semanticColors[mode];
+  return {
+    algorithm: mode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
+    token: {
+      colorPrimary: c['--fa-action-primary'],
+      colorPrimaryHover: c['--fa-action-hover'],
+      colorPrimaryActive: c['--fa-action-active'],
+      colorPrimaryBg: c['--fa-action-subtle'],
+      colorLink: c['--fa-text-link'],
+      colorLinkHover: c['--fa-text-link'],
+      colorInfo: c['--fa-status-info'],
+      colorInfoText: c['--fa-status-info'],
+      colorInfoBg: c['--fa-status-info-bg'],
+      colorSuccess: c['--fa-status-success-solid'],
+      colorSuccessText: c['--fa-status-success'],
+      colorSuccessBg: c['--fa-status-success-bg'],
+      colorWarning: c['--fa-status-warning-solid'],
+      colorWarningText: c['--fa-status-warning'],
+      colorWarningBg: c['--fa-status-warning-bg'],
+      colorError: c['--fa-action-danger'],
+      colorErrorText: c['--fa-status-error'],
+      colorErrorBg: c['--fa-status-error-bg'],
+      colorText: c['--fa-text-primary'],
+      colorTextSecondary: c['--fa-text-secondary'],
+      colorTextPlaceholder: c['--fa-text-secondary'],
+      colorTextDisabled: c['--fa-action-disabled'],
+      colorTextLightSolid: c['--fa-text-inverse'],
+      colorBgContainer: c['--fa-bg-surface'],
+      colorBgElevated: c['--fa-bg-elevated'],
+      colorBgLayout: c['--fa-bg-canvas'],
+      colorBgContainerDisabled: c['--fa-bg-subtle'],
+      colorFillQuaternary: c['--fa-bg-subtle'],
+      colorBorder: c['--fa-border-control'],
+      colorBorderSecondary: c['--fa-border-default'],
+      colorBgSpotlight: c['--fa-bg-nav'],
+      colorBgMask: c['--fa-bg-mask'],
+      controlOutline: c['--fa-action-focus'],
+      fontFamily: "'Noto Sans SC Variable', sans-serif",
+      fontSize: 14,
+      lineHeight: 22 / 14,
+      controlHeight: 40,
+      borderRadius: 8,
+      borderRadiusLG: 16,
+      controlOutlineWidth: 2,
+    },
+    components: {
+      Alert: {
+        colorSuccess: c['--fa-status-success'],
+        colorWarning: c['--fa-status-warning'],
+        colorError: c['--fa-status-error'],
+        colorInfo: c['--fa-status-info'],
+      },
+      Badge: {
+        colorSuccess: c['--fa-status-success'],
+        colorWarning: c['--fa-status-warning'],
+        colorError: c['--fa-status-error'],
+      },
+      Card: { borderRadiusLG: 12, boxShadowTertiary: 'none' },
+      Menu: { darkItemColor: c['--fa-text-nav'] },
+      Modal: { titleFontSize: 28, titleLineHeight: 40 / 28, borderRadiusLG: 16 },
+      Tag: { borderRadiusSM: 999, lineHeightSM: 26 / 12 },
+      Button: { fontWeight: 500, primaryShadow: 'none', defaultShadow: 'none' },
+    },
+  };
+}
+export const flowArkTheme = appearanceTheme('light');
 
 export function scriptEditorTheme(token: GlobalToken): editor.IStandaloneThemeData {
   return {
@@ -158,7 +187,7 @@ export function scriptEditorTheme(token: GlobalToken): editor.IStandaloneThemeDa
       'editor.background': token.colorBgSpotlight,
       'editor.foreground': token.colorTextLightSolid,
       'editorGutter.background': token.colorBgSpotlight,
-      'editorLineNumber.foreground': flowArkTheme.components.Menu.darkItemColor,
+      'editorLineNumber.foreground': semanticColors.light['--fa-text-nav'],
       'editorLineNumber.activeForeground': token.colorTextLightSolid,
       'editorCursor.foreground': token.colorTextLightSolid,
       'editor.lineHighlightBackground': token.colorBgSpotlight,
@@ -169,54 +198,40 @@ export function scriptEditorTheme(token: GlobalToken): editor.IStandaloneThemeDa
 
 function WorkspaceTokens({ children }: { children: ReactNode }) {
   const { token } = theme.useToken();
+  const { resolved } = useAppearance();
   useLayoutEffect(() => {
     const values: Record<string, string> = {
-      white: token.colorBgContainer,
-      fog: token.colorBgLayout,
-      soft: token.colorFillQuaternary,
-      line: token.colorBorder,
-      ink: token.colorText,
-      muted: token.colorTextSecondary,
-      nav: token.colorBgSpotlight,
-      navMuted: flowArkTheme.components.Menu.darkItemColor,
-      blue: token.colorPrimary,
-      blueHover: token.colorPrimaryHover,
-      blueSoft: token.colorPrimaryBg,
-      green: token.colorSuccess,
-      greenSoft: token.colorSuccessBg,
-      amber: token.colorWarning,
-      amberSoft: token.colorWarningBg,
-      red: token.colorError,
-      redSoft: token.colorErrorBg,
-      disabled: token.colorTextDisabled,
-      mask: token.colorBgMask,
-      floatingShadow: token.boxShadowSecondary,
+      ...semanticColors[resolved],
+      '--fa-shadow-floating': token.boxShadowSecondary,
+      '--fa-font-body': token.fontFamily,
+      '--fa-radius-8': `${token.borderRadius}px`,
     };
     const root = document.documentElement.style;
-    const previous = Object.keys(values).map((key) => [
-      key,
-      root.getPropertyValue(`--fa-raw-${key}`),
-    ]);
-    for (const [key, value] of Object.entries(values)) root.setProperty(`--fa-raw-${key}`, value);
-    root.setProperty('--fa-font-body', token.fontFamily);
-    root.setProperty('--fa-radius-8', `${token.borderRadius}px`);
+    const previous = Object.keys(values).map((key) => [key, root.getPropertyValue(key)]);
+    const previousMode = document.documentElement.dataset.theme;
+    const previousScheme = root.colorScheme;
+    document.documentElement.dataset.theme = resolved;
+    root.colorScheme = resolved;
+    for (const [key, value] of Object.entries(values)) root.setProperty(key, value);
     return () => {
       for (const [key, value] of previous) {
-        if (value) root.setProperty(`--fa-raw-${key}`, value);
-        else root.removeProperty(`--fa-raw-${key}`);
+        if (value) root.setProperty(key, value);
+        else root.removeProperty(key);
       }
-      root.removeProperty('--fa-font-body');
-      root.removeProperty('--fa-radius-8');
+      if (previousMode) document.documentElement.dataset.theme = previousMode;
+      else delete document.documentElement.dataset.theme;
+      root.colorScheme = previousScheme;
     };
-  }, [token]);
+  }, [token, resolved]);
   return children;
 }
 
 export function ApplicationTheme({ children }: { children: ReactNode }) {
+  const { resolved } = useAppearance();
   return (
     <ConfigProvider
       locale={zhCN}
-      theme={flowArkTheme}
+      theme={appearanceTheme(resolved)}
       button={{ autoInsertSpace: false }}
       modal={{
         styles: {

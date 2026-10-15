@@ -115,10 +115,10 @@
   text-align: center;
 }
 .debug-run-details.ant-collapse-ghost > .ant-collapse-item > .ant-collapse-header:hover {
-  border-color: var(--fa-action-primary);
+  border-color: var(--fa-text-link);
 }
 .debug-run-details.ant-collapse-ghost > .ant-collapse-item > .ant-collapse-header:focus-visible {
-  outline: 2px solid var(--fa-action-primary);
+  outline: 2px solid var(--fa-action-focus);
   outline-offset: 2px;
 }
 .debug-run-details section > .ant-btn + .ant-btn {

@@ -82,7 +82,7 @@
 }
 
 .schedule-workbench .template-schedule-item.selected {
-  border-color: var(--fa-action-primary);
+  border-color: var(--fa-text-link);
   background: var(--fa-action-subtle);
 }
 .schedule-version-id,
@@ -114,13 +114,17 @@
 }
 .schedule-workbench-form
   fieldset
-  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.schedule-adoption) {
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper):not(
+    .schedule-adoption
+  ) {
   gap: 6px;
   min-height: 58px;
 }
 .schedule-workbench-form
   fieldset
-  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.schedule-adoption)
+  > label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-wrapper):not(
+    .schedule-adoption
+  )
   > span:first-child {
   line-height: 18px;
 }

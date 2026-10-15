@@ -241,7 +241,7 @@
   font-size: 14px;
 }
 .tool-assistant-steps li[aria-current='step'] {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   font-weight: 600;
 }
 .tool-assistant-steps li > span {
@@ -277,7 +277,7 @@
   background: var(--fa-action-subtle);
 }
 .tool-source-note .ant-alert-title {
-  color: var(--fa-action-primary);
+  color: var(--fa-text-link);
   font-size: 13px;
   line-height: 20px;
 }

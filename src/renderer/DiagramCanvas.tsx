@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useAppearance } from './appearance';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -33,6 +34,7 @@ function Canvas({
   viewRequest,
   taskPresentation = false,
 }: Props) {
+  const { resolved } = useAppearance();
   const { setViewport, viewportInitialized: ready } = useReactFlow();
   const width = useStore((state) => state.width);
   const height = useStore((state) => state.height);
@@ -103,6 +105,7 @@ function Canvas({
 
   return (
     <ReactFlow
+      colorMode={resolved}
       style={{ background: 'var(--fa-bg-canvas)' }}
       ariaLabelConfig={{
         'node.a11yDescription.default': '按 Enter 或空格查看此步骤，按 Tab 浏览下一步骤。',
