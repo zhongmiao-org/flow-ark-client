@@ -16,11 +16,12 @@ const groups = [
   { id: 'ai', label: 'AI 调用', types: ['ai', 'conversation'] },
   { id: 'http', label: 'HTTP 请求', types: ['http'] },
   { id: 'script', label: 'JS / TS 脚本', types: ['script'] },
-  { id: 'file', label: '文件处理 / Excel', types: ['document', 'file', 'excel'] },
+  { id: 'file', label: '文件处理 / Excel', types: ['skill', 'document', 'file', 'excel'] },
   { id: 'logic', label: '条件 / 串行循环', types: ['condition', 'loop'] },
   { id: 'review', label: '结果断言 / 等待人工', types: ['assert', 'human'] },
 ];
 const descriptions: Record<string, string> = {
+  skill: '保存待确认草稿，或读取固定的个人Skill确认版本',
   document: '提取PDF、DOCX或文本，并保留来源与内容缺口',
   value: '准备文本、数字或结构化数据',
   assert: '核对结果，不满足时停止运行',

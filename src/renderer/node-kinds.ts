@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 export const kinds: Record<string, { label: string; icon: LucideIcon; color: string }> = {
+  skill: { label: 'Skill工作区', icon: FolderOpen, color: '#6e7f85' },
   document: { label: '解析资料', icon: FolderOpen, color: '#6e7f85' },
   desktop: { label: '应用选区', icon: Workflow, color: '#526b87' },
   mcp: { label: '已连接工具', icon: Workflow, color: '#526b87' },

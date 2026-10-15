@@ -1,5 +1,6 @@
 import { templateSourceSchema } from './template-source';
 import { z } from 'zod';
+import { skillMethods, skillRefSchema } from './skill';
 import { conversationMethods } from './conversation';
 import { runListSchema } from './run-history';
 import { scheduleCreateSchema, scheduleUpdateSchema, scheduleInspectSchema } from './schedules';
@@ -42,6 +43,7 @@ const bindings = z
         z
           .object({
             path: z.string().max(4096).optional(),
+            skill: skillRefSchema.optional(),
             browserId: id.optional(),
             provider: z.enum(['deepseek', 'openai-codex']).optional(),
             model: z.string().max(100).optional(),
@@ -69,6 +71,7 @@ export const templateSaveSchema = z
   .strict();
 export type TemplateSave = z.infer<typeof templateSaveSchema>;
 export const methods = {
+  ...skillMethods,
   ...conversationMethods,
   ...desktopMethods,
   ...desktopPlanMethods,
@@ -87,6 +90,7 @@ export const methods = {
   'flow.run.preview': runReviewPreviewSchema,
   'flow.run.confirm': runReviewConfirmSchema,
   'run.detail': z.object({ id }).strict(),
+  'run.typedResult': z.object({ runId: id, id: z.string().regex(/^[a-f0-9]{64}$/) }).strict(),
   'run.rerun.preview': runRerunPreviewSchema,
   'run.rerun.confirm': runRerunConfirmSchema,
   'run.list': runListSchema,

@@ -19,7 +19,12 @@ export function fileBindingNames(
   const names = new Set(['workspace', ...Object.keys(current)]);
   const visit = (steps: Step[]) => {
     for (const step of steps) {
-      if (step.type === 'file' || step.type === 'excel' || step.type === 'document')
+      if (
+        step.type === 'file' ||
+        step.type === 'excel' ||
+        step.type === 'document' ||
+        (step.type === 'skill' && step.operation === 'propose')
+      )
         names.add(step.binding);
       if (step.type === 'browser' && step.operation === 'upload') {
         try {

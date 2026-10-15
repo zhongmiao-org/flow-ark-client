@@ -1,3 +1,4 @@
+import SkillPicker from './SkillPicker';
 import { Card, Badge, Tag, ConfigProvider, Select, Button, Input } from 'antd';
 import {
   useId,
@@ -96,7 +97,15 @@ export default function TemplateResources({
                         {resource.name} · {resource.kind} / {resource.access}
                         {resource.required ? '（必需）' : '（可选）'}
                       </span>
-                      {resource.kind === 'file' || resource.kind === 'directory' ? (
+                      {resource.kind === 'skill' ? (
+                        <SkillPicker
+                          key={instance.id + ':' + resource.id}
+                          value={binding}
+                          disabled={busy}
+                          label={resource.name}
+                          change={(value) => patch(resource.id, value)}
+                        />
+                      ) : resource.kind === 'file' || resource.kind === 'directory' ? (
                         <Input
                           aria-label={resource.name}
                           readOnly
@@ -155,7 +164,8 @@ export default function TemplateResources({
                         />
                       )}
                     </label>
-                    {resource.kind === 'file' || resource.kind === 'directory' ? (
+                    {resource.kind === 'skill' ? null : resource.kind === 'file' ||
+                      resource.kind === 'directory' ? (
                       <>
                         <div className="template-resource-file-actions">
                           <Button
@@ -312,7 +322,9 @@ export default function TemplateResources({
                     !data.credentials.includes(binding.provider)
                 : declaration.kind === 'browser'
                   ? !data.browsers.some((browser) => browser.id === binding.browserId)
-                  : !binding.path;
+                  : declaration.kind === 'skill'
+                    ? !binding.path || !binding.skill
+                    : !binding.path;
             });
             const denied = entry.actions.filter(
               (id) => !instance.grants[id] || instance.grants[id] === 'deny',

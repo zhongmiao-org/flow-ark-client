@@ -1,0 +1,19 @@
+{
+  "formatVersion": "1.0",
+  "id": "skill-read-example",
+  "name": "读取固定Skill版本",
+  "description": "由本机资源重新选择确认版本",
+  "parameters": {},
+  "requiredCapabilities": [
+    "skill-v1"
+  ],
+  "steps": [
+    {
+      "id": "read",
+      "type": "skill",
+      "version": 1,
+      "operation": "read",
+      "binding": "profile"
+    }
+  ]
+}

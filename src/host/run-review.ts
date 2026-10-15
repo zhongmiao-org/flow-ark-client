@@ -31,7 +31,7 @@ export type ReviewTemplate = {
   resources: {
     id: string;
     name: string;
-    kind: 'file' | 'directory' | 'browser' | 'ai';
+    kind: 'file' | 'directory' | 'browser' | 'ai' | 'skill';
     access: 'read' | 'write' | 'readwrite' | 'use';
     required: boolean;
   }[];
@@ -190,6 +190,20 @@ export class RunReview {
     const steps = walk(record.flow.steps);
     for (const node of steps) {
       if (node.type === 'document') directory(node.binding, true, false);
+      if (node.type === 'skill') {
+        if (node.operation === 'propose') directory(node.binding, true, true);
+        else {
+          const b = record.bindings.resources?.[node.binding];
+          if (!b?.skill || !b.path) throw Error('Skill确认版本尚未选择');
+          resources.push({
+            id: 'skill:' + node.binding,
+            name: node.binding,
+            kind: 'skill',
+            access: 'read',
+            detail: b.skill.key + ' / ' + b.skill.versionId + ' / ' + b.skill.sha256,
+          });
+        }
+      }
       if (node.type === 'file' || node.type === 'excel')
         directory(
           node.binding,
@@ -243,6 +257,15 @@ export class RunReview {
           kind: declaration.kind,
           read: declaration.access !== 'write',
           write: ['write', 'readwrite'].includes(declaration.access),
+        });
+      } else if (declaration.kind === 'skill') {
+        if (!binding.skill || !binding.path) throw Error('Skill确认版本尚未选择');
+        resources.push({
+          id: 'template:' + declaration.id,
+          name: declaration.name,
+          kind: 'skill',
+          access: 'read',
+          detail: binding.skill.key + ' / ' + binding.skill.versionId,
         });
       } else if (declaration.kind === 'browser') {
         if (!binding.browserId) throw new Error('浏览器未绑定：' + declaration.name);

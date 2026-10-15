@@ -278,6 +278,21 @@ export type Node =
       timeoutMs?: number;
       binding: string;
       file: Value;
+    }
+  | {
+      id: string;
+      type: 'skill';
+      version: 1;
+      name?: string;
+      timeoutMs?: number;
+      operation: 'propose' | 'read';
+      binding: string;
+      key?: Value;
+      title?: Value;
+      markdown?: Value;
+      data?: Value;
+      evidence?: Value;
+      base?: Value;
     };
 export type Value =
   | Json
@@ -491,6 +506,58 @@ export type DocumentResult = {
    */
   warnings: DocumentWarning[];
 };
+export type SkillEvidence =
+  | {
+      kind: 'document';
+      label: string;
+      source: DocumentSource;
+      /**
+       * @minItems 1
+       * @maxItems 1000
+       */
+      units: [number, ...number[]];
+    }
+  | {
+      kind: 'conversation';
+      label: string;
+      sessionId: string;
+      revision: number;
+      sequence: number;
+      sha256: string;
+    }
+  | {
+      kind: 'manual';
+      label: string;
+      note: string;
+    };
+export type SkillProposalSnapshot = {
+  version: 1;
+  id: string;
+  revision: number;
+  key: string;
+  workspaceBinding: string;
+  sourceFlowId: string;
+  sourceNodeId: string;
+  sourceFingerprint: string;
+  base: SkillVersionRef | null;
+  status: 'draft' | 'publishing' | 'confirmed' | 'conflict' | 'failed' | 'unknown' | 'discarded';
+  draft: SkillDraft;
+  createdAt: string;
+  updatedAt: string;
+  publication?: {
+    requestId: string;
+    versionId: string;
+    draftSha256: string;
+  };
+  confirmed?: SkillVersionRef;
+  error?: string;
+};
+export type SkillProposeOutput = {
+  proposalId: string;
+  revision: number;
+  status: 'pending' | 'confirmed';
+  ref: SkillVersionRef | null;
+};
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -528,6 +595,14 @@ export interface FlowArkP1 {
   DocumentUnit?: DocumentUnit;
   DocumentWarning?: DocumentWarning;
   DocumentResult?: DocumentResult;
+  SkillVersionRef?: SkillVersionRef;
+  SkillEvidence?: SkillEvidence;
+  SkillDraft?: SkillDraft;
+  SkillFile?: SkillFile;
+  SkillManifest?: SkillManifest;
+  SkillVersion?: SkillVersion;
+  SkillProposalSnapshot?: SkillProposalSnapshot;
+  SkillProposeOutput?: SkillProposeOutput;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -689,7 +764,7 @@ export interface TemplateArchiveManifest {
   resources: {
     id: string;
     name: string;
-    kind: 'file' | 'directory' | 'browser' | 'ai';
+    kind: 'file' | 'directory' | 'browser' | 'ai' | 'skill';
     access: 'read' | 'write' | 'readwrite' | 'use';
     required: boolean;
   }[];
@@ -1098,4 +1173,54 @@ export interface DocumentWarning {
   code: 'empty-unit' | 'text-only' | 'body-only' | 'tracked-changes' | 'embedded-content';
   message: string;
   unit: number | null;
+}
+export interface SkillVersionRef {
+  key: string;
+  versionId: string;
+  sha256: string;
+}
+export interface SkillDraft {
+  title: string;
+  markdown: string;
+  data: {
+    [k: string]: Json;
+  };
+  /**
+   * @maxItems 100
+   */
+  evidence: SkillEvidence[];
+}
+export interface SkillFile {
+  path: 'SKILL.md' | 'data.json';
+  byteLength: number;
+  sha256: string;
+}
+export interface SkillManifest {
+  version: 1;
+  key: string;
+  versionId: string;
+  operationId: string;
+  title: string;
+  parent: SkillVersionRef | null;
+  confirmedAt: string;
+  /**
+   * @minItems 2
+   * @maxItems 2
+   */
+  files: [SkillFile, SkillFile];
+}
+export interface SkillVersion {
+  version: 1;
+  ref: SkillVersionRef;
+  title: string;
+  parent: SkillVersionRef | null;
+  confirmedAt: string;
+  markdown: string;
+  data: {
+    [k: string]: Json;
+  };
+  /**
+   * @maxItems 100
+   */
+  evidence: SkillEvidence[];
 }

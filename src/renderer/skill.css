@@ -1,0 +1,77 @@
+.skill-panel,
+.skill-version {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  container-type: inline-size;
+}
+.skill-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.skill-panel .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.skill-panel .skill-field {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.skill-panel label:not(.ant-checkbox-wrapper),
+.skill-panel p {
+  margin: 0;
+}
+.skill-panel h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 28px;
+}
+.skill-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.skill-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.skill-picker .ant-select {
+  width: 100%;
+}
+.skill-picker p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.skill-panel pre,
+.skill-version pre {
+  font: inherit;
+  line-height: 22px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 480px;
+  overflow: auto;
+  margin: 0;
+}
+.skill-panel .path-text,
+.skill-version p {
+  overflow-wrap: anywhere;
+}
+@container (max-width:900px) {
+  .skill-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .skill-panel .skill-field {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+}

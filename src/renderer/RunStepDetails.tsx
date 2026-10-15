@@ -87,6 +87,12 @@ function fields(node: Step): [string, string][] {
         ['请求头', configured(node.headers)],
         ['请求体', node.method === 'GET' ? 'GET 不发送请求体' : configured(node.body)],
       ];
+    case 'skill':
+      return [
+        ['操作', node.operation === 'read' ? '固定确认版本读取' : '创建待确认草稿'],
+        ['逻辑资源', node.binding],
+        ['结果', '正文与结构化内容需独立确认；不授予发送权限'],
+      ];
     case 'document':
       return [
         ['来源目录', node.binding],

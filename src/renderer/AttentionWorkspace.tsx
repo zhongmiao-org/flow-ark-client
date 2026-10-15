@@ -1,3 +1,4 @@
+import SkillPanel from './SkillPanel';
 import {
   Alert,
   Badge,
@@ -727,6 +728,19 @@ export default function AttentionWorkspace({
       </div>
     </>
   );
+  if (active && typeof selected?.detail?.skillProposalId === 'string')
+    return (
+      <SkillPanel
+        key={selected.detail.skillProposalId}
+        id={selected.detail.skillProposalId}
+        refresh={refresh}
+        registerLeave={(fn) => {
+          conversationLeave.current = fn;
+        }}
+        back={directBack}
+        openFlow={openFlow}
+      />
+    );
   if (active && typeof selected?.detail?.conversationId === 'string')
     return (
       <ConversationPanel

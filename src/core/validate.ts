@@ -1,3 +1,4 @@
+import { skillCapability, skillBudget } from '../shared/skill';
 import { conversationCapability, assertConversationNode } from '../shared/conversation';
 import { documentCapability, assertDocumentNode } from '../shared/document';
 import { aiNodeCapability, assertAIRequest } from '../shared/ai-node';
@@ -21,6 +22,8 @@ export function validateObject<T>(name: string, value: unknown): T {
   return value as T;
 }
 export const capabilities = [
+  skillCapability,
+  'skill',
   documentCapability,
   'document',
   conversationCapability,
@@ -70,6 +73,11 @@ export function validateFlow(value: unknown): Flow {
     for (const n of steps) {
       if (++count > 1000 || all.has(n.id)) throw new Error('节点数量过多或 ID 重复：' + n.id);
       all.add(n.id);
+      if (n.type === 'skill') {
+        if (!flow.requiredCapabilities.includes(skillCapability))
+          throw Error('Skill需要声明skill-v1能力');
+        skillBudget(n);
+      }
       if (n.type === 'document') {
         if (!flow.requiredCapabilities.includes(documentCapability))
           throw new Error('资料解析需要声明 document-extract-v1 能力');

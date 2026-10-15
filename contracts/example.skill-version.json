@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "ref": {
+    "key": "example-profile",
+    "versionId": "sv_11111111111111111111111111111111",
+    "sha256": "13dad1893106295dd7120c32e28e837f10c706d0270eaf3dcb45af209f9eae8d"
+  },
+  "title": "虚构资料的沟通规则",
+  "parent": null,
+  "confirmedAt": "2026-10-15T12:00:00.000Z",
+  "markdown": "---\nname: example-profile\ndescription: 虚构资料核对示例\n---\n\n先回答重点。未知事实先询问本人。\n",
+  "data": {
+    "preferences": {},
+    "facts": []
+  },
+  "evidence": [
+    {
+      "kind": "manual",
+      "label": "用户核对示例",
+      "note": "仅虚构内容，不是个人履历"
+    }
+  ]
+}

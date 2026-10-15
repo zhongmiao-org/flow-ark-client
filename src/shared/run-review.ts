@@ -46,7 +46,7 @@ export type EmbeddedReview = {
 export type ReviewResource = {
   id: string;
   name: string;
-  kind: 'file' | 'directory' | 'browser' | 'ai' | 'credential' | 'action';
+  kind: 'file' | 'directory' | 'browser' | 'ai' | 'credential' | 'action' | 'skill';
   access: string;
   location?: string;
   detail: string;

@@ -95,6 +95,16 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
           ? '结果为每次迭代的输出数组；索引取决于实际迭代次数'
           : '本步骤的完整输出；未知字段可在高级子路径中指定',
     );
+    if (node.type === 'skill')
+      for (const key of node.operation === 'propose'
+        ? ['proposalId', 'revision', 'status', 'ref']
+        : ['ref', 'title', 'markdown', 'data', 'evidence', 'parent', 'confirmedAt'])
+        add(
+          path + '.' + key,
+          label + ' / ' + key,
+          '前序步骤',
+          '创建草稿须先判断status；读取固定确认版本不会授予模型或发送权限',
+        );
     if (node.type === 'document')
       for (const key of ['status', 'source', 'text', 'units', 'warnings'])
         add(

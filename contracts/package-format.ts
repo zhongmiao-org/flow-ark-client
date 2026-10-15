@@ -1,11 +1,11 @@
-/** Normative package validation, pinned with the 0.8.0 contracts. No application imports. */
+/** Normative package validation for contracts 0.21.0, derived from package 2.0. No application imports. */
 import { createHash } from 'node:crypto';
 import Ajv from 'ajv/dist/2020.js';
 import schema from './p1.schema.json';
 import {validateConfigurationSchema} from './configuration-schema';
 export const LIMITS = { archive: 20*1024*1024, total: 100*1024*1024, file: 10*1024*1024, files: 512 };
 export type Entry = { id:string; name:string; flow:string; inputSchema:string; resultSchema:string; schedulable:boolean; capabilities:string[]; resources:string[]; actions:string[] };
-export type Manifest = { packageFormat:'2.0'; id:string; name:string; description:string; version:string; author:string; source:string; minimumClientVersion:string; sdkVersion:'1.0'; configurationSchema:string; stateSchema:string; entries:Entry[]; resources:{id:string;name:string;kind:'file'|'directory'|'browser'|'ai';access:'read'|'write'|'readwrite'|'use';required:boolean}[]; actions:{id:string;name:string;description:string;default:'deny'}[]; files:{path:string;size:number;sha256:string}[]; scripts:string[]; dependencies:{name:string;version:string;license:string}[];contentDigest:string };
+export type Manifest = { packageFormat:'2.0'; id:string; name:string; description:string; version:string; author:string; source:string; minimumClientVersion:string; sdkVersion:'1.0'; configurationSchema:string; stateSchema:string; entries:Entry[]; resources:{id:string;name:string;kind:'file'|'directory'|'browser'|'ai'|'skill';access:'read'|'write'|'readwrite'|'use';required:boolean}[]; actions:{id:string;name:string;description:string;default:'deny'}[]; files:{path:string;size:number;sha256:string}[]; scripts:string[]; dependencies:{name:string;version:string;license:string}[];contentDigest:string };
 export type PackageData = { manifest:Manifest; files:Map<string,Buffer> };
 export function canonical(value:any):string {
  if (value === undefined) throw new Error('摘要不能包含 undefined');
@@ -47,7 +47,7 @@ export function validatePackage(files:Map<string,Buffer>):PackageData {
  validateConfigurationSchema(jsonFile(files,manifest.configurationSchema));
  for(const e of manifest.entries)validateConfigurationSchema(jsonFile(files,e.inputSchema));
  for(const p of manifest.scripts){if(!p.startsWith('scripts/')||!p.endsWith('.js')||!files.has(p))throw new Error('脚本资源无效');}
- for(const r of manifest.resources)if(['browser','ai'].includes(r.kind)?r.access!=='use':r.access==='use')throw new Error('浏览器和 AI 资源需声明 use');
+ for(const r of manifest.resources){if(r.kind==='skill'&&r.access!=='read')throw new Error('Skill 资源只允许 read');if(['browser','ai'].includes(r.kind)?r.access!=='use':r.access==='use')throw new Error('浏览器和 AI 资源需声明 use');}
  for(const entry of manifest.entries){
   unique(entry.resources,'入口资源');unique(entry.actions,'入口动作');unique(entry.capabilities,'入口能力');
   for(const id of entry.resources)if(!manifest.resources.some(r=>r.id===id))throw new Error('入口引用未知资源');
