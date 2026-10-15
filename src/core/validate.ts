@@ -1,3 +1,4 @@
+import { aiNodeCapability, assertAIRequest } from '../shared/ai-node';
 import { resolveParameterSources, parameterSourceCapability } from '../shared/parameter-sources';
 import Ajv2020 from 'ajv/dist/2020.js';
 import schema from '../../contracts/p1.schema.json';
@@ -18,6 +19,7 @@ export function validateObject<T>(name: string, value: unknown): T {
   return value as T;
 }
 export const capabilities = [
+  aiNodeCapability,
   parameterSourceCapability,
   'desktop-selection-v1',
   'mcp-tool-v1',
@@ -62,6 +64,11 @@ export function validateFlow(value: unknown): Flow {
     for (const n of steps) {
       if (++count > 1000 || all.has(n.id)) throw new Error('节点数量过多或 ID 重复：' + n.id);
       all.add(n.id);
+      if (n.type === 'ai') {
+        if (!flow.requiredCapabilities.includes(aiNodeCapability))
+          throw new Error('AI 节点需要声明 ai-node-v1 能力');
+        assertAIRequest(n);
+      }
       if (n.type === 'desktop') {
         if (!flow.requiredCapabilities.includes('desktop-selection-v1'))
           throw new Error('应用选区步骤需要声明 desktop-selection-v1 能力');

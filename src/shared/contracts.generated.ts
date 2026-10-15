@@ -242,6 +242,20 @@ export type Node =
       target: string;
       operation: 'replace-selection';
       text: string;
+    }
+  | {
+      id: string;
+      name?: string;
+      timeoutMs?: number;
+      type: 'ai';
+      version: 1;
+      binding: string;
+      instructions: string;
+      input: Value;
+      schema: {
+        type: 'object';
+        [k: string]: Json | 'object';
+      };
     };
 export type Value =
   | Json

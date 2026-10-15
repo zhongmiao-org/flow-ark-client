@@ -1,4 +1,4 @@
-import type { Flow } from '../shared/types';
+import type { Flow, Step } from '../shared/types';
 import { referenceKey, referenceOf } from './value-references';
 
 /** Rename a draft parameter and exact structured references, never text or script code. */
@@ -25,6 +25,24 @@ export function renameParameter(flow: Flow, from: string, to: string) {
       return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, rewrite(child)]));
     return value;
   };
+  const rewriteSteps = (steps: Step[]): Step[] =>
+    steps.map((node) => {
+      if (node.type === 'ai') return { ...node, input: rewrite(node.input) as typeof node.input };
+      if (node.type === 'condition')
+        return {
+          ...node,
+          ...(rewrite({ actual: node.actual, expected: node.expected }) as object),
+          then: rewriteSteps(node.then),
+          else: rewriteSteps(node.else),
+        };
+      if (node.type === 'loop')
+        return {
+          ...node,
+          items: rewrite(node.items) as typeof node.items,
+          body: rewriteSteps(node.body),
+        };
+      return rewrite(node) as Step;
+    });
   return {
     flow: {
       ...flow,
@@ -41,7 +59,7 @@ export function renameParameter(flow: Flow, from: string, to: string) {
             ) as Flow['parameterSources'],
           }
         : {}),
-      steps: rewrite(flow.steps) as Flow['steps'],
+      steps: rewriteSteps(flow.steps),
     },
     references,
   };

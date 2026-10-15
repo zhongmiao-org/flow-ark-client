@@ -1,9 +1,16 @@
+import { defaultAISchema } from '../shared/ai-node';
 import type { Step } from '../shared/types';
 
 export function newStep(type: string): Step {
   const defaults: Record<string, object> = {
     value: { value: '你好，序舟' },
     assert: { actual: true, operator: 'equals', expected: true },
+    ai: {
+      binding: 'ai',
+      instructions: '按输入整理结果，未知信息明确说明。',
+      input: {},
+      schema: defaultAISchema,
+    },
     http: {
       url: 'https://example.com',
       method: 'GET',

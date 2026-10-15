@@ -79,6 +79,13 @@ export default function TaskStepInspector({
             : '未声明第三方依赖',
         ],
       );
+    if (step.type === 'ai')
+      facts.push(
+        ['AI资源', step.binding],
+        ['指令', step.instructions],
+        ['输入', value(step.input)],
+        ['输出格式', JSON.stringify(step.schema)],
+      );
     if (step.type === 'http')
       facts.push(
         ['请求方法', step.method],

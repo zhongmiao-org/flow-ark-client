@@ -1,3 +1,5 @@
+import { AINodes } from './ai-nodes';
+import { aiProviders } from '../shared/ai-node';
 import { resolveParameterSources } from '../shared/parameter-sources';
 import { toolSecretValues } from '../shared/mcp-oauth-grant';
 import { redactMcpReceipt } from './mcp-redaction';
@@ -147,15 +149,18 @@ export class Runtime {
       inUse: (provider) =>
         this.planning?.usesProvider(provider) ||
         this.desktopPlanning?.usesProvider(provider) ||
-        this.store
-          .list<Run>('run')
-          .some(
-            (run) =>
-              (run.id === this.active?.id || run.state === 'QUEUED') &&
-              this.store
-                .get<FlowRecord>('snapshot', run.id)
-                ?.bindings.credentials.includes(provider),
-          ),
+        this.store.list<Run>('run').some(
+          (run) =>
+            (run.id === this.active?.id || run.state === 'QUEUED') &&
+            (() => {
+              const snapshot = this.store.get<FlowRecord>('snapshot', run.id);
+              return (
+                !!snapshot &&
+                (snapshot.bindings.credentials.includes(provider) ||
+                  aiProviders(snapshot).includes(provider))
+              );
+            })(),
+        ),
       get: (provider) => this.system('ai.configuration.read', { provider }),
       change: (provider, revision, update) =>
         this.system('ai.configuration.write', { provider, revision, update }),
@@ -390,6 +395,28 @@ export class Runtime {
       this.store.fault ??= '脚本资源恢复核对失败：' + this.redactError(error);
     });
   }
+  private aiNodes = new AINodes({
+    configuration: (provider) => this.system('ai.configuration.read', { provider }),
+    key: (provider, revision) => this.system('credentials.get', { id: provider, revision }),
+    secret: (key) => {
+      this.secrets.push(key);
+    },
+    receipt: (runId, instance, result) =>
+      this.store.event(
+        runId,
+        'ai-result',
+        instance,
+        redact(
+          {
+            provider: result.provider,
+            model: result.model,
+            requestId: result.requestId,
+            usage: result.usage,
+          },
+          this.secrets,
+        ),
+      ),
+  });
   redactError(error: unknown): string {
     return redactedErrorText(error, this.secrets);
   }
@@ -476,7 +503,10 @@ export class Runtime {
     record: FlowRecord & Partial<PreparedScripts>,
     desktopRun?: string | true,
   ): Promise<PreparedScripts> {
-    const checkAI = this.aiSettings.capture(record.bindings.credentials);
+    const checkAI = this.aiSettings.capture([
+      ...record.bindings.credentials,
+      ...aiProviders(record),
+    ]);
     const checkLocal = this.localCredentials.capture(record.bindings.credentials);
     const checkCredentials = () => {
       this.toolTargets.assertExecutable(record.id, record, !!desktopRun);
@@ -511,6 +541,7 @@ export class Runtime {
     await this.webTargets.record(record);
     await this.outputs.record(record);
     await this.templates.preflight(record);
+    await this.aiNodes.preflight(record);
     const steps = walk(flow.steps);
     if (steps.some((n) => n.type === 'browser')) {
       const b = this.store.get<BrowserBinding>('browser', record.bindings.browserId ?? '');
@@ -1011,6 +1042,7 @@ export class Runtime {
       rpc.close();
       this.secrets = [];
       if (this.active === active) this.active = undefined;
+      this.aiNodes.release(run.id);
       this.scripts.finishRun(run.id);
       settled();
       if (!this.stopping && !this.store.fault && !this.executionBlock()) this.dispatch();
@@ -1031,10 +1063,30 @@ export class Runtime {
     // Its exact invocation tombstone must be recorded before normal owner checks.
     if (method === 'script.cancel') return this.scripts.cancel(id, args.invocationId);
     if (method === 'mcp.cancel') return this.mcpRuns.cancel(id, args.nodeInstance);
+    if (method === 'ai.cancel')
+      return this.active?.id === id ? this.aiNodes.cancel(id, args.invocationId) : false;
     if (this.active?.id !== id) throw new Error('运行已停止');
     this.checkActive(this.active);
     const runSignal = this.active.abort.signal;
     const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', id)!;
+    if (method === 'ai.call') {
+      const active = this.active;
+      const node = walk(snapshot.flow.steps).find((n) => n.id === args.nodeId);
+      if (!node || node.type !== 'ai') throw new Error('AI 节点不在运行快照中');
+      if (snapshot.bindings.template) {
+        const { entry, pkg } = await this.templates.context(snapshot);
+        const resource = pkg.manifest.resources.find((r) => r.id === node.binding);
+        if (
+          !entry.capabilities.includes('ai-node-v1') ||
+          !entry.capabilities.includes('ai') ||
+          !entry.resources.includes(node.binding) ||
+          resource?.kind !== 'ai' ||
+          resource.access !== 'use'
+        )
+          throw new Error('模板入口未声明当前 AI 能力与资源');
+      }
+      return this.aiNodes.perform(snapshot, id, args, runSignal, () => this.checkActive(active));
+    }
     if (method === 'mcp.call') {
       const active = this.active;
       const run = this.store.get<Run>('run', id);

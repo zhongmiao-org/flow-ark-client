@@ -1,0 +1,35 @@
+.ai-node-configuration {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.ai-node-configuration .ai-node-binding,
+.ai-node-configuration .ai-output-field {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 8px;
+}
+.ai-node-configuration .ai-output-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.ai-node-configuration .ant-select {
+  width: 100%;
+}
+.ai-node-configuration label:not(.ant-checkbox-wrapper) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ai-node-configuration p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

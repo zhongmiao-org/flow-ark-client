@@ -1,0 +1,50 @@
+{
+  "formatVersion": "1.0",
+  "id": "structured-ai",
+  "name": "结构化整理",
+  "description": "只生成结果，不执行外部动作",
+  "parameters": {
+    "source": "虚构资料"
+  },
+  "requiredCapabilities": [
+    "ai-node-v1"
+  ],
+  "steps": [
+    {
+      "id": "summarize",
+      "type": "ai",
+      "version": 1,
+      "binding": "ai",
+      "instructions": "按输入整理摘要，未知信息明确标记。",
+      "input": {
+        "source": {
+          "$ref": "params.source"
+        }
+      },
+      "schema": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "needsHuman": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer",
+          "needsHuman"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "answer",
+      "type": "value",
+      "version": 1,
+      "value": {
+        "$ref": "steps.summarize.output.answer"
+      }
+    }
+  ]
+}
