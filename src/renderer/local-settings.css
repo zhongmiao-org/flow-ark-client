@@ -229,7 +229,7 @@
   padding: 16px;
   gap: 8px;
 }
-.local-browser-choices button[aria-pressed='true'] {
+.local-browser-choices button[aria-pressed='true']:not(:disabled) {
   border-color: var(--fa-text-link);
   background: var(--fa-action-subtle);
 }

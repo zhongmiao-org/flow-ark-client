@@ -1,3 +1,4 @@
+import ActionButton from './ActionButton';
 import { Alert, Card, Drawer, Select, Button, Descriptions } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef } from 'react';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
@@ -238,18 +239,22 @@ export default function ResourceWorkspace(props: Props) {
                             if (props.guard()) props.choose(binding);
                           }}
                         />
-                        {node.type === 'excel' && node.operation === 'map' && (
-                          <Button
-                            onClick={() => {
-                              if (props.guard()) props.openExcel(node.id);
-                            }}
-                          >
-                            打开字段映射编辑器
+                        <div className="flowark-actions">
+                          {node.type === 'excel' && node.operation === 'map' && (
+                            <ActionButton
+                              hint="打开字段映射编辑器，预览并编辑 Excel 映射"
+                              aria-label="打开字段映射编辑器"
+                              onClick={() => {
+                                if (props.guard()) props.openExcel(node.id);
+                              }}
+                            >
+                              编辑映射
+                            </ActionButton>
+                          )}
+                          <Button type="primary" onClick={finish}>
+                            应用配置
                           </Button>
-                        )}
-                        <Button type="primary" onClick={finish}>
-                          应用配置
-                        </Button>
+                        </div>
                       </>
                     ) : (
                       <>

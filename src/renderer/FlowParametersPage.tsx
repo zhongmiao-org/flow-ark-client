@@ -1,3 +1,4 @@
+import ActionButton from './ActionButton';
 import { changeParameterValues, resolveParameterSources } from '../shared/parameter-sources';
 import {
   ConfigProvider,
@@ -276,7 +277,15 @@ export default function FlowParametersPage({
   const ids = [...new Set([...credentials, ...draft.bindings.credentials])];
   const actions = (
     <>
-      <Button
+      <ActionButton
+        hint={
+          busy === 'save'
+            ? '正在保存，请等待当前操作完成'
+            : busy
+              ? '当前资源操作尚未完成，请稍候'
+              : '保存参数、资源及当前流程草稿，留在本页'
+        }
+        aria-label="保存参数"
         type="primary"
         loading={busy === 'save'}
         disabled={!!busy || undefined}
@@ -284,7 +293,7 @@ export default function FlowParametersPage({
         onClick={() => void persist()}
       >
         {busy === 'save' ? '正在保存…' : error ? '重试保存参数' : '保存参数'}
-      </Button>
+      </ActionButton>
       <Button disabled={!!busy || undefined} onClick={() => leave()}>
         返回{returnLabel}
       </Button>

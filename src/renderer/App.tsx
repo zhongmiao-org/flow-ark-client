@@ -1,3 +1,4 @@
+import ActionButton from './ActionButton';
 import { Alert, Collapse, ConfigProvider, Button, Input, Segmented, Tag } from 'antd';
 import { VariableNavigationContext } from './variable-navigation';
 import StructureReferenceRecovery from './StructureReferenceRecovery';
@@ -3849,22 +3850,26 @@ function Editor({
                             forceRender: true,
                             children: (
                               <div className="read-step-more-fields">
-                                <Button
+                                <ActionButton
+                                  hint="打开网页动作配置，编辑当前步骤"
+                                  aria-label="网页动作配置"
                                   onClick={() => {
                                     if (!guardNodeInput()) return;
                                     setPanel('node');
                                     setBrowserActionOpen(true);
                                   }}
                                 >
-                                  网页动作配置
-                                </Button>
-                                <Button
+                                  网页配置
+                                </ActionButton>
+                                <ActionButton
+                                  hint="保存草稿后，使用 AI 修改当前步骤"
+                                  aria-label="用 AI 修改此步"
                                   data-ai-edit-step
                                   disabled={!draftSaved || undefined}
                                   onClick={() => openStepAI(selectedNode.id)}
                                 >
-                                  用 AI 修改此步
-                                </Button>
+                                  AI 修改
+                                </ActionButton>
                                 {advancedInput}
                               </div>
                             ),
@@ -4181,7 +4186,10 @@ function Editor({
                                       choose={choose}
                                     />
                                     {selectedNode.type === 'script' && (
-                                      <Button
+                                      <ActionButton
+                                        hint="打开脚本与依赖的完整配置"
+                                        triggerClassName="inspector-standalone-action"
+                                        aria-label="脚本与依赖配置"
                                         onClick={() => {
                                           if (guardNodeInput()) {
                                             setPanel('node');
@@ -4189,21 +4197,23 @@ function Editor({
                                           }
                                         }}
                                       >
-                                        脚本与依赖配置
-                                      </Button>
+                                        脚本配置
+                                      </ActionButton>
                                     )}
                                     {selectedNode.type === 'script' &&
                                       active &&
                                       !outlineOpen &&
                                       !scriptConfigurationOpen && (
                                         <>
-                                          <Button
+                                          <ActionButton
+                                            hint="打开完整脚本编辑器"
+                                            triggerClassName="inspector-standalone-action"
                                             type="primary"
                                             aria-label="打开完整脚本编辑器"
                                             onClick={() => openScript(selectedNode.id)}
                                           >
-                                            打开脚本编辑器
-                                          </Button>
+                                            编辑脚本
+                                          </ActionButton>
                                           <label>可信脚本 · 独立进程执行</label>
                                           <Suspense fallback={<p>加载编辑器…</p>}>
                                             <CodeEditor

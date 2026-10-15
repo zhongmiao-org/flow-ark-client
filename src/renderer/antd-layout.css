@@ -124,6 +124,15 @@ label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-w
   overflow-wrap: anywhere;
 }
 /* Solid action colours and readable text colours have distinct dark-mode roles. */
+.ant-btn.ant-btn-color-link.ant-btn-variant-link:not(:disabled) {
+  color: var(--fa-text-link);
+}
+.ant-btn.ant-btn-color-link.ant-btn-variant-link:not(:disabled):not(.ant-btn-loading):is(
+    :hover,
+    :active
+  ) {
+  color: var(--fa-text-link);
+}
 .ant-btn-color-primary.ant-btn-variant-outlined:not(:disabled),
 .ant-btn-color-primary.ant-btn-variant-text:not(:disabled) {
   color: var(--fa-text-link);
@@ -134,10 +143,13 @@ label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-w
 .ant-btn.ant-btn-color-primary:not(:disabled):is(
     .ant-btn-variant-outlined,
     .ant-btn-variant-text
-  ):is(:hover, :active) {
+  ):not(.ant-btn-loading):is(:hover, :active) {
   color: var(--fa-text-link);
 }
-.ant-btn.ant-btn-color-primary.ant-btn-variant-outlined:not(:disabled):is(:hover, :active) {
+.ant-btn.ant-btn-color-primary.ant-btn-variant-outlined:not(:disabled):not(.ant-btn-loading):is(
+    :hover,
+    :active
+  ) {
   border-color: var(--fa-text-link);
 }
 .ant-btn-color-primary.ant-btn-variant-solid:not(:disabled) {
@@ -145,13 +157,18 @@ label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-w
   background: var(--fa-action-primary);
   border-color: var(--fa-action-primary);
 }
-.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled):hover {
+.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled):not(.ant-btn-loading):hover {
   background: var(--fa-action-hover);
   border-color: var(--fa-action-hover);
 }
-.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled):active {
+.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled):not(.ant-btn-loading):active {
   background: var(--fa-action-active);
   border-color: var(--fa-action-active);
+}
+.ant-btn.ant-btn-loading.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled) {
+  color: var(--fa-text-inverse);
+  background: var(--fa-action-primary);
+  border-color: var(--fa-action-primary);
 }
 .ant-tag-success {
   --fa-tag-ink: var(--fa-status-success);
@@ -192,9 +209,12 @@ label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-w
 .ant-btn.ant-btn-color-dangerous:not(:disabled):is(
     .ant-btn-variant-outlined,
     .ant-btn-variant-text
-  ):is(:hover, :active) {
+  ):not(.ant-btn-loading):is(:hover, :active) {
   color: var(--fa-status-error);
 }
-.ant-btn.ant-btn-color-dangerous.ant-btn-variant-outlined:not(:disabled):is(:hover, :active) {
+.ant-btn.ant-btn-color-dangerous.ant-btn-variant-outlined:not(:disabled):not(.ant-btn-loading):is(
+    :hover,
+    :active
+  ) {
   border-color: var(--fa-status-error);
 }

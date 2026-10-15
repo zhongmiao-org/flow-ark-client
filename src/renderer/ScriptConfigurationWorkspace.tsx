@@ -1,3 +1,4 @@
+import ActionButton from './ActionButton';
 import { Card, Alert, Drawer, Collapse, Descriptions, Select, Button } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
@@ -198,9 +199,14 @@ export default function ScriptConfigurationWorkspace(props: Props) {
                   children: <span title={text}>{text}</span>,
                 }))}
               />
-              <Button type="primary" onClick={() => navigate(() => props.openEditor())}>
-                打开脚本编辑器
-              </Button>
+              <ActionButton
+                hint="打开完整脚本编辑器，编辑正文与输入"
+                aria-label="打开脚本编辑器"
+                type="primary"
+                onClick={() => navigate(() => props.openEditor())}
+              >
+                编辑脚本
+              </ActionButton>
             </Card>
           </section>
           <section aria-label="依赖检查">
@@ -326,9 +332,14 @@ export default function ScriptConfigurationWorkspace(props: Props) {
                   children: <span title={text}>{text}</span>,
                 }))}
               />
-              <Button type="primary" onClick={() => navigate(() => props.openEditor(true))}>
-                打开编辑器查看历史输出
-              </Button>
+              <ActionButton
+                hint="打开脚本编辑器查看历史输出；不会重新执行脚本"
+                aria-label="打开编辑器查看历史输出"
+                type="primary"
+                onClick={() => navigate(() => props.openEditor(true))}
+              >
+                历史输出
+              </ActionButton>
             </Card>
           </section>
           <section aria-label="AI 调用边界">
@@ -384,9 +395,14 @@ export default function ScriptConfigurationWorkspace(props: Props) {
                   ]}
                 />
               )}
-              <Button type="primary" onClick={() => navigate(props.openParameters)}>
-                查看参数与资源
-              </Button>
+              <ActionButton
+                hint="查看当前流程的参数和资源绑定"
+                aria-label="查看参数与资源"
+                type="primary"
+                onClick={() => navigate(props.openParameters)}
+              >
+                参数与资源
+              </ActionButton>
             </Card>
           </section>
         </div>

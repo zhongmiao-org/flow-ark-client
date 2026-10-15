@@ -141,12 +141,12 @@ label:not(.ant-checkbox-wrapper):not(.ant-radio-wrapper):not(.ant-radio-button-w
   border-radius: 3px;
   letter-spacing: 1px;
 }
-nav {
+.sidebar nav {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
-nav button {
+.sidebar nav button {
   justify-content: flex-start;
   color: var(--fa-text-nav);
   background: transparent;
@@ -155,15 +155,15 @@ nav button {
   font-size: 13px;
   gap: 12px;
 }
-nav button:hover {
+.sidebar nav button:hover:not(:disabled):not(.ant-btn-loading) {
   background: color-mix(in srgb, var(--fa-text-nav) 12%, var(--fa-bg-nav));
   color: var(--fa-text-inverse);
 }
-nav button.selected {
+.sidebar nav button.selected:not(:disabled) {
   color: var(--fa-text-inverse);
   background: var(--fa-action-primary);
 }
-nav button b {
+.sidebar nav button b {
   margin-left: auto;
   background: var(--fa-action-subtle);
   color: var(--fa-text-link);
@@ -1813,7 +1813,7 @@ main {
 .mapping-row span {
   color: var(--muted);
 }
-.mapping-row button.selected {
+.mapping-row button.selected:not(:disabled) {
   background: var(--fa-action-subtle);
   color: var(--fa-text-link);
 }

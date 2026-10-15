@@ -340,3 +340,7 @@
     grid-column: 1;
   }
 }
+
+.parameter-actions > .action-trigger {
+  min-width: min(160px, 100%);
+}

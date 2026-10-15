@@ -1,3 +1,4 @@
+import ActionButton from './ActionButton';
 import { Alert, Button, Card, Checkbox, Input } from 'antd';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { FlowRecord } from '../shared/types';
@@ -140,21 +141,27 @@ export default function EditorMorePage(props: Props) {
               <Button disabled={busy || undefined} onClick={props.exportZip}>
                 导出 ZIP
               </Button>
-              <Button
+              <ActionButton
+                hint="查看当前流程的固定版本与历史记录"
+                aria-label="版本与历史"
                 data-more-page="history"
                 disabled={busy || undefined}
                 onClick={() => openPage('history')}
               >
                 版本与历史
-              </Button>
-              <Button
+              </ActionButton>
+              <ActionButton
+                hint="复制为独立新任务；不会创建运行或计划"
+                aria-label="复制为新任务"
                 data-more-page="copy"
                 disabled={busy || undefined}
                 onClick={() => openPage('copy')}
               >
-                复制为新任务
-              </Button>
-              <Button
+                创建副本
+              </ActionButton>
+              <ActionButton
+                hint="选择并编辑当前流程的脚本步骤"
+                aria-label="编辑脚本"
                 data-more-page="scripts"
                 disabled={busy || undefined}
                 onClick={() =>
@@ -162,10 +169,15 @@ export default function EditorMorePage(props: Props) {
                 }
               >
                 编辑脚本
-              </Button>
-              <Button disabled={busy || undefined} onClick={props.outline}>
-                长流程大纲
-              </Button>
+              </ActionButton>
+              <ActionButton
+                hint="打开长流程大纲并定位具体步骤"
+                aria-label="长流程大纲"
+                disabled={busy || undefined}
+                onClick={props.outline}
+              >
+                流程大纲
+              </ActionButton>
               <Button disabled={busy || undefined} onClick={props.back}>
                 返回任务
               </Button>

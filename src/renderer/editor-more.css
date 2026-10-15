@@ -92,3 +92,7 @@
     min-height: 0;
   }
 }
+
+.editor-more-actions > .action-trigger {
+  width: 100%;
+}

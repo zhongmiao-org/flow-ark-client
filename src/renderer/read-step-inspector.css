@@ -103,3 +103,14 @@
   width: 100%;
   margin-bottom: 16px;
 }
+
+.read-step-more-fields > .action-trigger {
+  display: flex;
+  width: 100%;
+  margin-bottom: 16px;
+}
+.inspector-content > .action-trigger {
+  display: flex;
+  width: 100%;
+  margin-block: 16px;
+}

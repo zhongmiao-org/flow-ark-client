@@ -221,3 +221,7 @@
 .run-detail.is-output-page .runs-heading h1 {
   font-weight: 700;
 }
+
+.run-output-files > .ant-card-body > .action-trigger {
+  width: 100%;
+}

@@ -1,3 +1,4 @@
+import ActionButton from './ActionButton';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { runStateColors } from './theme';
 import { Card, Empty, Alert, Button, Collapse, Tag, Badge } from 'antd';
@@ -194,9 +195,14 @@ export default function RunOutputWorkspace({
               changed={reload}
               compact
             />
-            <Button type="primary" onClick={rerun}>
-              核对后重新运行
-            </Button>
+            <ActionButton
+              hint="先选择来源并核对后重新运行，不会直接执行"
+              aria-label="核对后重新运行"
+              type="primary"
+              onClick={rerun}
+            >
+              核对重跑
+            </ActionButton>
           </Card>
         </aside>
       </div>

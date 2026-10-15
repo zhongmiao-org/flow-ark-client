@@ -86,11 +86,11 @@
   background: transparent;
   white-space: nowrap;
 }
-.app .sidebar nav button:hover {
+.app .sidebar nav button:hover:not(:disabled):not(.ant-btn-loading) {
   color: var(--fa-text-inverse);
   background: color-mix(in srgb, var(--fa-text-inverse) 6%, transparent);
 }
-.app .sidebar nav button.selected {
+.app .sidebar nav button.selected:not(:disabled) {
   color: var(--fa-text-inverse);
   background: var(--fa-action-primary);
 }

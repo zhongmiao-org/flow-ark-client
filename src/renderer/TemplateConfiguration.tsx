@@ -1,3 +1,4 @@
+import ActionButton from './ActionButton';
 import { ConfigProvider, Select, Button, Checkbox, Input, Modal } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
@@ -526,9 +527,15 @@ export default function TemplateConfiguration({
             >
               取消
             </Button>
-            <Button type="primary" disabled={saving || leaving || undefined} htmlType="submit">
+            <ActionButton
+              hint={saving ? '正在保存当前实例，请等待完成' : '保存当前实例配置，不会开始运行'}
+              loading={saving}
+              type="primary"
+              disabled={saving || leaving || undefined}
+              htmlType="submit"
+            >
               保存配置
-            </Button>
+            </ActionButton>
           </footer>
         </form>
       </Modal>

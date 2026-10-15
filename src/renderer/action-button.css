@@ -1,0 +1,49 @@
+/* Explicit action content, independent of Ant Design's wave and loading DOM. */
+.action-trigger {
+  display: inline-flex;
+  vertical-align: middle;
+  min-width: 0;
+  max-width: 100%;
+  flex-shrink: 0;
+  border-radius: var(--fa-radius-8, 8px);
+}
+.action-trigger-stretch {
+  display: flex;
+  width: 100%;
+}
+.inspector-standalone-action {
+  display: flex;
+  width: 100%;
+  margin-block: 16px;
+}
+.action-trigger > .ant-btn {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+}
+.action-trigger:focus-visible {
+  outline: 2px solid var(--fa-action-focus);
+  outline-offset: 2px;
+}
+.flowark-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  margin-block: 16px;
+}
+.flowark-actions > :is(.action-trigger, .ant-btn) {
+  flex: 0 1 160px;
+  min-width: 0;
+}
+.flowark-actions .ant-btn {
+  min-height: var(--ant-control-height, 40px);
+  height: auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.template-modal footer > .action-trigger {
+  flex: 0 1 160px;
+  min-width: 0;
+}

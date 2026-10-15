@@ -68,11 +68,11 @@
   font-size: 12px;
   color: var(--fa-text-secondary);
 }
-.mapping-values .mapping-row button.selected {
+.mapping-values .mapping-row button.selected:not(:disabled) {
   background: var(--fa-action-subtle);
   color: var(--fa-text-link);
 }
-.mapping-values .mapping-row button.selected {
+.mapping-values .mapping-row button.selected:not(:disabled) {
   box-shadow: inset 3px 0 0 var(--fa-action-primary);
 }
 .mapping-values .resource-inline {

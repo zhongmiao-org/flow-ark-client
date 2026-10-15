@@ -1,3 +1,4 @@
+import ActionButton from './ActionButton';
 import { Drawer, ConfigProvider, Select, Button, Alert, Card } from 'antd';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import EditorWorkspaceToolbar from './EditorWorkspaceToolbar';
@@ -292,7 +293,12 @@ export default function StepPositionPage(props: Props) {
                     重做
                   </Button>
                 </div>
-                <Button
+                <ActionButton
+                  stretch
+                  hint={
+                    props.busy ? '正在保存，请等待当前操作完成' : '保存当前流程草稿，不会开始运行'
+                  }
+                  aria-label="保存草稿"
                   ref={saveButton}
                   type="primary"
                   loading={props.busy}
@@ -309,11 +315,16 @@ export default function StepPositionPage(props: Props) {
                     : attempted && props.saveError
                       ? '重试保存草稿'
                       : '保存草稿'}
-                </Button>
+                </ActionButton>
                 <Button onClick={() => props.view('all')}>显示全图</Button>
-                <Button disabled={!props.title || undefined} onClick={() => props.view('selected')}>
-                  聚焦所选步骤
-                </Button>
+                <ActionButton
+                  hint="聚焦所选步骤；请先选择一个步骤"
+                  aria-label="聚焦所选步骤"
+                  disabled={!props.title || undefined}
+                  onClick={() => props.view('selected')}
+                >
+                  聚焦步骤
+                </ActionButton>
                 <p>输入框内使用文本撤销；流程结构撤销不影响活动 Run 的固定快照。</p>
                 <p role="status">{props.saved ? '草稿已保存' : '有未保存的更改'}</p>
               </Card>
