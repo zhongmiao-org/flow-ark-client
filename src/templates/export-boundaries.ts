@@ -55,6 +55,21 @@ export function declareNativeBoundaries(flow: Flow, manifest: Manifest, entryId:
       node.binding = directory(node.binding, access);
       writes ||= access === 'write';
     }
+    if (node.type === 'ai') {
+      const old = manifest.resources.find((r) => r.id === node.binding);
+      if (old && (old.kind !== 'ai' || old.access !== 'use'))
+        throw new Error('AI 资源类型冲突：' + node.binding);
+      if (!old)
+        manifest.resources.push({
+          id: node.binding,
+          name: node.binding,
+          kind: 'ai',
+          access: 'use',
+          required: true,
+        });
+      if (!entry.resources.includes(node.binding)) entry.resources.push(node.binding);
+      if (!entry.capabilities.includes('ai-node-v1')) entry.capabilities.push('ai-node-v1');
+    }
     if (node.type === 'http') writes ||= node.method !== 'GET';
     if (node.type === 'browser') {
       let browser = manifest.resources.find(

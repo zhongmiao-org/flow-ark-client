@@ -66,6 +66,11 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
           'network',
           `${{ click: '点击网页元素', fill: '填写网页表单', select: '选择表单选项', check: '更改勾选状态', press: '向网页发送按键' }[node.operation]}，可能改变表单或触发网站操作。`,
         );
+      case 'ai':
+        return effect(
+          'network',
+          `将本节点指令和选定输入发送到AI资源“${node.binding}”绑定的模型，消耗用户自己的token额度；仅生成数据，不执行其他动作。`,
+        );
       case 'http':
         return effect(
           'network',

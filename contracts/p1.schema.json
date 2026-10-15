@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.17.1/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.18.0/p1.schema.json",
   "title": "FlowArk P1",
   "$defs": {
     "Json": {
@@ -1079,6 +1079,66 @@
             "target",
             "operation",
             "text"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 100000
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 3600000
+            },
+            "type": {
+              "const": "ai"
+            },
+            "version": {
+              "const": 1
+            },
+            "binding": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{0,99}$"
+            },
+            "instructions": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100000
+            },
+            "input": {
+              "$ref": "#/$defs/Value"
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "object"
+                }
+              },
+              "required": [
+                "type"
+              ],
+              "additionalProperties": {
+                "$ref": "#/$defs/Json"
+              }
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "version",
+            "binding",
+            "instructions",
+            "input",
+            "schema"
           ],
           "additionalProperties": false
         }

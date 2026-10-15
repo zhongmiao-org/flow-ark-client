@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Rpc } from '../shared/rpc';
 import { execute } from '../core/engine';
 import { RunControl } from '../core/run-control';
@@ -42,6 +43,23 @@ const rpc = new Rpc(
         signal.throwIfAborted();
         if (args.bindings.template)
           await rpc.call('node.authorize', { id: n.id, binding: resolved.binding });
+        if (n.type === 'ai') {
+          const invocationId = randomUUID();
+          const cancel = () => {
+            void rpc.call('ai.cancel', { invocationId }).catch(() => {});
+          };
+          signal.addEventListener('abort', cancel, { once: true });
+          try {
+            signal.throwIfAborted();
+            return await rpc.call(
+              'ai.call',
+              { nodeId: n.id, nodeInstance: instance, invocationId, input: resolved.input },
+              timeout + 10000,
+            );
+          } finally {
+            signal.removeEventListener('abort', cancel);
+          }
+        }
         if (n.type === 'http') {
           const u = new URL(resolved.url);
           if (!['http:', 'https:'].includes(u.protocol)) throw new Error('HTTP 节点仅支持 HTTP(S)');

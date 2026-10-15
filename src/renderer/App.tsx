@@ -103,6 +103,7 @@ import BrowserNodeConfiguration from './BrowserNodeConfiguration';
 import ReadStepInspector from './ReadStepInspector';
 import type { ElementPickerControls } from './ElementPicker';
 import { browserActions } from './browser-actions';
+import AINodeConfiguration from './AINodeConfiguration';
 import LogicNodeConfiguration from './LogicNodeConfiguration';
 import { revealDraftInput } from './revealDraftInput';
 import ResourceNodeConfiguration from './ResourceNodeConfiguration';
@@ -3072,6 +3073,7 @@ function Editor({
           ...new Set([
             ...r.flow.requiredCapabilities,
             ...(mapped ? ['excel-mapping-v1'] : []),
+            ...(flatten(steps).some((node) => node.type === 'ai') ? ['ai-node-v1'] : []),
             ...(flatten(steps).some((node) => node.type === 'mcp') ? ['mcp-tool-v1'] : []),
             ...(flatten(steps).some((node) => node.type === 'desktop')
               ? ['desktop-selection-v1']
@@ -3089,7 +3091,19 @@ function Editor({
     try {
       const steps = build();
       checkStructure(r.flow.steps, steps, r.flow.parameters);
-      setRecord({ ...r, flow: { ...r.flow, steps } });
+      setRecord({
+        ...r,
+        flow: {
+          ...r.flow,
+          steps,
+          requiredCapabilities: [
+            ...new Set([
+              ...r.flow.requiredCapabilities,
+              ...(flatten(steps).some((node) => node.type === 'ai') ? ['ai-node-v1'] : []),
+            ]),
+          ],
+        },
+      });
       setSelected(nextSelected);
       setTab('node');
       if (compact) setPanel('node');
@@ -4165,6 +4179,16 @@ function Editor({
                                           />
                                         </>
                                       )}
+                                    {selectedNode.type === 'ai' && (
+                                      <AINodeConfiguration
+                                        key={selectedNode.id + ':ai:' + revision}
+                                        node={selectedNode}
+                                        bindings={r.bindings}
+                                        choices={choices}
+                                        change={updateNode}
+                                        changeBindings={(bindings) => setRecord({ ...r, bindings })}
+                                      />
+                                    )}
                                     {selectedNode.type === 'mcp' && (
                                       <McpNodeConfiguration
                                         key={selectedNode.id + ':' + revision}

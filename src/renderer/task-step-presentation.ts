@@ -83,6 +83,10 @@ export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext
       return `等待你处理：${concise(step.message)}`;
     case 'script':
       return `${step.language === 'ts' ? 'TypeScript' : 'JavaScript'} 脚本 · 输入：${value(step.input)} · ${step.dependencies.length} 项依赖`;
+    case 'ai': {
+      const binding = context.bindings?.resources?.[step.binding];
+      return `AI资源「${step.binding}」 · ${binding?.provider ?? '尚未绑定服务'} / ${binding?.model || '尚未选择模型'} · 输入：${value(step.input)} · 仅生成结构化结果`;
+    }
     case 'http':
       return `${step.method} 请求 · 地址：${value(step.url)}`;
     case 'mcp': {

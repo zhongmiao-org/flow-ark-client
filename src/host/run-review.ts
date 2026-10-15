@@ -1,3 +1,4 @@
+import { aiBinding } from '../shared/ai-node';
 import { resolveParameterSources } from '../shared/parameter-sources';
 import { constants } from 'node:fs';
 import { access, realpath, stat } from 'node:fs/promises';
@@ -205,6 +206,16 @@ export class RunReview {
             directory(uploadText(fields.binding.value, 'binding'), true, false);
           else for (const name of Object.keys(record.bindings.files)) directory(name, true, false);
         }
+      }
+      if (node.type === 'ai' && !resources.some((r) => r.id === 'ai:' + node.binding)) {
+        const binding = aiBinding(record.bindings, node.binding);
+        resources.push({
+          id: 'ai:' + node.binding,
+          name: node.binding,
+          kind: 'ai',
+          access: 'use',
+          detail: binding.provider + ' / ' + binding.model + '；使用用户自己的Key并产生token消耗',
+        });
       }
       if (node.type === 'script') {
         for (const name of Object.keys(record.bindings.files)) directory(name, true, true);
