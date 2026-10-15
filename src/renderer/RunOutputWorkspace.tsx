@@ -160,7 +160,7 @@ export default function RunOutputWorkspace({
               <Alert type="warning" showIcon title={view.statusNote} role="status" />
             )}
             <RunOutput detail={detail} layout="result" />
-            <RunFileRecovery key={detail.run.id} detail={detail} />
+            <RunFileRecovery key={`file-recovery:${detail.run.id}`} detail={detail} />
             <RunResultReview key={detail.run.id} runId={detail.run.id} />
           </Card>
         </section>

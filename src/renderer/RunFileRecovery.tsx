@@ -50,12 +50,25 @@ export default function RunFileRecovery({
   const [failed, setFailed] = useState(false);
   const epoch = useRef(0);
   const lock = useRef(false);
+  const copyOrigin = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    if (copying || !copyOrigin.current) return;
+    const origin = copyOrigin.current;
+    copyOrigin.current = null;
+    if (
+      origin.isConnected &&
+      !origin.closest('[hidden]') &&
+      document.activeElement === document.body
+    )
+      origin.focus({ preventScroll: true });
+  }, [copying]);
   useEffect(() => {
     epoch.current++;
     lock.current = false;
     setCopying(undefined);
     setFeedback('');
     setFailed(false);
+    copyOrigin.current = null;
     return () => {
       epoch.current++;
     };
@@ -160,7 +173,10 @@ export default function RunFileRecovery({
                       {directory && (
                         <Button
                           disabled={!!copying || undefined}
-                          onClick={() => void copy(directory)}
+                          onClick={(event) => {
+                            copyOrigin.current = event.currentTarget;
+                            void copy(directory);
+                          }}
                         >
                           {copying === directory ? '正在复制…' : '复制原目录'}
                         </Button>
