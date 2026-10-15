@@ -353,7 +353,7 @@ export default function ScheduleWorkbench({
       detail:
         draft.mode === 'edit'
           ? `按每 ${draft.minutes} 分钟执行；保留原启停状态，仅影响未来触发。`
-          : `按每 ${draft.minutes} 分钟执行；已启用，首次执行在所选间隔之后。`,
+          : `间隔 ${draft.minutes} 分钟；已暂停，启用后才会执行。`,
     });
     return true;
   }
@@ -772,7 +772,7 @@ export default function ScheduleWorkbench({
                     <p>
                       {draft.mode === 'edit'
                         ? '默认保留原快照；不采用未保存草稿。更新不改变已排队或活动运行。'
-                        : '创建后启用，首次执行在所选间隔之后。不采用未保存草稿。'}
+                        : '创建后暂停，启用后首次执行在所选间隔之后。不采用未保存草稿。'}
                     </p>
                     {changed && (
                       <div role="alert" className="schedule-conflict">
