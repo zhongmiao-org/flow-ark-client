@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Alert, Button, Select } from 'antd';
 import { assertDocumentResult } from '../shared/document';
 import { assertSkillVersion } from '../shared/skill';
+import { assertConversationOutput } from '../shared/conversation';
+import ConversationResultView from './ConversationResultView';
 import { DocumentResultView } from './DocumentResults';
 import { SkillVersionView } from './SkillPanel';
 import { assertDataOutput } from '../shared/template-data';
@@ -30,6 +32,7 @@ export default function TypedRunResults({
         if (v.type === 'document') assertDocumentResult(v.value);
         else if (v.type === 'skill') assertSkillVersion(v.value);
         else if (v.type === 'context') assertDataOutput(v.value);
+        else if (v.type === 'conversation') assertConversationOutput(v.value);
         else throw Error('结果类型无效');
         if (live) setValue(v);
       })
@@ -62,6 +65,7 @@ export default function TypedRunResults({
       {value?.type === 'document' && <DocumentResultView key={id} value={value.value} />}{' '}
       {value?.type === 'skill' && <SkillVersionView value={value.value} />}
       {value?.type === 'context' && <ContextResultView value={value.value} />}
+      {value?.type === 'conversation' && <ConversationResultView value={value.value} />}
     </section>
   );
 }

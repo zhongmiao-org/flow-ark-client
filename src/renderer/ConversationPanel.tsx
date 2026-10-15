@@ -2,10 +2,14 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Alert, Button, Card, Checkbox, Collapse, Input, Tag } from 'antd';
 import {
   assertConversation,
+  assertConversationOutput,
   conversationEvent,
   type ConversationEvent,
   type ConversationSnapshot,
 } from '../shared/conversation';
+import type { ConversationOutput } from '../shared/conversation';
+import { assertTrialStatus, type SkillTrialStatus } from '../shared/skill-trial';
+import ConversationResultView from './ConversationResultView';
 import EditorLeaveDialog from './EditorLeaveDialog';
 import './conversation.css';
 export type ConversationLeave = (navigate: () => void, label: string) => void;
@@ -17,18 +21,29 @@ const labels = {
   cancelled: '本轮已取消',
   confirmed: '已确认',
 };
+const trialDraftLabels = {
+  draft: '可编辑',
+  failed: '待核对',
+  conflict: '基线有冲突',
+  publishing: '正在确认',
+  unknown: '保存结果待核对',
+  confirmed: '已确认',
+  discarded: '已放弃',
+};
 export default function ConversationPanel({
   id,
   refresh,
   registerLeave,
   back,
   openFlow,
+  openSkill,
 }: {
   id: string;
   refresh: () => Promise<void>;
   registerLeave: (fn: ConversationLeave | undefined) => void;
   back: () => void;
   openFlow?: (id: string) => void;
+  openSkill?: (id: string) => void;
 }) {
   const [snapshot, setSnapshot] = useState<ConversationSnapshot>();
   const saved = useRef<ConversationSnapshot | undefined>(undefined);
@@ -44,6 +59,76 @@ export default function ConversationPanel({
     textarea = useRef<any>(null);
   const pending = useRef<{ method: string; args: any } | undefined>(undefined);
   const [uncertain, setUncertain] = useState(false);
+  const [trialState, setTrialState] = useState<SkillTrialStatus>(),
+    [trialError, setTrialError] = useState('');
+  const [trialRefresh, setTrialRefresh] = useState(0),
+    [sourceOutput, setSourceOutput] = useState<ConversationOutput>();
+  const [sourceError, setSourceError] = useState('');
+  const trialSource = snapshot?.skillTrial;
+  useEffect(() => {
+    let live = true,
+      reading = false;
+    setTrialState(undefined);
+    setTrialError('');
+    if (!trialSource) return;
+    const inspect = async () => {
+      if (reading || !live) return;
+      reading = true;
+      try {
+        const v = await window.flowark.request('conversation.trialStatus', { id });
+        assertTrialStatus(v);
+        if (
+          v.source.proposalId !== trialSource.proposalId ||
+          v.source.revision !== trialSource.revision ||
+          v.source.sha256 !== trialSource.sha256
+        )
+          throw Error('来源状态不属于本次固定草稿');
+        if (live) {
+          setTrialState(v);
+          setTrialError('');
+        }
+      } catch (e) {
+        if (live) {
+          setTrialState(undefined);
+          setTrialError(e instanceof Error ? e.message : '试聊来源未核对，停止新请求');
+        }
+      } finally {
+        reading = false;
+      }
+    };
+    void inspect();
+    const timer = setInterval(() => void inspect(), 2000);
+    window.addEventListener('focus', inspect);
+    return () => {
+      live = false;
+      clearInterval(timer);
+      window.removeEventListener('focus', inspect);
+    };
+  }, [id, trialSource?.proposalId, trialSource?.revision, trialSource?.sha256, trialRefresh]);
+  useEffect(() => {
+    let live = true;
+    setSourceOutput(undefined);
+    setSourceError('');
+    if (snapshot?.status !== 'confirmed' || snapshot.skillTrial) return;
+    void window.flowark
+      .request('conversation.output', { id })
+      .then((v) => {
+        assertConversationOutput(v);
+        if (
+          v.sessionId !== id ||
+          v.revision !== snapshot.revision ||
+          v.sequence !== snapshot.sequence
+        )
+          throw Error('来源结果不是本次确认快照');
+        if (live) setSourceOutput(v);
+      })
+      .catch((e) => {
+        if (live) setSourceError(e.message ?? '来源结果读取失败');
+      });
+    return () => {
+      live = false;
+    };
+  }, [id, snapshot?.status, snapshot?.sequence, snapshot?.revision]);
   const read = useRef<() => Promise<void>>(async () => {});
   const apply = useRef<(s: ConversationSnapshot) => void>(() => {});
   const updateText = (value: string) => {
@@ -61,6 +146,7 @@ export default function ConversationPanel({
       assertConversation(value);
       if (disposed || value.id !== id || value.sequence < (saved.current?.sequence ?? 0)) return;
       const before = saved.current;
+      if (!before || before.revision !== value.revision) setReviewed(false);
       if (before?.status === 'confirmed' && value.status !== 'confirmed')
         throw new Error('已确认会话收到无效的旧请求状态');
       if (pending.current && value.attempts.some((a) => a.id === pending.current?.args.requestId)) {
@@ -211,16 +297,197 @@ export default function ConversationPanel({
       },
     };
     pending.current = command;
+    setReviewed(false);
     void act(command.method, command.args).catch(() => {});
   };
   const generating = snapshot?.status === 'generating',
     confirmed = snapshot?.status === 'confirmed';
   const draftChanged = !!snapshot && text !== snapshot.draft;
   const exhausted = !!snapshot && snapshot.attempts.length >= snapshot.maxRequests;
+  const trialBlocked = !!trialSource && !trialState?.usable;
+  const trialDetails = trialSource && (
+    <>
+      <div className="conversation-source-field">
+        <label htmlFor="conversation-source-revision">采用草稿</label>
+        <Input
+          id="conversation-source-revision"
+          readOnly
+          value={`修订 ${trialSource.revision} · 仅供内部核对`}
+        />
+      </div>
+      <div className="conversation-source-field">
+        <label htmlFor="conversation-source-digest">内容摘要</label>
+        <Input
+          id="conversation-source-digest"
+          readOnly
+          value={trialSource.sha256}
+          title={trialSource.sha256}
+        />
+      </div>
+      {trialState?.current && (
+        <p>
+          当前草稿修订 {trialState.current.revision} · {trialDraftLabels[trialState.current.status]}
+        </p>
+      )}
+      {trialBlocked && (
+        <Alert
+          type="warning"
+          showIcon
+          title={trialError || trialState?.message || '正在核对原草稿，暂不发送新请求'}
+          description="旧历史与输入保留，已开始的回复仍属于旧修订。草稿变化后返回当前草稿重新建立。"
+        />
+      )}
+      <p>回复不自动修改草稿、确认 Skill 或发送到外部。每轮使用自己的 Key，未知用量保持未知。</p>
+      <div className="conversation-actions">
+        <Button onClick={() => setTrialRefresh((v) => v + 1)}>重新核对来源</Button>
+        {openSkill && (
+          <Button onClick={() => navigate(() => openSkill(trialSource.proposalId), '当前草稿')}>
+            返回当前草稿
+          </Button>
+        )}
+      </div>
+    </>
+  );
+  const editor = snapshot && (
+    <>
+      {confirmed && draftChanged && (
+        <Alert
+          type="warning"
+          title="会话已在其他位置确认，未提交输入仍保留"
+          description={<Input.TextArea readOnly value={text} aria-label="保留的未提交输入" />}
+        />
+      )}
+      {!confirmed && (
+        <>
+          <label htmlFor={'conversation-input-' + id}>你的补充</label>
+          <Input.TextArea
+            ref={textarea}
+            id={'conversation-input-' + id}
+            value={text}
+            maxLength={4000}
+            autoSize={{ minRows: 4, maxRows: 10 }}
+            disabled={busy || generating || uncertain || trialBlocked}
+            onChange={(e) => {
+              updateText(e.target.value);
+              setReviewed(false);
+            }}
+          />
+          <p>{draftChanged ? '有未保存输入，请保存后退出。' : '输入已保存，可稍后继续。'}</p>
+          {!trialSource && (
+            <Checkbox checked={reviewed} onChange={(e) => setReviewed(e.target.checked)}>
+              已核对指令、所选上下文、完整历史及自己的 Key 费用
+            </Checkbox>
+          )}
+        </>
+      )}
+      <div className="conversation-actions">
+        {generating ? (
+          <Button
+            onClick={() =>
+              void act('conversation.cancel', {
+                id,
+                requestId: snapshot.attempts.at(-1)!.id,
+              }).catch(() => {})
+            }
+            disabled={busy}
+          >
+            取消生成
+          </Button>
+        ) : (
+          !confirmed && (
+            <>
+              <Button
+                type="primary"
+                disabled={
+                  busy ||
+                  recovering ||
+                  !reviewed ||
+                  (!text.trim() && !uncertain) ||
+                  exhausted ||
+                  trialBlocked
+                }
+                onClick={() => send()}
+              >
+                {uncertain ? '重试本次提交' : '发送'}
+              </Button>
+              <Button
+                disabled={busy || recovering || !draftChanged || uncertain}
+                onClick={() => void save().catch(() => {})}
+              >
+                保存输入
+              </Button>
+              {['failed', 'cancelled'].includes(snapshot.status) && (
+                <Button
+                  disabled={
+                    busy || recovering || !reviewed || exhausted || uncertain || trialBlocked
+                  }
+                  onClick={() => send(true)}
+                >
+                  手动重试本轮
+                </Button>
+              )}
+              <Button
+                disabled={busy || recovering || snapshot.status !== 'ready' || !!text || uncertain}
+                onClick={() =>
+                  void act('conversation.confirm', {
+                    id,
+                    revision: snapshot.revision,
+                  }).catch(() => {})
+                }
+              >
+                结束并确认
+              </Button>
+            </>
+          )
+        )}
+        <Button disabled={busy} onClick={() => void read.current()}>
+          重新读取
+        </Button>
+        {confirmed && openFlow && (
+          <Button
+            type="primary"
+            onClick={() => navigate(() => openFlow(snapshot.flowId), '来源流程')}
+          >
+            返回来源流程
+          </Button>
+        )}
+      </div>
+      {confirmed ? (
+        <Alert
+          type="success"
+          showIcon
+          title="完整对话已固定为只读内容"
+          description="回到来源流程核对后再显式运行；本次确认不生成Skill、不授予发送权限。"
+        />
+      ) : (
+        <p>未完成助手消息不能供后续步骤采用。确认对话不替代事实、Skill确认或外发授权。</p>
+      )}
+      <Collapse
+        items={[
+          {
+            key: 'receipts',
+            label: '查看请求用量',
+            children: snapshot.attempts.map((a) => (
+              <p key={a.id}>
+                {a.state} · {a.model} · {a.providerRequestId || '尚未取得请求ID'}
+                <br />
+                {a.usage === null ? '用量未知' : JSON.stringify(a.usage)}
+              </p>
+            )),
+          },
+        ]}
+      />
+    </>
+  );
   return (
-    <section className="page conversation-page" aria-label="引导会话">
+    <section
+      className={'page conversation-page' + (trialSource ? ' is-skill-trial' : '')}
+      aria-label="引导会话"
+    >
       <header>
-        <h1>引导会话 · {snapshot?.title ?? '正在读取'}</h1>
+        <h1>
+          {trialSource ? '内部试聊' : '引导会话'} · {snapshot?.title ?? '正在读取'}
+        </h1>
         <p>保存后可稍后继续。全部模型请求消耗你自己的 API Key 额度。</p>
         <Button onClick={() => navigate(back, '待办列表')}>返回待办</Button>
       </header>
@@ -243,12 +510,14 @@ export default function ConversationPanel({
       )}
       {snapshot && (
         <>
+          {sourceError && <Alert type="warning" title={sourceError} />}
+          {sourceOutput && <ConversationResultView value={sourceOutput} />}
           <Tag>
             {labels[snapshot.status]} · {snapshot.attempts.length} / {snapshot.maxRequests}{' '}
             次模型请求
           </Tag>
           <div className="conversation-columns">
-            <Card title="对话">
+            <Card title={trialSource ? '本轮对话' : '对话'}>
               <div
                 className="conversation-messages"
                 aria-live="polite"
@@ -268,8 +537,16 @@ export default function ConversationPanel({
                 ))}
               </div>
               {snapshot.error && <Alert type="warning" showIcon title={snapshot.error} />}
+              {trialSource && editor}
             </Card>
-            <Card title={confirmed ? '已确认的对话' : '本次输入'}>
+            <Card title={trialSource ? '本轮发送范围' : confirmed ? '已确认的对话' : '本次输入'}>
+              {trialDetails}
+              {trialSource && !confirmed && (
+                <Checkbox checked={reviewed} onChange={(e) => setReviewed(e.target.checked)}>
+                  已核对指令、所选上下文、完整历史及自己的 Key 费用
+                </Checkbox>
+              )}
+
               <Collapse
                 items={[
                   {
@@ -290,131 +567,7 @@ export default function ConversationPanel({
                   },
                 ]}
               />
-              {confirmed && draftChanged && (
-                <Alert
-                  type="warning"
-                  title="会话已在其他位置确认，未提交输入仍保留"
-                  description={
-                    <Input.TextArea readOnly value={text} aria-label="保留的未提交输入" />
-                  }
-                />
-              )}
-              {!confirmed && (
-                <>
-                  <label htmlFor={'conversation-input-' + id}>你的补充</label>
-                  <Input.TextArea
-                    ref={textarea}
-                    id={'conversation-input-' + id}
-                    value={text}
-                    maxLength={4000}
-                    autoSize={{ minRows: 4, maxRows: 10 }}
-                    disabled={busy || generating || uncertain}
-                    onChange={(e) => updateText(e.target.value)}
-                  />
-                  <p>
-                    {draftChanged ? '有未保存输入，请保存后退出。' : '输入已保存，可稍后继续。'}
-                  </p>
-                  <Checkbox checked={reviewed} onChange={(e) => setReviewed(e.target.checked)}>
-                    已核对指令、所选上下文、完整历史及自己的 Key 费用
-                  </Checkbox>
-                </>
-              )}
-              <div className="conversation-actions">
-                {generating ? (
-                  <Button
-                    onClick={() =>
-                      void act('conversation.cancel', {
-                        id,
-                        requestId: snapshot.attempts.at(-1)!.id,
-                      }).catch(() => {})
-                    }
-                    disabled={busy}
-                  >
-                    取消生成
-                  </Button>
-                ) : (
-                  !confirmed && (
-                    <>
-                      <Button
-                        type="primary"
-                        disabled={
-                          busy ||
-                          recovering ||
-                          !reviewed ||
-                          (!text.trim() && !uncertain) ||
-                          exhausted
-                        }
-                        onClick={() => send()}
-                      >
-                        {uncertain ? '重试本次提交' : '发送'}
-                      </Button>
-                      <Button
-                        disabled={busy || recovering || !draftChanged || uncertain}
-                        onClick={() => void save().catch(() => {})}
-                      >
-                        保存输入
-                      </Button>
-                      {['failed', 'cancelled'].includes(snapshot.status) && (
-                        <Button
-                          disabled={busy || recovering || !reviewed || exhausted || uncertain}
-                          onClick={() => send(true)}
-                        >
-                          手动重试本轮
-                        </Button>
-                      )}
-                      <Button
-                        disabled={
-                          busy || recovering || snapshot.status !== 'ready' || !!text || uncertain
-                        }
-                        onClick={() =>
-                          void act('conversation.confirm', {
-                            id,
-                            revision: snapshot.revision,
-                          }).catch(() => {})
-                        }
-                      >
-                        结束并确认
-                      </Button>
-                    </>
-                  )
-                )}
-                <Button disabled={busy} onClick={() => void read.current()}>
-                  重新读取
-                </Button>
-                {confirmed && openFlow && (
-                  <Button
-                    type="primary"
-                    onClick={() => navigate(() => openFlow(snapshot.flowId), '来源流程')}
-                  >
-                    返回来源流程
-                  </Button>
-                )}
-              </div>
-              {confirmed ? (
-                <Alert
-                  type="success"
-                  showIcon
-                  title="完整对话已固定为只读内容"
-                  description="回到来源流程核对后再显式运行；本次确认不生成Skill、不授予发送权限。"
-                />
-              ) : (
-                <p>未完成助手消息不能供后续步骤采用。确认对话不替代事实、Skill确认或外发授权。</p>
-              )}
-              <Collapse
-                items={[
-                  {
-                    key: 'receipts',
-                    label: '查看请求用量',
-                    children: snapshot.attempts.map((a) => (
-                      <p key={a.id}>
-                        {a.state} · {a.model} · {a.providerRequestId || '尚未取得请求ID'}
-                        <br />
-                        {a.usage === null ? '用量未知' : JSON.stringify(a.usage)}
-                      </p>
-                    )),
-                  },
-                ]}
-              />
+              {!trialSource && editor}
             </Card>
           </div>
         </>

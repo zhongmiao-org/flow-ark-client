@@ -1,0 +1,49 @@
+{
+  "formatVersion": "1.0",
+  "id": "session-example",
+  "flowId": "conversation-example",
+  "nodeId": "interview",
+  "title": "补充材料",
+  "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "provider": "deepseek",
+  "model": "explicit-user-model",
+  "instructions": "围绕用户提供的材料提问；未知信息保留未知。",
+  "context": {
+    "材料": "虚构说明"
+  },
+  "maxRequests": 20,
+  "status": "confirmed",
+  "revision": 4,
+  "sequence": 12,
+  "draft": "",
+  "messages": [
+    {
+      "id": "message-user",
+      "turnId": "turn-example",
+      "role": "user",
+      "text": "这项虚构工作的职责是接口对接。",
+      "state": "complete"
+    },
+    {
+      "id": "message-assistant",
+      "turnId": "turn-example",
+      "role": "assistant",
+      "text": "已记录职责，未提供的结果保持未知。",
+      "state": "complete",
+      "requestId": "request-example"
+    }
+  ],
+  "attempts": [
+    {
+      "id": "request-example",
+      "turnId": "turn-example",
+      "state": "complete",
+      "providerRequestId": "",
+      "model": "explicit-user-model",
+      "usage": null
+    }
+  ],
+  "updatedAt": "2026-10-15T12:00:00.000Z",
+  "error": "",
+  "confirmedAt": "2026-10-15T12:00:00.000Z"
+}

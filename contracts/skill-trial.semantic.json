@@ -1,0 +1,1149 @@
+[
+  {
+    "name": "\u771f\u5b9e\u786e\u8ba4\u6765\u6e90\u4e0e\u53ef\u6539\u5c55\u793a\u6807\u7b7e",
+    "operation": "verifyConversationEvidence",
+    "args": [
+      {
+        "kind": "conversation",
+        "label": "\u672c\u4eba\u6838\u5bf9",
+        "sessionId": "session-example",
+        "revision": 4,
+        "sequence": 12,
+        "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+      },
+      {
+        "formatVersion": "1.0",
+        "id": "session-example",
+        "flowId": "conversation-example",
+        "nodeId": "interview",
+        "title": "\u8865\u5145\u6750\u6599",
+        "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "provider": "deepseek",
+        "model": "explicit-user-model",
+        "instructions": "\u56f4\u7ed5\u7528\u6237\u63d0\u4f9b\u7684\u6750\u6599\u63d0\u95ee\uff1b\u672a\u77e5\u4fe1\u606f\u4fdd\u7559\u672a\u77e5\u3002",
+        "context": {
+          "\u6750\u6599": "\u865a\u6784\u8bf4\u660e"
+        },
+        "maxRequests": 20,
+        "status": "confirmed",
+        "revision": 4,
+        "sequence": 12,
+        "draft": "",
+        "messages": [
+          {
+            "id": "message-user",
+            "turnId": "turn-example",
+            "role": "user",
+            "text": "\u8fd9\u9879\u865a\u6784\u5de5\u4f5c\u7684\u804c\u8d23\u662f\u63a5\u53e3\u5bf9\u63a5\u3002",
+            "state": "complete"
+          },
+          {
+            "id": "message-assistant",
+            "turnId": "turn-example",
+            "role": "assistant",
+            "text": "\u5df2\u8bb0\u5f55\u804c\u8d23\uff0c\u672a\u63d0\u4f9b\u7684\u7ed3\u679c\u4fdd\u6301\u672a\u77e5\u3002",
+            "state": "complete",
+            "requestId": "request-example"
+          }
+        ],
+        "attempts": [
+          {
+            "id": "request-example",
+            "turnId": "turn-example",
+            "state": "complete",
+            "providerRequestId": "",
+            "model": "explicit-user-model",
+            "usage": null
+          }
+        ],
+        "updatedAt": "2026-10-15T12:00:00.000Z",
+        "error": "",
+        "confirmedAt": "2026-10-15T12:00:00.000Z"
+      }
+    ],
+    "valid": true
+  },
+  {
+    "name": "\u4f2a\u9020\u6458\u8981",
+    "operation": "verifyConversationEvidence",
+    "args": [
+      {
+        "kind": "conversation",
+        "label": "\u8865\u5145\u6750\u6599",
+        "sessionId": "session-example",
+        "revision": 4,
+        "sequence": 12,
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "formatVersion": "1.0",
+        "id": "session-example",
+        "flowId": "conversation-example",
+        "nodeId": "interview",
+        "title": "\u8865\u5145\u6750\u6599",
+        "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "provider": "deepseek",
+        "model": "explicit-user-model",
+        "instructions": "\u56f4\u7ed5\u7528\u6237\u63d0\u4f9b\u7684\u6750\u6599\u63d0\u95ee\uff1b\u672a\u77e5\u4fe1\u606f\u4fdd\u7559\u672a\u77e5\u3002",
+        "context": {
+          "\u6750\u6599": "\u865a\u6784\u8bf4\u660e"
+        },
+        "maxRequests": 20,
+        "status": "confirmed",
+        "revision": 4,
+        "sequence": 12,
+        "draft": "",
+        "messages": [
+          {
+            "id": "message-user",
+            "turnId": "turn-example",
+            "role": "user",
+            "text": "\u8fd9\u9879\u865a\u6784\u5de5\u4f5c\u7684\u804c\u8d23\u662f\u63a5\u53e3\u5bf9\u63a5\u3002",
+            "state": "complete"
+          },
+          {
+            "id": "message-assistant",
+            "turnId": "turn-example",
+            "role": "assistant",
+            "text": "\u5df2\u8bb0\u5f55\u804c\u8d23\uff0c\u672a\u63d0\u4f9b\u7684\u7ed3\u679c\u4fdd\u6301\u672a\u77e5\u3002",
+            "state": "complete",
+            "requestId": "request-example"
+          }
+        ],
+        "attempts": [
+          {
+            "id": "request-example",
+            "turnId": "turn-example",
+            "state": "complete",
+            "providerRequestId": "",
+            "model": "explicit-user-model",
+            "usage": null
+          }
+        ],
+        "updatedAt": "2026-10-15T12:00:00.000Z",
+        "error": "",
+        "confirmedAt": "2026-10-15T12:00:00.000Z"
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "\u4f2a\u9020\u5e8f\u53f7",
+    "operation": "verifyConversationEvidence",
+    "args": [
+      {
+        "kind": "conversation",
+        "label": "\u8865\u5145\u6750\u6599",
+        "sessionId": "session-example",
+        "revision": 4,
+        "sequence": 13,
+        "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+      },
+      {
+        "formatVersion": "1.0",
+        "id": "session-example",
+        "flowId": "conversation-example",
+        "nodeId": "interview",
+        "title": "\u8865\u5145\u6750\u6599",
+        "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "provider": "deepseek",
+        "model": "explicit-user-model",
+        "instructions": "\u56f4\u7ed5\u7528\u6237\u63d0\u4f9b\u7684\u6750\u6599\u63d0\u95ee\uff1b\u672a\u77e5\u4fe1\u606f\u4fdd\u7559\u672a\u77e5\u3002",
+        "context": {
+          "\u6750\u6599": "\u865a\u6784\u8bf4\u660e"
+        },
+        "maxRequests": 20,
+        "status": "confirmed",
+        "revision": 4,
+        "sequence": 12,
+        "draft": "",
+        "messages": [
+          {
+            "id": "message-user",
+            "turnId": "turn-example",
+            "role": "user",
+            "text": "\u8fd9\u9879\u865a\u6784\u5de5\u4f5c\u7684\u804c\u8d23\u662f\u63a5\u53e3\u5bf9\u63a5\u3002",
+            "state": "complete"
+          },
+          {
+            "id": "message-assistant",
+            "turnId": "turn-example",
+            "role": "assistant",
+            "text": "\u5df2\u8bb0\u5f55\u804c\u8d23\uff0c\u672a\u63d0\u4f9b\u7684\u7ed3\u679c\u4fdd\u6301\u672a\u77e5\u3002",
+            "state": "complete",
+            "requestId": "request-example"
+          }
+        ],
+        "attempts": [
+          {
+            "id": "request-example",
+            "turnId": "turn-example",
+            "state": "complete",
+            "providerRequestId": "",
+            "model": "explicit-user-model",
+            "usage": null
+          }
+        ],
+        "updatedAt": "2026-10-15T12:00:00.000Z",
+        "error": "",
+        "confirmedAt": "2026-10-15T12:00:00.000Z"
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "\u672a\u786e\u8ba4\u6765\u6e90",
+    "operation": "confirmedConversationEvidence",
+    "args": [
+      {
+        "formatVersion": "1.0",
+        "id": "session-example",
+        "flowId": "conversation-example",
+        "nodeId": "interview",
+        "title": "\u8865\u5145\u6750\u6599",
+        "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "provider": "deepseek",
+        "model": "explicit-user-model",
+        "instructions": "\u56f4\u7ed5\u7528\u6237\u63d0\u4f9b\u7684\u6750\u6599\u63d0\u95ee\uff1b\u672a\u77e5\u4fe1\u606f\u4fdd\u7559\u672a\u77e5\u3002",
+        "context": {
+          "\u6750\u6599": "\u865a\u6784\u8bf4\u660e"
+        },
+        "maxRequests": 20,
+        "status": "ready",
+        "revision": 4,
+        "sequence": 12,
+        "draft": "",
+        "messages": [
+          {
+            "id": "message-user",
+            "turnId": "turn-example",
+            "role": "user",
+            "text": "\u8fd9\u9879\u865a\u6784\u5de5\u4f5c\u7684\u804c\u8d23\u662f\u63a5\u53e3\u5bf9\u63a5\u3002",
+            "state": "complete"
+          },
+          {
+            "id": "message-assistant",
+            "turnId": "turn-example",
+            "role": "assistant",
+            "text": "\u5df2\u8bb0\u5f55\u804c\u8d23\uff0c\u672a\u63d0\u4f9b\u7684\u7ed3\u679c\u4fdd\u6301\u672a\u77e5\u3002",
+            "state": "complete",
+            "requestId": "request-example"
+          }
+        ],
+        "attempts": [
+          {
+            "id": "request-example",
+            "turnId": "turn-example",
+            "state": "complete",
+            "providerRequestId": "",
+            "model": "explicit-user-model",
+            "usage": null
+          }
+        ],
+        "updatedAt": "2026-10-15T12:00:00.000Z",
+        "error": ""
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "\u8bd5\u804a\u4e0d\u80fd\u6210\u4e3a\u672c\u4eba\u4e8b\u5b9e",
+    "operation": "confirmedConversationEvidence",
+    "args": [
+      {
+        "formatVersion": "1.0",
+        "id": "session-example",
+        "flowId": "conversation-example",
+        "nodeId": "interview",
+        "title": "\u8865\u5145\u6750\u6599",
+        "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "provider": "deepseek",
+        "model": "explicit-user-model",
+        "instructions": "\u56f4\u7ed5\u7528\u6237\u63d0\u4f9b\u7684\u6750\u6599\u63d0\u95ee\uff1b\u672a\u77e5\u4fe1\u606f\u4fdd\u7559\u672a\u77e5\u3002",
+        "context": {
+          "\u6750\u6599": "\u865a\u6784\u8bf4\u660e"
+        },
+        "maxRequests": 20,
+        "status": "confirmed",
+        "revision": 4,
+        "sequence": 12,
+        "draft": "",
+        "messages": [
+          {
+            "id": "message-user",
+            "turnId": "turn-example",
+            "role": "user",
+            "text": "\u8fd9\u9879\u865a\u6784\u5de5\u4f5c\u7684\u804c\u8d23\u662f\u63a5\u53e3\u5bf9\u63a5\u3002",
+            "state": "complete"
+          },
+          {
+            "id": "message-assistant",
+            "turnId": "turn-example",
+            "role": "assistant",
+            "text": "\u5df2\u8bb0\u5f55\u804c\u8d23\uff0c\u672a\u63d0\u4f9b\u7684\u7ed3\u679c\u4fdd\u6301\u672a\u77e5\u3002",
+            "state": "complete",
+            "requestId": "request-example"
+          }
+        ],
+        "attempts": [
+          {
+            "id": "request-example",
+            "turnId": "turn-example",
+            "state": "complete",
+            "providerRequestId": "",
+            "model": "explicit-user-model",
+            "usage": null
+          }
+        ],
+        "updatedAt": "2026-10-15T12:00:00.000Z",
+        "error": "",
+        "confirmedAt": "2026-10-15T12:00:00.000Z",
+        "skillTrial": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        }
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "\u5b8c\u6574\u56de\u590d\u8bf7\u6c42\u4e0d\u7b26",
+    "operation": "confirmedConversationEvidence",
+    "args": [
+      {
+        "formatVersion": "1.0",
+        "id": "session-example",
+        "flowId": "conversation-example",
+        "nodeId": "interview",
+        "title": "\u8865\u5145\u6750\u6599",
+        "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "provider": "deepseek",
+        "model": "explicit-user-model",
+        "instructions": "\u56f4\u7ed5\u7528\u6237\u63d0\u4f9b\u7684\u6750\u6599\u63d0\u95ee\uff1b\u672a\u77e5\u4fe1\u606f\u4fdd\u7559\u672a\u77e5\u3002",
+        "context": {
+          "\u6750\u6599": "\u865a\u6784\u8bf4\u660e"
+        },
+        "maxRequests": 20,
+        "status": "confirmed",
+        "revision": 4,
+        "sequence": 12,
+        "draft": "",
+        "messages": [
+          {
+            "id": "message-user",
+            "turnId": "turn-example",
+            "role": "user",
+            "text": "\u8fd9\u9879\u865a\u6784\u5de5\u4f5c\u7684\u804c\u8d23\u662f\u63a5\u53e3\u5bf9\u63a5\u3002",
+            "state": "complete"
+          },
+          {
+            "id": "message-assistant",
+            "turnId": "turn-example",
+            "role": "assistant",
+            "text": "\u5df2\u8bb0\u5f55\u804c\u8d23\uff0c\u672a\u63d0\u4f9b\u7684\u7ed3\u679c\u4fdd\u6301\u672a\u77e5\u3002",
+            "state": "complete",
+            "requestId": "other-request"
+          }
+        ],
+        "attempts": [
+          {
+            "id": "request-example",
+            "turnId": "turn-example",
+            "state": "complete",
+            "providerRequestId": "",
+            "model": "explicit-user-model",
+            "usage": null
+          }
+        ],
+        "updatedAt": "2026-10-15T12:00:00.000Z",
+        "error": "",
+        "confirmedAt": "2026-10-15T12:00:00.000Z"
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "\u5b8c\u6574\u7ed3\u679c\u5bf9\u5e94\u672c\u673a\u5feb\u7167",
+    "operation": "validateConversationOutput",
+    "args": [
+      {
+        "sessionId": "session-example",
+        "status": "confirmed",
+        "revision": 4,
+        "sequence": 12,
+        "transcript": [
+          {
+            "role": "user",
+            "text": "\u8fd9\u9879\u865a\u6784\u5de5\u4f5c\u7684\u804c\u8d23\u662f\u63a5\u53e3\u5bf9\u63a5\u3002"
+          },
+          {
+            "role": "assistant",
+            "text": "\u5df2\u8bb0\u5f55\u804c\u8d23\uff0c\u672a\u63d0\u4f9b\u7684\u7ed3\u679c\u4fdd\u6301\u672a\u77e5\u3002"
+          }
+        ],
+        "evidence": {
+          "kind": "conversation",
+          "label": "\u8865\u5145\u6750\u6599",
+          "sessionId": "session-example",
+          "revision": 4,
+          "sequence": 12,
+          "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+        }
+      },
+      {
+        "formatVersion": "1.0",
+        "id": "session-example",
+        "flowId": "conversation-example",
+        "nodeId": "interview",
+        "title": "\u8865\u5145\u6750\u6599",
+        "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "provider": "deepseek",
+        "model": "explicit-user-model",
+        "instructions": "\u56f4\u7ed5\u7528\u6237\u63d0\u4f9b\u7684\u6750\u6599\u63d0\u95ee\uff1b\u672a\u77e5\u4fe1\u606f\u4fdd\u7559\u672a\u77e5\u3002",
+        "context": {
+          "\u6750\u6599": "\u865a\u6784\u8bf4\u660e"
+        },
+        "maxRequests": 20,
+        "status": "confirmed",
+        "revision": 4,
+        "sequence": 12,
+        "draft": "",
+        "messages": [
+          {
+            "id": "message-user",
+            "turnId": "turn-example",
+            "role": "user",
+            "text": "\u8fd9\u9879\u865a\u6784\u5de5\u4f5c\u7684\u804c\u8d23\u662f\u63a5\u53e3\u5bf9\u63a5\u3002",
+            "state": "complete"
+          },
+          {
+            "id": "message-assistant",
+            "turnId": "turn-example",
+            "role": "assistant",
+            "text": "\u5df2\u8bb0\u5f55\u804c\u8d23\uff0c\u672a\u63d0\u4f9b\u7684\u7ed3\u679c\u4fdd\u6301\u672a\u77e5\u3002",
+            "state": "complete",
+            "requestId": "request-example"
+          }
+        ],
+        "attempts": [
+          {
+            "id": "request-example",
+            "turnId": "turn-example",
+            "state": "complete",
+            "providerRequestId": "",
+            "model": "explicit-user-model",
+            "usage": null
+          }
+        ],
+        "updatedAt": "2026-10-15T12:00:00.000Z",
+        "error": "",
+        "confirmedAt": "2026-10-15T12:00:00.000Z"
+      }
+    ],
+    "valid": true
+  },
+  {
+    "name": "\u7be1\u6539\u6b63\u6587\u4f46\u4fdd\u7559\u6458\u8981",
+    "operation": "validateConversationOutput",
+    "args": [
+      {
+        "sessionId": "session-example",
+        "status": "confirmed",
+        "revision": 4,
+        "sequence": 12,
+        "transcript": [
+          {
+            "role": "user",
+            "text": "\u4f2a\u9020\u7528\u6237\u539f\u8bdd"
+          },
+          {
+            "role": "assistant",
+            "text": "\u5df2\u8bb0\u5f55\u804c\u8d23\uff0c\u672a\u63d0\u4f9b\u7684\u7ed3\u679c\u4fdd\u6301\u672a\u77e5\u3002"
+          }
+        ],
+        "evidence": {
+          "kind": "conversation",
+          "label": "\u8865\u5145\u6750\u6599",
+          "sessionId": "session-example",
+          "revision": 4,
+          "sequence": 12,
+          "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+        }
+      },
+      {
+        "formatVersion": "1.0",
+        "id": "session-example",
+        "flowId": "conversation-example",
+        "nodeId": "interview",
+        "title": "\u8865\u5145\u6750\u6599",
+        "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "provider": "deepseek",
+        "model": "explicit-user-model",
+        "instructions": "\u56f4\u7ed5\u7528\u6237\u63d0\u4f9b\u7684\u6750\u6599\u63d0\u95ee\uff1b\u672a\u77e5\u4fe1\u606f\u4fdd\u7559\u672a\u77e5\u3002",
+        "context": {
+          "\u6750\u6599": "\u865a\u6784\u8bf4\u660e"
+        },
+        "maxRequests": 20,
+        "status": "confirmed",
+        "revision": 4,
+        "sequence": 12,
+        "draft": "",
+        "messages": [
+          {
+            "id": "message-user",
+            "turnId": "turn-example",
+            "role": "user",
+            "text": "\u8fd9\u9879\u865a\u6784\u5de5\u4f5c\u7684\u804c\u8d23\u662f\u63a5\u53e3\u5bf9\u63a5\u3002",
+            "state": "complete"
+          },
+          {
+            "id": "message-assistant",
+            "turnId": "turn-example",
+            "role": "assistant",
+            "text": "\u5df2\u8bb0\u5f55\u804c\u8d23\uff0c\u672a\u63d0\u4f9b\u7684\u7ed3\u679c\u4fdd\u6301\u672a\u77e5\u3002",
+            "state": "complete",
+            "requestId": "request-example"
+          }
+        ],
+        "attempts": [
+          {
+            "id": "request-example",
+            "turnId": "turn-example",
+            "state": "complete",
+            "providerRequestId": "",
+            "model": "explicit-user-model",
+            "usage": null
+          }
+        ],
+        "updatedAt": "2026-10-15T12:00:00.000Z",
+        "error": "",
+        "confirmedAt": "2026-10-15T12:00:00.000Z"
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "\u7ed3\u679c\u8eab\u4efd\u4e0d\u7b26",
+    "operation": "validateConversationOutput",
+    "args": [
+      {
+        "sessionId": "session-example",
+        "status": "confirmed",
+        "revision": 4,
+        "sequence": 12,
+        "transcript": [
+          {
+            "role": "user",
+            "text": "\u8fd9\u9879\u865a\u6784\u5de5\u4f5c\u7684\u804c\u8d23\u662f\u63a5\u53e3\u5bf9\u63a5\u3002"
+          },
+          {
+            "role": "assistant",
+            "text": "\u5df2\u8bb0\u5f55\u804c\u8d23\uff0c\u672a\u63d0\u4f9b\u7684\u7ed3\u679c\u4fdd\u6301\u672a\u77e5\u3002"
+          }
+        ],
+        "evidence": {
+          "kind": "conversation",
+          "label": "\u8865\u5145\u6750\u6599",
+          "sessionId": "session-example",
+          "revision": 5,
+          "sequence": 12,
+          "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+        }
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "\u56fa\u5b9a\u5b8c\u6574\u8349\u7a3f",
+    "operation": "validateSkillTrialPreview",
+    "args": [
+      {
+        "version": 1,
+        "source": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "key": "example-profile",
+        "base": null,
+        "draft": {
+          "title": "\u865a\u6784\u8d44\u6599\u7684\u6c9f\u901a\u89c4\u5219",
+          "markdown": "---\nname: example-profile\ndescription: \u865a\u6784\u8d44\u6599\u6838\u5bf9\u793a\u4f8b\n---\n\n\u5148\u56de\u7b54\u91cd\u70b9\u3002\u672a\u77e5\u4e8b\u5b9e\u5148\u8be2\u95ee\u672c\u4eba\u3002\n",
+          "data": {
+            "preferences": {},
+            "facts": []
+          },
+          "evidence": [
+            {
+              "kind": "conversation",
+              "label": "\u8865\u5145\u6750\u6599",
+              "sessionId": "session-example",
+              "revision": 4,
+              "sequence": 12,
+              "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+            }
+          ]
+        }
+      },
+      {
+        "version": 1,
+        "id": "sp_example",
+        "revision": 1,
+        "key": "example-profile",
+        "workspaceBinding": "workspace",
+        "sourceFlowId": "skill-example",
+        "sourceNodeId": "propose",
+        "sourceFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "base": null,
+        "status": "draft",
+        "draft": {
+          "title": "\u865a\u6784\u8d44\u6599\u7684\u6c9f\u901a\u89c4\u5219",
+          "markdown": "---\nname: example-profile\ndescription: \u865a\u6784\u8d44\u6599\u6838\u5bf9\u793a\u4f8b\n---\n\n\u5148\u56de\u7b54\u91cd\u70b9\u3002\u672a\u77e5\u4e8b\u5b9e\u5148\u8be2\u95ee\u672c\u4eba\u3002\n",
+          "data": {
+            "preferences": {},
+            "facts": []
+          },
+          "evidence": [
+            {
+              "kind": "conversation",
+              "label": "\u8865\u5145\u6750\u6599",
+              "sessionId": "session-example",
+              "revision": 4,
+              "sequence": 12,
+              "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+            }
+          ]
+        },
+        "createdAt": "2026-10-15T12:00:00.000Z",
+        "updatedAt": "2026-10-15T12:00:00.000Z"
+      }
+    ],
+    "valid": true
+  },
+  {
+    "name": "\u8349\u7a3f\u5185\u5bb9\u6458\u8981\u4e0d\u7b26",
+    "operation": "validateSkillTrialPreview",
+    "args": [
+      {
+        "version": 1,
+        "source": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "key": "example-profile",
+        "base": null,
+        "draft": {
+          "title": "\u865a\u6784\u8d44\u6599\u7684\u6c9f\u901a\u89c4\u5219",
+          "markdown": "---\nname: example-profile\ndescription: \u865a\u6784\u8d44\u6599\u6838\u5bf9\u793a\u4f8b\n---\n\n\u5148\u56de\u7b54\u91cd\u70b9\u3002\u672a\u77e5\u4e8b\u5b9e\u5148\u8be2\u95ee\u672c\u4eba\u3002\n\u6b63\u6587\u53d8\u5316",
+          "data": {
+            "preferences": {},
+            "facts": []
+          },
+          "evidence": [
+            {
+              "kind": "conversation",
+              "label": "\u8865\u5145\u6750\u6599",
+              "sessionId": "session-example",
+              "revision": 4,
+              "sequence": 12,
+              "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+            }
+          ]
+        }
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "\u5185\u5bb9\u6539\u56de\u4f46\u4fee\u8ba2\u5df2\u53d8\u5316",
+    "operation": "validateSkillTrialPreview",
+    "args": [
+      {
+        "version": 1,
+        "source": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "key": "example-profile",
+        "base": null,
+        "draft": {
+          "title": "\u865a\u6784\u8d44\u6599\u7684\u6c9f\u901a\u89c4\u5219",
+          "markdown": "---\nname: example-profile\ndescription: \u865a\u6784\u8d44\u6599\u6838\u5bf9\u793a\u4f8b\n---\n\n\u5148\u56de\u7b54\u91cd\u70b9\u3002\u672a\u77e5\u4e8b\u5b9e\u5148\u8be2\u95ee\u672c\u4eba\u3002\n",
+          "data": {
+            "preferences": {},
+            "facts": []
+          },
+          "evidence": [
+            {
+              "kind": "conversation",
+              "label": "\u8865\u5145\u6750\u6599",
+              "sessionId": "session-example",
+              "revision": 4,
+              "sequence": 12,
+              "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+            }
+          ]
+        }
+      },
+      {
+        "version": 1,
+        "id": "sp_example",
+        "revision": 2,
+        "key": "example-profile",
+        "workspaceBinding": "workspace",
+        "sourceFlowId": "skill-example",
+        "sourceNodeId": "propose",
+        "sourceFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "base": null,
+        "status": "draft",
+        "draft": {
+          "title": "\u865a\u6784\u8d44\u6599\u7684\u6c9f\u901a\u89c4\u5219",
+          "markdown": "---\nname: example-profile\ndescription: \u865a\u6784\u8d44\u6599\u6838\u5bf9\u793a\u4f8b\n---\n\n\u5148\u56de\u7b54\u91cd\u70b9\u3002\u672a\u77e5\u4e8b\u5b9e\u5148\u8be2\u95ee\u672c\u4eba\u3002\n",
+          "data": {
+            "preferences": {},
+            "facts": []
+          },
+          "evidence": [
+            {
+              "kind": "conversation",
+              "label": "\u8865\u5145\u6750\u6599",
+              "sessionId": "session-example",
+              "revision": 4,
+              "sequence": 12,
+              "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+            }
+          ]
+        },
+        "createdAt": "2026-10-15T12:00:00.000Z",
+        "updatedAt": "2026-10-15T12:00:00.000Z"
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "\u53d1\u5e03\u672a\u77e5\u4e0d\u80fd\u65b0\u8bd5\u804a",
+    "operation": "skillTrialPreview",
+    "args": [
+      {
+        "version": 1,
+        "id": "sp_example",
+        "revision": 1,
+        "key": "example-profile",
+        "workspaceBinding": "workspace",
+        "sourceFlowId": "skill-example",
+        "sourceNodeId": "propose",
+        "sourceFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "base": null,
+        "status": "unknown",
+        "draft": {
+          "title": "\u865a\u6784\u8d44\u6599\u7684\u6c9f\u901a\u89c4\u5219",
+          "markdown": "---\nname: example-profile\ndescription: \u865a\u6784\u8d44\u6599\u6838\u5bf9\u793a\u4f8b\n---\n\n\u5148\u56de\u7b54\u91cd\u70b9\u3002\u672a\u77e5\u4e8b\u5b9e\u5148\u8be2\u95ee\u672c\u4eba\u3002\n",
+          "data": {
+            "preferences": {},
+            "facts": []
+          },
+          "evidence": [
+            {
+              "kind": "conversation",
+              "label": "\u8865\u5145\u6750\u6599",
+              "sessionId": "session-example",
+              "revision": 4,
+              "sequence": 12,
+              "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+            }
+          ]
+        },
+        "createdAt": "2026-10-15T12:00:00.000Z",
+        "updatedAt": "2026-10-15T12:00:00.000Z"
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "\u6838\u5bf9\u7684\u663e\u5f0f\u6a21\u578b\u8bf7\u6c42",
+    "operation": "validateSkillTrialRequest",
+    "args": [
+      {
+        "version": 1,
+        "requestId": "trial-example",
+        "source": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "provider": "deepseek",
+        "model": "explicit-user-model",
+        "instructions": "\u6838\u5bf9\u8868\u8fbe\u4e0e\u672a\u77e5\u4fe1\u606f\uff0c\u4ec5\u4f9b\u5185\u90e8\u8bd5\u804a\u3002"
+      },
+      {
+        "version": 1,
+        "source": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "key": "example-profile",
+        "base": null,
+        "draft": {
+          "title": "\u865a\u6784\u8d44\u6599\u7684\u6c9f\u901a\u89c4\u5219",
+          "markdown": "---\nname: example-profile\ndescription: \u865a\u6784\u8d44\u6599\u6838\u5bf9\u793a\u4f8b\n---\n\n\u5148\u56de\u7b54\u91cd\u70b9\u3002\u672a\u77e5\u4e8b\u5b9e\u5148\u8be2\u95ee\u672c\u4eba\u3002\n",
+          "data": {
+            "preferences": {},
+            "facts": []
+          },
+          "evidence": [
+            {
+              "kind": "conversation",
+              "label": "\u8865\u5145\u6750\u6599",
+              "sessionId": "session-example",
+              "revision": 4,
+              "sequence": 12,
+              "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+            }
+          ]
+        }
+      }
+    ],
+    "valid": true
+  },
+  {
+    "name": "\u76f8\u540c\u5185\u5bb9\u4e0d\u540c\u8349\u7a3f",
+    "operation": "validateSkillTrialRequest",
+    "args": [
+      {
+        "version": 1,
+        "requestId": "trial-example",
+        "source": {
+          "version": 1,
+          "proposalId": "other-proposal",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "provider": "deepseek",
+        "model": "explicit-user-model",
+        "instructions": "\u6838\u5bf9\u8868\u8fbe\u4e0e\u672a\u77e5\u4fe1\u606f\uff0c\u4ec5\u4f9b\u5185\u90e8\u8bd5\u804a\u3002"
+      },
+      {
+        "version": 1,
+        "source": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "key": "example-profile",
+        "base": null,
+        "draft": {
+          "title": "\u865a\u6784\u8d44\u6599\u7684\u6c9f\u901a\u89c4\u5219",
+          "markdown": "---\nname: example-profile\ndescription: \u865a\u6784\u8d44\u6599\u6838\u5bf9\u793a\u4f8b\n---\n\n\u5148\u56de\u7b54\u91cd\u70b9\u3002\u672a\u77e5\u4e8b\u5b9e\u5148\u8be2\u95ee\u672c\u4eba\u3002\n",
+          "data": {
+            "preferences": {},
+            "facts": []
+          },
+          "evidence": [
+            {
+              "kind": "conversation",
+              "label": "\u8865\u5145\u6750\u6599",
+              "sessionId": "session-example",
+              "revision": 4,
+              "sequence": 12,
+              "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+            }
+          ]
+        }
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "\u7a7a\u767d\u6a21\u578b",
+    "operation": "validateSkillTrialRequest",
+    "args": [
+      {
+        "version": 1,
+        "requestId": "trial-example",
+        "source": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "provider": "deepseek",
+        "model": "   ",
+        "instructions": "\u6838\u5bf9\u8868\u8fbe\u4e0e\u672a\u77e5\u4fe1\u606f\uff0c\u4ec5\u4f9b\u5185\u90e8\u8bd5\u804a\u3002"
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "\u540c\u8bf7\u6c42\u540c\u6765\u6e90\u56de\u6267",
+    "operation": "validateSkillTrialResult",
+    "args": [
+      {
+        "version": 1,
+        "requestId": "trial-example",
+        "source": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "sessionId": "trial-session-example"
+      },
+      {
+        "version": 1,
+        "requestId": "trial-example",
+        "source": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "provider": "deepseek",
+        "model": "explicit-user-model",
+        "instructions": "\u6838\u5bf9\u8868\u8fbe\u4e0e\u672a\u77e5\u4fe1\u606f\uff0c\u4ec5\u4f9b\u5185\u90e8\u8bd5\u804a\u3002"
+      }
+    ],
+    "valid": true
+  },
+  {
+    "name": "\u56de\u6267\u4e0d\u5c5e\u4e8e\u8bf7\u6c42",
+    "operation": "validateSkillTrialResult",
+    "args": [
+      {
+        "version": 1,
+        "requestId": "other-request",
+        "source": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "sessionId": "trial-session-example"
+      },
+      {
+        "version": 1,
+        "requestId": "trial-example",
+        "source": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "provider": "deepseek",
+        "model": "explicit-user-model",
+        "instructions": "\u6838\u5bf9\u8868\u8fbe\u4e0e\u672a\u77e5\u4fe1\u606f\uff0c\u4ec5\u4f9b\u5185\u90e8\u8bd5\u804a\u3002"
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "\u5f53\u524d\u6765\u6e90\u53ef\u7528",
+    "operation": "validateSkillTrialStatus",
+    "args": [
+      {
+        "version": 1,
+        "source": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "current": {
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4",
+          "status": "draft"
+        },
+        "usable": true,
+        "reason": "ready",
+        "message": ""
+      }
+    ],
+    "valid": true
+  },
+  {
+    "name": "\u4fee\u8ba2\u53d8\u5316\u4ecd\u79f0\u53ef\u7528",
+    "operation": "validateSkillTrialStatus",
+    "args": [
+      {
+        "version": 1,
+        "source": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "current": {
+          "revision": 2,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4",
+          "status": "draft"
+        },
+        "usable": true,
+        "reason": "ready",
+        "message": ""
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "\u540c\u6e90\u5374\u79f0\u5df2\u53d8\u5316",
+    "operation": "validateSkillTrialStatus",
+    "args": [
+      {
+        "version": 1,
+        "source": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "current": {
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4",
+          "status": "draft"
+        },
+        "usable": false,
+        "reason": "changed",
+        "message": ""
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "\u76ee\u5f55\u4e0d\u53ef\u7528\u4fdd\u7559\u5f53\u524d\u8eab\u4efd",
+    "operation": "validateSkillTrialStatus",
+    "args": [
+      {
+        "version": 1,
+        "source": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "current": {
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4",
+          "status": "draft"
+        },
+        "usable": false,
+        "reason": "workspace",
+        "message": "\u76ee\u5f55\u4e0d\u53ef\u7528"
+      }
+    ],
+    "valid": true
+  },
+  {
+    "name": "\u6765\u6e90\u7f3a\u5931",
+    "operation": "validateSkillTrialStatus",
+    "args": [
+      {
+        "version": 1,
+        "source": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "current": null,
+        "usable": false,
+        "reason": "unavailable",
+        "message": ""
+      }
+    ],
+    "valid": true
+  },
+  {
+    "name": "\u53d1\u5e03\u671f\u95f4\u963b\u6b62\u8bd5\u804a",
+    "operation": "validateSkillTrialStatus",
+    "args": [
+      {
+        "version": 1,
+        "source": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "current": {
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4",
+          "status": "publishing"
+        },
+        "usable": false,
+        "reason": "blocked",
+        "message": ""
+      }
+    ],
+    "valid": true
+  },
+  {
+    "name": "\u4e0d\u53ef\u7528\u4e0d\u80fd\u79f0ready",
+    "operation": "validateSkillTrialStatus",
+    "args": [
+      {
+        "version": 1,
+        "source": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "current": {
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4",
+          "status": "draft"
+        },
+        "usable": false,
+        "reason": "ready",
+        "message": ""
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "\u65e0\u6548Unicode",
+    "operation": "validateSkillTrialPreview",
+    "args": [
+      {
+        "version": 1,
+        "source": {
+          "version": 1,
+          "proposalId": "sp_example",
+          "revision": 1,
+          "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+        },
+        "key": "example-profile",
+        "base": null,
+        "draft": {
+          "title": "\u865a\u6784\u8d44\u6599\u7684\u6c9f\u901a\u89c4\u5219",
+          "markdown": "\ud800",
+          "data": {
+            "preferences": {},
+            "facts": []
+          },
+          "evidence": [
+            {
+              "kind": "conversation",
+              "label": "\u8865\u5145\u6750\u6599",
+              "sessionId": "session-example",
+              "revision": 4,
+              "sequence": 12,
+              "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+            }
+          ]
+        }
+      }
+    ],
+    "valid": false
+  }
+]

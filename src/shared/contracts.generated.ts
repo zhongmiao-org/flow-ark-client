@@ -519,6 +519,8 @@ export type ConversationOutput = {
     role: 'user' | 'assistant';
     text: string;
   }[];
+  sequence: number;
+  evidence: ConversationEvidence | null;
 };
 export type DocumentResult = {
   version: 1;
@@ -545,14 +547,7 @@ export type SkillEvidence =
        */
       units: [number, ...number[]];
     }
-  | {
-      kind: 'conversation';
-      label: string;
-      sessionId: string;
-      revision: number;
-      sequence: number;
-      sha256: string;
-    }
+  | ConversationEvidence
   | {
       kind: 'manual';
       label: string;
@@ -718,6 +713,12 @@ export interface FlowArkP1 {
   TemplateDataWriteReceipt?: TemplateDataWriteReceipt;
   TemplateDataEditRequest?: TemplateDataEditRequest;
   TemplateDataEditResult?: TemplateDataEditResult;
+  ConversationEvidence?: ConversationEvidence;
+  SkillTrialSource?: SkillTrialSource;
+  SkillTrialPreview?: SkillTrialPreview;
+  SkillTrialRequest?: SkillTrialRequest;
+  SkillTrialResult?: SkillTrialResult;
+  SkillTrialStatus?: SkillTrialStatus;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -1277,6 +1278,13 @@ export interface ConversationSnapshot {
   updatedAt: string;
   error: string;
   confirmedAt?: string;
+  skillTrial?: SkillTrialSource;
+}
+export interface SkillTrialSource {
+  version: 1;
+  proposalId: string;
+  revision: number;
+  sha256: string;
 }
 export interface ConversationEvent {
   kind: 'conversation.snapshot';
@@ -1286,6 +1294,14 @@ export interface ConversationEvent {
   requestId: string | null;
   turnId: string | null;
   snapshot: ConversationSnapshot;
+}
+export interface ConversationEvidence {
+  kind: 'conversation';
+  label: string;
+  sessionId: string;
+  revision: number;
+  sequence: number;
+  sha256: string;
 }
 export interface DocumentSource {
   binding: string;
@@ -1552,4 +1568,37 @@ export interface TemplateDataEditResult {
   requestId: string;
   context: TemplateDataContext;
   state: TemplateDataState;
+}
+export interface SkillTrialPreview {
+  version: 1;
+  source: SkillTrialSource;
+  key: string;
+  base: SkillVersionRef | null;
+  draft: SkillDraft;
+}
+export interface SkillTrialRequest {
+  version: 1;
+  requestId: string;
+  source: SkillTrialSource;
+  provider: 'deepseek' | 'openai-codex';
+  model: string;
+  instructions: string;
+}
+export interface SkillTrialResult {
+  version: 1;
+  requestId: string;
+  source: SkillTrialSource;
+  sessionId: string;
+}
+export interface SkillTrialStatus {
+  version: 1;
+  source: SkillTrialSource;
+  current: {
+    revision: number;
+    sha256: string;
+    status: 'draft' | 'publishing' | 'confirmed' | 'conflict' | 'failed' | 'unknown' | 'discarded';
+  } | null;
+  usable: boolean;
+  reason: 'ready' | 'changed' | 'unavailable' | 'workspace' | 'blocked';
+  message: string;
 }

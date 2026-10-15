@@ -18,9 +18,12 @@
     },
     "evidence": [
       {
-        "kind": "manual",
-        "label": "用户核对示例",
-        "note": "仅虚构内容，不是个人履历"
+        "kind": "conversation",
+        "label": "补充材料",
+        "sessionId": "session-example",
+        "revision": 4,
+        "sequence": 12,
+        "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
       }
     ]
   },

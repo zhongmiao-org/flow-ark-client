@@ -62,8 +62,30 @@
   max-height: 280px;
   overflow: auto;
 }
+.is-skill-trial .ant-card-head {
+  min-height: 0;
+  padding: 24px 24px 0;
+  border-bottom: 0;
+}
+.is-skill-trial .ant-card-head-title {
+  font-size: 18px;
+  line-height: 28px;
+}
+.is-skill-trial .ant-card-body {
+  padding: 16px 24px 24px;
+}
+.conversation-source-field {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
 @container (max-width:900px) {
   .conversation-columns {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .conversation-source-field {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
   }
 }

@@ -1,0 +1,261 @@
+[
+  {
+    "name": "已确认会话输出",
+    "definition": "ConversationOutput",
+    "value": {
+      "sessionId": "session-example",
+      "status": "confirmed",
+      "revision": 4,
+      "sequence": 12,
+      "transcript": [
+        {
+          "role": "user",
+          "text": "这项虚构工作的职责是接口对接。"
+        },
+        {
+          "role": "assistant",
+          "text": "已记录职责，未提供的结果保持未知。"
+        }
+      ],
+      "evidence": {
+        "kind": "conversation",
+        "label": "补充材料",
+        "sessionId": "session-example",
+        "revision": 4,
+        "sequence": 12,
+        "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "来源输出缺少序号",
+    "definition": "ConversationOutput",
+    "value": {
+      "sessionId": "session-example",
+      "status": "confirmed",
+      "revision": 4,
+      "transcript": [
+        {
+          "role": "user",
+          "text": "这项虚构工作的职责是接口对接。"
+        },
+        {
+          "role": "assistant",
+          "text": "已记录职责，未提供的结果保持未知。"
+        }
+      ],
+      "evidence": {
+        "kind": "conversation",
+        "label": "补充材料",
+        "sessionId": "session-example",
+        "revision": 4,
+        "sequence": 12,
+        "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "已确认输出缺来源",
+    "definition": "ConversationOutput",
+    "value": {
+      "sessionId": "session-example",
+      "status": "confirmed",
+      "revision": 4,
+      "sequence": 12,
+      "transcript": [
+        {
+          "role": "user",
+          "text": "这项虚构工作的职责是接口对接。"
+        },
+        {
+          "role": "assistant",
+          "text": "已记录职责，未提供的结果保持未知。"
+        }
+      ],
+      "evidence": null
+    },
+    "valid": false
+  },
+  {
+    "name": "未确认输出泄露可采用历史",
+    "definition": "ConversationOutput",
+    "value": {
+      "sessionId": "session-example",
+      "status": "ready",
+      "revision": 4,
+      "sequence": 12,
+      "transcript": [
+        {
+          "role": "user",
+          "text": "这项虚构工作的职责是接口对接。"
+        },
+        {
+          "role": "assistant",
+          "text": "已记录职责，未提供的结果保持未知。"
+        }
+      ],
+      "evidence": {
+        "kind": "conversation",
+        "label": "补充材料",
+        "sessionId": "session-example",
+        "revision": 4,
+        "sequence": 12,
+        "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "未确认只提供状态",
+    "definition": "ConversationOutput",
+    "value": {
+      "sessionId": "session-example",
+      "status": "ready",
+      "revision": 3,
+      "sequence": 11,
+      "transcript": [],
+      "evidence": null
+    },
+    "valid": true
+  },
+  {
+    "name": "试聊预览",
+    "definition": "SkillTrialPreview",
+    "value": {
+      "version": 1,
+      "source": {
+        "version": 1,
+        "proposalId": "sp_example",
+        "revision": 1,
+        "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+      },
+      "key": "example-profile",
+      "base": null,
+      "draft": {
+        "title": "虚构资料的沟通规则",
+        "markdown": "---\nname: example-profile\ndescription: 虚构资料核对示例\n---\n\n先回答重点。未知事实先询问本人。\n",
+        "data": {
+          "preferences": {},
+          "facts": []
+        },
+        "evidence": [
+          {
+            "kind": "conversation",
+            "label": "补充材料",
+            "sessionId": "session-example",
+            "revision": 4,
+            "sequence": 12,
+            "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+          }
+        ]
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "试聊请求",
+    "definition": "SkillTrialRequest",
+    "value": {
+      "version": 1,
+      "requestId": "trial-example",
+      "source": {
+        "version": 1,
+        "proposalId": "sp_example",
+        "revision": 1,
+        "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+      },
+      "provider": "deepseek",
+      "model": "explicit-user-model",
+      "instructions": "核对表达与未知信息，仅供内部试聊。"
+    },
+    "valid": true
+  },
+  {
+    "name": "试聊结果",
+    "definition": "SkillTrialResult",
+    "value": {
+      "version": 1,
+      "requestId": "trial-example",
+      "source": {
+        "version": 1,
+        "proposalId": "sp_example",
+        "revision": 1,
+        "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+      },
+      "sessionId": "trial-session-example"
+    },
+    "valid": true
+  },
+  {
+    "name": "试聊状态",
+    "definition": "SkillTrialStatus",
+    "value": {
+      "version": 1,
+      "source": {
+        "version": 1,
+        "proposalId": "sp_example",
+        "revision": 1,
+        "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+      },
+      "current": {
+        "revision": 1,
+        "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4",
+        "status": "draft"
+      },
+      "usable": true,
+      "reason": "ready",
+      "message": ""
+    },
+    "valid": true
+  },
+  {
+    "name": "请求不携带Key",
+    "definition": "SkillTrialRequest",
+    "value": {
+      "version": 1,
+      "requestId": "trial-example",
+      "source": {
+        "version": 1,
+        "proposalId": "sp_example",
+        "revision": 1,
+        "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+      },
+      "provider": "deepseek",
+      "model": "explicit-user-model",
+      "instructions": "核对表达与未知信息，仅供内部试聊。",
+      "apiKey": "forbidden-placeholder"
+    },
+    "valid": false
+  },
+  {
+    "name": "摘要格式无效",
+    "definition": "SkillTrialSource",
+    "value": {
+      "version": 1,
+      "proposalId": "sp_example",
+      "revision": 1,
+      "sha256": "unknown"
+    },
+    "valid": false
+  },
+  {
+    "name": "禁止隐式模型服务",
+    "definition": "SkillTrialRequest",
+    "value": {
+      "version": 1,
+      "requestId": "trial-example",
+      "source": {
+        "version": 1,
+        "proposalId": "sp_example",
+        "revision": 1,
+        "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+      },
+      "provider": "implicit-fallback",
+      "model": "explicit-user-model",
+      "instructions": "核对表达与未知信息，仅供内部试聊。"
+    },
+    "valid": false
+  }
+]

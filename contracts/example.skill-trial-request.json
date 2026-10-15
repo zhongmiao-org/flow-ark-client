@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "requestId": "trial-example",
+  "source": {
+    "version": 1,
+    "proposalId": "sp_example",
+    "revision": 1,
+    "sha256": "f685e34657612af5b66652ffa75c4522ed4f8caf3fea1765801b247f6f928ce4"
+  },
+  "provider": "deepseek",
+  "model": "explicit-user-model",
+  "instructions": "核对表达与未知信息，仅供内部试聊。"
+}

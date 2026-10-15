@@ -6,6 +6,7 @@ import { dataMethods } from '../shared/template-data';
 import { TypedResults } from './typed-results';
 import { Skills } from './skills';
 import { skillMethods, skillBinding } from '../shared/skill';
+import { trialMethods } from '../shared/skill-trial';
 import { Conversations } from './conversations';
 import { DocumentProcesses } from './document-processes';
 import { conversationMethods } from '../shared/conversation';
@@ -164,6 +165,7 @@ export class Runtime {
     this.skills = new Skills(this.store, {
       available: () => this.assertAdmitting(),
       notify: () => this.system('notification', { title: 'FlowArk 有待核对的Skill草稿' }),
+      verifyConversation: (evidence) => this.conversations.verifyEvidence(evidence),
     });
     this.conversations = new Conversations(this.store, {
       available: () => this.assertAdmitting(),
@@ -171,6 +173,8 @@ export class Runtime {
       key: (provider, revision) => this.system('credentials.get', { id: provider, revision }),
       publish: (event) => this.system('conversation.message', event),
       notify: () => this.system('notification', { title: 'FlowArk 有新的引导会话' }),
+      trialStatus: (source) => this.skills.trialStatus(source),
+      trialUnchanged: (source) => this.skills.trialUnchanged(source),
     });
     this.aiSettings = new AISettings(this.store, {
       assertAvailable: () => {
@@ -1258,9 +1262,12 @@ export class Runtime {
         )
           throw new Error('模板入口未声明会话能力与AI资源');
       }
-      return this.conversations.open(snapshot, node, args.input, args.key, () =>
+      const result = this.conversations.open(snapshot, node, args.input, args.key, () =>
         this.checkActive(active),
       );
+      this.checkActive(active);
+      this.typedResults.save(id, node.id, args.nodeInstance, 'conversation', result);
+      return result;
     }
     if (method === 'ai.call') {
       const active = this.active;
@@ -1734,9 +1741,18 @@ export class Runtime {
     }
     if (method.startsWith('skill.')) {
       await this.ready;
-      const rule = skillMethods[method as keyof typeof skillMethods];
+      const rule =
+        trialMethods[method as keyof typeof trialMethods] ??
+        skillMethods[method as keyof typeof skillMethods];
       if (!rule) throw Error('Skill IPC方法未授权');
       const v = rule.parse(args) as any;
+      if (method === 'skill.trial.preview') return this.skills.trialPreview(v.id, v.revision);
+      if (method === 'skill.trial.start') {
+        const old = this.conversations.trialResult(v);
+        if (old) return old;
+        const fixed = await this.skills.trialInput(v.source);
+        return this.conversations.openSkillTrial(v, fixed);
+      }
       if (method === 'skill.list') return this.skills.list();
       if (method === 'skill.inspectBinding') {
         const r = await this.skills.read(v.path, v.ref);
@@ -1755,16 +1771,27 @@ export class Runtime {
     }
     if (method.startsWith('conversation.')) {
       await this.ready;
-      const rule = conversationMethods[method as keyof typeof conversationMethods];
+      const rule =
+        trialMethods[method as keyof typeof trialMethods] ??
+        conversationMethods[method as keyof typeof conversationMethods];
       if (!rule) throw new Error('会话IPC方法未授权');
       const value = rule.parse(args) as any;
+      if (method === 'conversation.output') return this.conversations.output(value.id);
+      if (method === 'conversation.trialStatus') return this.conversations.trialStatus(value.id);
       if (method === 'conversation.detail') return this.conversations.detail(value.id);
       if (method === 'conversation.draft')
         return this.conversations.draft(value.id, value.revision, value.text);
-      if (method === 'conversation.send')
-        return this.conversations.send(value.id, value.revision, value.requestId, value.text);
-      if (method === 'conversation.retry')
-        return this.conversations.send(value.id, value.revision, value.requestId);
+      if (method === 'conversation.send') {
+        return this.conversations.sendChecked(
+          value.id,
+          value.revision,
+          value.requestId,
+          value.text,
+        );
+      }
+      if (method === 'conversation.retry') {
+        return this.conversations.sendChecked(value.id, value.revision, value.requestId);
+      }
       if (method === 'conversation.cancel')
         return this.conversations.cancel(value.id, value.requestId);
       if (method === 'conversation.confirm')

@@ -3213,7 +3213,7 @@ function Editor({
               : []),
             ...(flatten(steps).some((node) => node.type === 'skill') ? ['skill-v1'] : []),
             ...(flatten(steps).some((node) => node.type === 'conversation')
-              ? ['conversation-v1']
+              ? ['conversation-v1', 'conversation-evidence-v1']
               : []),
             ...(flatten(steps).some((node) => node.type === 'mcp') ? ['mcp-tool-v1'] : []),
             ...(flatten(steps).some((node) => node.type === 'desktop')
@@ -3249,7 +3249,7 @@ function Editor({
                 : []),
               ...(flatten(steps).some((node) => node.type === 'skill') ? ['skill-v1'] : []),
               ...(flatten(steps).some((node) => node.type === 'conversation')
-                ? ['conversation-v1']
+                ? ['conversation-v1', 'conversation-evidence-v1']
                 : []),
             ]),
           ],
