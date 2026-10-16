@@ -687,6 +687,7 @@ export type BrowserInspectionNode = {
   framePath: FramePath;
 };
 export type BrowserInspectionResult = string | number | null;
+export type TemplateAttentionOrigin = TemplateInstanceAttentionOrigin | TemplateAuthorAttentionOrigin;
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -764,6 +765,11 @@ export interface FlowArkP1 {
   BrowserInspectionResult?: BrowserInspectionResult;
   TemplateAttentionOrigin?: TemplateAttentionOrigin;
   TemplateAttentionRecord?: TemplateAttentionRecord;
+  TemplateAuthorSdkOwner?: TemplateAuthorSdkOwner;
+  TemplateAuthorSdkContext?: TemplateAuthorSdkContext;
+  TemplateAuthorSdkResult?: TemplateAuthorSdkResult;
+  TemplateInstanceAttentionOrigin?: TemplateInstanceAttentionOrigin;
+  TemplateAuthorAttentionOrigin?: TemplateAuthorAttentionOrigin;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -824,6 +830,7 @@ export interface RunSnapshot {
    */
   scriptBundles?: ScriptBundle[];
   templateData?: TemplateDataContext;
+  authorSdk?: TemplateAuthorSdkContext;
 }
 export interface ScriptBundle {
   nodeId: string;
@@ -850,6 +857,28 @@ export interface TemplateDataContext {
   configuration: Json;
   schemaSha256: string;
   createdAt: string;
+}
+export interface TemplateAuthorSdkContext {
+  version: 1;
+  id: string;
+  owner: TemplateAuthorSdkOwner;
+  resultSchema: {
+    [k: string]: Json;
+  };
+  /**
+   * @maxItems 1000
+   */
+  capabilities: string[];
+  definitionSha256: string;
+  createdAt: string;
+}
+export interface TemplateAuthorSdkOwner {
+  kind: 'author-checkout';
+  checkoutId: string;
+  draftId: string;
+  entryId: string;
+  flowId: string;
+  baseRevision: number;
 }
 export interface RunEvent {
   runId: string;
@@ -1647,11 +1676,19 @@ export interface SkillTrialStatus {
   reason: 'ready' | 'changed' | 'unavailable' | 'workspace' | 'blocked';
   message: string;
 }
-export interface TemplateAttentionOrigin {
+export interface TemplateInstanceAttentionOrigin {
   version: 1;
   runId: string;
   instanceId: string;
   entryId: string;
+}
+export interface TemplateAuthorAttentionOrigin {
+  version: 2;
+  runId: string;
+  checkoutId: string;
+  draftId: string;
+  entryId: string;
+  baseRevision: number;
 }
 export interface TemplateAttentionRecord {
   id: string;
@@ -1662,4 +1699,12 @@ export interface TemplateAttentionRecord {
   read: boolean;
   time: string;
   origin?: TemplateAttentionOrigin;
+}
+export interface TemplateAuthorSdkResult {
+  version: 1;
+  runId: string;
+  contextId: string;
+  definitionSha256: string;
+  value: Json;
+  createdAt: string;
 }

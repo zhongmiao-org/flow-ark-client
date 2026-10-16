@@ -552,6 +552,23 @@ export default function AttentionWorkspace({
         }
         if (!next?.run || next.run.id !== id)
           throw new Error('未取得对应的来源运行记录，请重新核对；未打开其他运行。');
+        if (
+          selected?.kind === 'template' &&
+          isTemplateAttentionOrigin(selected.origin) &&
+          selected.origin.version === 2
+        ) {
+          const source = selected.origin,
+            owner = next.authorSdk?.owner;
+          if (
+            !owner ||
+            owner.checkoutId !== source.checkoutId ||
+            owner.draftId !== source.draftId ||
+            owner.entryId !== source.entryId ||
+            owner.baseRevision !== source.baseRevision ||
+            next.run.flowId !== owner.flowId
+          )
+            throw Error('作者提醒与原Run固定副本来源不一致，未打开其他运行。');
+        }
         openRun(next);
       } catch (reason) {
         if (visit.current === origin) {
@@ -1173,6 +1190,23 @@ export default function AttentionWorkspace({
                 />
               ) : (
                 <>
+                  {selected.kind === 'template' &&
+                    isTemplateAttentionOrigin(selected.origin) &&
+                    selected.origin.version === 2 && (
+                      <section aria-label="作者调试提醒来源">
+                        <Tag color="processing" variant="filled">
+                          作者调试
+                        </Tag>
+                        <p>
+                          固定入口 {selected.origin.entryId} · 制作修订{' '}
+                          {selected.origin.baseRevision}
+                        </p>
+                        <p className="attention-muted">
+                          编排副本 {selected.origin.checkoutId}
+                          ；与正式实例和其他副本分开，同键保留首次来源与已读。
+                        </p>
+                      </section>
+                    )}
                   {relatedRuns}
                   <Button disabled={busy || undefined} onClick={showBrowser}>
                     查看当前网页

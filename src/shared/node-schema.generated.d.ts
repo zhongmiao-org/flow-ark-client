@@ -1,4 +1,4 @@
-/* Generated from contracts/p1.schema.json (8c963086e315b0f103c7d84c9e92a1ae4eb3f6ed1fc4e5e90c17e4fb8615f5d6). Do not edit. */
+/* Generated from contracts/p1.schema.json (972d24ef30b9ca02ceca33016886fe4f353975e505359211f8bc53cf6202ac81). Do not edit. */
 import type { ValidateFunction } from 'ajv';
 export const node_value_1: ValidateFunction;
 export const node_assert_1: ValidateFunction;
@@ -50,3 +50,5 @@ export const data_state_v1: ValidateFunction;
 export const data_output_v1: ValidateFunction;
 export const data_writereceipt_v1: ValidateFunction;
 export const data_editresult_v1: ValidateFunction;
+export const author_sdk_context_v1: ValidateFunction;
+export const author_sdk_result_v1: ValidateFunction;

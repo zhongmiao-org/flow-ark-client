@@ -30,6 +30,7 @@ export function executionVersion(record: FlowRecord, prepared: PreparedScripts) 
     ...(record.desktopTarget ? { desktopTarget: record.desktopTarget } : {}),
     scriptBundles: prepared.scriptBundles,
     ...(prepared.templateData ? { templateData: prepared.templateData } : {}),
+    ...(prepared.authorSdk ? { authorSdk: prepared.authorSdk } : {}),
   });
 }
 
@@ -153,6 +154,10 @@ export class RunRerun {
             versionId: source.versionId,
             scripts: snapshot!.scripts,
             scriptBundles: snapshot!.scriptBundles,
+            ...(snapshot!.authorSdk ? { authorSdk: structuredClone(snapshot!.authorSdk) } : {}),
+            ...(snapshot!.templateData
+              ? { templateData: structuredClone(snapshot!.templateData) }
+              : {}),
           }
         : {}),
     };

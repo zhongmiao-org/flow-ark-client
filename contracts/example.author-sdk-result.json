@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "runId": "run-author-a",
+  "contextId": "author-sdk-context-a",
+  "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+  "value": {
+    "status": "ready"
+  },
+  "createdAt": "2026-10-16T03:00:01.000Z"
+}

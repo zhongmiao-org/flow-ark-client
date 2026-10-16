@@ -43,6 +43,8 @@ for (const name of ['Definition', 'Draft', 'PackageMetadata', 'Checkout', 'Expor
   validators['author_' + name.toLowerCase() + '_v1'] = `${schema.$id}#/$defs/TemplateAuthor${name}`;
 for (const name of ['Context', 'State', 'Output', 'WriteReceipt', 'EditResult'])
   validators['data_' + name.toLowerCase() + '_v1'] = `${schema.$id}#/$defs/TemplateData${name}`;
+for (const name of ['Context', 'Result'])
+  validators['author_sdk_' + name.toLowerCase() + '_v1'] = `${schema.$id}#/$defs/TemplateAuthorSdk${name}`;
 const banner = `/* Generated from contracts/p1.schema.json (${digest}). Do not edit. */`;
 await build({
   stdin: { contents: standaloneCode(ajv, validators), resolveDir: process.cwd(), loader: 'js' },

@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "id": "author-sdk-context-a",
+  "owner": {
+    "kind": "author-checkout",
+    "checkoutId": "checkout-a",
+    "draftId": "draft-a",
+    "entryId": "check",
+    "flowId": "flow-a",
+    "baseRevision": 7
+  },
+  "resultSchema": {
+    "type": "object",
+    "properties": {
+      "status": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "status"
+    ],
+    "additionalProperties": false
+  },
+  "capabilities": [
+    "template-sdk-v1",
+    "attention"
+  ],
+  "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+  "createdAt": "2026-10-16T03:00:00.000Z"
+}

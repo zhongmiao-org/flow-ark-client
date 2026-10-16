@@ -134,3 +134,33 @@
     padding: 0;
   }
 }
+
+.author-sdk-info {
+  display: grid;
+  gap: var(--fa-space-12);
+  margin-block: var(--fa-space-12);
+  min-width: 0;
+}
+.author-sdk-info p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.author-sdk-info pre {
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: var(--fa-space-12);
+  background: var(--fa-bg-surface);
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-8);
+}
+.author-sdk-saved-result {
+  display: grid;
+  gap: var(--fa-space-12);
+  min-width: 0;
+}
+
+.author-sdk-info > .ant-tag {
+  justify-self: start;
+}

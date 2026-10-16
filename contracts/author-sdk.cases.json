@@ -1,0 +1,1033 @@
+[
+  {
+    "name": "固定作者上下文",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "id": "author-sdk-context-a",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "flowId": "flow-a",
+        "baseRevision": 7
+      },
+      "resultSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "capabilities": [
+        "template-sdk-v1",
+        "attention"
+      ],
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "固定作者结果",
+    "definition": "TemplateAuthorSdkResult",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "runId": "run-author-a",
+      "contextId": "author-sdk-context-a",
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+      "value": {
+        "status": "ready"
+      },
+      "createdAt": "2026-10-16T03:00:01.000Z"
+    }
+  },
+  {
+    "name": "作者提醒来源",
+    "definition": "TemplateAttentionOrigin",
+    "valid": true,
+    "value": {
+      "version": 2,
+      "runId": "run-author-a",
+      "checkoutId": "checkout-a",
+      "draftId": "draft-a",
+      "entryId": "check",
+      "baseRevision": 7
+    }
+  },
+  {
+    "name": "正式来源v1保持",
+    "definition": "TemplateAttentionOrigin",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "runId": "run-formal",
+      "instanceId": "instance-a",
+      "entryId": "check"
+    }
+  },
+  {
+    "name": "上下文缺少version",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "id": "author-sdk-context-a",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "flowId": "flow-a",
+        "baseRevision": 7
+      },
+      "resultSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "capabilities": [
+        "template-sdk-v1",
+        "attention"
+      ],
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "上下文缺少id",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "flowId": "flow-a",
+        "baseRevision": 7
+      },
+      "resultSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "capabilities": [
+        "template-sdk-v1",
+        "attention"
+      ],
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "上下文缺少owner",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "author-sdk-context-a",
+      "resultSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "capabilities": [
+        "template-sdk-v1",
+        "attention"
+      ],
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "上下文缺少resultSchema",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "author-sdk-context-a",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "flowId": "flow-a",
+        "baseRevision": 7
+      },
+      "capabilities": [
+        "template-sdk-v1",
+        "attention"
+      ],
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "上下文缺少capabilities",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "author-sdk-context-a",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "flowId": "flow-a",
+        "baseRevision": 7
+      },
+      "resultSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "上下文缺少definitionSha256",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "author-sdk-context-a",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "flowId": "flow-a",
+        "baseRevision": 7
+      },
+      "resultSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "capabilities": [
+        "template-sdk-v1",
+        "attention"
+      ],
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "上下文缺少createdAt",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "author-sdk-context-a",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "flowId": "flow-a",
+        "baseRevision": 7
+      },
+      "resultSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "capabilities": [
+        "template-sdk-v1",
+        "attention"
+      ],
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f"
+    }
+  },
+  {
+    "name": "来源缺少kind",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "author-sdk-context-a",
+      "owner": {
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "flowId": "flow-a",
+        "baseRevision": 7
+      },
+      "resultSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "capabilities": [
+        "template-sdk-v1",
+        "attention"
+      ],
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "来源缺少checkoutId",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "author-sdk-context-a",
+      "owner": {
+        "kind": "author-checkout",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "flowId": "flow-a",
+        "baseRevision": 7
+      },
+      "resultSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "capabilities": [
+        "template-sdk-v1",
+        "attention"
+      ],
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "来源缺少draftId",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "author-sdk-context-a",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "checkout-a",
+        "entryId": "check",
+        "flowId": "flow-a",
+        "baseRevision": 7
+      },
+      "resultSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "capabilities": [
+        "template-sdk-v1",
+        "attention"
+      ],
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "来源缺少entryId",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "author-sdk-context-a",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "flowId": "flow-a",
+        "baseRevision": 7
+      },
+      "resultSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "capabilities": [
+        "template-sdk-v1",
+        "attention"
+      ],
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "来源缺少flowId",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "author-sdk-context-a",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "baseRevision": 7
+      },
+      "resultSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "capabilities": [
+        "template-sdk-v1",
+        "attention"
+      ],
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "来源缺少baseRevision",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "author-sdk-context-a",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "flowId": "flow-a"
+      },
+      "resultSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "capabilities": [
+        "template-sdk-v1",
+        "attention"
+      ],
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "伪造正式实例",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "author-sdk-context-a",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "flowId": "flow-a",
+        "baseRevision": 7,
+        "instanceId": "instance-a"
+      },
+      "resultSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "capabilities": [
+        "template-sdk-v1",
+        "attention"
+      ],
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "未知来源",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "author-sdk-context-a",
+      "owner": {
+        "kind": "instance",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "flowId": "flow-a",
+        "baseRevision": 7
+      },
+      "resultSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "capabilities": [
+        "template-sdk-v1",
+        "attention"
+      ],
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "零修订",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "author-sdk-context-a",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "flowId": "flow-a",
+        "baseRevision": 0
+      },
+      "resultSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "capabilities": [
+        "template-sdk-v1",
+        "attention"
+      ],
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "越界修订",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "author-sdk-context-a",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "flowId": "flow-a",
+        "baseRevision": 9007199254740991
+      },
+      "resultSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "capabilities": [
+        "template-sdk-v1",
+        "attention"
+      ],
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "重复能力",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "author-sdk-context-a",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "flowId": "flow-a",
+        "baseRevision": 7
+      },
+      "resultSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "capabilities": [
+        "attention",
+        "attention"
+      ],
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "非法结果结构",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "author-sdk-context-a",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "flowId": "flow-a",
+        "baseRevision": 7
+      },
+      "resultSchema": true,
+      "capabilities": [
+        "template-sdk-v1",
+        "attention"
+      ],
+      "definitionSha256": "0886b3fb4f4b53523f61de061e0218374a148fc80de2c4b43bab9c3ae8045d6f",
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "非法摘要",
+    "definition": "TemplateAuthorSdkContext",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "id": "author-sdk-context-a",
+      "owner": {
+        "kind": "author-checkout",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "flowId": "flow-a",
+        "baseRevision": 7
+      },
+      "resultSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "capabilities": [
+        "template-sdk-v1",
+        "attention"
+      ],
+      "definitionSha256": "not-a-sha",
+      "createdAt": "2026-10-16T03:00:00.000Z"
+    }
+  },
+  {
+    "name": "提醒缺少version",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "runId": "run-author-a",
+      "checkoutId": "checkout-a",
+      "draftId": "draft-a",
+      "entryId": "check",
+      "baseRevision": 7
+    }
+  },
+  {
+    "name": "提醒缺少runId",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 2,
+      "checkoutId": "checkout-a",
+      "draftId": "draft-a",
+      "entryId": "check",
+      "baseRevision": 7
+    }
+  },
+  {
+    "name": "提醒缺少checkoutId",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 2,
+      "runId": "run-author-a",
+      "draftId": "draft-a",
+      "entryId": "check",
+      "baseRevision": 7
+    }
+  },
+  {
+    "name": "提醒缺少draftId",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 2,
+      "runId": "run-author-a",
+      "checkoutId": "checkout-a",
+      "entryId": "check",
+      "baseRevision": 7
+    }
+  },
+  {
+    "name": "提醒缺少entryId",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 2,
+      "runId": "run-author-a",
+      "checkoutId": "checkout-a",
+      "draftId": "draft-a",
+      "baseRevision": 7
+    }
+  },
+  {
+    "name": "提醒缺少baseRevision",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 2,
+      "runId": "run-author-a",
+      "checkoutId": "checkout-a",
+      "draftId": "draft-a",
+      "entryId": "check"
+    }
+  },
+  {
+    "name": "提醒非法instanceId",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 2,
+      "runId": "run-author-a",
+      "checkoutId": "checkout-a",
+      "draftId": "draft-a",
+      "entryId": "check",
+      "baseRevision": 7,
+      "instanceId": "instance-a"
+    }
+  },
+  {
+    "name": "提醒非法version",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 3,
+      "runId": "run-author-a",
+      "checkoutId": "checkout-a",
+      "draftId": "draft-a",
+      "entryId": "check",
+      "baseRevision": 7
+    }
+  },
+  {
+    "name": "提醒非法baseRevision",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 2,
+      "runId": "run-author-a",
+      "checkoutId": "checkout-a",
+      "draftId": "draft-a",
+      "entryId": "check",
+      "baseRevision": 0
+    }
+  },
+  {
+    "name": "提醒非法runId",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 2,
+      "runId": "bad/identity",
+      "checkoutId": "checkout-a",
+      "draftId": "draft-a",
+      "entryId": "check",
+      "baseRevision": 7
+    }
+  },
+  {
+    "name": "任意原始详情NoneType",
+    "definition": "TemplateAttentionRecord",
+    "valid": true,
+    "value": {
+      "id": "attention-author-a",
+      "kind": "template",
+      "title": "虚构作者调试提醒",
+      "detail": null,
+      "dedupeKey": "author-sdk-attention:checkout-a:review",
+      "read": false,
+      "time": "2026-10-16T03:00:01.000Z",
+      "origin": {
+        "version": 2,
+        "runId": "run-author-a",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "baseRevision": 7
+      }
+    }
+  },
+  {
+    "name": "任意原始详情bool",
+    "definition": "TemplateAttentionRecord",
+    "valid": true,
+    "value": {
+      "id": "attention-author-a",
+      "kind": "template",
+      "title": "虚构作者调试提醒",
+      "detail": false,
+      "dedupeKey": "author-sdk-attention:checkout-a:review",
+      "read": false,
+      "time": "2026-10-16T03:00:01.000Z",
+      "origin": {
+        "version": 2,
+        "runId": "run-author-a",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "baseRevision": 7
+      }
+    }
+  },
+  {
+    "name": "任意原始详情list",
+    "definition": "TemplateAttentionRecord",
+    "valid": true,
+    "value": {
+      "id": "attention-author-a",
+      "kind": "template",
+      "title": "虚构作者调试提醒",
+      "detail": [],
+      "dedupeKey": "author-sdk-attention:checkout-a:review",
+      "read": false,
+      "time": "2026-10-16T03:00:01.000Z",
+      "origin": {
+        "version": 2,
+        "runId": "run-author-a",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "baseRevision": 7
+      }
+    }
+  },
+  {
+    "name": "任意原始详情int",
+    "definition": "TemplateAttentionRecord",
+    "valid": true,
+    "value": {
+      "id": "attention-author-a",
+      "kind": "template",
+      "title": "虚构作者调试提醒",
+      "detail": 0,
+      "dedupeKey": "author-sdk-attention:checkout-a:review",
+      "read": false,
+      "time": "2026-10-16T03:00:01.000Z",
+      "origin": {
+        "version": 2,
+        "runId": "run-author-a",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "baseRevision": 7
+      }
+    }
+  },
+  {
+    "name": "任意原始详情str",
+    "definition": "TemplateAttentionRecord",
+    "valid": true,
+    "value": {
+      "id": "attention-author-a",
+      "kind": "template",
+      "title": "虚构作者调试提醒",
+      "detail": "原始文本",
+      "dedupeKey": "author-sdk-attention:checkout-a:review",
+      "read": false,
+      "time": "2026-10-16T03:00:01.000Z",
+      "origin": {
+        "version": 2,
+        "runId": "run-author-a",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "baseRevision": 7
+      }
+    }
+  },
+  {
+    "name": "任意原始详情dict",
+    "definition": "TemplateAttentionRecord",
+    "valid": true,
+    "value": {
+      "id": "attention-author-a",
+      "kind": "template",
+      "title": "虚构作者调试提醒",
+      "detail": {
+        "origin": {
+          "version": 1,
+          "instanceId": "spoofed"
+        }
+      },
+      "dedupeKey": "author-sdk-attention:checkout-a:review",
+      "read": false,
+      "time": "2026-10-16T03:00:01.000Z",
+      "origin": {
+        "version": 2,
+        "runId": "run-author-a",
+        "checkoutId": "checkout-a",
+        "draftId": "draft-a",
+        "entryId": "check",
+        "baseRevision": 7
+      }
+    }
+  },
+  {
+    "name": "拒绝标识边界entryId'check\\n'",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 2,
+      "runId": "run-author-a",
+      "checkoutId": "checkout-a",
+      "draftId": "draft-a",
+      "entryId": "check\n",
+      "baseRevision": 7
+    }
+  },
+  {
+    "name": "拒绝标识边界checkoutId'check\\n'",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 2,
+      "runId": "run-author-a",
+      "checkoutId": "check\n",
+      "draftId": "draft-a",
+      "entryId": "check",
+      "baseRevision": 7
+    }
+  },
+  {
+    "name": "拒绝标识边界entryId'Check'",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 2,
+      "runId": "run-author-a",
+      "checkoutId": "checkout-a",
+      "draftId": "draft-a",
+      "entryId": "Check",
+      "baseRevision": 7
+    }
+  }
+]
