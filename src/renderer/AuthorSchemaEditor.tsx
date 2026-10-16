@@ -176,7 +176,7 @@ export default function AuthorSchemaEditor({
       : ['number', 'integer'].includes(current.type)
         ? ['minimum', 'maximum']
         : current.type === 'array'
-          ? ['maxItems']
+          ? ['minItems', 'maxItems']
           : [];
   function changeType(value: string, where = path) {
     if (dirty) {
@@ -195,6 +195,8 @@ export default function AuthorSchemaEditor({
       'minLength',
       'maxLength',
       'maxItems',
+      'minItems',
+      'uniqueItems',
       'enum',
       'oneOf',
       'const',
@@ -385,6 +387,7 @@ export default function AuthorSchemaEditor({
                       minimum: '最小值',
                       maximum: '最大值',
                       maxItems: '最多项数',
+                      minItems: '最少项数',
                     }[k]
                   }
                 </label>
@@ -399,6 +402,14 @@ export default function AuthorSchemaEditor({
                 />
               </div>
             ))}
+            {current.type === 'array' && (
+              <Checkbox
+                checked={current.uniqueItems === true}
+                onChange={(e) => update('uniqueItems', e.target.checked || undefined)}
+              >
+                不允许重复项
+              </Checkbox>
+            )}
             {current.type === 'array' && (
               <Button
                 onClick={() => {

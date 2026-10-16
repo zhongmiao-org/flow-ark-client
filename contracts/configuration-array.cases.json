@@ -1,0 +1,275 @@
+[
+  {
+    "name": "empty",
+    "schema": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "default": []
+    },
+    "schemaValid": true,
+    "value": [],
+    "valueValid": false
+  },
+  {
+    "name": "single",
+    "schema": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "default": []
+    },
+    "schemaValid": true,
+    "value": [
+      "A"
+    ],
+    "valueValid": true
+  },
+  {
+    "name": "three",
+    "schema": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "default": []
+    },
+    "schemaValid": true,
+    "value": [
+      "A",
+      "B",
+      "C"
+    ],
+    "valueValid": true
+  },
+  {
+    "name": "too-many",
+    "schema": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "default": []
+    },
+    "schemaValid": true,
+    "value": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "valueValid": false
+  },
+  {
+    "name": "duplicate",
+    "schema": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "default": []
+    },
+    "schemaValid": true,
+    "value": [
+      "A",
+      "A"
+    ],
+    "valueValid": false
+  },
+  {
+    "name": "case-distinct",
+    "schema": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "default": []
+    },
+    "schemaValid": true,
+    "value": [
+      "A",
+      "a"
+    ],
+    "valueValid": true
+  },
+  {
+    "name": "explicit-false",
+    "schema": {
+      "type": "array",
+      "items": {},
+      "uniqueItems": false
+    },
+    "schemaValid": true,
+    "value": [
+      {
+        "a": 1
+      },
+      {
+        "a": 1
+      }
+    ],
+    "valueValid": true
+  },
+  {
+    "name": "object-key-order",
+    "schema": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "uniqueItems": true
+    },
+    "schemaValid": true,
+    "value": [
+      {
+        "a": 1,
+        "b": 2
+      },
+      {
+        "b": 2,
+        "a": 1
+      }
+    ],
+    "valueValid": false
+  },
+  {
+    "name": "nested-array-order",
+    "schema": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "integer"
+        }
+      },
+      "uniqueItems": true
+    },
+    "schemaValid": true,
+    "value": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        1
+      ]
+    ],
+    "valueValid": true
+  },
+  {
+    "name": "nested-array-duplicate",
+    "schema": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "integer"
+        }
+      },
+      "uniqueItems": true
+    },
+    "schemaValid": true,
+    "value": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        2
+      ]
+    ],
+    "valueValid": false
+  },
+  {
+    "name": "empty-only",
+    "schema": {
+      "type": "array",
+      "items": {},
+      "minItems": 0,
+      "maxItems": 0,
+      "uniqueItems": true
+    },
+    "schemaValid": true,
+    "value": [],
+    "valueValid": true
+  },
+  {
+    "name": "negative-min",
+    "schema": {
+      "type": "array",
+      "minItems": -1
+    },
+    "schemaValid": false
+  },
+  {
+    "name": "fraction-min",
+    "schema": {
+      "type": "array",
+      "minItems": 1.5
+    },
+    "schemaValid": false
+  },
+  {
+    "name": "bad-max",
+    "schema": {
+      "type": "array",
+      "maxItems": "2"
+    },
+    "schemaValid": false
+  },
+  {
+    "name": "unsafe-min",
+    "schema": {
+      "type": "array",
+      "minItems": 9007199254740992
+    },
+    "schemaValid": false
+  },
+  {
+    "name": "contradiction",
+    "schema": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 2
+    },
+    "schemaValid": false
+  },
+  {
+    "name": "not-array",
+    "schema": {
+      "type": "string",
+      "minItems": 1
+    },
+    "schemaValid": false
+  },
+  {
+    "name": "string-unique",
+    "schema": {
+      "type": "array",
+      "uniqueItems": "true"
+    },
+    "schemaValid": false
+  }
+]

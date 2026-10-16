@@ -1,7 +1,7 @@
 import ActionButton from './ActionButton';
 import { ConfigProvider, Select, Checkbox, Input, Modal } from 'antd';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import type { Bindings, Json } from '../shared/types';
 import { schemaDefaults } from '../shared/template-config';
 import { LiteralValue, type LiteralValueDraftSlot } from './ValueField';
@@ -17,6 +17,32 @@ function sameOption(a: any, b: any): boolean {
     keys.length === Object.keys(b).length &&
     keys.every((key) => Object.hasOwn(b, key) && sameOption(a[key], b[key]))
   );
+}
+
+function arrayError(schema: any, values: Json[]): string {
+  if (!Array.isArray(values)) return '请提供有效的数组。';
+  const minimum = schema.minItems ?? 0;
+  const maximum = schema.maxItems ?? 1000;
+  if (values.length < minimum) return `至少添加 ${minimum} 项，当前 ${values.length} 项。`;
+  if (values.length > maximum) return `最多保留 ${maximum} 项，当前 ${values.length} 项。`;
+  if (schema.uniqueItems) {
+    const positions = new Map<string, number>();
+    for (const [index, value] of values.entries()) {
+      const key = JSON.stringify(value, (_name, item) =>
+        item && typeof item === 'object' && !Array.isArray(item)
+          ? Object.fromEntries(
+              Object.keys(item)
+                .sort()
+                .map((key) => [key, item[key]]),
+            )
+          : item,
+      );
+      const prior = positions.get(key);
+      if (prior !== undefined) return `第 ${index + 1} 项与第 ${prior + 1} 项重复，请修改或移除。`;
+      positions.set(key, index);
+    }
+  }
+  return '';
 }
 
 export type ConfigurationFieldDraft = LiteralValueDraftSlot & {
@@ -81,7 +107,9 @@ export function Field({ schema: s, value, change, label, required = false, draft
       : options
         ? selected === -1
           ? '请选择一个有效选项。'
-          : ''
+          : s.type === 'array'
+            ? arrayError(s, value)
+            : ''
         : s.type === 'string'
           ? s.minLength !== undefined && length < s.minLength
             ? `至少填写 ${s.minLength} 个字符。`
@@ -168,7 +196,7 @@ export function Field({ schema: s, value, change, label, required = false, draft
     </div>
   );
 }
-function TemplateArray({ schema, value, change, title, draft }: any) {
+function TemplateArray({ schema, value, change, title = '数组', draft }: any) {
   const errorId = useId();
   const values: Json[] = Array.isArray(value) ? value : [];
   const [rows, setRows] = useState<{ keys: number[]; next: number }>(
@@ -195,25 +223,35 @@ function TemplateArray({ schema, value, change, title, draft }: any) {
   useLayoutEffect(() => {
     const key = focusRow.current;
     if (key === null) return;
-    focusRow.current = null;
-    const target =
-      key === 'add'
-        ? add.current
-        : rowElements.current
-            .get(key)
-            ?.querySelector<HTMLElement>(
-              'input:not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled)',
-            );
-    target?.focus();
+    const frame = requestAnimationFrame(() => {
+      if (focusRow.current !== key) return;
+      focusRow.current = null;
+      const target =
+        key === 'add'
+          ? add.current
+          : rowElements.current
+              .get(key)
+              ?.querySelector<HTMLElement>(
+                'input:not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled)',
+              );
+      target?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
   }, [rows]);
   const limit = schema.maxItems ?? 1000;
   const minimum = schema.minItems ?? 0;
-  const error =
-    values.length < minimum
-      ? `至少添加 ${minimum} 项，当前 ${values.length} 项。`
-      : values.length > limit
-        ? `最多保留 ${limit} 项，当前 ${values.length} 项。`
-        : '';
+  const error = arrayError(schema, value === undefined ? [] : value);
+  const move = (index: number, offset: number) => {
+    const target = index + offset;
+    if (target < 0 || target >= values.length) return;
+    const keys = [...rows.keys];
+    [keys[index], keys[target]] = [keys[target], keys[index]];
+    const next = [...values];
+    [next[index], next[target]] = [next[target], next[index]];
+    focusRow.current = rows.keys[index];
+    setRows({ ...rows, keys });
+    change(next);
+  };
   return (
     <fieldset
       className="template-fieldset template-array-field"
@@ -250,6 +288,28 @@ function TemplateArray({ schema, value, change, title, draft }: any) {
             draft={childDraft(draft, 'item:' + rows.keys[index])}
             change={(next: Json) => change(values.map((v, i) => (i === index ? next : v)))}
           />
+          <ActionButton
+            hint={`将${title}第 ${index + 1} 项上移，保留该条目的输入`}
+            triggerClassName="template-array-move"
+            htmlType="button"
+            className="icon-button"
+            aria-label={`上移 ${title} ${index + 1}`}
+            disabled={index === 0}
+            onClick={() => move(index, -1)}
+          >
+            <ArrowUp size={14} />
+          </ActionButton>
+          <ActionButton
+            hint={`将${title}第 ${index + 1} 项下移，保留该条目的输入`}
+            triggerClassName="template-array-move"
+            htmlType="button"
+            className="icon-button"
+            aria-label={`下移 ${title} ${index + 1}`}
+            disabled={index === values.length - 1}
+            onClick={() => move(index, 1)}
+          >
+            <ArrowDown size={14} />
+          </ActionButton>
           <ActionButton
             hint={`移除 ${title} ${index + 1}，其他条目的输入保持不变`}
             triggerClassName="template-array-remove"
