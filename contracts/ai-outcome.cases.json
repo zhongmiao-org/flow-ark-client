@@ -1,0 +1,1027 @@
+[
+  {
+    "name": "v2显式返回请求结果",
+    "definition": "Node",
+    "valid": true,
+    "value": {
+      "id": "summarize",
+      "type": "ai",
+      "version": 2,
+      "binding": "ai",
+      "instructions": "按输入整理摘要，未知信息明确标记。",
+      "input": {
+        "source": {
+          "$ref": "params.source"
+        }
+      },
+      "schema": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "needsHuman": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer",
+          "needsHuman"
+        ],
+        "additionalProperties": false
+      },
+      "failureMode": "result"
+    }
+  },
+  {
+    "name": "v2显式停止",
+    "definition": "Node",
+    "valid": true,
+    "value": {
+      "id": "summarize",
+      "type": "ai",
+      "version": 2,
+      "binding": "ai",
+      "instructions": "按输入整理摘要，未知信息明确标记。",
+      "input": {
+        "source": {
+          "$ref": "params.source"
+        }
+      },
+      "schema": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "needsHuman": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer",
+          "needsHuman"
+        ],
+        "additionalProperties": false
+      },
+      "failureMode": "stop"
+    }
+  },
+  {
+    "name": "v1仍保持原定义",
+    "definition": "Node",
+    "valid": true,
+    "value": {
+      "id": "summarize",
+      "type": "ai",
+      "version": 1,
+      "binding": "ai",
+      "instructions": "按输入整理摘要，未知信息明确标记。",
+      "input": {
+        "source": {
+          "$ref": "params.source"
+        }
+      },
+      "schema": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "needsHuman": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer",
+          "needsHuman"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "name": "v2缺少失败策略",
+    "definition": "Node",
+    "valid": false,
+    "value": {
+      "id": "summarize",
+      "type": "ai",
+      "version": 2,
+      "binding": "ai",
+      "instructions": "按输入整理摘要，未知信息明确标记。",
+      "input": {
+        "source": {
+          "$ref": "params.source"
+        }
+      },
+      "schema": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "needsHuman": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer",
+          "needsHuman"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "name": "未知策略",
+    "definition": "Node",
+    "valid": false,
+    "value": {
+      "id": "summarize",
+      "type": "ai",
+      "version": 2,
+      "binding": "ai",
+      "instructions": "按输入整理摘要，未知信息明确标记。",
+      "input": {
+        "source": {
+          "$ref": "params.source"
+        }
+      },
+      "schema": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "needsHuman": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer",
+          "needsHuman"
+        ],
+        "additionalProperties": false
+      },
+      "failureMode": "retry"
+    }
+  },
+  {
+    "name": "未知节点版本",
+    "definition": "Node",
+    "valid": false,
+    "value": {
+      "id": "summarize",
+      "type": "ai",
+      "version": 3,
+      "binding": "ai",
+      "instructions": "按输入整理摘要，未知信息明确标记。",
+      "input": {
+        "source": {
+          "$ref": "params.source"
+        }
+      },
+      "schema": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "needsHuman": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer",
+          "needsHuman"
+        ],
+        "additionalProperties": false
+      },
+      "failureMode": "result"
+    }
+  },
+  {
+    "name": "内联Key",
+    "definition": "Node",
+    "valid": false,
+    "value": {
+      "id": "summarize",
+      "type": "ai",
+      "version": 2,
+      "binding": "ai",
+      "instructions": "按输入整理摘要，未知信息明确标记。",
+      "input": {
+        "source": {
+          "$ref": "params.source"
+        }
+      },
+      "schema": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "needsHuman": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer",
+          "needsHuman"
+        ],
+        "additionalProperties": false
+      },
+      "failureMode": "result",
+      "apiKey": "fictional-value"
+    }
+  },
+  {
+    "name": "v1不接受隐式策略",
+    "definition": "Node",
+    "valid": false,
+    "value": {
+      "id": "summarize",
+      "type": "ai",
+      "version": 1,
+      "binding": "ai",
+      "instructions": "按输入整理摘要，未知信息明确标记。",
+      "input": {
+        "source": {
+          "$ref": "params.source"
+        }
+      },
+      "schema": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "needsHuman": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer",
+          "needsHuman"
+        ],
+        "additionalProperties": false
+      },
+      "failureMode": "result"
+    }
+  },
+  {
+    "name": "成功完整结果",
+    "definition": "AIOutcome",
+    "valid": true,
+    "value": {
+      "status": "success",
+      "result": {
+        "provider": "deepseek",
+        "model": "fictional-model",
+        "requestId": "fictional-request",
+        "output": {
+          "answer": "虚构结构化结果",
+          "needsHuman": false
+        },
+        "usage": {
+          "prompt_tokens": 20,
+          "completion_tokens": 10,
+          "total_tokens": 30
+        }
+      }
+    }
+  },
+  {
+    "name": "未知成功用量",
+    "definition": "AIOutcome",
+    "valid": true,
+    "value": {
+      "status": "success",
+      "result": {
+        "provider": "deepseek",
+        "model": "fictional-model",
+        "requestId": "fictional-request",
+        "output": {
+          "answer": "虚构结构化结果",
+          "needsHuman": false
+        },
+        "usage": null
+      }
+    }
+  },
+  {
+    "name": "失败未知用量与请求ID",
+    "definition": "AIOutcome",
+    "valid": true,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "usage": null,
+      "error": {
+        "code": "rate-limit",
+        "message": "AI 服务限流，请稍后自行重新运行。",
+        "httpStatus": 429
+      }
+    }
+  },
+  {
+    "name": "失败保留已知用量",
+    "definition": "AIOutcome",
+    "valid": true,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": "fictional-id",
+      "usage": {
+        "input_tokens": 5,
+        "output_tokens": 1
+      },
+      "error": {
+        "code": "rate-limit",
+        "message": "AI 服务限流，请稍后自行重新运行。",
+        "httpStatus": 429
+      }
+    }
+  },
+  {
+    "name": "固定失败分类-authentication",
+    "definition": "AIOutcome",
+    "valid": true,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "usage": null,
+      "error": {
+        "code": "authentication",
+        "message": "AI 服务拒绝鉴权，请检查自己的 Key 与模型权限。",
+        "httpStatus": 401
+      }
+    }
+  },
+  {
+    "name": "固定失败分类-rate-limit",
+    "definition": "AIOutcome",
+    "valid": true,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "usage": null,
+      "error": {
+        "code": "rate-limit",
+        "message": "AI 服务限流，请稍后自行重新运行。",
+        "httpStatus": 429
+      }
+    }
+  },
+  {
+    "name": "固定失败分类-http",
+    "definition": "AIOutcome",
+    "valid": true,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "usage": null,
+      "error": {
+        "code": "http",
+        "message": "AI 接口返回请求错误，请核对服务状态与请求配置。",
+        "httpStatus": 503
+      }
+    }
+  },
+  {
+    "name": "固定失败分类-network",
+    "definition": "AIOutcome",
+    "valid": true,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "usage": null,
+      "error": {
+        "code": "network",
+        "message": "AI 网络请求未完成，请核对连接后自行重新运行。",
+        "httpStatus": null
+      }
+    }
+  },
+  {
+    "name": "固定失败分类-request-timeout",
+    "definition": "AIOutcome",
+    "valid": true,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "usage": null,
+      "error": {
+        "code": "request-timeout",
+        "message": "AI 请求等待超时，未采用结果；不会自动重试。",
+        "httpStatus": null
+      }
+    }
+  },
+  {
+    "name": "固定失败分类-refused",
+    "definition": "AIOutcome",
+    "valid": true,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "usage": null,
+      "error": {
+        "code": "refused",
+        "message": "AI 服务拒绝生成，未采用正文。",
+        "httpStatus": null
+      }
+    }
+  },
+  {
+    "name": "固定失败分类-incomplete",
+    "definition": "AIOutcome",
+    "valid": true,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "usage": null,
+      "error": {
+        "code": "incomplete",
+        "message": "AI 未返回完整结果，未采用部分正文。",
+        "httpStatus": null
+      }
+    }
+  },
+  {
+    "name": "固定失败分类-invalid-response",
+    "definition": "AIOutcome",
+    "valid": true,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "usage": null,
+      "error": {
+        "code": "invalid-response",
+        "message": "AI 响应或输出格式无效，未采用正文。",
+        "httpStatus": null
+      }
+    }
+  },
+  {
+    "name": "失败不能带正文",
+    "definition": "AIOutcome",
+    "valid": false,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "usage": null,
+      "error": {
+        "code": "rate-limit",
+        "message": "AI 服务限流，请稍后自行重新运行。",
+        "httpStatus": 429
+      },
+      "output": {
+        "answer": "partial"
+      }
+    }
+  },
+  {
+    "name": "失败不能带成功结果",
+    "definition": "AIOutcome",
+    "valid": false,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "usage": null,
+      "error": {
+        "code": "rate-limit",
+        "message": "AI 服务限流，请稍后自行重新运行。",
+        "httpStatus": 429
+      },
+      "result": {
+        "provider": "deepseek",
+        "model": "fictional-model",
+        "requestId": "fictional-request",
+        "output": {
+          "answer": "虚构结构化结果",
+          "needsHuman": false
+        },
+        "usage": {
+          "prompt_tokens": 20,
+          "completion_tokens": 10,
+          "total_tokens": 30
+        }
+      }
+    }
+  },
+  {
+    "name": "失败缺用量",
+    "definition": "AIOutcome",
+    "valid": false,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "error": {
+        "code": "rate-limit",
+        "message": "AI 服务限流，请稍后自行重新运行。",
+        "httpStatus": 429
+      }
+    }
+  },
+  {
+    "name": "失败缺请求ID",
+    "definition": "AIOutcome",
+    "valid": false,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "usage": null,
+      "error": {
+        "code": "rate-limit",
+        "message": "AI 服务限流，请稍后自行重新运行。",
+        "httpStatus": 429
+      }
+    }
+  },
+  {
+    "name": "失败未知状态",
+    "definition": "AIOutcome",
+    "valid": false,
+    "value": {
+      "status": "cancelled",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "usage": null,
+      "error": {
+        "code": "rate-limit",
+        "message": "AI 服务限流，请稍后自行重新运行。",
+        "httpStatus": 429
+      }
+    }
+  },
+  {
+    "name": "失败任意服务正文",
+    "definition": "AIOutcome",
+    "valid": false,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "usage": null,
+      "error": {
+        "code": "rate-limit",
+        "message": "fictional raw body",
+        "httpStatus": 429
+      }
+    }
+  },
+  {
+    "name": "错误码不能代替取消",
+    "definition": "AIOutcome",
+    "valid": false,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "usage": null,
+      "error": {
+        "code": "cancelled",
+        "message": "AI 服务限流，请稍后自行重新运行。",
+        "httpStatus": 429
+      }
+    }
+  },
+  {
+    "name": "节点期限不能伪装请求故障",
+    "definition": "AIOutcome",
+    "valid": false,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "usage": null,
+      "error": {
+        "code": "node-timeout",
+        "message": "AI 服务限流，请稍后自行重新运行。",
+        "httpStatus": 429
+      }
+    }
+  },
+  {
+    "name": "存储错误不能伪装请求故障",
+    "definition": "AIOutcome",
+    "valid": false,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "usage": null,
+      "error": {
+        "code": "storage",
+        "message": "AI 服务限流，请稍后自行重新运行。",
+        "httpStatus": 429
+      }
+    }
+  },
+  {
+    "name": "限流HTTP必须429",
+    "definition": "AIOutcome",
+    "valid": false,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "usage": null,
+      "error": {
+        "code": "rate-limit",
+        "message": "AI 服务限流，请稍后自行重新运行。",
+        "httpStatus": 401
+      }
+    }
+  },
+  {
+    "name": "失败空请求ID用null",
+    "definition": "AIOutcome",
+    "valid": false,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": "",
+      "usage": null,
+      "error": {
+        "code": "rate-limit",
+        "message": "AI 服务限流，请稍后自行重新运行。",
+        "httpStatus": 429
+      }
+    }
+  },
+  {
+    "name": "失败请求ID禁止控制字符",
+    "definition": "AIOutcome",
+    "valid": false,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": "id\nraw",
+      "usage": null,
+      "error": {
+        "code": "rate-limit",
+        "message": "AI 服务限流，请稍后自行重新运行。",
+        "httpStatus": 429
+      }
+    }
+  },
+  {
+    "name": "失败禁止额外凭据字段",
+    "definition": "AIOutcome",
+    "valid": false,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "usage": null,
+      "error": {
+        "code": "rate-limit",
+        "message": "AI 服务限流，请稍后自行重新运行。",
+        "httpStatus": 429
+      },
+      "apiKey": "fictional-value"
+    }
+  },
+  {
+    "name": "成功不能带错误",
+    "definition": "AIOutcome",
+    "valid": false,
+    "value": {
+      "status": "success",
+      "result": {
+        "provider": "deepseek",
+        "model": "fictional-model",
+        "requestId": "fictional-request",
+        "output": {
+          "answer": "虚构结构化结果",
+          "needsHuman": false
+        },
+        "usage": {
+          "prompt_tokens": 20,
+          "completion_tokens": 10,
+          "total_tokens": 30
+        }
+      },
+      "error": {
+        "code": "rate-limit",
+        "message": "AI 服务限流，请稍后自行重新运行。",
+        "httpStatus": 429
+      }
+    }
+  },
+  {
+    "name": "成功缺完整结果",
+    "definition": "AIOutcome",
+    "valid": false,
+    "value": {
+      "status": "success"
+    }
+  },
+  {
+    "name": "成功不接受扁平输出",
+    "definition": "AIOutcome",
+    "valid": false,
+    "value": {
+      "status": "success",
+      "result": {
+        "provider": "deepseek",
+        "model": "fictional-model",
+        "requestId": "fictional-request",
+        "output": {
+          "answer": "虚构结构化结果",
+          "needsHuman": false
+        },
+        "usage": {
+          "prompt_tokens": 20,
+          "completion_tokens": 10,
+          "total_tokens": 30
+        }
+      },
+      "output": {}
+    }
+  },
+  {
+    "name": "成功结果缺输出",
+    "definition": "AIOutcome",
+    "valid": false,
+    "value": {
+      "status": "success",
+      "result": {
+        "provider": "deepseek",
+        "model": "fictional-model",
+        "requestId": "fictional-request",
+        "usage": {
+          "prompt_tokens": 20,
+          "completion_tokens": 10,
+          "total_tokens": 30
+        }
+      }
+    }
+  },
+  {
+    "name": "成功收据不含正文",
+    "definition": "AINodeReceipt",
+    "valid": true,
+    "value": {
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": "fictional-request",
+      "usage": {
+        "prompt_tokens": 20,
+        "completion_tokens": 10,
+        "total_tokens": 30
+      },
+      "status": "success"
+    }
+  },
+  {
+    "name": "失败收据完整分类",
+    "definition": "AINodeReceipt",
+    "valid": true,
+    "value": {
+      "status": "failed",
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": null,
+      "usage": null,
+      "error": {
+        "code": "rate-limit",
+        "message": "AI 服务限流，请稍后自行重新运行。",
+        "httpStatus": 429
+      }
+    }
+  },
+  {
+    "name": "收据不能携带正文",
+    "definition": "AINodeReceipt",
+    "valid": false,
+    "value": {
+      "provider": "deepseek",
+      "model": "fictional-model",
+      "requestId": "fictional-request",
+      "usage": {
+        "prompt_tokens": 20,
+        "completion_tokens": 10,
+        "total_tokens": 30
+      },
+      "status": "success",
+      "output": {
+        "answer": "虚构结构化结果",
+        "needsHuman": false
+      }
+    }
+  },
+  {
+    "name": "收据不能携带完整结果",
+    "definition": "AINodeReceipt",
+    "valid": false,
+    "value": {
+      "status": "success",
+      "result": {
+        "provider": "deepseek",
+        "model": "fictional-model",
+        "requestId": "fictional-request",
+        "output": {
+          "answer": "虚构结构化结果",
+          "needsHuman": false
+        },
+        "usage": {
+          "prompt_tokens": 20,
+          "completion_tokens": 10,
+          "total_tokens": 30
+        }
+      }
+    }
+  },
+  {
+    "name": "401鉴权",
+    "definition": "AIRequestError",
+    "valid": true,
+    "value": {
+      "code": "authentication",
+      "message": "AI 服务拒绝鉴权，请检查自己的 Key 与模型权限。",
+      "httpStatus": 401
+    }
+  },
+  {
+    "name": "403权限拒绝",
+    "definition": "AIRequestError",
+    "valid": true,
+    "value": {
+      "code": "authentication",
+      "message": "AI 服务拒绝鉴权，请检查自己的 Key 与模型权限。",
+      "httpStatus": 403
+    }
+  },
+  {
+    "name": "错误码与HTTP冲突-http-200",
+    "definition": "AIRequestError",
+    "valid": false,
+    "value": {
+      "code": "http",
+      "message": "AI 接口返回请求错误，请核对服务状态与请求配置。",
+      "httpStatus": 200
+    }
+  },
+  {
+    "name": "错误码与HTTP冲突-http-401",
+    "definition": "AIRequestError",
+    "valid": false,
+    "value": {
+      "code": "http",
+      "message": "AI 接口返回请求错误，请核对服务状态与请求配置。",
+      "httpStatus": 401
+    }
+  },
+  {
+    "name": "错误码与HTTP冲突-http-429",
+    "definition": "AIRequestError",
+    "valid": false,
+    "value": {
+      "code": "http",
+      "message": "AI 接口返回请求错误，请核对服务状态与请求配置。",
+      "httpStatus": 429
+    }
+  },
+  {
+    "name": "错误码与HTTP冲突-network-503",
+    "definition": "AIRequestError",
+    "valid": false,
+    "value": {
+      "code": "network",
+      "message": "AI 网络请求未完成，请核对连接后自行重新运行。",
+      "httpStatus": 503
+    }
+  },
+  {
+    "name": "错误码与HTTP冲突-invalid-response-401",
+    "definition": "AIRequestError",
+    "valid": false,
+    "value": {
+      "code": "invalid-response",
+      "message": "AI 响应或输出格式无效，未采用正文。",
+      "httpStatus": 401
+    }
+  },
+  {
+    "name": "嵌套用量计数",
+    "definition": "AIUsage",
+    "valid": true,
+    "value": {
+      "input_tokens": 40,
+      "output_tokens": 4,
+      "input_tokens_details": {
+        "cached_tokens": 2
+      }
+    }
+  },
+  {
+    "name": "未知用量",
+    "definition": "AIUsage",
+    "valid": true,
+    "value": null
+  },
+  {
+    "name": "实际零计数",
+    "definition": "AIUsage",
+    "valid": true,
+    "value": {
+      "total_tokens": 0
+    }
+  },
+  {
+    "name": "不可用不能填空对象",
+    "definition": "AIUsage",
+    "valid": false,
+    "value": {}
+  },
+  {
+    "name": "用量不接收任意正文",
+    "definition": "AIUsage",
+    "valid": false,
+    "value": {
+      "total_tokens": 1,
+      "body": "fictional body"
+    }
+  },
+  {
+    "name": "计数不能为负",
+    "definition": "AIUsage",
+    "valid": false,
+    "value": {
+      "total_tokens": -1
+    }
+  },
+  {
+    "name": "计数不能为字符串",
+    "definition": "AIUsage",
+    "valid": false,
+    "value": {
+      "total_tokens": "1"
+    }
+  },
+  {
+    "name": "计数不能为小数",
+    "definition": "AIUsage",
+    "valid": false,
+    "value": {
+      "total_tokens": 1.5
+    }
+  },
+  {
+    "name": "计数必须安全整数",
+    "definition": "AIUsage",
+    "valid": false,
+    "value": {
+      "total_tokens": 9007199254740992
+    }
+  },
+  {
+    "name": "嵌套不接收任意字段",
+    "definition": "AIUsage",
+    "valid": false,
+    "value": {
+      "output_tokens_details": {
+        "message": "fictional"
+      }
+    }
+  }
+]

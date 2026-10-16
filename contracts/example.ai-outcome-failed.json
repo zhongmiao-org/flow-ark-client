@@ -1,0 +1,12 @@
+{
+  "status": "failed",
+  "provider": "deepseek",
+  "model": "fictional-model",
+  "requestId": null,
+  "usage": null,
+  "error": {
+    "code": "rate-limit",
+    "message": "AI 服务限流，请稍后自行重新运行。",
+    "httpStatus": 429
+  }
+}

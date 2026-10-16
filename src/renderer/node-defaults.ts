@@ -26,6 +26,8 @@ export function newStep(type: string): Step {
       maxRequests: 20,
     },
     ai: {
+      version: 2,
+      failureMode: 'stop',
       binding: 'ai',
       instructions: '按输入整理结果，未知信息明确说明。',
       input: {},

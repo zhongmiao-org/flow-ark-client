@@ -7,6 +7,8 @@ import { templateDataCapability } from '../shared/template-data';
 import { conversationCapability, assertConversationNode } from '../shared/conversation';
 import { documentCapability, assertDocumentNode } from '../shared/document';
 import { aiNodeCapability, assertAIRequest } from '../shared/ai-node';
+import { aiOutcomeCapability } from '../shared/ai-outcome';
+import { assertAIOutcomeCapabilities } from '../../contracts/ai-outcome';
 import { resolveParameterSources, parameterSourceCapability } from '../shared/parameter-sources';
 import Ajv2020 from 'ajv/dist/2020.js';
 import schema from '../../contracts/p1.schema.json';
@@ -39,6 +41,7 @@ export const capabilities = [
   conversationCapability,
   'conversation',
   aiNodeCapability,
+  aiOutcomeCapability,
   parameterSourceCapability,
   'desktop-selection-v1',
   'mcp-tool-v1',
@@ -101,6 +104,7 @@ export function validateFlow(value: unknown): Flow {
         assertConversationNode(n);
       }
       if (n.type === 'ai') {
+        assertAIOutcomeCapabilities(n, flow.requiredCapabilities);
         if (!flow.requiredCapabilities.includes(aiNodeCapability))
           throw new Error('AI 节点需要声明 ai-node-v1 能力');
         assertAIRequest(n);

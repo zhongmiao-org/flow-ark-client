@@ -1,0 +1,75 @@
+{
+  "formatVersion": "1.0",
+  "id": "structured-ai-outcome",
+  "name": "结构化结果与失败处理",
+  "description": "只判断AI请求结果；没有外发、自动重试或默认提醒。",
+  "parameters": {
+    "source": "虚构资料"
+  },
+  "requiredCapabilities": [
+    "ai-node-v1",
+    "ai-outcome-v1"
+  ],
+  "steps": [
+    {
+      "id": "summarize",
+      "type": "ai",
+      "version": 2,
+      "binding": "ai",
+      "instructions": "按输入整理摘要，未知信息明确标记。",
+      "input": {
+        "source": {
+          "$ref": "params.source"
+        }
+      },
+      "schema": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "needsHuman": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer",
+          "needsHuman"
+        ],
+        "additionalProperties": false
+      },
+      "failureMode": "result"
+    },
+    {
+      "id": "request-status",
+      "name": "先判断请求是否成功",
+      "type": "condition",
+      "version": 1,
+      "actual": {
+        "$ref": "steps.summarize.status"
+      },
+      "operator": "equals",
+      "expected": "success",
+      "then": [
+        {
+          "id": "answer",
+          "type": "value",
+          "version": 1,
+          "value": {
+            "$ref": "steps.summarize.result.output.answer"
+          }
+        }
+      ],
+      "else": [
+        {
+          "id": "request-failed",
+          "type": "value",
+          "version": 1,
+          "value": {
+            "$ref": "steps.summarize.error.code"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -7,7 +7,8 @@ import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import { mkdirSync, chmodSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { now, redact } from '../shared/utils';
-import type { Event, Run, RunState } from '../shared/types';
+import type { AINodeReceipt, Event, Run, RunState } from '../shared/types';
+import { ai_receipt_v1 } from '../shared/node-schema.generated';
 
 // Development storage has one current layout; no legacy migration runs at startup.
 export function initializeStore(db: DatabaseSync) {
@@ -146,6 +147,19 @@ export class Store {
     ).map((r) => ({ position: Number(r.position), value: this.open(r.payload) }));
   }
   event(runId: string, type: string, nodeInstance: string, data: any): Event {
+    return this.appendEvent(runId, type, nodeInstance, redact(data));
+  }
+  aiOutcome(runId: string, nodeInstance: string, receipt: AINodeReceipt, secrets: string[]): Event {
+    if (!ai_receipt_v1(receipt)) throw new Error('AI收据格式无效，未登记');
+    // Validated usage has only fixed field names and nonnegative safe integer values.
+    // Keep those counts, while redacting all free-form metadata with the Run's secrets.
+    const { usage, ...metadata } = receipt;
+    return this.appendEvent(runId, 'ai-outcome', nodeInstance, {
+      ...redact(metadata, secrets),
+      usage,
+    });
+  }
+  private appendEvent(runId: string, type: string, nodeInstance: string, data: any): Event {
     const sequence = Number(
       (
         this.db
@@ -159,7 +173,7 @@ export class Store {
       time: now(),
       type,
       nodeInstance,
-      data: redact(data),
+      data,
     };
     this.write(() =>
       this.db.prepare('INSERT INTO events VALUES(?,?,?)').run(runId, sequence, this.seal(event)),

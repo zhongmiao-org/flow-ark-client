@@ -259,6 +259,21 @@ export type Node =
     }
   | {
       id: string;
+      name?: string;
+      timeoutMs?: number;
+      type: 'ai';
+      version: 2;
+      binding: string;
+      instructions: string;
+      input: Value;
+      schema: {
+        type: 'object';
+        [k: string]: Json | 'object';
+      };
+      failureMode: 'stop' | 'result';
+    }
+  | {
+      id: string;
       type: 'conversation';
       version: 1;
       name?: string;
@@ -688,6 +703,104 @@ export type BrowserInspectionNode = {
 };
 export type BrowserInspectionResult = string | number | null;
 export type TemplateAttentionOrigin = TemplateInstanceAttentionOrigin | TemplateAuthorAttentionOrigin;
+export type AIRequestError =
+  | {
+      code: 'authentication';
+      message: 'AI 服务拒绝鉴权，请检查自己的 Key 与模型权限。';
+      httpStatus: 401 | 403;
+    }
+  | {
+      code: 'rate-limit';
+      message: 'AI 服务限流，请稍后自行重新运行。';
+      httpStatus: 429;
+    }
+  | {
+      code: 'http';
+      message: 'AI 接口返回请求错误，请核对服务状态与请求配置。';
+      httpStatus: number;
+    }
+  | {
+      code: 'network';
+      message: 'AI 网络请求未完成，请核对连接后自行重新运行。';
+      httpStatus: null | number;
+    }
+  | {
+      code: 'request-timeout';
+      message: 'AI 请求等待超时，未采用结果；不会自动重试。';
+      httpStatus: null | number;
+    }
+  | {
+      code: 'refused';
+      message: 'AI 服务拒绝生成，未采用正文。';
+      httpStatus: null | number;
+    }
+  | {
+      code: 'incomplete';
+      message: 'AI 未返回完整结果，未采用部分正文。';
+      httpStatus: null | number;
+    }
+  | {
+      code: 'invalid-response';
+      message: 'AI 响应或输出格式无效，未采用正文。';
+      httpStatus: null | number;
+    };
+export type AIUsage = null | {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+  input_tokens?: number;
+  output_tokens?: number;
+  prompt_cache_hit_tokens?: number;
+  prompt_cache_miss_tokens?: number;
+  prompt_tokens_details?: {
+    cached_tokens?: number;
+    reasoning_tokens?: number;
+    audio_tokens?: number;
+    accepted_prediction_tokens?: number;
+    rejected_prediction_tokens?: number;
+  };
+  completion_tokens_details?: {
+    cached_tokens?: number;
+    reasoning_tokens?: number;
+    audio_tokens?: number;
+    accepted_prediction_tokens?: number;
+    rejected_prediction_tokens?: number;
+  };
+  input_tokens_details?: {
+    cached_tokens?: number;
+    reasoning_tokens?: number;
+    audio_tokens?: number;
+    accepted_prediction_tokens?: number;
+    rejected_prediction_tokens?: number;
+  };
+  output_tokens_details?: {
+    cached_tokens?: number;
+    reasoning_tokens?: number;
+    audio_tokens?: number;
+    accepted_prediction_tokens?: number;
+    rejected_prediction_tokens?: number;
+  };
+};
+export type AIOutcome =
+  | {
+      status: 'success';
+      result: AIResult & {
+        model?: string;
+        requestId?: string;
+        usage?: AIUsage;
+        [k: string]: any;
+      };
+    }
+  | AIRequestFailure;
+export type AINodeReceipt =
+  | {
+      status: 'success';
+      provider: 'openai-codex' | 'deepseek';
+      model: string;
+      requestId: null | string;
+      usage: AIUsage;
+    }
+  | AIRequestFailure;
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -770,6 +883,11 @@ export interface FlowArkP1 {
   TemplateAuthorSdkResult?: TemplateAuthorSdkResult;
   TemplateInstanceAttentionOrigin?: TemplateInstanceAttentionOrigin;
   TemplateAuthorAttentionOrigin?: TemplateAuthorAttentionOrigin;
+  AIRequestError?: AIRequestError;
+  AIRequestFailure?: AIRequestFailure;
+  AIOutcome?: AIOutcome;
+  AINodeReceipt?: AINodeReceipt;
+  AIUsage?: AIUsage;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -1707,4 +1825,12 @@ export interface TemplateAuthorSdkResult {
   definitionSha256: string;
   value: Json;
   createdAt: string;
+}
+export interface AIRequestFailure {
+  status: 'failed';
+  provider: 'openai-codex' | 'deepseek';
+  model: string;
+  requestId: null | string;
+  usage: AIUsage;
+  error: AIRequestError;
 }

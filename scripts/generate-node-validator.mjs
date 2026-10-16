@@ -29,6 +29,8 @@ validators.conversation_output_v1 = `${schema.$id}#/$defs/ConversationOutput`;
 for (const name of ['Source', 'Preview', 'Request', 'Result', 'Status'])
   validators['trial_' + name.toLowerCase() + '_v1'] = `${schema.$id}#/$defs/SkillTrial${name}`;
 validators.document_result_v1 = `${schema.$id}#/$defs/DocumentResult`;
+validators.ai_outcome_v1 = `${schema.$id}#/$defs/AIOutcome`;
+validators.ai_receipt_v1 = `${schema.$id}#/$defs/AINodeReceipt`;
 for (const name of [
   'SkillVersionRef',
   'SkillDraft',
@@ -44,7 +46,8 @@ for (const name of ['Definition', 'Draft', 'PackageMetadata', 'Checkout', 'Expor
 for (const name of ['Context', 'State', 'Output', 'WriteReceipt', 'EditResult'])
   validators['data_' + name.toLowerCase() + '_v1'] = `${schema.$id}#/$defs/TemplateData${name}`;
 for (const name of ['Context', 'Result'])
-  validators['author_sdk_' + name.toLowerCase() + '_v1'] = `${schema.$id}#/$defs/TemplateAuthorSdk${name}`;
+  validators['author_sdk_' + name.toLowerCase() + '_v1'] =
+    `${schema.$id}#/$defs/TemplateAuthorSdk${name}`;
 const banner = `/* Generated from contracts/p1.schema.json (${digest}). Do not edit. */`;
 await build({
   stdin: { contents: standaloneCode(ajv, validators), resolveDir: process.cwd(), loader: 'js' },

@@ -1,4 +1,8 @@
-import { Collapse, Descriptions, Tag } from 'antd';
+import { Alert, Button, Collapse, Descriptions, Tag } from 'antd';
+import { useEffect, useRef, useState } from 'react';
+import { ai_receipt_v1 } from '../shared/node-schema.generated';
+import { aiReceiptMessage } from '../shared/ai-outcome';
+import type { AINodeReceipt, Event } from '../shared/types';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { Step } from '../shared/types';
 import type { RunPresentationInput, RunStepPresentation } from '../shared/run-presentation';
@@ -92,6 +96,13 @@ function fields(node: Step): [string, string][] {
       ];
     case 'ai':
       return [
+        ['结果格式', node.version === 2 ? 'v2：status / result.output' : 'v1：output'],
+        [
+          '请求失败时',
+          node.version === 2 && node.failureMode === 'result'
+            ? '返回失败状态，供后续条件判断'
+            : '停止运行',
+        ],
         ['AI资源', node.binding],
         ['指令', configured(node.instructions)],
         ['输入', configured(node.input)],
@@ -206,6 +217,95 @@ export function fileOperationTitle(node: Extract<Step, { type: 'file' | 'excel' 
   return `${operations[node.operation] ?? node.operation}${node.type === 'excel' ? '表格' : '文件'}`;
 }
 
+export function RunAIOutcome({
+  node,
+  events,
+  showConfiguration,
+}: {
+  node: Extract<Step, { type: 'ai' }>;
+  events: Event[];
+  showConfiguration: () => void;
+}) {
+  if (node.version !== 2) return null;
+  const saved = events.findLast((event) => event.type === 'ai-outcome');
+  if (!saved || !ai_receipt_v1(saved.data))
+    return (
+      <Alert
+        type="info"
+        title="尚未取得可确认的AI请求回执"
+        description="取消、节点期限、资源缺口或本地记录失败仍会阻止运行；不会自动重试或把迟到内容交给后续步骤。原始脱敏记录保留。"
+      />
+    );
+  const receipt = saved.data as AINodeReceipt;
+  const handled =
+    receipt.status === 'failed' &&
+    node.failureMode === 'result' &&
+    events.some(
+      (event) =>
+        event.type === 'node-end' &&
+        event.data?.completed === true &&
+        event.sequence > saved.sequence,
+    );
+  return (
+    <section className="run-ai-outcome" aria-label="AI请求结果">
+      <div>
+        <h3>{receipt.status === 'failed' ? '失败回执' : '完整结果回执'}</h3>
+        <p>{handled ? '请求失败，已交给后续处理。' : aiReceiptMessage(receipt)}</p>
+        <Descriptions
+          layout="vertical"
+          column={1}
+          items={[
+            {
+              key: 'model',
+              label: '服务 / 模型',
+              children: receipt.provider + ' / ' + receipt.model,
+            },
+            { key: 'id', label: '请求ID', children: receipt.requestId ?? '未知' },
+            {
+              key: 'usage',
+              label: '已知用量',
+              children:
+                receipt.usage === null
+                  ? '未知（null），不补零'
+                  : JSON.stringify(receipt.usage, null, 2),
+            },
+            ...(receipt.status === 'failed'
+              ? [
+                  {
+                    key: 'error',
+                    label: '失败分类 / HTTP',
+                    children: receipt.error.code + ' / ' + (receipt.error.httpStatus ?? '未知'),
+                  },
+                  { key: 'reason', label: '原因', children: receipt.error.message },
+                ]
+              : []),
+          ]}
+        />
+      </div>
+      <div>
+        <h3>
+          {receipt.status === 'failed'
+            ? node.failureMode === 'result'
+              ? '由后续步骤明确处理'
+              : '按配置停止运行'
+            : '条件节点与变量来源'}
+        </h3>
+        <p>
+          {receipt.status === 'failed'
+            ? node.failureMode === 'result'
+              ? '先判断 status = failed，再由编排连接保存原因和本人待办。失败没有 result 或可用正文；是否完成提醒须核对后续记录。'
+              : '本节点选择停止运行；不会执行失败提醒分支，实际终态以运行记录为准。'
+            : '先判断 status = success，再引用 result.output；完整输出可在输出与产物查看。模型结果不成为业务事实或外发授权。'}
+        </p>
+        <p>取消、期限、权限和资源缺口仍停止；查看与重开不会重新调用模型。</p>
+        <Button type="primary" onClick={showConfiguration}>
+          查看节点配置
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 export default function RunStepDetails({
   detail,
   step,
@@ -215,6 +315,24 @@ export default function RunStepDetails({
   step: RunStepPresentation;
   compact?: boolean;
 }) {
+  const configurationRef = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [reveal, setReveal] = useState(0);
+  useEffect(() => {
+    setExpanded(false);
+    setReveal(0);
+  }, [detail.run.id, step.instance]);
+  useEffect(() => {
+    if (!reveal) return;
+    // Collapse makes its force-rendered contents visible on its next motion frame.
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        configurationRef.current?.scrollIntoView({ block: 'nearest' });
+        configurationRef.current?.focus();
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [reveal]);
   const node =
     step.instance && runInstancePresenter(detail.snapshot)(step.instance)
       ? flatten(detail.snapshot?.steps ?? []).find((item) => item.id === step.nodeId)
@@ -247,7 +365,21 @@ export default function RunStepDetails({
   );
   return (
     <section className="run-step-details" aria-label="当前步骤信息">
-      {!compact && configuration}
+      {!compact && (
+        <div ref={configurationRef} tabIndex={-1}>
+          {configuration}
+        </div>
+      )}
+      {node?.type === 'ai' && (
+        <RunAIOutcome
+          node={node}
+          events={events}
+          showConfiguration={() => {
+            setExpanded(true);
+            setReveal((value) => value + 1);
+          }}
+        />
+      )}
 
       <div className="run-step-events">
         <h3>此步骤的最近记录</h3>
@@ -279,6 +411,8 @@ export default function RunStepDetails({
       </div>
       {compact && (
         <Collapse
+          activeKey={expanded ? ['configuration'] : []}
+          onChange={(keys) => setExpanded(keys.includes('configuration'))}
           className="run-snapshot-details"
           items={[
             {
@@ -287,7 +421,7 @@ export default function RunStepDetails({
               forceRender: true,
               onKeyDown: activateCollapseWithSpace,
               children: (
-                <div className="feedback-body">
+                <div className="feedback-body" ref={configurationRef} tabIndex={-1}>
                   {step.instance && <p>节点实例：{step.instance}</p>}
                   {configuration}
                 </div>

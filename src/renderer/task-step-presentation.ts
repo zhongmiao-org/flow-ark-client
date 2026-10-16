@@ -93,7 +93,7 @@ export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext
       return `引导会话「${step.title}」 · 键：${value(step.key)} · 最多${step.maxRequests}次请求 · 待用户确认后继续`;
     case 'ai': {
       const binding = context.bindings?.resources?.[step.binding];
-      return `AI资源「${step.binding}」 · ${binding?.provider ?? '尚未绑定服务'} / ${binding?.model || '尚未选择模型'} · 输入：${value(step.input)} · 仅生成结构化结果`;
+      return `AI资源「${step.binding}」 · ${binding?.provider ?? '尚未绑定服务'} / ${binding?.model || '尚未选择模型'} · 输入：${value(step.input)} · ${step.version === 2 ? (step.failureMode === 'result' ? 'v2：请求失败返回状态，取消与资源缺口仍停止' : 'v2：请求失败停止，成功结果在result.output') : 'v1：仅生成结构化结果，请求失败停止'}`;
     }
     case 'http':
       return `${step.method} 请求 · 地址：${value(step.url)}`;

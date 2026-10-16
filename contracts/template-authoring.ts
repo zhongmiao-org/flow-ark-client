@@ -1,4 +1,5 @@
-/** Normative author definitions and optional portable metadata, contracts 0.22.0. */
+/** Normative author definitions and optional portable metadata, contracts 0.28.0. */
+import { assertAIOutcomeCapabilities } from './ai-outcome';
 import Ajv from 'ajv/dist/2020.js';
 import schema from './p1.schema.json';
 import { validateConfigurationSchema } from './configuration-schema';
@@ -109,6 +110,7 @@ export function validateAuthorDefinition(value: unknown): any {
     for (const id of entry.actionIds)
       if (!d.actions.some((a: any) => a.id === id)) throw Error('入口引用未知动作：' + id);
     const steps = nodes(entry.flow.steps);
+    for (const node of steps) assertAIOutcomeCapabilities(node, entry.flow.requiredCapabilities);
     unique(steps.map((n: any) => n.id), '入口节点');
     unique(entry.promptBindings.map((b: any) => b.nodeId), '入口提示词目标');
     for (const binding of entry.promptBindings) {
