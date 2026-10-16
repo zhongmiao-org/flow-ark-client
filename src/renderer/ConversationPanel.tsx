@@ -234,7 +234,8 @@ export default function ConversationPanel({
       const value = await window.flowark.request(method, args);
       if (!alive.current) return;
       apply.current(value);
-      if (method === 'conversation.draft') updateText(value.draft);
+      // Input changes follow accept's sequence and local-edit checks. A delayed
+      // save receipt may already have been superseded by a newer onmessage snapshot.
       if (method === 'conversation.send' || method === 'conversation.retry') {
         pending.current = undefined;
         setUncertain(false);
