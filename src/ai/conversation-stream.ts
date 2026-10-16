@@ -1,4 +1,5 @@
 import type { Json } from '../shared/types';
+import { ResponseTextStream, requireStreamIdentity } from './response-text-stream';
 
 export type ConversationInput = {
   provider: 'deepseek' | 'openai-codex';
@@ -121,6 +122,7 @@ export async function streamConversation(
     text += part;
     if (part) delta(part);
   };
+  const responseText = new ResponseTextStream(add);
   for await (const raw of sse(response, signal)) {
     signal.throwIfAborted();
     if (raw === '[DONE]') {
@@ -140,7 +142,9 @@ export async function streamConversation(
       throw new Error('AI 消息流格式无效');
     if (deep) {
       if (event.error) throw new Error('AI 服务返回错误，未自动重试');
-      if (typeof event.id === 'string' && event.id.length <= 200) requestId = event.id;
+      const id = requireStreamIdentity(event.id);
+      if (requestId && id !== requestId) throw Error('AI 消息流的响应身份不一致');
+      requestId = id;
       if (typeof event.model === 'string' && event.model.length <= 100) model = event.model;
       if (event.usage !== undefined) usage = event.usage;
       if (!Array.isArray(event.choices) || event.choices.length > 1)
@@ -169,7 +173,14 @@ export async function streamConversation(
       if (!Number.isSafeInteger(event.sequence_number) || event.sequence_number !== sequence + 1)
         throw new Error('AI 流式事件序号缺失或乱序');
       sequence = event.sequence_number;
-      if (event.type === 'response.output_text.delta') add(event.delta);
+      if (
+        event.type === 'response.completed' &&
+        (!event.response ||
+          event.response.status !== 'completed' ||
+          event.response.error ||
+          event.response.incomplete_details)
+      )
+        throw new Error('AI 返回未完成结果');
       if (
         [
           'response.failed',
@@ -180,25 +191,8 @@ export async function streamConversation(
         ].includes(event.type)
       )
         throw new Error('AI 回复未完整完成或被拒绝，未自动重试');
-      if (
-        event.type === 'response.output_item.added' &&
-        event.item?.type !== 'message' &&
-        event.item?.type !== 'reasoning'
-      )
-        throw new Error('AI 会话不接受工具调用');
-      if (event.type === 'response.completed') {
+      if (responseText.accept(event)) {
         const result = event.response;
-        if (!result || result.status !== 'completed' || result.error || result.incomplete_details)
-          throw new Error('AI 返回未完成结果');
-        const content = result.output
-          ?.filter((m: any) => m.type === 'message')
-          .flatMap((m: any) => m.content ?? []);
-        if (
-          !Array.isArray(content) ||
-          content.some((c: any) => c.type !== 'output_text') ||
-          content.map((c: any) => c.text).join('') !== text
-        )
-          throw new Error('AI 完成正文与已接收消息不一致');
         if (typeof result.id === 'string' && result.id.length <= 200) requestId = result.id;
         if (typeof result.model === 'string' && result.model.length <= 100) model = result.model;
         usage = result.usage ?? null;
