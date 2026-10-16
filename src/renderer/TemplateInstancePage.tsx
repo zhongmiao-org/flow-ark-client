@@ -227,8 +227,16 @@ export default function TemplateInstancePage({
             ? '[data-instance-tab="resources"]'
             : scope === 'instance'
               ? '[data-instance-tab="configuration"], [data-instance-tab="resources"]'
-              : '[data-instance-tab]';
+              : '[data-instance-tab="configuration"], [data-instance-tab="resources"], [data-entry-id]';
+    const inputs = scope === 'all' ? templateSaveRequest(draft, saved, scope).inputs : {};
     return [...(root.current?.querySelectorAll(containers) ?? [])]
+      .filter(
+        (element) =>
+          scope !== 'all' ||
+          !element.hasAttribute('data-entry-id') ||
+          Object.hasOwn(inputs, element.getAttribute('data-entry-id')!) ||
+          element.querySelector('[data-value-incomplete]'),
+      )
       .map((element) => element.querySelector<HTMLElement>('[data-value-invalid]'))
       .find((element) => element);
   };
@@ -339,7 +347,7 @@ export default function TemplateInstancePage({
   };
   const go: TemplateNavigation = (next, destination = returnLabel) => {
     if (lock.current || pending.current) return;
-    if (templateDirty(draft, saved) || rawInvalid()) {
+    if (templateDirty(draft, saved) || root.current?.querySelector('[data-value-incomplete]')) {
       if (!focus.current?.offsetParent) focus.current = document.activeElement as HTMLElement;
       pending.current = true;
       invalidField.current = null;

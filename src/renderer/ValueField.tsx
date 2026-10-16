@@ -190,7 +190,11 @@ export function LiteralValue({
     json: jsonDefault ?? {},
   };
   return (
-    <div className="literal-value" data-value-invalid={error || undefined}>
+    <div
+      className="literal-value"
+      data-value-invalid={error || undefined}
+      data-value-incomplete={error || undefined}
+    >
       <label htmlFor={id + '-type'}>{displayLabels?.type ?? `${label}类型`}</label>
       <Select<string>
         id={id + '-type'}
