@@ -22,6 +22,9 @@ export type AuthorEditorOrigin = {
   checkoutId: string;
   flowId: string;
   name: string;
+  sdk?: import('../shared/contracts.generated').TemplateAuthorSdkContext;
+  sdkError?: string;
+  sdkLoaded?: boolean;
 };
 const api = (method: string, args: unknown = {}) => window.flowark.request(method, args);
 const status: Record<string, string> = {

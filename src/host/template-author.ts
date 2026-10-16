@@ -29,6 +29,7 @@ import type { FlowRecord, Flow } from '../shared/types';
 import { parameterSchema } from '../templates/export-boundaries';
 import { resolveParameterSources } from '../shared/parameter-sources';
 import type { TemplateData } from './template-data';
+import type { AuthorSdk } from './author-sdk';
 import { exportTarget, writeExport, readExport, type ExportTarget } from './author-export-files';
 type ExportOperation = { receipt: AuthorReceipt; token: string; target?: ExportTarget };
 type Preview = { id: string; revision: number; expires: number; pkg: PackageData; bytes: Buffer };
@@ -65,6 +66,7 @@ export class TemplateAuthor {
     private library: PackageLibrary,
     private available: () => void,
     private data?: TemplateData,
+    private sdk?: AuthorSdk,
   ) {
     for (const op of store.list<ExportOperation>('author-export')) {
       if (op.receipt.status === 'choosing') {
@@ -226,6 +228,7 @@ export class TemplateAuthor {
       this.store.put('flow', record.id, record);
       this.store.put('author-checkout', checkout.id, checkout);
       this.data?.createDebug(checkout, d);
+      this.sdk?.create(checkout, d);
     });
     return { checkout, record };
   }
@@ -236,7 +239,13 @@ export class TemplateAuthor {
   }
   origin(flowId: string) {
     const c = this.store.list<AuthorCheckout>('author-checkout').find((c) => c.flowId === flowId);
-    return c ? { checkout: c, draft: this.draft(c.draftId) } : null;
+    return c
+      ? {
+          checkout: c,
+          draft: this.draft(c.draftId),
+          ...this.sdk?.describe(this.checkoutValue(c).record),
+        }
+      : null;
   }
   source(flowId: string) {
     const r = this.store.get<FlowRecord>('flow', flowId);

@@ -1,3 +1,4 @@
+import { AuthorSdk } from './author-sdk';
 import { methods } from '../shared/ipc';
 import {
   assertBrowserInspectionNode,
@@ -154,6 +155,7 @@ export class Runtime {
   private typedResults: TypedResults;
   private author: TemplateAuthor;
   private templateData: TemplateData;
+  private authorSdk: AuthorSdk;
   private admissions: Promise<void> = Promise.resolve();
   constructor(
     readonly dataPath: string,
@@ -403,11 +405,17 @@ export class Runtime {
         );
       },
     });
+    this.authorSdk = new AuthorSdk(
+      this.store,
+      () => this.assertAdmitting(),
+      () => this.system('notification', { title: 'FlowArk 有新的作者调试提醒' }),
+    );
     this.author = new TemplateAuthor(
       this.store,
       this.templates.library,
       () => this.assertAdmitting(),
       this.templateData,
+      this.authorSdk,
     );
     this.sessions = new Sessions(dir, executable, dataPath, system);
     this.runReview = new RunReview(this.store, {
@@ -581,6 +589,7 @@ export class Runtime {
     };
     this.toolTargets.assertExecutable(record.id, record, !!desktopRun);
     const validatedFlow = validateFlow(record.flow);
+    const authorSdk = this.authorSdk.prepare(record);
     const templateData = await this.templateData.prepare(record);
     const flow = { ...validatedFlow, parameters: resolveParameterSources(validatedFlow) };
     if (walk(flow.steps).some((node) => node.type === 'desktop')) {
@@ -678,6 +687,7 @@ export class Runtime {
         scriptBundles: record.scriptBundles,
         skillSnapshots,
         templateData,
+        authorSdk,
       });
     }
     if (record.versionId && scriptNodes.some((n) => n.dependencies.length))
@@ -687,6 +697,7 @@ export class Runtime {
       scriptBundles: [],
       skillSnapshots,
       templateData,
+      authorSdk,
     };
     for (const n of steps)
       if (n.type === 'script') {
@@ -776,21 +787,28 @@ export class Runtime {
     else if (method === 'artifact')
       result = await this.workerRequest(owner.runId, 'artifact.create', args);
     else if (method === 'credential') {
-      if (this.store.get<FlowRecord>('snapshot', owner.runId)?.bindings.template)
+      if (
+        this.store.get<FlowRecord & PreparedScripts>('snapshot', owner.runId)?.authorSdk ||
+        this.store.get<FlowRecord>('snapshot', owner.runId)?.bindings.template
+      )
         throw new Error('模板脚本不能直接读取凭据，请使用绑定的 AI 能力');
       result = await this.workerRequest(owner.runId, 'credential', args);
     } else if (method === 'template') {
-      const snapshot = this.store.get<FlowRecord>('snapshot', owner.runId)!;
-      result = await this.templates.call(snapshot, owner.runId, args, this.active!.abort.signal, {
-        browser: async (bindingId, command) => {
-          const binding = this.store.get<BrowserBinding>('browser', bindingId);
-          if (!binding) throw new Error('浏览器不存在');
-          return this.sessions.use(binding, owner.runId, command, this.active!.abort.signal);
-        },
-        credential: async (id) => this.workerRequest(owner.runId, 'credential', { id }),
-        artifact: async (name, content) =>
-          this.workerRequest(owner.runId, 'artifact.create', { name, content }),
-      });
+      const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', owner.runId)!;
+      result = snapshot.authorSdk
+        ? this.authorSdk.call(snapshot, owner.runId, args, this.active!.abort.signal, () =>
+            this.assertScriptOwner(owner),
+          )
+        : await this.templates.call(snapshot, owner.runId, args, this.active!.abort.signal, {
+            browser: async (bindingId, command) => {
+              const binding = this.store.get<BrowserBinding>('browser', bindingId);
+              if (!binding) throw new Error('浏览器不存在');
+              return this.sessions.use(binding, owner.runId, command, this.active!.abort.signal);
+            },
+            credential: async (id) => this.workerRequest(owner.runId, 'credential', { id }),
+            artifact: async (name, content) =>
+              this.workerRequest(owner.runId, 'artifact.create', { name, content }),
+          });
     } else throw new Error('脚本能力不在白名单');
     this.assertScriptOwner(owner);
     return result;
@@ -972,7 +990,10 @@ export class Runtime {
     };
     check();
     const prepared = await this.preflight(record);
-    if (scheduleId && prepared.templateData?.owner.kind === 'author-checkout')
+    if (
+      scheduleId &&
+      (prepared.authorSdk || prepared.templateData?.owner.kind === 'author-checkout')
+    )
       throw Error('制作副本的配置与状态仅供明确试运行，请在正式模板实例中配置计划');
     check();
     this.credentialChecks.get(prepared)?.();
@@ -1066,6 +1087,10 @@ export class Runtime {
             executable: this.executable,
           },
           24 * 3600000,
+        );
+        this.checkActive(active);
+        this.authorSdk.complete(s, run.id, outputs, active.abort.signal, () =>
+          this.checkActive(active),
         );
         await this.templates.complete(s, run.id, outputs);
       } catch (error) {
@@ -1736,6 +1761,8 @@ export class Runtime {
       if (!rule) throw Error('模板制作方法未授权');
       const v = rule.parse(args) as any;
       switch (method) {
+        case 'author.sdk.result':
+          return this.authorSdk.read(v.runId);
         case 'author.schema.check':
           return this.author.schema(v.schema, v.form);
         case 'author.list':
@@ -1981,6 +2008,7 @@ export class Runtime {
             .filter((r) => run?.state === 'SUCCEEDED' || r.type === 'context'),
           snapshot: snapshot?.flow,
           scriptBundles: snapshot?.scriptBundles ?? [],
+          authorSdk: snapshot?.authorSdk,
           fault: this.store.fault ? redact(this.store.fault, this.secrets) : undefined,
           execution: this.observeExecution(),
         };
@@ -2108,6 +2136,7 @@ export class Runtime {
         if (args.templateSource) this.templates.assertSource(r.id, args.templateSource);
         await this.templates.preflight(r, true);
         const prepared = await this.preflight(r);
+        if (prepared.authorSdk) throw Error('作者调试副本不可创建本机计划，请在正式实例中配置');
         this.assertAdmitting();
         new Intl.DateTimeFormat('en', { timeZone: args.timezone });
         if (args.templateSource) this.templates.assertSource(r.id, args.templateSource);
@@ -2147,6 +2176,7 @@ export class Runtime {
           const originalFlow = digest(record);
           await this.templates.preflight(record, true);
           prepared = await this.preflight(record);
+          if (prepared.authorSdk) throw Error('作者调试副本不可创建本机计划，请在正式实例中配置');
           this.assertAdmitting();
           const currentFlow = this.store.get<FlowRecord>('flow', previous.flowId);
           if (!currentFlow || digest(currentFlow) !== originalFlow)

@@ -1,3 +1,4 @@
+import AuthorSdkInfo from './AuthorSdkInfo';
 import TypedRunResults from './TypedRunResults';
 import RunContextOperations from './RunContextOperations';
 import ActionButton from './ActionButton';
@@ -162,6 +163,13 @@ export default function RunOutputWorkspace({
             </Tag>
             {view.statusNote && (
               <Alert type="warning" showIcon title={view.statusNote} role="status" />
+            )}
+            {detail.authorSdk && (
+              <AuthorSdkInfo
+                key={`author-sdk:${detail.run.id}`}
+                context={detail.authorSdk}
+                runId={detail.run.id}
+              />
             )}
             {detail.typedResults?.length ? (
               <TypedRunResults runId={detail.run.id} entries={detail.typedResults} />

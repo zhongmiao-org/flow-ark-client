@@ -7,6 +7,7 @@ const allowed = new Set([
   'context.inspect',
   'author.schema.check',
   'author.list',
+  'author.sdk.result',
   'author.create',
   'author.detail',
   'author.save',

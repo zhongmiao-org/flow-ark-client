@@ -30,6 +30,7 @@ const token = z.string().regex(/^[a-f0-9]{64}$/),
   packageKey = z.string().min(1).max(240);
 export const authorMethods = {
   'author.schema.check': z.object({ schema: z.unknown(), form: z.boolean() }).strict(),
+  'author.sdk.result': z.object({ runId: id }).strict(),
   'author.list': z.object({}).strict(),
   'author.create': z.object({ requestId: id }).strict(),
   'author.detail': z.object({ id }).strict(),

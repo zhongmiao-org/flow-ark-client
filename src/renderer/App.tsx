@@ -1,3 +1,4 @@
+import AuthorSdkInfo from './AuthorSdkInfo';
 import SkillNodeConfiguration from './SkillNodeConfiguration';
 import ContextNodeConfiguration from './ContextNodeConfiguration';
 import DebugContextPage from './DebugContextPage';
@@ -690,9 +691,19 @@ function WorkspaceApp() {
             checkoutId: origin.checkout.id,
             flowId: r.id,
             name: origin.draft.definition.metadata.name,
+            sdk: origin.sdk,
+            sdkError: origin.sdkError,
+            sdkLoaded: true,
           });
       })
-      .catch(() => {});
+      .catch(() => {
+        if (visit === authorFlowGeneration.current)
+          setAuthorEditorOrigin((old) =>
+            old?.flowId === r.id
+              ? { ...old, sdkLoaded: true, sdkError: '固定SDK来源读取失败，请重新打开副本核对。' }
+              : old,
+          );
+      });
     return true;
   }
   async function create() {
@@ -2365,7 +2376,18 @@ function WorkspaceApp() {
                   type="info"
                   showIcon
                   title="模板入口编排副本"
-                  description="保存和调试只影响此本机副本。带回时排除参数值、资源绑定与调试结果，并重新核对提示词和制作修订。"
+                  description={
+                    <>
+                      <p>
+                        保存和调试只影响此本机副本。带回时排除参数值、资源绑定与调试结果，并重新核对提示词和制作修订。
+                      </p>
+                      <AuthorSdkInfo
+                        context={authorEditorOrigin.sdk}
+                        error={authorEditorOrigin.sdkError}
+                        loading={!authorEditorOrigin.sdkLoaded}
+                      />
+                    </>
+                  }
                   action={
                     <div className="author-actions">
                       <Button

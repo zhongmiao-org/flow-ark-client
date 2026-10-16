@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.26.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.27.0/p1.schema.json",
   "title": "FlowArk P1",
   "$defs": {
     "Json": {
@@ -1811,6 +1811,9 @@
         },
         "templateData": {
           "$ref": "#/$defs/TemplateDataContext"
+        },
+        "authorSdk": {
+          "$ref": "#/$defs/TemplateAuthorSdkContext"
         }
       },
       "required": [
@@ -5796,43 +5799,14 @@
       ]
     },
     "TemplateAttentionOrigin": {
-      "type": "object",
-      "properties": {
-        "version": {
-          "const": 1
+      "oneOf": [
+        {
+          "$ref": "#/$defs/TemplateInstanceAttentionOrigin"
         },
-        "runId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 100,
-          "not": {
-            "pattern": "[^a-zA-Z0-9_-]"
-          }
-        },
-        "instanceId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 100,
-          "not": {
-            "pattern": "[^a-zA-Z0-9_-]"
-          }
-        },
-        "entryId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 100,
-          "not": {
-            "pattern": "[^a-zA-Z0-9_-]"
-          }
+        {
+          "$ref": "#/$defs/TemplateAuthorAttentionOrigin"
         }
-      },
-      "required": [
-        "version",
-        "runId",
-        "instanceId",
-        "entryId"
-      ],
-      "additionalProperties": false
+      ]
     },
     "TemplateAttentionRecord": {
       "type": "object",
@@ -5878,6 +5852,260 @@
         "dedupeKey",
         "read",
         "time"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateAuthorSdkOwner": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "author-checkout"
+        },
+        "checkoutId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "not": {
+            "pattern": "[^a-zA-Z0-9_-]"
+          }
+        },
+        "draftId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "not": {
+            "pattern": "[^a-zA-Z0-9_-]"
+          }
+        },
+        "entryId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[a-z]",
+          "not": {
+            "pattern": "[^a-z0-9-]"
+          }
+        },
+        "flowId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "not": {
+            "pattern": "[^a-zA-Z0-9_-]"
+          }
+        },
+        "baseRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740990
+        }
+      },
+      "required": [
+        "kind",
+        "checkoutId",
+        "draftId",
+        "entryId",
+        "flowId",
+        "baseRevision"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateAuthorSdkContext": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "not": {
+            "pattern": "[^a-zA-Z0-9_-]"
+          }
+        },
+        "owner": {
+          "$ref": "#/$defs/TemplateAuthorSdkOwner"
+        },
+        "resultSchema": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Json"
+          }
+        },
+        "capabilities": {
+          "type": "array",
+          "maxItems": 1000,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "definitionSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "createdAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+          "minLength": 24,
+          "maxLength": 24
+        }
+      },
+      "required": [
+        "version",
+        "id",
+        "owner",
+        "resultSchema",
+        "capabilities",
+        "definitionSha256",
+        "createdAt"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateAuthorSdkResult": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "not": {
+            "pattern": "[^a-zA-Z0-9_-]"
+          }
+        },
+        "contextId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "not": {
+            "pattern": "[^a-zA-Z0-9_-]"
+          }
+        },
+        "definitionSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "value": {
+          "$ref": "#/$defs/Json"
+        },
+        "createdAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+          "minLength": 24,
+          "maxLength": 24
+        }
+      },
+      "required": [
+        "version",
+        "runId",
+        "contextId",
+        "definitionSha256",
+        "value",
+        "createdAt"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateInstanceAttentionOrigin": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "not": {
+            "pattern": "[^a-zA-Z0-9_-]"
+          }
+        },
+        "instanceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "not": {
+            "pattern": "[^a-zA-Z0-9_-]"
+          }
+        },
+        "entryId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "not": {
+            "pattern": "[^a-zA-Z0-9_-]"
+          }
+        }
+      },
+      "required": [
+        "version",
+        "runId",
+        "instanceId",
+        "entryId"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateAuthorAttentionOrigin": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 2
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "not": {
+            "pattern": "[^a-zA-Z0-9_-]"
+          }
+        },
+        "checkoutId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "not": {
+            "pattern": "[^a-zA-Z0-9_-]"
+          }
+        },
+        "draftId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "not": {
+            "pattern": "[^a-zA-Z0-9_-]"
+          }
+        },
+        "entryId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[a-z]",
+          "not": {
+            "pattern": "[^a-z0-9-]"
+          }
+        },
+        "baseRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740990
+        }
+      },
+      "required": [
+        "version",
+        "runId",
+        "checkoutId",
+        "draftId",
+        "entryId",
+        "baseRevision"
       ],
       "additionalProperties": false
     }

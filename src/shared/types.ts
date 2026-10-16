@@ -13,6 +13,7 @@ export type PreparedScripts = {
   scriptBundles: ScriptBundle[];
   skillSnapshots?: Record<string, import('./skill').SkillVersion>;
   templateData?: import('./template-data').DataContext;
+  authorSdk?: import('./contracts.generated').TemplateAuthorSdkContext;
 };
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export type Bindings = {

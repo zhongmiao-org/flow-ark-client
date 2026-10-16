@@ -433,6 +433,7 @@ export class RunReview {
         authorization: after.authorization,
         bundles: prepared.scriptBundles,
         ...(prepared.templateData ? { templateData: prepared.templateData } : {}),
+        ...(prepared.authorSdk ? { authorSdk: prepared.authorSdk } : {}),
       }),
     };
   }
@@ -469,6 +470,16 @@ export class RunReview {
       result.flow.versionId = executionVersion(prepared.record, prepared.prepared);
       result.flow.scriptBundles = prepared.prepared.scriptBundles;
       result.resources = prepared.resources;
+      if (prepared.prepared.authorSdk) {
+        const sdk = prepared.prepared.authorSdk;
+        result.resources.push({
+          id: 'author-sdk',
+          name: '作者调试结果与提醒',
+          kind: 'action',
+          access: '本机记录',
+          detail: `固定入口 ${sdk.owner.entryId} / 制作修订 ${sdk.owner.baseRevision}；结果及提醒只属本副本，不进入正式实例或公开ZIP。其余SDK须在正式实例配置。`,
+        });
+      }
       if (prepared.prepared.templateData) {
         const context = prepared.prepared.templateData;
         result.resources.push({

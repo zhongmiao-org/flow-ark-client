@@ -1,0 +1,21 @@
+{
+  "id": "attention-author-a",
+  "kind": "template",
+  "title": "虚构作者调试提醒",
+  "detail": {
+    "origin": {
+      "runId": "untrusted-text"
+    }
+  },
+  "dedupeKey": "author-sdk-attention:checkout-a:review",
+  "read": false,
+  "time": "2026-10-16T03:00:01.000Z",
+  "origin": {
+    "version": 2,
+    "runId": "run-author-a",
+    "checkoutId": "checkout-a",
+    "draftId": "draft-a",
+    "entryId": "check",
+    "baseRevision": 7
+  }
+}
