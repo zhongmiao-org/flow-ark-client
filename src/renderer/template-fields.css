@@ -26,10 +26,12 @@
   overflow-wrap: anywhere;
   max-width: 100%;
 }
-.template-array-row > .template-array-remove {
+.template-array-row > .template-array-remove,
+.template-array-row > .template-array-move {
   flex: 0 0 40px;
 }
-.template-array-remove > .ant-btn {
+.template-array-remove > .ant-btn,
+.template-array-move > .ant-btn {
   width: 40px;
   height: 40px;
   min-height: 40px;

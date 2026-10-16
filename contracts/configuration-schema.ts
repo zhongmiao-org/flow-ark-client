@@ -15,7 +15,9 @@ const allowed = new Set([
   'maximum',
   'minLength',
   'maxLength',
+  'minItems',
   'maxItems',
+  'uniqueItems',
   'readOnly',
 ]);
 /** Only a bounded, data-only JSON Schema subset can be rendered or validated. */
@@ -29,6 +31,16 @@ export function validateConfigurationSchema(schema: any, depth = 0): void {
     !['object', 'array', 'string', 'number', 'integer', 'boolean'].includes(schema.type)
   )
     throw new Error('模板字段类型不支持');
+  if (Object.hasOwn(schema, 'minItems') || Object.hasOwn(schema, 'uniqueItems')) {
+    if (schema.type !== 'array') throw new Error('数组数量及重复规则须用于明确的array类型');
+    if (Object.hasOwn(schema, 'uniqueItems') && typeof schema.uniqueItems !== 'boolean')
+      throw new Error('uniqueItems须为布尔值');
+  }
+  for (const key of ['minItems', 'maxItems'])
+    if (Object.hasOwn(schema, key) && (!Number.isSafeInteger(schema[key]) || schema[key] < 0))
+      throw new Error('数组项数须为非负安全整数：' + key);
+  if (schema.minItems !== undefined && schema.maxItems !== undefined && schema.minItems > schema.maxItems)
+    throw new Error('数组最少项数不能超过最多项数');
   if (schema.properties) {
     if (Object.keys(schema.properties).length > 100) throw new Error('模板配置字段过多');
     for (const [key, value] of Object.entries(schema.properties)) {
