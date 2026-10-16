@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.25.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.26.0/p1.schema.json",
   "title": "FlowArk P1",
   "$defs": {
     "Json": {
@@ -5794,6 +5794,92 @@
           "type": "null"
         }
       ]
+    },
+    "TemplateAttentionOrigin": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "not": {
+            "pattern": "[^a-zA-Z0-9_-]"
+          }
+        },
+        "instanceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "not": {
+            "pattern": "[^a-zA-Z0-9_-]"
+          }
+        },
+        "entryId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "not": {
+            "pattern": "[^a-zA-Z0-9_-]"
+          }
+        }
+      },
+      "required": [
+        "version",
+        "runId",
+        "instanceId",
+        "entryId"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateAttentionRecord": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "not": {
+            "pattern": "[^a-zA-Z0-9_-]"
+          }
+        },
+        "kind": {
+          "const": "template"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 100000
+        },
+        "detail": {
+          "$ref": "#/$defs/Json"
+        },
+        "dedupeKey": {
+          "type": "string",
+          "maxLength": 100000
+        },
+        "read": {
+          "type": "boolean"
+        },
+        "time": {
+          "type": "string",
+          "maxLength": 100000
+        },
+        "origin": {
+          "$ref": "#/$defs/TemplateAttentionOrigin"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "title",
+        "detail",
+        "dedupeKey",
+        "read",
+        "time"
+      ],
+      "additionalProperties": false
     }
   }
 }

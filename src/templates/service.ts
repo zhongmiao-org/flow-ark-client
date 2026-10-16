@@ -607,13 +607,14 @@ export class Templates {
       case 'attention': {
         need('attention');
         const a = args.request;
-        if (typeof a.title !== 'string' || typeof a.key !== 'string')
+        if (!a || typeof a.title !== 'string' || typeof a.key !== 'string')
           throw new Error('待办参数无效');
         const item = this.store.attention(
           'template',
           a.title,
-          a.detail ?? {},
+          a.detail === undefined ? {} : a.detail,
           ref.instanceId + ':' + a.key,
+          { version: 1, runId, instanceId: ref.instanceId, entryId: entry.id },
         );
         void this.notify().catch(() => {});
         return item;

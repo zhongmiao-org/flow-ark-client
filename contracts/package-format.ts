@@ -1,4 +1,4 @@
-/** Normative package validation for contracts 0.25.0, derived from package 2.0. No application imports. */
+/** Normative package validation for contracts 0.26.0, derived from package 2.0. No application imports. */
 import { createHash } from 'node:crypto';
 import { assertBrowserInspectionNode, browserInspectionCapability } from './browser-inspection';
 import Ajv from 'ajv/dist/2020.js';

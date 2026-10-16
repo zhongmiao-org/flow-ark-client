@@ -1,3 +1,4 @@
+import type { TemplateAttentionOrigin } from '../../contracts/template-attention';
 import type { FlowArkP1 as P1Contracts } from './contracts.generated';
 import type { RunOverview } from './run-history';
 import type { RunRerunMode } from './run-rerun';
@@ -95,6 +96,7 @@ export type Attention = {
   dedupeKey: string;
   read: boolean;
   time: string;
+  origin?: TemplateAttentionOrigin;
 };
 export type ExecutionObservation = {
   observedAt: string;

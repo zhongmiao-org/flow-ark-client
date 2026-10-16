@@ -25,11 +25,16 @@ export default function AttentionDetails({
   item: Attention;
   omitRunReferences?: boolean;
 }) {
-  const entries = Object.entries(item.detail ?? {}).filter(
-    ([key]) =>
-      !['schema', 'answered'].includes(key) &&
-      !(omitRunReferences && ['runId', 'runIds'].includes(key)),
-  );
+  const template = item.kind === 'template';
+  const entries = template
+    ? item.detail !== null && typeof item.detail === 'object' && !Array.isArray(item.detail)
+      ? Object.entries(item.detail)
+      : [['value', item.detail]]
+    : Object.entries(item.detail ?? {}).filter(
+        ([key]) =>
+          !['schema', 'answered'].includes(key) &&
+          !(omitRunReferences && ['runId', 'runIds'].includes(key)),
+      );
   return (
     <>
       {!!entries.length && (
@@ -40,7 +45,7 @@ export default function AttentionDetails({
           column={1}
           items={entries.map(([key, value]) => ({
             key,
-            label: detailLabels[key] ?? key,
+            label: template ? `模板字段 · ${key}` : (detailLabels[key] ?? key),
             children: (
               <span className="attention-fact-value">
                 {typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
@@ -51,7 +56,7 @@ export default function AttentionDetails({
       )}
       {!entries.length && (
         <p className="attention-muted">
-          {omitRunReferences
+          {omitRunReferences && !template
             ? '请逐项查看关联运行，核对已保存的结果与外部操作。'
             : '该提醒没有附加说明。'}
         </p>
