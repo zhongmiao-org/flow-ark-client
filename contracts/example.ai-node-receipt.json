@@ -1,0 +1,11 @@
+{
+  "provider": "deepseek",
+  "model": "fictional-model",
+  "requestId": "fictional-request",
+  "usage": {
+    "prompt_tokens": 20,
+    "completion_tokens": 10,
+    "total_tokens": 30
+  },
+  "status": "success"
+}

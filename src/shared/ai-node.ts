@@ -1,4 +1,5 @@
 import type { Bindings, Flow, Json, Step } from './types';
+import { aiOutcomeModel } from './ai-outcome';
 
 export const aiNodeCapability = 'ai-node-v1';
 export type AINode = Extract<Step, { type: 'ai' }>;
@@ -68,13 +69,14 @@ export function assertAIRequest(node: AINode, input: unknown = node.input) {
   if (bytes({ instructions: node.instructions, input, schema: node.schema }) > 1024 * 1024)
     throw new Error('AI 指令、输入与输出格式合计超过 1 MiB');
 }
-export function aiBinding(bindings: Bindings, id: string) {
+export function aiBinding(bindings: Bindings, id: string, version = 1) {
   const binding = bindings.resources?.[id];
   if (
     !binding ||
     !['deepseek', 'openai-codex'].includes(binding.provider ?? '') ||
     !binding.model ||
     !/^[\x21-\x7e]{1,100}$/.test(binding.model) ||
+    (version === 2 && !aiOutcomeModel.test(binding.model)) ||
     binding.path !== undefined ||
     binding.browserId !== undefined
   )

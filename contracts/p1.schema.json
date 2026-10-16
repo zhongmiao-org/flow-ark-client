@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.27.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.28.0/p1.schema.json",
   "title": "FlowArk P1",
   "$defs": {
     "Json": {
@@ -1139,6 +1139,73 @@
             "instructions",
             "input",
             "schema"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 100000
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 3600000
+            },
+            "type": {
+              "const": "ai"
+            },
+            "version": {
+              "const": 2
+            },
+            "binding": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{0,99}$"
+            },
+            "instructions": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100000
+            },
+            "input": {
+              "$ref": "#/$defs/Value"
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "object"
+                }
+              },
+              "required": [
+                "type"
+              ],
+              "additionalProperties": {
+                "$ref": "#/$defs/Json"
+              }
+            },
+            "failureMode": {
+              "enum": [
+                "stop",
+                "result"
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "version",
+            "binding",
+            "instructions",
+            "input",
+            "schema",
+            "failureMode"
           ],
           "additionalProperties": false
         },
@@ -6108,6 +6175,545 @@
         "baseRevision"
       ],
       "additionalProperties": false
+    },
+    "AIRequestError": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "authentication"
+            },
+            "message": {
+              "const": "AI 服务拒绝鉴权，请检查自己的 Key 与模型权限。"
+            },
+            "httpStatus": {
+              "enum": [
+                401,
+                403
+              ]
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "httpStatus"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "rate-limit"
+            },
+            "message": {
+              "const": "AI 服务限流，请稍后自行重新运行。"
+            },
+            "httpStatus": {
+              "const": 429
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "httpStatus"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "http"
+            },
+            "message": {
+              "const": "AI 接口返回请求错误，请核对服务状态与请求配置。"
+            },
+            "httpStatus": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 599,
+              "not": {
+                "anyOf": [
+                  {
+                    "minimum": 200,
+                    "maximum": 299
+                  },
+                  {
+                    "enum": [
+                      401,
+                      403,
+                      429
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "httpStatus"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "network"
+            },
+            "message": {
+              "const": "AI 网络请求未完成，请核对连接后自行重新运行。"
+            },
+            "httpStatus": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "integer",
+                  "minimum": 200,
+                  "maximum": 299
+                }
+              ]
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "httpStatus"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "request-timeout"
+            },
+            "message": {
+              "const": "AI 请求等待超时，未采用结果；不会自动重试。"
+            },
+            "httpStatus": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "integer",
+                  "minimum": 200,
+                  "maximum": 299
+                }
+              ]
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "httpStatus"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "refused"
+            },
+            "message": {
+              "const": "AI 服务拒绝生成，未采用正文。"
+            },
+            "httpStatus": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "integer",
+                  "minimum": 200,
+                  "maximum": 299
+                }
+              ]
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "httpStatus"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "incomplete"
+            },
+            "message": {
+              "const": "AI 未返回完整结果，未采用部分正文。"
+            },
+            "httpStatus": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "integer",
+                  "minimum": 200,
+                  "maximum": 299
+                }
+              ]
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "httpStatus"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "invalid-response"
+            },
+            "message": {
+              "const": "AI 响应或输出格式无效，未采用正文。"
+            },
+            "httpStatus": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "integer",
+                  "minimum": 200,
+                  "maximum": 299
+                }
+              ]
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "httpStatus"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "AIRequestFailure": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "const": "failed"
+        },
+        "provider": {
+          "enum": [
+            "openai-codex",
+            "deepseek"
+          ]
+        },
+        "model": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,99}$"
+        },
+        "requestId": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_.:-]{1,200}$"
+            }
+          ]
+        },
+        "usage": {
+          "$ref": "#/$defs/AIUsage"
+        },
+        "error": {
+          "$ref": "#/$defs/AIRequestError"
+        }
+      },
+      "required": [
+        "status",
+        "provider",
+        "model",
+        "requestId",
+        "usage",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "AIOutcome": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "success"
+            },
+            "result": {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/AIResult"
+                },
+                {
+                  "properties": {
+                    "model": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,99}$"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "pattern": "^(?:[a-zA-Z0-9_.:-]{1,200})?$"
+                    },
+                    "usage": {
+                      "$ref": "#/$defs/AIUsage"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "required": [
+            "status",
+            "result"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "$ref": "#/$defs/AIRequestFailure"
+        }
+      ]
+    },
+    "AINodeReceipt": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "success"
+            },
+            "provider": {
+              "enum": [
+                "openai-codex",
+                "deepseek"
+              ]
+            },
+            "model": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,99}$"
+            },
+            "requestId": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9_.:-]{1,200}$"
+                }
+              ]
+            },
+            "usage": {
+              "$ref": "#/$defs/AIUsage"
+            }
+          },
+          "required": [
+            "status",
+            "provider",
+            "model",
+            "requestId",
+            "usage"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "$ref": "#/$defs/AIRequestFailure"
+        }
+      ]
+    },
+    "AIUsage": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "prompt_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "completion_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "total_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "input_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "output_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "prompt_cache_hit_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "prompt_cache_miss_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "prompt_tokens_details": {
+              "type": "object",
+              "properties": {
+                "cached_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "reasoning_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "audio_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "accepted_prediction_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "rejected_prediction_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "additionalProperties": false,
+              "minProperties": 1
+            },
+            "completion_tokens_details": {
+              "type": "object",
+              "properties": {
+                "cached_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "reasoning_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "audio_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "accepted_prediction_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "rejected_prediction_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "additionalProperties": false,
+              "minProperties": 1
+            },
+            "input_tokens_details": {
+              "type": "object",
+              "properties": {
+                "cached_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "reasoning_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "audio_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "accepted_prediction_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "rejected_prediction_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "additionalProperties": false,
+              "minProperties": 1
+            },
+            "output_tokens_details": {
+              "type": "object",
+              "properties": {
+                "cached_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "reasoning_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "audio_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "accepted_prediction_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "rejected_prediction_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "additionalProperties": false,
+              "minProperties": 1
+            }
+          },
+          "additionalProperties": false,
+          "minProperties": 1
+        }
+      ]
     }
   }
 }

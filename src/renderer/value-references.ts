@@ -135,13 +135,42 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
         add(path + '.' + key, label + ' / ' + key, '前序步骤', '确认后才有完整对话；先判断 status');
     if (node.type === 'ai') {
       const schema = node.schema as { properties?: Record<string, unknown> };
+      const prefix = node.version === 2 ? '.result' : '';
+      if (node.version === 2)
+        for (const key of [
+          'status',
+          'result',
+          'error',
+          'error.code',
+          'error.message',
+          'error.httpStatus',
+          'provider',
+          'model',
+          'requestId',
+          'usage',
+        ])
+          add(
+            path + '.' + key,
+            label + ' / ' + key,
+            '前序步骤',
+            key === 'status'
+              ? '先判断 success 或 failed'
+              : key === 'result'
+                ? '仅status=success时可读取完整AIResult'
+                : '失败分支的回执；未知ID/用量为null，无可用正文',
+          );
       for (const key of ['output', 'provider', 'model', 'requestId', 'usage'])
-        add(path + '.' + key, label + ' / ' + key, '前序步骤', 'AI已校验结果字段');
+        add(
+          path + prefix + '.' + key,
+          label + ' / ' + (prefix ? 'result / ' : '') + key,
+          '前序步骤',
+          node.version === 2 ? '仅status=success时可读取完整结果' : 'AI已校验结果字段',
+        );
       for (const key of Object.keys(schema.properties ?? {}))
         if (referenceKey(key))
           add(
-            path + '.output.' + key,
-            label + ' / output / ' + key,
+            path + prefix + '.output.' + key,
+            label + (prefix ? ' / result' : '') + ' / output / ' + key,
             '前序步骤',
             '已声明输出字段，实际值以本次运行为准',
           );

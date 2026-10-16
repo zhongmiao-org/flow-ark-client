@@ -115,6 +115,11 @@ export function declareNativeBoundaries(flow: Flow, manifest: Manifest, entryId:
       if (!entry.resources.includes(node.binding)) entry.resources.push(node.binding);
       const capability = node.type === 'ai' ? 'ai-node-v1' : 'conversation-v1';
       if (!entry.capabilities.includes(capability)) entry.capabilities.push(capability);
+      if (node.type === 'ai' && node.version === 2) {
+        if (!entry.capabilities.includes('ai-outcome-v1')) entry.capabilities.push('ai-outcome-v1');
+        if (!flow.requiredCapabilities.includes('ai-outcome-v1'))
+          flow.requiredCapabilities.push('ai-outcome-v1');
+      }
       if (node.type === 'conversation') {
         if (!entry.capabilities.includes('conversation-evidence-v1'))
           entry.capabilities.push('conversation-evidence-v1');

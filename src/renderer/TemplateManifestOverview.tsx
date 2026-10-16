@@ -19,6 +19,7 @@ export const capabilityLabel = (name: string) =>
       http: '网络请求',
       ai: 'AI 服务',
       'ai-node-v1': '结构化 AI v1',
+      'ai-outcome-v1': 'AI请求结果与失败分支',
       conversation: '引导会话',
       'conversation-v1': '持久会话 v1',
       'conversation-evidence-v1': '已确认会话来源',

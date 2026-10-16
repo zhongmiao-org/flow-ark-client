@@ -1,0 +1,17 @@
+{
+  "status": "success",
+  "result": {
+    "provider": "deepseek",
+    "model": "fictional-model",
+    "requestId": "fictional-request",
+    "output": {
+      "answer": "虚构结构化结果",
+      "needsHuman": false
+    },
+    "usage": {
+      "prompt_tokens": 20,
+      "completion_tokens": 10,
+      "total_tokens": 30
+    }
+  }
+}

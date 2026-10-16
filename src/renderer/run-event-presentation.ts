@@ -1,8 +1,12 @@
-import type { Event } from '../shared/types';
+import type { AINodeReceipt, Event } from '../shared/types';
 import { runDisplayLabels } from '../shared/run-history';
+import { ai_receipt_v1 } from '../shared/node-schema.generated';
+import { aiReceiptMessage } from '../shared/ai-outcome';
 
 export function runEventTitle(event: Event): string {
   switch (event.type) {
+    case 'ai-outcome':
+      return event.data?.status === 'failed' ? 'AI请求失败' : 'AI请求结果';
     case 'state':
       return '运行状态';
     case 'node-start':
@@ -28,6 +32,10 @@ export function runEventTitle(event: Event): string {
 
 export function runEventMessage(event: Event): string {
   const data = event.data ?? {};
+  if (event.type === 'ai-outcome')
+    return ai_receipt_v1(data)
+      ? aiReceiptMessage(data as AINodeReceipt)
+      : 'AI回执格式尚未确认，保留原始脱敏记录';
   if (event.type === 'state') {
     const state = data.state;
     return typeof state === 'string' && Object.hasOwn(runDisplayLabels, state)

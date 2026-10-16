@@ -219,7 +219,40 @@ export default function AINodeConfiguration({
         change={(input) => change({ ...node, input })}
       />
       <h4>输出格式</h4>
-      <p className="note">通过完整格式校验后才继续。后续步骤引用 output 中的字段。</p>
+      {node.version === 2 ? (
+        <>
+          <label htmlFor={id + '-failure'}>请求失败时</label>
+          <Select
+            id={id + '-failure'}
+            aria-label="AI请求失败时"
+            value={node.failureMode}
+            options={[
+              { value: 'stop', label: '停止运行（默认）' },
+              { value: 'result', label: '返回失败状态，供后续条件判断' },
+            ]}
+            onChange={(failureMode) => change({ ...node, failureMode })}
+          />
+          <p className="note">
+            先判断 status = success，再读取 result.output。失败为 status = failed，只有 error，无
+            result 或可用正文。
+          </p>
+          <p className="note">
+            缺 Key、绑定、权限，取消或节点超时仍停止；不自动重试或切换模型。提醒由后续分支明确连接。
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="note">
+            v1：通过完整格式校验后才继续，后续引用 output 中的字段；请求失败停止运行。
+          </p>
+          <p className="note">
+            改用 v2 后成功结果位于 result.output，须同时调整后续引用；当前节点和历史不会自动升级。
+          </p>
+          <Button onClick={() => change({ ...node, version: 2, failureMode: 'stop' })}>
+            明确改用 v2 结果格式
+          </Button>
+        </>
+      )}
       {names.map((name, index) => (
         <OutputField
           key={index}

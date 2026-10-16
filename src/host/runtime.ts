@@ -465,6 +465,9 @@ export class Runtime {
     });
   }
   private aiNodes = new AINodes({
+    outcomeReceipt: (runId, instance, receipt) => {
+      this.store.aiOutcome(runId, instance, receipt, this.secrets);
+    },
     configuration: (provider) => this.system('ai.configuration.read', { provider }),
     key: (provider, revision) => this.system('credentials.get', { id: provider, revision }),
     secret: (key) => {
@@ -1308,6 +1311,7 @@ export class Runtime {
         const resource = pkg.manifest.resources.find((r) => r.id === node.binding);
         if (
           !entry.capabilities.includes('ai-node-v1') ||
+          (node.version === 2 && !entry.capabilities.includes('ai-outcome-v1')) ||
           !entry.capabilities.includes('ai') ||
           !entry.resources.includes(node.binding) ||
           resource?.kind !== 'ai' ||

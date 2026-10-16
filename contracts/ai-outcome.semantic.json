@@ -1,0 +1,186 @@
+[
+  {
+    "name": "v2需要两项能力",
+    "operation": "capabilities",
+    "node": {
+      "id": "summarize",
+      "type": "ai",
+      "version": 2,
+      "binding": "ai",
+      "instructions": "按输入整理摘要，未知信息明确标记。",
+      "input": {
+        "source": {
+          "$ref": "params.source"
+        }
+      },
+      "schema": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "needsHuman": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer",
+          "needsHuman"
+        ],
+        "additionalProperties": false
+      },
+      "failureMode": "result"
+    },
+    "capabilities": [
+      "ai-node-v1",
+      "ai-outcome-v1"
+    ],
+    "valid": true
+  },
+  {
+    "name": "v2不可漏新能力",
+    "operation": "capabilities",
+    "node": {
+      "id": "summarize",
+      "type": "ai",
+      "version": 2,
+      "binding": "ai",
+      "instructions": "按输入整理摘要，未知信息明确标记。",
+      "input": {
+        "source": {
+          "$ref": "params.source"
+        }
+      },
+      "schema": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "needsHuman": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer",
+          "needsHuman"
+        ],
+        "additionalProperties": false
+      },
+      "failureMode": "result"
+    },
+    "capabilities": [
+      "ai-node-v1"
+    ],
+    "valid": false
+  },
+  {
+    "name": "v2不可漏AI基础能力",
+    "operation": "capabilities",
+    "node": {
+      "id": "summarize",
+      "type": "ai",
+      "version": 2,
+      "binding": "ai",
+      "instructions": "按输入整理摘要，未知信息明确标记。",
+      "input": {
+        "source": {
+          "$ref": "params.source"
+        }
+      },
+      "schema": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "needsHuman": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer",
+          "needsHuman"
+        ],
+        "additionalProperties": false
+      },
+      "failureMode": "result"
+    },
+    "capabilities": [
+      "ai-outcome-v1"
+    ],
+    "valid": false
+  },
+  {
+    "name": "v2不可全无能力",
+    "operation": "capabilities",
+    "node": {
+      "id": "summarize",
+      "type": "ai",
+      "version": 2,
+      "binding": "ai",
+      "instructions": "按输入整理摘要，未知信息明确标记。",
+      "input": {
+        "source": {
+          "$ref": "params.source"
+        }
+      },
+      "schema": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "needsHuman": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer",
+          "needsHuman"
+        ],
+        "additionalProperties": false
+      },
+      "failureMode": "result"
+    },
+    "capabilities": [],
+    "valid": false
+  },
+  {
+    "name": "v1保持原能力校验范围",
+    "operation": "capabilities",
+    "node": {
+      "id": "summarize",
+      "type": "ai",
+      "version": 1,
+      "binding": "ai",
+      "instructions": "按输入整理摘要，未知信息明确标记。",
+      "input": {
+        "source": {
+          "$ref": "params.source"
+        }
+      },
+      "schema": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "needsHuman": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer",
+          "needsHuman"
+        ],
+        "additionalProperties": false
+      },
+      "failureMode": "result"
+    },
+    "capabilities": [
+      "ai-node-v1"
+    ],
+    "valid": true
+  }
+]

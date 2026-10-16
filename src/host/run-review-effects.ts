@@ -103,7 +103,7 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
       case 'ai':
         return effect(
           'network',
-          `将本节点指令和选定输入发送到AI资源“${node.binding}”绑定的模型，消耗用户自己的token额度；仅生成数据，不执行其他动作。`,
+          `将本节点指令和选定输入发送到AI资源“${node.binding}”绑定的模型，消耗用户自己的token额度；仅生成数据，不执行其他动作。${node.version === 2 ? (node.failureMode === 'result' ? '请求故障返回失败状态供后续处理；取消、权限、资源和节点期限仍中断。' : '请求故障停止运行；成功结果在result.output。') : ''}`,
         );
       case 'http':
         return effect(
