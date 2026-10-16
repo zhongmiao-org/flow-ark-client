@@ -76,6 +76,7 @@ export default function TemplateEntry({
     loadingResources = useRef(false);
   const inputFields = useRef<HTMLFieldSetElement>(null);
   const [invalidInput, setInvalidInput] = useState(false);
+  const [incompleteInput, setIncompleteInput] = useState(false);
   const [inputSaved, setInputSaved] = useState(0);
   const focusedInputSave = useRef(0);
   const readinessNotice = useRef<HTMLDivElement>(null);
@@ -88,13 +89,16 @@ export default function TemplateEntry({
   useLayoutEffect(() => {
     const fields = inputFields.current;
     if (!fields) return;
-    const update = () => setInvalidInput(hasInvalidInput());
+    const update = () => {
+      setInvalidInput(hasInvalidInput());
+      setIncompleteInput(!!fields.querySelector('[data-value-incomplete]'));
+    };
     const observer = new MutationObserver(update);
     observer.observe(fields, {
       subtree: true,
       childList: true,
       attributes: true,
-      attributeFilter: ['data-value-invalid'],
+      attributeFilter: ['data-value-invalid', 'data-value-incomplete'],
     });
     update();
     return () => observer.disconnect();
@@ -214,7 +218,7 @@ export default function TemplateEntry({
     return () => observer.disconnect();
   }, [active, checking, inspection, sourceChecking]);
   const dirtyInput =
-    invalidInput || !equal(entry.values, saved.entries.find((e) => e.id === entryId)?.values);
+    incompleteInput || !equal(entry.values, saved.entries.find((e) => e.id === entryId)?.values);
   const dirtyConfiguration = !equal(instance, saved.instance);
   const missing = entry.resources.filter((id) => {
     const declaration = detail.manifest.resources.find((r) => r.id === id)!;
@@ -342,6 +346,7 @@ export default function TemplateEntry({
     !!createdRun ||
     !flowId ||
     !!readError ||
+    invalidInput ||
     dirtyInput ||
     dirtyConfiguration ||
     !!missing.length ||
@@ -349,7 +354,8 @@ export default function TemplateEntry({
     !!entry.unavailable.length;
   const requirements = [
     ...(!flowId ? ['原入口流程不存在，请返回模板库重新读取。'] : []),
-    ...(dirtyInput ? [invalidInput ? '请修正本次输入中未完成的字段。' : '本次输入尚未保存。'] : []),
+    ...(invalidInput ? ['请修正本次输入中未完成的字段。'] : []),
+    ...(dirtyInput && !invalidInput ? ['本次输入尚未保存。'] : []),
     ...(dirtyConfiguration ? ['实例配置尚未保存。'] : []),
     ...(missing.length
       ? [
