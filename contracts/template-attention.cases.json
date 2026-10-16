@@ -1,0 +1,351 @@
+[
+  {
+    "name": "可信宿主来源",
+    "definition": "TemplateAttentionOrigin",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "runId": "run-original",
+      "instanceId": "instance-a",
+      "entryId": "check"
+    }
+  },
+  {
+    "name": "模板伪造字段仅作原始内容",
+    "definition": "TemplateAttentionRecord",
+    "valid": true,
+    "value": {
+      "id": "attention-a",
+      "kind": "template",
+      "title": "请核对当前网页",
+      "detail": {
+        "runId": "run-spoofed",
+        "runIds": [
+          "run-other"
+        ],
+        "origin": {
+          "runId": "nested-spoof"
+        }
+      },
+      "dedupeKey": "instance-a:review",
+      "read": false,
+      "time": "2026-10-16T00:00:00.000Z",
+      "origin": {
+        "version": 1,
+        "runId": "run-original",
+        "instanceId": "instance-a",
+        "entryId": "check"
+      }
+    }
+  },
+  {
+    "name": "字符串详情",
+    "definition": "TemplateAttentionRecord",
+    "valid": true,
+    "value": {
+      "id": "attention-a",
+      "kind": "template",
+      "title": "请核对当前网页",
+      "detail": "普通字符串",
+      "dedupeKey": "instance-a:review",
+      "read": false,
+      "time": "2026-10-16T00:00:00.000Z",
+      "origin": {
+        "version": 1,
+        "runId": "run-original",
+        "instanceId": "instance-a",
+        "entryId": "check"
+      }
+    }
+  },
+  {
+    "name": "数组详情",
+    "definition": "TemplateAttentionRecord",
+    "valid": true,
+    "value": {
+      "id": "attention-a",
+      "kind": "template",
+      "title": "请核对当前网页",
+      "detail": [
+        1,
+        false,
+        {
+          "reason": "核对"
+        }
+      ],
+      "dedupeKey": "instance-a:review",
+      "read": false,
+      "time": "2026-10-16T00:00:00.000Z",
+      "origin": {
+        "version": 1,
+        "runId": "run-original",
+        "instanceId": "instance-a",
+        "entryId": "check"
+      }
+    }
+  },
+  {
+    "name": "保留null详情",
+    "definition": "TemplateAttentionRecord",
+    "valid": true,
+    "value": {
+      "id": "attention-a",
+      "kind": "template",
+      "title": "请核对当前网页",
+      "detail": null,
+      "dedupeKey": "instance-a:review",
+      "read": false,
+      "time": "2026-10-16T00:00:00.000Z",
+      "origin": {
+        "version": 1,
+        "runId": "run-original",
+        "instanceId": "instance-a",
+        "entryId": "check"
+      }
+    }
+  },
+  {
+    "name": "布尔详情",
+    "definition": "TemplateAttentionRecord",
+    "valid": true,
+    "value": {
+      "id": "attention-a",
+      "kind": "template",
+      "title": "请核对当前网页",
+      "detail": false,
+      "dedupeKey": "instance-a:review",
+      "read": false,
+      "time": "2026-10-16T00:00:00.000Z",
+      "origin": {
+        "version": 1,
+        "runId": "run-original",
+        "instanceId": "instance-a",
+        "entryId": "check"
+      }
+    }
+  },
+  {
+    "name": "数字详情",
+    "definition": "TemplateAttentionRecord",
+    "valid": true,
+    "value": {
+      "id": "attention-a",
+      "kind": "template",
+      "title": "请核对当前网页",
+      "detail": 0,
+      "dedupeKey": "instance-a:review",
+      "read": false,
+      "time": "2026-10-16T00:00:00.000Z",
+      "origin": {
+        "version": 1,
+        "runId": "run-original",
+        "instanceId": "instance-a",
+        "entryId": "check"
+      }
+    }
+  },
+  {
+    "name": "旧记录无来源但不猜测补链",
+    "definition": "TemplateAttentionRecord",
+    "valid": true,
+    "value": {
+      "id": "attention-a",
+      "kind": "template",
+      "title": "请核对当前网页",
+      "detail": {
+        "status": "needs-review"
+      },
+      "dedupeKey": "instance-a:review",
+      "read": false,
+      "time": "2026-10-16T00:00:00.000Z"
+    }
+  },
+  {
+    "name": "来源缺少version",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "runId": "run-original",
+      "instanceId": "instance-a",
+      "entryId": "check"
+    }
+  },
+  {
+    "name": "来源缺少runId",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "instanceId": "instance-a",
+      "entryId": "check"
+    }
+  },
+  {
+    "name": "来源缺少instanceId",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "runId": "run-original",
+      "entryId": "check"
+    }
+  },
+  {
+    "name": "来源缺少entryId",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "runId": "run-original",
+      "instanceId": "instance-a"
+    }
+  },
+  {
+    "name": "未知来源版本",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 2,
+      "runId": "run-original",
+      "instanceId": "instance-a",
+      "entryId": "check"
+    }
+  },
+  {
+    "name": "空Run",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "runId": "",
+      "instanceId": "instance-a",
+      "entryId": "check"
+    }
+  },
+  {
+    "name": "非法实例标识",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "runId": "run-original",
+      "instanceId": "bad.id",
+      "entryId": "check"
+    }
+  },
+  {
+    "name": "入口非文本",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "runId": "run-original",
+      "instanceId": "instance-a",
+      "entryId": 5
+    }
+  },
+  {
+    "name": "来源标识超限",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "runId": "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+      "instanceId": "instance-a",
+      "entryId": "check"
+    }
+  },
+  {
+    "name": "来源不得添加模板关联",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "runId": "run-original",
+      "instanceId": "instance-a",
+      "entryId": "check",
+      "runIds": [
+        "run-other"
+      ]
+    }
+  },
+  {
+    "name": "来源不能为数组",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": []
+  },
+  {
+    "name": "来源不能为null",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": null
+  },
+  {
+    "name": "新记录错误来源不可当作无来源",
+    "definition": "TemplateAttentionRecord",
+    "valid": false,
+    "value": {
+      "id": "attention-a",
+      "kind": "template",
+      "title": "请核对当前网页",
+      "detail": {
+        "status": "needs-review"
+      },
+      "dedupeKey": "instance-a:review",
+      "read": false,
+      "time": "2026-10-16T00:00:00.000Z",
+      "origin": {
+        "version": 2,
+        "runId": "run-original",
+        "instanceId": "instance-a",
+        "entryId": "check"
+      }
+    }
+  },
+  {
+    "name": "顶层不得伪造额外runId",
+    "definition": "TemplateAttentionRecord",
+    "valid": false,
+    "value": {
+      "id": "attention-a",
+      "kind": "template",
+      "title": "请核对当前网页",
+      "detail": {
+        "status": "needs-review"
+      },
+      "dedupeKey": "instance-a:review",
+      "read": false,
+      "time": "2026-10-16T00:00:00.000Z",
+      "origin": {
+        "version": 1,
+        "runId": "run-original",
+        "instanceId": "instance-a",
+        "entryId": "check"
+      },
+      "runId": "run-spoofed"
+    }
+  },
+  {
+    "name": "来源标识拒绝尾随换行runId",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "runId": "otherwise-valid\n",
+      "instanceId": "instance-a",
+      "entryId": "check"
+    }
+  },
+  {
+    "name": "来源标识拒绝尾随换行entryId",
+    "definition": "TemplateAttentionOrigin",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "runId": "run-original",
+      "instanceId": "instance-a",
+      "entryId": "otherwise-valid\n"
+    }
+  }
+]

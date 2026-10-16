@@ -762,6 +762,8 @@ export interface FlowArkP1 {
   SkillTrialStatus?: SkillTrialStatus;
   BrowserInspectionNode?: BrowserInspectionNode;
   BrowserInspectionResult?: BrowserInspectionResult;
+  TemplateAttentionOrigin?: TemplateAttentionOrigin;
+  TemplateAttentionRecord?: TemplateAttentionRecord;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -1644,4 +1646,20 @@ export interface SkillTrialStatus {
   usable: boolean;
   reason: 'ready' | 'changed' | 'unavailable' | 'workspace' | 'blocked';
   message: string;
+}
+export interface TemplateAttentionOrigin {
+  version: 1;
+  runId: string;
+  instanceId: string;
+  entryId: string;
+}
+export interface TemplateAttentionRecord {
+  id: string;
+  kind: 'template';
+  title: string;
+  detail: Json;
+  dedupeKey: string;
+  read: boolean;
+  time: string;
+  origin?: TemplateAttentionOrigin;
 }

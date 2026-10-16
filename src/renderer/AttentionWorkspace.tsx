@@ -1,3 +1,4 @@
+import { isTemplateAttentionOrigin } from '../../contracts/template-attention';
 import SkillPanel from './SkillPanel';
 import {
   Alert,
@@ -42,10 +43,19 @@ const api = (method: string, args: unknown = {}): Promise<any> =>
 const date = (value: string) => new Date(value).toLocaleString('zh-CN');
 const human = (item: Attention) => item.kind === 'template-input';
 const sourceId = (item: Attention) =>
-  typeof item.detail?.runId === 'string' ? item.detail.runId : undefined;
+  item.kind === 'template'
+    ? isTemplateAttentionOrigin(item.origin)
+      ? item.origin.runId
+      : undefined
+    : typeof item.detail?.runId === 'string'
+      ? item.detail.runId
+      : undefined;
 const relatedRunIds = (item: Attention): string[] =>
   [
-    ...new Set([sourceId(item), ...(Array.isArray(item.detail?.runIds) ? item.detail.runIds : [])]),
+    ...new Set([
+      sourceId(item),
+      ...(item.kind !== 'template' && Array.isArray(item.detail?.runIds) ? item.detail.runIds : []),
+    ]),
   ].filter((id): id is string => typeof id === 'string' && !!id.trim());
 const ended = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED']);
 function requestState(item: Attention, data: Bootstrap, now: number) {
@@ -357,7 +367,7 @@ export default function AttentionWorkspace({
   const state = selected && human(selected) ? currentState(selected) : undefined;
   const completed = (item: Attention) =>
     acknowledged.has(item.id) ||
-    item.detail?.answered ||
+    (human(item) && item.detail?.answered) ||
     (item.read && (!human(item) || requestState(item, data, now) === 'expired'));
   const pendingCount = data.attention.filter((item) => !completed(item)).length;
   const doneCount = data.attention.length - pendingCount;
@@ -597,6 +607,11 @@ export default function AttentionWorkspace({
   const relatedRuns = runIds.length ? (
     <section className="attention-related-runs" aria-label="关联运行">
       <h3>关联运行 · {runIds.length}</h3>
+      {selected?.kind === 'template' && (
+        <p className="attention-muted">
+          来源由 FlowArk 记录；同键重复提醒保留首次来源，原始说明保持。
+        </p>
+      )}
       <ul>
         {runIds.map((id, index) => {
           const run = runRecords.get(id);
@@ -625,7 +640,11 @@ export default function AttentionWorkspace({
       <p className="attention-muted">查看记录和标为已读都不会重新执行任务。</p>
     </section>
   ) : (
-    <p className="attention-muted">这条提醒未提供可直接打开的运行记录。</p>
+    <p className="attention-muted">
+      {selected?.kind === 'template'
+        ? '这条模板提醒没有保存可信运行来源。原始说明保留，请到运行记录人工核对；不自动补链。'
+        : '这条提醒未提供可直接打开的运行记录。'}
+    </p>
   );
   const listContent = (
     <>

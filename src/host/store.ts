@@ -1,3 +1,7 @@
+import {
+  isTemplateAttentionOrigin,
+  type TemplateAttentionOrigin,
+} from '../../contracts/template-attention';
 import { DatabaseSync } from 'node:sqlite';
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import { mkdirSync, chmodSync } from 'node:fs';
@@ -213,7 +217,15 @@ export class Store {
       'unknown:' + effect.id,
     );
   }
-  attention(kind: string, title: string, detail: any, key: string) {
+  attention(
+    kind: string,
+    title: string,
+    detail: any,
+    key: string,
+    origin?: TemplateAttentionOrigin,
+  ) {
+    if (kind === 'template' && !isTemplateAttentionOrigin(origin))
+      throw new Error('模板提醒缺少有效宿主来源');
     const old = this.list<any>('attention').find((a) => a.dedupeKey === key);
     if (old) return old;
     const item = {
@@ -224,6 +236,7 @@ export class Store {
       dedupeKey: key,
       read: false,
       time: now(),
+      ...(kind === 'template' ? { origin } : {}),
     };
     this.put('attention', item.id, item);
     return item;

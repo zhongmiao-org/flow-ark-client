@@ -1,0 +1,17 @@
+{
+  "id": "attention-a",
+  "kind": "template",
+  "title": "请核对当前网页",
+  "detail": {
+    "status": "needs-review"
+  },
+  "dedupeKey": "instance-a:review",
+  "read": false,
+  "time": "2026-10-16T00:00:00.000Z",
+  "origin": {
+    "version": 1,
+    "runId": "run-original",
+    "instanceId": "instance-a",
+    "entryId": "check"
+  }
+}
