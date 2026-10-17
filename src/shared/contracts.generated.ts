@@ -338,6 +338,19 @@ export type Node =
             $ref: string;
           };
       framePath: FramePath;
+    }
+  | {
+      id: string;
+      type: 'conversation';
+      version: 2;
+      name?: string;
+      timeoutMs?: number;
+      binding: string;
+      key: Value;
+      title: string;
+      instructions: string;
+      input: Value;
+      historyWindow: number;
     };
 export type Value =
   | Json
@@ -587,7 +600,8 @@ export type SkillEvidence =
       kind: 'manual';
       label: string;
       note: string;
-    };
+    }
+  | ConversationCheckpointEvidence;
 export type SkillProposalSnapshot = {
   version: 1;
   id: string;
@@ -822,6 +836,45 @@ export type EntryHandoffReceipt = {
   updatedAt: string;
   error: string | null;
 };
+export type ConversationHistoryRef =
+  | {
+      kind: 'origin';
+      requestId: string;
+    }
+  | {
+      kind: 'history';
+      ordinal: number;
+      sha256: string;
+    };
+/**
+ * @minItems 0
+ * @maxItems 24
+ */
+export type ConversationHistorySelection = ConversationHistoryRef[];
+export type ConversationThreadOrigin = ConversationEvidence | null;
+export type ConversationThreadOutput = {
+  formatVersion: '2.0';
+  sessionId: string;
+  status: 'pending' | 'confirmed' | 'context-review';
+  revision: number;
+  sequence: number;
+  context: ConversationContextRef;
+  historyCount: number;
+  historyHash: string;
+  origin: ConversationThreadOrigin;
+  /**
+   * @minItems 0
+   * @maxItems 48
+   */
+  transcript: {
+    role: 'user' | 'assistant';
+    text: string;
+    messageId: string;
+    requestId: string;
+  }[];
+  evidence: ConversationCheckpointEvidence | null;
+  proposalId: string | null;
+};
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -913,6 +966,23 @@ export interface FlowArkP1 {
   EntryHandoffPreview?: EntryHandoffPreview;
   EntryHandoffRequest?: EntryHandoffRequest;
   EntryHandoffReceipt?: EntryHandoffReceipt;
+  ConversationContextRef?: ConversationContextRef;
+  ConversationContext?: ConversationContext;
+  ConversationHistoryRef?: ConversationHistoryRef;
+  ConversationHistorySelection?: ConversationHistorySelection;
+  ConversationHistoryCursor?: ConversationHistoryCursor;
+  ConversationThreadOrigin?: ConversationThreadOrigin;
+  ConversationThreadInput?: ConversationThreadInput;
+  ConversationThreadPrepared?: ConversationThreadPrepared;
+  ConversationThreadEntry?: ConversationThreadEntry;
+  ConversationThreadActive?: ConversationThreadActive;
+  ConversationCheckpointEvidence?: ConversationCheckpointEvidence;
+  ConversationThreadSnapshot?: ConversationThreadSnapshot;
+  ConversationThreadEvent?: ConversationThreadEvent;
+  ConversationHistoryPage?: ConversationHistoryPage;
+  ConversationContextProposal?: ConversationContextProposal;
+  ConversationCheckpoint?: ConversationCheckpoint;
+  ConversationThreadOutput?: ConversationThreadOutput;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -1547,6 +1617,13 @@ export interface SkillVersionRef {
   versionId: string;
   sha256: string;
 }
+export interface ConversationCheckpointEvidence {
+  kind: 'conversation-checkpoint';
+  label: string;
+  sessionId: string;
+  checkpointId: string;
+  sha256: string;
+}
 export interface SkillDraft {
   title: string;
   markdown: string;
@@ -1918,4 +1995,409 @@ export interface EntryHandoffRequest {
   token: string;
   requestId: string;
   reviewed: true;
+}
+export interface ConversationContextRef {
+  id: string;
+  sha256: string;
+}
+export interface ConversationContext {
+  version: 1;
+  id: string;
+  sha256: string;
+  flowId: string;
+  nodeId: string;
+  title: string;
+  provider: 'deepseek' | 'openai-codex';
+  model: string;
+  instructions: string;
+  context: Json;
+}
+export interface ConversationHistoryCursor {
+  sessionId: string;
+  before: number;
+  sha256: string;
+}
+export interface ConversationThreadInput {
+  provider: 'deepseek' | 'openai-codex';
+  model: string;
+  instructions: string;
+  context: Json;
+  /**
+   * @minItems 1
+   * @maxItems 49
+   */
+  messages: [
+    {
+      role: 'user' | 'assistant';
+      text: string;
+    },
+    ...{
+      role: 'user' | 'assistant';
+      text: string;
+    }[]
+  ];
+}
+export interface ConversationThreadPrepared {
+  version: 1;
+  id: string;
+  sessionId: string;
+  revision: number;
+  historyCount: number;
+  historyHash: string;
+  context: ConversationContextRef;
+  selection: ConversationHistorySelection;
+  text: string;
+  retryOf: string | null;
+  input: ConversationThreadInput;
+  sha256: string;
+}
+export interface ConversationThreadEntry {
+  version: 1;
+  sessionId: string;
+  ordinal: number;
+  previousHash: string;
+  sha256: string;
+  requestId: string;
+  turnId: string;
+  userMessageId: string;
+  assistantMessageId: string;
+  text: string;
+  answer: string;
+  state: 'complete' | 'failed' | 'cancelled';
+  model: string;
+  providerRequestId: string;
+  usage: AIUsage;
+  inputId: string;
+  inputHash: string;
+  context: ConversationContextRef;
+  retryOf: string | null;
+  error: string;
+  finishedAt: string;
+}
+export interface ConversationThreadActive {
+  requestId: string;
+  turnId: string;
+  userMessageId: string;
+  assistantMessageId: string;
+  text: string;
+  answer: string;
+  inputId: string;
+  inputHash: string;
+  context: ConversationContextRef;
+  retryOf: string | null;
+}
+export interface ConversationThreadSnapshot {
+  formatVersion: '2.0';
+  id: string;
+  flowId: string;
+  nodeId: string;
+  title: string;
+  context: ConversationContextRef;
+  origin: ConversationThreadOrigin;
+  historyWindow: number;
+  revision: number;
+  sequence: number;
+  status: 'draft' | 'generating' | 'ready' | 'failed' | 'cancelled';
+  draft: string;
+  requestCount: number;
+  turnCount: number;
+  historyCount: number;
+  historyHash: string;
+  active: ConversationThreadActive | null;
+  lastEntry: ConversationThreadEntry | null;
+  latestCheckpoint: ConversationCheckpointEvidence | null;
+  checkpointCurrent: boolean;
+  updatedAt: string;
+  error: string;
+  contextProposalId: string | null;
+}
+export interface ConversationThreadEvent {
+  kind: 'conversation.thread.snapshot';
+  eventId: string;
+  sessionId: string;
+  sequence: number;
+  requestId: string | null;
+  turnId: string | null;
+  snapshot: ConversationThreadSnapshot;
+}
+export interface ConversationHistoryPage {
+  version: 1;
+  cursor: ConversationHistoryCursor;
+  /**
+   * @minItems 0
+   * @maxItems 20
+   */
+  entries:
+    | []
+    | [ConversationThreadEntry]
+    | [ConversationThreadEntry, ConversationThreadEntry]
+    | [ConversationThreadEntry, ConversationThreadEntry, ConversationThreadEntry]
+    | [ConversationThreadEntry, ConversationThreadEntry, ConversationThreadEntry, ConversationThreadEntry]
+    | [
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry
+      ]
+    | [
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry
+      ]
+    | [
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry
+      ]
+    | [
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry
+      ]
+    | [
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry
+      ]
+    | [
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry
+      ]
+    | [
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry
+      ]
+    | [
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry
+      ]
+    | [
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry
+      ]
+    | [
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry
+      ]
+    | [
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry
+      ]
+    | [
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry
+      ]
+    | [
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry
+      ]
+    | [
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry
+      ]
+    | [
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry
+      ]
+    | [
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry,
+        ConversationThreadEntry
+      ];
+  next: ConversationHistoryCursor | null;
+}
+export interface ConversationContextProposal {
+  version: 1;
+  id: string;
+  sessionId: string;
+  revision: number;
+  base: ConversationContextRef;
+  proposed: ConversationContext;
+  historyWindow: number;
+  sourceRunId: string;
+}
+export interface ConversationCheckpoint {
+  version: 1;
+  id: string;
+  sessionId: string;
+  title: string;
+  sourceRevision: number;
+  historyCount: number;
+  historyHash: string;
+  context: ConversationContext;
+  origin: ConversationThreadOrigin;
+  selection: ConversationHistorySelection;
+  /**
+   * @minItems 0
+   * @maxItems 48
+   */
+  transcript: {
+    role: 'user' | 'assistant';
+    text: string;
+    messageId: string;
+    requestId: string;
+  }[];
+  confirmedAt: string;
+  sha256: string;
 }

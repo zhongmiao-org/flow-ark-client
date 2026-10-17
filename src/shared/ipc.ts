@@ -1,3 +1,4 @@
+import { threadMethods } from './conversation-thread';
 import { handoffMethods } from './entry-handoff';
 import { templateSourceSchema } from './template-source';
 import { z } from 'zod';
@@ -91,6 +92,7 @@ export const methods = {
   ...dataMethods,
   ...skillMethods,
   ...conversationMethods,
+  ...threadMethods,
   ...desktopMethods,
   ...desktopPlanMethods,
   ...desktopRunMethods,

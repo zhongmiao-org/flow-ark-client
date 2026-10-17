@@ -1,0 +1,48 @@
+{
+  "formatVersion": "2.0",
+  "sessionId": "continuous-example",
+  "status": "confirmed",
+  "revision": 6,
+  "sequence": 31,
+  "context": {
+    "id": "context-example",
+    "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+  },
+  "historyCount": 2,
+  "historyHash": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64",
+  "origin": null,
+  "transcript": [
+    {
+      "role": "user",
+      "text": "这是一条虚构补充。",
+      "messageId": "user-1",
+      "requestId": "request-1"
+    },
+    {
+      "role": "assistant",
+      "text": "已保存补充；仍需本人确认。",
+      "messageId": "assistant-1",
+      "requestId": "request-1"
+    },
+    {
+      "role": "user",
+      "text": "这是一条虚构补充。",
+      "messageId": "user-2",
+      "requestId": "request-2"
+    },
+    {
+      "role": "assistant",
+      "text": "已保存补充；仍需本人确认。",
+      "messageId": "assistant-2",
+      "requestId": "request-2"
+    }
+  ],
+  "evidence": {
+    "kind": "conversation-checkpoint",
+    "label": "持续补充 · 虚构示例",
+    "sessionId": "continuous-example",
+    "checkpointId": "checkpoint-example",
+    "sha256": "f013409f6304ab039abe769c50e22f3625a7774238602357d48ef0be2f28691b"
+  },
+  "proposalId": null
+}

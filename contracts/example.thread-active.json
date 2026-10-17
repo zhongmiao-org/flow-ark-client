@@ -1,0 +1,67 @@
+{
+  "formatVersion": "2.0",
+  "id": "continuous-example",
+  "flowId": "flow-example",
+  "nodeId": "interview",
+  "title": "持续补充 · 虚构示例",
+  "context": {
+    "id": "context-example",
+    "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+  },
+  "origin": null,
+  "historyWindow": 12,
+  "revision": 6,
+  "sequence": 31,
+  "status": "generating",
+  "draft": "",
+  "requestCount": 3,
+  "turnCount": 3,
+  "historyCount": 2,
+  "historyHash": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64",
+  "active": {
+    "requestId": "request-3",
+    "turnId": "turn-3",
+    "userMessageId": "user-3",
+    "assistantMessageId": "assistant-3",
+    "text": "还有一条补充。",
+    "answer": "还未完成",
+    "inputId": "prepared-example",
+    "inputHash": "af80a04e52e931042e6f5be0f03b107b6be44ef23d15d3bd42d9268bacb3254b",
+    "context": {
+      "id": "context-example",
+      "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+    },
+    "retryOf": null
+  },
+  "lastEntry": {
+    "version": 1,
+    "sessionId": "continuous-example",
+    "ordinal": 2,
+    "previousHash": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12",
+    "requestId": "request-2",
+    "turnId": "turn-2",
+    "userMessageId": "user-2",
+    "assistantMessageId": "assistant-2",
+    "text": "这是一条虚构补充。",
+    "answer": "已保存补充；仍需本人确认。",
+    "state": "complete",
+    "model": "explicit-user-model",
+    "providerRequestId": "",
+    "usage": null,
+    "inputId": "input-2",
+    "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "context": {
+      "id": "context-example",
+      "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+    },
+    "retryOf": null,
+    "error": "",
+    "finishedAt": "2026-10-17T00:00:00.000Z",
+    "sha256": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64"
+  },
+  "latestCheckpoint": null,
+  "checkpointCurrent": false,
+  "updatedAt": "2026-10-17T00:00:00.000Z",
+  "error": "",
+  "contextProposalId": null
+}

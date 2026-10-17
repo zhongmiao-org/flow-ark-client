@@ -28,6 +28,20 @@ validators.template_human_review_v1 = `${schema.$id}#/$defs/TemplateHumanReview`
 validators.conversation_snapshot_v1 = `${schema.$id}#/$defs/ConversationSnapshot`;
 validators.conversation_event_v1 = `${schema.$id}#/$defs/ConversationEvent`;
 validators.conversation_output_v1 = `${schema.$id}#/$defs/ConversationOutput`;
+for (const name of [
+  'Context',
+  'ThreadSnapshot',
+  'ThreadEvent',
+  'HistoryPage',
+  'ThreadPrepared',
+  'ThreadEntry',
+  'Checkpoint',
+  'CheckpointEvidence',
+  'ThreadOutput',
+  'ContextProposal',
+])
+  validators['conversation_' + name.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase() + '_v2'] =
+    `${schema.$id}#/$defs/Conversation${name}`;
 for (const name of ['Source', 'Preview', 'Request', 'Result', 'Status'])
   validators['trial_' + name.toLowerCase() + '_v1'] = `${schema.$id}#/$defs/SkillTrial${name}`;
 validators.document_result_v1 = `${schema.$id}#/$defs/DocumentResult`;

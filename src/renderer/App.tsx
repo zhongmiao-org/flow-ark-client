@@ -3240,8 +3240,11 @@ function Editor({
               ? ['document-extract-v1']
               : []),
             ...(flatten(steps).some((node) => node.type === 'skill') ? ['skill-v1'] : []),
-            ...(flatten(steps).some((node) => node.type === 'conversation')
+            ...(flatten(steps).some((node) => node.type === 'conversation' && node.version === 1)
               ? ['conversation-v1', 'conversation-evidence-v1']
+              : []),
+            ...(flatten(steps).some((node) => node.type === 'conversation' && node.version === 2)
+              ? ['conversation-v2', 'conversation-checkpoint-v1']
               : []),
             ...(flatten(steps).some((node) => node.type === 'mcp') ? ['mcp-tool-v1'] : []),
             ...(flatten(steps).some((node) => node.type === 'desktop')
@@ -3282,8 +3285,11 @@ function Editor({
                 ? ['document-extract-v1']
                 : []),
               ...(flatten(steps).some((node) => node.type === 'skill') ? ['skill-v1'] : []),
-              ...(flatten(steps).some((node) => node.type === 'conversation')
+              ...(flatten(steps).some((node) => node.type === 'conversation' && node.version === 1)
                 ? ['conversation-v1', 'conversation-evidence-v1']
+                : []),
+              ...(flatten(steps).some((node) => node.type === 'conversation' && node.version === 2)
+                ? ['conversation-v2', 'conversation-checkpoint-v1']
                 : []),
             ]),
           ],

@@ -1,3 +1,6 @@
+import { ConversationThreads } from './conversation-threads';
+import { ConversationCapacity } from './conversation-request';
+import { threadMethods } from '../shared/conversation-thread';
 import { EntryHandoffs } from './entry-handoff';
 import { handoffMethods, type HandoffSelection } from '../shared/entry-handoff';
 import { AuthorSdk } from './author-sdk';
@@ -155,6 +158,7 @@ export class Runtime {
   private timer?: NodeJS.Timeout;
   private secrets: string[] = [];
   private conversations: Conversations;
+  private threads: ConversationThreads;
   private documents: DocumentProcesses;
   private skills: Skills;
   private typedResults: TypedResults;
@@ -177,9 +181,14 @@ export class Runtime {
     this.skills = new Skills(this.store, {
       available: () => this.assertAdmitting(),
       notify: () => this.system('notification', { title: 'FlowArk 有待核对的Skill草稿' }),
-      verifyConversation: (evidence) => this.conversations.verifyEvidence(evidence),
+      verifyConversation: (evidence, current) =>
+        (evidence as { kind?: string }).kind === 'conversation-checkpoint'
+          ? this.threads.verifyEvidence(evidence, current)
+          : this.conversations.verifyEvidence(evidence),
     });
+    const conversationCapacity = new ConversationCapacity();
     this.conversations = new Conversations(this.store, {
+      capacity: conversationCapacity,
       available: () => this.assertAdmitting(),
       configuration: (provider) => this.system('ai.configuration.read', { provider }),
       key: (provider, revision) => this.system('credentials.get', { id: provider, revision }),
@@ -187,6 +196,15 @@ export class Runtime {
       notify: () => this.system('notification', { title: 'FlowArk 有新的引导会话' }),
       trialStatus: (source) => this.skills.trialStatus(source),
       trialUnchanged: (source) => this.skills.trialUnchanged(source),
+    });
+    this.threads = new ConversationThreads(this.store, {
+      available: () => this.assertAdmitting(),
+      configuration: (provider) => this.system('ai.configuration.read', { provider }),
+      key: (provider, revision) => this.system('credentials.get', { id: provider, revision }),
+      publish: (event) => this.system('conversation.message', event),
+      notify: () => this.system('notification', { title: 'FlowArk 有新的持续会话' }),
+      origin: (id, revision) => this.conversations.continuationSource(id, revision),
+      capacity: conversationCapacity,
     });
     this.aiSettings = new AISettings(this.store, {
       assertAvailable: () => {
@@ -197,6 +215,7 @@ export class Runtime {
         this.planning?.usesProvider(provider) ||
         this.desktopPlanning?.usesProvider(provider) ||
         this.conversations?.usesProvider(provider) ||
+        this.threads?.usesProvider(provider) ||
         this.store.list<Run>('run').some(
           (run) =>
             (run.id === this.active?.id || run.state === 'QUEUED') &&
@@ -1342,12 +1361,22 @@ export class Runtime {
       const active = this.active;
       const node = walk(snapshot.flow.steps).find((n) => n.id === args.nodeId);
       if (!node || node.type !== 'skill') throw Error('Skill节点不在当前快照中');
+      const checkpointSource =
+        node.operation === 'propose' &&
+        Array.isArray(args.input?.evidence) &&
+        args.input.evidence.some((e: any) => e?.kind === 'conversation-checkpoint');
+      if (
+        checkpointSource &&
+        !snapshot.flow.requiredCapabilities.includes('conversation-checkpoint-v1')
+      )
+        throw Error('采用持续会话来源须声明conversation-checkpoint-v1');
       if (snapshot.bindings.template) {
         const { entry, pkg } = await this.templates.context(snapshot);
         const r = pkg.manifest.resources.find((r) => r.id === node.binding);
         if (
           !entry.capabilities.includes('skill') ||
           !entry.capabilities.includes('skill-v1') ||
+          (checkpointSource && !entry.capabilities.includes('conversation-checkpoint-v1')) ||
           !entry.resources.includes(node.binding) ||
           (node.operation === 'propose'
             ? r?.kind !== 'directory' || r.access !== 'readwrite'
@@ -1406,7 +1435,10 @@ export class Runtime {
         const { entry, pkg } = await this.templates.context(snapshot);
         const resource = pkg.manifest.resources.find((r) => r.id === node.binding);
         if (
-          !entry.capabilities.includes('conversation-v1') ||
+          !entry.capabilities.includes(
+            node.version === 2 ? 'conversation-v2' : 'conversation-v1',
+          ) ||
+          (node.version === 2 && !entry.capabilities.includes('conversation-checkpoint-v1')) ||
           !entry.capabilities.includes('conversation') ||
           !entry.capabilities.includes('ai') ||
           !entry.resources.includes(node.binding) ||
@@ -1415,9 +1447,14 @@ export class Runtime {
         )
           throw new Error('模板入口未声明会话能力与AI资源');
       }
-      const result = this.conversations.open(snapshot, node, args.input, args.key, () =>
-        this.checkActive(active),
-      );
+      const result =
+        node.version === 2
+          ? this.threads.open(snapshot, node, args.input, args.key, id, () =>
+              this.checkActive(active),
+            )
+          : this.conversations.open(snapshot, node, args.input, args.key, () =>
+              this.checkActive(active),
+            );
       this.checkActive(active);
       this.typedResults.save(id, node.id, args.nodeInstance, 'conversation', result);
       return result;
@@ -1796,7 +1833,7 @@ export class Runtime {
       this.desktopPlanning.invalidate();
       this.desktopRuns.cancelAll();
       this.planning.cancelAll();
-      await this.conversations.cancelAll();
+      await Promise.all([this.conversations.cancelAll(), this.threads.cancelAll()]);
     } catch (error) {
       errors.push(error);
     }
@@ -1968,6 +2005,38 @@ export class Runtime {
       if (method === 'skill.rebase') return this.skills.rebase(v);
       if (method === 'skill.fork') return this.skills.fork(v.id);
       if (method === 'skill.relocate') return this.skills.relocate(v.id, v.path);
+    }
+    if (method.startsWith('conversation.thread.')) {
+      await this.ready;
+      const rule = threadMethods[method as keyof typeof threadMethods];
+      if (!rule) throw Error('持续会话IPC方法未授权');
+      const v = rule.parse(args) as any;
+      if (method === 'conversation.thread.detail') return this.threads.detail(v.id);
+      if (method === 'conversation.thread.context') return this.threads.context(v.id);
+      if (method === 'conversation.thread.origin') return this.threads.origin(v.id);
+      if (method === 'conversation.thread.selection') return this.threads.selection(v.id);
+      if (method === 'conversation.thread.output') return this.threads.output(v.id);
+      if (method === 'conversation.thread.continue') return this.threads.continue(v.id, v.revision);
+      if (method === 'conversation.thread.history') return this.threads.history(v.id, v.cursor);
+      if (method === 'conversation.thread.draft')
+        return this.threads.draft(v.id, v.revision, v.text);
+      if (method === 'conversation.thread.preview')
+        return this.threads.preview(v.id, v.revision, v.text, v.selection, v.retryOf);
+      if (method === 'conversation.thread.send')
+        return this.threads.send(v.id, v.revision, v.requestId, v.preparedId, v.sha256, v.token);
+      if (method === 'conversation.thread.receipt') return this.threads.receipt(v.id, v.requestId);
+      if (method === 'conversation.thread.withdraw')
+        return this.threads.withdraw(v.id, v.requestId, v.preparedId, v.sha256);
+      if (method === 'conversation.thread.cancel') return this.threads.cancel(v.id, v.requestId);
+      if (method === 'conversation.thread.checkpoint.preview')
+        return this.threads.checkpointPreview(v.id, v.revision, v.selection);
+      if (method === 'conversation.thread.checkpoint.confirm')
+        return this.threads.confirm(v.id, v.revision, v.requestId, v.token, v.sha256);
+      if (method === 'conversation.thread.checkpoint.detail')
+        return this.threads.checkpoint(v.id, v.checkpointId);
+      if (method === 'conversation.thread.proposal') return this.threads.proposal(v.id);
+      if (method === 'conversation.thread.context.adopt')
+        return this.threads.adopt(v.id, v.revision, v.proposalId, v.accept);
     }
     if (method.startsWith('conversation.')) {
       await this.ready;
@@ -2419,7 +2488,7 @@ export class Runtime {
       this.desktopPlanning.invalidate();
       this.desktopRuns.cancelAll();
       this.planning.cancelAll();
-      await this.conversations.cancelAll();
+      await Promise.all([this.conversations.cancelAll(), this.threads.cancelAll()]);
       await this.skills.stop();
       await this.author.stop();
     } catch (error) {

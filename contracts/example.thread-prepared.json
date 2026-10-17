@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "id": "prepared-example",
+  "sessionId": "continuous-example",
+  "revision": 5,
+  "historyCount": 2,
+  "historyHash": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64",
+  "context": {
+    "id": "context-example",
+    "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+  },
+  "selection": [
+    {
+      "kind": "history",
+      "ordinal": 1,
+      "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+    },
+    {
+      "kind": "history",
+      "ordinal": 2,
+      "sha256": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64"
+    }
+  ],
+  "text": "还有一条补充。",
+  "retryOf": null,
+  "input": {
+    "provider": "deepseek",
+    "model": "explicit-user-model",
+    "instructions": "围绕所选材料补充，未知保持未知；聊天不自动成为事实或外发许可。",
+    "context": {
+      "value": {
+        "material": "虚构资料",
+        "confirmedSkill": null
+      },
+      "history": {
+        "sessionId": "continuous-example",
+        "count": 2,
+        "sha256": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64",
+        "origin": null,
+        "selection": [
+          {
+            "kind": "history",
+            "ordinal": 1,
+            "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+          },
+          {
+            "kind": "history",
+            "ordinal": 2,
+            "sha256": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64"
+          }
+        ]
+      }
+    },
+    "messages": [
+      {
+        "role": "user",
+        "text": "这是一条虚构补充。"
+      },
+      {
+        "role": "assistant",
+        "text": "已保存补充；仍需本人确认。"
+      },
+      {
+        "role": "user",
+        "text": "这是一条虚构补充。"
+      },
+      {
+        "role": "assistant",
+        "text": "已保存补充；仍需本人确认。"
+      },
+      {
+        "role": "user",
+        "text": "还有一条补充。"
+      }
+    ]
+  },
+  "sha256": "af80a04e52e931042e6f5be0f03b107b6be44ef23d15d3bd42d9268bacb3254b"
+}

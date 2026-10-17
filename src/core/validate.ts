@@ -1,3 +1,4 @@
+import { assertContinuousConversationCapabilities } from '../../contracts/continuous-conversation';
 import { skillCapability, skillBudget } from '../shared/skill';
 import {
   browserInspectionCapability,
@@ -31,6 +32,8 @@ export function validateObject<T>(name: string, value: unknown): T {
 export const capabilities = [
   browserInspectionCapability,
   'conversation-evidence-v1',
+  'conversation-v2',
+  'conversation-checkpoint-v1',
   'skill-trial-v1',
   templateDataCapability,
   'context',
@@ -98,7 +101,10 @@ export function validateFlow(value: unknown): Flow {
           throw new Error('资料解析需要声明 document-extract-v1 能力');
         assertDocumentNode(n);
       }
-      if (n.type === 'conversation') {
+      if (n.type === 'conversation' && n.version === 2) {
+        assertContinuousConversationCapabilities(n, flow.requiredCapabilities);
+      }
+      if (n.type === 'conversation' && n.version === 1) {
         if (!flow.requiredCapabilities.includes(conversationCapability))
           throw new Error('引导会话需要声明 conversation-v1 能力');
         assertConversationNode(n);

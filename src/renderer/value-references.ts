@@ -131,7 +131,17 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
           '先核对status与内容缺口，再选择明确单元',
         );
     if (node.type === 'conversation')
-      for (const key of ['sessionId', 'status', 'revision', 'sequence', 'transcript', 'evidence'])
+      for (const key of [
+        'sessionId',
+        'status',
+        'revision',
+        'sequence',
+        'transcript',
+        'evidence',
+        ...(node.version === 2
+          ? ['context', 'historyCount', 'historyHash', 'origin', 'proposalId']
+          : []),
+      ])
         add(path + '.' + key, label + ' / ' + key, '前序步骤', '确认后才有完整对话；先判断 status');
     if (node.type === 'ai') {
       const schema = node.schema as { properties?: Record<string, unknown> };

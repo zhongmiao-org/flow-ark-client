@@ -39,6 +39,7 @@ export default function ConversationPanel({
   backLabel = '待办',
   openFlow,
   openSkill,
+  continueConversation,
 }: {
   id: string;
   refresh: () => Promise<void>;
@@ -47,6 +48,7 @@ export default function ConversationPanel({
   backLabel?: string;
   openFlow?: (id: string) => void;
   openSkill?: (id: string) => void;
+  continueConversation?: (id: string) => void;
 }) {
   const [snapshot, setSnapshot] = useState<ConversationSnapshot>();
   const saved = useRef<ConversationSnapshot | undefined>(undefined);
@@ -261,6 +263,7 @@ export default function ConversationPanel({
       }
     };
     const stop = window.flowark.onmessage((raw) => {
+      if (raw.kind !== 'conversation.snapshot') return;
       if (raw?.sessionId !== id) return;
       if (!queued || raw.sequence > queued.sequence) queued = raw;
       if (scheduled) return;
@@ -508,6 +511,33 @@ export default function ConversationPanel({
         <Button disabled={busy} onClick={() => void read.current()}>
           重新读取
         </Button>
+        {confirmed && !trialSource && continueConversation && (
+          <Button
+            disabled={busy || recovering}
+            onClick={() => {
+              if (locked.current) return;
+              locked.current = true;
+              setBusy(true);
+              setError('');
+              void window.flowark
+                .request('conversation.thread.continue', { id, revision: snapshot.revision })
+                .then(async (value) => {
+                  if (!alive.current) return;
+                  await refresh();
+                  continueConversation(value.id);
+                })
+                .catch((e) => {
+                  if (alive.current) setError(e.message ?? '继续会话未完成，原记录保留');
+                })
+                .finally(() => {
+                  locked.current = false;
+                  if (alive.current) setBusy(false);
+                });
+            }}
+          >
+            继续补充
+          </Button>
+        )}
         {confirmed && openFlow && (
           <Button
             type="primary"

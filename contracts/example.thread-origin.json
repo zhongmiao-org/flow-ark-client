@@ -1,0 +1,35 @@
+{
+  "formatVersion": "2.0",
+  "id": "session-example",
+  "flowId": "flow-example",
+  "nodeId": "interview",
+  "title": "持续补充 · 虚构示例",
+  "context": {
+    "id": "context-example",
+    "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+  },
+  "origin": {
+    "kind": "conversation",
+    "label": "补充材料",
+    "sessionId": "session-example",
+    "revision": 4,
+    "sequence": 12,
+    "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+  },
+  "historyWindow": 12,
+  "revision": 1,
+  "sequence": 1,
+  "status": "draft",
+  "draft": "",
+  "requestCount": 0,
+  "turnCount": 0,
+  "historyCount": 0,
+  "historyHash": "3f2c85aa0bbc6c974de0ee91997127953883a7f0f531951b9fbfef6d1c512ead",
+  "active": null,
+  "lastEntry": null,
+  "latestCheckpoint": null,
+  "checkpointCurrent": false,
+  "updatedAt": "2026-10-17T00:00:00.000Z",
+  "error": "",
+  "contextProposalId": null
+}

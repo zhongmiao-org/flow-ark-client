@@ -11,7 +11,7 @@ export type {
   ConversationOutput,
 } from './contracts.generated';
 import type { ConversationSnapshot, ConversationEvent } from './contracts.generated';
-export type ConversationNode = Extract<Step, { type: 'conversation' }>;
+export type ConversationNode = Extract<Step, { type: 'conversation'; version: 1 }>;
 export const conversationCapability = 'conversation-v1';
 export function assertConversationOutput(
   v: unknown,

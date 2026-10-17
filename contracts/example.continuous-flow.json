@@ -1,0 +1,28 @@
+{
+  "formatVersion": "1.0",
+  "id": "continuous-flow-example",
+  "name": "持续会话 · 虚构示例",
+  "description": "不设总次数上限，用户逐轮核对自己的Key费用。",
+  "parameters": {
+    "material": null
+  },
+  "requiredCapabilities": [
+    "conversation-v2",
+    "conversation-checkpoint-v1"
+  ],
+  "steps": [
+    {
+      "id": "interview",
+      "type": "conversation",
+      "version": 2,
+      "binding": "ai",
+      "key": "material-interview",
+      "title": "持续补充 · 虚构示例",
+      "instructions": "围绕所选材料补充，未知保持未知；聊天不自动成为事实或外发许可。",
+      "input": {
+        "$ref": "params.material"
+      },
+      "historyWindow": 12
+    }
+  ]
+}

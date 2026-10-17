@@ -1,4 +1,5 @@
-/** Normative package validation for contracts 0.31.0, derived from package 2.0. No application imports. */
+import { assertContinuousConversationCapabilities } from './continuous-conversation';
+/** Normative package validation for contracts 0.32.0, derived from package 2.0. No application imports. */
 import { assertDirectoryDefaults } from './directory-defaults';
 import { assertAIOutcomeCapabilities } from './ai-outcome';
 import { createHash } from 'node:crypto';
@@ -68,6 +69,8 @@ export function validatePackage(files:Map<string,Buffer>):PackageData {
    if(!p||!manifest.scripts.includes(p))throw new Error('脚本必须引用清单中的 @package:scripts/ 资源');
   }if(n.type==='browser'&&n.version===4){assertBrowserInspectionNode(n);if(!flow.requiredCapabilities.includes(browserInspectionCapability))throw new Error('网页只读节点未声明browser-observe-v1能力');}
   assertAIOutcomeCapabilities(n,flow.requiredCapabilities);
+  assertContinuousConversationCapabilities(n,flow.requiredCapabilities);
+  if(n.type==='conversation'&&n.version===2){const resource=manifest.resources.find(r=>r.id===n.binding);if(!entry.capabilities.includes('conversation')||!entry.capabilities.includes('ai')||!entry.resources.includes(n.binding)||resource?.kind!=='ai'||resource.access!=='use')throw new Error('持续会话入口未声明conversation/ai及本入口AI资源');}
   if(n.type==='condition'){walk(n.then,depth+1);walk(n.else,depth+1);}if(n.type==='loop')walk(n.body,depth+1);}};walk(flow.steps);
  }
  validateAuthorMetadata(files,manifest);

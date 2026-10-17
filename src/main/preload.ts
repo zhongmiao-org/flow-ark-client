@@ -1,3 +1,4 @@
+import type { ConversationThreadEvent } from '../shared/conversation-thread';
 import { contextBridge, ipcRenderer } from 'electron';
 import type { ConversationEvent } from '../shared/conversation';
 const allowed = new Set([
@@ -43,6 +44,24 @@ const allowed = new Set([
   'tool.connection.disconnect',
   'tool.connection.remove',
   'bootstrap',
+  'conversation.thread.selection',
+  'conversation.thread.detail',
+  'conversation.thread.context',
+  'conversation.thread.origin',
+  'conversation.thread.output',
+  'conversation.thread.continue',
+  'conversation.thread.history',
+  'conversation.thread.draft',
+  'conversation.thread.preview',
+  'conversation.thread.send',
+  'conversation.thread.receipt',
+  'conversation.thread.withdraw',
+  'conversation.thread.cancel',
+  'conversation.thread.checkpoint.preview',
+  'conversation.thread.checkpoint.confirm',
+  'conversation.thread.checkpoint.detail',
+  'conversation.thread.proposal',
+  'conversation.thread.context.adopt',
   'conversation.detail',
   'conversation.output',
   'conversation.trialStatus',
@@ -155,9 +174,11 @@ const allowed = new Set([
   'app.showData',
 ]);
 contextBridge.exposeInMainWorld('flowark', {
-  onmessage: (listener: (event: ConversationEvent) => void) => {
-    const receive = (_event: Electron.IpcRendererEvent, value: ConversationEvent) =>
-      listener(value);
+  onmessage: (listener: (event: ConversationEvent | ConversationThreadEvent) => void) => {
+    const receive = (
+      _event: Electron.IpcRendererEvent,
+      value: ConversationEvent | ConversationThreadEvent,
+    ) => listener(value);
     ipcRenderer.on('flowark:conversation', receive);
     return () => ipcRenderer.removeListener('flowark:conversation', receive);
   },

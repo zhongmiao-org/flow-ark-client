@@ -1,5 +1,6 @@
 import { isTemplateAttentionOrigin } from '../../contracts/template-attention';
 import SkillPanel from './SkillPanel';
+import ConversationThreadPanel from './ConversationThreadPanel';
 import {
   Alert,
   Badge,
@@ -315,6 +316,8 @@ export default function AttentionWorkspace({
   const [query, setQuery] = useState('');
   const [kind, setKind] = useState('all');
   const [selectedId, setSelectedId] = useState('');
+  const [continuedThread, setContinuedThread] = useState('');
+  useEffect(() => setContinuedThread(''), [selectedId]);
   const [busy, setBusy] = useState(false);
   const [openingRunId, setOpeningRunId] = useState('');
   const [error, setError] = useState('');
@@ -777,6 +780,19 @@ export default function AttentionWorkspace({
         openFlow={openFlow}
       />
     );
+  if (active && (continuedThread || typeof selected?.detail?.conversationThreadId === 'string'))
+    return (
+      <ConversationThreadPanel
+        key={continuedThread || String(selected?.detail?.conversationThreadId)}
+        id={continuedThread || String(selected?.detail?.conversationThreadId)}
+        refresh={refresh}
+        registerLeave={(fn) => {
+          conversationLeave.current = fn;
+        }}
+        back={directBack}
+        openFlow={openFlow}
+      />
+    );
   if (active && typeof selected?.detail?.conversationId === 'string')
     return (
       <ConversationPanel
@@ -788,6 +804,7 @@ export default function AttentionWorkspace({
         }}
         back={directBack}
         openFlow={openFlow}
+        continueConversation={setContinuedThread}
         openSkill={(id) => {
           const item = data.attention.find((a) => a.detail?.skillProposalId === id);
           if (item) open(item);

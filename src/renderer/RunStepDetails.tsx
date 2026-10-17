@@ -90,7 +90,10 @@ function fields(node: Step): [string, string][] {
         ['会话标题', node.title],
         ['会话键', configured(node.key)],
         ['AI资源', node.binding],
-        ['请求上限', String(node.maxRequests)],
+        [
+          node.version === 2 ? '每轮历史窗口' : '请求上限',
+          node.version === 2 ? `${node.historyWindow}轮，无总次数限制` : String(node.maxRequests),
+        ],
         ['指令', configured(node.instructions)],
         ['上下文', configured(node.input)],
       ];

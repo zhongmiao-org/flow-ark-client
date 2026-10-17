@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "id": "proposal-example",
+  "sessionId": "continuous-example",
+  "revision": 6,
+  "base": {
+    "id": "context-example",
+    "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+  },
+  "proposed": {
+    "version": 1,
+    "id": "context-new",
+    "flowId": "flow-example",
+    "nodeId": "interview",
+    "title": "持续补充 · 虚构示例",
+    "provider": "deepseek",
+    "model": "explicit-user-model",
+    "instructions": "围绕所选材料补充，未知保持未知；聊天不自动成为事实或外发许可。",
+    "context": {
+      "material": "另一份虚构材料",
+      "confirmedSkill": null
+    },
+    "sha256": "d7ea61535e3c7eb625473cc9606a50c6381852321028ec3c5bd09614e9c09eb8"
+  },
+  "historyWindow": 12,
+  "sourceRunId": "run-example"
+}
