@@ -18,6 +18,7 @@ import {
   type ConversationContextProposal,
 } from '../shared/conversation-thread';
 import { assertConversation, type ConversationSnapshot } from '../shared/conversation';
+import type { AIConfigurationState } from '../shared/ai-settings';
 import type { ConversationLeave } from './ConversationPanel';
 import MarkdownBody from './MarkdownBody';
 import ConversationResultView from './ConversationResultView';
@@ -50,6 +51,7 @@ export default function ConversationThreadPanel({
   const [head, setHead] = useState<Head>(),
     saved = useRef<Head | undefined>(undefined);
   const [context, setContext] = useState<ConversationContext>();
+  const [configuration, setConfiguration] = useState<AIConfigurationState>();
   const [origin, setOrigin] = useState<ConversationSnapshot | null>(null);
   const [history, setHistory] = useState<ConversationHistoryPage>();
   const [latestPage, setLatestPage] = useState(true),
@@ -120,6 +122,7 @@ export default function ConversationThreadPanel({
     setHead(undefined);
     setHistory(undefined);
     setContext(undefined);
+    setConfiguration(undefined);
     setOrigin(null);
     setProposal(null);
     setSelection([]);
@@ -221,6 +224,22 @@ export default function ConversationThreadPanel({
       live = false;
     };
   }, [id, head?.context.id, head?.contextProposalId]);
+  useEffect(() => {
+    let live = true;
+    setConfiguration(undefined);
+    if (context)
+      void window.flowark
+        .request('ai.configuration.get', { provider: context.provider })
+        .then((value) => {
+          if (live) setConfiguration(value);
+        })
+        .catch(() => {
+          if (live) setError('AI 配置读取失败，输入保留；请重新打开会话。');
+        });
+    return () => {
+      live = false;
+    };
+  }, [id, context?.id]);
   useEffect(() => {
     if (!head) return;
     let live = true;
@@ -386,36 +405,58 @@ export default function ConversationThreadPanel({
       }
     });
   };
-  const previewSend = (retryOf: string | null = null) =>
+  const prepareSend = async (retryOf: string | null = null, showPreview = false) => {
+    const s = saved.current!,
+      body = retryOf ? s.lastEntry!.text : input.current;
+    const value = (await api('preview', {
+      id,
+      revision: s.revision,
+      text: body,
+      selection,
+      retryOf,
+    })) as ThreadPreparedPreview;
+    assertThreadPrepared(value.prepared);
+    if (value.prepared.sessionId !== id || value.prepared.text !== body)
+      throw Error('预览不属于本次输入');
+    accept.current(await api('detail', { id }));
+    if (
+      value.prepared.revision !== saved.current?.revision ||
+      value.prepared.text !== input.current
+    )
+      throw Error('预览期间内容已变化，请重新核对');
+    setPrepared(showPreview ? value : undefined);
+    setCheckpoint(undefined);
+    setReviewed(false);
+    follow.current = true;
+    return value;
+  };
+  const previewSend = () => act(() => prepareSend(null, true).then(() => {}));
+  const send = (retryOf: string | null = null) =>
     act(async () => {
-      const s = saved.current!,
-        body = retryOf ? s.lastEntry!.text : input.current;
-      const value = (await api('preview', {
-        id,
-        revision: s.revision,
-        text: body,
-        selection,
-        retryOf,
-      })) as ThreadPreparedPreview;
-      assertThreadPrepared(value.prepared);
-      if (value.prepared.sessionId !== id || value.prepared.text !== body)
-        throw Error('预览不属于本次输入');
-      accept.current(await api('detail', { id }));
-      if (
-        value.prepared.revision !== saved.current?.revision ||
-        value.prepared.text !== input.current
-      )
-        throw Error('预览期间内容已变化，请重新核对');
-      setPrepared(value);
-      setCheckpoint(undefined);
-      setReviewed(false);
-      follow.current = true;
-    });
-  const send = () =>
-    act(async () => {
-      const s = saved.current!,
-        p = prepared!;
-      if (!reviewed || p.prepared.revision !== s.revision || p.prepared.text !== input.current)
+      if (!context || !configuration) throw Error('AI 配置尚未读取，输入保留');
+      const checkConfiguration = async () => {
+        const value: AIConfigurationState = await window.flowark.request('ai.configuration.get', {
+          provider: context.provider,
+        });
+        if (
+          !value.configured ||
+          !value.revision ||
+          value.operation ||
+          value.model !== context.model
+        ) {
+          setConfiguration(value);
+          throw Error('AI 配置不可用或模型与当前来源不一致，本次未发送；请核对设置。');
+        }
+        if (value.revision !== configuration.revision) {
+          setConfiguration(value);
+          throw Error('Key 配置已变化，本次未发送；核对当前服务后可再次点击发送。');
+        }
+      };
+      await checkConfiguration();
+      const p = await prepareSend(retryOf);
+      await checkConfiguration();
+      const s = saved.current!;
+      if (p.prepared.revision !== s.revision || p.prepared.text !== input.current)
         throw Error('发送内容已变化，请重新核对');
       const requestId = crypto.randomUUID();
       pending.current = {
@@ -566,8 +607,12 @@ export default function ConversationThreadPanel({
         <Card className="conversation-card">
           <div className="conversation-status">
             <Tag>
-              {head.contextProposalId ? '新资料待核对' : labels[head.status]} · 累计{' '}
-              {head.requestCount + (origin?.attempts.length ?? 0)} 次请求 · 无总轮数限制
+              {head.contextProposalId
+                ? '新资料待核对'
+                : head.status === 'draft' && origin
+                  ? '等待你补充'
+                  : labels[head.status]}{' '}
+              · 累计 {head.requestCount + (origin?.attempts.length ?? 0)} 次请求 · 无总轮数限制
             </Tag>
             {head.latestCheckpoint && (
               <Tag>{head.checkpointCurrent ? '当前来源已确认' : '旧确认保留 · 新补充待确认'}</Tag>
@@ -578,7 +623,7 @@ export default function ConversationThreadPanel({
             items={[
               {
                 key: 'context',
-                label: `核对发送范围 · 已选 ${selection.length}/${head.historyWindow} 轮完整问答`,
+                label: `查看发送范围（可选） · 已选 ${selection.length}/${head.historyWindow} 轮完整问答`,
                 children: (
                   <>
                     <p>
@@ -590,6 +635,12 @@ export default function ConversationThreadPanel({
                     </p>
                     <pre>{JSON.stringify(context, null, 2)}</pre>
                     <pre>{JSON.stringify(selection, null, 2)}</pre>
+                    <Button
+                      disabled={disabled || !text.trim()}
+                      onClick={() => void previewSend().catch(() => {})}
+                    >
+                      查看本次完整发送内容
+                    </Button>
                   </>
                 ),
               },
@@ -776,7 +827,7 @@ export default function ConversationThreadPanel({
                 <div className="conversation-message">
                   <strong>随时补充或更正</strong>
                   <p>
-                    可以提问、补充事实或表达样本，不必答完固定题单。发送前核对当前指令、资料和所选对话。
+                    可以提问、补充事实或表达样本，不必答完固定题单。输入后直接发送；需要时可展开发送范围。
                   </p>
                 </div>
               )}
@@ -829,15 +880,21 @@ export default function ConversationThreadPanel({
                 resetReview();
               }}
             />
-            {(prepared || checkpoint) && (
+            <p className="conversation-input-hint">
+              {context?.provider} / {context?.model} · 使用你自己的 API Key
+              {configuration
+                ? configuration.configured
+                  ? ''
+                  : '（尚未配置）'
+                : '（正在读取配置）'}
+            </p>
+            {checkpoint && (
               <Checkbox
                 checked={reviewed}
                 disabled={busy || !!confirmRequest}
                 onChange={(e) => setReviewed(e.target.checked)}
               >
-                {prepared
-                  ? '已核对本次完整发送内容、历史范围和自己的 Key 费用'
-                  : '已核对本次完整确认来源；Skill 仍需另行确认保存'}
+                已核对本次完整确认来源；Skill 仍需另行确认保存
               </Checkbox>
             )}
             <div className="conversation-actions">
@@ -873,26 +930,13 @@ export default function ConversationThreadPanel({
                     >
                       {confirmRequest ? '核对原确认' : '确认本次来源'}
                     </Button>
-                  ) : prepared ? (
-                    <Button
-                      type="primary"
-                      disabled={
-                        disabled ||
-                        !reviewed ||
-                        prepared.prepared.revision !== head.revision ||
-                        prepared.prepared.text !== text
-                      }
-                      onClick={() => void send().catch(() => {})}
-                    >
-                      发送
-                    </Button>
                   ) : (
                     <Button
                       type="primary"
-                      disabled={disabled || !text.trim()}
-                      onClick={() => void previewSend().catch(() => {})}
+                      disabled={disabled || !text.trim() || !configuration}
+                      onClick={() => void send().catch(() => {})}
                     >
-                      核对本次发送
+                      发送
                     </Button>
                   )}
                   <Button
@@ -903,15 +947,15 @@ export default function ConversationThreadPanel({
                   </Button>
                   {(prepared || checkpoint) && (
                     <Button disabled={busy || !!confirmRequest} onClick={resetReview}>
-                      返回继续核对
+                      返回继续聊天
                     </Button>
                   )}
                   {!prepared && !checkpoint && ['failed', 'cancelled'].includes(head.status) && (
                     <Button
                       disabled={disabled || (!!text && text !== head.lastEntry?.text)}
-                      onClick={() => void previewSend(head.lastEntry!.requestId).catch(() => {})}
+                      onClick={() => void send(head.lastEntry!.requestId).catch(() => {})}
                     >
-                      核对后重试本轮
+                      重试本轮
                     </Button>
                   )}
                   {!checkpoint && (
