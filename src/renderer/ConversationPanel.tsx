@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Alert, Button, Card, Checkbox, Collapse, Input, Tag } from 'antd';
+import { Alert, Button, Card, Collapse, Input, Tag } from 'antd';
 import {
   assertConversation,
   assertConversationOutput,
@@ -56,8 +56,7 @@ export default function ConversationPanel({
   const inputText = useRef('');
   const [error, setError] = useState(''),
     [recovering, setRecovering] = useState(true),
-    [busy, setBusy] = useState(false),
-    [reviewed, setReviewed] = useState(false);
+    [busy, setBusy] = useState(false);
   const [leave, setLeave] = useState<{ navigate: () => void; label: string }>();
   const locked = useRef(false),
     alive = useRef(true),
@@ -204,7 +203,6 @@ export default function ConversationPanel({
       assertConversation(value);
       if (disposed || value.id !== id || value.sequence < (saved.current?.sequence ?? 0)) return;
       const before = saved.current;
-      if (!before || before.revision !== value.revision) setReviewed(false);
       if (before?.status === 'confirmed' && value.status !== 'confirmed')
         throw new Error('已确认会话收到无效的旧请求状态');
       if (pending.current && value.attempts.some((a) => a.id === pending.current?.args.requestId)) {
@@ -344,7 +342,7 @@ export default function ConversationPanel({
     return () => window.removeEventListener('beforeunload', prevent);
   }, []);
   const send = (retry = false) => {
-    if (!snapshot || !reviewed) return;
+    if (!snapshot) return;
     const method = retry ? 'conversation.retry' : 'conversation.send';
     const command = pending.current ?? {
       method,
@@ -358,7 +356,6 @@ export default function ConversationPanel({
     };
     scrollLatest();
     pending.current = command;
-    setReviewed(false);
     void act(command.method, command.args).catch(() => {});
   };
   const generating = snapshot?.status === 'generating',
@@ -433,7 +430,6 @@ export default function ConversationPanel({
             disabled={busy || generating || uncertain || trialBlocked}
             onChange={(e) => {
               updateText(e.target.value);
-              setReviewed(false);
             }}
           />
           <p className="conversation-input-hint">
@@ -441,11 +437,11 @@ export default function ConversationPanel({
               ? '有未保存输入，请保存后退出。'
               : text
                 ? '输入已保存，可稍后继续。'
-                : '输入后，核对发送范围并勾选，再点击发送。'}
+                : '输入后直接点击发送；需要时可展开发送范围。'}
           </p>
-          <Checkbox checked={reviewed} onChange={(e) => setReviewed(e.target.checked)}>
-            已核对指令、所选上下文、完整历史及自己的 Key 费用
-          </Checkbox>
+          <p className="conversation-input-hint">
+            {snapshot.provider} / {snapshot.model} · 使用你自己的 API Key，重试也可能计费。
+          </p>
         </>
       )}
       <div className="conversation-actions">
@@ -467,12 +463,7 @@ export default function ConversationPanel({
               <Button
                 type="primary"
                 disabled={
-                  busy ||
-                  recovering ||
-                  !reviewed ||
-                  (!text.trim() && !uncertain) ||
-                  exhausted ||
-                  trialBlocked
+                  busy || recovering || (!text.trim() && !uncertain) || exhausted || trialBlocked
                 }
                 onClick={() => send()}
               >
@@ -486,9 +477,7 @@ export default function ConversationPanel({
               </Button>
               {['failed', 'cancelled'].includes(snapshot.status) && (
                 <Button
-                  disabled={
-                    busy || recovering || !reviewed || exhausted || uncertain || trialBlocked
-                  }
+                  disabled={busy || recovering || exhausted || uncertain || trialBlocked}
                   onClick={() => send(true)}
                 >
                   手动重试本轮
@@ -607,7 +596,7 @@ export default function ConversationPanel({
               items={[
                 {
                   key: 'context',
-                  label: '核对发送范围',
+                  label: '查看发送范围（可选）',
                   children: (
                     <>
                       {trialDetails}
@@ -685,7 +674,7 @@ export default function ConversationPanel({
                 )}
                 {sourceError && <Alert type="warning" title={sourceError} />}
                 {!snapshot.messages.length && (
-                  <p>先展开核对发送范围，再在下方输入你的要求或补充。不会自动调用模型。</p>
+                  <p>在下方输入要求或补充后点击发送；需要时可展开发送范围。</p>
                 )}
                 {snapshot.messages.map((message) => (
                   <article key={message.id} className={'conversation-message is-' + message.role}>
