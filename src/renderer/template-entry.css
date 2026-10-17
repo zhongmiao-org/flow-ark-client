@@ -260,3 +260,76 @@
 .template-entry-inspection .template-entry-resource-content {
   padding-top: 20px;
 }
+
+/* Figma 774:8573 / 774:8675 / 774:8777 / 774:8879. */
+.entry-handoff {
+  margin-top: 24px;
+}
+.entry-handoff-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  margin-block: 16px;
+}
+.entry-handoff dl {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 16px;
+}
+.entry-handoff dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.entry-handoff [role='status']:focus {
+  outline: 2px solid var(--fa-action-focus);
+  outline-offset: 4px;
+}
+@media (max-width: 980px) {
+  .entry-handoff-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.entry-handoff-open {
+  min-height: 78vh;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.entry-handoff-open h1 {
+  font-size: 28px;
+  line-height: 40px;
+  margin: 0;
+}
+.entry-handoff-open h2 {
+  font-size: 18px;
+  line-height: 28px;
+  margin: 0 0 16px;
+  font-weight: 500;
+}
+.entry-handoff-open p {
+  color: var(--fa-text-secondary);
+}
+.entry-handoff-open dl {
+  align-items: center;
+}
+.entry-handoff-open dt {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--fa-text-secondary);
+}
+.entry-handoff-columns {
+  align-items: start;
+}
+.entry-handoff-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 24px;
+}
+.entry-handoff-footer span {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--fa-text-secondary);
+}

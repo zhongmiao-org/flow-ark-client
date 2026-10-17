@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "selection": {
+    "flowId": "fictional-control-flow",
+    "source": {
+      "instanceId": "fictional-instance",
+      "entryId": "control",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  },
+  "token": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "expiresAt": "2026-10-16T10:05:00.000Z",
+  "flowName": "虚构控制入口",
+  "instanceName": "虚构实例",
+  "packageVersion": "1.0.0",
+  "packageDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "runs": [
+    {
+      "id": "fictional-active",
+      "name": "虚构运行",
+      "state": "RUNNING"
+    },
+    {
+      "id": "fictional-queued",
+      "name": "虚构排队",
+      "state": "QUEUED"
+    }
+  ],
+  "limitations": [
+    "停止不撤回已提交的外部操作",
+    "新入口结果仍须核对"
+  ]
+}
