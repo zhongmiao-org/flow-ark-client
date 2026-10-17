@@ -15,6 +15,16 @@ export function assertPortableSourceFlow(flow: Flow) {
       )
         throw Error('公开来源读取位置只能从头开始或引用前序变量；请移除固定私人游标');
     }
+  const neutralSeed = (v: unknown): boolean => {
+    if (v === null || v === '' || v === 0 || v === false) return true;
+    if (!v || typeof v !== 'object') return false;
+    if (!Array.isArray(v) && Object.keys(v).length === 1 && typeof (v as any).$ref === 'string')
+      return true;
+    return Object.values(v).every(neutralSeed);
+  };
+  for (const node of walk(flow.steps))
+    if (node.type === 'source-reduce' && !neutralSeed(node.seed))
+      throw Error('整理初始数据含固定内容，请改为公开空结构、参数或前序结果引用后导出');
   const visit = (v: any, depth: number) => {
     if (depth > 48) throw Error('公开流程嵌套超限');
     if (!v || typeof v !== 'object') return;

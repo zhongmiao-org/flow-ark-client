@@ -1,3 +1,4 @@
+import { assertReductionOutput } from '../shared/source-reduction';
 import { conversationEvent } from '../shared/conversation';
 import { threadEvent } from '../shared/conversation-thread';
 import { archiveEvent } from '../shared/conversation-archive';
@@ -462,6 +463,7 @@ app
           async (method, args) => {
             if (method === 'conversation.message') {
               const event =
+                args?.job && args?.checkpoint ? (assertReductionOutput(args), args) :
                 args?.kind === 'conversation.archive.snapshot'
                   ? archiveEvent(args)
                   : args?.kind === 'conversation.thread.snapshot'

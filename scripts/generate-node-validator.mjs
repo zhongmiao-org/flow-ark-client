@@ -16,7 +16,7 @@ const ajv = new Ajv2020({
 ajv.addSchema(schema);
 const groups = new Map();
 schema.$defs.Node.oneOf.forEach((node, index) => {
-  const key = `node_${node.properties.type.const}_${node.properties.version.const}`;
+  const key = `node_${node.properties.type.const.replaceAll("-", "_")}_${node.properties.version.const}`;
   groups.set(key, [...(groups.get(key) ?? []), { node, index }]);
 });
 const validators = {};
@@ -63,6 +63,8 @@ for (const name of ['Capture', 'Ref', 'Record', 'Manifest', 'Cursor', 'Page'])
 for (const name of ['Cursor', 'Chunk', 'Read', 'ManifestOutput'])
   validators['source_' + name.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase() + '_v1'] =
     `${schema.$id}#/$defs/ConversationSource${name}`;
+for (const name of ['Recipe', 'Ref', 'Checkpoint', 'Transport', 'Attempt', 'Proof', 'Evidence', 'Output'])
+  validators['reduction_' + name.toLowerCase() + '_v1'] = `${schema.$id}#/$defs/SourceReduction${name}`;
 validators.document_result_v1 = `${schema.$id}#/$defs/DocumentResult`;
 validators.ai_outcome_v1 = `${schema.$id}#/$defs/AIOutcome`;
 validators.ai_receipt_v1 = `${schema.$id}#/$defs/AINodeReceipt`;

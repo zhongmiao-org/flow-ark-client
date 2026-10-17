@@ -61,7 +61,7 @@ function validateNode(
   const node = value as Record<string, unknown>;
   if (typeof node.type !== 'string') throw new Error(`${path}/type：必须是文字`);
   if (!Number.isInteger(node.version)) throw new Error(`${path}/version：必须是整数`);
-  const key = `node_${node.type}_${node.version}`;
+  const key = `node_${node.type.replaceAll('-', '_')}_${node.version}`;
   if (!Object.hasOwn(validators, key))
     throw new Error(`${path}：不支持此节点类型或版本，请核对 type 和 version`);
   // Visit children first so a nested failure is reported against its own variant,

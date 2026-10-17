@@ -86,12 +86,29 @@ export function aiBinding(bindings: Bindings, id: string, version = 1) {
 export function aiProviders(record: Pick<{ flow: Flow; bindings: Bindings }, 'flow' | 'bindings'>) {
   return [
     ...new Set(
-      [...aiNodes(record.flow.steps), ...conversationNodes(record.flow.steps)].flatMap((node) => {
-        const provider = record.bindings.resources?.[node.binding]?.provider;
+      [
+        ...aiNodes(record.flow.steps),
+        ...conversationNodes(record.flow.steps),
+        ...walkReduction(record.flow.steps),
+      ].flatMap((node) => {
+        const provider =
+          record.bindings.resources?.[node.type === 'source-reduce' ? node.aiBinding : node.binding]
+            ?.provider;
         return provider ? [provider] : [];
       }),
     ),
   ];
+}
+function walkReduction(steps: Step[]): Extract<Step, { type: 'source-reduce' }>[] {
+  return steps.flatMap((n) =>
+    n.type === 'source-reduce'
+      ? [n]
+      : n.type === 'condition'
+        ? [...walkReduction(n.then), ...walkReduction(n.else)]
+        : n.type === 'loop'
+          ? walkReduction(n.body)
+          : [],
+  );
 }
 
 export function conversationNodes(steps: Step[]): Extract<Step, { type: 'conversation' }>[] {

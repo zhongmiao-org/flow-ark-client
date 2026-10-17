@@ -1,3 +1,6 @@
+import { SourceReductions } from './source-reductions';
+import { reductionMethods } from '../shared/source-reduction';
+import { assertSourceReductionNode } from '../../contracts/source-reduction';
 import { ConversationThreads } from './conversation-threads';
 import { ConversationArchives } from './conversation-archives';
 import { ConversationSources } from './conversation-sources';
@@ -166,6 +169,7 @@ export class Runtime {
   private threads: ConversationThreads;
   private archives: ConversationArchives;
   private sources: ConversationSources;
+  private reductions: SourceReductions;
   private documents: DocumentProcesses;
   private skills: Skills;
   private typedResults: TypedResults;
@@ -183,17 +187,21 @@ export class Runtime {
     this.artifactFiles = new ArtifactFiles(dataPath);
     this.store = new Store(join(dataPath, 'flowark.sqlite'), key);
     this.store.recover();
-    this.typedResults = new TypedResults(this.store, (record, node, value) =>
-      this.sources.verifyResult(record, node, value),
+    this.typedResults = new TypedResults(
+      this.store,
+      (record, node, value) => this.sources.verifyResult(record, node, value),
+      (target, value) => this.reductions.verifyResult(target, value),
     );
     this.documents = new DocumentProcesses(dir, executable);
     this.skills = new Skills(this.store, {
       available: () => this.assertAdmitting(),
       notify: () => this.system('notification', { title: 'FlowArk 有待核对的Skill草稿' }),
       verifyConversation: (evidence, current) =>
-        (evidence as { kind?: string }).kind === 'conversation-checkpoint'
-          ? this.threads.verifyEvidence(evidence, current)
-          : this.conversations.verifyEvidence(evidence),
+        (evidence as { kind?: string }).kind === 'source-reduction'
+          ? this.reductions.verifyEvidence(evidence, current)
+          : (evidence as { kind?: string }).kind === 'conversation-checkpoint'
+            ? this.threads.verifyEvidence(evidence, current)
+            : this.conversations.verifyEvidence(evidence),
     });
     const conversationCapacity = new ConversationCapacity();
     this.conversations = new Conversations(this.store, {
@@ -240,6 +248,20 @@ export class Runtime {
         };
       },
     });
+    this.reductions = new SourceReductions(this.store, this.archives, this.sources, {
+      available: () => this.assertAdmitting(),
+      configuration: (provider) => this.system('ai.configuration.read', { provider }),
+      key: (provider, revision) => this.system('credentials.get', { id: provider, revision }),
+      secret: (key) => {
+        this.secrets.push(key);
+      },
+      publish: (output) => this.system('conversation.message', output),
+      current: (manifest) => this.threads.archiveIsCurrent(manifest),
+      error: (error) => this.redactError(error),
+      receipt: (runId, nodeInstance, receipt) => {
+        this.store.aiOutcome(runId, nodeInstance, receipt, this.secrets);
+      },
+    });
     this.aiSettings = new AISettings(this.store, {
       assertAvailable: () => {
         if (this.stopping || this.suspended) throw new Error('应用正在退出或休眠');
@@ -250,6 +272,7 @@ export class Runtime {
         this.desktopPlanning?.usesProvider(provider) ||
         this.conversations?.usesProvider(provider) ||
         this.threads?.usesProvider(provider) ||
+        this.reductions?.usesProvider(provider) ||
         this.store.list<Run>('run').some(
           (run) =>
             (run.id === this.active?.id || run.state === 'QUEUED') &&
@@ -726,6 +749,7 @@ export class Runtime {
     await this.webTargets.record(record);
     await this.outputs.record(record);
     await this.templates.preflight(record);
+    await this.reductions.preflight(record);
     await this.aiNodes.preflight(record);
     await this.aiNodes.preflightConversations(record);
     if (record.bindings.template) {
@@ -740,7 +764,9 @@ export class Runtime {
     }
     const skillSnapshots = await this.skills.snapshot(record, record.skillSnapshots);
     const steps = walk(flow.steps);
-    for (const n of steps) if (n.type === 'source') this.sources.assertBinding(record, n.binding);
+    for (const n of steps)
+      if (n.type === 'source' || n.type === 'source-reduce')
+        this.sources.assertBinding(record, n.binding);
     if (record.bindings.template) {
       const { entry, pkg } = await this.templates.context(record);
       for (const r of pkg.manifest.resources.filter(
@@ -1377,6 +1403,10 @@ export class Runtime {
     if (method === 'document.cancel')
       return this.active?.id === id ? this.documents.cancel(id, args.invocationId) : false;
     if (method === 'context.cancel') return this.templateData.cancel(id, args.nodeInstance);
+    if (method === 'reduction.cancel') {
+      this.reductions.cancel(id, args.nodeInstance);
+      return true;
+    }
     if (method === 'ai.cancel')
       return this.active?.id === id ? this.aiNodes.cancel(id, args.invocationId) : false;
     if (this.active?.id !== id) throw new Error('运行已停止');
@@ -1404,6 +1434,30 @@ export class Runtime {
         () => this.checkActive(active),
       );
       this.typedResults.save(id, node.id, args.nodeInstance, 'context', result);
+      return result;
+    }
+    if (method === 'reduction.node') {
+      const active = this.active,
+        node = walk(snapshot.flow.steps).find((n) => n.id === args.nodeId);
+      if (
+        node?.type !== 'source-reduce' ||
+        typeof args.nodeInstance !== 'string' ||
+        !active.nodeInstances?.has(args.nodeInstance)
+      )
+        throw Error('整理节点不属于当前执行实例');
+      if (snapshot.bindings.template) {
+        const { entry, pkg } = await this.templates.context(snapshot);
+        assertSourceReductionNode(node, snapshot.flow.requiredCapabilities, pkg.manifest, entry);
+      }
+      const result = await this.reductions.perform(
+        snapshot,
+        { runId: id, nodeId: node.id, nodeInstance: args.nodeInstance },
+        args.seed,
+        runSignal,
+        () => this.checkActive(active),
+      );
+      this.checkActive(active);
+      this.typedResults.save(id, node.id, args.nodeInstance, 'source-reduce', result);
       return result;
     }
     if (method === 'source.node') {
@@ -1600,6 +1654,8 @@ export class Runtime {
       const { entry, pkg } = await this.templates.context(snapshot);
       if (node.type === 'source')
         assertConversationSourceNode(node, snapshot.flow.requiredCapabilities, pkg.manifest, entry);
+      else if (node.type === 'source-reduce')
+        assertSourceReductionNode(node, snapshot.flow.requiredCapabilities, pkg.manifest, entry);
       else if (!entry.capabilities.includes(node.type)) throw new Error('入口未声明节点能力');
       if (node.type === 'file' || node.type === 'excel') {
         const binding = args.binding;
@@ -1901,6 +1957,7 @@ export class Runtime {
         this.conversations.cancelAll(),
         this.threads.cancelAll(),
         this.archives.stop(),
+        this.reductions.stop(),
       ]);
     } catch (error) {
       errors.push(error);
@@ -2074,6 +2131,35 @@ export class Runtime {
       if (method === 'skill.fork') return this.skills.fork(v.id);
       if (method === 'skill.relocate') return this.skills.relocate(v.id, v.path);
     }
+    if (method.startsWith('reduction.')) {
+      await this.ready;
+      const rule = reductionMethods[method as keyof typeof reductionMethods];
+      if (!rule) throw Error('整理IPC方法未授权');
+      const v = rule.parse(args) as any,
+        target = { runId: v.runId, nodeId: v.nodeId, nodeInstance: v.nodeInstance };
+      if (method === 'reduction.forRun') return this.reductions.forRun(target);
+      if (method === 'reduction.detail') return this.reductions.detail(target, v.jobId);
+      if (method === 'reduction.attempts')
+        return this.reductions.attempts(target, v.jobId, v.before);
+      if (method === 'reduction.attempt')
+        return this.reductions.readAttempt(target, v.jobId, v.sequence);
+      if (method === 'reduction.recover')
+        return this.reductions.recover(
+          target,
+          v.jobId,
+          v.revision,
+          v.pendingAttemptId,
+          v.requestId,
+        );
+      if (method === 'reduction.allowRetry')
+        return this.reductions.allowRetry(
+          target,
+          v.jobId,
+          v.revision,
+          v.pendingAttemptId,
+          v.requestId,
+        );
+    }
     if (method.startsWith('source.')) {
       await this.ready;
       const rule = sourceMethods[method as keyof typeof sourceMethods];
@@ -2087,7 +2173,14 @@ export class Runtime {
         const run = this.store.get<Run>('run', v.runId),
           snapshot = this.store.get<FlowRecord>('snapshot', v.runId);
         const node = snapshot && walk(snapshot.flow.steps).find((n) => n.id === v.nodeId);
-        if (run?.state !== 'SUCCEEDED' || !snapshot || node?.type !== 'source')
+        if (
+          !run ||
+          !snapshot ||
+          !node ||
+          !['source', 'source-reduce'].includes(node.type) ||
+          (node.type === 'source' && run.state !== 'SUCCEEDED') ||
+          !('binding' in node)
+        )
           throw Error('来源运行结果尚不可查看');
         const ref = this.sources.assertBinding(snapshot, node.binding);
         return this.sources.record(ref, v.ordinal);
@@ -2609,6 +2702,7 @@ export class Runtime {
         this.conversations.cancelAll(),
         this.threads.cancelAll(),
         this.archives.stop(),
+        this.reductions.stop(),
       ]);
       await this.skills.stop();
       await this.author.stop();

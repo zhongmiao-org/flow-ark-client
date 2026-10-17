@@ -1,4 +1,4 @@
-/* Generated from contracts/p1.schema.json (d36b612b854b31198fe1556cf8702315c44c65fa5a3002a83f153a3744d66657). Do not edit. */
+/* Generated from contracts/p1.schema.json (5e46550ef470f066e51019938b8af42750e729f62c4495bcc729648b0d239134). Do not edit. */
 import type { ValidateFunction } from 'ajv';
 export const node_value_1: ValidateFunction;
 export const node_assert_1: ValidateFunction;
@@ -28,6 +28,7 @@ export const node_context_1: ValidateFunction;
 export const node_browser_4: ValidateFunction;
 export const node_conversation_2: ValidateFunction;
 export const node_source_1: ValidateFunction;
+export const node_source_reduce_1: ValidateFunction;
 export const handoff_preview_v1: ValidateFunction;
 export const handoff_receipt_v1: ValidateFunction;
 export const template_human_review_v1: ValidateFunction;
@@ -59,6 +60,14 @@ export const source_cursor_v1: ValidateFunction;
 export const source_chunk_v1: ValidateFunction;
 export const source_read_v1: ValidateFunction;
 export const source_manifest_output_v1: ValidateFunction;
+export const reduction_recipe_v1: ValidateFunction;
+export const reduction_ref_v1: ValidateFunction;
+export const reduction_checkpoint_v1: ValidateFunction;
+export const reduction_transport_v1: ValidateFunction;
+export const reduction_attempt_v1: ValidateFunction;
+export const reduction_proof_v1: ValidateFunction;
+export const reduction_evidence_v1: ValidateFunction;
+export const reduction_output_v1: ValidateFunction;
 export const document_result_v1: ValidateFunction;
 export const ai_outcome_v1: ValidateFunction;
 export const ai_receipt_v1: ValidateFunction;

@@ -116,7 +116,7 @@ export class Skills {
   }
   private verifyEvidence(draft: SkillDraft, current = true) {
     for (const e of draft.evidence)
-      if (e.kind === 'conversation' || e.kind === 'conversation-checkpoint') {
+      if (e.kind === 'conversation' || e.kind === 'conversation-checkpoint' || e.kind === 'source-reduction') {
         if (!this.deps.verifyConversation) throw Error('会话来源核对不可用，草稿未确认');
         this.deps.verifyConversation(e, current);
       }

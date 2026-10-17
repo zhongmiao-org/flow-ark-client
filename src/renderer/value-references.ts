@@ -95,6 +95,31 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
           ? '结果为每次迭代的输出数组；索引取决于实际迭代次数'
           : '本步骤的完整输出；未知字段可在高级子路径中指定',
     );
+    if (node.type === 'source-reduce')
+      for (const key of [
+        'phase',
+        'checkpoint.accumulator',
+        'proof',
+        'checkpoint.records',
+        'checkpoint.chunks',
+        'reportedTotalTokens',
+        'unknownUsageRequests',
+      ])
+        add(
+          path + '.' + key,
+          label + ' / ' + key,
+          '前序步骤',
+          '固定整理结果；先判断 phase 是否为 complete',
+        );
+    if (node.type === 'source-reduce')
+      fields(
+        node.schema?.properties
+          ? Object.fromEntries(Object.keys(node.schema.properties).map((k) => [k, null]))
+          : {},
+        path + '.checkpoint.accumulator',
+        label + ' / 整理草稿',
+        '前序步骤',
+      );
     if (node.type === 'source')
       for (const key of node.operation === 'manifest'
         ? ['source', 'manifest', 'current', 'manifest.requestCount', 'manifest.recordCount']

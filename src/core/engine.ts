@@ -74,7 +74,11 @@ export async function execute(flow: Flow, params: any, ctx: Execution) {
       await parent.run(() => ctx.emit('node-start', instance, { type: n.type }));
       const timeout =
         n.timeoutMs ??
-        (['condition', 'loop', 'value', 'assert', 'human'].includes(n.type) ? undefined : 60000);
+        (n.type === 'source-reduce'
+          ? 1800000
+          : ['condition', 'loop', 'value', 'assert', 'human'].includes(n.type)
+            ? undefined
+            : 60000);
       const deadline = new NodeDeadline(parent, instance, timeout);
       let result: any;
       try {
@@ -119,9 +123,11 @@ export async function execute(flow: Flow, params: any, ctx: Execution) {
             const resolved =
               n.type === 'conversation'
                 ? { ...n, key: resolveValue(n.key, local), input: resolveValue(n.input, local) }
-                : n.type === 'ai'
-                  ? { ...n, input: resolveValue(n.input, local) }
-                  : resolveValue(n, local);
+                : n.type === 'source-reduce'
+                  ? { ...n, seed: resolveValue(n.seed, local) }
+                  : n.type === 'ai'
+                    ? { ...n, input: resolveValue(n.input, local) }
+                    : resolveValue(n, local);
             deadline.check();
             output = await ctx.perform(n, resolved, instance, deadline.signal);
           }

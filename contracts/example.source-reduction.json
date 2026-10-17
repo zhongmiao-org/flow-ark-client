@@ -1,0 +1,328 @@
+{
+  "sourceFixture": "example.conversation-archive.json",
+  "recipe": {
+    "version": 1,
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "instructions": "整理虚构来源；区分角色、来源和未知项，保留本人后续更正；输出完整更新后的summary。",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "summary": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "summary"
+      ],
+      "additionalProperties": false
+    },
+    "seed": {
+      "summary": ""
+    }
+  },
+  "flow": {
+    "formatVersion": "1.0",
+    "id": "reduce-source",
+    "name": "固定来源分批整理",
+    "description": "通用虚构示例；私人绑定不进入模板。",
+    "parameters": {},
+    "requiredCapabilities": [
+      "source-reduce-v1",
+      "conversation-source-read-v1",
+      "ai-node-v1"
+    ],
+    "steps": [
+      {
+        "id": "reduce",
+        "type": "source-reduce",
+        "version": 1,
+        "name": "AI分批整理来源",
+        "binding": "source",
+        "aiBinding": "model",
+        "instructions": "整理虚构来源；区分角色、来源和未知项，保留本人后续更正；输出完整更新后的summary。",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "summary": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "summary"
+          ],
+          "additionalProperties": false
+        },
+        "seed": {
+          "summary": ""
+        },
+        "maxRequests": 8,
+        "timeoutMs": 1800000
+      }
+    ]
+  },
+  "initial": {
+    "version": 1,
+    "job": {
+      "version": 1,
+      "jobId": "reduce-example",
+      "source": {
+        "version": 1,
+        "archiveId": "archive-example-8-14",
+        "sessionId": "archive-session",
+        "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+      },
+      "recipeHash": "237c2e4dccca91a1cff1a61c1e0dc1e0d973dcdce9d3a89e832d29b346c54baa"
+    },
+    "revision": 0,
+    "next": {
+      "version": 1,
+      "format": "canonical-record-json-v1",
+      "source": {
+        "version": 1,
+        "archiveId": "archive-example-8-14",
+        "sessionId": "archive-session",
+        "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+      },
+      "recordOrdinal": 1,
+      "byteOffset": 0,
+      "previousHash": "419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3"
+    },
+    "accumulator": {
+      "summary": ""
+    },
+    "chunks": 0,
+    "records": 0,
+    "bytes": 0,
+    "chainHash": "9752e3b137d717955b739be38a49f937385e2f5142a0b6478be77ade8757c5b6",
+    "lastAttemptId": null,
+    "sha256": "2bad9a7c3c319b5369d96337e66d5385f95fe94771c1058b4bfbceb7395971ea"
+  },
+  "firstAttempt": {
+    "version": 1,
+    "attemptId": "ra_7d2988ac68357bf5282e36afdb3497a0",
+    "job": {
+      "version": 1,
+      "jobId": "reduce-example",
+      "source": {
+        "version": 1,
+        "archiveId": "archive-example-8-14",
+        "sessionId": "archive-session",
+        "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+      },
+      "recipeHash": "237c2e4dccca91a1cff1a61c1e0dc1e0d973dcdce9d3a89e832d29b346c54baa"
+    },
+    "sequence": 1,
+    "checkpointRevision": 0,
+    "checkpointSha256": "2bad9a7c3c319b5369d96337e66d5385f95fe94771c1058b4bfbceb7395971ea",
+    "runId": "run-example",
+    "nodeInstance": "reduce",
+    "configurationRevision": "configuration-example",
+    "state": "response",
+    "request": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "instructions": "整理虚构来源；区分角色、来源和未知项，保留本人后续更正；输出完整更新后的summary。",
+      "input": {
+        "format": "source-reduction-v1",
+        "source": {
+          "version": 1,
+          "archiveId": "archive-example-8-14",
+          "sessionId": "archive-session",
+          "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+        },
+        "manifest": {
+          "version": 1,
+          "id": "archive-example-8-14",
+          "capture": {
+            "version": 1,
+            "sessionId": "archive-session",
+            "title": "持续补充 · 虚构示例",
+            "revision": 1000,
+            "contextRevision": 1,
+            "context": {
+              "id": "context-example",
+              "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+            },
+            "origin": {
+              "kind": "conversation",
+              "label": "补充材料",
+              "sessionId": "archive-session",
+              "revision": 4,
+              "sequence": 12,
+              "sha256": "7d0c6e42438ee5ca1c1ed50df379d25435c32fd36a96b7ba6a796f8c20635d98"
+            },
+            "historyCount": 8,
+            "historyHash": "ff6dd1ab4abac3890b39d50448a1af9d828ced6ca6522b341e7fb12ceef6e672"
+          },
+          "createdAt": "2026-10-17T00:00:00.000Z",
+          "originRequestCount": 14,
+          "historyCount": 8,
+          "contextCount": 1,
+          "recordCount": 10,
+          "requestCount": 22,
+          "completeCount": 18,
+          "failedCount": 2,
+          "cancelledCount": 2,
+          "rootHash": "419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3",
+          "tailHash": "a23b01c460c25bedceffc505c6b23ddf0954d6078c72bd62281b5a733e2298df",
+          "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+        },
+        "fragment": {
+          "version": 1,
+          "cursor": {
+            "version": 1,
+            "format": "canonical-record-json-v1",
+            "source": {
+              "version": 1,
+              "archiveId": "archive-example-8-14",
+              "sessionId": "archive-session",
+              "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+            },
+            "recordOrdinal": 1,
+            "byteOffset": 0,
+            "previousHash": "419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3"
+          },
+          "chunk": {
+            "version": 1,
+            "format": "canonical-record-json-v1",
+            "source": {
+              "version": 1,
+              "archiveId": "archive-example-8-14",
+              "sessionId": "archive-session",
+              "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+            },
+            "recordOrdinal": 1,
+            "recordKind": "origin",
+            "recordHash": "19378721c2620d2ed9dd0febe93497ec9bdaba4dcab95189616f255ee611c577",
+            "recordBytes": 7154,
+            "byteOffset": 0,
+            "byteEnd": 7154,
+            "text": "{\"archiveId\":\"archive-example-8-14\",\"ordinal\":1,\"payload\":{\"kind\":\"origin\",\"snapshot\":{\"attempts\":[{\"id\":\"origin-request-1\",\"model\":\"explicit-user-model\",\"providerRequestId\":\"\",\"state\":\"complete\",\"turnId\":\"origin-turn-1\",\"usage\":null},{\"id\":\"origin-request-2\",\"model\":\"explicit-user-model\",\"providerRequestId\":\"\",\"state\":\"complete\",\"turnId\":\"origin-turn-2\",\"usage\":null},{\"id\":\"origin-request-3\",\"model\":\"explicit-user-model\",\"providerRequestId\":\"\",\"state\":\"failed\",\"turnId\":\"origin-turn-3\",\"usage\":null},{\"id\":\"origin-request-4\",\"model\":\"explicit-user-model\",\"providerRequestId\":\"\",\"state\":\"complete\",\"turnId\":\"origin-turn-4\",\"usage\":null},{\"id\":\"origin-request-5\",\"model\":\"explicit-user-model\",\"providerRequestId\":\"\",\"state\":\"cancelled\",\"turnId\":\"origin-turn-5\",\"usage\":null},{\"id\":\"origin-request-6\",\"model\":\"explicit-user-model\",\"providerRequestId\":\"\",\"state\":\"complete\",\"turnId\":\"origin-turn-6\",\"usage\":null},{\"id\":\"origin-request-7\",\"model\":\"explicit-user-model\",\"providerRequestId\":\"\",\"state\":\"complete\",\"turnId\":\"origin-turn-7\",\"usage\":null},{\"id\":\"origin-request-8\",\"model\":\"explicit-user-model\",\"providerRequestId\":\"\",\"state\":\"complete\",\"turnId\":\"origin-turn-8\",\"usage\":null},{\"id\":\"origin-request-9\",\"model\":\"explicit-user-model\",\"providerRequestId\":\"\",\"state\":\"complete\",\"turnId\":\"origin-turn-9\",\"usage\":null},{\"id\":\"origin-request-10\",\"model\":\"explicit-user-model\",\"providerRequestId\":\"\",\"state\":\"complete\",\"turnId\":\"origin-turn-10\",\"usage\":null},{\"id\":\"origin-request-11\",\"model\":\"explicit-user-model\",\"providerRequestId\":\"\",\"state\":\"complete\",\"turnId\":\"origin-turn-11\",\"usage\":null},{\"id\":\"origin-request-12\",\"model\":\"explicit-user-model\",\"providerRequestId\":\"\",\"state\":\"complete\",\"turnId\":\"origin-turn-12\",\"usage\":null},{\"id\":\"origin-request-13\",\"model\":\"explicit-user-model\",\"providerRequestId\":\"\",\"state\":\"complete\",\"turnId\":\"origin-turn-13\",\"usage\":null},{\"id\":\"origin-request-14\",\"model\":\"explicit-user-model\",\"providerRequestId\":\"\",\"state\":\"complete\",\"turnId\":\"origin-turn-14\",\"usage\":null}],\"confirmedAt\":\"2026-10-15T12:00:00.000Z\",\"context\":{\"材料\":\"虚构说明\"},\"draft\":\"\",\"error\":\"\",\"fingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"flowId\":\"conversation-example\",\"formatVersion\":\"1.0\",\"id\":\"archive-session\",\"instructions\":\"围绕用户提供的材料提问；未知信息保留未知。\",\"maxRequests\":50,\"messages\":[{\"id\":\"origin-user-1\",\"role\":\"user\",\"state\":\"complete\",\"text\":\"虚构旧资料第1项；后续更正保留原记录。\",\"turnId\":\"origin-turn-1\"},{\"id\":\"origin-assistant-1\",\"requestId\":\"origin-request-1\",\"role\":\"assistant\",\"state\":\"complete\",\"text\":\"已记录；建议仍需本人核对。\",\"turnId\":\"origin-turn-1\"},{\"id\":\"origin-user-2\",\"role\":\"user\",\"state\":\"complete\",\"text\":\"虚构旧资料第2项；后续更正保留原记录。\",\"turnId\":\"origin-turn-2\"},{\"id\":\"origin-assistant-2\",\"requestId\":\"origin-request-2\",\"role\":\"assistant\",\"state\":\"complete\",\"text\":\"已记录；建议仍需本人核对。\",\"turnId\":\"origin-turn-2\"},{\"id\":\"origin-user-3\",\"role\":\"user\",\"state\":\"complete\",\"text\":\"虚构旧资料第3项；后续更正保留原记录。\",\"turnId\":\"origin-turn-3\"},{\"id\":\"origin-assistant-3\",\"requestId\":\"origin-request-3\",\"role\":\"assistant\",\"state\":\"partial\",\"text\":\"未完成片段\",\"turnId\":\"origin-turn-3\"},{\"id\":\"origin-user-4\",\"role\":\"user\",\"state\":\"complete\",\"text\":\"虚构旧资料第4项；后续更正保留原记录。\",\"turnId\":\"origin-turn-4\"},{\"id\":\"origin-assistant-4\",\"requestId\":\"origin-request-4\",\"role\":\"assistant\",\"state\":\"complete\",\"text\":\"已记录；建议仍需本人核对。\",\"turnId\":\"origin-turn-4\"},{\"id\":\"origin-user-5\",\"role\":\"user\",\"state\":\"complete\",\"text\":\"虚构旧资料第5项；后续更正保留原记录。\",\"turnId\":\"origin-turn-5\"},{\"id\":\"origin-assistant-5\",\"requestId\":\"origin-request-5\",\"role\":\"assistant\",\"state\":\"partial\",\"text\":\"未完成片段\",\"turnId\":\"origin-turn-5\"},{\"id\":\"origin-user-6\",\"role\":\"user\",\"state\":\"complete\",\"text\":\"虚构旧资料第6项；后续更正保留原记录。\",\"turnId\":\"origin-turn-6\"},{\"id\":\"origin-assistant-6\",\"requestId\":\"origin-request-6\",\"role\":\"assistant\",\"state\":\"complete\",\"text\":\"已记录；建议仍需本人核对。\",\"turnId\":\"origin-turn-6\"},{\"id\":\"origin-user-7\",\"role\":\"user\",\"state\":\"complete\",\"text\":\"虚构旧资料第7项；后续更正保留原记录。\",\"turnId\":\"origin-turn-7\"},{\"id\":\"origin-assistant-7\",\"requestId\":\"origin-request-7\",\"role\":\"assistant\",\"state\":\"complete\",\"text\":\"已记录；建议仍需本人核对。\",\"turnId\":\"origin-turn-7\"},{\"id\":\"origin-user-8\",\"role\":\"user\",\"state\":\"complete\",\"text\":\"虚构旧资料第8项；后续更正保留原记录。\",\"turnId\":\"origin-turn-8\"},{\"id\":\"origin-assistant-8\",\"requestId\":\"origin-request-8\",\"role\":\"assistant\",\"state\":\"complete\",\"text\":\"已记录；建议仍需本人核对。\",\"turnId\":\"origin-turn-8\"},{\"id\":\"origin-user-9\",\"role\":\"user\",\"state\":\"complete\",\"text\":\"虚构旧资料第9项；后续更正保留原记录。\",\"turnId\":\"origin-turn-9\"},{\"id\":\"origin-assistant-9\",\"requestId\":\"origin-request-9\",\"role\":\"assistant\",\"state\":\"complete\",\"text\":\"已记录；建议仍需本人核对。\",\"turnId\":\"origin-turn-9\"},{\"id\":\"origin-user-10\",\"role\":\"user\",\"state\":\"complete\",\"text\":\"虚构旧资料第10项；后续更正保留原记录。\",\"turnId\":\"origin-turn-10\"},{\"id\":\"origin-assistant-10\",\"requestId\":\"origin-request-10\",\"role\":\"assistant\",\"state\":\"complete\",\"text\":\"已记录；建议仍需本人核对。\",\"turnId\":\"origin-turn-10\"},{\"id\":\"origin-user-11\",\"role\":\"user\",\"state\":\"complete\",\"text\":\"虚构旧资料第11项；后续更正保留原记录。\",\"turnId\":\"origin-turn-11\"},{\"id\":\"origin-assistant-11\",\"requestId\":\"origin-request-11\",\"role\":\"assistant\",\"state\":\"complete\",\"text\":\"已记录；建议仍需本人核对。\",\"turnId\":\"origin-turn-11\"},{\"id\":\"origin-user-12\",\"role\":\"user\",\"state\":\"complete\",\"text\":\"虚构旧资料第12项；后续更正保留原记录。\",\"turnId\":\"origin-turn-12\"},{\"id\":\"origin-assistant-12\",\"requestId\":\"origin-request-12\",\"role\":\"assistant\",\"state\":\"complete\",\"text\":\"已记录；建议仍需本人核对。\",\"turnId\":\"origin-turn-12\"},{\"id\":\"origin-user-13\",\"role\":\"user\",\"state\":\"complete\",\"text\":\"虚构旧资料第13项；后续更正保留原记录。\",\"turnId\":\"origin-turn-13\"},{\"id\":\"origin-assistant-13\",\"requestId\":\"origin-request-13\",\"role\":\"assistant\",\"state\":\"complete\",\"text\":\"已记录；建议仍需本人核对。\",\"turnId\":\"origin-turn-13\"},{\"id\":\"origin-user-14\",\"role\":\"user\",\"state\":\"complete\",\"text\":\"虚构旧资料第14项；后续更正保留原记录。\",\"turnId\":\"origin-turn-14\"},{\"id\":\"origin-assistant-14\",\"requestId\":\"origin-request-14\",\"role\":\"assistant\",\"state\":\"complete\",\"text\":\"已记录；建议仍需本人核对。\",\"turnId\":\"origin-turn-14\"}],\"model\":\"explicit-user-model\",\"nodeId\":\"interview\",\"provider\":\"deepseek\",\"revision\":4,\"sequence\":12,\"status\":\"confirmed\",\"title\":\"补充材料\",\"updatedAt\":\"2026-10-15T12:00:00.000Z\"}},\"previousHash\":\"419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3\",\"sha256\":\"19378721c2620d2ed9dd0febe93497ec9bdaba4dcab95189616f255ee611c577\",\"version\":1}",
+            "sha256": "03a7aa36c752f5d416396b86395feeca8d2b6148f037513be1e2efaf2252cc68"
+          },
+          "next": {
+            "version": 1,
+            "format": "canonical-record-json-v1",
+            "source": {
+              "version": 1,
+              "archiveId": "archive-example-8-14",
+              "sessionId": "archive-session",
+              "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+            },
+            "recordOrdinal": 2,
+            "byteOffset": 0,
+            "previousHash": "19378721c2620d2ed9dd0febe93497ec9bdaba4dcab95189616f255ee611c577"
+          },
+          "done": false
+        },
+        "prior": {
+          "revision": 0,
+          "sha256": "2bad9a7c3c319b5369d96337e66d5385f95fe94771c1058b4bfbceb7395971ea",
+          "accumulator": {
+            "summary": ""
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "summary"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "requestSha256": "9a35bcd4fcdae0dcabd26602abcda4488f056eec0dc700c4f908547a3823f652",
+    "transport": {
+      "body": "{\"model\":\"deepseek-flash\",\"messages\":[{\"role\":\"system\",\"content\":\"整理虚构来源；区分角色、来源和未知项，保留本人后续更正；输出完整更新后的summary。\\n只输出符合以下 JSON Schema 的完整 JSON：{\\\"type\\\":\\\"object\\\",\\\"properties\\\":{\\\"summary\\\":{\\\"type\\\":\\\"string\\\"}},\\\"required\\\":[\\\"summary\\\"],\\\"additionalProperties\\\":false}\"},{\"role\":\"user\",\"content\":\"{\\\"format\\\":\\\"source-reduction-v1\\\",\\\"source\\\":{\\\"version\\\":1,\\\"archiveId\\\":\\\"archive-example-8-14\\\",\\\"sessionId\\\":\\\"archive-session\\\",\\\"sha256\\\":\\\"d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d\\\"},\\\"manifest\\\":{\\\"version\\\":1,\\\"id\\\":\\\"archive-example-8-14\\\",\\\"capture\\\":{\\\"version\\\":1,\\\"sessionId\\\":\\\"archive-session\\\",\\\"title\\\":\\\"持续补充 · 虚构示例\\\",\\\"revision\\\":1000,\\\"contextRevision\\\":1,\\\"context\\\":{\\\"id\\\":\\\"context-example\\\",\\\"sha256\\\":\\\"bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f\\\"},\\\"origin\\\":{\\\"kind\\\":\\\"conversation\\\",\\\"label\\\":\\\"补充材料\\\",\\\"sessionId\\\":\\\"archive-session\\\",\\\"revision\\\":4,\\\"sequence\\\":12,\\\"sha256\\\":\\\"7d0c6e42438ee5ca1c1ed50df379d25435c32fd36a96b7ba6a796f8c20635d98\\\"},\\\"historyCount\\\":8,\\\"historyHash\\\":\\\"ff6dd1ab4abac3890b39d50448a1af9d828ced6ca6522b341e7fb12ceef6e672\\\"},\\\"createdAt\\\":\\\"2026-10-17T00:00:00.000Z\\\",\\\"originRequestCount\\\":14,\\\"historyCount\\\":8,\\\"contextCount\\\":1,\\\"recordCount\\\":10,\\\"requestCount\\\":22,\\\"completeCount\\\":18,\\\"failedCount\\\":2,\\\"cancelledCount\\\":2,\\\"rootHash\\\":\\\"419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3\\\",\\\"tailHash\\\":\\\"a23b01c460c25bedceffc505c6b23ddf0954d6078c72bd62281b5a733e2298df\\\",\\\"sha256\\\":\\\"d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d\\\"},\\\"fragment\\\":{\\\"version\\\":1,\\\"cursor\\\":{\\\"version\\\":1,\\\"format\\\":\\\"canonical-record-json-v1\\\",\\\"source\\\":{\\\"version\\\":1,\\\"archiveId\\\":\\\"archive-example-8-14\\\",\\\"sessionId\\\":\\\"archive-session\\\",\\\"sha256\\\":\\\"d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d\\\"},\\\"recordOrdinal\\\":1,\\\"byteOffset\\\":0,\\\"previousHash\\\":\\\"419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3\\\"},\\\"chunk\\\":{\\\"version\\\":1,\\\"format\\\":\\\"canonical-record-json-v1\\\",\\\"source\\\":{\\\"version\\\":1,\\\"archiveId\\\":\\\"archive-example-8-14\\\",\\\"sessionId\\\":\\\"archive-session\\\",\\\"sha256\\\":\\\"d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d\\\"},\\\"recordOrdinal\\\":1,\\\"recordKind\\\":\\\"origin\\\",\\\"recordHash\\\":\\\"19378721c2620d2ed9dd0febe93497ec9bdaba4dcab95189616f255ee611c577\\\",\\\"recordBytes\\\":7154,\\\"byteOffset\\\":0,\\\"byteEnd\\\":7154,\\\"text\\\":\\\"{\\\\\\\"archiveId\\\\\\\":\\\\\\\"archive-example-8-14\\\\\\\",\\\\\\\"ordinal\\\\\\\":1,\\\\\\\"payload\\\\\\\":{\\\\\\\"kind\\\\\\\":\\\\\\\"origin\\\\\\\",\\\\\\\"snapshot\\\\\\\":{\\\\\\\"attempts\\\\\\\":[{\\\\\\\"id\\\\\\\":\\\\\\\"origin-request-1\\\\\\\",\\\\\\\"model\\\\\\\":\\\\\\\"explicit-user-model\\\\\\\",\\\\\\\"providerRequestId\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-1\\\\\\\",\\\\\\\"usage\\\\\\\":null},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-request-2\\\\\\\",\\\\\\\"model\\\\\\\":\\\\\\\"explicit-user-model\\\\\\\",\\\\\\\"providerRequestId\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-2\\\\\\\",\\\\\\\"usage\\\\\\\":null},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-request-3\\\\\\\",\\\\\\\"model\\\\\\\":\\\\\\\"explicit-user-model\\\\\\\",\\\\\\\"providerRequestId\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"failed\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-3\\\\\\\",\\\\\\\"usage\\\\\\\":null},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-request-4\\\\\\\",\\\\\\\"model\\\\\\\":\\\\\\\"explicit-user-model\\\\\\\",\\\\\\\"providerRequestId\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-4\\\\\\\",\\\\\\\"usage\\\\\\\":null},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-request-5\\\\\\\",\\\\\\\"model\\\\\\\":\\\\\\\"explicit-user-model\\\\\\\",\\\\\\\"providerRequestId\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"cancelled\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-5\\\\\\\",\\\\\\\"usage\\\\\\\":null},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-request-6\\\\\\\",\\\\\\\"model\\\\\\\":\\\\\\\"explicit-user-model\\\\\\\",\\\\\\\"providerRequestId\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-6\\\\\\\",\\\\\\\"usage\\\\\\\":null},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-request-7\\\\\\\",\\\\\\\"model\\\\\\\":\\\\\\\"explicit-user-model\\\\\\\",\\\\\\\"providerRequestId\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-7\\\\\\\",\\\\\\\"usage\\\\\\\":null},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-request-8\\\\\\\",\\\\\\\"model\\\\\\\":\\\\\\\"explicit-user-model\\\\\\\",\\\\\\\"providerRequestId\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-8\\\\\\\",\\\\\\\"usage\\\\\\\":null},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-request-9\\\\\\\",\\\\\\\"model\\\\\\\":\\\\\\\"explicit-user-model\\\\\\\",\\\\\\\"providerRequestId\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-9\\\\\\\",\\\\\\\"usage\\\\\\\":null},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-request-10\\\\\\\",\\\\\\\"model\\\\\\\":\\\\\\\"explicit-user-model\\\\\\\",\\\\\\\"providerRequestId\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-10\\\\\\\",\\\\\\\"usage\\\\\\\":null},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-request-11\\\\\\\",\\\\\\\"model\\\\\\\":\\\\\\\"explicit-user-model\\\\\\\",\\\\\\\"providerRequestId\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-11\\\\\\\",\\\\\\\"usage\\\\\\\":null},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-request-12\\\\\\\",\\\\\\\"model\\\\\\\":\\\\\\\"explicit-user-model\\\\\\\",\\\\\\\"providerRequestId\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-12\\\\\\\",\\\\\\\"usage\\\\\\\":null},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-request-13\\\\\\\",\\\\\\\"model\\\\\\\":\\\\\\\"explicit-user-model\\\\\\\",\\\\\\\"providerRequestId\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-13\\\\\\\",\\\\\\\"usage\\\\\\\":null},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-request-14\\\\\\\",\\\\\\\"model\\\\\\\":\\\\\\\"explicit-user-model\\\\\\\",\\\\\\\"providerRequestId\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-14\\\\\\\",\\\\\\\"usage\\\\\\\":null}],\\\\\\\"confirmedAt\\\\\\\":\\\\\\\"2026-10-15T12:00:00.000Z\\\\\\\",\\\\\\\"context\\\\\\\":{\\\\\\\"材料\\\\\\\":\\\\\\\"虚构说明\\\\\\\"},\\\\\\\"draft\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"error\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"fingerprint\\\\\\\":\\\\\\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\\\\\",\\\\\\\"flowId\\\\\\\":\\\\\\\"conversation-example\\\\\\\",\\\\\\\"formatVersion\\\\\\\":\\\\\\\"1.0\\\\\\\",\\\\\\\"id\\\\\\\":\\\\\\\"archive-session\\\\\\\",\\\\\\\"instructions\\\\\\\":\\\\\\\"围绕用户提供的材料提问；未知信息保留未知。\\\\\\\",\\\\\\\"maxRequests\\\\\\\":50,\\\\\\\"messages\\\\\\\":[{\\\\\\\"id\\\\\\\":\\\\\\\"origin-user-1\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"user\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"虚构旧资料第1项；后续更正保留原记录。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-1\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-assistant-1\\\\\\\",\\\\\\\"requestId\\\\\\\":\\\\\\\"origin-request-1\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"assistant\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"已记录；建议仍需本人核对。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-1\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-user-2\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"user\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"虚构旧资料第2项；后续更正保留原记录。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-2\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-assistant-2\\\\\\\",\\\\\\\"requestId\\\\\\\":\\\\\\\"origin-request-2\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"assistant\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"已记录；建议仍需本人核对。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-2\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-user-3\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"user\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"虚构旧资料第3项；后续更正保留原记录。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-3\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-assistant-3\\\\\\\",\\\\\\\"requestId\\\\\\\":\\\\\\\"origin-request-3\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"assistant\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"partial\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"未完成片段\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-3\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-user-4\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"user\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"虚构旧资料第4项；后续更正保留原记录。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-4\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-assistant-4\\\\\\\",\\\\\\\"requestId\\\\\\\":\\\\\\\"origin-request-4\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"assistant\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"已记录；建议仍需本人核对。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-4\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-user-5\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"user\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"虚构旧资料第5项；后续更正保留原记录。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-5\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-assistant-5\\\\\\\",\\\\\\\"requestId\\\\\\\":\\\\\\\"origin-request-5\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"assistant\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"partial\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"未完成片段\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-5\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-user-6\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"user\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"虚构旧资料第6项；后续更正保留原记录。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-6\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-assistant-6\\\\\\\",\\\\\\\"requestId\\\\\\\":\\\\\\\"origin-request-6\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"assistant\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"已记录；建议仍需本人核对。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-6\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-user-7\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"user\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"虚构旧资料第7项；后续更正保留原记录。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-7\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-assistant-7\\\\\\\",\\\\\\\"requestId\\\\\\\":\\\\\\\"origin-request-7\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"assistant\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"已记录；建议仍需本人核对。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-7\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-user-8\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"user\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"虚构旧资料第8项；后续更正保留原记录。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-8\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-assistant-8\\\\\\\",\\\\\\\"requestId\\\\\\\":\\\\\\\"origin-request-8\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"assistant\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"已记录；建议仍需本人核对。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-8\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-user-9\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"user\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"虚构旧资料第9项；后续更正保留原记录。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-9\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-assistant-9\\\\\\\",\\\\\\\"requestId\\\\\\\":\\\\\\\"origin-request-9\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"assistant\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"已记录；建议仍需本人核对。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-9\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-user-10\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"user\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"虚构旧资料第10项；后续更正保留原记录。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-10\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-assistant-10\\\\\\\",\\\\\\\"requestId\\\\\\\":\\\\\\\"origin-request-10\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"assistant\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"已记录；建议仍需本人核对。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-10\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-user-11\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"user\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"虚构旧资料第11项；后续更正保留原记录。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-11\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-assistant-11\\\\\\\",\\\\\\\"requestId\\\\\\\":\\\\\\\"origin-request-11\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"assistant\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"已记录；建议仍需本人核对。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-11\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-user-12\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"user\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"虚构旧资料第12项；后续更正保留原记录。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-12\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-assistant-12\\\\\\\",\\\\\\\"requestId\\\\\\\":\\\\\\\"origin-request-12\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"assistant\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"已记录；建议仍需本人核对。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-12\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-user-13\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"user\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"虚构旧资料第13项；后续更正保留原记录。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-13\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-assistant-13\\\\\\\",\\\\\\\"requestId\\\\\\\":\\\\\\\"origin-request-13\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"assistant\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"已记录；建议仍需本人核对。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-13\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-user-14\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"user\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"虚构旧资料第14项；后续更正保留原记录。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-14\\\\\\\"},{\\\\\\\"id\\\\\\\":\\\\\\\"origin-assistant-14\\\\\\\",\\\\\\\"requestId\\\\\\\":\\\\\\\"origin-request-14\\\\\\\",\\\\\\\"role\\\\\\\":\\\\\\\"assistant\\\\\\\",\\\\\\\"state\\\\\\\":\\\\\\\"complete\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"已记录；建议仍需本人核对。\\\\\\\",\\\\\\\"turnId\\\\\\\":\\\\\\\"origin-turn-14\\\\\\\"}],\\\\\\\"model\\\\\\\":\\\\\\\"explicit-user-model\\\\\\\",\\\\\\\"nodeId\\\\\\\":\\\\\\\"interview\\\\\\\",\\\\\\\"provider\\\\\\\":\\\\\\\"deepseek\\\\\\\",\\\\\\\"revision\\\\\\\":4,\\\\\\\"sequence\\\\\\\":12,\\\\\\\"status\\\\\\\":\\\\\\\"confirmed\\\\\\\",\\\\\\\"title\\\\\\\":\\\\\\\"补充材料\\\\\\\",\\\\\\\"updatedAt\\\\\\\":\\\\\\\"2026-10-15T12:00:00.000Z\\\\\\\"}},\\\\\\\"previousHash\\\\\\\":\\\\\\\"419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3\\\\\\\",\\\\\\\"sha256\\\\\\\":\\\\\\\"19378721c2620d2ed9dd0febe93497ec9bdaba4dcab95189616f255ee611c577\\\\\\\",\\\\\\\"version\\\\\\\":1}\\\",\\\"sha256\\\":\\\"03a7aa36c752f5d416396b86395feeca8d2b6148f037513be1e2efaf2252cc68\\\"},\\\"next\\\":{\\\"version\\\":1,\\\"format\\\":\\\"canonical-record-json-v1\\\",\\\"source\\\":{\\\"version\\\":1,\\\"archiveId\\\":\\\"archive-example-8-14\\\",\\\"sessionId\\\":\\\"archive-session\\\",\\\"sha256\\\":\\\"d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d\\\"},\\\"recordOrdinal\\\":2,\\\"byteOffset\\\":0,\\\"previousHash\\\":\\\"19378721c2620d2ed9dd0febe93497ec9bdaba4dcab95189616f255ee611c577\\\"},\\\"done\\\":false},\\\"prior\\\":{\\\"revision\\\":0,\\\"sha256\\\":\\\"2bad9a7c3c319b5369d96337e66d5385f95fe94771c1058b4bfbceb7395971ea\\\",\\\"accumulator\\\":{\\\"summary\\\":\\\"\\\"}}}\"}],\"response_format\":{\"type\":\"json_object\"},\"max_tokens\":16384,\"stream\":false}",
+      "sha256": "183327346cfdcc373a3335bb74f732db7edc8d512671968819a5f14b65ab7764"
+    },
+    "outcome": {
+      "status": "success",
+      "result": {
+        "provider": "deepseek",
+        "model": "deepseek-flash",
+        "requestId": "example-1",
+        "output": {
+          "summary": "片段1；"
+        },
+        "usage": {
+          "prompt_tokens": 100,
+          "completion_tokens": 10,
+          "total_tokens": 110
+        }
+      }
+    }
+  },
+  "final": {
+    "version": 1,
+    "job": {
+      "version": 1,
+      "jobId": "reduce-example",
+      "source": {
+        "version": 1,
+        "archiveId": "archive-example-8-14",
+        "sessionId": "archive-session",
+        "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+      },
+      "recipeHash": "237c2e4dccca91a1cff1a61c1e0dc1e0d973dcdce9d3a89e832d29b346c54baa"
+    },
+    "phase": "complete",
+    "revision": 11,
+    "checkpoint": {
+      "version": 1,
+      "job": {
+        "version": 1,
+        "jobId": "reduce-example",
+        "source": {
+          "version": 1,
+          "archiveId": "archive-example-8-14",
+          "sessionId": "archive-session",
+          "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+        },
+        "recipeHash": "237c2e4dccca91a1cff1a61c1e0dc1e0d973dcdce9d3a89e832d29b346c54baa"
+      },
+      "revision": 10,
+      "next": null,
+      "accumulator": {
+        "summary": "片段1；片段2；片段3；片段4；片段5；片段6；片段7；片段8；片段9；片段10；"
+      },
+      "chunks": 10,
+      "records": 10,
+      "bytes": 16483,
+      "chainHash": "dd7235832bb75ff02b26a957bed6b23bad72709c2ae50d4eaa01e853bf2d4f57",
+      "lastAttemptId": "ra_04d564e04ff040a1b6391e8f024a087a",
+      "sha256": "55d8ec275676e5bdc0d544936951c541b070b4d2409d395351a190101615e432"
+    },
+    "pendingAttemptId": null,
+    "attempts": 10,
+    "reportedTotalTokens": 1100,
+    "unknownUsageRequests": 0,
+    "proof": {
+      "version": 1,
+      "job": {
+        "version": 1,
+        "jobId": "reduce-example",
+        "source": {
+          "version": 1,
+          "archiveId": "archive-example-8-14",
+          "sessionId": "archive-session",
+          "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+        },
+        "recipeHash": "237c2e4dccca91a1cff1a61c1e0dc1e0d973dcdce9d3a89e832d29b346c54baa"
+      },
+      "checkpointSha256": "55d8ec275676e5bdc0d544936951c541b070b4d2409d395351a190101615e432",
+      "accumulatorSha256": "3f6872e77c57751018ca3a326cb71c721e2c087e3a1071021a93ece07e6a6496",
+      "chainHash": "dd7235832bb75ff02b26a957bed6b23bad72709c2ae50d4eaa01e853bf2d4f57",
+      "chunks": 10,
+      "records": 10,
+      "bytes": 16483,
+      "sha256": "eecfc8ec22954229ec03da28f2218abf59146fe6c4de28f89c60998fa87b59f9"
+    }
+  }
+}

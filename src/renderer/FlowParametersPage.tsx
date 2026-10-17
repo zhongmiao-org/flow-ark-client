@@ -1,3 +1,4 @@
+import AIServiceBinding from './AIServiceBinding';
 import SkillPicker from './SkillPicker';
 import SourcePicker from './SourcePicker';
 import { flatten } from './flow-editing';
@@ -539,7 +540,7 @@ export default function FlowParametersPage({
               {[
                 ...new Set(
                   flatten(draft.flow.steps)
-                    .filter((n) => n.type === 'source')
+                    .filter((n) => n.type === 'source' || n.type === 'source-reduce')
                     .map((n) => (n as import('../shared/conversation-source').SourceNode).binding),
                 ),
               ].map((binding) => (
@@ -567,6 +568,24 @@ export default function FlowParametersPage({
                     />
                   )}
                 </div>
+              ))}
+              {[
+                ...new Set(
+                  flatten(draft.flow.steps)
+                    .filter((n) => n.type === 'source-reduce')
+                    .map(
+                      (n) => (n as import('../shared/source-reduction').ReductionNode).aiBinding,
+                    ),
+                ),
+              ].map((binding) => (
+                <section className="ai-node-configuration" key={'reduction-ai:' + binding}>
+                  <h3>本人AI资源 · {binding}</h3>
+                  <AIServiceBinding
+                    resource={binding}
+                    bindings={draft.bindings}
+                    changeBindings={(bindings) => setDraft({ ...draft, bindings })}
+                  />
+                </section>
               ))}
               <h3>凭据引用 · 允许脚本读取</h3>
               {!ids.length && <p>未使用凭据。可在本地设置的凭据、AI 服务或应用与工具中管理。</p>}

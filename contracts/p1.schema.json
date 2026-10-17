@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.34.0/p1.schema.json",
-  "title": "FlowArk P1 0.34.0: fixed conversation source resources and bounded reads",
+  "$id": "https://flowark.local/contracts/0.35.0/p1.schema.json",
+  "title": "FlowArk P1 0.35.0: fixed conversation source resources and bounded reads",
   "$defs": {
     "Json": {
       "anyOf": [
@@ -1860,6 +1860,69 @@
             "binding",
             "operation",
             "cursor"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "type": {
+              "const": "source-reduce"
+            },
+            "version": {
+              "const": 1
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3600000
+            },
+            "binding": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{0,99}$"
+            },
+            "aiBinding": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{0,99}$"
+            },
+            "instructions": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32000
+            },
+            "schema": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/Json"
+              }
+            },
+            "seed": {
+              "$ref": "#/$defs/Value"
+            },
+            "maxRequests": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 16
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "version",
+            "binding",
+            "aiBinding",
+            "instructions",
+            "schema",
+            "seed",
+            "maxRequests"
           ],
           "additionalProperties": false
         }
@@ -3864,6 +3927,9 @@
         },
         {
           "$ref": "#/$defs/ConversationCheckpointEvidence"
+        },
+        {
+          "$ref": "#/$defs/SourceReductionEvidence"
         }
       ]
     },
@@ -8840,6 +8906,426 @@
         "source",
         "manifest",
         "current"
+      ],
+      "additionalProperties": false
+    },
+    "SourceReductionRecipe": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "provider": {
+          "enum": [
+            "deepseek",
+            "openai-codex"
+          ]
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "instructions": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32000
+        },
+        "schema": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Json"
+          }
+        },
+        "seed": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Json"
+          }
+        }
+      },
+      "required": [
+        "version",
+        "provider",
+        "model",
+        "instructions",
+        "schema",
+        "seed"
+      ],
+      "additionalProperties": false
+    },
+    "SourceReductionRef": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "jobId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "source": {
+          "$ref": "#/$defs/ConversationArchiveRef"
+        },
+        "recipeHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "version",
+        "jobId",
+        "source",
+        "recipeHash"
+      ],
+      "additionalProperties": false
+    },
+    "SourceReductionCheckpoint": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "job": {
+          "$ref": "#/$defs/SourceReductionRef"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "next": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/ConversationSourceCursor"
+            }
+          ]
+        },
+        "accumulator": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Json"
+          }
+        },
+        "chunks": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "records": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "chainHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "lastAttemptId": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            }
+          ]
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "version",
+        "job",
+        "revision",
+        "next",
+        "accumulator",
+        "chunks",
+        "records",
+        "bytes",
+        "chainHash",
+        "lastAttemptId",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "SourceReductionTransport": {
+      "type": "object",
+      "properties": {
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 393216
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "body",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "SourceReductionAttempt": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "attemptId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "job": {
+          "$ref": "#/$defs/SourceReductionRef"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "checkpointRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "checkpointSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "runId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "nodeInstance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "configurationRevision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "state": {
+          "enum": [
+            "prepared",
+            "dispatched",
+            "response",
+            "failed",
+            "unknown",
+            "committed",
+            "abandoned"
+          ]
+        },
+        "request": {
+          "$ref": "#/$defs/AIRequest"
+        },
+        "requestSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "transport": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/SourceReductionTransport"
+            }
+          ]
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/AIOutcome"
+            }
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "attemptId",
+        "job",
+        "sequence",
+        "checkpointRevision",
+        "checkpointSha256",
+        "runId",
+        "nodeInstance",
+        "configurationRevision",
+        "state",
+        "request",
+        "requestSha256",
+        "transport",
+        "outcome"
+      ],
+      "additionalProperties": false
+    },
+    "SourceReductionProof": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "job": {
+          "$ref": "#/$defs/SourceReductionRef"
+        },
+        "checkpointSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "accumulatorSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "chainHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "chunks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "records": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "version",
+        "job",
+        "checkpointSha256",
+        "accumulatorSha256",
+        "chainHash",
+        "chunks",
+        "records",
+        "bytes",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "SourceReductionEvidence": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "source-reduction"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "proof": {
+          "$ref": "#/$defs/SourceReductionProof"
+        }
+      },
+      "required": [
+        "kind",
+        "label",
+        "proof"
+      ],
+      "additionalProperties": false
+    },
+    "SourceReductionOutput": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "job": {
+          "$ref": "#/$defs/SourceReductionRef"
+        },
+        "phase": {
+          "enum": [
+            "ready",
+            "running",
+            "attention",
+            "complete"
+          ]
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "checkpoint": {
+          "$ref": "#/$defs/SourceReductionCheckpoint"
+        },
+        "pendingAttemptId": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            }
+          ]
+        },
+        "attempts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "reportedTotalTokens": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "unknownUsageRequests": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "proof": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/SourceReductionProof"
+            }
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "job",
+        "phase",
+        "revision",
+        "checkpoint",
+        "pendingAttemptId",
+        "attempts",
+        "reportedTotalTokens",
+        "unknownUsageRequests",
+        "proof"
       ],
       "additionalProperties": false
     }

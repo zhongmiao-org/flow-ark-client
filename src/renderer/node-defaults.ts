@@ -3,6 +3,16 @@ import type { Step } from '../shared/types';
 
 export function newStep(type: string): Step {
   const defaults: Record<string, object> = {
+    'source-reduce': {
+      name: '分批整理来源',
+      binding: 'source',
+      aiBinding: 'ai',
+      instructions:
+        '按时间整理当前来源片段并保留上一草稿；区分原始材料、本人更正和助手建议，未知信息保持未知。',
+      schema: defaultAISchema,
+      seed: { answer: '' },
+      maxRequests: 8,
+    },
     source: { name: '读取来源清单', operation: 'manifest', binding: 'source' },
     context: { operation: 'configuration' },
     skill: {

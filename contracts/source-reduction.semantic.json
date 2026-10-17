@@ -1,0 +1,332 @@
+[
+  {
+    "name": "读取成功但未调用模型不得推进",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "读取成功但未调用模型不得推进"
+    ],
+    "valid": false
+  },
+  {
+    "name": "未知结果不得推进",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "未知结果不得推进"
+    ],
+    "valid": false
+  },
+  {
+    "name": "旧尝试迟到结果不得采用",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "旧尝试迟到结果不得采用"
+    ],
+    "valid": false
+  },
+  {
+    "name": "已采用尝试不得二次提交",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "已采用尝试不得二次提交"
+    ],
+    "valid": false
+  },
+  {
+    "name": "初始来源换源拒绝",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "初始来源换源拒绝"
+    ],
+    "valid": false
+  },
+  {
+    "name": "缺失实际供应商正文拒绝",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "缺失实际供应商正文拒绝"
+    ],
+    "valid": false
+  },
+  {
+    "name": "模型输入缺片段即使自报摘要正确仍拒绝",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "模型输入缺片段即使自报摘要正确仍拒绝"
+    ],
+    "valid": false
+  },
+  {
+    "name": "实际供应商只发摘要拒绝",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "实际供应商只发摘要拒绝"
+    ],
+    "valid": false
+  },
+  {
+    "name": "实际供应商隐藏附加消息拒绝",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "实际供应商隐藏附加消息拒绝"
+    ],
+    "valid": false
+  },
+  {
+    "name": "供应商重复字段拒绝",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "供应商重复字段拒绝"
+    ],
+    "valid": false
+  },
+  {
+    "name": "供应商输出字段不完整拒绝",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "供应商输出字段不完整拒绝"
+    ],
+    "valid": false
+  },
+  {
+    "name": "供应商输出非法Unicode拒绝",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "供应商输出非法Unicode拒绝"
+    ],
+    "valid": false
+  },
+  {
+    "name": "超过草稿预算拒绝",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "超过草稿预算拒绝"
+    ],
+    "valid": false
+  },
+  {
+    "name": "伪造上一步草稿拒绝",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "伪造上一步草稿拒绝"
+    ],
+    "valid": false
+  },
+  {
+    "name": "过期检查点修订拒绝",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "过期检查点修订拒绝"
+    ],
+    "valid": false
+  },
+  {
+    "name": "同一尝试身份挪到新序号拒绝",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "同一尝试身份挪到新序号拒绝"
+    ],
+    "valid": false
+  },
+  {
+    "name": "同一片段重复覆盖拒绝",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "同一片段重复覆盖拒绝"
+    ],
+    "valid": false
+  },
+  {
+    "name": "缺首片段拒绝",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "缺首片段拒绝"
+    ],
+    "valid": false
+  },
+  {
+    "name": "未全部覆盖不得签发证明",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "未全部覆盖不得签发证明"
+    ],
+    "valid": false
+  },
+  {
+    "name": "最终草稿改变证明失效",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "最终草稿改变证明失效"
+    ],
+    "valid": false
+  },
+  {
+    "name": "其他配方不得采用相同任务",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "其他配方不得采用相同任务"
+    ],
+    "valid": false
+  },
+  {
+    "name": "输入超预算发送前拒绝",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "输入超预算发送前拒绝"
+    ],
+    "valid": false
+  },
+  {
+    "name": "原始片段正文被替换拒绝",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "原始片段正文被替换拒绝"
+    ],
+    "valid": false
+  },
+  {
+    "name": "仅有完成布尔不得证明完整",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "仅有完成布尔不得证明完整"
+    ],
+    "valid": false
+  },
+  {
+    "name": "完整结果却仍有待核对请求拒绝",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "完整结果却仍有待核对请求拒绝"
+    ],
+    "valid": false
+  },
+  {
+    "name": "缺少入口AI资源拒绝",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "缺少入口AI资源拒绝"
+    ],
+    "valid": false
+  },
+  {
+    "name": "入口不能借用其他入口AI能力",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "入口不能借用其他入口AI能力"
+    ],
+    "valid": false
+  },
+  {
+    "name": "AI资源不能声明读文件权限",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "AI资源不能声明读文件权限"
+    ],
+    "valid": false
+  },
+  {
+    "name": "重复请求不能重复计用量",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "重复请求不能重复计用量"
+    ],
+    "valid": false
+  },
+  {
+    "name": "其他任务不能混入用量",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "其他任务不能混入用量"
+    ],
+    "valid": false
+  },
+  {
+    "name": "未发状态不能包含实际请求体",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "未发状态不能包含实际请求体"
+    ],
+    "valid": false
+  },
+  {
+    "name": "草稿超过64KiB一字节发送前拒绝",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "草稿超过64KiB一字节发送前拒绝"
+    ],
+    "valid": false
+  },
+  {
+    "name": "22次连续真实请求形状回放",
+    "operation": "fixture-replay",
+    "args": [
+      "example.conversation-archive.json"
+    ],
+    "valid": true
+  },
+  {
+    "name": "40次多页来源回放",
+    "operation": "fixture-replay",
+    "args": [
+      "example.conversation-archive-long.json"
+    ],
+    "valid": true
+  },
+  {
+    "name": "长Unicode按无损片段回放",
+    "operation": "fixture-replay",
+    "args": [
+      "example.source-unicode.json"
+    ],
+    "valid": true
+  },
+  {
+    "name": "完整响应usage缺失仍保持null",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "usage-null"
+    ],
+    "valid": true
+  },
+  {
+    "name": "OpenAI实际正文完整映射",
+    "operation": "fixture-mutation",
+    "args": [
+      "example.source-reduction.json",
+      "openai-wire"
+    ],
+    "valid": true
+  }
+]

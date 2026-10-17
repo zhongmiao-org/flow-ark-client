@@ -130,7 +130,8 @@ export type Bridge = {
       event:
         | import('./conversation').ConversationEvent
         | import('./conversation-thread').ConversationThreadEvent
-        | import('./conversation-archive').ArchiveEvent,
+        | import('./conversation-archive').ArchiveEvent
+        | import('./source-reduction').SourceReductionOutput,
     ) => void,
   ): () => void;
 };

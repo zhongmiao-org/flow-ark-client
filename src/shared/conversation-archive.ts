@@ -138,7 +138,10 @@ const canonicalValue = (v: any): any =>
       : v;
 export const browserHash = async (value: any) => {
   const { sha256: _sha, ...body } = value;
-  const bytes = new TextEncoder().encode(JSON.stringify(canonicalValue(body)));
+  return browserDigest(body);
+};
+export const browserDigest = async (value: unknown) => {
+  const bytes = new TextEncoder().encode(JSON.stringify(canonicalValue(value)));
   return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), (b) =>
     b.toString(16).padStart(2, '0'),
   ).join('');

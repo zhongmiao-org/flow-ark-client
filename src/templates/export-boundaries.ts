@@ -65,7 +65,7 @@ export function declareNativeBoundaries(flow: Flow, manifest: Manifest, entryId:
       node.binding = directory(node.binding, access);
       writes ||= access === 'write';
     }
-    if (node.type === 'source') {
+    if (node.type === 'source' || node.type === 'source-reduce') {
       const old = manifest.resources.find((r) => r.id === node.binding);
       if (old && (old.kind !== 'conversation-source' || old.access !== 'read'))
         throw Error('完整来源资源类型冲突');
@@ -80,6 +80,23 @@ export function declareNativeBoundaries(flow: Flow, manifest: Manifest, entryId:
       if (!entry.resources.includes(node.binding)) entry.resources.push(node.binding);
       if (!entry.capabilities.includes('conversation-source-read-v1'))
         entry.capabilities.push('conversation-source-read-v1');
+    }
+    if (node.type === 'source-reduce') {
+      for (const c of ['source-reduce-v1', 'ai-node-v1', 'conversation-source-read-v1']) {
+        if (!entry.capabilities.includes(c)) entry.capabilities.push(c);
+        if (!flow.requiredCapabilities.includes(c)) flow.requiredCapabilities.push(c);
+      }
+      const old = manifest.resources.find((r) => r.id === node.aiBinding);
+      if (old && (old.kind !== 'ai' || old.access !== 'use')) throw Error('整理AI资源类型冲突');
+      if (!old)
+        manifest.resources.push({
+          id: node.aiBinding,
+          name: node.aiBinding,
+          kind: 'ai',
+          access: 'use',
+          required: true,
+        });
+      if (!entry.resources.includes(node.aiBinding)) entry.resources.push(node.aiBinding);
     }
     if (node.type === 'skill') {
       if (node.operation === 'propose') {
