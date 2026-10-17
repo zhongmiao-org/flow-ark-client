@@ -66,6 +66,59 @@ export default function ConversationPanel({
   const [trialRefresh, setTrialRefresh] = useState(0),
     [sourceOutput, setSourceOutput] = useState<ConversationOutput>();
   const [sourceError, setSourceError] = useState('');
+  const [compact, setCompact] = useState(() => window.innerHeight <= 800);
+  const page = useRef<HTMLElement>(null);
+  const messages = useRef<HTMLDivElement>(null);
+  const followLatest = useRef(true);
+  const historySize = useRef({ height: 0, total: 0 });
+  const [showLatest, setShowLatest] = useState(false);
+  const scrollLatest = () => {
+    followLatest.current = true;
+    setShowLatest(false);
+    const element = messages.current;
+    if (element) element.scrollTop = element.scrollHeight;
+  };
+  useLayoutEffect(() => {
+    const element = page.current;
+    if (!element) return;
+    const container = element.closest('main');
+    const measure = () => {
+      setCompact(window.innerHeight <= 800);
+      const top = element.getBoundingClientRect().top;
+      const offset = container
+        ? top - container.getBoundingClientRect().top + container.scrollTop
+        : top;
+      element.style.height = `${Math.max(300, (container?.clientHeight ?? window.innerHeight) - offset)}px`;
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(container ?? document.documentElement);
+    window.addEventListener('resize', measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
+  useLayoutEffect(() => {
+    followLatest.current = true;
+    setShowLatest(false);
+  }, [id]);
+  useLayoutEffect(() => {
+    const element = messages.current;
+    if (!element) return;
+    const follow = () => {
+      historySize.current = { height: element.clientHeight, total: element.scrollHeight };
+      if (followLatest.current) element.scrollTop = element.scrollHeight;
+    };
+    follow();
+    // Reflow (including a resized window or expanded review) follows only while
+    // the reader has elected to stay at the latest message.
+    const observer = new ResizeObserver(follow);
+    observer.observe(element);
+    if (element.firstElementChild) observer.observe(element.firstElementChild);
+    if (!followLatest.current) setShowLatest(true);
+    return () => observer.disconnect();
+  }, [snapshot?.messages]);
   const trialSource = snapshot?.skillTrial;
   useEffect(() => {
     let live = true,
@@ -299,6 +352,7 @@ export default function ConversationPanel({
         ...(!retry ? { text: inputText.current } : {}),
       },
     };
+    scrollLatest();
     pending.current = command;
     setReviewed(false);
     void act(command.method, command.args).catch(() => {});
@@ -352,7 +406,7 @@ export default function ConversationPanel({
     </>
   );
   const editor = snapshot && (
-    <>
+    <div className="conversation-composer">
       {confirmed && draftChanged && (
         <Alert
           type="warning"
@@ -362,25 +416,32 @@ export default function ConversationPanel({
       )}
       {!confirmed && (
         <>
-          <label htmlFor={'conversation-input-' + id}>你的补充</label>
+          <label htmlFor={'conversation-input-' + id} style={{ margin: 0, fontSize: 13 }}>
+            回复上方问题
+          </label>
           <Input.TextArea
             ref={textarea}
             id={'conversation-input-' + id}
             value={text}
             maxLength={4000}
-            autoSize={{ minRows: 4, maxRows: 10 }}
+            placeholder="在这里回答上方问题，也可以补充或更正…"
+            autoSize={{ minRows: compact ? 2 : 3, maxRows: 3 }}
             disabled={busy || generating || uncertain || trialBlocked}
             onChange={(e) => {
               updateText(e.target.value);
               setReviewed(false);
             }}
           />
-          <p>{draftChanged ? '有未保存输入，请保存后退出。' : '输入已保存，可稍后继续。'}</p>
-          {!trialSource && (
-            <Checkbox checked={reviewed} onChange={(e) => setReviewed(e.target.checked)}>
-              已核对指令、所选上下文、完整历史及自己的 Key 费用
-            </Checkbox>
-          )}
+          <p className="conversation-input-hint">
+            {draftChanged
+              ? '有未保存输入，请保存后退出。'
+              : text
+                ? '输入已保存，可稍后继续。'
+                : '输入后，核对发送范围并勾选，再点击发送。'}
+          </p>
+          <Checkbox checked={reviewed} onChange={(e) => setReviewed(e.target.checked)}>
+            已核对指令、所选上下文、完整历史及自己的 Key 费用
+          </Checkbox>
         </>
       )}
       <div className="conversation-actions">
@@ -463,38 +524,28 @@ export default function ConversationPanel({
           description="回到来源流程核对后再显式运行；本次确认不生成Skill、不授予发送权限。"
         />
       ) : (
-        <p>未完成助手消息不能供后续步骤采用。确认对话不替代事实、Skill确认或外发授权。</p>
+        <p className="conversation-finish-hint">
+          继续问答请点“发送”；全部访谈完成后再“结束并确认”。确认不替代事实、Skill确认或外发授权。
+        </p>
       )}
-      <Collapse
-        items={[
-          {
-            key: 'receipts',
-            label: '查看请求用量',
-            children: snapshot.attempts.map((a) => (
-              <p key={a.id}>
-                {a.state} · {a.model} · {a.providerRequestId || '尚未取得请求ID'}
-                <br />
-                {a.usage === null ? '用量未知' : JSON.stringify(a.usage)}
-              </p>
-            )),
-          },
-        ]}
-      />
-    </>
+    </div>
   );
   return (
     <section
+      ref={page}
       className={'page conversation-page' + (trialSource ? ' is-skill-trial' : '')}
       aria-label="引导会话"
     >
-      <header>
-        <h1>
-          {trialSource ? '内部试聊' : '引导会话'} · {snapshot?.title ?? '正在读取'}
-        </h1>
-        <p>保存后可稍后继续。全部模型请求消耗你自己的 API Key 额度。</p>
+      <header className="conversation-heading">
+        <div>
+          <h1>
+            {trialSource ? '内部试聊' : '引导会话'} · {snapshot?.title ?? '正在读取'}
+          </h1>
+          <p>保存后可稍后继续。全部模型请求消耗你自己的 API Key 额度。</p>
+        </div>
         <Button onClick={() => navigate(back, backLabel)}>返回{backLabel}</Button>
       </header>
-      {recovering && (
+      {recovering && !snapshot && (
         <Alert
           type="info"
           showIcon
@@ -502,7 +553,7 @@ export default function ConversationPanel({
           description="保留当前输入，恢复展示不会重新调用模型。核对前不能发送或确认。"
         />
       )}
-      {error && (
+      {error && !snapshot && (
         <Alert
           role="alert"
           type="error"
@@ -513,21 +564,97 @@ export default function ConversationPanel({
       )}
       {snapshot && (
         <>
-          {sourceError && <Alert type="warning" title={sourceError} />}
-          {sourceOutput && <ConversationResultView value={sourceOutput} />}
-          <Tag>
-            {labels[snapshot.status]} · {snapshot.attempts.length} / {snapshot.maxRequests}{' '}
-            次模型请求
-          </Tag>
-          <div className="conversation-columns">
-            <Card title={trialSource ? '本轮对话' : '对话'}>
-              <div
-                className="conversation-messages"
-                aria-live="polite"
-                aria-relevant="additions text"
-              >
+          <Card className="conversation-card">
+            <div className="conversation-status">
+              <Tag>
+                {labels[snapshot.status]} · {snapshot.attempts.length} / {snapshot.maxRequests}{' '}
+                次模型请求
+              </Tag>
+            </div>
+            <Collapse
+              className="conversation-review"
+              items={[
+                {
+                  key: 'context',
+                  label: '核对发送范围',
+                  children: (
+                    <>
+                      {trialDetails}
+                      <p>
+                        {snapshot.provider} / {snapshot.model}
+                      </p>
+                      <h4>引导指令</h4>
+                      <pre>{snapshot.instructions}</pre>
+                      <h4>所选上下文</h4>
+                      <pre>{JSON.stringify(snapshot.context, null, 2)}</pre>
+                      <p>下一轮仅发送完整历史和所选上下文。Key不进入会话；未知用量不会填零。</p>
+                      <Collapse
+                        items={[
+                          {
+                            key: 'receipts',
+                            label: '查看请求用量',
+                            children: snapshot.attempts.length ? (
+                              snapshot.attempts.map((a) => (
+                                <p key={a.id}>
+                                  {a.state} · {a.model} · {a.providerRequestId || '尚未取得请求ID'}
+                                  <br />
+                                  {a.usage === null ? '用量未知' : JSON.stringify(a.usage)}
+                                </p>
+                              ))
+                            ) : (
+                              <p>尚无模型请求。</p>
+                            ),
+                          },
+                        ]}
+                      />
+                    </>
+                  ),
+                },
+              ]}
+            />
+            <div
+              ref={messages}
+              className="conversation-messages"
+              role="log"
+              tabIndex={0}
+              aria-label="对话历史"
+              aria-live="polite"
+              aria-relevant="additions text"
+              onScroll={() => {
+                const element = messages.current;
+                if (!element) return;
+                const previous = historySize.current;
+                const resized =
+                  previous.height !== element.clientHeight ||
+                  previous.total !== element.scrollHeight;
+                historySize.current = { height: element.clientHeight, total: element.scrollHeight };
+                // Reflow can emit a scroll before ResizeObserver runs. Preserve
+                // following in that case; ordinary scrolling opts into history.
+                if (followLatest.current && resized) {
+                  element.scrollTop = element.scrollHeight;
+                  return;
+                }
+                const atEnd = element.scrollHeight - element.clientHeight - element.scrollTop < 24;
+                followLatest.current = atEnd;
+                setShowLatest(!atEnd);
+              }}
+            >
+              <div className="conversation-message-list">
+                {recovering && (
+                  <Alert type="info" title="正在核对完整会话，保留当前输入，不会重新调用模型。" />
+                )}
+                {error && (
+                  <Alert
+                    role="alert"
+                    type="error"
+                    showIcon
+                    title={error}
+                    action={<Button onClick={() => void read.current()}>重新读取</Button>}
+                  />
+                )}
+                {sourceError && <Alert type="warning" title={sourceError} />}
                 {!snapshot.messages.length && (
-                  <p>先核对右侧上下文，再发送你的要求或补充。不会自动调用模型。</p>
+                  <p>先展开核对发送范围，再在下方输入你的要求或补充。不会自动调用模型。</p>
                 )}
                 {snapshot.messages.map((message) => (
                   <article key={message.id} className={'conversation-message is-' + message.role}>
@@ -538,41 +665,17 @@ export default function ConversationPanel({
                     <p>{message.text || (generating ? '等待正文…' : '本轮没有完整正文')}</p>
                   </article>
                 ))}
+                {snapshot.error && <Alert type="warning" showIcon title={snapshot.error} />}
+                {sourceOutput && <ConversationResultView value={sourceOutput} />}
               </div>
-              {snapshot.error && <Alert type="warning" showIcon title={snapshot.error} />}
-              {trialSource && editor}
-            </Card>
-            <Card title={trialSource ? '本轮发送范围' : confirmed ? '已确认的对话' : '本次输入'}>
-              {trialDetails}
-              {trialSource && !confirmed && (
-                <Checkbox checked={reviewed} onChange={(e) => setReviewed(e.target.checked)}>
-                  已核对指令、所选上下文、完整历史及自己的 Key 费用
-                </Checkbox>
-              )}
-
-              <Collapse
-                items={[
-                  {
-                    key: 'context',
-                    label: '核对指令、上下文与模型',
-                    children: (
-                      <>
-                        <p>
-                          {snapshot.provider} / {snapshot.model}
-                        </p>
-                        <h4>引导指令</h4>
-                        <pre>{snapshot.instructions}</pre>
-                        <h4>所选上下文</h4>
-                        <pre>{JSON.stringify(snapshot.context, null, 2)}</pre>
-                        <p>下一轮仅发送完整历史和所选上下文。Key不进入会话；未知用量不会填零。</p>
-                      </>
-                    ),
-                  },
-                ]}
-              />
-              {!trialSource && editor}
-            </Card>
-          </div>
+            </div>
+            {showLatest && (
+              <Button className="conversation-latest" onClick={scrollLatest}>
+                回到最新回复
+              </Button>
+            )}
+            {editor}
+          </Card>
         </>
       )}
       {leave && (
