@@ -801,6 +801,23 @@ export type AINodeReceipt =
       usage: AIUsage;
     }
   | AIRequestFailure;
+export type EntryHandoffReceipt = {
+  version: 1;
+  requestId: string;
+  selection: EntryHandoffSelection;
+  token: string;
+  revision: number;
+  status: 'stopping' | 'created' | 'failed' | 'interrupted';
+  /**
+   * @minItems 1
+   * @maxItems 100
+   */
+  stoppedRunIds: [string, ...string[]];
+  runId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  error: string | null;
+};
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -888,6 +905,10 @@ export interface FlowArkP1 {
   AIOutcome?: AIOutcome;
   AINodeReceipt?: AINodeReceipt;
   AIUsage?: AIUsage;
+  EntryHandoffSelection?: EntryHandoffSelection;
+  EntryHandoffPreview?: EntryHandoffPreview;
+  EntryHandoffRequest?: EntryHandoffRequest;
+  EntryHandoffReceipt?: EntryHandoffReceipt;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -1833,4 +1854,60 @@ export interface AIRequestFailure {
   requestId: null | string;
   usage: AIUsage;
   error: AIRequestError;
+}
+export interface EntryHandoffSelection {
+  flowId: string;
+  source: {
+    instanceId: string;
+    entryId: string;
+    revision: string;
+  };
+}
+export interface EntryHandoffPreview {
+  version: 1;
+  selection: EntryHandoffSelection;
+  token: string;
+  expiresAt: string;
+  flowName: string;
+  instanceName: string;
+  packageVersion: string;
+  packageDigest: string;
+  /**
+   * @minItems 1
+   * @maxItems 100
+   */
+  runs: [
+    {
+      id: string;
+      name: string;
+      state: 'QUEUED' | 'RUNNING' | 'PAUSING' | 'PAUSED' | 'WAITING_INPUT' | 'CANCELLING';
+    },
+    ...{
+      id: string;
+      name: string;
+      state: 'QUEUED' | 'RUNNING' | 'PAUSING' | 'PAUSED' | 'WAITING_INPUT' | 'CANCELLING';
+    }[]
+  ];
+  /**
+   * @maxItems 10
+   */
+  limitations:
+    | []
+    | [string]
+    | [string, string]
+    | [string, string, string]
+    | [string, string, string, string]
+    | [string, string, string, string, string]
+    | [string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string, string, string];
+}
+export interface EntryHandoffRequest {
+  version: 1;
+  selection: EntryHandoffSelection;
+  token: string;
+  requestId: string;
+  reviewed: true;
 }

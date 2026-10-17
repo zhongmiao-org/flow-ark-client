@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.28.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.30.0/p1.schema.json",
   "title": "FlowArk P1",
   "$defs": {
     "Json": {
@@ -6712,6 +6712,322 @@
           },
           "additionalProperties": false,
           "minProperties": 1
+        }
+      ]
+    },
+    "EntryHandoffSelection": {
+      "type": "object",
+      "properties": {
+        "flowId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "source": {
+          "type": "object",
+          "properties": {
+            "instanceId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "entryId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "revision": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "instanceId",
+            "entryId",
+            "revision"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "flowId",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "EntryHandoffPreview": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "selection": {
+          "$ref": "#/$defs/EntryHandoffSelection"
+        },
+        "token": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "expiresAt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "flowName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "instanceName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "packageVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "packageDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "runs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "state": {
+                "enum": [
+                  "QUEUED",
+                  "RUNNING",
+                  "PAUSING",
+                  "PAUSED",
+                  "WAITING_INPUT",
+                  "CANCELLING"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "state"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        }
+      },
+      "required": [
+        "version",
+        "selection",
+        "token",
+        "expiresAt",
+        "flowName",
+        "instanceName",
+        "packageVersion",
+        "packageDigest",
+        "runs",
+        "limitations"
+      ],
+      "additionalProperties": false
+    },
+    "EntryHandoffRequest": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "selection": {
+          "$ref": "#/$defs/EntryHandoffSelection"
+        },
+        "token": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "reviewed": {
+          "const": true
+        }
+      },
+      "required": [
+        "version",
+        "selection",
+        "token",
+        "requestId",
+        "reviewed"
+      ],
+      "additionalProperties": false
+    },
+    "EntryHandoffReceipt": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "selection": {
+          "$ref": "#/$defs/EntryHandoffSelection"
+        },
+        "token": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740990
+        },
+        "status": {
+          "enum": [
+            "stopping",
+            "created",
+            "failed",
+            "interrupted"
+          ]
+        },
+        "stoppedRunIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "runId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "requestId",
+        "selection",
+        "token",
+        "revision",
+        "status",
+        "stoppedRunIds",
+        "runId",
+        "createdAt",
+        "updatedAt",
+        "error"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "created"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "runId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "error": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "runId": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "failed",
+                  "interrupted"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "error": {
+                "type": "null"
+              }
+            }
+          }
         }
       ]
     }

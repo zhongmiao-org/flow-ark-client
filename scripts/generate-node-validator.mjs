@@ -22,6 +22,8 @@ const validators = Object.fromEntries(
 );
 if (Object.keys(validators).length !== schema.$defs.Node.oneOf.length)
   throw new Error('Node variants must have distinct type/version pairs');
+for (const name of ['Preview', 'Receipt'])
+  validators['handoff_' + name.toLowerCase() + '_v1'] = `${schema.$id}#/$defs/EntryHandoff${name}`;
 validators.template_human_review_v1 = `${schema.$id}#/$defs/TemplateHumanReview`;
 validators.conversation_snapshot_v1 = `${schema.$id}#/$defs/ConversationSnapshot`;
 validators.conversation_event_v1 = `${schema.$id}#/$defs/ConversationEvent`;

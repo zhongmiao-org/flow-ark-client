@@ -1,0 +1,431 @@
+[
+  {
+    "name": "preview",
+    "definition": "EntryHandoffPreview",
+    "value": {
+      "version": 1,
+      "selection": {
+        "flowId": "fictional-control-flow",
+        "source": {
+          "instanceId": "fictional-instance",
+          "entryId": "control",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "token": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "expiresAt": "2026-10-16T10:05:00.000Z",
+      "flowName": "虚构控制入口",
+      "instanceName": "虚构实例",
+      "packageVersion": "1.0.0",
+      "packageDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "runs": [
+        {
+          "id": "fictional-active",
+          "name": "虚构运行",
+          "state": "RUNNING"
+        },
+        {
+          "id": "fictional-queued",
+          "name": "虚构排队",
+          "state": "QUEUED"
+        }
+      ],
+      "limitations": [
+        "停止不撤回已提交的外部操作",
+        "新入口结果仍须核对"
+      ]
+    },
+    "valid": true
+  },
+  {
+    "name": "request",
+    "definition": "EntryHandoffRequest",
+    "value": {
+      "version": 1,
+      "selection": {
+        "flowId": "fictional-control-flow",
+        "source": {
+          "instanceId": "fictional-instance",
+          "entryId": "control",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "token": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "requestId": "12345678-1234-4123-8123-123456789abc",
+      "reviewed": true
+    },
+    "valid": true
+  },
+  {
+    "name": "stopping",
+    "definition": "EntryHandoffReceipt",
+    "value": {
+      "version": 1,
+      "requestId": "12345678-1234-4123-8123-123456789abc",
+      "selection": {
+        "flowId": "fictional-control-flow",
+        "source": {
+          "instanceId": "fictional-instance",
+          "entryId": "control",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "token": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "revision": 1,
+      "status": "stopping",
+      "stoppedRunIds": [
+        "fictional-active",
+        "fictional-queued"
+      ],
+      "runId": null,
+      "createdAt": "2026-10-16T10:00:00.000Z",
+      "updatedAt": "2026-10-16T10:00:00.000Z",
+      "error": null
+    },
+    "valid": true
+  },
+  {
+    "name": "created",
+    "definition": "EntryHandoffReceipt",
+    "value": {
+      "version": 1,
+      "requestId": "12345678-1234-4123-8123-123456789abc",
+      "selection": {
+        "flowId": "fictional-control-flow",
+        "source": {
+          "instanceId": "fictional-instance",
+          "entryId": "control",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "token": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "revision": 2,
+      "status": "created",
+      "stoppedRunIds": [
+        "fictional-active",
+        "fictional-queued"
+      ],
+      "runId": "fictional-next",
+      "createdAt": "2026-10-16T10:00:00.000Z",
+      "updatedAt": "2026-10-16T10:00:00.000Z",
+      "error": null
+    },
+    "valid": true
+  },
+  {
+    "name": "interrupted",
+    "definition": "EntryHandoffReceipt",
+    "value": {
+      "version": 1,
+      "requestId": "12345678-1234-4123-8123-123456789abc",
+      "selection": {
+        "flowId": "fictional-control-flow",
+        "source": {
+          "instanceId": "fictional-instance",
+          "entryId": "control",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "token": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "revision": 2,
+      "status": "interrupted",
+      "stoppedRunIds": [
+        "fictional-active",
+        "fictional-queued"
+      ],
+      "runId": null,
+      "createdAt": "2026-10-16T10:00:00.000Z",
+      "updatedAt": "2026-10-16T10:00:00.000Z",
+      "error": "重开后未自动续跑"
+    },
+    "valid": true
+  },
+  {
+    "name": "failed",
+    "definition": "EntryHandoffReceipt",
+    "value": {
+      "version": 1,
+      "requestId": "12345678-1234-4123-8123-123456789abc",
+      "selection": {
+        "flowId": "fictional-control-flow",
+        "source": {
+          "instanceId": "fictional-instance",
+          "entryId": "control",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "token": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "revision": 2,
+      "status": "failed",
+      "stoppedRunIds": [
+        "fictional-active",
+        "fictional-queued"
+      ],
+      "runId": null,
+      "createdAt": "2026-10-16T10:00:00.000Z",
+      "updatedAt": "2026-10-16T10:00:00.000Z",
+      "error": "进程回收未确认"
+    },
+    "valid": true
+  },
+  {
+    "name": "created-without-run",
+    "definition": "EntryHandoffReceipt",
+    "value": {
+      "version": 1,
+      "requestId": "12345678-1234-4123-8123-123456789abc",
+      "selection": {
+        "flowId": "fictional-control-flow",
+        "source": {
+          "instanceId": "fictional-instance",
+          "entryId": "control",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "token": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "revision": 1,
+      "status": "created",
+      "stoppedRunIds": [
+        "fictional-active",
+        "fictional-queued"
+      ],
+      "runId": null,
+      "createdAt": "2026-10-16T10:00:00.000Z",
+      "updatedAt": "2026-10-16T10:00:00.000Z",
+      "error": null
+    },
+    "valid": false
+  },
+  {
+    "name": "stopping-with-run",
+    "definition": "EntryHandoffReceipt",
+    "value": {
+      "version": 1,
+      "requestId": "12345678-1234-4123-8123-123456789abc",
+      "selection": {
+        "flowId": "fictional-control-flow",
+        "source": {
+          "instanceId": "fictional-instance",
+          "entryId": "control",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "token": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "revision": 1,
+      "status": "stopping",
+      "stoppedRunIds": [
+        "fictional-active",
+        "fictional-queued"
+      ],
+      "runId": "invented",
+      "createdAt": "2026-10-16T10:00:00.000Z",
+      "updatedAt": "2026-10-16T10:00:00.000Z",
+      "error": null
+    },
+    "valid": false
+  },
+  {
+    "name": "failed-without-error",
+    "definition": "EntryHandoffReceipt",
+    "value": {
+      "version": 1,
+      "requestId": "12345678-1234-4123-8123-123456789abc",
+      "selection": {
+        "flowId": "fictional-control-flow",
+        "source": {
+          "instanceId": "fictional-instance",
+          "entryId": "control",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "token": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "revision": 1,
+      "status": "failed",
+      "stoppedRunIds": [
+        "fictional-active",
+        "fictional-queued"
+      ],
+      "runId": null,
+      "createdAt": "2026-10-16T10:00:00.000Z",
+      "updatedAt": "2026-10-16T10:00:00.000Z",
+      "error": null
+    },
+    "valid": false
+  },
+  {
+    "name": "duplicate-stopped-ids",
+    "definition": "EntryHandoffReceipt",
+    "value": {
+      "version": 1,
+      "requestId": "12345678-1234-4123-8123-123456789abc",
+      "selection": {
+        "flowId": "fictional-control-flow",
+        "source": {
+          "instanceId": "fictional-instance",
+          "entryId": "control",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "token": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "revision": 1,
+      "status": "stopping",
+      "stoppedRunIds": [
+        "same",
+        "same"
+      ],
+      "runId": null,
+      "createdAt": "2026-10-16T10:00:00.000Z",
+      "updatedAt": "2026-10-16T10:00:00.000Z",
+      "error": null
+    },
+    "valid": false
+  },
+  {
+    "name": "empty-stop-scope",
+    "definition": "EntryHandoffReceipt",
+    "value": {
+      "version": 1,
+      "requestId": "12345678-1234-4123-8123-123456789abc",
+      "selection": {
+        "flowId": "fictional-control-flow",
+        "source": {
+          "instanceId": "fictional-instance",
+          "entryId": "control",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "token": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "revision": 1,
+      "status": "stopping",
+      "stoppedRunIds": [],
+      "runId": null,
+      "createdAt": "2026-10-16T10:00:00.000Z",
+      "updatedAt": "2026-10-16T10:00:00.000Z",
+      "error": null
+    },
+    "valid": false
+  },
+  {
+    "name": "unknown-status",
+    "definition": "EntryHandoffReceipt",
+    "value": {
+      "version": 1,
+      "requestId": "12345678-1234-4123-8123-123456789abc",
+      "selection": {
+        "flowId": "fictional-control-flow",
+        "source": {
+          "instanceId": "fictional-instance",
+          "entryId": "control",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "token": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "revision": 1,
+      "status": "success",
+      "stoppedRunIds": [
+        "fictional-active",
+        "fictional-queued"
+      ],
+      "runId": null,
+      "createdAt": "2026-10-16T10:00:00.000Z",
+      "updatedAt": "2026-10-16T10:00:00.000Z",
+      "error": null
+    },
+    "valid": false
+  },
+  {
+    "name": "zero-revision",
+    "definition": "EntryHandoffReceipt",
+    "value": {
+      "version": 1,
+      "requestId": "12345678-1234-4123-8123-123456789abc",
+      "selection": {
+        "flowId": "fictional-control-flow",
+        "source": {
+          "instanceId": "fictional-instance",
+          "entryId": "control",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "token": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "revision": 0,
+      "status": "stopping",
+      "stoppedRunIds": [
+        "fictional-active",
+        "fictional-queued"
+      ],
+      "runId": null,
+      "createdAt": "2026-10-16T10:00:00.000Z",
+      "updatedAt": "2026-10-16T10:00:00.000Z",
+      "error": null
+    },
+    "valid": false
+  },
+  {
+    "name": "unknown-data",
+    "definition": "EntryHandoffReceipt",
+    "value": {
+      "version": 1,
+      "requestId": "12345678-1234-4123-8123-123456789abc",
+      "selection": {
+        "flowId": "fictional-control-flow",
+        "source": {
+          "instanceId": "fictional-instance",
+          "entryId": "control",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "token": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "revision": 1,
+      "status": "stopping",
+      "stoppedRunIds": [
+        "fictional-active",
+        "fictional-queued"
+      ],
+      "runId": null,
+      "createdAt": "2026-10-16T10:00:00.000Z",
+      "updatedAt": "2026-10-16T10:00:00.000Z",
+      "error": null,
+      "key": "forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "unreviewed",
+    "definition": "EntryHandoffRequest",
+    "value": {
+      "version": 1,
+      "selection": {
+        "flowId": "fictional-control-flow",
+        "source": {
+          "instanceId": "fictional-instance",
+          "entryId": "control",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "token": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "requestId": "12345678-1234-4123-8123-123456789abc",
+      "reviewed": false
+    },
+    "valid": false
+  },
+  {
+    "name": "non-digest-revision",
+    "definition": "EntryHandoffRequest",
+    "value": {
+      "version": 1,
+      "selection": {
+        "flowId": "fictional-control-flow",
+        "source": {
+          "instanceId": "fictional-instance",
+          "entryId": "control",
+          "revision": "old"
+        }
+      },
+      "token": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "requestId": "12345678-1234-4123-8123-123456789abc",
+      "reviewed": true
+    },
+    "valid": false
+  }
+]

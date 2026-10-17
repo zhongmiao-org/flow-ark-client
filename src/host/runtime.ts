@@ -1,3 +1,5 @@
+import { EntryHandoffs } from './entry-handoff';
+import { handoffMethods, type HandoffSelection } from '../shared/entry-handoff';
 import { AuthorSdk } from './author-sdk';
 import { methods } from '../shared/ipc';
 import {
@@ -134,6 +136,9 @@ export class Runtime {
   readonly localCredentials: LocalCredentialSettings;
   private credentialChecks = new WeakMap<PreparedScripts, () => void>();
   private active?: Active;
+  private handoffId?: string;
+  private handoffNextRun?: string;
+  private handoffs: EntryHandoffs;
   private artifactFiles: ArtifactFiles;
   private artifactCleanup: ArtifactCleanup;
   private reruns: RunRerun;
@@ -380,7 +385,10 @@ export class Runtime {
         (this.pendingCapabilities.get(id) ?? 0) > 0,
     );
     this.reruns = new RunRerun(this.store, {
-      assertAdmitting: () => this.assertAdmitting(),
+      assertAdmitting: () => {
+        this.assertAdmitting();
+        this.assertNoHandoff();
+      },
       busy: (id) =>
         this.active?.id === id ||
         this.scripts.hasRun(id) ||
@@ -427,7 +435,10 @@ export class Runtime {
         this.scripts.hasRun(id) ||
         (this.pendingCapabilities.get(id) ?? 0) > 0,
       target: (selection) => this.system('browser.embedded.target.verify', { selection }),
-      assertAdmitting: () => this.assertAdmitting(),
+      assertAdmitting: () => {
+        this.assertAdmitting();
+        this.assertNoHandoff();
+      },
       epoch: () => this.admissionEpoch,
       preflight: (record) => this.preflight(record, true),
       version: (record, prepared) => this.version(record, prepared),
@@ -442,6 +453,46 @@ export class Runtime {
       },
       error: (error) => this.redactError(error),
     });
+    this.handoffs = new EntryHandoffs(this.store, {
+      available: () => this.assertAdmitting(),
+      epoch: () => this.admissionEpoch,
+      capture: (selection) => this.handoffScope(selection),
+      prepare: async (record) => {
+        await this.preflight(record);
+      },
+      package: async (record) => {
+        const { pkg } = await this.templates.context(record);
+        return { version: pkg.manifest.version, digest: pkg.manifest.contentDigest };
+      },
+      reserve: (id) => {
+        this.assertNoHandoff();
+        this.handoffId = id;
+        this.admissionEpoch++;
+      },
+      release: (id) => {
+        if (this.handoffId === id) this.handoffId = undefined;
+        this.dispatch();
+      },
+      stop: (ids) => this.stopHandoffRuns(ids),
+      create: async (record, selection, id) => {
+        this.templates.assertSource(selection.flowId, selection.source);
+        const run = await this.admit(
+          this.admissionEpoch,
+          record,
+          selection.flowId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          false,
+          selection.source,
+          id,
+        );
+        this.handoffNextRun = run.id;
+        return run;
+      },
+      error: (error) => this.redactError(error),
+    });
     this.ready = Promise.all([this.scripts.ready, this.templates.library.cleanStaging()]).then(
       () => {
         // A recovery probe can take several seconds. Plans missed during that
@@ -449,6 +500,7 @@ export class Runtime {
         this.skipMissed('application-restart');
         this.lastTick = Date.now();
         this.templateData.recover();
+        this.handoffs.recover();
         this.recovering = false;
         if (!this.stopping)
           this.timer = setInterval(
@@ -723,6 +775,61 @@ export class Runtime {
     await this.outputs.record(record);
     return checked(prepared);
   }
+  private assertNoHandoff(owner?: string) {
+    if (this.handoffId && this.handoffId !== owner)
+      throw Error('正在停止本实例后执行入口，请先核对原请求');
+  }
+  private handoffScope(selection: HandoffSelection) {
+    this.templates.assertSource(selection.flowId, selection.source);
+    const record = this.store.get<FlowRecord>('flow', selection.flowId),
+      instance = this.store.get<any>('template-instance', selection.source.instanceId);
+    if (!record || !instance) throw Error('模板入口或实例不存在');
+    const belongs = (id: string) =>
+      this.store.get<FlowRecord>('snapshot', id)?.bindings.template?.instanceId === instance.id;
+    if (this.active && !belongs(this.active.id))
+      throw Error('其他实例或流程正在运行，请等待结束；不会停止它');
+    const runs = this.store.list<Run>('run').filter((r) => !terminal.has(r.state) && belongs(r.id));
+    if (!runs.length || runs.length > 100)
+      throw Error('本实例没有可停止运行，或停止范围超过100条，请重新核对');
+    if (this.active && !runs.some((r) => r.id === this.active!.id))
+      throw Error('原运行正在收尾，请等待资源回收');
+    return { record: structuredClone(record), instanceName: instance.name as string, runs };
+  }
+  private async stopHandoffRuns(ids: string[]) {
+    const active = this.active;
+    if (active && !ids.includes(active.id)) throw Error('活跃运行已变化，不停止其他流程');
+    if (active) this.stop(active);
+    for (const id of ids) {
+      const run = this.store.get<Run>('run', id);
+      if (run?.state === 'QUEUED') await this.cancelQueued(run);
+    }
+    if (active) {
+      let timer: NodeJS.Timeout | undefined;
+      try {
+        await Promise.race([
+          active.done,
+          new Promise((_, reject) => {
+            timer = setTimeout(() => reject(Error('原运行回收未确认，请核对原请求')), 15000);
+          }),
+        ]);
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+    this.assertAdmitting();
+    for (const id of ids) {
+      const run = this.store.get<Run>('run', id);
+      if (
+        !run ||
+        !terminal.has(run.state) ||
+        run.state === 'INTERRUPTED' ||
+        this.active?.id === id ||
+        this.scripts.hasRun(id) ||
+        (this.pendingCapabilities.get(id) ?? 0) > 0
+      )
+        throw Error('原运行或能力回收未确认，不启动新入口');
+    }
+  }
   private assertAdmitting() {
     const blocked = this.executionBlock();
     if (blocked) throw new Error(blocked);
@@ -731,7 +838,7 @@ export class Runtime {
   }
   private assertAdmission(epoch: number) {
     if (epoch !== this.admissionEpoch)
-      throw new Error('系统挂起已撤销本次运行请求，恢复后请重新开始');
+      throw new Error('应用或运行准入已变化，本次请求已撤销，请重新核对');
     this.assertAdmitting();
   }
   private blockExecution(reason: string) {
@@ -939,6 +1046,7 @@ export class Runtime {
       ? structuredClone(templateSourceSchema.parse(templateSource))
       : undefined;
     if (templateSource) this.templates.assertSource(flowId, templateSource);
+    this.assertNoHandoff();
     const epoch = this.admissionEpoch;
     if (this.suspended) throw new Error('系统正在休眠，恢复后请重新开始运行');
     if (!this.recovering) this.assertAdmitting();
@@ -977,8 +1085,10 @@ export class Runtime {
     scheduleRevision?: string,
     debug = false,
     templateSource?: TemplateSource,
+    handoffId?: string,
   ) {
     const check = () => {
+      this.assertNoHandoff(handoffId);
       this.assertAdmission(epoch);
       if (templateSource) this.templates.assertSource(flowId, templateSource);
       if (scheduleId) {
@@ -1021,6 +1131,7 @@ export class Runtime {
       this.store.put('run', id, run);
       this.store.event(id, 'state', '', { state: 'QUEUED' });
       if (triggerId) this.store.put('trigger', triggerId, { id, at: now() });
+      if (handoffId) this.handoffs.created(handoffId, id);
     });
     this.dispatch();
     return run;
@@ -1032,9 +1143,17 @@ export class Runtime {
   }
   private async pump() {
     await this.ready;
-    if (this.active || this.stopping || this.suspended || this.store.fault || this.executionBlock())
+    if (
+      this.active ||
+      this.handoffId ||
+      this.stopping ||
+      this.suspended ||
+      this.store.fault ||
+      this.executionBlock()
+    )
       return;
-    const run = this.store.list<Run>('run').find((r) => r.state === 'QUEUED');
+    const queue = this.store.list<Run>('run').filter((r) => r.state === 'QUEUED');
+    const run = queue.find((r) => r.id === this.handoffNextRun) ?? queue[0];
     if (!run) return;
     const proc = child(join(this.dir, 'worker.cjs'), this.executable);
     const rpc = new Rpc(
@@ -1054,6 +1173,7 @@ export class Runtime {
       abort: new AbortController(),
     };
     this.active = active;
+    if (this.handoffNextRun === run.id) this.handoffNextRun = undefined;
     proc.on('message', (m) => void rpc.receive(m as any));
     const lost = () => {
       if (!active.workerClosing && !active.cancelling) {
@@ -1739,6 +1859,19 @@ export class Runtime {
     return true;
   }
   async request(method: string, args: any = {}): Promise<any> {
+    if (method.startsWith('template.handoff.')) {
+      await this.ready;
+      const rule = handoffMethods[method as keyof typeof handoffMethods];
+      if (!rule) throw Error('入口切换方法未授权');
+      const v = rule.parse(args) as any;
+      if (method === 'template.handoff.get') return this.handoffs.get(v.requestId);
+      if (method === 'template.handoff.list') return this.handoffs.list(v.instanceId);
+      if (method === 'template.handoff.preview') {
+        this.assertNoHandoff();
+        return this.handoffs.preview(v);
+      }
+      return this.handoffs.confirm(v);
+    }
     if (method.startsWith('context.')) {
       await this.ready;
       const rule = dataMethods[method as keyof typeof dataMethods];
