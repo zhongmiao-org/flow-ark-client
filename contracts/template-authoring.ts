@@ -1,4 +1,5 @@
-/** Normative author definitions and optional portable metadata, contracts 0.28.0. */
+/** Normative author definitions and optional portable metadata, contracts 0.31.0. */
+import { assertDirectoryDefaults } from './directory-defaults';
 import { assertAIOutcomeCapabilities } from './ai-outcome';
 import Ajv from 'ajv/dist/2020.js';
 import schema from './p1.schema.json';
@@ -88,6 +89,7 @@ export function validateAuthorDefinition(value: unknown): any {
   const d = value as any;
   unique(d.entries.map((e: any) => e.id), '作者入口');
   unique(d.resources.map((r: any) => r.id), '作者资源');
+  assertDirectoryDefaults(d.resources);
   unique(d.actions.map((a: any) => a.id), '作者动作');
   unique(d.prompts.map((p: any) => p.id), '作者提示词');
   if (d.readme.length > 60000 || d.prompts.some((p: any) => p.body.length > 60000))

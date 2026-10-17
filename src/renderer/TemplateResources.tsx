@@ -10,6 +10,7 @@ import {
 } from 'react';
 import type { Bootstrap } from '../shared/types';
 import { equal, type TemplateDetail } from './template-draft';
+import { patchResourceBinding } from './directory-binding-draft';
 const api = (method: string, args: unknown = {}) => window.flowark.request(method, args);
 export default function TemplateResources({
   detail,
@@ -58,12 +59,18 @@ export default function TemplateResources({
   const patch = (
     id: string,
     binding: TemplateDetail['instance']['resources'][string] | undefined,
+    mode: 'manual' | 'default' = 'manual',
   ) =>
     change((current) => {
-      const resources = { ...current.instance.resources };
-      if (binding) resources[id] = binding;
-      else delete resources[id];
-      return { ...current, instance: { ...current.instance, resources } };
+      const { resources, directoryDraft } = patchResourceBinding(
+        current.instance.resources,
+        current.manifest.resources,
+        current.directoryDraft,
+        id,
+        binding,
+        mode,
+      );
+      return { ...current, directoryDraft, instance: { ...current.instance, resources } };
     });
   const grant = (id: string, mode: 'deny' | 'confirm' | 'auto') =>
     change((current) => ({
@@ -82,13 +89,19 @@ export default function TemplateResources({
               {manifest.resources.length === 0 && <p>此模板未声明本机资源。</p>}
               {manifest.resources.map((resource) => {
                 const binding = instance.resources[resource.id] ?? {};
+                const defaultSource = manifest.resources.find(
+                  (source) => source.id === resource.defaultDirectoryFrom,
+                );
+                const derived = detail.directoryDraft?.derived[resource.id];
+                const defaultHintId = `${scopeId}-${resource.id}-directory-default`;
                 return (
                   <div
                     className={
                       'template-resource' +
                       (resource.kind === 'file' || resource.kind === 'directory'
                         ? ' template-resource-file'
-                        : '')
+                        : '') +
+                      (defaultSource ? ' template-resource-default' : '')
                     }
                     key={resource.id}
                   >
@@ -108,6 +121,7 @@ export default function TemplateResources({
                       ) : resource.kind === 'file' || resource.kind === 'directory' ? (
                         <Input
                           aria-label={resource.name}
+                          aria-describedby={defaultSource ? defaultHintId : undefined}
                           readOnly
                           value={binding.path ?? ''}
                           placeholder="尚未绑定"
@@ -206,7 +220,32 @@ export default function TemplateResources({
                               清除绑定
                             </Button>
                           )}
+                          {defaultSource && (
+                            <Button
+                              disabled={busy || !instance.resources[defaultSource.id]?.path}
+                              aria-label={`使用${defaultSource.name}作为${resource.name}`}
+                              aria-describedby={defaultHintId}
+                              onClick={() => patch(resource.id, undefined, 'default')}
+                            >
+                              使用来源目录
+                            </Button>
+                          )}
                         </div>
+                        {defaultSource && (
+                          <p
+                            id={defaultHintId}
+                            className="template-directory-default-note"
+                            role="status"
+                          >
+                            {derived && binding.path === derived.path
+                              ? `本次默认使用“${defaultSource.name}”，尚未保存；可另选或清除。`
+                              : detail.directoryDraft?.manual.includes(resource.id)
+                                ? `已手动${binding.path ? '设置' : '清除'}；本次不自动跟随“${defaultSource.name}”。`
+                                : `默认可使用“${defaultSource.name}”；已有保存值不随来源改变。`}
+                            {!instance.resources[defaultSource.id]?.path &&
+                              ` 请先选择“${defaultSource.name}”。`}
+                          </p>
+                        )}
                         {!binding.path && saved.resources[resource.id]?.path && (
                           <p className="template-resource-cleared" role="status">
                             已清除草稿绑定，保存授权后生效。

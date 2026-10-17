@@ -1189,7 +1189,11 @@ export default function TemplateAuthorWorkspace({
                             disabled={busy}
                             onChange={(e) =>
                               edit((d) => {
+                                const previousId = d.resources[i].id;
                                 d.resources[i].id = e.target.value;
+                                for (const resource of d.resources)
+                                  if (resource.defaultDirectoryFrom === previousId)
+                                    resource.defaultDirectoryFrom = e.target.value;
                               })
                             }
                           />
@@ -1219,14 +1223,24 @@ export default function TemplateAuthorWorkspace({
                                 }[value],
                               }),
                             )}
-                            onChange={(v) =>
+                            onChange={(v) => {
+                              if (
+                                v !== 'directory' &&
+                                (r.defaultDirectoryFrom ||
+                                  definition.resources.some(
+                                    (resource) => resource.defaultDirectoryFrom === r.id,
+                                  ))
+                              ) {
+                                setError('请先解除此目录及其他目录对它的默认来源引用，再改变类型');
+                                return;
+                              }
                               edit((d) => {
                                 d.resources[i].kind = v;
                                 d.resources[i].access = ['browser', 'ai'].includes(v)
                                   ? 'use'
                                   : 'read';
-                              })
-                            }
+                              });
+                            }}
                           />
                           <Select
                             aria-label={'资源' + (i + 1) + '访问'}
@@ -1271,11 +1285,61 @@ export default function TemplateAuthorWorkspace({
                                 setError('资源仍被入口声明，请先解除入口引用');
                                 return;
                               }
+                              if (
+                                definition.resources.some(
+                                  (resource) => resource.defaultDirectoryFrom === r.id,
+                                )
+                              ) {
+                                setError('目录仍被其他资源用作默认来源，请先解除默认来源引用');
+                                return;
+                              }
                               edit((d) => d.resources.splice(i, 1));
                             }}
                           >
                             移除
                           </Button>
+                          {r.kind === 'directory' && (
+                            <div className="author-directory-default">
+                              <span>默认目录来源</span>
+                              <Select
+                                aria-label={'资源' + (i + 1) + '默认目录来源'}
+                                value={r.defaultDirectoryFrom ?? ''}
+                                disabled={busy}
+                                options={[
+                                  { value: '', label: '不设置默认来源' },
+                                  ...definition.resources
+                                    .filter(
+                                      (source) =>
+                                        source.id !== r.id &&
+                                        source.kind === 'directory' &&
+                                        !source.defaultDirectoryFrom,
+                                    )
+                                    .map((source) => ({
+                                      value: source.id,
+                                      label: `${source.name}（${source.id}）`,
+                                    })),
+                                ]}
+                                onChange={(value) => {
+                                  if (
+                                    value &&
+                                    definition.resources.some(
+                                      (resource) => resource.defaultDirectoryFrom === r.id,
+                                    )
+                                  ) {
+                                    setError('此目录仍作为其他目录的默认来源，请先解除引用');
+                                    return;
+                                  }
+                                  edit((d) => {
+                                    if (value) d.resources[i].defaultDirectoryFrom = value;
+                                    else delete d.resources[i].defaultDirectoryFrom;
+                                  });
+                                }}
+                              />
+                              <p>
+                                仅复用使用者选定的目录路径作为草稿默认值，可另选或清除；不保存本机路径或授予写入权限。
+                              </p>
+                            </div>
+                          )}
                         </div>
                       ))}
                       <Button

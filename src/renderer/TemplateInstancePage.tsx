@@ -418,7 +418,13 @@ export default function TemplateInstancePage({
       const instance = { ...current.instance };
       for (const field of templateFields(scope))
         (instance as any)[field] = structuredClone(saved.instance[field]);
-      return { ...current, instance };
+      return {
+        ...current,
+        instance,
+        directoryDraft: templateFields(scope).includes('resources')
+          ? undefined
+          : current.directoryDraft,
+      };
     });
     if (scope === 'configuration') setConfigurationGeneration((v) => v + 1);
     setError('');

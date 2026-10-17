@@ -1,6 +1,9 @@
 import type { Templates } from '../templates/service';
 import type { TemplateSave } from '../shared/ipc';
-export type TemplateDetail = Awaited<ReturnType<Templates['detail']>>;
+import type { DirectoryBindingDraft } from './directory-binding-draft';
+export type TemplateDetail = Awaited<ReturnType<Templates['detail']>> & {
+  directoryDraft?: DirectoryBindingDraft;
+};
 export type TemplateSaveScope = 'configuration' | 'resources' | 'instance' | 'input' | 'all';
 export const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 export function templateSaveRequest(
@@ -49,6 +52,12 @@ export function acceptTemplateSave(
   return {
     ...next,
     instance,
+    directoryDraft:
+      templateFields(scope).includes('resources') &&
+      equal(current.instance.resources, submitted.instance.resources) &&
+      equal(current.directoryDraft, submitted.directoryDraft)
+        ? undefined
+        : current.directoryDraft,
     entries: next.entries.map((entry) => {
       const currentEntry = current.entries.find((e) => e.id === entry.id);
       return currentEntry &&
