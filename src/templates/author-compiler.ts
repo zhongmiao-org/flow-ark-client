@@ -20,6 +20,7 @@ import type { Flow, Json } from '../shared/types';
 import { validateFlow, walk, capabilities } from '../core/validate';
 import { declareNativeBoundaries } from './export-boundaries';
 import { schemaDefaults } from '../shared/template-config';
+import { assertPortableSourceFlow } from './source-boundaries';
 
 function neutralParameters(parameters: Flow['parameters']): Flow['parameters'] {
   const neutral = (v: Json): Json =>
@@ -40,10 +41,12 @@ export function neutralFlow(input: Flow): Flow {
   const f = structuredClone(validateFlow(input));
   delete f.sourceTemplate;
   f.parameters = neutralParameters(f.parameters);
+  assertPortableSourceFlow(f);
   return f;
 }
 export function expandAuthorFlow(d: AuthorDefinition, e: AuthorEntry): Flow {
   const flow = structuredClone(e.flow) as Flow;
+  assertPortableSourceFlow(flow);
   for (const binding of e.promptBindings) {
     const node = walk(flow.steps).find((n) => n.id === binding.nodeId),
       p = d.prompts.find((p) => p.id === binding.promptId);

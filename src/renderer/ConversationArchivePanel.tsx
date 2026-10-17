@@ -90,7 +90,7 @@ function Turn({
     </div>
   );
 }
-function RecordView({ row }: { row: Row }) {
+export function RecordView({ row }: { row: Row }) {
   const p = row.payload;
   if (p.kind === 'history')
     return (

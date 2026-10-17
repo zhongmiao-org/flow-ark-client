@@ -26,7 +26,7 @@ export default function TaskPlanScope({
     const label =
       step.type === 'file' || step.type === 'excel'
         ? taskStepTitle(step)
-        : taskStepTitle({ ...step, name: undefined });
+        : taskStepTitle({ ...step, name: '' });
     counts.set(label, (counts.get(label) ?? 0) + 1);
   }
   const branching = steps.some((step) => step.type === 'loop' || step.type === 'condition');

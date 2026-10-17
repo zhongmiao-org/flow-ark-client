@@ -14,14 +14,27 @@ const ajv = new Ajv2020({
   code: { source: true, esm: true },
 });
 ajv.addSchema(schema);
-const validators = Object.fromEntries(
-  schema.$defs.Node.oneOf.map((node, index) => [
-    `node_${node.properties.type.const}_${node.properties.version.const}`,
-    `${schema.$id}#/$defs/Node/oneOf/${index}`,
-  ]),
-);
-if (Object.keys(validators).length !== schema.$defs.Node.oneOf.length)
-  throw new Error('Node variants must have distinct type/version pairs');
+const groups = new Map();
+schema.$defs.Node.oneOf.forEach((node, index) => {
+  const key = `node_${node.properties.type.const}_${node.properties.version.const}`;
+  groups.set(key, [...(groups.get(key) ?? []), { node, index }]);
+});
+const validators = {};
+for (const [key, variants] of groups) {
+  const refs = variants.map(({ index }) => ({ $ref: `${schema.$id}#/$defs/Node/oneOf/${index}` }));
+  if (variants.length === 1) validators[key] = refs[0].$ref;
+  else {
+    if (
+      key !== 'node_source_1' ||
+      variants.some(({ node }) => !node.properties.operation?.const) ||
+      new Set(variants.map(({ node }) => node.properties.operation.const)).size !== variants.length
+    )
+      throw new Error('Node variants must have distinct type/version or source operation');
+    const id = schema.$id + '.source-node-v1';
+    ajv.addSchema({ $id: id, oneOf: refs });
+    validators[key] = id;
+  }
+}
 for (const name of ['Preview', 'Receipt'])
   validators['handoff_' + name.toLowerCase() + '_v1'] = `${schema.$id}#/$defs/EntryHandoff${name}`;
 validators.template_human_review_v1 = `${schema.$id}#/$defs/TemplateHumanReview`;
@@ -47,6 +60,9 @@ for (const name of ['Source', 'Preview', 'Request', 'Result', 'Status'])
 for (const name of ['Capture', 'Ref', 'Record', 'Manifest', 'Cursor', 'Page'])
   validators['archive_' + name.toLowerCase() + '_v1'] =
     `${schema.$id}#/$defs/ConversationArchive${name}`;
+for (const name of ['Cursor', 'Chunk', 'Read', 'ManifestOutput'])
+  validators['source_' + name.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase() + '_v1'] =
+    `${schema.$id}#/$defs/ConversationSource${name}`;
 validators.document_result_v1 = `${schema.$id}#/$defs/DocumentResult`;
 validators.ai_outcome_v1 = `${schema.$id}#/$defs/AIOutcome`;
 validators.ai_receipt_v1 = `${schema.$id}#/$defs/AINodeReceipt`;

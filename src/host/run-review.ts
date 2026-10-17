@@ -31,7 +31,7 @@ export type ReviewTemplate = {
   resources: {
     id: string;
     name: string;
-    kind: 'file' | 'directory' | 'browser' | 'ai' | 'skill';
+    kind: 'file' | 'directory' | 'browser' | 'ai' | 'skill' | 'conversation-source';
     access: 'read' | 'write' | 'readwrite' | 'use';
     required: boolean;
   }[];
@@ -190,6 +190,18 @@ export class RunReview {
     const steps = walk(record.flow.steps);
     for (const node of steps) {
       if (node.type === 'document') directory(node.binding, true, false);
+      if (node.type === 'source') {
+        const ref = record.bindings.resources?.[node.binding]?.source;
+        if (!ref) throw Error('完整来源尚未选择');
+        if (!resources.some((r) => r.id === 'source:' + node.binding))
+          resources.push({
+            id: 'source:' + node.binding,
+            name: node.binding,
+            kind: 'conversation-source',
+            access: 'read',
+            detail: '固定完整来源 · 版本' + ref.sha256.slice(0, 8) + '；不调用模型',
+          });
+      }
       if (node.type === 'skill') {
         if (node.operation === 'propose') directory(node.binding, true, true);
         else {
@@ -257,6 +269,15 @@ export class RunReview {
           kind: declaration.kind,
           read: declaration.access !== 'write',
           write: ['write', 'readwrite'].includes(declaration.access),
+        });
+      } else if (declaration.kind === 'conversation-source') {
+        if (!binding.source) throw Error('完整来源尚未选择');
+        resources.push({
+          id: 'template:' + declaration.id,
+          name: declaration.name,
+          kind: 'conversation-source',
+          access: 'read',
+          detail: '固定完整来源 · 版本' + binding.source.sha256.slice(0, 8),
         });
       } else if (declaration.kind === 'skill') {
         if (!binding.skill || !binding.path) throw Error('Skill确认版本尚未选择');

@@ -444,6 +444,19 @@ export class ConversationThreads {
     this.archiveContext(saved.snapshot.id, saved.snapshot.context);
     if (saved.snapshot.origin) this.origin(saved.snapshot.id);
   }
+  archiveIsCurrent(manifest: unknown) {
+    const m = manifest as { capture: { sessionId: string } },
+      saved = this.get(m.capture.sessionId);
+    // Missing/corrupt backing data is a failure, not a successful stale observation.
+    this.archiveContext(saved.snapshot.id, saved.snapshot.context);
+    if (saved.snapshot.origin) this.origin(saved.snapshot.id);
+    try {
+      validateCurrentConversationArchive(manifest, saved.snapshot, saved.contextRevision);
+      return true;
+    } catch {
+      return false;
+    }
+  }
   private rows(id: string, selection: Selection): Entry[] {
     return selection.flatMap((r) => (r.kind === 'history' ? [this.entry(id, r.ordinal)] : []));
   }

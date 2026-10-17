@@ -25,6 +25,8 @@ export const capabilityLabel = (name: string) =>
       'conversation-v2': '持续会话 v2',
       'conversation-checkpoint-v1': '持续会话确认来源',
       'conversation-evidence-v1': '已确认会话来源',
+      'conversation-source-read-v1': '完整来源只读读取',
+      source: '完整来源读取',
       skill: '个人 Skill',
       'skill-v1': 'Skill 确认版本 v1',
       'skill-trial-v1': '草稿内部试聊',
@@ -46,6 +48,7 @@ export const capabilityLabel = (name: string) =>
     }) as Record<string, string>
   )[name] ?? name;
 const resourceKind = {
+  'conversation-source': '完整会话来源',
   skill: '确认Skill',
   file: '文件',
   directory: '目录',

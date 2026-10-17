@@ -11,6 +11,8 @@ import { assertDataOutput } from '../shared/template-data';
 import ContextResultView from './ContextResultView';
 import { assertBrowserInspectionResult } from '../shared/browser-inspection';
 import type { TypedResultMeta } from '../host/typed-results';
+import { verifySourceResult } from '../shared/conversation-source';
+import SourceResultView from './SourceResultView';
 export default function TypedRunResults({
   runId,
   entries,
@@ -30,8 +32,9 @@ export default function TypedRunResults({
     if (!id) return;
     void window.flowark
       .request('run.typedResult', { runId, id })
-      .then((v) => {
-        if (v.type === 'document') assertDocumentResult(v.value);
+      .then(async (v) => {
+        if (v.type === 'source') await verifySourceResult(v.value);
+        else if (v.type === 'document') assertDocumentResult(v.value);
         else if (v.type === 'skill') assertSkillVersion(v.value);
         else if (v.type === 'context') assertDataOutput(v.value);
         else if (v.type === 'conversation') {
@@ -69,6 +72,9 @@ export default function TypedRunResults({
       )}{' '}
       {value?.type === 'document' && <DocumentResultView key={id} value={value.value} />}{' '}
       {value?.type === 'skill' && <SkillVersionView value={value.value} />}
+      {value?.type === 'source' && (
+        <SourceResultView runId={runId} nodeId={value.nodeId} value={value.value} />
+      )}
       {value?.type === 'context' && <ContextResultView value={value.value} />}
       {value?.type === 'conversation' && <ConversationResultView value={value.value} />}
       {value?.type === 'browser' && (

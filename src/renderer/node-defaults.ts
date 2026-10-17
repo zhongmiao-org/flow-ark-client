@@ -3,6 +3,7 @@ import type { Step } from '../shared/types';
 
 export function newStep(type: string): Step {
   const defaults: Record<string, object> = {
+    source: { name: '读取来源清单', operation: 'manifest', binding: 'source' },
     context: { operation: 'configuration' },
     skill: {
       operation: 'propose',

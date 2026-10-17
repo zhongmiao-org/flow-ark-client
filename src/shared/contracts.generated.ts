@@ -351,6 +351,25 @@ export type Node =
       instructions: string;
       input: Value;
       historyWindow: number;
+    }
+  | {
+      id: string;
+      type: 'source';
+      version: 1;
+      name: string;
+      timeoutMs?: number;
+      binding: string;
+      operation: 'manifest';
+    }
+  | {
+      id: string;
+      type: 'source';
+      version: 1;
+      name: string;
+      timeoutMs?: number;
+      binding: string;
+      operation: 'read';
+      cursor: Value;
     };
 export type Value =
   | Json
@@ -639,7 +658,7 @@ export type TemplateAuthorNeutralValue =
 export type TemplateAuthorResource = {
   id: string;
   name: string;
-  kind: 'file' | 'directory' | 'browser' | 'ai' | 'skill';
+  kind: 'file' | 'directory' | 'browser' | 'ai' | 'skill' | 'conversation-source';
   access: 'read' | 'write' | 'readwrite' | 'use';
   required: boolean;
   /**
@@ -989,6 +1008,10 @@ export interface FlowArkP1 {
   ConversationArchiveManifest?: ConversationArchiveManifest;
   ConversationArchiveCursor?: ConversationArchiveCursor;
   ConversationArchivePage?: ConversationArchivePage;
+  ConversationSourceCursor?: ConversationSourceCursor;
+  ConversationSourceChunk?: ConversationSourceChunk;
+  ConversationSourceRead?: ConversationSourceRead;
+  ConversationSourceManifestOutput?: ConversationSourceManifestOutput;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -1189,7 +1212,7 @@ export interface TemplateArchiveManifest {
   resources: {
     id: string;
     name: string;
-    kind: 'file' | 'directory' | 'browser' | 'ai' | 'skill';
+    kind: 'file' | 'directory' | 'browser' | 'ai' | 'skill' | 'conversation-source';
     access: 'read' | 'write' | 'readwrite' | 'use';
     required: boolean;
     /**
@@ -2712,4 +2735,38 @@ export interface ConversationArchivePage {
       ];
   next: ConversationArchiveCursor | null;
   sha256: string;
+}
+export interface ConversationSourceCursor {
+  version: 1;
+  format: 'canonical-record-json-v1';
+  source: ConversationArchiveRef;
+  recordOrdinal: number;
+  byteOffset: number;
+  previousHash: string;
+}
+export interface ConversationSourceChunk {
+  version: 1;
+  format: 'canonical-record-json-v1';
+  source: ConversationArchiveRef;
+  recordOrdinal: number;
+  recordKind: 'origin' | 'context' | 'history';
+  recordHash: string;
+  recordBytes: number;
+  byteOffset: number;
+  byteEnd: number;
+  text: string;
+  sha256: string;
+}
+export interface ConversationSourceRead {
+  version: 1;
+  cursor: ConversationSourceCursor;
+  chunk: ConversationSourceChunk;
+  next: ConversationSourceCursor | null;
+  done: boolean;
+}
+export interface ConversationSourceManifestOutput {
+  version: 1;
+  source: ConversationArchiveRef;
+  manifest: ConversationArchiveManifest;
+  current: boolean;
 }

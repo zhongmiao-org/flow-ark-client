@@ -1,3 +1,4 @@
+import { assertConversationSourceNode } from './conversation-source';
 import { assertContinuousConversationCapabilities } from './continuous-conversation';
 /** Normative author definitions and optional portable metadata, contracts 0.31.0. */
 import { assertDirectoryDefaults } from './directory-defaults';
@@ -116,6 +117,7 @@ export function validateAuthorDefinition(value: unknown): any {
     for (const node of steps) {
       assertAIOutcomeCapabilities(node, entry.flow.requiredCapabilities);
       assertContinuousConversationCapabilities(node, entry.flow.requiredCapabilities);
+      assertConversationSourceNode(node, entry.flow.requiredCapabilities, d, { capabilities: entry.flow.requiredCapabilities, resources: entry.resourceIds });
       if (node.type === 'conversation' && node.version === 2) {
         const r = d.resources.find((r: any) => r.id === node.binding);
         if (!entry.resourceIds.includes(node.binding) || r?.kind !== 'ai' || r.access !== 'use')

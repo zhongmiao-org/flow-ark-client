@@ -1,5 +1,6 @@
 import AuthorSdkInfo from './AuthorSdkInfo';
 import TypedRunResults from './TypedRunResults';
+import type { TypedResultMeta } from '../host/typed-results';
 import RunContextOperations from './RunContextOperations';
 import ActionButton from './ActionButton';
 import DocumentResults from './DocumentResults';
@@ -181,7 +182,19 @@ export default function RunOutputWorkspace({
               runId={detail.run.id}
               runState={detail.run.state}
             />
-            <RunOutput detail={detail} layout="result" />
+            {detail.typedResults?.some((entry: TypedResultMeta) => entry.type === 'source') ? (
+              <Collapse
+                items={[
+                  {
+                    key: 'source-debug-output',
+                    label: '脱敏入口结果（高级，可选）',
+                    children: <RunOutput detail={detail} layout="result" />,
+                  },
+                ]}
+              />
+            ) : (
+              <RunOutput detail={detail} layout="result" />
+            )}
             <RunFileRecovery key={`file-recovery:${detail.run.id}`} detail={detail} />
             <RunResultReview key={detail.run.id} runId={detail.run.id} />
           </Card>

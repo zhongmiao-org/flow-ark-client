@@ -49,6 +49,13 @@ export class Templates {
     dataPath: string,
     version: string,
     private notify: () => Promise<any> = async () => {},
+    private sourceChanges?: (
+      id: string,
+      revision: string,
+      before: NonNullable<Bindings['resources']>,
+      next: NonNullable<Bindings['resources']>,
+      allowed: string[],
+    ) => void,
   ) {
     this.library = new PackageLibrary(join(dataPath, 'template-packages'), version);
   }
@@ -190,6 +197,19 @@ export class Templates {
     const revision = sha256(canonical({ instance, records }));
     return { instance, records, revision };
   }
+  sourceOwner(id: string) {
+    const { instance, revision } = this.snapshot(id);
+    const pkg = this.store.get<InstalledPackage>('template-package', instance.packageKey);
+    if (!pkg) throw Error('实例模板来源不存在');
+    return {
+      revision,
+      fingerprint: revision,
+      resources: instance.resources,
+      sourceIds: pkg.manifest.resources
+        .filter((r) => r.kind === 'conversation-source' && r.access === 'read')
+        .map((r) => r.id),
+    };
+  }
   assertSource(flowId: string, source: TemplateSource) {
     const { instance, records, revision } = this.snapshot(source.instanceId);
     if (revision !== source.revision) throw new Error('实例已变化，请返回原入口重新核对');
@@ -265,14 +285,21 @@ export class Templates {
           ? ['provider', 'model']
           : declaration.kind === 'browser'
             ? ['browserId']
-            : declaration.kind === 'skill'
-              ? ['path', 'skill']
-              : ['path'];
+            : declaration.kind === 'conversation-source'
+              ? ['source']
+              : declaration.kind === 'skill'
+                ? ['path', 'skill']
+                : ['path'];
       if (declaration.kind === 'skill') {
         if (declaration.access !== 'read' || !value.path)
           throw Error('Skill资源需要确认版本及工作区');
         assertSkillRef(value.skill);
       }
+      if (
+        declaration.kind === 'conversation-source' &&
+        (!value.source || declaration.access !== 'read')
+      )
+        throw Error('完整来源资源必须选择固定只读来源');
       if (Object.keys(value).some((field) => !fields.includes(field)))
         throw new Error('资源绑定类型不符');
     }
@@ -287,6 +314,16 @@ export class Templates {
       // Package loading is asynchronous; other editor writes can occur while it runs.
       const current = this.snapshot(args.id);
       if (current.revision !== args.revision) throw new Error('实例已变化，请重新读取后保存');
+      if (Object.values(args.resources).some((v) => v.source)) {
+        if (!this.sourceChanges) throw Error('来源绑定宿主尚未连接');
+        this.sourceChanges(
+          args.id,
+          current.revision,
+          current.instance.resources,
+          args.resources,
+          manifest.resources.filter((r) => r.kind === 'conversation-source').map((r) => r.id),
+        );
+      }
       for (const entry of manifest.entries) {
         const record = current.records[entry.id],
           ref = record?.bindings.template;
@@ -370,6 +407,8 @@ export class Templates {
         assertSkillRef(binding.skill);
         if (!binding.path) throw Error('Skill工作区未选择');
       }
+      if (declaration.kind === 'conversation-source' && !binding.source)
+        throw Error('完整来源尚未选择');
       if (declaration.kind === 'ai' && (!binding.provider || !binding.model))
         throw new Error('AI 供应商和模型未配置');
       if (declaration.kind === 'browser' && !this.store.get('browser', binding.browserId ?? ''))

@@ -464,6 +464,29 @@ export class ConversationArchives {
     validateConversationArchiveRef(ref, m);
     return structuredClone(m!);
   }
+  sourceInfo(ref: Ref) {
+    const manifest = this.readSource(ref),
+      s = this.get(manifest.id, manifest.capture.sessionId);
+    if (
+      s.operation.state !== 'confirmed' ||
+      s.operation.manifest?.sha256 !== manifest.sha256 ||
+      !s.operation.confirmedAt
+    )
+      throw Error('完整来源尚未确认登记');
+    return { manifest, confirmedAt: s.operation.confirmedAt };
+  }
+  sourceRecord(ref: Ref, ordinal: number) {
+    const m = this.readSource(ref);
+    if (!Number.isSafeInteger(ordinal) || ordinal < 1 || ordinal > m.recordCount)
+      throw Error('来源记录位置无效');
+    const r = this.row(m.id, ordinal);
+    if (
+      r.previousHash !== (ordinal === 1 ? m.rootHash : this.row(m.id, ordinal - 1).sha256) ||
+      (ordinal === m.recordCount && r.sha256 !== m.tailHash)
+    )
+      throw Error('来源记录与固定清单不符');
+    return structuredClone(r);
+  }
   async stop() {
     const jobs = [...this.jobs.entries()];
     for (const [id, job] of jobs) {

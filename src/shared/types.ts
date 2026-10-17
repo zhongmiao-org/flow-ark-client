@@ -33,6 +33,7 @@ export type Bindings = {
       provider?: 'deepseek' | 'openai-codex';
       model?: string;
       skill?: import('./skill').SkillVersionRef;
+      source?: import('./conversation-archive').ConversationArchiveRef;
     }
   >;
   grants?: Record<string, 'deny' | 'confirm' | 'auto'>;
