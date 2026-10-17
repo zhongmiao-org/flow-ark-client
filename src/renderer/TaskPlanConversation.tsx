@@ -1,4 +1,5 @@
 import { Button, Collapse } from 'antd';
+import MarkdownBody from './MarkdownBody';
 import type { ReactNode } from 'react';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 
@@ -65,7 +66,7 @@ export default function TaskPlanConversation({
       </article>
       <article className="ai-task-note ai-step-reply">
         <h2>FlowArk</h2>
-        <p>{reply}</p>
+        <MarkdownBody text={reply} />
         {explanation && (
           <Collapse
             items={[
@@ -73,7 +74,7 @@ export default function TaskPlanConversation({
                 key: 'explanation',
                 onKeyDown: activateCollapseWithSpace,
                 label: '查看 AI 的方案说明',
-                children: <p>{explanation}</p>,
+                children: <MarkdownBody text={explanation} />,
               },
             ]}
           />
