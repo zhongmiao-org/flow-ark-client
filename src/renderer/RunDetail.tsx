@@ -187,7 +187,7 @@ export default function RunDetail({
   const runPanels = {
     current: (
       <>
-        <RunObservation detail={observed} compact />
+        <RunObservation detail={observed} compact rerun={() => setTab('rerun')} />
         {r.business && <p className="run-business-note">{r.business}</p>}
         {r.debug && (
           <p className="note">逐步调试 · 执行下一步会实际操作页面；继续将连续运行剩余流程。</p>

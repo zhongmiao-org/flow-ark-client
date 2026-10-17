@@ -190,7 +190,7 @@ export class RunReview {
     const steps = walk(record.flow.steps);
     for (const node of steps) {
       if (node.type === 'document') directory(node.binding, true, false);
-      if (node.type === 'source') {
+      if (node.type === 'source' || node.type === 'source-reduce') {
         const ref = record.bindings.resources?.[node.binding]?.source;
         if (!ref) throw Error('完整来源尚未选择');
         if (!resources.some((r) => r.id === 'source:' + node.binding))
@@ -234,18 +234,17 @@ export class RunReview {
           else for (const name of Object.keys(record.bindings.files)) directory(name, true, false);
         }
       }
-      if (
-        (node.type === 'ai' || node.type === 'conversation') &&
-        !resources.some((r) => r.id === 'ai:' + node.binding)
-      ) {
-        const binding = aiBinding(record.bindings, node.binding);
-        resources.push({
-          id: 'ai:' + node.binding,
-          name: node.binding,
-          kind: 'ai',
-          access: 'use',
-          detail: binding.provider + ' / ' + binding.model + '；使用用户自己的Key并产生token消耗',
-        });
+      if (node.type === 'ai' || node.type === 'conversation' || node.type === 'source-reduce') {
+        const key = node.type === 'source-reduce' ? node.aiBinding : node.binding;
+        const binding = aiBinding(record.bindings, key);
+        if (!resources.some((r) => r.id === 'ai:' + key))
+          resources.push({
+            id: 'ai:' + key,
+            name: key,
+            kind: 'ai',
+            access: 'use',
+            detail: binding.provider + ' / ' + binding.model + '；使用用户自己的Key并产生token消耗',
+          });
       }
       if (node.type === 'script') {
         for (const name of Object.keys(record.bindings.files)) directory(name, true, true);

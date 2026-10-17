@@ -1,3 +1,5 @@
+import SourceReductionPanel from './SourceReductionPanel';
+import { verifyReductionOutput } from '../shared/source-reduction';
 import { useEffect, useState } from 'react';
 import { Alert, Button, Select } from 'antd';
 import { assertDocumentResult } from '../shared/document';
@@ -16,9 +18,11 @@ import SourceResultView from './SourceResultView';
 export default function TypedRunResults({
   runId,
   entries,
+  rerun,
 }: {
   runId: string;
   entries: TypedResultMeta[];
+  rerun?: () => void;
 }) {
   const [selected, setSelected] = useState(entries[0]?.id),
     [value, setValue] = useState<any>(),
@@ -33,7 +37,8 @@ export default function TypedRunResults({
     void window.flowark
       .request('run.typedResult', { runId, id })
       .then(async (v) => {
-        if (v.type === 'source') await verifySourceResult(v.value);
+        if (v.type === 'source-reduce') await verifyReductionOutput(v.value);
+        else if (v.type === 'source') await verifySourceResult(v.value);
         else if (v.type === 'document') assertDocumentResult(v.value);
         else if (v.type === 'skill') assertSkillVersion(v.value);
         else if (v.type === 'context') assertDataOutput(v.value);
@@ -72,6 +77,14 @@ export default function TypedRunResults({
       )}{' '}
       {value?.type === 'document' && <DocumentResultView key={id} value={value.value} />}{' '}
       {value?.type === 'skill' && <SkillVersionView value={value.value} />}
+      {value?.type === 'source-reduce' && (
+        <SourceReductionPanel
+          key={id}
+          target={{ runId, nodeId: value.nodeId, nodeInstance: value.nodeInstance }}
+          initial={value.value}
+          rerun={rerun}
+        />
+      )}
       {value?.type === 'source' && (
         <SourceResultView runId={runId} nodeId={value.nodeId} value={value.value} />
       )}

@@ -123,6 +123,12 @@ export class Store {
       throw new Error('本地记录位置超出支持范围');
     return n;
   }
+  position(kind: string, id: string): number {
+    const row = this.db.prepare('SELECT rowid AS n FROM documents WHERE kind=? AND id=?').get(kind, id) as { n: number } | undefined;
+    const n = Number(row?.n);
+    if (!Number.isSafeInteger(n) || n < 1) throw new Error('本地记录位置不存在或无效');
+    return n;
+  }
   count(kind: string, after = 0): number {
     return Number(
       (

@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 export const kinds: Record<string, { label: string; icon: LucideIcon; color: string }> = {
+  'source-reduce': { label: '分批整理来源', icon: Workflow, color: '#456bd0' },
   source: { label: '读取完整会话来源', icon: FolderOpen, color: '#6e7f85' },
   context: { label: '配置与状态', icon: Workflow, color: '#526b87' },
   skill: { label: 'Skill工作区', icon: FolderOpen, color: '#6e7f85' },

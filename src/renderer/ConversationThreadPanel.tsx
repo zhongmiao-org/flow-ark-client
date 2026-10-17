@@ -167,6 +167,7 @@ export default function ConversationThreadPanel({
     let queued: unknown,
       scheduled = false;
     const stop = window.flowark.onmessage((raw) => {
+      if ('job' in raw) return;
       if (raw.kind !== 'conversation.thread.snapshot' || raw.sessionId !== id) return;
       if (!queued || raw.sequence > (queued as { sequence: number }).sequence) queued = raw;
       if (scheduled) return;

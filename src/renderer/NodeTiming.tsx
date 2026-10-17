@@ -20,12 +20,13 @@ export default function NodeTiming({
   compact?: boolean;
 }) {
   const id = useId();
-  const [text, setText] = useState(String(node.timeoutMs ?? 60000));
+  const defaultMs = node.type === 'source-reduce' ? 1800000 : 60000;
+  const [text, setText] = useState(String(node.timeoutMs ?? defaultMs));
   const [error, setError] = useState(timeoutError(node.timeoutMs));
   const enabled = node.timeoutMs !== undefined;
   const noDefault = ['condition', 'loop', 'value', 'assert', 'human'].includes(node.type);
   useEffect(() => {
-    setText(String(node.timeoutMs ?? 60000));
+    setText(String(node.timeoutMs ?? defaultMs));
     setError(timeoutError(node.timeoutMs));
   }, [node.id, node.timeoutMs]);
   const help = enabled ? (
@@ -36,7 +37,7 @@ export default function NodeTiming({
     <p>
       {noDefault
         ? '此类节点未配置时没有自身默认期限；仍受父容器期限和运行取消约束。'
-        : '未配置时使用 60000 毫秒（60 秒）；父容器可以更早到期。'}
+        : `未配置时使用 ${defaultMs} 毫秒（${defaultMs / 1000} 秒）；父容器可以更早到期。`}
     </p>
   );
   return (
@@ -53,8 +54,8 @@ export default function NodeTiming({
         onChange={(event) => {
           setError('');
           if (event.target.checked) {
-            setText('60000');
-            change({ ...node, timeoutMs: 60000 });
+            setText(String(defaultMs));
+            change({ ...node, timeoutMs: defaultMs });
           } else {
             const { timeoutMs: _timeout, ...next } = node;
             change(next as Step);

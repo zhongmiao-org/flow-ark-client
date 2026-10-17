@@ -370,6 +370,21 @@ export type Node =
       binding: string;
       operation: 'read';
       cursor: Value;
+    }
+  | {
+      id: string;
+      type: 'source-reduce';
+      version: 1;
+      name?: string;
+      timeoutMs?: number;
+      binding: string;
+      aiBinding: string;
+      instructions: string;
+      schema: {
+        [k: string]: Json;
+      };
+      seed: Value;
+      maxRequests: number;
     };
 export type Value =
   | Json
@@ -620,7 +635,8 @@ export type SkillEvidence =
       label: string;
       note: string;
     }
-  | ConversationCheckpointEvidence;
+  | ConversationCheckpointEvidence
+  | SourceReductionEvidence;
 export type SkillProposalSnapshot = {
   version: 1;
   id: string;
@@ -1012,6 +1028,14 @@ export interface FlowArkP1 {
   ConversationSourceChunk?: ConversationSourceChunk;
   ConversationSourceRead?: ConversationSourceRead;
   ConversationSourceManifestOutput?: ConversationSourceManifestOutput;
+  SourceReductionRecipe?: SourceReductionRecipe;
+  SourceReductionRef?: SourceReductionRef;
+  SourceReductionCheckpoint?: SourceReductionCheckpoint;
+  SourceReductionTransport?: SourceReductionTransport;
+  SourceReductionAttempt?: SourceReductionAttempt;
+  SourceReductionProof?: SourceReductionProof;
+  SourceReductionEvidence?: SourceReductionEvidence;
+  SourceReductionOutput?: SourceReductionOutput;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -1651,6 +1675,34 @@ export interface ConversationCheckpointEvidence {
   label: string;
   sessionId: string;
   checkpointId: string;
+  sha256: string;
+}
+export interface SourceReductionEvidence {
+  kind: 'source-reduction';
+  label: string;
+  proof: SourceReductionProof;
+}
+export interface SourceReductionProof {
+  version: 1;
+  job: SourceReductionRef;
+  checkpointSha256: string;
+  accumulatorSha256: string;
+  chainHash: string;
+  chunks: number;
+  records: number;
+  bytes: number;
+  sha256: string;
+}
+export interface SourceReductionRef {
+  version: 1;
+  jobId: string;
+  source: ConversationArchiveRef;
+  recipeHash: string;
+}
+export interface ConversationArchiveRef {
+  version: 1;
+  archiveId: string;
+  sessionId: string;
   sha256: string;
 }
 export interface SkillDraft {
@@ -2441,12 +2493,6 @@ export interface ConversationArchiveCapture {
   historyCount: number;
   historyHash: string;
 }
-export interface ConversationArchiveRef {
-  version: 1;
-  archiveId: string;
-  sessionId: string;
-  sha256: string;
-}
 export interface ConversationArchiveRecord {
   version: 1;
   archiveId: string;
@@ -2769,4 +2815,63 @@ export interface ConversationSourceManifestOutput {
   source: ConversationArchiveRef;
   manifest: ConversationArchiveManifest;
   current: boolean;
+}
+export interface SourceReductionRecipe {
+  version: 1;
+  provider: 'deepseek' | 'openai-codex';
+  model: string;
+  instructions: string;
+  schema: {
+    [k: string]: Json;
+  };
+  seed: {
+    [k: string]: Json;
+  };
+}
+export interface SourceReductionCheckpoint {
+  version: 1;
+  job: SourceReductionRef;
+  revision: number;
+  next: null | ConversationSourceCursor;
+  accumulator: {
+    [k: string]: Json;
+  };
+  chunks: number;
+  records: number;
+  bytes: number;
+  chainHash: string;
+  lastAttemptId: null | string;
+  sha256: string;
+}
+export interface SourceReductionTransport {
+  body: string;
+  sha256: string;
+}
+export interface SourceReductionAttempt {
+  version: 1;
+  attemptId: string;
+  job: SourceReductionRef;
+  sequence: number;
+  checkpointRevision: number;
+  checkpointSha256: string;
+  runId: string;
+  nodeInstance: string;
+  configurationRevision: string;
+  state: 'prepared' | 'dispatched' | 'response' | 'failed' | 'unknown' | 'committed' | 'abandoned';
+  request: AIRequest;
+  requestSha256: string;
+  transport: null | SourceReductionTransport;
+  outcome: null | AIOutcome;
+}
+export interface SourceReductionOutput {
+  version: 1;
+  job: SourceReductionRef;
+  phase: 'ready' | 'running' | 'attention' | 'complete';
+  revision: number;
+  checkpoint: SourceReductionCheckpoint;
+  pendingAttemptId: null | string;
+  attempts: number;
+  reportedTotalTokens: number;
+  unknownUsageRequests: number;
+  proof: null | SourceReductionProof;
 }

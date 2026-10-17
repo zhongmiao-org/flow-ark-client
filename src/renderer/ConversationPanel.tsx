@@ -261,6 +261,7 @@ export default function ConversationPanel({
       }
     };
     const stop = window.flowark.onmessage((raw) => {
+      if ('job' in raw) return;
       if (raw.kind !== 'conversation.snapshot') return;
       if (raw?.sessionId !== id) return;
       if (!queued || raw.sequence > queued.sequence) queued = raw;

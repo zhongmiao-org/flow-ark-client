@@ -1,6 +1,7 @@
 import { assertContinuousConversationCapabilities } from '../../contracts/continuous-conversation';
 import { assertConversationSourceNode } from '../../contracts/conversation-source';
 import { sourceCapability } from '../shared/conversation-source';
+import { assertSourceReductionNode } from '../../contracts/source-reduction';
 import { skillCapability, skillBudget } from '../shared/skill';
 import {
   browserInspectionCapability,
@@ -32,6 +33,8 @@ export function validateObject<T>(name: string, value: unknown): T {
   return value as T;
 }
 export const capabilities = [
+  'source-reduce-v1',
+  'source-reduce',
   sourceCapability,
   'source',
   browserInspectionCapability,
@@ -94,6 +97,7 @@ export function validateFlow(value: unknown): Flow {
       if (++count > 1000 || all.has(n.id)) throw new Error('节点数量过多或 ID 重复：' + n.id);
       all.add(n.id);
       assertConversationSourceNode(n, flow.requiredCapabilities);
+      assertSourceReductionNode(n, flow.requiredCapabilities);
       if (n.type === 'context' && !flow.requiredCapabilities.includes(templateDataCapability))
         throw Error('配置与状态需要声明template-data-v1能力');
       if (n.type === 'skill') {

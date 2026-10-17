@@ -1,8 +1,15 @@
+import type { SourceReductionOutput } from '../shared/source-reduction';
 import type { ConversationThreadEvent } from '../shared/conversation-thread';
 import type { ArchiveEvent } from '../shared/conversation-archive';
 import { contextBridge, ipcRenderer } from 'electron';
 import type { ConversationEvent } from '../shared/conversation';
 const allowed = new Set([
+  'reduction.forRun',
+  'reduction.detail',
+  'reduction.attempts',
+  'reduction.attempt',
+  'reduction.recover',
+  'reduction.allowRetry',
   'source.list',
   'source.select',
   'source.inspect',
@@ -190,11 +197,11 @@ const allowed = new Set([
 ]);
 contextBridge.exposeInMainWorld('flowark', {
   onmessage: (
-    listener: (event: ConversationEvent | ConversationThreadEvent | ArchiveEvent) => void,
+    listener: (event: ConversationEvent | ConversationThreadEvent | ArchiveEvent | SourceReductionOutput) => void,
   ) => {
     const receive = (
       _event: Electron.IpcRendererEvent,
-      value: ConversationEvent | ConversationThreadEvent | ArchiveEvent,
+      value: ConversationEvent | ConversationThreadEvent | ArchiveEvent | SourceReductionOutput,
     ) => listener(value);
     ipcRenderer.on('flowark:conversation', receive);
     return () => ipcRenderer.removeListener('flowark:conversation', receive);

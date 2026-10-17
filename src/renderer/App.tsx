@@ -1,3 +1,4 @@
+import SourceReductionConfiguration from './SourceReductionConfiguration';
 import SourceNodeConfiguration from './SourceNodeConfiguration';
 import AuthorSdkInfo from './AuthorSdkInfo';
 import SkillNodeConfiguration from './SkillNodeConfiguration';
@@ -3241,6 +3242,9 @@ function Editor({
               ? ['document-extract-v1']
               : []),
             ...(flatten(steps).some((node) => node.type === 'skill') ? ['skill-v1'] : []),
+            ...(flatten(steps).some((node) => node.type === 'source-reduce')
+              ? ['source-reduce-v1', 'conversation-source-read-v1', 'ai-node-v1']
+              : []),
             ...(flatten(steps).some((node) => node.type === 'source')
               ? ['conversation-source-read-v1']
               : []),
@@ -3289,6 +3293,9 @@ function Editor({
                 ? ['document-extract-v1']
                 : []),
               ...(flatten(steps).some((node) => node.type === 'skill') ? ['skill-v1'] : []),
+              ...(flatten(steps).some((node) => node.type === 'source-reduce')
+                ? ['source-reduce-v1', 'conversation-source-read-v1', 'ai-node-v1']
+                : []),
               ...(flatten(steps).some((node) => node.type === 'source')
                 ? ['conversation-source-read-v1']
                 : []),
@@ -4377,6 +4384,16 @@ function Editor({
                                           />
                                         </>
                                       )}
+                                    {selectedNode.type === 'source-reduce' && (
+                                      <SourceReductionConfiguration
+                                        key={selectedNode.id + ':reduce:' + revision}
+                                        node={selectedNode}
+                                        bindings={r.bindings}
+                                        choices={choices}
+                                        change={updateNode}
+                                        changeBindings={(bindings) => setRecord({ ...r, bindings })}
+                                      />
+                                    )}
                                     {selectedNode.type === 'source' && (
                                       <SourceNodeConfiguration
                                         node={selectedNode}

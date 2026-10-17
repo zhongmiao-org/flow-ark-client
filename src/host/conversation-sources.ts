@@ -162,7 +162,7 @@ export class ConversationSources {
       previous.bindings.resources ?? {},
       next,
       walk(flow.steps)
-        .filter((n): n is SourceNode => n.type === 'source')
+        .filter((n) => n.type === 'source' || n.type === 'source-reduce')
         .map((n) => n.binding),
     );
   }

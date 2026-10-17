@@ -1,3 +1,4 @@
+import SourceReductionPanel from './SourceReductionPanel';
 import { Alert, Button, Collapse, Descriptions, Tag } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { ai_receipt_v1 } from '../shared/node-schema.generated';
@@ -117,6 +118,14 @@ function fields(node: Step): [string, string][] {
         ['请求地址', configured(node.url)],
         ['请求头', configured(node.headers)],
         ['请求体', node.method === 'GET' ? 'GET 不发送请求体' : configured(node.body)],
+      ];
+    case 'source-reduce':
+      return [
+        ['来源资源', node.binding],
+        ['本人AI资源', node.aiBinding],
+        ['本批请求上限', String(node.maxRequests)],
+        ['初始数据', configured(node.seed)],
+        ['进度恢复', '完整响应与草稿、下一位置一起保存；未知结果须核对。'],
       ];
     case 'source':
       return [
@@ -319,10 +328,12 @@ export default function RunStepDetails({
   detail,
   step,
   compact = false,
+  rerun,
 }: {
   detail: RunPresentationInput;
   step: RunStepPresentation;
   compact?: boolean;
+  rerun?: () => void;
 }) {
   const configurationRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
@@ -378,6 +389,13 @@ export default function RunStepDetails({
         <div ref={configurationRef} tabIndex={-1}>
           {configuration}
         </div>
+      )}
+      {node?.type === 'source-reduce' && step.instance && (
+        <SourceReductionPanel
+          key={detail.run.id + step.instance}
+          target={{ runId: detail.run.id, nodeId: node.id, nodeInstance: step.instance }}
+          rerun={rerun}
+        />
       )}
       {node?.type === 'ai' && (
         <RunAIOutcome

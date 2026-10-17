@@ -276,7 +276,7 @@ export class TemplateAuthor {
       if (
         !n ||
         !p ||
-        !['ai', 'conversation'].includes(n.type) ||
+        !['ai', 'conversation', 'source-reduce'].includes(n.type) ||
         !('instructions' in n) ||
         n.instructions !== p.body
       ) {

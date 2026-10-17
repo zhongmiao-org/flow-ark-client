@@ -10,7 +10,15 @@ import { flatten } from './flow-editing';
 import { browserActions } from './browser-actions';
 import { runInstancePresenter } from './run-instance-presentation';
 
-export function RunObservation({ detail, compact = false }: { detail: any; compact?: boolean }) {
+export function RunObservation({
+  detail,
+  compact = false,
+  rerun,
+}: {
+  detail: any;
+  compact?: boolean;
+  rerun?: () => void;
+}) {
   const [, updateClock] = useState(0);
   useEffect(() => {
     const timer = setInterval(() => updateClock((tick) => tick + 1), 1000);
@@ -97,7 +105,7 @@ export function RunObservation({ detail, compact = false }: { detail: any; compa
       )}
       {fileNode && <RunFileOperation detail={detail} step={view.step} node={fileNode} />}
       {view.statusNote && !compact && <p className="run-observation-note">{view.statusNote}</p>}
-      <RunStepDetails detail={detail} step={view.step} compact={compact} />
+      <RunStepDetails detail={detail} step={view.step} compact={compact} rerun={rerun} />
     </section>
   );
 }

@@ -173,7 +173,7 @@ export default function RunOutputWorkspace({
               />
             )}
             {detail.typedResults?.length ? (
-              <TypedRunResults runId={detail.run.id} entries={detail.typedResults} />
+              <TypedRunResults runId={detail.run.id} entries={detail.typedResults} rerun={rerun} />
             ) : (
               <DocumentResults snapshot={detail.snapshot} output={detail.output} />
             )}
@@ -182,7 +182,9 @@ export default function RunOutputWorkspace({
               runId={detail.run.id}
               runState={detail.run.state}
             />
-            {detail.typedResults?.some((entry: TypedResultMeta) => entry.type === 'source') ? (
+            {detail.typedResults?.some((entry: TypedResultMeta) =>
+              ['source', 'source-reduce'].includes(entry.type),
+            ) ? (
               <Collapse
                 items={[
                   {

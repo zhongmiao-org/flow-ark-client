@@ -1,0 +1,57 @@
+.reduction-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-surface);
+  color: var(--fa-text-primary);
+}
+.reduction-panel header,
+.reduction-panel footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.reduction-panel p,
+.reduction-panel h3,
+.reduction-panel h4 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.reduction-panel p {
+  line-height: 22px;
+}
+.reduction-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.reduction-scroll {
+  max-height: 480px;
+  overflow: auto;
+  min-width: 0;
+  overscroll-behavior: contain;
+}
+.reduction-value {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 8px;
+}
+.reduction-panel li {
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.reduction-panel footer {
+  padding-top: 8px;
+}

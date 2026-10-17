@@ -12,6 +12,11 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
       detail,
     });
     switch (node.type) {
+      case 'source-reduce':
+        return effect(
+          'network',
+          `读取固定来源“${node.binding}”，使用本人AI资源“${node.aiBinding}”分批整理，本节点本批最多${node.maxRequests}次请求；保存进度，未知结果不自动重试，不自动发布Skill。`,
+        );
       case 'source':
         return effect(
           'read',

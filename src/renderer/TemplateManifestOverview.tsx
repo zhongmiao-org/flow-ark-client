@@ -25,6 +25,8 @@ export const capabilityLabel = (name: string) =>
       'conversation-v2': '持续会话 v2',
       'conversation-checkpoint-v1': '持续会话确认来源',
       'conversation-evidence-v1': '已确认会话来源',
+      'source-reduce': '分批整理来源',
+      'source-reduce-v1': '可恢复的来源整理',
       'conversation-source-read-v1': '完整来源只读读取',
       source: '完整来源读取',
       skill: '个人 Skill',

@@ -50,7 +50,12 @@ export function expandAuthorFlow(d: AuthorDefinition, e: AuthorEntry): Flow {
   for (const binding of e.promptBindings) {
     const node = walk(flow.steps).find((n) => n.id === binding.nodeId),
       p = d.prompts.find((p) => p.id === binding.promptId);
-    if (!node || !p || !['ai', 'conversation'].includes(node.type) || !('instructions' in node))
+    if (
+      !node ||
+      !p ||
+      !['ai', 'conversation', 'source-reduce'].includes(node.type) ||
+      !('instructions' in node)
+    )
       throw Error('提示词目标不可用');
     node.instructions = p.body;
   }

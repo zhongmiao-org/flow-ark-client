@@ -1118,7 +1118,7 @@ export default function TemplateAuthorWorkspace({
                       }}
                       options={definition.entries.flatMap((e) =>
                         flatten(e.flow.steps)
-                          .filter((n) => ['ai', 'conversation'].includes(n.type))
+                          .filter((n) => ['ai', 'conversation', 'source-reduce'].includes(n.type))
                           .map((n) => ({
                             value: JSON.stringify([e.id, n.id]),
                             label: e.id + ' / ' + n.id,

@@ -246,6 +246,7 @@ export default function ConversationArchivePanel({
     };
     read.current = load;
     const stop = window.flowark.onmessage((raw) => {
+      if ('job' in raw) return;
       if (raw.kind !== 'conversation.archive.snapshot' || raw.sessionId !== id) return;
       try {
         const e = archiveEvent(raw),

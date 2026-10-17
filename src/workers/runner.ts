@@ -39,7 +39,7 @@ const rpc = new Rpc(
       emit,
       human: (message, signal) => control!.human(message, signal),
       perform: async (n: Step, resolved: any, instance: string, signal: AbortSignal) => {
-        const timeout = n.timeoutMs ?? 60000;
+        const timeout = n.timeoutMs ?? (n.type === 'source-reduce' ? 1800000 : 60000);
         signal.throwIfAborted();
         if (args.bindings.template)
           await rpc.call('node.authorize', { id: n.id, binding: resolved.binding });
@@ -58,6 +58,22 @@ const rpc = new Rpc(
           } catch (e) {
             cancel();
             throw e;
+          } finally {
+            signal.removeEventListener('abort', cancel);
+          }
+        }
+        if (n.type === 'source-reduce') {
+          const cancel = () => {
+            void rpc.call('reduction.cancel', { nodeInstance: instance }).catch(() => {});
+          };
+          signal.addEventListener('abort', cancel, { once: true });
+          try {
+            signal.throwIfAborted();
+            return await rpc.call(
+              'reduction.node',
+              { nodeId: n.id, nodeInstance: instance, seed: resolved.seed },
+              timeout + 10000,
+            );
           } finally {
             signal.removeEventListener('abort', cancel);
           }
