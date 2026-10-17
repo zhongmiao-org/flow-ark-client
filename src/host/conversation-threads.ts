@@ -50,6 +50,10 @@ import {
 import { digest, now, uid, redactedErrorText } from '../shared/utils';
 import type { Store } from './store';
 import { abortable, ConversationCapacity } from './conversation-request';
+import {
+  conversationArchiveCapture,
+  validateCurrentConversationArchive,
+} from '../../contracts/conversation-archive';
 
 type Saved = {
   scope: string;
@@ -417,6 +421,28 @@ export class ConversationThreads {
     validateConversationEntry(e);
     if (!e || e.sessionId !== id || e.ordinal !== ordinal) throw Error('历史条目不属于本会话');
     return e;
+  }
+  archiveCapture(id: string, revision?: number) {
+    const saved = this.get(id, revision);
+    return conversationArchiveCapture(saved.snapshot, saved.contextRevision);
+  }
+  archiveEntry(id: string, ordinal: number) {
+    if (ordinal > this.get(id).snapshot.historyCount) throw Error('来源请求超出真实历史范围');
+    return structuredClone(this.entry(id, ordinal));
+  }
+  archiveContext(id: string, value: { id: string; sha256: string }) {
+    this.get(id);
+    const c = this.store.get<Context>(kinds.context, value.id);
+    validateConversationContext(c);
+    if (!c || !same(ref(c), value)) throw Error('来源资料引用与本机固定记录不一致');
+    return structuredClone(c);
+  }
+  archiveCurrent(manifest: unknown) {
+    const m = manifest as { capture: { sessionId: string } },
+      saved = this.get(m.capture.sessionId);
+    validateCurrentConversationArchive(manifest, saved.snapshot, saved.contextRevision);
+    this.archiveContext(saved.snapshot.id, saved.snapshot.context);
+    if (saved.snapshot.origin) this.origin(saved.snapshot.id);
   }
   private rows(id: string, selection: Selection): Entry[] {
     return selection.flatMap((r) => (r.kind === 'history' ? [this.entry(id, r.ordinal)] : []));

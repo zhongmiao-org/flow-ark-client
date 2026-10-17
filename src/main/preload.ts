@@ -1,7 +1,17 @@
 import type { ConversationThreadEvent } from '../shared/conversation-thread';
+import type { ArchiveEvent } from '../shared/conversation-archive';
 import { contextBridge, ipcRenderer } from 'electron';
 import type { ConversationEvent } from '../shared/conversation';
 const allowed = new Set([
+  'conversation.archive.latest',
+  'conversation.archive.receipt',
+  'conversation.archive.detail',
+  'conversation.archive.prepare',
+  'conversation.archive.resume',
+  'conversation.archive.cancel',
+  'conversation.archive.page',
+  'conversation.archive.preview',
+  'conversation.archive.confirm',
   'context.debug.get',
   'context.debug.save',
   'context.operations',
@@ -174,10 +184,12 @@ const allowed = new Set([
   'app.showData',
 ]);
 contextBridge.exposeInMainWorld('flowark', {
-  onmessage: (listener: (event: ConversationEvent | ConversationThreadEvent) => void) => {
+  onmessage: (
+    listener: (event: ConversationEvent | ConversationThreadEvent | ArchiveEvent) => void,
+  ) => {
     const receive = (
       _event: Electron.IpcRendererEvent,
-      value: ConversationEvent | ConversationThreadEvent,
+      value: ConversationEvent | ConversationThreadEvent | ArchiveEvent,
     ) => listener(value);
     ipcRenderer.on('flowark:conversation', receive);
     return () => ipcRenderer.removeListener('flowark:conversation', receive);

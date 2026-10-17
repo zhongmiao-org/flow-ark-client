@@ -1,5 +1,6 @@
 import { conversationEvent } from '../shared/conversation';
 import { threadEvent } from '../shared/conversation-thread';
+import { archiveEvent } from '../shared/conversation-archive';
 import { oauthGrant, toolSecretValues } from '../shared/mcp-oauth-grant';
 import {
   app,
@@ -461,9 +462,11 @@ app
           async (method, args) => {
             if (method === 'conversation.message') {
               const event =
-                args?.kind === 'conversation.thread.snapshot'
-                  ? threadEvent(args)
-                  : conversationEvent(args);
+                args?.kind === 'conversation.archive.snapshot'
+                  ? archiveEvent(args)
+                  : args?.kind === 'conversation.thread.snapshot'
+                    ? threadEvent(args)
+                    : conversationEvent(args);
               if (win && !win.isDestroyed() && !win.webContents.isDestroyed())
                 win.webContents.send('flowark:conversation', event);
               return true;

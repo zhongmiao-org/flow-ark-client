@@ -134,6 +134,27 @@
   gap: 12px;
   align-items: center;
 }
+.archive-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.conversation-message.archive-summary {
+  background: var(--fa-bg-surface);
+  border: 1px solid var(--fa-border-default);
+}
+.archive-data {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.archive-data details {
+  border-left: 2px solid var(--fa-border-default);
+  padding-left: 12px;
+}
+.archive-data summary {
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
 @media (max-height: 800px) {
   .page.conversation-page {
     padding: 16px 24px;

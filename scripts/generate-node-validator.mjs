@@ -44,6 +44,9 @@ for (const name of [
     `${schema.$id}#/$defs/Conversation${name}`;
 for (const name of ['Source', 'Preview', 'Request', 'Result', 'Status'])
   validators['trial_' + name.toLowerCase() + '_v1'] = `${schema.$id}#/$defs/SkillTrial${name}`;
+for (const name of ['Capture', 'Ref', 'Record', 'Manifest', 'Cursor', 'Page'])
+  validators['archive_' + name.toLowerCase() + '_v1'] =
+    `${schema.$id}#/$defs/ConversationArchive${name}`;
 validators.document_result_v1 = `${schema.$id}#/$defs/DocumentResult`;
 validators.ai_outcome_v1 = `${schema.$id}#/$defs/AIOutcome`;
 validators.ai_receipt_v1 = `${schema.$id}#/$defs/AINodeReceipt`;

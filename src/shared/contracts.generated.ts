@@ -983,6 +983,12 @@ export interface FlowArkP1 {
   ConversationContextProposal?: ConversationContextProposal;
   ConversationCheckpoint?: ConversationCheckpoint;
   ConversationThreadOutput?: ConversationThreadOutput;
+  ConversationArchiveCapture?: ConversationArchiveCapture;
+  ConversationArchiveRef?: ConversationArchiveRef;
+  ConversationArchiveRecord?: ConversationArchiveRecord;
+  ConversationArchiveManifest?: ConversationArchiveManifest;
+  ConversationArchiveCursor?: ConversationArchiveCursor;
+  ConversationArchivePage?: ConversationArchivePage;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -2399,5 +2405,311 @@ export interface ConversationCheckpoint {
     requestId: string;
   }[];
   confirmedAt: string;
+  sha256: string;
+}
+export interface ConversationArchiveCapture {
+  version: 1;
+  sessionId: string;
+  title: string;
+  revision: number;
+  contextRevision: number;
+  context: ConversationContextRef;
+  origin: ConversationThreadOrigin;
+  historyCount: number;
+  historyHash: string;
+}
+export interface ConversationArchiveRef {
+  version: 1;
+  archiveId: string;
+  sessionId: string;
+  sha256: string;
+}
+export interface ConversationArchiveRecord {
+  version: 1;
+  archiveId: string;
+  ordinal: number;
+  previousHash: string;
+  sha256: string;
+  payload:
+    | {
+        kind: 'origin';
+        snapshot: ConversationSnapshot;
+      }
+    | {
+        kind: 'context';
+        context: ConversationContext;
+      }
+    | {
+        kind: 'history';
+        entry: ConversationThreadEntry;
+      };
+}
+export interface ConversationArchiveManifest {
+  version: 1;
+  id: string;
+  capture: ConversationArchiveCapture;
+  createdAt: string;
+  originRequestCount: number;
+  historyCount: number;
+  contextCount: number;
+  recordCount: number;
+  requestCount: number;
+  completeCount: number;
+  failedCount: number;
+  cancelledCount: number;
+  rootHash: string;
+  tailHash: string;
+  sha256: string;
+}
+export interface ConversationArchiveCursor {
+  source: ConversationArchiveRef;
+  nextOrdinal: number;
+  previousHash: string;
+}
+export interface ConversationArchivePage {
+  version: 1;
+  cursor: ConversationArchiveCursor;
+  /**
+   * @minItems 1
+   * @maxItems 20
+   */
+  records:
+    | [ConversationArchiveRecord]
+    | [ConversationArchiveRecord, ConversationArchiveRecord]
+    | [ConversationArchiveRecord, ConversationArchiveRecord, ConversationArchiveRecord]
+    | [ConversationArchiveRecord, ConversationArchiveRecord, ConversationArchiveRecord, ConversationArchiveRecord]
+    | [
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord
+      ]
+    | [
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord
+      ]
+    | [
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord
+      ]
+    | [
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord
+      ]
+    | [
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord
+      ]
+    | [
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord
+      ]
+    | [
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord
+      ]
+    | [
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord
+      ]
+    | [
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord
+      ]
+    | [
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord
+      ]
+    | [
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord
+      ]
+    | [
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord
+      ]
+    | [
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord
+      ]
+    | [
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord
+      ]
+    | [
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord
+      ]
+    | [
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord,
+        ConversationArchiveRecord
+      ];
+  next: ConversationArchiveCursor | null;
   sha256: string;
 }

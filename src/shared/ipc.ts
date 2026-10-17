@@ -1,4 +1,5 @@
 import { threadMethods } from './conversation-thread';
+import { archiveMethods } from './conversation-archive';
 import { handoffMethods } from './entry-handoff';
 import { templateSourceSchema } from './template-source';
 import { z } from 'zod';
@@ -86,6 +87,7 @@ export const templateSaveSchema = z
   .strict();
 export type TemplateSave = z.infer<typeof templateSaveSchema>;
 export const methods = {
+  ...archiveMethods,
   ...handoffMethods,
   ...trialMethods,
   ...authorMethods,
