@@ -128,7 +128,8 @@ export type Bridge = {
     listener: (
       event:
         | import('./conversation').ConversationEvent
-        | import('./conversation-thread').ConversationThreadEvent,
+        | import('./conversation-thread').ConversationThreadEvent
+        | import('./conversation-archive').ArchiveEvent,
     ) => void,
   ): () => void;
 };

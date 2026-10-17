@@ -23,6 +23,7 @@ import type { ConversationLeave } from './ConversationPanel';
 import MarkdownBody from './MarkdownBody';
 import ConversationResultView from './ConversationResultView';
 import EditorLeaveDialog from './EditorLeaveDialog';
+import ConversationArchivePanel from './ConversationArchivePanel';
 import './conversation.css';
 const api = (method: string, args: unknown): Promise<any> =>
   window.flowark.request('conversation.thread.' + method, args);
@@ -77,6 +78,7 @@ export default function ConversationThreadPanel({
   const [uncertain, setUncertain] = useState(false);
   const [output, setOutput] = useState<any>();
   const [historicalCheckpoint, setHistoricalCheckpoint] = useState<unknown>();
+  const [archiveOpen, setArchiveOpen] = useState(false);
   useEffect(() => setHistoricalCheckpoint(undefined), [id, head?.latestCheckpoint?.checkpointId]);
   const [leave, setLeave] = useState<{ navigate: () => void; label: string }>();
   const page = useRef<HTMLElement>(null),
@@ -290,7 +292,7 @@ export default function ConversationThreadPanel({
       observer.disconnect();
       window.removeEventListener('resize', measure);
     };
-  }, []);
+  }, [archiveOpen]);
   useLayoutEffect(() => {
     const element = messages.current;
     if (!element) return;
@@ -303,7 +305,7 @@ export default function ConversationThreadPanel({
     if (element.firstElementChild) observer.observe(element.firstElementChild);
     if (!follow.current && latestPage) setShowLatest(true);
     return () => observer.disconnect();
-  }, [history, head?.active?.answer, prepared, checkpoint, latestPage]);
+  }, [history, head?.active?.answer, prepared, checkpoint, latestPage, archiveOpen]);
   const act = async (action: () => Promise<void>) => {
     if (locked.current) return;
     locked.current = true;
@@ -588,423 +590,451 @@ export default function ConversationThreadPanel({
     !!head?.contextProposalId ||
     !!confirmRequest;
   return (
-    <section ref={page} className="page conversation-page" aria-label="持续会话">
-      <header className="conversation-heading">
-        <div>
-          <h1>持续对话 · {head?.title ?? '正在读取'}</h1>
-          <p>访谈与历史持续保存；确认来源后仍可继续补充，Skill 另行确认保存。</p>
-        </div>
-        <Button onClick={() => navigate(back, '待办')}>返回待办</Button>
-      </header>
-      {!head && (
-        <Alert
-          type={error ? 'error' : 'info'}
-          title={error || '正在核对本机会话，恢复不会调用模型'}
-          action={<Button onClick={() => void recover.current()}>重新读取</Button>}
+    <>
+      {archiveOpen && head && (
+        <ConversationArchivePanel
+          id={id}
+          headRevision={head.revision}
+          hasInput={!!text || !!head.active || !!head.contextProposalId}
+          back={() => setArchiveOpen(false)}
         />
       )}
-      {head && (
-        <Card className="conversation-card">
-          <div className="conversation-status">
-            <Tag>
-              {head.contextProposalId
-                ? '新资料待核对'
-                : head.status === 'draft' && origin
-                  ? '等待你补充'
-                  : labels[head.status]}{' '}
-              · 累计 {head.requestCount + (origin?.attempts.length ?? 0)} 次请求 · 无总轮数限制
-            </Tag>
-            {head.latestCheckpoint && (
-              <Tag>{head.checkpointCurrent ? '当前来源已确认' : '旧确认保留 · 新补充待确认'}</Tag>
-            )}
+      <section
+        ref={page}
+        hidden={archiveOpen}
+        className="page conversation-page"
+        aria-label="持续会话"
+      >
+        <header className="conversation-heading">
+          <div>
+            <h1>持续对话 · {head?.title ?? '正在读取'}</h1>
+            <p>访谈与历史持续保存；确认来源后仍可继续补充，Skill 另行确认保存。</p>
           </div>
-          <Collapse
-            className="conversation-review"
-            items={[
-              {
-                key: 'context',
-                label: `查看发送范围（可选） · 已选 ${selection.length}/${head.historyWindow} 轮完整问答`,
-                children: (
-                  <>
-                    <p>
-                      {context?.provider} / {context?.model} · 每轮最长120秒 · 使用你自己的 API
-                      Key，重试也可能计费。
-                    </p>
-                    <p>
-                      旧历史保存在本机。仅发送已选轮次、当前指令、上下文和本次输入；未选内容不会自动总结或删除。必要规则不在本次范围时，请先调整资料或选择。
-                    </p>
-                    <pre>{JSON.stringify(context, null, 2)}</pre>
-                    <pre>{JSON.stringify(selection, null, 2)}</pre>
-                    <Button
-                      disabled={disabled || !text.trim()}
-                      onClick={() => void previewSend().catch(() => {})}
-                    >
-                      查看本次完整发送内容
-                    </Button>
-                  </>
-                ),
-              },
-            ]}
+          <Button onClick={() => navigate(back, '待办')}>返回待办</Button>
+        </header>
+        {!head && (
+          <Alert
+            type={error ? 'error' : 'info'}
+            title={error || '正在核对本机会话，恢复不会调用模型'}
+            action={<Button onClick={() => void recover.current()}>重新读取</Button>}
           />
-          <div
-            ref={messages}
-            className="conversation-messages"
-            role="log"
-            aria-label="持续会话消息"
-            aria-live="off"
-            onScroll={() => {
-              const e = messages.current!;
-              follow.current =
-                latestPageRef.current && e.scrollHeight - e.scrollTop - e.clientHeight < 60;
-              if (follow.current) setShowLatest(false);
-            }}
-          >
-            <div className="conversation-message-list">
-              {proposal && (
-                <Card title="核对新资料与设置">
-                  <p>
-                    旧历史和确认快照保留。采用更新不会自动合并事实冲突；请在后续补充中明确更正与撤回。
-                  </p>
-                  <div className="skill-grid">
-                    <div>
-                      <h4>原设置</h4>
-                      <pre>
-                        {JSON.stringify({ context, historyWindow: head.historyWindow }, null, 2)}
-                      </pre>
-                    </div>
-                    <div>
-                      <h4>提议设置</h4>
-                      <pre>{JSON.stringify(proposal, null, 2)}</pre>
-                    </div>
-                  </div>
-                  <Checkbox
-                    checked={contextReviewed}
-                    onChange={(v) => setContextReviewed(v.target.checked)}
-                  >
-                    已核对资料、指令、模型和历史窗口差异
-                  </Checkbox>
-                  <div className="conversation-actions">
-                    {[true, false].map((v) => (
-                      <Button
-                        key={String(v)}
-                        disabled={busy || !contextReviewed}
-                        onClick={() =>
-                          void act(async () => {
-                            accept.current(
-                              await api('context.adopt', {
-                                id,
-                                revision: head.revision,
-                                proposalId: proposal.id,
-                                accept: v,
-                                reviewed: true,
-                              }),
-                            );
-                            resetReview();
-                          }).catch(() => {})
-                        }
-                      >
-                        {v ? '采用新设置' : '保留原设置'}
-                      </Button>
-                    ))}
-                  </div>
-                </Card>
-              )}
+        )}
+        {head && (
+          <Card className="conversation-card">
+            <div className="conversation-status">
+              <Tag>
+                {head.contextProposalId
+                  ? '新资料待核对'
+                  : head.status === 'draft' && origin
+                    ? '等待你补充'
+                    : labels[head.status]}{' '}
+                · 累计 {head.requestCount + (origin?.attempts.length ?? 0)} 次请求 · 无总轮数限制
+              </Tag>
               {head.latestCheckpoint && (
-                <Collapse
-                  items={[
-                    {
-                      key: 'fixed-source',
-                      label: head.checkpointCurrent
-                        ? '查看当前确认来源'
-                        : '查看上次确认来源（只读保留）',
-                      children: (
-                        <>
-                          <p>
-                            确认快照保持原内容；继续补充后，旧快照不能作为新 Skill 发布的当前来源。
-                          </p>
-                          <Button
-                            disabled={busy}
-                            onClick={() =>
-                              void act(async () => {
-                                const value = await api('checkpoint.detail', {
-                                  id,
-                                  checkpointId: head.latestCheckpoint!.checkpointId,
-                                });
-                                assertThreadCheckpoint(value);
-                                if (
-                                  value.sessionId !== id ||
-                                  value.id !== head.latestCheckpoint!.checkpointId ||
-                                  value.sha256 !== head.latestCheckpoint!.sha256
-                                )
-                                  throw Error('历史确认身份不一致');
-                                setHistoricalCheckpoint(value);
-                              }).catch(() => {})
-                            }
-                          >
-                            读取固定内容
-                          </Button>
-                          {historicalCheckpoint !== undefined && (
-                            <pre tabIndex={0}>{JSON.stringify(historicalCheckpoint, null, 2)}</pre>
-                          )}
-                        </>
-                      ),
-                    },
-                  ]}
-                />
+                <Tag>
+                  {head.checkpointCurrent
+                    ? '所选聊天范围已确认 · 非完整访谈'
+                    : '所选范围旧确认保留'}
+                </Tag>
               )}
-              {origin && (
-                <Collapse
-                  items={[
-                    {
-                      key: 'origin',
-                      label: `原访谈 · ${origin.attempts.length} 次请求（只读保留）`,
-                      children: origin.attempts.map((a) => {
-                        const user = origin.messages.find(
-                            (m) => m.role === 'user' && m.requestId === a.id,
-                          ),
-                          assistant = origin.messages.find(
-                            (m) => m.role === 'assistant' && m.requestId === a.id,
-                          );
-                        return (
-                          <article key={a.id} className="conversation-thread-turn">
-                            <Checkbox
-                              disabled={
-                                busy || !!prepared || !!checkpoint || a.state !== 'complete'
-                              }
-                              checked={selection.some(
-                                (r) => r.kind === 'origin' && r.requestId === a.id,
-                              )}
-                              onChange={(e) =>
-                                pick({ kind: 'origin', requestId: a.id }, e.target.checked)
-                              }
-                            >
-                              采用原访谈本轮
-                            </Checkbox>
-                            <div className="conversation-message is-user">
-                              <strong>你</strong>
-                              <p>{user?.text}</p>
-                            </div>
-                            <div className="conversation-message">
-                              <strong>助手 · {a.state}</strong>
-                              <MarkdownBody text={assistant?.text ?? ''} />
-                              <p>{a.usage === null ? '用量未知' : JSON.stringify(a.usage)}</p>
-                            </div>
-                          </article>
-                        );
-                      }),
-                    },
-                  ]}
-                />
-              )}
-              <div className="conversation-actions">
-                <Button
-                  disabled={busy || !history?.next}
-                  onClick={() => void readPage(true).catch(() => {})}
-                >
-                  加载更早历史
-                </Button>
-                {!latestPage && (
-                  <Button disabled={busy} onClick={() => void readPage(false).catch(() => {})}>
-                    回到最新记录
-                  </Button>
-                )}
-                <span>每页最多20次请求；更早记录保留。可跨页选择完整轮次。</span>
-              </div>
-              {history?.entries.map(entryView)}
-              {latestPage && head.active && (
-                <article className="conversation-thread-turn">
-                  <div className="conversation-message is-user">
-                    <strong>你</strong>
-                    <p>{head.active.text}</p>
-                  </div>
-                  <div className="conversation-message">
-                    <strong>助手 · 正在生成</strong>
-                    <MarkdownBody text={head.active.answer} partial />
-                  </div>
-                </article>
-              )}
-              {!head.historyCount && !origin && (
-                <div className="conversation-message">
-                  <strong>随时补充或更正</strong>
-                  <p>
-                    可以提问、补充事实或表达样本，不必答完固定题单。输入后直接发送；需要时可展开发送范围。
-                  </p>
-                </div>
-              )}
-              {prepared && (
-                <Card title="本次模型实际接收的内容">
-                  <p>
-                    仅下列固定内容会发送。预览5分钟有效；你自己的 Key 费用按服务商实际用量结算。
-                  </p>
-                  <pre tabIndex={0}>{JSON.stringify(prepared.prepared.input, null, 2)}</pre>
-                  <p>历史范围：</p>
-                  <pre>{JSON.stringify(prepared.prepared.selection, null, 2)}</pre>
-                  <p>有效至：{new Date(prepared.expiresAt).toLocaleTimeString()}</p>
-                </Card>
-              )}
-              {checkpoint && (
-                <Card title="固定本次确认来源">
-                  <p>只固定下面选择的完整来源，仍可继续聊天。此操作不生成或发布 Skill。</p>
-                  <pre tabIndex={0}>{JSON.stringify(checkpoint.source, null, 2)}</pre>
-                </Card>
-              )}
-              {output && <ConversationResultView value={output} />}
             </div>
-          </div>
-          {showLatest && (
-            <Button
-              className="conversation-latest"
-              onClick={() => {
-                follow.current = true;
-                setShowLatest(false);
-                messages.current?.scrollTo({ top: messages.current.scrollHeight });
+            <Collapse
+              className="conversation-review"
+              items={[
+                {
+                  key: 'context',
+                  label: `本次聊天范围（可选） · 携带 ${selection.length} 轮完整问答 · 窗口上限 ${head.historyWindow}`,
+                  children: (
+                    <>
+                      <p>
+                        {context?.provider} / {context?.model} · 每轮最长120秒 · 使用你自己的 API
+                        Key，重试也可能计费。
+                      </p>
+                      <p>
+                        旧历史保存在本机。仅发送已选轮次、当前指令、上下文和本次输入；未选内容不会自动总结或删除。必要规则不在本次范围时，请先调整资料或选择。
+                      </p>
+                      <pre>{JSON.stringify(context, null, 2)}</pre>
+                      <pre>{JSON.stringify(selection, null, 2)}</pre>
+                      <Button
+                        disabled={disabled || !text.trim()}
+                        onClick={() => void previewSend().catch(() => {})}
+                      >
+                        查看本次完整发送内容
+                      </Button>
+                      <Button
+                        disabled={disabled || !!text}
+                        onClick={() => void previewCheckpoint().catch(() => {})}
+                      >
+                        固定所选范围（高级）
+                      </Button>
+                    </>
+                  ),
+                },
+              ]}
+            />
+            <div
+              ref={messages}
+              className="conversation-messages"
+              role="log"
+              aria-label="持续会话消息"
+              aria-live="off"
+              onScroll={() => {
+                const e = messages.current!;
+                follow.current =
+                  latestPageRef.current && e.scrollHeight - e.scrollTop - e.clientHeight < 60;
+                if (follow.current) setShowLatest(false);
               }}
             >
-              查看最新回复
-            </Button>
-          )}
-          <div className="conversation-composer">
-            {error && <Alert role="alert" type="error" title={error} />}
-            {notice && <Alert type="info" title={notice} />}
-            {head.error && !error && <p>{head.error}</p>}
-            <label htmlFor={'thread-reply-' + id}>回复或补充</label>
-            <Input.TextArea
-              id={'thread-reply-' + id}
-              value={text}
-              maxLength={4000}
-              disabled={busy || !!head.active || uncertain || !!confirmRequest}
-              autoSize={{ minRows: window.innerHeight <= 800 ? 2 : 3, maxRows: 4 }}
-              placeholder="补充新情况、表达样本，或直接提出问题…"
-              onChange={(e) => {
-                updateText(e.target.value);
-                resetReview();
-              }}
-            />
-            <p className="conversation-input-hint">
-              {context?.provider} / {context?.model} · 使用你自己的 API Key
-              {configuration
-                ? configuration.configured
-                  ? ''
-                  : '（尚未配置）'
-                : '（正在读取配置）'}
-            </p>
-            {checkpoint && (
-              <Checkbox
-                checked={reviewed}
-                disabled={busy || !!confirmRequest}
-                onChange={(e) => setReviewed(e.target.checked)}
-              >
-                已核对本次完整确认来源；Skill 仍需另行确认保存
-              </Checkbox>
-            )}
-            <div className="conversation-actions">
-              {uncertain ? (
-                <>
-                  <Button disabled={busy} onClick={() => void inspect().catch(() => {})}>
-                    核对原请求
-                  </Button>
-                  <Button disabled={busy} onClick={() => void inspect(true).catch(() => {})}>
-                    撤销未开始请求
-                  </Button>
-                </>
-              ) : head.active ? (
-                <Button
-                  disabled={busy}
-                  onClick={() =>
-                    void act(async () =>
-                      accept.current(
-                        await api('cancel', { id, requestId: head.active!.requestId }),
-                      ),
-                    ).catch(() => {})
-                  }
-                >
-                  取消生成
-                </Button>
-              ) : (
-                <>
-                  {checkpoint ? (
-                    <Button
-                      type="primary"
-                      disabled={busy || (!reviewed && !confirmRequest)}
-                      onClick={() => void confirm().catch(() => {})}
+              <div className="conversation-message-list">
+                {proposal && (
+                  <Card title="核对新资料与设置">
+                    <p>
+                      旧历史和确认快照保留。采用更新不会自动合并事实冲突；请在后续补充中明确更正与撤回。
+                    </p>
+                    <div className="skill-grid">
+                      <div>
+                        <h4>原设置</h4>
+                        <pre>
+                          {JSON.stringify({ context, historyWindow: head.historyWindow }, null, 2)}
+                        </pre>
+                      </div>
+                      <div>
+                        <h4>提议设置</h4>
+                        <pre>{JSON.stringify(proposal, null, 2)}</pre>
+                      </div>
+                    </div>
+                    <Checkbox
+                      checked={contextReviewed}
+                      onChange={(v) => setContextReviewed(v.target.checked)}
                     >
-                      {confirmRequest ? '核对原确认' : '确认本次来源'}
-                    </Button>
-                  ) : (
-                    <Button
-                      type="primary"
-                      disabled={disabled || !text.trim() || !configuration}
-                      onClick={() => void send().catch(() => {})}
-                    >
-                      发送
-                    </Button>
-                  )}
+                      已核对资料、指令、模型和历史窗口差异
+                    </Checkbox>
+                    <div className="conversation-actions">
+                      {[true, false].map((v) => (
+                        <Button
+                          key={String(v)}
+                          disabled={busy || !contextReviewed}
+                          onClick={() =>
+                            void act(async () => {
+                              accept.current(
+                                await api('context.adopt', {
+                                  id,
+                                  revision: head.revision,
+                                  proposalId: proposal.id,
+                                  accept: v,
+                                  reviewed: true,
+                                }),
+                              );
+                              resetReview();
+                            }).catch(() => {})
+                          }
+                        >
+                          {v ? '采用新设置' : '保留原设置'}
+                        </Button>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+                {head.latestCheckpoint && (
+                  <Collapse
+                    items={[
+                      {
+                        key: 'fixed-source',
+                        label: head.checkpointCurrent
+                          ? '查看所选聊天范围确认'
+                          : '查看所选范围旧确认（只读保留）',
+                        children: (
+                          <>
+                            <p>
+                              确认快照保持原内容；继续补充后，旧快照不能作为新 Skill
+                              发布的当前来源。
+                            </p>
+                            <Button
+                              disabled={busy}
+                              onClick={() =>
+                                void act(async () => {
+                                  const value = await api('checkpoint.detail', {
+                                    id,
+                                    checkpointId: head.latestCheckpoint!.checkpointId,
+                                  });
+                                  assertThreadCheckpoint(value);
+                                  if (
+                                    value.sessionId !== id ||
+                                    value.id !== head.latestCheckpoint!.checkpointId ||
+                                    value.sha256 !== head.latestCheckpoint!.sha256
+                                  )
+                                    throw Error('历史确认身份不一致');
+                                  setHistoricalCheckpoint(value);
+                                }).catch(() => {})
+                              }
+                            >
+                              读取固定内容
+                            </Button>
+                            {historicalCheckpoint !== undefined && (
+                              <pre tabIndex={0}>
+                                {JSON.stringify(historicalCheckpoint, null, 2)}
+                              </pre>
+                            )}
+                          </>
+                        ),
+                      },
+                    ]}
+                  />
+                )}
+                {origin && (
+                  <Collapse
+                    items={[
+                      {
+                        key: 'origin',
+                        label: `原访谈 · ${origin.attempts.length} 次请求（只读保留）`,
+                        children: origin.attempts.map((a) => {
+                          const user = origin.messages.find(
+                              (m) => m.role === 'user' && m.turnId === a.turnId,
+                            ),
+                            assistant = origin.messages.find(
+                              (m) => m.role === 'assistant' && m.requestId === a.id,
+                            );
+                          return (
+                            <article key={a.id} className="conversation-thread-turn">
+                              <Checkbox
+                                disabled={
+                                  busy || !!prepared || !!checkpoint || a.state !== 'complete'
+                                }
+                                checked={selection.some(
+                                  (r) => r.kind === 'origin' && r.requestId === a.id,
+                                )}
+                                onChange={(e) =>
+                                  pick({ kind: 'origin', requestId: a.id }, e.target.checked)
+                                }
+                              >
+                                采用原访谈本轮
+                              </Checkbox>
+                              <div className="conversation-message is-user">
+                                <strong>你</strong>
+                                <p>{user?.text}</p>
+                              </div>
+                              <div className="conversation-message">
+                                <strong>助手 · {a.state}</strong>
+                                <MarkdownBody text={assistant?.text ?? ''} />
+                                <p>{a.usage === null ? '用量未知' : JSON.stringify(a.usage)}</p>
+                              </div>
+                            </article>
+                          );
+                        }),
+                      },
+                    ]}
+                  />
+                )}
+                <div className="conversation-actions">
                   <Button
-                    disabled={disabled || text === head.draft}
-                    onClick={() => void save().catch(() => {})}
+                    disabled={busy || !history?.next}
+                    onClick={() => void readPage(true).catch(() => {})}
                   >
-                    保存输入
+                    加载更早历史
                   </Button>
-                  {(prepared || checkpoint) && (
-                    <Button disabled={busy || !!confirmRequest} onClick={resetReview}>
-                      返回继续聊天
+                  {!latestPage && (
+                    <Button disabled={busy} onClick={() => void readPage(false).catch(() => {})}>
+                      回到最新记录
                     </Button>
                   )}
-                  {!prepared && !checkpoint && ['failed', 'cancelled'].includes(head.status) && (
-                    <Button
-                      disabled={disabled || (!!text && text !== head.lastEntry?.text)}
-                      onClick={() => void send(head.lastEntry!.requestId).catch(() => {})}
-                    >
-                      重试本轮
-                    </Button>
-                  )}
-                  {!checkpoint && (
-                    <Button
-                      disabled={disabled || !!text || !selection.length}
-                      onClick={() => void previewCheckpoint().catch(() => {})}
-                    >
-                      固定本次来源
-                    </Button>
-                  )}
-                </>
-              )}
-              <Button disabled={busy} onClick={() => void recover.current()}>
-                重新读取
-              </Button>
-              {openFlow && (
-                <Button
-                  disabled={busy}
-                  onClick={() => navigate(() => openFlow(head.flowId), '来源流程')}
-                >
-                  返回来源流程
-                </Button>
-              )}
+                  <span>每页最多20次请求；更早记录保留。可跨页选择完整轮次。</span>
+                </div>
+                {history?.entries.map(entryView)}
+                {latestPage && head.active && (
+                  <article className="conversation-thread-turn">
+                    <div className="conversation-message is-user">
+                      <strong>你</strong>
+                      <p>{head.active.text}</p>
+                    </div>
+                    <div className="conversation-message">
+                      <strong>助手 · 正在生成</strong>
+                      <MarkdownBody text={head.active.answer} partial />
+                    </div>
+                  </article>
+                )}
+                {!head.historyCount && !origin && (
+                  <div className="conversation-message">
+                    <strong>随时补充或更正</strong>
+                    <p>
+                      可以提问、补充事实或表达样本，不必答完固定题单。输入后直接发送；需要时可展开发送范围。
+                    </p>
+                  </div>
+                )}
+                {prepared && (
+                  <Card title="本次模型实际接收的内容">
+                    <p>
+                      仅下列固定内容会发送。预览5分钟有效；你自己的 Key 费用按服务商实际用量结算。
+                    </p>
+                    <pre tabIndex={0}>{JSON.stringify(prepared.prepared.input, null, 2)}</pre>
+                    <p>历史范围：</p>
+                    <pre>{JSON.stringify(prepared.prepared.selection, null, 2)}</pre>
+                    <p>有效至：{new Date(prepared.expiresAt).toLocaleTimeString()}</p>
+                  </Card>
+                )}
+                {checkpoint && (
+                  <Card title="固定所选聊天范围（高级）">
+                    <p>只固定下面选择的完整来源，仍可继续聊天。此操作不生成或发布 Skill。</p>
+                    <pre tabIndex={0}>{JSON.stringify(checkpoint.source, null, 2)}</pre>
+                  </Card>
+                )}
+                {output && <ConversationResultView value={output} />}
+              </div>
             </div>
-            <p className="conversation-finish-hint">
-              聊天先保留，整理与发布分别由你决定；继续聊天不会自动覆盖已发布 Skill 或流程绑定。
-            </p>
-          </div>
-        </Card>
-      )}
-      {leave && (
-        <EditorLeaveDialog
-          name={head?.title ?? '持续会话'}
-          destination={leave.label}
-          draftLabel="输入"
-          stay={() => setLeave(undefined)}
-          discard={() => {
-            const next = leave.navigate;
-            setLeave(undefined);
-            next();
-          }}
-          save={async () => {
-            await save();
-            const next = leave.navigate;
-            setLeave(undefined);
-            next();
-          }}
-        />
-      )}
-    </section>
+            {showLatest && (
+              <Button
+                className="conversation-latest"
+                onClick={() => {
+                  follow.current = true;
+                  setShowLatest(false);
+                  messages.current?.scrollTo({ top: messages.current.scrollHeight });
+                }}
+              >
+                查看最新回复
+              </Button>
+            )}
+            <div className="conversation-composer">
+              {error && <Alert role="alert" type="error" title={error} />}
+              {notice && <Alert type="info" title={notice} />}
+              {head.error && !error && <p>{head.error}</p>}
+              <label htmlFor={'thread-reply-' + id}>回复或补充</label>
+              <Input.TextArea
+                id={'thread-reply-' + id}
+                value={text}
+                maxLength={4000}
+                disabled={busy || !!head.active || uncertain || !!confirmRequest}
+                autoSize={{ minRows: window.innerHeight <= 800 ? 2 : 3, maxRows: 4 }}
+                placeholder="补充新情况、表达样本，或直接提出问题…"
+                onChange={(e) => {
+                  updateText(e.target.value);
+                  resetReview();
+                }}
+              />
+              <p className="conversation-input-hint">
+                {context?.provider} / {context?.model} · 使用你自己的 API Key
+                {configuration
+                  ? configuration.configured
+                    ? ''
+                    : '（尚未配置）'
+                  : '（正在读取配置）'}
+              </p>
+              {checkpoint && (
+                <Checkbox
+                  checked={reviewed}
+                  disabled={busy || !!confirmRequest}
+                  onChange={(e) => setReviewed(e.target.checked)}
+                >
+                  已核对本次完整确认来源；Skill 仍需另行确认保存
+                </Checkbox>
+              )}
+              <div className="conversation-actions">
+                {uncertain ? (
+                  <>
+                    <Button disabled={busy} onClick={() => void inspect().catch(() => {})}>
+                      核对原请求
+                    </Button>
+                    <Button disabled={busy} onClick={() => void inspect(true).catch(() => {})}>
+                      撤销未开始请求
+                    </Button>
+                  </>
+                ) : head.active ? (
+                  <Button
+                    disabled={busy}
+                    onClick={() =>
+                      void act(async () =>
+                        accept.current(
+                          await api('cancel', { id, requestId: head.active!.requestId }),
+                        ),
+                      ).catch(() => {})
+                    }
+                  >
+                    取消生成
+                  </Button>
+                ) : (
+                  <>
+                    {checkpoint ? (
+                      <Button
+                        type="primary"
+                        disabled={busy || (!reviewed && !confirmRequest)}
+                        onClick={() => void confirm().catch(() => {})}
+                      >
+                        {confirmRequest ? '核对原确认' : '确认本次来源'}
+                      </Button>
+                    ) : (
+                      <Button
+                        type="primary"
+                        disabled={disabled || !text.trim() || !configuration}
+                        onClick={() => void send().catch(() => {})}
+                      >
+                        发送
+                      </Button>
+                    )}
+                    <Button
+                      disabled={disabled || text === head.draft}
+                      onClick={() => void save().catch(() => {})}
+                    >
+                      保存输入
+                    </Button>
+                    {(prepared || checkpoint) && (
+                      <Button disabled={busy || !!confirmRequest} onClick={resetReview}>
+                        返回继续聊天
+                      </Button>
+                    )}
+                    {!prepared && !checkpoint && ['failed', 'cancelled'].includes(head.status) && (
+                      <Button
+                        disabled={disabled || (!!text && text !== head.lastEntry?.text)}
+                        onClick={() => void send(head.lastEntry!.requestId).catch(() => {})}
+                      >
+                        重试本轮
+                      </Button>
+                    )}
+                    {!checkpoint && (
+                      <Button
+                        disabled={busy || !!confirmRequest}
+                        onClick={() => setArchiveOpen(true)}
+                      >
+                        完整访谈来源
+                      </Button>
+                    )}
+                  </>
+                )}
+                <Button disabled={busy} onClick={() => void recover.current()}>
+                  重新读取
+                </Button>
+                {openFlow && (
+                  <Button
+                    disabled={busy}
+                    onClick={() => navigate(() => openFlow(head.flowId), '来源流程')}
+                  >
+                    返回来源流程
+                  </Button>
+                )}
+              </div>
+              <p className="conversation-finish-hint">
+                聊天先保留，整理与发布分别由你决定；继续聊天不会自动覆盖已发布 Skill 或流程绑定。
+              </p>
+            </div>
+          </Card>
+        )}
+        {leave && (
+          <EditorLeaveDialog
+            name={head?.title ?? '持续会话'}
+            destination={leave.label}
+            draftLabel="输入"
+            stay={() => setLeave(undefined)}
+            discard={() => {
+              const next = leave.navigate;
+              setLeave(undefined);
+              next();
+            }}
+            save={async () => {
+              await save();
+              const next = leave.navigate;
+              setLeave(undefined);
+              next();
+            }}
+          />
+        )}
+      </section>
+    </>
   );
 }

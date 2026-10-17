@@ -1,4 +1,6 @@
 import { ConversationThreads } from './conversation-threads';
+import { ConversationArchives } from './conversation-archives';
+import { archiveMethods } from '../shared/conversation-archive';
 import { ConversationCapacity } from './conversation-request';
 import { threadMethods } from '../shared/conversation-thread';
 import { EntryHandoffs } from './entry-handoff';
@@ -159,6 +161,7 @@ export class Runtime {
   private secrets: string[] = [];
   private conversations: Conversations;
   private threads: ConversationThreads;
+  private archives: ConversationArchives;
   private documents: DocumentProcesses;
   private skills: Skills;
   private typedResults: TypedResults;
@@ -205,6 +208,16 @@ export class Runtime {
       notify: () => this.system('notification', { title: 'FlowArk 有新的持续会话' }),
       origin: (id, revision) => this.conversations.continuationSource(id, revision),
       capacity: conversationCapacity,
+    });
+    this.archives = new ConversationArchives(this.store, {
+      available: () => this.assertAdmitting(),
+      capture: (id, revision) => this.threads.archiveCapture(id, revision),
+      headRevision: (id) => this.threads.detail(id).revision,
+      current: (manifest) => this.threads.archiveCurrent(manifest),
+      origin: (id) => this.threads.origin(id),
+      context: (id, ref) => this.threads.archiveContext(id, ref),
+      entry: (id, ordinal) => this.threads.archiveEntry(id, ordinal),
+      publish: (event) => this.system('conversation.message', event),
     });
     this.aiSettings = new AISettings(this.store, {
       assertAvailable: () => {
@@ -1833,7 +1846,11 @@ export class Runtime {
       this.desktopPlanning.invalidate();
       this.desktopRuns.cancelAll();
       this.planning.cancelAll();
-      await Promise.all([this.conversations.cancelAll(), this.threads.cancelAll()]);
+      await Promise.all([
+        this.conversations.cancelAll(),
+        this.threads.cancelAll(),
+        this.archives.stop(),
+      ]);
     } catch (error) {
       errors.push(error);
     }
@@ -2005,6 +2022,36 @@ export class Runtime {
       if (method === 'skill.rebase') return this.skills.rebase(v);
       if (method === 'skill.fork') return this.skills.fork(v.id);
       if (method === 'skill.relocate') return this.skills.relocate(v.id, v.path);
+    }
+    if (method.startsWith('conversation.archive.')) {
+      await this.ready;
+      const rule = archiveMethods[method as keyof typeof archiveMethods];
+      if (!rule) throw Error('完整来源IPC方法未授权');
+      const v = rule.parse(args) as any;
+      if (method === 'conversation.archive.latest') return this.archives.latest(v.id);
+      if (method === 'conversation.archive.receipt')
+        return this.archives.receipt(v.id, v.requestId);
+      if (method === 'conversation.archive.detail')
+        return this.archives.detail(v.id, v.operationId);
+      if (method === 'conversation.archive.prepare')
+        return this.archives.prepare(v.id, v.revision, v.requestId);
+      if (method === 'conversation.archive.resume')
+        return this.archives.resume(v.id, v.operationId, v.revision);
+      if (method === 'conversation.archive.cancel')
+        return this.archives.cancel(v.id, v.operationId, v.revision);
+      if (method === 'conversation.archive.page')
+        return this.archives.page(v.id, v.operationId, v.cursor);
+      if (method === 'conversation.archive.preview')
+        return this.archives.preview(v.id, v.operationId, v.revision);
+      if (method === 'conversation.archive.confirm')
+        return this.archives.confirm(
+          v.id,
+          v.operationId,
+          v.revision,
+          v.requestId,
+          v.sha256,
+          v.token,
+        );
     }
     if (method.startsWith('conversation.thread.')) {
       await this.ready;
@@ -2488,7 +2535,11 @@ export class Runtime {
       this.desktopPlanning.invalidate();
       this.desktopRuns.cancelAll();
       this.planning.cancelAll();
-      await Promise.all([this.conversations.cancelAll(), this.threads.cancelAll()]);
+      await Promise.all([
+        this.conversations.cancelAll(),
+        this.threads.cancelAll(),
+        this.archives.stop(),
+      ]);
       await this.skills.stop();
       await this.author.stop();
     } catch (error) {

@@ -1,0 +1,2580 @@
+[
+  {
+    "name": "原访谈与持续补充完整清单",
+    "definition": "ConversationArchiveManifest",
+    "value": {
+      "version": 1,
+      "id": "archive-example-8-14",
+      "capture": {
+        "version": 1,
+        "sessionId": "archive-session",
+        "title": "持续补充 · 虚构示例",
+        "revision": 1000,
+        "contextRevision": 1,
+        "context": {
+          "id": "context-example",
+          "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+        },
+        "origin": {
+          "kind": "conversation",
+          "label": "补充材料",
+          "sessionId": "archive-session",
+          "revision": 4,
+          "sequence": 12,
+          "sha256": "7d0c6e42438ee5ca1c1ed50df379d25435c32fd36a96b7ba6a796f8c20635d98"
+        },
+        "historyCount": 8,
+        "historyHash": "ff6dd1ab4abac3890b39d50448a1af9d828ced6ca6522b341e7fb12ceef6e672"
+      },
+      "createdAt": "2026-10-17T00:00:00.000Z",
+      "originRequestCount": 14,
+      "historyCount": 8,
+      "contextCount": 1,
+      "recordCount": 10,
+      "requestCount": 22,
+      "completeCount": 18,
+      "failedCount": 2,
+      "cancelledCount": 2,
+      "rootHash": "419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3",
+      "tailHash": "a23b01c460c25bedceffc505c6b23ddf0954d6078c72bd62281b5a733e2298df",
+      "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+    },
+    "valid": true
+  },
+  {
+    "name": "固定引用不携带正文或私人路径",
+    "definition": "ConversationArchiveRef",
+    "value": {
+      "version": 1,
+      "archiveId": "archive-example-8-14",
+      "sessionId": "archive-session",
+      "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+    },
+    "valid": true
+  },
+  {
+    "name": "有界完整来源页",
+    "definition": "ConversationArchivePage",
+    "value": {
+      "version": 1,
+      "cursor": {
+        "source": {
+          "version": 1,
+          "archiveId": "archive-example-8-14",
+          "sessionId": "archive-session",
+          "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+        },
+        "nextOrdinal": 1,
+        "previousHash": "419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3"
+      },
+      "records": [
+        {
+          "version": 1,
+          "archiveId": "archive-example-8-14",
+          "ordinal": 1,
+          "previousHash": "419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3",
+          "sha256": "19378721c2620d2ed9dd0febe93497ec9bdaba4dcab95189616f255ee611c577",
+          "payload": {
+            "kind": "origin",
+            "snapshot": {
+              "formatVersion": "1.0",
+              "id": "archive-session",
+              "flowId": "conversation-example",
+              "nodeId": "interview",
+              "title": "补充材料",
+              "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "provider": "deepseek",
+              "model": "explicit-user-model",
+              "instructions": "围绕用户提供的材料提问；未知信息保留未知。",
+              "context": {
+                "材料": "虚构说明"
+              },
+              "maxRequests": 50,
+              "status": "confirmed",
+              "revision": 4,
+              "sequence": 12,
+              "draft": "",
+              "messages": [
+                {
+                  "id": "origin-user-1",
+                  "turnId": "origin-turn-1",
+                  "role": "user",
+                  "text": "虚构旧资料第1项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-1",
+                  "turnId": "origin-turn-1",
+                  "role": "assistant",
+                  "requestId": "origin-request-1",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-2",
+                  "turnId": "origin-turn-2",
+                  "role": "user",
+                  "text": "虚构旧资料第2项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-2",
+                  "turnId": "origin-turn-2",
+                  "role": "assistant",
+                  "requestId": "origin-request-2",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-3",
+                  "turnId": "origin-turn-3",
+                  "role": "user",
+                  "text": "虚构旧资料第3项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-3",
+                  "turnId": "origin-turn-3",
+                  "role": "assistant",
+                  "requestId": "origin-request-3",
+                  "text": "未完成片段",
+                  "state": "partial"
+                },
+                {
+                  "id": "origin-user-4",
+                  "turnId": "origin-turn-4",
+                  "role": "user",
+                  "text": "虚构旧资料第4项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-4",
+                  "turnId": "origin-turn-4",
+                  "role": "assistant",
+                  "requestId": "origin-request-4",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-5",
+                  "turnId": "origin-turn-5",
+                  "role": "user",
+                  "text": "虚构旧资料第5项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-5",
+                  "turnId": "origin-turn-5",
+                  "role": "assistant",
+                  "requestId": "origin-request-5",
+                  "text": "未完成片段",
+                  "state": "partial"
+                },
+                {
+                  "id": "origin-user-6",
+                  "turnId": "origin-turn-6",
+                  "role": "user",
+                  "text": "虚构旧资料第6项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-6",
+                  "turnId": "origin-turn-6",
+                  "role": "assistant",
+                  "requestId": "origin-request-6",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-7",
+                  "turnId": "origin-turn-7",
+                  "role": "user",
+                  "text": "虚构旧资料第7项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-7",
+                  "turnId": "origin-turn-7",
+                  "role": "assistant",
+                  "requestId": "origin-request-7",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-8",
+                  "turnId": "origin-turn-8",
+                  "role": "user",
+                  "text": "虚构旧资料第8项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-8",
+                  "turnId": "origin-turn-8",
+                  "role": "assistant",
+                  "requestId": "origin-request-8",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-9",
+                  "turnId": "origin-turn-9",
+                  "role": "user",
+                  "text": "虚构旧资料第9项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-9",
+                  "turnId": "origin-turn-9",
+                  "role": "assistant",
+                  "requestId": "origin-request-9",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-10",
+                  "turnId": "origin-turn-10",
+                  "role": "user",
+                  "text": "虚构旧资料第10项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-10",
+                  "turnId": "origin-turn-10",
+                  "role": "assistant",
+                  "requestId": "origin-request-10",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-11",
+                  "turnId": "origin-turn-11",
+                  "role": "user",
+                  "text": "虚构旧资料第11项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-11",
+                  "turnId": "origin-turn-11",
+                  "role": "assistant",
+                  "requestId": "origin-request-11",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-12",
+                  "turnId": "origin-turn-12",
+                  "role": "user",
+                  "text": "虚构旧资料第12项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-12",
+                  "turnId": "origin-turn-12",
+                  "role": "assistant",
+                  "requestId": "origin-request-12",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-13",
+                  "turnId": "origin-turn-13",
+                  "role": "user",
+                  "text": "虚构旧资料第13项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-13",
+                  "turnId": "origin-turn-13",
+                  "role": "assistant",
+                  "requestId": "origin-request-13",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-14",
+                  "turnId": "origin-turn-14",
+                  "role": "user",
+                  "text": "虚构旧资料第14项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-14",
+                  "turnId": "origin-turn-14",
+                  "role": "assistant",
+                  "requestId": "origin-request-14",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "origin-request-1",
+                  "turnId": "origin-turn-1",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-2",
+                  "turnId": "origin-turn-2",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-3",
+                  "turnId": "origin-turn-3",
+                  "state": "failed",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-4",
+                  "turnId": "origin-turn-4",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-5",
+                  "turnId": "origin-turn-5",
+                  "state": "cancelled",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-6",
+                  "turnId": "origin-turn-6",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-7",
+                  "turnId": "origin-turn-7",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-8",
+                  "turnId": "origin-turn-8",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-9",
+                  "turnId": "origin-turn-9",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-10",
+                  "turnId": "origin-turn-10",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-11",
+                  "turnId": "origin-turn-11",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-12",
+                  "turnId": "origin-turn-12",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-13",
+                  "turnId": "origin-turn-13",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-14",
+                  "turnId": "origin-turn-14",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                }
+              ],
+              "updatedAt": "2026-10-15T12:00:00.000Z",
+              "error": "",
+              "confirmedAt": "2026-10-15T12:00:00.000Z"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-8-14",
+          "ordinal": 2,
+          "previousHash": "19378721c2620d2ed9dd0febe93497ec9bdaba4dcab95189616f255ee611c577",
+          "sha256": "43cb81d5b8bbf18984530913cde88694426a5193a40a0220ff97cedb3cdad524",
+          "payload": {
+            "kind": "context",
+            "context": {
+              "version": 1,
+              "id": "context-example",
+              "flowId": "flow-example",
+              "nodeId": "interview",
+              "title": "持续补充 · 虚构示例",
+              "provider": "deepseek",
+              "model": "explicit-user-model",
+              "instructions": "围绕所选材料补充，未知保持未知；聊天不自动成为事实或外发许可。",
+              "context": {
+                "material": "虚构资料",
+                "confirmedSkill": null
+              },
+              "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-8-14",
+          "ordinal": 3,
+          "previousHash": "43cb81d5b8bbf18984530913cde88694426a5193a40a0220ff97cedb3cdad524",
+          "sha256": "fa32742a86518e4f1825e651da752666f52385c5c4b098743de79e88dcd75934",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 1,
+              "previousHash": "aa43813fdcd3cf09a22495b029cb582ec5d12c373f9abfa9c81830360e14e93f",
+              "requestId": "archive-request-1",
+              "turnId": "archive-turn-1",
+              "userMessageId": "archive-user-1",
+              "assistantMessageId": "archive-assistant-1",
+              "text": "虚构补充第1项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-1",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "c47c5db8ddce8822fd6653cded381029d7e2348dc19991e8652cfd8a9d8daa58"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-8-14",
+          "ordinal": 4,
+          "previousHash": "fa32742a86518e4f1825e651da752666f52385c5c4b098743de79e88dcd75934",
+          "sha256": "ced3697a00136398f4ae9e25c999551a347d5d10531d3add411b5e3d0c6ffe84",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 2,
+              "previousHash": "c47c5db8ddce8822fd6653cded381029d7e2348dc19991e8652cfd8a9d8daa58",
+              "requestId": "archive-request-2",
+              "turnId": "archive-turn-2",
+              "userMessageId": "archive-user-2",
+              "assistantMessageId": "archive-assistant-2",
+              "text": "虚构补充第2项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-2",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "48860e3a8e39e7848558ca5d7b6ce7dfdfb5e8362700d10575daebdcb6180dac"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-8-14",
+          "ordinal": 5,
+          "previousHash": "ced3697a00136398f4ae9e25c999551a347d5d10531d3add411b5e3d0c6ffe84",
+          "sha256": "456f306992cfeed6775fabeb063a02bb4dfc5ac623e783a86de6cb6d17e2aebb",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 3,
+              "previousHash": "48860e3a8e39e7848558ca5d7b6ce7dfdfb5e8362700d10575daebdcb6180dac",
+              "requestId": "archive-request-3",
+              "turnId": "archive-turn-3",
+              "userMessageId": "archive-user-3",
+              "assistantMessageId": "archive-assistant-3",
+              "text": "虚构补充第3项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "failed",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-3",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "虚构网络故障",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "5a8cfb99786310fd0e0fb198a78d5006278a75b733230fec14136e6afbffdc3b"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-8-14",
+          "ordinal": 6,
+          "previousHash": "456f306992cfeed6775fabeb063a02bb4dfc5ac623e783a86de6cb6d17e2aebb",
+          "sha256": "9569dbc6a8d1960de6e64033b5c06d71601020cec6a1ed8851e97f273e2164d0",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 4,
+              "previousHash": "5a8cfb99786310fd0e0fb198a78d5006278a75b733230fec14136e6afbffdc3b",
+              "requestId": "archive-request-4",
+              "turnId": "archive-turn-3",
+              "userMessageId": "archive-user-3",
+              "assistantMessageId": "archive-assistant-4",
+              "text": "虚构补充第3项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-4",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": "archive-request-3",
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "1b44fe2ded75be0521e0736b699ffd9b8dff13bb2136941e0efd0a6223f8215b"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-8-14",
+          "ordinal": 7,
+          "previousHash": "9569dbc6a8d1960de6e64033b5c06d71601020cec6a1ed8851e97f273e2164d0",
+          "sha256": "5ee02a3196618b806b6d851c57505c1a94e1ff086dfbfdf56776f68fac3f8472",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 5,
+              "previousHash": "1b44fe2ded75be0521e0736b699ffd9b8dff13bb2136941e0efd0a6223f8215b",
+              "requestId": "archive-request-5",
+              "turnId": "archive-turn-5",
+              "userMessageId": "archive-user-5",
+              "assistantMessageId": "archive-assistant-5",
+              "text": "虚构补充第5项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "cancelled",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-5",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "本人取消",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "07299317f887fad0fff43af3b178e7933563b5c5548188ec61f9aef7bf66892a"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-8-14",
+          "ordinal": 8,
+          "previousHash": "5ee02a3196618b806b6d851c57505c1a94e1ff086dfbfdf56776f68fac3f8472",
+          "sha256": "88aa9b1193e37bd5235485f3e774d25efe831a8881b7f2acf26f9294189504be",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 6,
+              "previousHash": "07299317f887fad0fff43af3b178e7933563b5c5548188ec61f9aef7bf66892a",
+              "requestId": "archive-request-6",
+              "turnId": "archive-turn-6",
+              "userMessageId": "archive-user-6",
+              "assistantMessageId": "archive-assistant-6",
+              "text": "虚构补充第6项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-6",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "7a252b61172680db3a18d21eaa1d645e19e3173fa87985637876a758b9c33442"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-8-14",
+          "ordinal": 9,
+          "previousHash": "88aa9b1193e37bd5235485f3e774d25efe831a8881b7f2acf26f9294189504be",
+          "sha256": "7e172ce75e32eef613a8fe97e587db7e5ecb8f947e05ab6d778ee76743c6c476",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 7,
+              "previousHash": "7a252b61172680db3a18d21eaa1d645e19e3173fa87985637876a758b9c33442",
+              "requestId": "archive-request-7",
+              "turnId": "archive-turn-7",
+              "userMessageId": "archive-user-7",
+              "assistantMessageId": "archive-assistant-7",
+              "text": "撤回旧偏好第1项，改为新的明确要求。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-7",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "4a5d0dc2a39455698d8635d003a7b9dbf32b971e9b8820ef7bef4f1643041d73"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-8-14",
+          "ordinal": 10,
+          "previousHash": "7e172ce75e32eef613a8fe97e587db7e5ecb8f947e05ab6d778ee76743c6c476",
+          "sha256": "a23b01c460c25bedceffc505c6b23ddf0954d6078c72bd62281b5a733e2298df",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 8,
+              "previousHash": "4a5d0dc2a39455698d8635d003a7b9dbf32b971e9b8820ef7bef4f1643041d73",
+              "requestId": "archive-request-8",
+              "turnId": "archive-turn-8",
+              "userMessageId": "archive-user-8",
+              "assistantMessageId": "archive-assistant-8",
+              "text": "没有更多补充，请整理草稿。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-8",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "ff6dd1ab4abac3890b39d50448a1af9d828ced6ca6522b341e7fb12ceef6e672"
+            }
+          }
+        }
+      ],
+      "next": null,
+      "sha256": "e9f186cdc4c2b169f890e27bd615a630fd401233068d3089e76941e47d6b18a5"
+    },
+    "valid": true
+  },
+  {
+    "name": "超过24次仍可固定清单",
+    "definition": "ConversationArchiveManifest",
+    "value": {
+      "version": 1,
+      "id": "archive-example-26-14",
+      "capture": {
+        "version": 1,
+        "sessionId": "archive-session",
+        "title": "持续补充 · 虚构示例",
+        "revision": 1000,
+        "contextRevision": 1,
+        "context": {
+          "id": "context-example",
+          "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+        },
+        "origin": {
+          "kind": "conversation",
+          "label": "补充材料",
+          "sessionId": "archive-session",
+          "revision": 4,
+          "sequence": 12,
+          "sha256": "7d0c6e42438ee5ca1c1ed50df379d25435c32fd36a96b7ba6a796f8c20635d98"
+        },
+        "historyCount": 26,
+        "historyHash": "c23a90dd15f896a3667fc5f9a4212a5a389685688eb75c0df69b1a6c0ead0898"
+      },
+      "createdAt": "2026-10-17T00:00:00.000Z",
+      "originRequestCount": 14,
+      "historyCount": 26,
+      "contextCount": 1,
+      "recordCount": 28,
+      "requestCount": 40,
+      "completeCount": 36,
+      "failedCount": 2,
+      "cancelledCount": 2,
+      "rootHash": "b66fab36698b8c204b53fdfcefe7f82c2c27df0a83fcffb8f17c7258ab86fc65",
+      "tailHash": "7ecd4f88f03b50684d794ab82c6b4d2c1ff284f3121de8f4f4eb116b6c8bce87",
+      "sha256": "effe310b34f1ca387e33f231830ffda95cc87dd41a17f68a70a18bd90c9ce444"
+    },
+    "valid": true
+  },
+  {
+    "name": "超过100条记录仍为有界清单",
+    "definition": "ConversationArchiveManifest",
+    "value": {
+      "version": 1,
+      "id": "archive-example-131-0",
+      "capture": {
+        "version": 1,
+        "sessionId": "archive-session",
+        "title": "持续补充 · 虚构示例",
+        "revision": 1000,
+        "contextRevision": 1,
+        "context": {
+          "id": "context-example",
+          "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+        },
+        "origin": null,
+        "historyCount": 131,
+        "historyHash": "2b834ecc79f24bc8b626fbc3dbf9be249a07ae6eaaeb6aa5c79208f2ea7b0433"
+      },
+      "createdAt": "2026-10-17T00:00:00.000Z",
+      "originRequestCount": 0,
+      "historyCount": 131,
+      "contextCount": 1,
+      "recordCount": 132,
+      "requestCount": 131,
+      "completeCount": 129,
+      "failedCount": 1,
+      "cancelledCount": 1,
+      "rootHash": "52daac262552d0bde90e46a7af03c585cecd11eefbf391458d7bfaa879c56148",
+      "tailHash": "4fe66b81c98dc863e49d9266b48679abd6b972ce4a1615431ab69a6907f3d9df",
+      "sha256": "a4fbb67316ce5d2488e67a0977c50aebd4414ee82865229e99cda64d7d1ba404"
+    },
+    "valid": true
+  },
+  {
+    "name": "旧消息可缺少用户requestId",
+    "definition": "ConversationArchiveRecord",
+    "value": {
+      "version": 1,
+      "archiveId": "archive-example-8-14",
+      "ordinal": 1,
+      "previousHash": "419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3",
+      "sha256": "19378721c2620d2ed9dd0febe93497ec9bdaba4dcab95189616f255ee611c577",
+      "payload": {
+        "kind": "origin",
+        "snapshot": {
+          "formatVersion": "1.0",
+          "id": "archive-session",
+          "flowId": "conversation-example",
+          "nodeId": "interview",
+          "title": "补充材料",
+          "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "provider": "deepseek",
+          "model": "explicit-user-model",
+          "instructions": "围绕用户提供的材料提问；未知信息保留未知。",
+          "context": {
+            "材料": "虚构说明"
+          },
+          "maxRequests": 50,
+          "status": "confirmed",
+          "revision": 4,
+          "sequence": 12,
+          "draft": "",
+          "messages": [
+            {
+              "id": "origin-user-1",
+              "turnId": "origin-turn-1",
+              "role": "user",
+              "text": "虚构旧资料第1项；后续更正保留原记录。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-assistant-1",
+              "turnId": "origin-turn-1",
+              "role": "assistant",
+              "requestId": "origin-request-1",
+              "text": "已记录；建议仍需本人核对。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-user-2",
+              "turnId": "origin-turn-2",
+              "role": "user",
+              "text": "虚构旧资料第2项；后续更正保留原记录。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-assistant-2",
+              "turnId": "origin-turn-2",
+              "role": "assistant",
+              "requestId": "origin-request-2",
+              "text": "已记录；建议仍需本人核对。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-user-3",
+              "turnId": "origin-turn-3",
+              "role": "user",
+              "text": "虚构旧资料第3项；后续更正保留原记录。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-assistant-3",
+              "turnId": "origin-turn-3",
+              "role": "assistant",
+              "requestId": "origin-request-3",
+              "text": "未完成片段",
+              "state": "partial"
+            },
+            {
+              "id": "origin-user-4",
+              "turnId": "origin-turn-4",
+              "role": "user",
+              "text": "虚构旧资料第4项；后续更正保留原记录。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-assistant-4",
+              "turnId": "origin-turn-4",
+              "role": "assistant",
+              "requestId": "origin-request-4",
+              "text": "已记录；建议仍需本人核对。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-user-5",
+              "turnId": "origin-turn-5",
+              "role": "user",
+              "text": "虚构旧资料第5项；后续更正保留原记录。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-assistant-5",
+              "turnId": "origin-turn-5",
+              "role": "assistant",
+              "requestId": "origin-request-5",
+              "text": "未完成片段",
+              "state": "partial"
+            },
+            {
+              "id": "origin-user-6",
+              "turnId": "origin-turn-6",
+              "role": "user",
+              "text": "虚构旧资料第6项；后续更正保留原记录。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-assistant-6",
+              "turnId": "origin-turn-6",
+              "role": "assistant",
+              "requestId": "origin-request-6",
+              "text": "已记录；建议仍需本人核对。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-user-7",
+              "turnId": "origin-turn-7",
+              "role": "user",
+              "text": "虚构旧资料第7项；后续更正保留原记录。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-assistant-7",
+              "turnId": "origin-turn-7",
+              "role": "assistant",
+              "requestId": "origin-request-7",
+              "text": "已记录；建议仍需本人核对。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-user-8",
+              "turnId": "origin-turn-8",
+              "role": "user",
+              "text": "虚构旧资料第8项；后续更正保留原记录。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-assistant-8",
+              "turnId": "origin-turn-8",
+              "role": "assistant",
+              "requestId": "origin-request-8",
+              "text": "已记录；建议仍需本人核对。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-user-9",
+              "turnId": "origin-turn-9",
+              "role": "user",
+              "text": "虚构旧资料第9项；后续更正保留原记录。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-assistant-9",
+              "turnId": "origin-turn-9",
+              "role": "assistant",
+              "requestId": "origin-request-9",
+              "text": "已记录；建议仍需本人核对。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-user-10",
+              "turnId": "origin-turn-10",
+              "role": "user",
+              "text": "虚构旧资料第10项；后续更正保留原记录。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-assistant-10",
+              "turnId": "origin-turn-10",
+              "role": "assistant",
+              "requestId": "origin-request-10",
+              "text": "已记录；建议仍需本人核对。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-user-11",
+              "turnId": "origin-turn-11",
+              "role": "user",
+              "text": "虚构旧资料第11项；后续更正保留原记录。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-assistant-11",
+              "turnId": "origin-turn-11",
+              "role": "assistant",
+              "requestId": "origin-request-11",
+              "text": "已记录；建议仍需本人核对。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-user-12",
+              "turnId": "origin-turn-12",
+              "role": "user",
+              "text": "虚构旧资料第12项；后续更正保留原记录。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-assistant-12",
+              "turnId": "origin-turn-12",
+              "role": "assistant",
+              "requestId": "origin-request-12",
+              "text": "已记录；建议仍需本人核对。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-user-13",
+              "turnId": "origin-turn-13",
+              "role": "user",
+              "text": "虚构旧资料第13项；后续更正保留原记录。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-assistant-13",
+              "turnId": "origin-turn-13",
+              "role": "assistant",
+              "requestId": "origin-request-13",
+              "text": "已记录；建议仍需本人核对。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-user-14",
+              "turnId": "origin-turn-14",
+              "role": "user",
+              "text": "虚构旧资料第14项；后续更正保留原记录。",
+              "state": "complete"
+            },
+            {
+              "id": "origin-assistant-14",
+              "turnId": "origin-turn-14",
+              "role": "assistant",
+              "requestId": "origin-request-14",
+              "text": "已记录；建议仍需本人核对。",
+              "state": "complete"
+            }
+          ],
+          "attempts": [
+            {
+              "id": "origin-request-1",
+              "turnId": "origin-turn-1",
+              "state": "complete",
+              "providerRequestId": "",
+              "model": "explicit-user-model",
+              "usage": null
+            },
+            {
+              "id": "origin-request-2",
+              "turnId": "origin-turn-2",
+              "state": "complete",
+              "providerRequestId": "",
+              "model": "explicit-user-model",
+              "usage": null
+            },
+            {
+              "id": "origin-request-3",
+              "turnId": "origin-turn-3",
+              "state": "failed",
+              "providerRequestId": "",
+              "model": "explicit-user-model",
+              "usage": null
+            },
+            {
+              "id": "origin-request-4",
+              "turnId": "origin-turn-4",
+              "state": "complete",
+              "providerRequestId": "",
+              "model": "explicit-user-model",
+              "usage": null
+            },
+            {
+              "id": "origin-request-5",
+              "turnId": "origin-turn-5",
+              "state": "cancelled",
+              "providerRequestId": "",
+              "model": "explicit-user-model",
+              "usage": null
+            },
+            {
+              "id": "origin-request-6",
+              "turnId": "origin-turn-6",
+              "state": "complete",
+              "providerRequestId": "",
+              "model": "explicit-user-model",
+              "usage": null
+            },
+            {
+              "id": "origin-request-7",
+              "turnId": "origin-turn-7",
+              "state": "complete",
+              "providerRequestId": "",
+              "model": "explicit-user-model",
+              "usage": null
+            },
+            {
+              "id": "origin-request-8",
+              "turnId": "origin-turn-8",
+              "state": "complete",
+              "providerRequestId": "",
+              "model": "explicit-user-model",
+              "usage": null
+            },
+            {
+              "id": "origin-request-9",
+              "turnId": "origin-turn-9",
+              "state": "complete",
+              "providerRequestId": "",
+              "model": "explicit-user-model",
+              "usage": null
+            },
+            {
+              "id": "origin-request-10",
+              "turnId": "origin-turn-10",
+              "state": "complete",
+              "providerRequestId": "",
+              "model": "explicit-user-model",
+              "usage": null
+            },
+            {
+              "id": "origin-request-11",
+              "turnId": "origin-turn-11",
+              "state": "complete",
+              "providerRequestId": "",
+              "model": "explicit-user-model",
+              "usage": null
+            },
+            {
+              "id": "origin-request-12",
+              "turnId": "origin-turn-12",
+              "state": "complete",
+              "providerRequestId": "",
+              "model": "explicit-user-model",
+              "usage": null
+            },
+            {
+              "id": "origin-request-13",
+              "turnId": "origin-turn-13",
+              "state": "complete",
+              "providerRequestId": "",
+              "model": "explicit-user-model",
+              "usage": null
+            },
+            {
+              "id": "origin-request-14",
+              "turnId": "origin-turn-14",
+              "state": "complete",
+              "providerRequestId": "",
+              "model": "explicit-user-model",
+              "usage": null
+            }
+          ],
+          "updatedAt": "2026-10-15T12:00:00.000Z",
+          "error": "",
+          "confirmedAt": "2026-10-15T12:00:00.000Z"
+        }
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "实际失败请求保留输入和片段",
+    "definition": "ConversationArchiveRecord",
+    "value": {
+      "version": 1,
+      "archiveId": "archive-example-8-14",
+      "ordinal": 5,
+      "previousHash": "ced3697a00136398f4ae9e25c999551a347d5d10531d3add411b5e3d0c6ffe84",
+      "sha256": "456f306992cfeed6775fabeb063a02bb4dfc5ac623e783a86de6cb6d17e2aebb",
+      "payload": {
+        "kind": "history",
+        "entry": {
+          "version": 1,
+          "sessionId": "archive-session",
+          "ordinal": 3,
+          "previousHash": "48860e3a8e39e7848558ca5d7b6ce7dfdfb5e8362700d10575daebdcb6180dac",
+          "requestId": "archive-request-3",
+          "turnId": "archive-turn-3",
+          "userMessageId": "archive-user-3",
+          "assistantMessageId": "archive-assistant-3",
+          "text": "虚构补充第3项。",
+          "answer": "已保留来源；助手建议不自动成为事实。",
+          "state": "failed",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "archive-input-3",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "虚构网络故障",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "5a8cfb99786310fd0e0fb198a78d5006278a75b733230fec14136e6afbffdc3b"
+        }
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "引用不接受凭据",
+    "definition": "ConversationArchiveRef",
+    "value": {
+      "version": 1,
+      "archiveId": "archive-example-8-14",
+      "sessionId": "archive-session",
+      "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d",
+      "apiKey": "forbidden-example"
+    },
+    "valid": false
+  },
+  {
+    "name": "引用不接受路径",
+    "definition": "ConversationArchiveRef",
+    "value": {
+      "version": 1,
+      "archiveId": "archive-example-8-14",
+      "sessionId": "archive-session",
+      "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d",
+      "path": "/not-a-binding"
+    },
+    "valid": false
+  },
+  {
+    "name": "版本未知拒绝",
+    "definition": "ConversationArchiveRef",
+    "value": {
+      "version": 2,
+      "archiveId": "archive-example-8-14",
+      "sessionId": "archive-session",
+      "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+    },
+    "valid": false
+  },
+  {
+    "name": "来源不能充当Skill事实或处理覆盖",
+    "definition": "SkillEvidence",
+    "value": {
+      "version": 1,
+      "archiveId": "archive-example-8-14",
+      "sessionId": "archive-session",
+      "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d",
+      "kind": "conversation-archive"
+    },
+    "valid": false
+  },
+  {
+    "name": "单页不能为空",
+    "definition": "ConversationArchivePage",
+    "value": {
+      "version": 1,
+      "cursor": {
+        "source": {
+          "version": 1,
+          "archiveId": "archive-example-8-14",
+          "sessionId": "archive-session",
+          "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+        },
+        "nextOrdinal": 1,
+        "previousHash": "419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3"
+      },
+      "records": [],
+      "next": null,
+      "sha256": "e9f186cdc4c2b169f890e27bd615a630fd401233068d3089e76941e47d6b18a5"
+    },
+    "valid": false
+  },
+  {
+    "name": "单页不能超过20条",
+    "definition": "ConversationArchivePage",
+    "value": {
+      "version": 1,
+      "cursor": {
+        "source": {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "sessionId": "archive-session",
+          "sha256": "effe310b34f1ca387e33f231830ffda95cc87dd41a17f68a70a18bd90c9ce444"
+        },
+        "nextOrdinal": 1,
+        "previousHash": "b66fab36698b8c204b53fdfcefe7f82c2c27df0a83fcffb8f17c7258ab86fc65"
+      },
+      "records": [
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 1,
+          "previousHash": "b66fab36698b8c204b53fdfcefe7f82c2c27df0a83fcffb8f17c7258ab86fc65",
+          "sha256": "4def790f7d835d0a35a1f8ae16133aa919a8952dc6df7bd5ffee0de90814268c",
+          "payload": {
+            "kind": "origin",
+            "snapshot": {
+              "formatVersion": "1.0",
+              "id": "archive-session",
+              "flowId": "conversation-example",
+              "nodeId": "interview",
+              "title": "补充材料",
+              "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "provider": "deepseek",
+              "model": "explicit-user-model",
+              "instructions": "围绕用户提供的材料提问；未知信息保留未知。",
+              "context": {
+                "材料": "虚构说明"
+              },
+              "maxRequests": 50,
+              "status": "confirmed",
+              "revision": 4,
+              "sequence": 12,
+              "draft": "",
+              "messages": [
+                {
+                  "id": "origin-user-1",
+                  "turnId": "origin-turn-1",
+                  "role": "user",
+                  "text": "虚构旧资料第1项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-1",
+                  "turnId": "origin-turn-1",
+                  "role": "assistant",
+                  "requestId": "origin-request-1",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-2",
+                  "turnId": "origin-turn-2",
+                  "role": "user",
+                  "text": "虚构旧资料第2项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-2",
+                  "turnId": "origin-turn-2",
+                  "role": "assistant",
+                  "requestId": "origin-request-2",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-3",
+                  "turnId": "origin-turn-3",
+                  "role": "user",
+                  "text": "虚构旧资料第3项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-3",
+                  "turnId": "origin-turn-3",
+                  "role": "assistant",
+                  "requestId": "origin-request-3",
+                  "text": "未完成片段",
+                  "state": "partial"
+                },
+                {
+                  "id": "origin-user-4",
+                  "turnId": "origin-turn-4",
+                  "role": "user",
+                  "text": "虚构旧资料第4项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-4",
+                  "turnId": "origin-turn-4",
+                  "role": "assistant",
+                  "requestId": "origin-request-4",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-5",
+                  "turnId": "origin-turn-5",
+                  "role": "user",
+                  "text": "虚构旧资料第5项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-5",
+                  "turnId": "origin-turn-5",
+                  "role": "assistant",
+                  "requestId": "origin-request-5",
+                  "text": "未完成片段",
+                  "state": "partial"
+                },
+                {
+                  "id": "origin-user-6",
+                  "turnId": "origin-turn-6",
+                  "role": "user",
+                  "text": "虚构旧资料第6项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-6",
+                  "turnId": "origin-turn-6",
+                  "role": "assistant",
+                  "requestId": "origin-request-6",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-7",
+                  "turnId": "origin-turn-7",
+                  "role": "user",
+                  "text": "虚构旧资料第7项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-7",
+                  "turnId": "origin-turn-7",
+                  "role": "assistant",
+                  "requestId": "origin-request-7",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-8",
+                  "turnId": "origin-turn-8",
+                  "role": "user",
+                  "text": "虚构旧资料第8项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-8",
+                  "turnId": "origin-turn-8",
+                  "role": "assistant",
+                  "requestId": "origin-request-8",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-9",
+                  "turnId": "origin-turn-9",
+                  "role": "user",
+                  "text": "虚构旧资料第9项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-9",
+                  "turnId": "origin-turn-9",
+                  "role": "assistant",
+                  "requestId": "origin-request-9",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-10",
+                  "turnId": "origin-turn-10",
+                  "role": "user",
+                  "text": "虚构旧资料第10项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-10",
+                  "turnId": "origin-turn-10",
+                  "role": "assistant",
+                  "requestId": "origin-request-10",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-11",
+                  "turnId": "origin-turn-11",
+                  "role": "user",
+                  "text": "虚构旧资料第11项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-11",
+                  "turnId": "origin-turn-11",
+                  "role": "assistant",
+                  "requestId": "origin-request-11",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-12",
+                  "turnId": "origin-turn-12",
+                  "role": "user",
+                  "text": "虚构旧资料第12项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-12",
+                  "turnId": "origin-turn-12",
+                  "role": "assistant",
+                  "requestId": "origin-request-12",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-13",
+                  "turnId": "origin-turn-13",
+                  "role": "user",
+                  "text": "虚构旧资料第13项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-13",
+                  "turnId": "origin-turn-13",
+                  "role": "assistant",
+                  "requestId": "origin-request-13",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-user-14",
+                  "turnId": "origin-turn-14",
+                  "role": "user",
+                  "text": "虚构旧资料第14项；后续更正保留原记录。",
+                  "state": "complete"
+                },
+                {
+                  "id": "origin-assistant-14",
+                  "turnId": "origin-turn-14",
+                  "role": "assistant",
+                  "requestId": "origin-request-14",
+                  "text": "已记录；建议仍需本人核对。",
+                  "state": "complete"
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "origin-request-1",
+                  "turnId": "origin-turn-1",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-2",
+                  "turnId": "origin-turn-2",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-3",
+                  "turnId": "origin-turn-3",
+                  "state": "failed",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-4",
+                  "turnId": "origin-turn-4",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-5",
+                  "turnId": "origin-turn-5",
+                  "state": "cancelled",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-6",
+                  "turnId": "origin-turn-6",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-7",
+                  "turnId": "origin-turn-7",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-8",
+                  "turnId": "origin-turn-8",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-9",
+                  "turnId": "origin-turn-9",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-10",
+                  "turnId": "origin-turn-10",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-11",
+                  "turnId": "origin-turn-11",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-12",
+                  "turnId": "origin-turn-12",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-13",
+                  "turnId": "origin-turn-13",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                },
+                {
+                  "id": "origin-request-14",
+                  "turnId": "origin-turn-14",
+                  "state": "complete",
+                  "providerRequestId": "",
+                  "model": "explicit-user-model",
+                  "usage": null
+                }
+              ],
+              "updatedAt": "2026-10-15T12:00:00.000Z",
+              "error": "",
+              "confirmedAt": "2026-10-15T12:00:00.000Z"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 2,
+          "previousHash": "4def790f7d835d0a35a1f8ae16133aa919a8952dc6df7bd5ffee0de90814268c",
+          "sha256": "27eab5c0c36f3dadfee9edcc045d3ee7d572985af07850ff637b50f6e9a11ac2",
+          "payload": {
+            "kind": "context",
+            "context": {
+              "version": 1,
+              "id": "context-example",
+              "flowId": "flow-example",
+              "nodeId": "interview",
+              "title": "持续补充 · 虚构示例",
+              "provider": "deepseek",
+              "model": "explicit-user-model",
+              "instructions": "围绕所选材料补充，未知保持未知；聊天不自动成为事实或外发许可。",
+              "context": {
+                "material": "虚构资料",
+                "confirmedSkill": null
+              },
+              "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 3,
+          "previousHash": "27eab5c0c36f3dadfee9edcc045d3ee7d572985af07850ff637b50f6e9a11ac2",
+          "sha256": "dfa09307f4dbb865dbf524f2788e7c9d7f6237aea46550811c624f813e630f97",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 1,
+              "previousHash": "aa43813fdcd3cf09a22495b029cb582ec5d12c373f9abfa9c81830360e14e93f",
+              "requestId": "archive-request-1",
+              "turnId": "archive-turn-1",
+              "userMessageId": "archive-user-1",
+              "assistantMessageId": "archive-assistant-1",
+              "text": "虚构补充第1项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-1",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "c47c5db8ddce8822fd6653cded381029d7e2348dc19991e8652cfd8a9d8daa58"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 4,
+          "previousHash": "dfa09307f4dbb865dbf524f2788e7c9d7f6237aea46550811c624f813e630f97",
+          "sha256": "9732f086a584f2bc3210da7d78076b93b2fbaf1487ff5ea077ba9965ee0fb6d1",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 2,
+              "previousHash": "c47c5db8ddce8822fd6653cded381029d7e2348dc19991e8652cfd8a9d8daa58",
+              "requestId": "archive-request-2",
+              "turnId": "archive-turn-2",
+              "userMessageId": "archive-user-2",
+              "assistantMessageId": "archive-assistant-2",
+              "text": "虚构补充第2项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-2",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "48860e3a8e39e7848558ca5d7b6ce7dfdfb5e8362700d10575daebdcb6180dac"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 5,
+          "previousHash": "9732f086a584f2bc3210da7d78076b93b2fbaf1487ff5ea077ba9965ee0fb6d1",
+          "sha256": "27146062ee3e79a74679177fd2e8e0e54d5a8b224a99c1e2f8fe4fca442fe24e",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 3,
+              "previousHash": "48860e3a8e39e7848558ca5d7b6ce7dfdfb5e8362700d10575daebdcb6180dac",
+              "requestId": "archive-request-3",
+              "turnId": "archive-turn-3",
+              "userMessageId": "archive-user-3",
+              "assistantMessageId": "archive-assistant-3",
+              "text": "虚构补充第3项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "failed",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-3",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "虚构网络故障",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "5a8cfb99786310fd0e0fb198a78d5006278a75b733230fec14136e6afbffdc3b"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 6,
+          "previousHash": "27146062ee3e79a74679177fd2e8e0e54d5a8b224a99c1e2f8fe4fca442fe24e",
+          "sha256": "ff853a74e3807587d745a95cde1732c38216c0d38737d8c47dd3fd69e8f14574",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 4,
+              "previousHash": "5a8cfb99786310fd0e0fb198a78d5006278a75b733230fec14136e6afbffdc3b",
+              "requestId": "archive-request-4",
+              "turnId": "archive-turn-3",
+              "userMessageId": "archive-user-3",
+              "assistantMessageId": "archive-assistant-4",
+              "text": "虚构补充第3项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-4",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": "archive-request-3",
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "1b44fe2ded75be0521e0736b699ffd9b8dff13bb2136941e0efd0a6223f8215b"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 7,
+          "previousHash": "ff853a74e3807587d745a95cde1732c38216c0d38737d8c47dd3fd69e8f14574",
+          "sha256": "8a21012642187ca97ef2b778ef0c4c4cbec3d7931c5f4001fb6a6a29d43649fb",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 5,
+              "previousHash": "1b44fe2ded75be0521e0736b699ffd9b8dff13bb2136941e0efd0a6223f8215b",
+              "requestId": "archive-request-5",
+              "turnId": "archive-turn-5",
+              "userMessageId": "archive-user-5",
+              "assistantMessageId": "archive-assistant-5",
+              "text": "虚构补充第5项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "cancelled",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-5",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "本人取消",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "07299317f887fad0fff43af3b178e7933563b5c5548188ec61f9aef7bf66892a"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 8,
+          "previousHash": "8a21012642187ca97ef2b778ef0c4c4cbec3d7931c5f4001fb6a6a29d43649fb",
+          "sha256": "393b42ae30502bf5b71e4bcfe994e441e6b8e2aacda45d97a51fd504d641f244",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 6,
+              "previousHash": "07299317f887fad0fff43af3b178e7933563b5c5548188ec61f9aef7bf66892a",
+              "requestId": "archive-request-6",
+              "turnId": "archive-turn-6",
+              "userMessageId": "archive-user-6",
+              "assistantMessageId": "archive-assistant-6",
+              "text": "虚构补充第6项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-6",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "7a252b61172680db3a18d21eaa1d645e19e3173fa87985637876a758b9c33442"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 9,
+          "previousHash": "393b42ae30502bf5b71e4bcfe994e441e6b8e2aacda45d97a51fd504d641f244",
+          "sha256": "50c23ca1d87d199079829622d4ec2bf778482d1e527ec931e7b53613df4db38f",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 7,
+              "previousHash": "7a252b61172680db3a18d21eaa1d645e19e3173fa87985637876a758b9c33442",
+              "requestId": "archive-request-7",
+              "turnId": "archive-turn-7",
+              "userMessageId": "archive-user-7",
+              "assistantMessageId": "archive-assistant-7",
+              "text": "撤回旧偏好第1项，改为新的明确要求。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-7",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "4a5d0dc2a39455698d8635d003a7b9dbf32b971e9b8820ef7bef4f1643041d73"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 10,
+          "previousHash": "50c23ca1d87d199079829622d4ec2bf778482d1e527ec931e7b53613df4db38f",
+          "sha256": "a1a380ed15a0f316f72fca4f892c9aa4f3feff5ecc58151244bd717ce77fb954",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 8,
+              "previousHash": "4a5d0dc2a39455698d8635d003a7b9dbf32b971e9b8820ef7bef4f1643041d73",
+              "requestId": "archive-request-8",
+              "turnId": "archive-turn-8",
+              "userMessageId": "archive-user-8",
+              "assistantMessageId": "archive-assistant-8",
+              "text": "没有更多补充，请整理草稿。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-8",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "ff6dd1ab4abac3890b39d50448a1af9d828ced6ca6522b341e7fb12ceef6e672"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 11,
+          "previousHash": "a1a380ed15a0f316f72fca4f892c9aa4f3feff5ecc58151244bd717ce77fb954",
+          "sha256": "fb679d5c47b31054d1f66f333ed72200fdf3adc6d7f3fd1f3ccb9d2c914b26d6",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 9,
+              "previousHash": "ff6dd1ab4abac3890b39d50448a1af9d828ced6ca6522b341e7fb12ceef6e672",
+              "requestId": "archive-request-9",
+              "turnId": "archive-turn-9",
+              "userMessageId": "archive-user-9",
+              "assistantMessageId": "archive-assistant-9",
+              "text": "虚构补充第9项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-9",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "fadadcf4e96ba8d909cc0ce987419b56b34bb7cf201f57decd9a6a7e08d8b60d"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 12,
+          "previousHash": "fb679d5c47b31054d1f66f333ed72200fdf3adc6d7f3fd1f3ccb9d2c914b26d6",
+          "sha256": "ae722ea356dede9d729e3dccf11a3b65ed3ad20a287682391266ace09c58014d",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 10,
+              "previousHash": "fadadcf4e96ba8d909cc0ce987419b56b34bb7cf201f57decd9a6a7e08d8b60d",
+              "requestId": "archive-request-10",
+              "turnId": "archive-turn-10",
+              "userMessageId": "archive-user-10",
+              "assistantMessageId": "archive-assistant-10",
+              "text": "虚构补充第10项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-10",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "7cf657bd36dd271c11f0e55e1950140ce0812b6928490330799f7674a6019219"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 13,
+          "previousHash": "ae722ea356dede9d729e3dccf11a3b65ed3ad20a287682391266ace09c58014d",
+          "sha256": "2b8bdb8bbac185c9979ab37fc9e3ac680bc72f9a0ace57961a54c8b5db9bf984",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 11,
+              "previousHash": "7cf657bd36dd271c11f0e55e1950140ce0812b6928490330799f7674a6019219",
+              "requestId": "archive-request-11",
+              "turnId": "archive-turn-11",
+              "userMessageId": "archive-user-11",
+              "assistantMessageId": "archive-assistant-11",
+              "text": "虚构补充第11项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-11",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "fdb05c7c7e302b8641bc5ee3cdd2740e8947a65f6a4d9cd4c6274f90f75d60be"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 14,
+          "previousHash": "2b8bdb8bbac185c9979ab37fc9e3ac680bc72f9a0ace57961a54c8b5db9bf984",
+          "sha256": "e2e2c59f286e93a3bd387020aae709c2fd7c57c44fa1079a6346f9d8c783e765",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 12,
+              "previousHash": "fdb05c7c7e302b8641bc5ee3cdd2740e8947a65f6a4d9cd4c6274f90f75d60be",
+              "requestId": "archive-request-12",
+              "turnId": "archive-turn-12",
+              "userMessageId": "archive-user-12",
+              "assistantMessageId": "archive-assistant-12",
+              "text": "虚构补充第12项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-12",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "aca218dcbf3b74d9e8a8946509309c3099f2de8b1735717e961f304781bad844"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 15,
+          "previousHash": "e2e2c59f286e93a3bd387020aae709c2fd7c57c44fa1079a6346f9d8c783e765",
+          "sha256": "f2d8354eb947074a5d2e4f9b54c3cbc77034582865ef987b685bc5fa7350f665",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 13,
+              "previousHash": "aca218dcbf3b74d9e8a8946509309c3099f2de8b1735717e961f304781bad844",
+              "requestId": "archive-request-13",
+              "turnId": "archive-turn-13",
+              "userMessageId": "archive-user-13",
+              "assistantMessageId": "archive-assistant-13",
+              "text": "虚构补充第13项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-13",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "759702a80e416433bd80e18f91108a49cb6f0000cef7a6b17ee12a1c9f4961be"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 16,
+          "previousHash": "f2d8354eb947074a5d2e4f9b54c3cbc77034582865ef987b685bc5fa7350f665",
+          "sha256": "5835afbacc3afea63dc36838786347e9f1e3ec8dc64e511709e766cacc7df0c1",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 14,
+              "previousHash": "759702a80e416433bd80e18f91108a49cb6f0000cef7a6b17ee12a1c9f4961be",
+              "requestId": "archive-request-14",
+              "turnId": "archive-turn-14",
+              "userMessageId": "archive-user-14",
+              "assistantMessageId": "archive-assistant-14",
+              "text": "虚构补充第14项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-14",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "687b0bca259a53bdf42161d5800c767046697c588455ee8e18e411142294d7c8"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 17,
+          "previousHash": "5835afbacc3afea63dc36838786347e9f1e3ec8dc64e511709e766cacc7df0c1",
+          "sha256": "343ab048817e380c3f0d5a311452ef6f374fc0b1f63d83116687b0e4f969f7a1",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 15,
+              "previousHash": "687b0bca259a53bdf42161d5800c767046697c588455ee8e18e411142294d7c8",
+              "requestId": "archive-request-15",
+              "turnId": "archive-turn-15",
+              "userMessageId": "archive-user-15",
+              "assistantMessageId": "archive-assistant-15",
+              "text": "虚构补充第15项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-15",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "65127c2502eddccdf9bcc0d7bf0bed0029fcf3470794a6f85094b148432888e2"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 18,
+          "previousHash": "343ab048817e380c3f0d5a311452ef6f374fc0b1f63d83116687b0e4f969f7a1",
+          "sha256": "771644fc2afa13b5a132a6f06dc554fc58f1d812e434618a12a95b80172cacb3",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 16,
+              "previousHash": "65127c2502eddccdf9bcc0d7bf0bed0029fcf3470794a6f85094b148432888e2",
+              "requestId": "archive-request-16",
+              "turnId": "archive-turn-16",
+              "userMessageId": "archive-user-16",
+              "assistantMessageId": "archive-assistant-16",
+              "text": "虚构补充第16项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-16",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "427b17e25ffe455681c946476c0c4b9e2a6760c4cba135eb34f5f65b4f913864"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 19,
+          "previousHash": "771644fc2afa13b5a132a6f06dc554fc58f1d812e434618a12a95b80172cacb3",
+          "sha256": "18f725471c8d5a0cc76d41ee839310477d51c72e88f71afd6603830b37469b5c",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 17,
+              "previousHash": "427b17e25ffe455681c946476c0c4b9e2a6760c4cba135eb34f5f65b4f913864",
+              "requestId": "archive-request-17",
+              "turnId": "archive-turn-17",
+              "userMessageId": "archive-user-17",
+              "assistantMessageId": "archive-assistant-17",
+              "text": "虚构补充第17项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-17",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "28742d9ed9a876f9148b640d49e1f679f39013f1652ddcfd5426e1215eb5df23"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 20,
+          "previousHash": "18f725471c8d5a0cc76d41ee839310477d51c72e88f71afd6603830b37469b5c",
+          "sha256": "720b848adc3aee037dd589b6f9b3d8fdca8d265620d1a05e5aa3e61d590a31b1",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 18,
+              "previousHash": "28742d9ed9a876f9148b640d49e1f679f39013f1652ddcfd5426e1215eb5df23",
+              "requestId": "archive-request-18",
+              "turnId": "archive-turn-18",
+              "userMessageId": "archive-user-18",
+              "assistantMessageId": "archive-assistant-18",
+              "text": "虚构补充第18项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-18",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "1dcbbf82f6e94cde8c874f2d422dc30894371f9c52c41c30bd4fa0baf252b65d"
+            }
+          }
+        },
+        {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "ordinal": 21,
+          "previousHash": "720b848adc3aee037dd589b6f9b3d8fdca8d265620d1a05e5aa3e61d590a31b1",
+          "sha256": "f8d0ad535fb42ff6a4ef89c159168d537630cebe99338937092c17f8d9c75758",
+          "payload": {
+            "kind": "history",
+            "entry": {
+              "version": 1,
+              "sessionId": "archive-session",
+              "ordinal": 19,
+              "previousHash": "1dcbbf82f6e94cde8c874f2d422dc30894371f9c52c41c30bd4fa0baf252b65d",
+              "requestId": "archive-request-19",
+              "turnId": "archive-turn-19",
+              "userMessageId": "archive-user-19",
+              "assistantMessageId": "archive-assistant-19",
+              "text": "虚构补充第19项。",
+              "answer": "已保留来源；助手建议不自动成为事实。",
+              "state": "complete",
+              "model": "explicit-user-model",
+              "providerRequestId": "",
+              "usage": null,
+              "inputId": "archive-input-19",
+              "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "context": {
+                "id": "context-example",
+                "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+              },
+              "retryOf": null,
+              "error": "",
+              "finishedAt": "2026-10-17T00:00:00.000Z",
+              "sha256": "fe5d46aa0d186dca1ca8699d870f16e24decc27685d4a2616102c9fbf93a74b8"
+            }
+          }
+        }
+      ],
+      "next": {
+        "source": {
+          "version": 1,
+          "archiveId": "archive-example-26-14",
+          "sessionId": "archive-session",
+          "sha256": "effe310b34f1ca387e33f231830ffda95cc87dd41a17f68a70a18bd90c9ce444"
+        },
+        "nextOrdinal": 21,
+        "previousHash": "720b848adc3aee037dd589b6f9b3d8fdca8d265620d1a05e5aa3e61d590a31b1"
+      },
+      "sha256": "424f4583757f705e8076e50647fc4663eadb1e55957b35227fc95b912f4458f2"
+    },
+    "valid": false
+  },
+  {
+    "name": "记录类型未知拒绝",
+    "definition": "ConversationArchiveRecord",
+    "value": {
+      "version": 1,
+      "archiveId": "archive-example-8-14",
+      "ordinal": 1,
+      "previousHash": "419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3",
+      "sha256": "19378721c2620d2ed9dd0febe93497ec9bdaba4dcab95189616f255ee611c577",
+      "payload": {
+        "kind": "anything",
+        "value": {}
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "不接受不安全整数",
+    "definition": "ConversationArchiveManifest",
+    "value": {
+      "version": 1,
+      "id": "archive-example-8-14",
+      "capture": {
+        "version": 1,
+        "sessionId": "archive-session",
+        "title": "持续补充 · 虚构示例",
+        "revision": 1000,
+        "contextRevision": 1,
+        "context": {
+          "id": "context-example",
+          "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+        },
+        "origin": {
+          "kind": "conversation",
+          "label": "补充材料",
+          "sessionId": "archive-session",
+          "revision": 4,
+          "sequence": 12,
+          "sha256": "7d0c6e42438ee5ca1c1ed50df379d25435c32fd36a96b7ba6a796f8c20635d98"
+        },
+        "historyCount": 8,
+        "historyHash": "ff6dd1ab4abac3890b39d50448a1af9d828ced6ca6522b341e7fb12ceef6e672"
+      },
+      "createdAt": "2026-10-17T00:00:00.000Z",
+      "originRequestCount": 14,
+      "historyCount": 8,
+      "contextCount": 1,
+      "recordCount": 10,
+      "requestCount": 9007199254740992,
+      "completeCount": 18,
+      "failedCount": 2,
+      "cancelledCount": 2,
+      "rootHash": "419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3",
+      "tailHash": "a23b01c460c25bedceffc505c6b23ddf0954d6078c72bd62281b5a733e2298df",
+      "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+    },
+    "valid": false
+  },
+  {
+    "name": "旧来源总次数按原格式限制",
+    "definition": "ConversationArchiveManifest",
+    "value": {
+      "version": 1,
+      "id": "archive-example-8-14",
+      "capture": {
+        "version": 1,
+        "sessionId": "archive-session",
+        "title": "持续补充 · 虚构示例",
+        "revision": 1000,
+        "contextRevision": 1,
+        "context": {
+          "id": "context-example",
+          "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+        },
+        "origin": {
+          "kind": "conversation",
+          "label": "补充材料",
+          "sessionId": "archive-session",
+          "revision": 4,
+          "sequence": 12,
+          "sha256": "7d0c6e42438ee5ca1c1ed50df379d25435c32fd36a96b7ba6a796f8c20635d98"
+        },
+        "historyCount": 8,
+        "historyHash": "ff6dd1ab4abac3890b39d50448a1af9d828ced6ca6522b341e7fb12ceef6e672"
+      },
+      "createdAt": "2026-10-17T00:00:00.000Z",
+      "originRequestCount": 51,
+      "historyCount": 8,
+      "contextCount": 1,
+      "recordCount": 10,
+      "requestCount": 22,
+      "completeCount": 18,
+      "failedCount": 2,
+      "cancelledCount": 2,
+      "rootHash": "419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3",
+      "tailHash": "a23b01c460c25bedceffc505c6b23ddf0954d6078c72bd62281b5a733e2298df",
+      "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+    },
+    "valid": false
+  },
+  {
+    "name": "必须保留至少当前资料上下文",
+    "definition": "ConversationArchiveManifest",
+    "value": {
+      "version": 1,
+      "id": "archive-example-8-14",
+      "capture": {
+        "version": 1,
+        "sessionId": "archive-session",
+        "title": "持续补充 · 虚构示例",
+        "revision": 1000,
+        "contextRevision": 1,
+        "context": {
+          "id": "context-example",
+          "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+        },
+        "origin": {
+          "kind": "conversation",
+          "label": "补充材料",
+          "sessionId": "archive-session",
+          "revision": 4,
+          "sequence": 12,
+          "sha256": "7d0c6e42438ee5ca1c1ed50df379d25435c32fd36a96b7ba6a796f8c20635d98"
+        },
+        "historyCount": 8,
+        "historyHash": "ff6dd1ab4abac3890b39d50448a1af9d828ced6ca6522b341e7fb12ceef6e672"
+      },
+      "createdAt": "2026-10-17T00:00:00.000Z",
+      "originRequestCount": 14,
+      "historyCount": 8,
+      "contextCount": 0,
+      "recordCount": 10,
+      "requestCount": 22,
+      "completeCount": 18,
+      "failedCount": 2,
+      "cancelledCount": 2,
+      "rootHash": "419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3",
+      "tailHash": "a23b01c460c25bedceffc505c6b23ddf0954d6078c72bd62281b5a733e2298df",
+      "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+    },
+    "valid": false
+  },
+  {
+    "name": "总来源不携带无限数组",
+    "definition": "ConversationArchiveManifest",
+    "value": {
+      "version": 1,
+      "id": "archive-example-8-14",
+      "capture": {
+        "version": 1,
+        "sessionId": "archive-session",
+        "title": "持续补充 · 虚构示例",
+        "revision": 1000,
+        "contextRevision": 1,
+        "context": {
+          "id": "context-example",
+          "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+        },
+        "origin": {
+          "kind": "conversation",
+          "label": "补充材料",
+          "sessionId": "archive-session",
+          "revision": 4,
+          "sequence": 12,
+          "sha256": "7d0c6e42438ee5ca1c1ed50df379d25435c32fd36a96b7ba6a796f8c20635d98"
+        },
+        "historyCount": 8,
+        "historyHash": "ff6dd1ab4abac3890b39d50448a1af9d828ced6ca6522b341e7fb12ceef6e672"
+      },
+      "createdAt": "2026-10-17T00:00:00.000Z",
+      "originRequestCount": 14,
+      "historyCount": 8,
+      "contextCount": 1,
+      "recordCount": 10,
+      "requestCount": 22,
+      "completeCount": 18,
+      "failedCount": 2,
+      "cancelledCount": 2,
+      "rootHash": "419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3",
+      "tailHash": "a23b01c460c25bedceffc505c6b23ddf0954d6078c72bd62281b5a733e2298df",
+      "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d",
+      "allRecords": []
+    },
+    "valid": false
+  }
+]
