@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "source": {
+    "version": 1,
+    "archiveId": "archive-example-8-14",
+    "sessionId": "archive-session",
+    "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+  },
+  "manifest": {
+    "version": 1,
+    "id": "archive-example-8-14",
+    "capture": {
+      "version": 1,
+      "sessionId": "archive-session",
+      "title": "持续补充 · 虚构示例",
+      "revision": 1000,
+      "contextRevision": 1,
+      "context": {
+        "id": "context-example",
+        "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+      },
+      "origin": {
+        "kind": "conversation",
+        "label": "补充材料",
+        "sessionId": "archive-session",
+        "revision": 4,
+        "sequence": 12,
+        "sha256": "7d0c6e42438ee5ca1c1ed50df379d25435c32fd36a96b7ba6a796f8c20635d98"
+      },
+      "historyCount": 8,
+      "historyHash": "ff6dd1ab4abac3890b39d50448a1af9d828ced6ca6522b341e7fb12ceef6e672"
+    },
+    "createdAt": "2026-10-17T00:00:00.000Z",
+    "originRequestCount": 14,
+    "historyCount": 8,
+    "contextCount": 1,
+    "recordCount": 10,
+    "requestCount": 22,
+    "completeCount": 18,
+    "failedCount": 2,
+    "cancelledCount": 2,
+    "rootHash": "419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3",
+    "tailHash": "a23b01c460c25bedceffc505c6b23ddf0954d6078c72bd62281b5a733e2298df",
+    "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+  },
+  "current": true
+}

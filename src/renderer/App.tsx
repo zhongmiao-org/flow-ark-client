@@ -1,3 +1,4 @@
+import SourceNodeConfiguration from './SourceNodeConfiguration';
 import AuthorSdkInfo from './AuthorSdkInfo';
 import SkillNodeConfiguration from './SkillNodeConfiguration';
 import ContextNodeConfiguration from './ContextNodeConfiguration';
@@ -3240,6 +3241,9 @@ function Editor({
               ? ['document-extract-v1']
               : []),
             ...(flatten(steps).some((node) => node.type === 'skill') ? ['skill-v1'] : []),
+            ...(flatten(steps).some((node) => node.type === 'source')
+              ? ['conversation-source-read-v1']
+              : []),
             ...(flatten(steps).some((node) => node.type === 'conversation' && node.version === 1)
               ? ['conversation-v1', 'conversation-evidence-v1']
               : []),
@@ -3285,6 +3289,9 @@ function Editor({
                 ? ['document-extract-v1']
                 : []),
               ...(flatten(steps).some((node) => node.type === 'skill') ? ['skill-v1'] : []),
+              ...(flatten(steps).some((node) => node.type === 'source')
+                ? ['conversation-source-read-v1']
+                : []),
               ...(flatten(steps).some((node) => node.type === 'conversation' && node.version === 1)
                 ? ['conversation-v1', 'conversation-evidence-v1']
                 : []),
@@ -4370,6 +4377,21 @@ function Editor({
                                           />
                                         </>
                                       )}
+                                    {selectedNode.type === 'source' && (
+                                      <SourceNodeConfiguration
+                                        node={selectedNode}
+                                        choices={choices}
+                                        resources={flatten(r.flow.steps)
+                                          .filter((n) => n.type === 'source')
+                                          .map(
+                                            (n) =>
+                                              (
+                                                n as import('../shared/conversation-source').SourceNode
+                                              ).binding,
+                                          )}
+                                        change={updateNode}
+                                      />
+                                    )}
                                     {selectedNode.type === 'document' && (
                                       <DocumentNodeConfiguration
                                         node={selectedNode}

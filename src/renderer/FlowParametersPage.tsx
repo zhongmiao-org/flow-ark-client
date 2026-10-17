@@ -1,4 +1,5 @@
 import SkillPicker from './SkillPicker';
+import SourcePicker from './SourcePicker';
 import { flatten } from './flow-editing';
 import ActionButton from './ActionButton';
 import { changeParameterValues, resolveParameterSources } from '../shared/parameter-sources';
@@ -533,6 +534,38 @@ export default function FlowParametersPage({
                       })
                     }
                   />
+                </div>
+              ))}
+              {[
+                ...new Set(
+                  flatten(draft.flow.steps)
+                    .filter((n) => n.type === 'source')
+                    .map((n) => (n as import('../shared/conversation-source').SourceNode).binding),
+                ),
+              ].map((binding) => (
+                <div key={'source:' + binding}>
+                  <h3>完整会话来源 · {binding}</h3>
+                  {draft.bindings.template ? (
+                    <>
+                      <p>完整来源由实例资源统一管理。</p>
+                      <Button onClick={configuration}>编辑实例资源</Button>
+                    </>
+                  ) : (
+                    <SourcePicker
+                      target={{ kind: 'flow', id: record.id, revision: record.updatedAt }}
+                      binding={binding}
+                      value={draft.bindings.resources?.[binding]}
+                      disabled={!!busy}
+                      change={(value) =>
+                        setDraft((current) => {
+                          const resources = { ...current.bindings.resources };
+                          if (value) resources[binding] = value;
+                          else delete resources[binding];
+                          return { ...current, bindings: { ...current.bindings, resources } };
+                        })
+                      }
+                    />
+                  )}
                 </div>
               ))}
               <h3>凭据引用 · 允许脚本读取</h3>

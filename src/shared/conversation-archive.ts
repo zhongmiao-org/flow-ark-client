@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { archive_capture_v1, archive_manifest_v1, archive_page_v1 } from './node-schema.generated';
+import {
+  archive_capture_v1,
+  archive_manifest_v1,
+  archive_page_v1,
+  archive_record_v1,
+} from './node-schema.generated';
 import { conversationBytes } from './conversation';
 import type {
   ConversationArchiveCapture,
@@ -131,7 +136,7 @@ const canonicalValue = (v: any): any =>
             .map((k) => [k, canonicalValue(v[k])]),
         )
       : v;
-const browserHash = async (value: any) => {
+export const browserHash = async (value: any) => {
   const { sha256: _sha, ...body } = value;
   const bytes = new TextEncoder().encode(JSON.stringify(canonicalValue(body)));
   return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), (b) =>
@@ -186,6 +191,18 @@ export async function verifyArchivePage(
   )
     throw Error('完整来源页终点无效');
   return p;
+}
+export async function verifyArchiveRecord(value: unknown, archiveId: string, ordinal: number) {
+  const r = value as import('./contracts.generated').ConversationArchiveRecord;
+  if (
+    conversationBytes(value) > 1024 * 1024 + 4096 ||
+    !archive_record_v1(value) ||
+    r.archiveId !== archiveId ||
+    r.ordinal !== ordinal ||
+    (await browserHash(r)) !== r.sha256
+  )
+    throw Error('来源原记录的身份、摘要或预算无效');
+  return r;
 }
 const base = { id, operationId: id };
 export const archiveMethods = {

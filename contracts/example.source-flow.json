@@ -1,0 +1,29 @@
+{
+  "formatVersion": "1.0",
+  "id": "read-fixed-source",
+  "name": "读取固定来源",
+  "description": "通用契约示例，不包含私人绑定或正文。",
+  "parameters": {},
+  "requiredCapabilities": [
+    "conversation-source-read-v1"
+  ],
+  "steps": [
+    {
+      "id": "source-manifest",
+      "type": "source",
+      "version": 1,
+      "name": "读取来源清单",
+      "binding": "source",
+      "operation": "manifest"
+    },
+    {
+      "id": "source-first",
+      "type": "source",
+      "version": 1,
+      "name": "从头读取片段",
+      "binding": "source",
+      "operation": "read",
+      "cursor": null
+    }
+  ]
+}

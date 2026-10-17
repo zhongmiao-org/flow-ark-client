@@ -1,6 +1,7 @@
 import type { Manifest } from '../../contracts/package-format';
 import { walk } from '../core/validate';
 import type { Flow } from '../shared/types';
+import { assertPortableSourceFlow } from './source-boundaries';
 
 /** Infer editable types, never user values or defaults. */
 export function parameterSchema(value: unknown): any {
@@ -23,6 +24,7 @@ export function parameterSchema(value: unknown): any {
 
 /** Native nodes expose logical resources; machine paths and grants never participate. */
 export function declareNativeBoundaries(flow: Flow, manifest: Manifest, entryId: string) {
+  assertPortableSourceFlow(flow);
   const entry = manifest.entries.find((e) => e.id === entryId)!;
   const hadDeclaredActions = entry.actions.length > 0;
   const steps = walk(flow.steps);
@@ -62,6 +64,22 @@ export function declareNativeBoundaries(flow: Flow, manifest: Manifest, entryId:
       const access = node.operation === 'read' ? 'read' : 'write';
       node.binding = directory(node.binding, access);
       writes ||= access === 'write';
+    }
+    if (node.type === 'source') {
+      const old = manifest.resources.find((r) => r.id === node.binding);
+      if (old && (old.kind !== 'conversation-source' || old.access !== 'read'))
+        throw Error('完整来源资源类型冲突');
+      if (!old)
+        manifest.resources.push({
+          id: node.binding,
+          name: node.binding,
+          kind: 'conversation-source',
+          access: 'read',
+          required: true,
+        });
+      if (!entry.resources.includes(node.binding)) entry.resources.push(node.binding);
+      if (!entry.capabilities.includes('conversation-source-read-v1'))
+        entry.capabilities.push('conversation-source-read-v1');
     }
     if (node.type === 'skill') {
       if (node.operation === 'propose') {

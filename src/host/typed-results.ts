@@ -15,17 +15,21 @@ import {
   verifyConversationCheckpointEvidence,
 } from '../../contracts/continuous-conversation';
 import type { ConversationCheckpoint } from '../shared/conversation-thread';
+import type { SourceNode } from '../shared/conversation-source';
 export type TypedResultMeta = {
   id: string;
   nodeId: string;
   nodeInstance: string;
-  type: 'document' | 'skill' | 'context' | 'conversation' | 'browser';
+  type: 'document' | 'skill' | 'context' | 'conversation' | 'browser' | 'source';
   label: string;
   bytes: number;
   sha256: string;
 };
 export class TypedResults {
-  constructor(private store: Store) {}
+  constructor(
+    private store: Store,
+    private sourceResult?: (record: FlowRecord, node: SourceNode, value: unknown) => void,
+  ) {}
   save(
     runId: string,
     nodeId: string,
@@ -38,7 +42,8 @@ export class TypedResults {
     const snapshot = this.store.get<FlowRecord>('snapshot', runId);
     const node = snapshot && walk(snapshot.flow.steps).find((n) => n.id === nodeId);
     if (!node || node.type !== type) throw Error('结构化结果不属于当前快照');
-    if (type === 'document') assertDocumentResult(value);
+    if (type === 'source') this.checkSource(snapshot!, nodeId, value);
+    else if (type === 'document') assertDocumentResult(value);
     else if (type === 'skill') assertSkillVersion(value);
     else if (type === 'conversation') this.conversationResult(value, node.version);
     else if (type === 'browser') this.browserResult(runId, nodeId, value);
@@ -94,7 +99,9 @@ export class TypedResults {
     )
       throw Error('完整结构化结果尚不可采用');
     if (digest(r.value) !== r.meta.sha256) throw Error('结构化结果摘要不一致');
-    if (r.meta.type === 'document') assertDocumentResult(r.value);
+    if (r.meta.type === 'source')
+      this.checkSource(this.store.get<FlowRecord>('snapshot', runId)!, r.meta.nodeId, r.value);
+    else if (r.meta.type === 'document') assertDocumentResult(r.value);
     else if (r.meta.type === 'context') this.contextResult(runId, r.meta.nodeInstance, r.value);
     else if (r.meta.type === 'conversation') {
       const snapshot = this.store.get<FlowRecord>('snapshot', runId);
@@ -115,7 +122,13 @@ export class TypedResults {
       ...(r.meta.type === 'browser'
         ? { operation: this.browserResult(runId, r.meta.nodeId, r.value) }
         : {}),
+      ...(r.meta.type === 'source' ? { nodeId: r.meta.nodeId } : {}),
     };
+  }
+  private checkSource(record: FlowRecord, nodeId: string, value: unknown) {
+    const node = record && walk(record.flow.steps).find((n) => n.id === nodeId);
+    if (node?.type !== 'source' || !this.sourceResult) throw Error('来源结果不属于固定运行节点');
+    this.sourceResult(record, node, value);
   }
   private browserResult(runId: string, nodeId: string, value: unknown) {
     const snapshot = this.store.get<FlowRecord>('snapshot', runId);

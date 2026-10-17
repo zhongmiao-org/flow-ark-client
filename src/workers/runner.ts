@@ -62,6 +62,14 @@ const rpc = new Rpc(
             signal.removeEventListener('abort', cancel);
           }
         }
+        if (n.type === 'source') {
+          signal.throwIfAborted();
+          return rpc.call(
+            'source.node',
+            { nodeId: n.id, nodeInstance: instance, cursor: resolved.cursor ?? null },
+            timeout + 5000,
+          );
+        }
         if (n.type === 'skill') {
           signal.throwIfAborted();
           return rpc.call(

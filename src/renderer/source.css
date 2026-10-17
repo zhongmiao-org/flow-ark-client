@@ -1,0 +1,36 @@
+.source-picker {
+  display: grid;
+  gap: var(--fa-space-12);
+  min-width: 0;
+}
+.source-picker label,
+.source-picker .source-field {
+  display: grid;
+  gap: var(--fa-space-12);
+  min-width: 0;
+}
+.source-picker .ant-select {
+  width: 100%;
+}
+.source-picker > .ant-tag,
+.source-picker > .ant-btn {
+  justify-self: start;
+}
+.source-picker p {
+  margin: 0;
+  color: var(--fa-text-secondary);
+}
+.source-original {
+  display: grid;
+  gap: var(--fa-space-12);
+  max-height: min(65vh, 700px);
+  overflow: auto;
+  padding: var(--fa-space-4);
+}
+.source-original .ant-card {
+  min-width: 0;
+}
+.source-original .archive-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

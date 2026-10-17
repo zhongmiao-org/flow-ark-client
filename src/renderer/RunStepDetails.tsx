@@ -118,6 +118,12 @@ function fields(node: Step): [string, string][] {
         ['请求头', configured(node.headers)],
         ['请求体', node.method === 'GET' ? 'GET 不发送请求体' : configured(node.body)],
       ];
+    case 'source':
+      return [
+        ['来源资源', node.binding],
+        ['操作', node.operation === 'manifest' ? '读取固定来源清单' : '读取一个有界片段'],
+        ['模型调用', '无，读取不代表AI已整理'],
+      ];
     case 'skill':
       return [
         ['操作', node.operation === 'read' ? '固定确认版本读取' : '创建待确认草稿'],

@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "format": "canonical-record-json-v1",
+  "source": {
+    "version": 1,
+    "archiveId": "archive-example-8-14",
+    "sessionId": "archive-session",
+    "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+  },
+  "recordOrdinal": 1,
+  "byteOffset": 0,
+  "previousHash": "419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3"
+}

@@ -1211,18 +1211,24 @@ export default function TemplateAuthorWorkspace({
                             aria-label={'资源' + (i + 1) + '类型'}
                             value={r.kind}
                             disabled={busy}
-                            options={['directory', 'file', 'browser', 'ai', 'skill'].map(
-                              (value) => ({
-                                value,
-                                label: {
-                                  directory: '目录',
-                                  file: '文件',
-                                  browser: '浏览器',
-                                  ai: 'AI服务',
-                                  skill: '确认Skill',
-                                }[value],
-                              }),
-                            )}
+                            options={[
+                              'directory',
+                              'file',
+                              'browser',
+                              'ai',
+                              'skill',
+                              'conversation-source',
+                            ].map((value) => ({
+                              value,
+                              label: {
+                                directory: '目录',
+                                file: '文件',
+                                browser: '浏览器',
+                                ai: 'AI服务',
+                                skill: '确认Skill',
+                                'conversation-source': '完整会话来源',
+                              }[value],
+                            }))}
                             onChange={(v) => {
                               if (
                                 v !== 'directory' &&
@@ -1248,7 +1254,7 @@ export default function TemplateAuthorWorkspace({
                             disabled={busy}
                             options={(['browser', 'ai'].includes(r.kind)
                               ? ['use']
-                              : r.kind === 'skill'
+                              : ['skill', 'conversation-source'].includes(r.kind)
                                 ? ['read']
                                 : ['read', 'write', 'readwrite']
                             ).map((value) => ({

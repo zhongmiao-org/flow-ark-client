@@ -12,6 +12,11 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
       detail,
     });
     switch (node.type) {
+      case 'source':
+        return effect(
+          'read',
+          `读取来源资源“${node.binding}”的固定${node.operation === 'manifest' ? '清单' : '有界片段'}；不调用模型，不生成Skill。`,
+        );
       case 'context':
         return node.operation === 'state.write'
           ? effect(

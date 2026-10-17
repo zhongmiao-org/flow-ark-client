@@ -1,5 +1,8 @@
 import { ConversationThreads } from './conversation-threads';
 import { ConversationArchives } from './conversation-archives';
+import { ConversationSources } from './conversation-sources';
+import { sourceMethods, type SourceNode } from '../shared/conversation-source';
+import { assertConversationSourceNode } from '../../contracts/conversation-source';
 import { archiveMethods } from '../shared/conversation-archive';
 import { ConversationCapacity } from './conversation-request';
 import { threadMethods } from '../shared/conversation-thread';
@@ -162,6 +165,7 @@ export class Runtime {
   private conversations: Conversations;
   private threads: ConversationThreads;
   private archives: ConversationArchives;
+  private sources: ConversationSources;
   private documents: DocumentProcesses;
   private skills: Skills;
   private typedResults: TypedResults;
@@ -179,7 +183,9 @@ export class Runtime {
     this.artifactFiles = new ArtifactFiles(dataPath);
     this.store = new Store(join(dataPath, 'flowark.sqlite'), key);
     this.store.recover();
-    this.typedResults = new TypedResults(this.store);
+    this.typedResults = new TypedResults(this.store, (record, node, value) =>
+      this.sources.verifyResult(record, node, value),
+    );
     this.documents = new DocumentProcesses(dir, executable);
     this.skills = new Skills(this.store, {
       available: () => this.assertAdmitting(),
@@ -218,6 +224,21 @@ export class Runtime {
       context: (id, ref) => this.threads.archiveContext(id, ref),
       entry: (id, ordinal) => this.threads.archiveEntry(id, ordinal),
       publish: (event) => this.system('conversation.message', event),
+    });
+    this.sources = new ConversationSources(this.store, this.archives, {
+      available: () => this.assertAdmitting(),
+      current: (m) => this.threads.archiveIsCurrent(m),
+      owner: (kind, id) => {
+        if (kind === 'instance') return this.templates.sourceOwner(id);
+        const record = this.store.get<FlowRecord>('flow', id);
+        if (!record || record.bindings.template)
+          throw Error('目标流程不存在，或需要在实例配置中选择来源');
+        return {
+          revision: record.updatedAt,
+          fingerprint: digest(record),
+          resources: record.bindings.resources ?? {},
+        };
+      },
     });
     this.aiSettings = new AISettings(this.store, {
       assertAvailable: () => {
@@ -429,8 +450,13 @@ export class Runtime {
       version: (record, prepared) => this.version(record, prepared),
       dispatch: () => this.dispatch(),
     });
-    this.templates = new Templates(this.store, dataPath, clientVersion, () =>
-      this.system('notification', { title: 'FlowArk 有新的待办' }),
+    this.templates = new Templates(
+      this.store,
+      dataPath,
+      clientVersion,
+      () => this.system('notification', { title: 'FlowArk 有新的待办' }),
+      (id, revision, before, next, allowed) =>
+        this.sources.assertChanges({ kind: 'instance', id }, revision, before, next, allowed),
     );
     this.templateData = new TemplateData(this.store, {
       available: () => this.assertAdmitting(),
@@ -603,6 +629,7 @@ export class Runtime {
       updatedAt: now(),
     };
     for (const id of bindings.credentials) this.localCredentials.assertReadable(id);
+    if (!previous?.bindings.template) this.sources.assertFlow(previous, flow, bindings);
     this.store.put('flow', flow.id, record);
     return record;
   }
@@ -713,6 +740,15 @@ export class Runtime {
     }
     const skillSnapshots = await this.skills.snapshot(record, record.skillSnapshots);
     const steps = walk(flow.steps);
+    for (const n of steps) if (n.type === 'source') this.sources.assertBinding(record, n.binding);
+    if (record.bindings.template) {
+      const { entry, pkg } = await this.templates.context(record);
+      for (const r of pkg.manifest.resources.filter(
+        (r) => r.kind === 'conversation-source' && entry.resources.includes(r.id),
+      ))
+        if (record.bindings.resources?.[r.id] || r.required)
+          this.sources.assertBinding(record, r.id);
+    }
     if (steps.some((n) => n.type === 'browser')) {
       const b = this.store.get<BrowserBinding>('browser', record.bindings.browserId ?? '');
       if (!b) throw new Error('请先选择本机浏览器');
@@ -1370,6 +1406,19 @@ export class Runtime {
       this.typedResults.save(id, node.id, args.nodeInstance, 'context', result);
       return result;
     }
+    if (method === 'source.node') {
+      const node = walk(snapshot.flow.steps).find((n) => n.id === args.nodeId);
+      if (!node || node.type !== 'source') throw Error('来源节点不属于当前运行快照');
+      if (snapshot.bindings.template) {
+        const { entry, pkg } = await this.templates.context(snapshot);
+        assertConversationSourceNode(node, snapshot.flow.requiredCapabilities, pkg.manifest, entry);
+      }
+      this.checkActive(this.active);
+      const result = this.sources.perform(snapshot, node, args.cursor ?? null);
+      this.checkActive(this.active);
+      this.typedResults.save(id, node.id, args.nodeInstance, 'source', result);
+      return result;
+    }
     if (method === 'skill.node') {
       const active = this.active;
       const node = walk(snapshot.flow.steps).find((n) => n.id === args.nodeId);
@@ -1549,7 +1598,9 @@ export class Runtime {
       const node = walk(snapshot.flow.steps).find((n) => n.id === args.id);
       if (!node) throw new Error('节点不属于当前快照');
       const { entry, pkg } = await this.templates.context(snapshot);
-      if (!entry.capabilities.includes(node.type)) throw new Error('入口未声明节点能力');
+      if (node.type === 'source')
+        assertConversationSourceNode(node, snapshot.flow.requiredCapabilities, pkg.manifest, entry);
+      else if (!entry.capabilities.includes(node.type)) throw new Error('入口未声明节点能力');
       if (node.type === 'file' || node.type === 'excel') {
         const binding = args.binding;
         const resource = pkg.manifest.resources.find((r) => r.id === binding);
@@ -2022,6 +2073,25 @@ export class Runtime {
       if (method === 'skill.rebase') return this.skills.rebase(v);
       if (method === 'skill.fork') return this.skills.fork(v.id);
       if (method === 'skill.relocate') return this.skills.relocate(v.id, v.path);
+    }
+    if (method.startsWith('source.')) {
+      await this.ready;
+      const rule = sourceMethods[method as keyof typeof sourceMethods];
+      if (!rule) throw Error('来源IPC方法未授权');
+      const v = rule.parse(args) as any;
+      if (method === 'source.list') return this.sources.list(v.target, v.query, v.cursor);
+      if (method === 'source.select') return this.sources.select(v.target, v.binding, v.ref);
+      if (method === 'source.inspect') return this.sources.inspect(v.target, v.binding, v.ref);
+      if (method === 'source.page') return this.sources.page(v.target, v.binding, v.ref, v.cursor);
+      if (method === 'source.runRecord') {
+        const run = this.store.get<Run>('run', v.runId),
+          snapshot = this.store.get<FlowRecord>('snapshot', v.runId);
+        const node = snapshot && walk(snapshot.flow.steps).find((n) => n.id === v.nodeId);
+        if (run?.state !== 'SUCCEEDED' || !snapshot || node?.type !== 'source')
+          throw Error('来源运行结果尚不可查看');
+        const ref = this.sources.assertBinding(snapshot, node.binding);
+        return this.sources.record(ref, v.ordinal);
+      }
     }
     if (method.startsWith('conversation.archive.')) {
       await this.ready;

@@ -13,6 +13,7 @@ import {
   type Manifest,
 } from '../../contracts/package-format';
 import JSZip from 'jszip';
+import { assertPortableSourceFlow } from './source-boundaries';
 export async function readArchive(path: string): Promise<PackageData> {
   if ((await stat(path)).size > LIMITS.archive) throw new Error('模板压缩包超过 20 MiB');
   return new Promise((resolve, reject) => {
@@ -39,6 +40,8 @@ export async function readArchive(path: string): Promise<PackageData> {
           if (finished) return;
           try {
             const pkg = validatePackage(files);
+            for (const entry of pkg.manifest.entries)
+              assertPortableSourceFlow(materializeFlow(pkg, entry.id));
             finished = true;
             resolve(pkg);
           } catch (e) {
@@ -99,6 +102,8 @@ export async function writeArchive(pkg: PackageData, path: string) {
 }
 export async function archiveBytes(pkg: PackageData) {
   validatePackage(pkg.files);
+  for (const entry of pkg.manifest.entries)
+    assertPortableSourceFlow(materializeFlow(pkg, entry.id));
   const zip = new JSZip();
   for (const [name, content] of [...pkg.files].sort(([a], [b]) => a.localeCompare(b)))
     zip.file(name, content, { date: new Date('2000-01-01T00:00:00Z'), createFolders: false });

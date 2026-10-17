@@ -3,6 +3,11 @@ import type { ArchiveEvent } from '../shared/conversation-archive';
 import { contextBridge, ipcRenderer } from 'electron';
 import type { ConversationEvent } from '../shared/conversation';
 const allowed = new Set([
+  'source.list',
+  'source.select',
+  'source.inspect',
+  'source.page',
+  'source.runRecord',
   'conversation.archive.latest',
   'conversation.archive.receipt',
   'conversation.archive.detail',

@@ -1,3 +1,4 @@
+import { assertConversationSourceNode } from './conversation-source';
 import { assertContinuousConversationCapabilities } from './continuous-conversation';
 /** Normative package validation for contracts 0.32.0, derived from package 2.0. No application imports. */
 import { assertDirectoryDefaults } from './directory-defaults';
@@ -10,7 +11,7 @@ import {validateConfigurationSchema} from './configuration-schema';
 import { validateAuthorMetadata } from './template-authoring';
 export const LIMITS = { archive: 20*1024*1024, total: 100*1024*1024, file: 10*1024*1024, files: 512 };
 export type Entry = { id:string; name:string; flow:string; inputSchema:string; resultSchema:string; schedulable:boolean; capabilities:string[]; resources:string[]; actions:string[] };
-export type Manifest = { packageFormat:'2.0'; id:string; name:string; description:string; version:string; author:string; source:string; minimumClientVersion:string; sdkVersion:'1.0'; configurationSchema:string; stateSchema:string; entries:Entry[]; resources:{id:string;name:string;kind:'file'|'directory'|'browser'|'ai'|'skill';access:'read'|'write'|'readwrite'|'use';required:boolean;defaultDirectoryFrom?:string}[]; actions:{id:string;name:string;description:string;default:'deny'}[]; files:{path:string;size:number;sha256:string}[]; scripts:string[]; dependencies:{name:string;version:string;license:string}[];contentDigest:string };
+export type Manifest = { packageFormat:'2.0'; id:string; name:string; description:string; version:string; author:string; source:string; minimumClientVersion:string; sdkVersion:'1.0'; configurationSchema:string; stateSchema:string; entries:Entry[]; resources:{id:string;name:string;kind:'file'|'directory'|'browser'|'ai'|'skill'|'conversation-source';access:'read'|'write'|'readwrite'|'use';required:boolean;defaultDirectoryFrom?:string}[]; actions:{id:string;name:string;description:string;default:'deny'}[]; files:{path:string;size:number;sha256:string}[]; scripts:string[]; dependencies:{name:string;version:string;license:string}[];contentDigest:string };
 export type PackageData = { manifest:Manifest; files:Map<string,Buffer> };
 export function canonical(value:any):string {
  if (value === undefined) throw new Error('摘要不能包含 undefined');
@@ -53,7 +54,7 @@ export function validatePackage(files:Map<string,Buffer>):PackageData {
  validateConfigurationSchema(jsonFile(files,manifest.configurationSchema));
  for(const e of manifest.entries)validateConfigurationSchema(jsonFile(files,e.inputSchema));
  for(const p of manifest.scripts){if(!p.startsWith('scripts/')||!p.endsWith('.js')||!files.has(p))throw new Error('脚本资源无效');}
- for(const r of manifest.resources){if(r.kind==='skill'&&r.access!=='read')throw new Error('Skill 资源只允许 read');if(['browser','ai'].includes(r.kind)?r.access!=='use':r.access==='use')throw new Error('浏览器和 AI 资源需声明 use');}
+ for(const r of manifest.resources){if(['skill','conversation-source'].includes(r.kind)&&r.access!=='read')throw new Error('Skill 与完整来源资源只允许 read');if(['browser','ai'].includes(r.kind)?r.access!=='use':r.access==='use')throw new Error('浏览器和 AI 资源需声明 use');}
  for(const entry of manifest.entries){
   unique(entry.resources,'入口资源');unique(entry.actions,'入口动作');unique(entry.capabilities,'入口能力');
   for(const id of entry.resources)if(!manifest.resources.some(r=>r.id===id))throw new Error('入口引用未知资源');
@@ -70,6 +71,7 @@ export function validatePackage(files:Map<string,Buffer>):PackageData {
   }if(n.type==='browser'&&n.version===4){assertBrowserInspectionNode(n);if(!flow.requiredCapabilities.includes(browserInspectionCapability))throw new Error('网页只读节点未声明browser-observe-v1能力');}
   assertAIOutcomeCapabilities(n,flow.requiredCapabilities);
   assertContinuousConversationCapabilities(n,flow.requiredCapabilities);
+  assertConversationSourceNode(n,flow.requiredCapabilities,manifest,entry);
   if(n.type==='conversation'&&n.version===2){const resource=manifest.resources.find(r=>r.id===n.binding);if(!entry.capabilities.includes('conversation')||!entry.capabilities.includes('ai')||!entry.resources.includes(n.binding)||resource?.kind!=='ai'||resource.access!=='use')throw new Error('持续会话入口未声明conversation/ai及本入口AI资源');}
   if(n.type==='condition'){walk(n.then,depth+1);walk(n.else,depth+1);}if(n.type==='loop')walk(n.body,depth+1);}};walk(flow.steps);
  }

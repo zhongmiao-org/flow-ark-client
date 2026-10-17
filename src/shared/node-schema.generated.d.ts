@@ -1,4 +1,4 @@
-/* Generated from contracts/p1.schema.json (6702b46ad353aaf9d5bb6bbc12c41e34385c290899da684fda5fd39761b093dc). Do not edit. */
+/* Generated from contracts/p1.schema.json (d36b612b854b31198fe1556cf8702315c44c65fa5a3002a83f153a3744d66657). Do not edit. */
 import type { ValidateFunction } from 'ajv';
 export const node_value_1: ValidateFunction;
 export const node_assert_1: ValidateFunction;
@@ -27,6 +27,7 @@ export const node_skill_1: ValidateFunction;
 export const node_context_1: ValidateFunction;
 export const node_browser_4: ValidateFunction;
 export const node_conversation_2: ValidateFunction;
+export const node_source_1: ValidateFunction;
 export const handoff_preview_v1: ValidateFunction;
 export const handoff_receipt_v1: ValidateFunction;
 export const template_human_review_v1: ValidateFunction;
@@ -54,6 +55,10 @@ export const archive_record_v1: ValidateFunction;
 export const archive_manifest_v1: ValidateFunction;
 export const archive_cursor_v1: ValidateFunction;
 export const archive_page_v1: ValidateFunction;
+export const source_cursor_v1: ValidateFunction;
+export const source_chunk_v1: ValidateFunction;
+export const source_read_v1: ValidateFunction;
+export const source_manifest_output_v1: ValidateFunction;
 export const document_result_v1: ValidateFunction;
 export const ai_outcome_v1: ValidateFunction;
 export const ai_receipt_v1: ValidateFunction;

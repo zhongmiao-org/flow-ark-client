@@ -12,7 +12,7 @@ import './action-library.css';
 
 const groups = [
   { id: 'browser', label: '网页操作', types: ['browser'] },
-  { id: 'value', label: '数据与变量', types: ['value', 'context'] },
+  { id: 'value', label: '数据与变量', types: ['value', 'context', 'source'] },
   { id: 'ai', label: 'AI 调用', types: ['ai', 'conversation'] },
   { id: 'http', label: 'HTTP 请求', types: ['http'] },
   { id: 'script', label: 'JS / TS 脚本', types: ['script'] },
@@ -21,6 +21,7 @@ const groups = [
   { id: 'review', label: '结果断言 / 等待人工', types: ['assert', 'human'] },
 ];
 const descriptions: Record<string, string> = {
+  source: '读取本人选择的固定完整会话来源，不调用模型',
   context: '读取本次配置、最新状态，或按修订更新完整状态',
   skill: '保存待确认草稿，或读取固定的个人Skill确认版本',
   document: '提取PDF、DOCX或文本，并保留来源与内容缺口',

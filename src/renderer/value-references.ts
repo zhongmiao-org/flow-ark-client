@@ -95,6 +95,18 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
           ? '结果为每次迭代的输出数组；索引取决于实际迭代次数'
           : '本步骤的完整输出；未知字段可在高级子路径中指定',
     );
+    if (node.type === 'source')
+      for (const key of node.operation === 'manifest'
+        ? ['source', 'manifest', 'current', 'manifest.requestCount', 'manifest.recordCount']
+        : ['cursor', 'chunk', 'chunk.text', 'next', 'done'])
+        add(
+          path + '.' + key,
+          label + ' / ' + key,
+          '前序步骤',
+          key === 'next'
+            ? '选择这个实际返回位置，继续读取同一固定来源；先判断done'
+            : '本机来源读取输出，不等于模型处理覆盖',
+        );
     if (node.type === 'skill')
       for (const key of node.operation === 'propose'
         ? ['proposalId', 'revision', 'status', 'ref']
