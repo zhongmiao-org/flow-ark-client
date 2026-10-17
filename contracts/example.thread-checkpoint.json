@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "id": "checkpoint-example",
+  "sessionId": "continuous-example",
+  "title": "持续补充 · 虚构示例",
+  "sourceRevision": 5,
+  "historyCount": 2,
+  "historyHash": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64",
+  "context": {
+    "version": 1,
+    "id": "context-example",
+    "flowId": "flow-example",
+    "nodeId": "interview",
+    "title": "持续补充 · 虚构示例",
+    "provider": "deepseek",
+    "model": "explicit-user-model",
+    "instructions": "围绕所选材料补充，未知保持未知；聊天不自动成为事实或外发许可。",
+    "context": {
+      "material": "虚构资料",
+      "confirmedSkill": null
+    },
+    "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+  },
+  "origin": null,
+  "selection": [
+    {
+      "kind": "history",
+      "ordinal": 1,
+      "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+    },
+    {
+      "kind": "history",
+      "ordinal": 2,
+      "sha256": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64"
+    }
+  ],
+  "transcript": [
+    {
+      "role": "user",
+      "text": "这是一条虚构补充。",
+      "messageId": "user-1",
+      "requestId": "request-1"
+    },
+    {
+      "role": "assistant",
+      "text": "已保存补充；仍需本人确认。",
+      "messageId": "assistant-1",
+      "requestId": "request-1"
+    },
+    {
+      "role": "user",
+      "text": "这是一条虚构补充。",
+      "messageId": "user-2",
+      "requestId": "request-2"
+    },
+    {
+      "role": "assistant",
+      "text": "已保存补充；仍需本人确认。",
+      "messageId": "assistant-2",
+      "requestId": "request-2"
+    }
+  ],
+  "confirmedAt": "2026-10-17T00:00:00.000Z",
+  "sha256": "f013409f6304ab039abe769c50e22f3625a7774238602357d48ef0be2f28691b"
+}

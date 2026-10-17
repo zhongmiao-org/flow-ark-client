@@ -1,3 +1,4 @@
+import { abortable, ConversationCapacity } from './conversation-request';
 import { Store } from './store';
 import {
   conversationOutput,
@@ -28,37 +29,12 @@ import { digest, now, uid, redactedErrorText } from '../shared/utils';
 import type { FlowRecord, Json } from '../shared/types';
 import type { AIConfiguration } from '../shared/ai-settings';
 
-function abortable<T>(pending: () => Promise<T>, signal: AbortSignal): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    if (signal.aborted) {
-      reject(signal.reason);
-      return;
-    }
-    let ended = false;
-    const finish = (error: boolean, value: any) => {
-      if (ended) return;
-      ended = true;
-      signal.removeEventListener('abort', cancel);
-      error ? reject(value) : resolve(value);
-    };
-    const cancel = () => finish(true, signal.reason ?? new Error('会话请求已取消'));
-    signal.addEventListener('abort', cancel, { once: true });
-    try {
-      pending().then(
-        (v) => finish(false, v),
-        (e) => finish(true, e),
-      );
-    } catch (e) {
-      finish(true, e);
-    }
-  });
-}
-
 type Saved = { scope: string; key: string; snapshot: ConversationSnapshot };
 type Job = { id: string; provider: string; abort: AbortController; done: Promise<void> };
 const kind = 'guided-conversation';
 export class Conversations {
   private jobs = new Map<string, Job>();
+  private capacity: ConversationCapacity;
   constructor(
     private store: Store,
     private deps: {
@@ -68,10 +44,12 @@ export class Conversations {
       publish: (event: ConversationEvent) => Promise<unknown>;
       notify: () => Promise<unknown>;
       generate?: typeof streamConversation;
+      capacity?: ConversationCapacity;
       trialStatus?: (source: SkillTrialSource) => Promise<SkillTrialStatus>;
       trialUnchanged?: (source: SkillTrialSource) => void;
     },
   ) {
+    this.capacity = deps.capacity ?? new ConversationCapacity();
     for (const saved of store.list<Saved>(kind)) {
       if (saved.snapshot.status !== 'generating') continue;
       const s = saved.snapshot;
@@ -96,6 +74,14 @@ export class Conversations {
   }
   detail(id: string) {
     return structuredClone(this.get(id).snapshot);
+  }
+  continuationSource(id: string, revision?: number) {
+    const saved = this.get(id, revision);
+    if (saved.snapshot.status !== 'confirmed' || saved.snapshot.skillTrial)
+      throw Error('请先确认普通会话来源；内部试聊不能自动成为个人资料');
+    // Uses the original protected record, never a renderer-supplied transcript.
+    this.output(id);
+    return structuredClone(saved);
   }
   output(id: string): ConversationOutput {
     return conversationOutput(this.get(id).snapshot);
@@ -351,7 +337,7 @@ export class Conversations {
       this.deps.trialUnchanged(s.skillTrial);
     }
     if (s.status === 'confirmed' || this.jobs.has(id)) throw new Error('会话已确认或正在生成');
-    if (this.jobs.size >= 4) throw new Error('已有四个会话正在生成，请稍后显式重试');
+    if (this.capacity.full) throw new Error('已有四个会话正在生成，请稍后显式重试');
     if (s.attempts.length >= s.maxRequests) throw new Error('已达到本会话模型请求上限；未调用模型');
     const retry = text === undefined;
     const last = s.attempts.at(-1);
@@ -399,9 +385,11 @@ export class Conversations {
       abort: new AbortController(),
       done: Promise.resolve(),
     };
+    this.capacity.acquire('v1:' + id, requestId);
     this.jobs.set(id, job);
     job.done = this.perform(id, job, input).finally(() => {
       if (this.jobs.get(id) === job) this.jobs.delete(id);
+      this.capacity.release('v1:' + id, job.id);
     });
     // Errors are captured and persisted inside perform; never float an unhandled job rejection.
     void job.done.catch(() => {});

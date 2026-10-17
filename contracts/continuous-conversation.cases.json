@@ -1,0 +1,1409 @@
+[
+  {
+    "name": "持续会话节点",
+    "definition": "Node",
+    "value": {
+      "id": "interview",
+      "type": "conversation",
+      "version": 2,
+      "binding": "ai",
+      "key": "material-interview",
+      "title": "持续补充 · 虚构示例",
+      "instructions": "围绕所选材料补充，未知保持未知；聊天不自动成为事实或外发许可。",
+      "input": {
+        "$ref": "params.material"
+      },
+      "historyWindow": 12
+    },
+    "valid": true
+  },
+  {
+    "name": "节点不带总次数限制",
+    "definition": "Node",
+    "value": {
+      "id": "interview",
+      "type": "conversation",
+      "version": 2,
+      "binding": "ai",
+      "key": "material-interview",
+      "title": "持续补充 · 虚构示例",
+      "instructions": "围绕所选材料补充，未知保持未知；聊天不自动成为事实或外发许可。",
+      "input": {
+        "$ref": "params.material"
+      },
+      "historyWindow": 12,
+      "maxRequests": 999
+    },
+    "valid": false
+  },
+  {
+    "name": "单次窗口不能超范围",
+    "definition": "Node",
+    "value": {
+      "id": "interview",
+      "type": "conversation",
+      "version": 2,
+      "binding": "ai",
+      "key": "material-interview",
+      "title": "持续补充 · 虚构示例",
+      "instructions": "围绕所选材料补充，未知保持未知；聊天不自动成为事实或外发许可。",
+      "input": {
+        "$ref": "params.material"
+      },
+      "historyWindow": 25
+    },
+    "valid": false
+  },
+  {
+    "name": "初始持续会话",
+    "definition": "ConversationThreadSnapshot",
+    "value": {
+      "formatVersion": "2.0",
+      "id": "continuous-example",
+      "flowId": "flow-example",
+      "nodeId": "interview",
+      "title": "持续补充 · 虚构示例",
+      "context": {
+        "id": "context-example",
+        "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+      },
+      "origin": null,
+      "historyWindow": 12,
+      "revision": 1,
+      "sequence": 1,
+      "status": "draft",
+      "draft": "",
+      "requestCount": 0,
+      "turnCount": 0,
+      "historyCount": 0,
+      "historyHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+      "active": null,
+      "lastEntry": null,
+      "latestCheckpoint": null,
+      "checkpointCurrent": false,
+      "updatedAt": "2026-10-17T00:00:00.000Z",
+      "error": "",
+      "contextProposalId": null
+    },
+    "valid": true
+  },
+  {
+    "name": "不携带Key",
+    "definition": "ConversationThreadSnapshot",
+    "value": {
+      "formatVersion": "2.0",
+      "id": "continuous-example",
+      "flowId": "flow-example",
+      "nodeId": "interview",
+      "title": "持续补充 · 虚构示例",
+      "context": {
+        "id": "context-example",
+        "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+      },
+      "origin": null,
+      "historyWindow": 12,
+      "revision": 1,
+      "sequence": 1,
+      "status": "draft",
+      "draft": "",
+      "requestCount": 0,
+      "turnCount": 0,
+      "historyCount": 0,
+      "historyHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+      "active": null,
+      "lastEntry": null,
+      "latestCheckpoint": null,
+      "checkpointCurrent": false,
+      "updatedAt": "2026-10-17T00:00:00.000Z",
+      "error": "",
+      "contextProposalId": null,
+      "apiKey": "fictional-placeholder"
+    },
+    "valid": false
+  },
+  {
+    "name": "新head不携带全部历史数组",
+    "definition": "ConversationThreadSnapshot",
+    "value": {
+      "formatVersion": "2.0",
+      "id": "continuous-example",
+      "flowId": "flow-example",
+      "nodeId": "interview",
+      "title": "持续补充 · 虚构示例",
+      "context": {
+        "id": "context-example",
+        "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+      },
+      "origin": null,
+      "historyWindow": 12,
+      "revision": 1,
+      "sequence": 1,
+      "status": "draft",
+      "draft": "",
+      "requestCount": 0,
+      "turnCount": 0,
+      "historyCount": 0,
+      "historyHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+      "active": null,
+      "lastEntry": null,
+      "latestCheckpoint": null,
+      "checkpointCurrent": false,
+      "updatedAt": "2026-10-17T00:00:00.000Z",
+      "error": "",
+      "contextProposalId": null,
+      "messages": []
+    },
+    "valid": false
+  },
+  {
+    "name": "活动请求有界保存",
+    "definition": "ConversationThreadSnapshot",
+    "value": {
+      "formatVersion": "2.0",
+      "id": "continuous-example",
+      "flowId": "flow-example",
+      "nodeId": "interview",
+      "title": "持续补充 · 虚构示例",
+      "context": {
+        "id": "context-example",
+        "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+      },
+      "origin": null,
+      "historyWindow": 12,
+      "revision": 6,
+      "sequence": 31,
+      "status": "generating",
+      "draft": "",
+      "requestCount": 3,
+      "turnCount": 3,
+      "historyCount": 2,
+      "historyHash": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64",
+      "active": {
+        "requestId": "request-3",
+        "turnId": "turn-3",
+        "userMessageId": "user-3",
+        "assistantMessageId": "assistant-3",
+        "text": "还有一条补充。",
+        "answer": "还未完成",
+        "inputId": "prepared-example",
+        "inputHash": "af80a04e52e931042e6f5be0f03b107b6be44ef23d15d3bd42d9268bacb3254b",
+        "context": {
+          "id": "context-example",
+          "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+        },
+        "retryOf": null
+      },
+      "lastEntry": {
+        "version": 1,
+        "sessionId": "continuous-example",
+        "ordinal": 2,
+        "previousHash": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12",
+        "requestId": "request-2",
+        "turnId": "turn-2",
+        "userMessageId": "user-2",
+        "assistantMessageId": "assistant-2",
+        "text": "这是一条虚构补充。",
+        "answer": "已保存补充；仍需本人确认。",
+        "state": "complete",
+        "model": "explicit-user-model",
+        "providerRequestId": "",
+        "usage": null,
+        "inputId": "input-2",
+        "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "context": {
+          "id": "context-example",
+          "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+        },
+        "retryOf": null,
+        "error": "",
+        "finishedAt": "2026-10-17T00:00:00.000Z",
+        "sha256": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64"
+      },
+      "latestCheckpoint": null,
+      "checkpointCurrent": false,
+      "updatedAt": "2026-10-17T00:00:00.000Z",
+      "error": "",
+      "contextProposalId": null
+    },
+    "valid": true
+  },
+  {
+    "name": "持续会话不设永久confirmed状态",
+    "definition": "ConversationThreadSnapshot",
+    "value": {
+      "formatVersion": "2.0",
+      "id": "continuous-example",
+      "flowId": "flow-example",
+      "nodeId": "interview",
+      "title": "持续补充 · 虚构示例",
+      "context": {
+        "id": "context-example",
+        "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+      },
+      "origin": null,
+      "historyWindow": 12,
+      "revision": 6,
+      "sequence": 31,
+      "status": "confirmed",
+      "draft": "",
+      "requestCount": 2,
+      "turnCount": 2,
+      "historyCount": 2,
+      "historyHash": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64",
+      "active": null,
+      "lastEntry": {
+        "version": 1,
+        "sessionId": "continuous-example",
+        "ordinal": 2,
+        "previousHash": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12",
+        "requestId": "request-2",
+        "turnId": "turn-2",
+        "userMessageId": "user-2",
+        "assistantMessageId": "assistant-2",
+        "text": "这是一条虚构补充。",
+        "answer": "已保存补充；仍需本人确认。",
+        "state": "complete",
+        "model": "explicit-user-model",
+        "providerRequestId": "",
+        "usage": null,
+        "inputId": "input-2",
+        "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "context": {
+          "id": "context-example",
+          "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+        },
+        "retryOf": null,
+        "error": "",
+        "finishedAt": "2026-10-17T00:00:00.000Z",
+        "sha256": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64"
+      },
+      "latestCheckpoint": {
+        "kind": "conversation-checkpoint",
+        "label": "持续补充 · 虚构示例",
+        "sessionId": "continuous-example",
+        "checkpointId": "checkpoint-example",
+        "sha256": "f013409f6304ab039abe769c50e22f3625a7774238602357d48ef0be2f28691b"
+      },
+      "checkpointCurrent": true,
+      "updatedAt": "2026-10-17T00:00:00.000Z",
+      "error": "",
+      "contextProposalId": null
+    },
+    "valid": false
+  },
+  {
+    "name": "事件身份",
+    "definition": "ConversationThreadEvent",
+    "value": {
+      "kind": "conversation.thread.snapshot",
+      "eventId": "thread:continuous-example:30",
+      "sessionId": "continuous-example",
+      "sequence": 30,
+      "requestId": "request-2",
+      "turnId": "turn-2",
+      "snapshot": {
+        "formatVersion": "2.0",
+        "id": "continuous-example",
+        "flowId": "flow-example",
+        "nodeId": "interview",
+        "title": "持续补充 · 虚构示例",
+        "context": {
+          "id": "context-example",
+          "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+        },
+        "origin": null,
+        "historyWindow": 12,
+        "revision": 5,
+        "sequence": 30,
+        "status": "ready",
+        "draft": "",
+        "requestCount": 2,
+        "turnCount": 2,
+        "historyCount": 2,
+        "historyHash": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64",
+        "active": null,
+        "lastEntry": {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 2,
+          "previousHash": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12",
+          "requestId": "request-2",
+          "turnId": "turn-2",
+          "userMessageId": "user-2",
+          "assistantMessageId": "assistant-2",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-2",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64"
+        },
+        "latestCheckpoint": null,
+        "checkpointCurrent": false,
+        "updatedAt": "2026-10-17T00:00:00.000Z",
+        "error": "",
+        "contextProposalId": null
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "有限历史页",
+    "definition": "ConversationHistoryPage",
+    "value": {
+      "version": 1,
+      "cursor": {
+        "sessionId": "continuous-example",
+        "before": 3,
+        "sha256": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64"
+      },
+      "entries": [
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 2,
+          "previousHash": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12",
+          "requestId": "request-2",
+          "turnId": "turn-2",
+          "userMessageId": "user-2",
+          "assistantMessageId": "assistant-2",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-2",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64"
+        }
+      ],
+      "next": null
+    },
+    "valid": true
+  },
+  {
+    "name": "分页单次不能超过20条",
+    "definition": "ConversationHistoryPage",
+    "value": {
+      "version": 1,
+      "cursor": {
+        "sessionId": "continuous-example",
+        "before": 3,
+        "sha256": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64"
+      },
+      "entries": [
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "version": 1,
+          "sessionId": "continuous-example",
+          "ordinal": 1,
+          "previousHash": "839f19d8d88aee5af5cd5e97185640efbe2783b72fd19286e70cbce26ed1e34f",
+          "requestId": "request-1",
+          "turnId": "turn-1",
+          "userMessageId": "user-1",
+          "assistantMessageId": "assistant-1",
+          "text": "这是一条虚构补充。",
+          "answer": "已保存补充；仍需本人确认。",
+          "state": "complete",
+          "model": "explicit-user-model",
+          "providerRequestId": "",
+          "usage": null,
+          "inputId": "input-1",
+          "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "context": {
+            "id": "context-example",
+            "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+          },
+          "retryOf": null,
+          "error": "",
+          "finishedAt": "2026-10-17T00:00:00.000Z",
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        }
+      ],
+      "next": null
+    },
+    "valid": false
+  },
+  {
+    "name": "固定发送范围",
+    "definition": "ConversationThreadPrepared",
+    "value": {
+      "version": 1,
+      "id": "prepared-example",
+      "sessionId": "continuous-example",
+      "revision": 5,
+      "historyCount": 2,
+      "historyHash": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64",
+      "context": {
+        "id": "context-example",
+        "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+      },
+      "selection": [
+        {
+          "kind": "history",
+          "ordinal": 1,
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "kind": "history",
+          "ordinal": 2,
+          "sha256": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64"
+        }
+      ],
+      "text": "还有一条补充。",
+      "retryOf": null,
+      "input": {
+        "provider": "deepseek",
+        "model": "explicit-user-model",
+        "instructions": "围绕所选材料补充，未知保持未知；聊天不自动成为事实或外发许可。",
+        "context": {
+          "value": {
+            "material": "虚构资料",
+            "confirmedSkill": null
+          },
+          "history": {
+            "sessionId": "continuous-example",
+            "count": 2,
+            "sha256": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64",
+            "origin": null,
+            "selection": [
+              {
+                "kind": "history",
+                "ordinal": 1,
+                "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+              },
+              {
+                "kind": "history",
+                "ordinal": 2,
+                "sha256": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64"
+              }
+            ]
+          }
+        },
+        "messages": [
+          {
+            "role": "user",
+            "text": "这是一条虚构补充。"
+          },
+          {
+            "role": "assistant",
+            "text": "已保存补充；仍需本人确认。"
+          },
+          {
+            "role": "user",
+            "text": "这是一条虚构补充。"
+          },
+          {
+            "role": "assistant",
+            "text": "已保存补充；仍需本人确认。"
+          },
+          {
+            "role": "user",
+            "text": "还有一条补充。"
+          }
+        ]
+      },
+      "sha256": "af80a04e52e931042e6f5be0f03b107b6be44ef23d15d3bd42d9268bacb3254b"
+    },
+    "valid": true
+  },
+  {
+    "name": "固定确认快照",
+    "definition": "ConversationCheckpoint",
+    "value": {
+      "version": 1,
+      "id": "checkpoint-example",
+      "sessionId": "continuous-example",
+      "title": "持续补充 · 虚构示例",
+      "sourceRevision": 5,
+      "historyCount": 2,
+      "historyHash": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64",
+      "context": {
+        "version": 1,
+        "id": "context-example",
+        "flowId": "flow-example",
+        "nodeId": "interview",
+        "title": "持续补充 · 虚构示例",
+        "provider": "deepseek",
+        "model": "explicit-user-model",
+        "instructions": "围绕所选材料补充，未知保持未知；聊天不自动成为事实或外发许可。",
+        "context": {
+          "material": "虚构资料",
+          "confirmedSkill": null
+        },
+        "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+      },
+      "origin": null,
+      "selection": [
+        {
+          "kind": "history",
+          "ordinal": 1,
+          "sha256": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12"
+        },
+        {
+          "kind": "history",
+          "ordinal": 2,
+          "sha256": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64"
+        }
+      ],
+      "transcript": [
+        {
+          "role": "user",
+          "text": "这是一条虚构补充。",
+          "messageId": "user-1",
+          "requestId": "request-1"
+        },
+        {
+          "role": "assistant",
+          "text": "已保存补充；仍需本人确认。",
+          "messageId": "assistant-1",
+          "requestId": "request-1"
+        },
+        {
+          "role": "user",
+          "text": "这是一条虚构补充。",
+          "messageId": "user-2",
+          "requestId": "request-2"
+        },
+        {
+          "role": "assistant",
+          "text": "已保存补充；仍需本人确认。",
+          "messageId": "assistant-2",
+          "requestId": "request-2"
+        }
+      ],
+      "confirmedAt": "2026-10-17T00:00:00.000Z",
+      "sha256": "f013409f6304ab039abe769c50e22f3625a7774238602357d48ef0be2f28691b"
+    },
+    "valid": true
+  },
+  {
+    "name": "确认范围不能为空",
+    "definition": "ConversationCheckpoint",
+    "value": {
+      "version": 1,
+      "id": "checkpoint-example",
+      "sessionId": "continuous-example",
+      "title": "持续补充 · 虚构示例",
+      "sourceRevision": 5,
+      "historyCount": 2,
+      "historyHash": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64",
+      "context": {
+        "version": 1,
+        "id": "context-example",
+        "flowId": "flow-example",
+        "nodeId": "interview",
+        "title": "持续补充 · 虚构示例",
+        "provider": "deepseek",
+        "model": "explicit-user-model",
+        "instructions": "围绕所选材料补充，未知保持未知；聊天不自动成为事实或外发许可。",
+        "context": {
+          "material": "虚构资料",
+          "confirmedSkill": null
+        },
+        "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+      },
+      "origin": null,
+      "selection": [],
+      "transcript": [],
+      "confirmedAt": "2026-10-17T00:00:00.000Z",
+      "sha256": "f013409f6304ab039abe769c50e22f3625a7774238602357d48ef0be2f28691b"
+    },
+    "valid": false
+  },
+  {
+    "name": "当前确认输出",
+    "definition": "ConversationThreadOutput",
+    "value": {
+      "formatVersion": "2.0",
+      "sessionId": "continuous-example",
+      "status": "confirmed",
+      "revision": 6,
+      "sequence": 31,
+      "context": {
+        "id": "context-example",
+        "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+      },
+      "historyCount": 2,
+      "historyHash": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64",
+      "origin": null,
+      "transcript": [
+        {
+          "role": "user",
+          "text": "这是一条虚构补充。",
+          "messageId": "user-1",
+          "requestId": "request-1"
+        },
+        {
+          "role": "assistant",
+          "text": "已保存补充；仍需本人确认。",
+          "messageId": "assistant-1",
+          "requestId": "request-1"
+        },
+        {
+          "role": "user",
+          "text": "这是一条虚构补充。",
+          "messageId": "user-2",
+          "requestId": "request-2"
+        },
+        {
+          "role": "assistant",
+          "text": "已保存补充；仍需本人确认。",
+          "messageId": "assistant-2",
+          "requestId": "request-2"
+        }
+      ],
+      "evidence": {
+        "kind": "conversation-checkpoint",
+        "label": "持续补充 · 虚构示例",
+        "sessionId": "continuous-example",
+        "checkpointId": "checkpoint-example",
+        "sha256": "f013409f6304ab039abe769c50e22f3625a7774238602357d48ef0be2f28691b"
+      },
+      "proposalId": null
+    },
+    "valid": true
+  },
+  {
+    "name": "pending不夹带旧确认正文",
+    "definition": "ConversationThreadOutput",
+    "value": {
+      "formatVersion": "2.0",
+      "sessionId": "continuous-example",
+      "status": "pending",
+      "revision": 6,
+      "sequence": 31,
+      "context": {
+        "id": "context-example",
+        "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+      },
+      "historyCount": 2,
+      "historyHash": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64",
+      "origin": null,
+      "transcript": [
+        {
+          "role": "user",
+          "text": "这是一条虚构补充。",
+          "messageId": "user-1",
+          "requestId": "request-1"
+        },
+        {
+          "role": "assistant",
+          "text": "已保存补充；仍需本人确认。",
+          "messageId": "assistant-1",
+          "requestId": "request-1"
+        },
+        {
+          "role": "user",
+          "text": "这是一条虚构补充。",
+          "messageId": "user-2",
+          "requestId": "request-2"
+        },
+        {
+          "role": "assistant",
+          "text": "已保存补充；仍需本人确认。",
+          "messageId": "assistant-2",
+          "requestId": "request-2"
+        }
+      ],
+      "evidence": {
+        "kind": "conversation-checkpoint",
+        "label": "持续补充 · 虚构示例",
+        "sessionId": "continuous-example",
+        "checkpointId": "checkpoint-example",
+        "sha256": "f013409f6304ab039abe769c50e22f3625a7774238602357d48ef0be2f28691b"
+      },
+      "proposalId": null
+    },
+    "valid": false
+  },
+  {
+    "name": "confirmed须有来源",
+    "definition": "ConversationThreadOutput",
+    "value": {
+      "formatVersion": "2.0",
+      "sessionId": "continuous-example",
+      "status": "confirmed",
+      "revision": 6,
+      "sequence": 31,
+      "context": {
+        "id": "context-example",
+        "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+      },
+      "historyCount": 2,
+      "historyHash": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64",
+      "origin": null,
+      "transcript": [
+        {
+          "role": "user",
+          "text": "这是一条虚构补充。",
+          "messageId": "user-1",
+          "requestId": "request-1"
+        },
+        {
+          "role": "assistant",
+          "text": "已保存补充；仍需本人确认。",
+          "messageId": "assistant-1",
+          "requestId": "request-1"
+        },
+        {
+          "role": "user",
+          "text": "这是一条虚构补充。",
+          "messageId": "user-2",
+          "requestId": "request-2"
+        },
+        {
+          "role": "assistant",
+          "text": "已保存补充；仍需本人确认。",
+          "messageId": "assistant-2",
+          "requestId": "request-2"
+        }
+      ],
+      "evidence": null,
+      "proposalId": null
+    },
+    "valid": false
+  },
+  {
+    "name": "context-review须有真实提议身份",
+    "definition": "ConversationThreadOutput",
+    "value": {
+      "formatVersion": "2.0",
+      "sessionId": "continuous-example",
+      "status": "context-review",
+      "revision": 6,
+      "sequence": 31,
+      "context": {
+        "id": "context-example",
+        "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+      },
+      "historyCount": 2,
+      "historyHash": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64",
+      "origin": null,
+      "transcript": [],
+      "evidence": null,
+      "proposalId": null
+    },
+    "valid": false
+  },
+  {
+    "name": "新确认可作Skill来源",
+    "definition": "SkillEvidence",
+    "value": {
+      "kind": "conversation-checkpoint",
+      "label": "持续补充 · 虚构示例",
+      "sessionId": "continuous-example",
+      "checkpointId": "checkpoint-example",
+      "sha256": "f013409f6304ab039abe769c50e22f3625a7774238602357d48ef0be2f28691b"
+    },
+    "valid": true
+  },
+  {
+    "name": "来源无Key",
+    "definition": "ConversationCheckpointEvidence",
+    "value": {
+      "kind": "conversation-checkpoint",
+      "label": "持续补充 · 虚构示例",
+      "sessionId": "continuous-example",
+      "checkpointId": "checkpoint-example",
+      "sha256": "f013409f6304ab039abe769c50e22f3625a7774238602357d48ef0be2f28691b",
+      "key": "fictional-placeholder"
+    },
+    "valid": false
+  },
+  {
+    "name": "资料更新提议",
+    "definition": "ConversationContextProposal",
+    "value": {
+      "version": 1,
+      "id": "proposal-example",
+      "sessionId": "continuous-example",
+      "revision": 6,
+      "base": {
+        "id": "context-example",
+        "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+      },
+      "proposed": {
+        "version": 1,
+        "id": "context-new",
+        "flowId": "flow-example",
+        "nodeId": "interview",
+        "title": "持续补充 · 虚构示例",
+        "provider": "deepseek",
+        "model": "explicit-user-model",
+        "instructions": "围绕所选材料补充，未知保持未知；聊天不自动成为事实或外发许可。",
+        "context": {
+          "material": "另一份虚构材料",
+          "confirmedSkill": null
+        },
+        "sha256": "d7ea61535e3c7eb625473cc9606a50c6381852321028ec3c5bd09614e9c09eb8"
+      },
+      "historyWindow": 12,
+      "sourceRunId": "run-example"
+    },
+    "valid": true
+  }
+]

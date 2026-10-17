@@ -72,6 +72,16 @@
   flex-direction: column;
   gap: 16px;
 }
+.conversation-thread-turn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.conversation-thread-turn .ant-checkbox-wrapper {
+  font-size: 13px;
+  line-height: 20px;
+}
 .conversation-message p {
   white-space: pre-wrap;
   font-size: 14px;

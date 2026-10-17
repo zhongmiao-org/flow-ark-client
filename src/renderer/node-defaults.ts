@@ -18,12 +18,13 @@ export function newStep(type: string): Step {
     value: { value: '你好，序舟' },
     assert: { actual: true, operator: 'equals', expected: true },
     conversation: {
+      version: 2,
       binding: 'ai',
       key: 'main',
       title: '补充材料',
       instructions: '围绕用户明确选择的材料提问；未知信息保持未知。',
       input: {},
-      maxRequests: 20,
+      historyWindow: 12,
     },
     ai: {
       version: 2,

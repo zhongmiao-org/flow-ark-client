@@ -1,6 +1,11 @@
 import { Card, Collapse, Tag } from 'antd';
+import type { ConversationThreadOutput } from '../shared/conversation-thread';
 import type { ConversationOutput } from '../shared/conversation';
-export default function ConversationResultView({ value }: { value: ConversationOutput }) {
+export default function ConversationResultView({
+  value,
+}: {
+  value: ConversationOutput | ConversationThreadOutput;
+}) {
   return (
     <section className="skill-version" aria-label="固定会话来源结果">
       <Tag>{value.status === 'confirmed' ? '已确认来源' : '会话尚未确认，历史暂不可采用'}</Tag>

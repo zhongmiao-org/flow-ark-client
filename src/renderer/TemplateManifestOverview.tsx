@@ -22,6 +22,8 @@ export const capabilityLabel = (name: string) =>
       'ai-outcome-v1': 'AI请求结果与失败分支',
       conversation: '引导会话',
       'conversation-v1': '持久会话 v1',
+      'conversation-v2': '持续会话 v2',
+      'conversation-checkpoint-v1': '持续会话确认来源',
       'conversation-evidence-v1': '已确认会话来源',
       skill: '个人 Skill',
       'skill-v1': 'Skill 确认版本 v1',

@@ -113,7 +113,12 @@ export function declareNativeBoundaries(flow: Flow, manifest: Manifest, entryId:
           required: true,
         });
       if (!entry.resources.includes(node.binding)) entry.resources.push(node.binding);
-      const capability = node.type === 'ai' ? 'ai-node-v1' : 'conversation-v1';
+      const capability =
+        node.type === 'ai'
+          ? 'ai-node-v1'
+          : node.version === 2
+            ? 'conversation-v2'
+            : 'conversation-v1';
       if (!entry.capabilities.includes(capability)) entry.capabilities.push(capability);
       if (node.type === 'ai' && node.version === 2) {
         if (!entry.capabilities.includes('ai-outcome-v1')) entry.capabilities.push('ai-outcome-v1');
@@ -121,10 +126,13 @@ export function declareNativeBoundaries(flow: Flow, manifest: Manifest, entryId:
           flow.requiredCapabilities.push('ai-outcome-v1');
       }
       if (node.type === 'conversation') {
-        if (!entry.capabilities.includes('conversation-evidence-v1'))
-          entry.capabilities.push('conversation-evidence-v1');
-        if (!flow.requiredCapabilities.includes('conversation-evidence-v1'))
-          flow.requiredCapabilities.push('conversation-evidence-v1');
+        const evidenceCapability =
+          node.version === 2 ? 'conversation-checkpoint-v1' : 'conversation-evidence-v1';
+        if (!entry.capabilities.includes('conversation')) entry.capabilities.push('conversation');
+        if (!entry.capabilities.includes(evidenceCapability))
+          entry.capabilities.push(evidenceCapability);
+        for (const c of [capability, evidenceCapability])
+          if (!flow.requiredCapabilities.includes(c)) flow.requiredCapabilities.push(c);
       }
       if (!entry.capabilities.includes('ai')) entry.capabilities.push('ai');
     }

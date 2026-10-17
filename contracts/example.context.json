@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "id": "context-example",
+  "flowId": "flow-example",
+  "nodeId": "interview",
+  "title": "持续补充 · 虚构示例",
+  "provider": "deepseek",
+  "model": "explicit-user-model",
+  "instructions": "围绕所选材料补充，未知保持未知；聊天不自动成为事实或外发许可。",
+  "context": {
+    "material": "虚构资料",
+    "confirmedSkill": null
+  },
+  "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+}

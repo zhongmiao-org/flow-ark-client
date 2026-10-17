@@ -9,6 +9,12 @@ import { validateTemplateDataOutput } from '../../contracts/template-data';
 import type { DataOutput, DataReceipt } from '../shared/template-data';
 import { contextOperations } from '../shared/template-data';
 import { assertBrowserInspectionResult } from '../shared/browser-inspection';
+import { assertThreadOutput } from '../shared/conversation-thread';
+import {
+  validateConversationCheckpoint,
+  verifyConversationCheckpointEvidence,
+} from '../../contracts/continuous-conversation';
+import type { ConversationCheckpoint } from '../shared/conversation-thread';
 export type TypedResultMeta = {
   id: string;
   nodeId: string;
@@ -34,7 +40,7 @@ export class TypedResults {
     if (!node || node.type !== type) throw Error('结构化结果不属于当前快照');
     if (type === 'document') assertDocumentResult(value);
     else if (type === 'skill') assertSkillVersion(value);
-    else if (type === 'conversation') this.conversationResult(value);
+    else if (type === 'conversation') this.conversationResult(value, node.version);
     else if (type === 'browser') this.browserResult(runId, nodeId, value);
     else this.contextResult(runId, nodeInstance, value);
     const id = digest({ runId, nodeId, nodeInstance, type }),
@@ -90,8 +96,12 @@ export class TypedResults {
     if (digest(r.value) !== r.meta.sha256) throw Error('结构化结果摘要不一致');
     if (r.meta.type === 'document') assertDocumentResult(r.value);
     else if (r.meta.type === 'context') this.contextResult(runId, r.meta.nodeInstance, r.value);
-    else if (r.meta.type === 'conversation') this.conversationResult(r.value);
-    else if (r.meta.type === 'browser') this.browserResult(runId, r.meta.nodeId, r.value);
+    else if (r.meta.type === 'conversation') {
+      const snapshot = this.store.get<FlowRecord>('snapshot', runId);
+      const node = snapshot && walk(snapshot.flow.steps).find((n) => n.id === r.meta.nodeId);
+      if (node?.type !== 'conversation') throw Error('会话结果不属于固定节点');
+      this.conversationResult(r.value, node.version);
+    } else if (r.meta.type === 'browser') this.browserResult(runId, r.meta.nodeId, r.value);
     else {
       assertSkillVersion(r.value);
       const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', runId);
@@ -115,7 +125,38 @@ export class TypedResults {
     assertBrowserInspectionResult(node.operation, value);
     return node.operation;
   }
-  private conversationResult(value: unknown) {
+  private conversationResult(value: unknown, version: number) {
+    if (version === 2) {
+      assertThreadOutput(value);
+      if (value.status !== 'confirmed') {
+        if (
+          value.evidence ||
+          value.transcript.length ||
+          (value.status === 'context-review') !== !!value.proposalId
+        )
+          throw Error('未确认的持续会话输出不能携带可采用历史');
+        return;
+      }
+      if (!value.evidence || value.proposalId) throw Error('确认结果缺少固定来源');
+      const c = this.store.get<ConversationCheckpoint>(
+        'conversation-thread-checkpoint',
+        value.evidence.checkpointId,
+      );
+      validateConversationCheckpoint(c);
+      verifyConversationCheckpointEvidence(value.evidence, c);
+      if (
+        !c ||
+        c.sessionId !== value.sessionId ||
+        c.sourceRevision > value.revision ||
+        c.historyCount !== value.historyCount ||
+        c.historyHash !== value.historyHash ||
+        digest({ id: c.context.id, sha256: c.context.sha256 }) !== digest(value.context) ||
+        digest(c.origin) !== digest(value.origin) ||
+        digest(c.transcript) !== digest(value.transcript)
+      )
+        throw Error('持续会话结果与当时的固定来源不一致');
+      return;
+    }
     const v = validateConversationOutput(value);
     if (v.evidence) {
       const saved = this.store.get<{ snapshot: unknown }>('guided-conversation', v.sessionId);

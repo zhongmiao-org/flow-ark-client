@@ -74,7 +74,7 @@ export class Skills {
     private deps: {
       available: () => void;
       notify: () => Promise<unknown>;
-      verifyConversation?: (evidence: unknown) => void;
+      verifyConversation?: (evidence: unknown, current: boolean) => void;
     },
   ) {
     for (const saved of store.list<Saved>('skill-proposal'))
@@ -114,16 +114,17 @@ export class Skills {
       throw Error('Skill草稿已变化，当前输入保留；请重新读取后继续');
     return v;
   }
-  private verifyEvidence(draft: SkillDraft) {
+  private verifyEvidence(draft: SkillDraft, current = true) {
     for (const e of draft.evidence)
-      if (e.kind === 'conversation') {
+      if (e.kind === 'conversation' || e.kind === 'conversation-checkpoint') {
         if (!this.deps.verifyConversation) throw Error('会话来源核对不可用，草稿未确认');
-        this.deps.verifyConversation(e);
+        this.deps.verifyConversation(e, current);
       }
   }
   trialUnchanged(source: SkillTrialSource) {
     this.available();
     const s = this.get(source.proposalId).snapshot;
+    this.verifyEvidence(s.draft);
     if (
       !['draft', 'failed', 'conflict'].includes(s.status) ||
       s.revision !== source.revision ||
@@ -170,6 +171,21 @@ export class Skills {
     this.available();
     const latest = this.get(source.proposalId);
     const s = latest.snapshot;
+    let validSource = true;
+    try {
+      this.verifyEvidence(s.draft);
+    } catch {
+      validSource = false;
+    }
+    if (!validSource)
+      return validateSkillTrialStatus({
+        version: 1,
+        source,
+        current: null,
+        usable: false,
+        reason: 'unavailable',
+        message: '确认来源已被新内容取代；旧试聊保留，请先核对当前来源。',
+      });
     const current = {
       revision: s.revision,
       sha256: skillTrialDigest(s.key, s.base, s.draft),
@@ -184,7 +200,7 @@ export class Skills {
           : 'ready';
     const messages = {
       ready: '',
-      blocked: '草稿已确认、发布或待核对，旧试聊停止新请求。',
+      blocked: '草稿或确认来源已变化、发布或待核对，旧试聊停止新请求。',
       changed: '草稿已修改；旧历史保留，请返回当前草稿重新建立。',
       workspace: '原工作区不可用或身份已变化，请先核对。',
     };
@@ -354,13 +370,20 @@ export class Skills {
   save(id: string, revision: number, draft: unknown) {
     this.available();
     assertSkillDraft(draft);
-    this.verifyEvidence(draft);
+    this.verifyEvidence(draft, false);
     const saved = this.get(id, revision);
     if (['publishing', 'unknown', 'confirmed', 'discarded'].includes(saved.snapshot.status))
       throw Error('此Skill草稿正在保存、待核对或已经确认，请先核对状态');
     saved.snapshot.draft = structuredClone(draft);
     saved.snapshot.status = 'draft';
     delete saved.snapshot.error;
+    try {
+      this.verifyEvidence(draft);
+    } catch (e) {
+      saved.snapshot.status = 'conflict';
+      saved.snapshot.error =
+        e instanceof Error ? e.message : '确认来源已变化；手工内容已保存，请核对新来源。';
+    }
     saved.snapshot.revision++;
     return this.persist(saved);
   }
@@ -517,6 +540,7 @@ export class Skills {
           this.available(),
         );
         await this.baseline(saved);
+        this.verifyEvidence(op.draft);
         this.available();
         const latest = this.get(s.id);
         if (
@@ -615,9 +639,10 @@ export class Skills {
       }
       try {
         await this.baseline(saved);
+        this.verifyEvidence(op.draft);
       } catch {
         s.status = 'conflict';
-        s.error = '完整文件保留，但当前确认基线已变化；本次未登记，请核对差异后另建新版本。';
+        s.error = '完整文件保留，但当前确认基线或来源已变化；本次未登记，请核对差异后另建新版本。';
         s.revision++;
         op.state = 'failed';
         this.store.tx(() => {

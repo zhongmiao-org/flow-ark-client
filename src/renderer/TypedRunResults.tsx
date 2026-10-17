@@ -3,6 +3,7 @@ import { Alert, Button, Select } from 'antd';
 import { assertDocumentResult } from '../shared/document';
 import { assertSkillVersion } from '../shared/skill';
 import { assertConversationOutput } from '../shared/conversation';
+import { assertThreadOutput } from '../shared/conversation-thread';
 import ConversationResultView from './ConversationResultView';
 import { DocumentResultView } from './DocumentResults';
 import { SkillVersionView } from './SkillPanel';
@@ -33,8 +34,10 @@ export default function TypedRunResults({
         if (v.type === 'document') assertDocumentResult(v.value);
         else if (v.type === 'skill') assertSkillVersion(v.value);
         else if (v.type === 'context') assertDataOutput(v.value);
-        else if (v.type === 'conversation') assertConversationOutput(v.value);
-        else if (v.type === 'browser') assertBrowserInspectionResult(v.operation, v.value);
+        else if (v.type === 'conversation') {
+          if (v.value?.formatVersion === '2.0') assertThreadOutput(v.value);
+          else assertConversationOutput(v.value);
+        } else if (v.type === 'browser') assertBrowserInspectionResult(v.operation, v.value);
         else throw Error('结果类型无效');
         if (live) setValue(v);
       })

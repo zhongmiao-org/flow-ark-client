@@ -1,7 +1,8 @@
 import { useEffect, useId, useState } from 'react';
 import { Button, Input, InputNumber, Select } from 'antd';
 import type { Bindings } from '../shared/types';
-import type { ConversationNode } from '../shared/conversation';
+import type { Step } from '../shared/types';
+type ConversationNode = Extract<Step, { type: 'conversation' }>;
 import type { ReferenceChoice } from './value-references';
 import ValueField from './ValueField';
 import './ai-node.css';
@@ -19,8 +20,10 @@ export default function ConversationNodeConfiguration({
   changeBindings: (b: Bindings) => void;
 }) {
   const id = useId();
-  const [limit, setLimit] = useState<number | null>(node.maxRequests);
-  useEffect(() => setLimit(node.maxRequests), [node.maxRequests]);
+  const configuredLimit = node.version === 2 ? node.historyWindow : node.maxRequests;
+  const max = node.version === 2 ? 24 : 50;
+  const [limit, setLimit] = useState<number | null>(configuredLimit);
+  useEffect(() => setLimit(configuredLimit), [configuredLimit]);
   const binding = bindings.resources?.[node.binding] ?? {};
   const [configuration, setConfiguration] = useState<{ configured: boolean; model: string }>();
   useEffect(() => {
@@ -41,7 +44,7 @@ export default function ConversationNodeConfiguration({
     changeBindings({ ...bindings, resources: { ...bindings.resources, [node.binding]: b } });
   return (
     <section className="node-configuration ai-node-configuration" aria-label="持久引导会话配置">
-      <h4>持久引导会话</h4>
+      <h4>{node.version === 2 ? '持续会话' : '持久引导会话 v1'}</h4>
       <p>
         创建或读取会话后结束本批，等待用户不占运行槽。首次创建不调用模型；在待办核对自己的 Key
         费用后发送。
@@ -120,25 +123,33 @@ export default function ConversationNodeConfiguration({
       />
       <label
         data-value-invalid={
-          limit === null || limit < 1 || limit > 50 || !Number.isInteger(limit) ? 'true' : undefined
+          limit === null || limit < 1 || limit > max || !Number.isInteger(limit)
+            ? 'true'
+            : undefined
         }
       >
-        最多模型请求（包含手动重试）
+        {node.version === 2 ? '每轮历史窗口（完整问答，非总次数）' : '最多模型请求（包含手动重试）'}
         <InputNumber
           min={1}
-          max={50}
+          max={max}
           precision={0}
           value={limit}
           onChange={(value) => {
             setLimit(value);
-            if (value !== null && Number.isInteger(value) && value >= 1 && value <= 50)
-              change({ ...node, maxRequests: value });
+            if (value !== null && Number.isInteger(value) && value >= 1 && value <= max)
+              change(
+                node.version === 2
+                  ? { ...node, historyWindow: value }
+                  : { ...node, maxRequests: value },
+              );
           }}
         />
       </label>
       <p>
-        后续用 status 条件判断：confirmed 才能读取 transcript；其他状态应结束本批。确认对话不替代
-        Skill 确认或发送授权。
+        {node.version === 2
+          ? '访谈无总轮次上限。同一实例和会话键关联持续档案；资料、指令、模型变化先核对后采用。新补充使当前输出回到 pending，资料待核对为 context-review。'
+          : '后续用 status 条件判断：confirmed 才能读取 transcript；其他状态应结束本批。'}{' '}
+        确认对话不替代 Skill 确认或发送授权。
       </p>
     </section>
   );

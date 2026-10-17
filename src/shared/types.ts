@@ -124,7 +124,13 @@ export type Bootstrap = {
 };
 export type Bridge = {
   request(method: string, args?: any): Promise<any>;
-  onmessage(listener: (event: import('./conversation').ConversationEvent) => void): () => void;
+  onmessage(
+    listener: (
+      event:
+        | import('./conversation').ConversationEvent
+        | import('./conversation-thread').ConversationThreadEvent,
+    ) => void,
+  ): () => void;
 };
 export type BrowserCommand = {
   operation: string;

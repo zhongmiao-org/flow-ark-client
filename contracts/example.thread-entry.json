@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "sessionId": "continuous-example",
+  "ordinal": 2,
+  "previousHash": "67ce55ddb559e0de240949849b148a38d880535ffb99804a13b06db489cece12",
+  "requestId": "request-2",
+  "turnId": "turn-2",
+  "userMessageId": "user-2",
+  "assistantMessageId": "assistant-2",
+  "text": "这是一条虚构补充。",
+  "answer": "已保存补充；仍需本人确认。",
+  "state": "complete",
+  "model": "explicit-user-model",
+  "providerRequestId": "",
+  "usage": null,
+  "inputId": "input-2",
+  "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "context": {
+    "id": "context-example",
+    "sha256": "bc61f287aa148c7f3381e88e381f4ae4bd2290d2ffc2030d233043367beff47f"
+  },
+  "retryOf": null,
+  "error": "",
+  "finishedAt": "2026-10-17T00:00:00.000Z",
+  "sha256": "e318e1837bf59ad0c7d2917230cf0c2044ec83923b132ca8fec2a51b1d9cbf64"
+}
