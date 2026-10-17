@@ -33,6 +33,14 @@ for (const font of ['inter', 'noto-sans-sc']) {
 }
 await copyFile('node_modules/pdfjs-dist/LICENSE', 'dist/licenses/pdfjs-dist-LICENSE.txt');
 await copyFile('third-party/saxes-LICENSE.txt', 'dist/licenses/saxes-LICENSE.txt');
+for (const [name, license] of [
+  ['react-markdown', 'license'],
+  ['remark-gfm', 'license'],
+  ['mermaid', 'LICENSE'],
+  ['dompurify', 'LICENSE'],
+]) {
+  await copyFile(`node_modules/${name}/${license}`, `dist/licenses/${name}-LICENSE.txt`);
+}
 await build({
   entryPoints: {
     main: 'src/main/main.ts',

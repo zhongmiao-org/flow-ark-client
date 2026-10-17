@@ -12,6 +12,7 @@ import { assertTrialStatus, type SkillTrialStatus } from '../shared/skill-trial'
 import ConversationResultView from './ConversationResultView';
 import EditorLeaveDialog from './EditorLeaveDialog';
 import './conversation.css';
+import MarkdownBody from './MarkdownBody';
 export type ConversationLeave = (navigate: () => void, label: string) => void;
 const labels = {
   draft: '尚未开始',
@@ -662,7 +663,11 @@ export default function ConversationPanel({
                       {message.role === 'user' ? '你' : '助手'}
                       {message.state === 'partial' ? ' · 未完成' : ''}
                     </strong>
-                    <p>{message.text || (generating ? '等待正文…' : '本轮没有完整正文')}</p>
+                    {message.role === 'assistant' && message.text ? (
+                      <MarkdownBody text={message.text} partial={message.state === 'partial'} />
+                    ) : (
+                      <p>{message.text || (generating ? '等待正文…' : '本轮没有完整正文')}</p>
+                    )}
                   </article>
                 ))}
                 {snapshot.error && <Alert type="warning" showIcon title={snapshot.error} />}
