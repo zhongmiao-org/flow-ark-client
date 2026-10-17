@@ -628,6 +628,10 @@ export type TemplateAuthorResource = {
   kind: 'file' | 'directory' | 'browser' | 'ai' | 'skill';
   access: 'read' | 'write' | 'readwrite' | 'use';
   required: boolean;
+  /**
+   * Optional single-hop logical directory source for explicit resource-editor draft defaults; never a runtime binding fallback.
+   */
+  defaultDirectoryFrom?: string;
 };
 export type TemplateAuthorExportReceipt = {
   version: 1;
@@ -1112,6 +1116,10 @@ export interface TemplateArchiveManifest {
     kind: 'file' | 'directory' | 'browser' | 'ai' | 'skill';
     access: 'read' | 'write' | 'readwrite' | 'use';
     required: boolean;
+    /**
+     * Optional single-hop logical directory source for explicit resource-editor draft defaults; never a runtime binding fallback.
+     */
+    defaultDirectoryFrom?: string;
   }[];
   /**
    * @maxItems 100

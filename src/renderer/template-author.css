@@ -1,6 +1,22 @@
 .template-author-root {
   min-width: 0;
 }
+.author-directory-default {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 8px 12px;
+  width: 100%;
+  min-width: 0;
+}
+.author-directory-default > span {
+  padding-block: 10px;
+  color: var(--fa-text-secondary);
+}
+.author-directory-default > p {
+  grid-column: 1 / -1;
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
 .template-author {
   display: flex;
   flex-direction: column;

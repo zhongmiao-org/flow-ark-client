@@ -1,0 +1,353 @@
+[
+  {
+    "name": "no-default",
+    "resources": [
+      {
+        "id": "source",
+        "name": "source",
+        "kind": "directory",
+        "access": "read",
+        "required": true
+      },
+      {
+        "id": "output",
+        "name": "output",
+        "kind": "directory",
+        "access": "read",
+        "required": true
+      }
+    ],
+    "valid": true
+  },
+  {
+    "name": "one-default",
+    "resources": [
+      {
+        "id": "source",
+        "name": "source",
+        "kind": "directory",
+        "access": "read",
+        "required": true
+      },
+      {
+        "id": "output",
+        "name": "output",
+        "kind": "directory",
+        "access": "read",
+        "required": true,
+        "defaultDirectoryFrom": "source"
+      }
+    ],
+    "valid": true
+  },
+  {
+    "name": "many-targets",
+    "resources": [
+      {
+        "id": "source",
+        "name": "source",
+        "kind": "directory",
+        "access": "read",
+        "required": true
+      },
+      {
+        "id": "out-a",
+        "name": "out-a",
+        "kind": "directory",
+        "access": "read",
+        "required": true,
+        "defaultDirectoryFrom": "source"
+      },
+      {
+        "id": "out-b",
+        "name": "out-b",
+        "kind": "directory",
+        "access": "read",
+        "required": true,
+        "defaultDirectoryFrom": "source"
+      }
+    ],
+    "valid": true
+  },
+  {
+    "name": "out-of-order",
+    "resources": [
+      {
+        "id": "output",
+        "name": "output",
+        "kind": "directory",
+        "access": "read",
+        "required": true,
+        "defaultDirectoryFrom": "source"
+      },
+      {
+        "id": "source",
+        "name": "source",
+        "kind": "directory",
+        "access": "read",
+        "required": true
+      }
+    ],
+    "valid": true
+  },
+  {
+    "name": "other-kinds-no-default",
+    "resources": [
+      {
+        "id": "model",
+        "name": "model",
+        "kind": "ai",
+        "access": "use",
+        "required": true
+      },
+      {
+        "id": "confirmed",
+        "name": "confirmed",
+        "kind": "skill",
+        "access": "read",
+        "required": true
+      }
+    ],
+    "valid": true
+  },
+  {
+    "name": "unknown",
+    "resources": [
+      {
+        "id": "output",
+        "name": "output",
+        "kind": "directory",
+        "access": "read",
+        "required": true,
+        "defaultDirectoryFrom": "missing"
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "self",
+    "resources": [
+      {
+        "id": "source",
+        "name": "source",
+        "kind": "directory",
+        "access": "read",
+        "required": true,
+        "defaultDirectoryFrom": "source"
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "source-file",
+    "resources": [
+      {
+        "id": "source",
+        "name": "source",
+        "kind": "file",
+        "access": "read",
+        "required": true
+      },
+      {
+        "id": "output",
+        "name": "output",
+        "kind": "directory",
+        "access": "read",
+        "required": true,
+        "defaultDirectoryFrom": "source"
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "source-ai",
+    "resources": [
+      {
+        "id": "source",
+        "name": "source",
+        "kind": "ai",
+        "access": "use",
+        "required": true
+      },
+      {
+        "id": "output",
+        "name": "output",
+        "kind": "directory",
+        "access": "read",
+        "required": true,
+        "defaultDirectoryFrom": "source"
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "target-file",
+    "resources": [
+      {
+        "id": "source",
+        "name": "source",
+        "kind": "directory",
+        "access": "read",
+        "required": true
+      },
+      {
+        "id": "output",
+        "name": "output",
+        "kind": "file",
+        "access": "read",
+        "required": true,
+        "defaultDirectoryFrom": "source"
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "target-skill",
+    "resources": [
+      {
+        "id": "source",
+        "name": "source",
+        "kind": "directory",
+        "access": "read",
+        "required": true
+      },
+      {
+        "id": "output",
+        "name": "output",
+        "kind": "skill",
+        "access": "read",
+        "required": true,
+        "defaultDirectoryFrom": "source"
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "cycle",
+    "resources": [
+      {
+        "id": "source",
+        "name": "source",
+        "kind": "directory",
+        "access": "read",
+        "required": true,
+        "defaultDirectoryFrom": "output"
+      },
+      {
+        "id": "output",
+        "name": "output",
+        "kind": "directory",
+        "access": "read",
+        "required": true,
+        "defaultDirectoryFrom": "source"
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "chain",
+    "resources": [
+      {
+        "id": "source",
+        "name": "source",
+        "kind": "directory",
+        "access": "read",
+        "required": true
+      },
+      {
+        "id": "middle",
+        "name": "middle",
+        "kind": "directory",
+        "access": "read",
+        "required": true,
+        "defaultDirectoryFrom": "source"
+      },
+      {
+        "id": "output",
+        "name": "output",
+        "kind": "directory",
+        "access": "read",
+        "required": true,
+        "defaultDirectoryFrom": "middle"
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "duplicate-id",
+    "resources": [
+      {
+        "id": "source",
+        "name": "source",
+        "kind": "directory",
+        "access": "read",
+        "required": true
+      },
+      {
+        "id": "source",
+        "name": "source",
+        "kind": "directory",
+        "access": "read",
+        "required": true
+      },
+      {
+        "id": "output",
+        "name": "output",
+        "kind": "directory",
+        "access": "read",
+        "required": true,
+        "defaultDirectoryFrom": "source"
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "private-path-instead-of-id",
+    "resources": [
+      {
+        "id": "output",
+        "name": "output",
+        "kind": "directory",
+        "access": "read",
+        "required": true,
+        "defaultDirectoryFrom": "/fictional/source"
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "empty-source-id",
+    "resources": [
+      {
+        "id": "output",
+        "name": "output",
+        "kind": "directory",
+        "access": "read",
+        "required": true,
+        "defaultDirectoryFrom": ""
+      }
+    ],
+    "valid": false
+  },
+  {
+    "name": "bad-source-value",
+    "resources": [
+      {
+        "id": "source",
+        "name": "source",
+        "kind": "directory",
+        "access": "read",
+        "required": true
+      },
+      {
+        "id": "output",
+        "name": "output",
+        "kind": "directory",
+        "access": "read",
+        "required": true,
+        "defaultDirectoryFrom": false
+      }
+    ],
+    "valid": false
+  }
+]

@@ -248,3 +248,15 @@
 .template-instance-tabs > .ant-tabs-nav {
   margin-bottom: 32px;
 }
+.template-directory-default-note {
+  grid-column: 1 / -1;
+  color: var(--fa-text-secondary);
+  overflow-wrap: anywhere;
+}
+.template-resource-file.template-resource-default {
+  grid-template-columns: minmax(0, 1fr);
+}
+.template-resource-default > .template-resource-file-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}

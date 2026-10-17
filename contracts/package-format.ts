@@ -1,4 +1,5 @@
-/** Normative package validation for contracts 0.28.0, derived from package 2.0. No application imports. */
+/** Normative package validation for contracts 0.31.0, derived from package 2.0. No application imports. */
+import { assertDirectoryDefaults } from './directory-defaults';
 import { assertAIOutcomeCapabilities } from './ai-outcome';
 import { createHash } from 'node:crypto';
 import { assertBrowserInspectionNode, browserInspectionCapability } from './browser-inspection';
@@ -8,7 +9,7 @@ import {validateConfigurationSchema} from './configuration-schema';
 import { validateAuthorMetadata } from './template-authoring';
 export const LIMITS = { archive: 20*1024*1024, total: 100*1024*1024, file: 10*1024*1024, files: 512 };
 export type Entry = { id:string; name:string; flow:string; inputSchema:string; resultSchema:string; schedulable:boolean; capabilities:string[]; resources:string[]; actions:string[] };
-export type Manifest = { packageFormat:'2.0'; id:string; name:string; description:string; version:string; author:string; source:string; minimumClientVersion:string; sdkVersion:'1.0'; configurationSchema:string; stateSchema:string; entries:Entry[]; resources:{id:string;name:string;kind:'file'|'directory'|'browser'|'ai'|'skill';access:'read'|'write'|'readwrite'|'use';required:boolean}[]; actions:{id:string;name:string;description:string;default:'deny'}[]; files:{path:string;size:number;sha256:string}[]; scripts:string[]; dependencies:{name:string;version:string;license:string}[];contentDigest:string };
+export type Manifest = { packageFormat:'2.0'; id:string; name:string; description:string; version:string; author:string; source:string; minimumClientVersion:string; sdkVersion:'1.0'; configurationSchema:string; stateSchema:string; entries:Entry[]; resources:{id:string;name:string;kind:'file'|'directory'|'browser'|'ai'|'skill';access:'read'|'write'|'readwrite'|'use';required:boolean;defaultDirectoryFrom?:string}[]; actions:{id:string;name:string;description:string;default:'deny'}[]; files:{path:string;size:number;sha256:string}[]; scripts:string[]; dependencies:{name:string;version:string;license:string}[];contentDigest:string };
 export type PackageData = { manifest:Manifest; files:Map<string,Buffer> };
 export function canonical(value:any):string {
  if (value === undefined) throw new Error('摘要不能包含 undefined');
@@ -44,6 +45,7 @@ export function validatePackage(files:Map<string,Buffer>):PackageData {
  if(manifest.files.length!==files.size-1 || manifest.files.some(f=>f.path==='manifest.json'))throw new Error('未声明文件或清单自引用');
  for(const f of manifest.files){packagePath(f.path);const b=files.get(f.path);if(!b||b.length!==f.size||sha256(b)!==f.sha256)throw new Error('资源完整性不匹配：'+f.path);}
  if(manifestDigest(manifest)!==manifest.contentDigest)throw new Error('模板摘要不匹配');
+ assertDirectoryDefaults(manifest.resources);
  const schemaPaths=[manifest.configurationSchema,manifest.stateSchema,...manifest.entries.flatMap(e=>[e.inputSchema,e.resultSchema])];
  for(const p of schemaPaths){if(!p.startsWith('schemas/'))throw new Error('Schema 必须位于 schemas/');assertSchema(jsonFile(files,p));}
  for(const p of files.keys())if(p.startsWith('scripts/')&&!manifest.scripts.includes(p))throw new Error('脚本未由清单声明');

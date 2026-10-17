@@ -1,0 +1,19 @@
+{
+  "resources": [
+    {
+      "id": "source",
+      "name": "source",
+      "kind": "directory",
+      "access": "read",
+      "required": true
+    },
+    {
+      "id": "output",
+      "name": "output",
+      "kind": "directory",
+      "access": "readwrite",
+      "required": true,
+      "defaultDirectoryFrom": "source"
+    }
+  ]
+}

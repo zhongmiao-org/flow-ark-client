@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.30.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.31.0/p1.schema.json",
   "title": "FlowArk P1",
   "$defs": {
     "Json": {
@@ -2281,6 +2281,11 @@
               },
               "required": {
                 "type": "boolean"
+              },
+              "defaultDirectoryFrom": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,99}$",
+                "description": "Optional single-hop logical directory source for explicit resource-editor draft defaults; never a runtime binding fallback."
               }
             },
             "required": [
@@ -2304,6 +2309,20 @@
                   "properties": {
                     "access": {
                       "const": "read"
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "required": [
+                    "defaultDirectoryFrom"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "kind": {
+                      "const": "directory"
                     }
                   }
                 }
@@ -4182,6 +4201,11 @@
         },
         "required": {
           "type": "boolean"
+        },
+        "defaultDirectoryFrom": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,99}$",
+          "description": "Optional single-hop logical directory source for explicit resource-editor draft defaults; never a runtime binding fallback."
         }
       },
       "required": [
@@ -4205,6 +4229,20 @@
             "properties": {
               "access": {
                 "const": "read"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "defaultDirectoryFrom"
+            ]
+          },
+          "then": {
+            "properties": {
+              "kind": {
+                "const": "directory"
               }
             }
           }
