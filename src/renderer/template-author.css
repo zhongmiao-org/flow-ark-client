@@ -149,8 +149,8 @@
   min-width: 0;
 }
 .author-schema-row > .ant-select {
-  width: 108px;
-  flex: 0 0 108px;
+  width: 144px;
+  flex: 0 0 144px;
 }
 .author-schema-row > .ant-checkbox-wrapper {
   flex: 0 0 auto;

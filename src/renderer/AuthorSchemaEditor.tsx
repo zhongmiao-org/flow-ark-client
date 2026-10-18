@@ -21,6 +21,7 @@ const typeName: Record<string, string> = {
   number: '数值',
   integer: '整数',
   boolean: '布尔',
+  null: '空值（null）',
   any: '任意JSON',
 };
 const object = (v: any) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
@@ -90,6 +91,7 @@ export default function AuthorSchemaEditor({
   }
   const current = object(at(schema, path)),
     key = path.at(-2) === 'properties' ? path.at(-1) : undefined;
+  const selectableTypes = form ? [...types, 'any'] : [...types, 'null', 'any'];
   const keyDirty = key !== undefined && keyDraft !== key,
     rawDirty = raw !== undefined && raw !== JSON.stringify(schema, null, 2),
     dirty = keyDirty || rawDirty;
@@ -248,13 +250,12 @@ export default function AuthorSchemaEditor({
                     <Select
                       aria-label={row.name + '字段类型'}
                       value={s.type ?? 'any'}
-                      options={(rootObject && !row.path.length
-                        ? ['object']
-                        : [...types, 'any']
-                      ).map((value) => ({
-                        value,
-                        label: typeName[value],
-                      }))}
+                      options={(rootObject && !row.path.length ? ['object'] : selectableTypes).map(
+                        (value) => ({
+                          value,
+                          label: typeName[value],
+                        }),
+                      )}
                       onChange={(value) => changeType(value, row.path)}
                     />
                     {row.path.at(-2) === 'properties' && (
@@ -283,6 +284,7 @@ export default function AuthorSchemaEditor({
                 添加子字段
               </Button>
               <Button
+                disabled={!form || disabled || rawDirty || validating}
                 onClick={() => {
                   void check(schema, true, () => {
                     setPreviewValue(schemaDefaults(schema));
@@ -294,6 +296,7 @@ export default function AuthorSchemaEditor({
               </Button>
             </div>
             <p>对象和数组逐层维护；字段键变化后请检查已有引用。公开默认值不复制本机输入。</p>
+            {!form && <p>使用者表单预览仅用于共享配置和入口输入。</p>}
           </Card>
           <Card title={'所选字段 · ' + (key ?? (path.at(-1) === 'items' ? '数组项' : '根结构'))}>
             {key !== undefined && (
@@ -335,12 +338,13 @@ export default function AuthorSchemaEditor({
               <Select
                 aria-labelledby="author-field-type"
                 value={current.type ?? 'any'}
-                options={(rootObject && !path.length ? ['object'] : [...types, 'any']).map(
+                options={(rootObject && !path.length ? ['object'] : selectableTypes).map(
                   (value) => ({ value, label: typeName[value] }),
                 )}
                 onChange={(value) => changeType(value)}
               />
             </div>
+            {current.type === 'null' && <p>空值是 null，与空文本、0、false 或缺少字段不同。</p>}
             <div className="author-field">
               <label htmlFor="author-field-description">说明</label>
               <Input.TextArea
@@ -495,19 +499,39 @@ export default function AuthorSchemaEditor({
             <Checkbox
               checked={Object.hasOwn(current, 'default')}
               onChange={(e) =>
-                update('default', e.target.checked ? schemaDefaults(current) : undefined)
+                update(
+                  'default',
+                  e.target.checked
+                    ? current.type === 'null'
+                      ? null
+                      : schemaDefaults(current)
+                    : undefined,
+                )
               }
             >
               设置公开默认值
             </Checkbox>
-            {Object.hasOwn(current, 'default') && (
-              <Field
-                schema={{ ...current, title: '公开默认值', readOnly: false }}
-                value={current.default}
-                label="公开默认值"
-                change={(v: any) => update('default', v)}
-              />
-            )}
+            {Object.hasOwn(current, 'default') &&
+              (current.type === 'null' ? (
+                current.default === null ? (
+                  <div className="author-stack">
+                    <p>公开默认值：null</p>
+                    <p>默认值为固定空值，无需输入文字。</p>
+                  </div>
+                ) : (
+                  <div className="author-stack">
+                    <p role="alert">当前默认值不是 null，请清除默认值或设为空值。</p>
+                    <Button onClick={() => update('default', null)}>设为空值</Button>
+                  </div>
+                )
+              ) : (
+                <Field
+                  schema={{ ...current, title: '公开默认值', readOnly: false }}
+                  value={current.default}
+                  label="公开默认值"
+                  change={(v: any) => update('default', v)}
+                />
+              ))}
             {key !== undefined && (
               <Button danger disabled={disabled || dirty} onClick={remove}>
                 移除此字段
