@@ -82,7 +82,7 @@ function fields(node: Step): [string, string][] {
           : node.operation === 'screenshot'
             ? [['截图范围', '当前网页视口']]
             : [
-                ['目标定位', node.selector || '未配置'],
+                ['目标定位', node.selector ? configured(node.selector) : '未配置'],
                 ['框架层级', `${'framePath' in node ? (node.framePath?.length ?? 0) : 0} 层`],
               ]),
       ] as [string, string][];
