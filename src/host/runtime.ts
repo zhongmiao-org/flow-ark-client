@@ -530,7 +530,15 @@ export class Runtime {
       this.store,
       this.templates.library,
       this.authorSdk,
-      (capture) => this.resultSources.capture(capture),
+      (capture) => {
+        // An outstanding host call can still deliver an authorized secret after script exit.
+        if (
+          this.active?.id !== capture.run.id ||
+          (this.pendingCapabilities.get(capture.run.id) ?? 0) > 0
+        )
+          return;
+        this.resultSources.capture(capture);
+      },
     );
     this.resultSources = new RunResultSources(this.store, this.entryResults, {
       available: () => this.assertAdmitting(),
@@ -2134,8 +2142,14 @@ export class Runtime {
     if (method === 'credential') {
       if (!snapshot.bindings.credentials.includes(args.id)) throw new Error('凭据未授权给此流程');
       this.localCredentials.assertReadable(args.id);
+      const owner = this.active;
       const secret = await this.system('credentials.get', { id: args.id });
-      this.secrets.push(secret);
+      // Protect values already observed by this original Run, including a closing Run.
+      if (this.active === owner && owner.id === id) this.secrets.push(secret);
+      runSignal.throwIfAborted();
+      if (this.active !== owner || owner.id !== id) throw Error('凭据所属运行已停止');
+      this.checkActive(owner);
+      this.localCredentials.assertReadable(args.id);
       return secret;
     }
     if (method === 'attention') {
