@@ -132,7 +132,7 @@ export function validateAuthorDefinition(value: unknown): any {
       if (++bindings > AUTHOR_LIMITS.bindings) throw Error('提示词绑定总数超限');
       const prompt = d.prompts.find((p: any) => p.id === binding.promptId);
       const n = steps.find((n: any) => n.id === binding.nodeId);
-      if (!prompt || !n || !['ai', 'conversation'].includes(n.type) ||
+      if (!prompt || !n || !['ai', 'conversation', 'source-reduce'].includes(n.type) ||
         n.instructions !== authorPromptMarker(prompt.id))
         throw Error('提示词绑定或正文标记不一致：' + entry.id + '/' + binding.nodeId);
     }
@@ -187,7 +187,7 @@ export function validateAuthorMetadata(
       entries.set(entry.id, nodes(JSON.parse(utf8(flow)).steps));
     }
     const node = entries.get(entry.id)!.find((n) => n.id === binding.nodeId);
-    if (!node || !['ai', 'conversation'].includes(node.type) ||
+    if (!node || !['ai', 'conversation', 'source-reduce'].includes(node.type) ||
       node.instructions !== prompts.get(binding.promptId))
       throw Error('公开提示词原文与步骤不一致：' + binding.entryId + '/' + binding.nodeId);
   }
