@@ -1,3 +1,4 @@
+import { verifyRead, verifyPrepared } from '../../contracts/run-result-binding.mjs';
 import { realpathSync, statSync } from 'node:fs';
 import type { Store } from './store';
 import { validateConversationOutput } from '../../contracts/skill-trial';
@@ -5,7 +6,7 @@ import type { FlowRecord, Run, PreparedScripts } from '../shared/types';
 import { assertDocumentResult } from '../shared/document';
 import { assertSkillVersion, skillBytes } from '../shared/skill';
 import { digest } from '../shared/utils';
-import { walk } from '../core/validate';
+import { walk, validateObject } from '../core/validate';
 import { validateTemplateDataOutput } from '../../contracts/template-data';
 import type { DataOutput, DataReceipt } from '../shared/template-data';
 import { contextOperations } from '../shared/template-data';
@@ -35,6 +36,7 @@ export type TypedResultMeta = {
     | 'context'
     | 'conversation'
     | 'browser'
+    | 'run-result'
     | 'source'
     | 'source-reduce'
     | 'effect';
@@ -61,7 +63,8 @@ export class TypedResults {
     const snapshot = this.store.get<FlowRecord>('snapshot', runId);
     const node = snapshot && walk(snapshot.flow.steps).find((n) => n.id === nodeId);
     if (!node || node.type !== type) throw Error('结构化结果不属于当前快照');
-    if (type === 'effect') this.effectResult(runId, nodeId, value);
+    if (type === 'run-result') this.checkResult(runId, nodeId, value);
+    else if (type === 'effect') this.effectResult(runId, nodeId, value);
     else if (type === 'source-reduce') this.checkReduction(runId, nodeId, nodeInstance, value);
     else if (type === 'source') this.checkSource(snapshot!, nodeId, value);
     else if (type === 'document') assertDocumentResult(value);
@@ -177,7 +180,8 @@ export class TypedResults {
     )
       throw Error('完整结构化结果尚不可采用');
     if (digest(r.value) !== r.meta.sha256) throw Error('结构化结果摘要不一致');
-    if (r.meta.type === 'effect') this.effectResult(runId, r.meta.nodeId, r.value);
+    if (r.meta.type === 'run-result') this.checkResult(runId, r.meta.nodeId, r.value);
+    else if (r.meta.type === 'effect') this.effectResult(runId, r.meta.nodeId, r.value);
     else if (r.meta.type === 'source-reduce')
       this.checkReduction(runId, r.meta.nodeId, r.meta.nodeInstance, r.value);
     else if (r.meta.type === 'source')
@@ -206,6 +210,28 @@ export class TypedResults {
         : {}),
       ...(['source', 'source-reduce'].includes(r.meta.type) ? { nodeId: r.meta.nodeId } : {}),
     };
+  }
+  private checkResult(runId: string, nodeId: string, value: unknown) {
+    const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', runId);
+    const node = snapshot && walk(snapshot.flow.steps).find((n) => n.id === nodeId);
+    if (node?.type !== 'run-result') throw Error('结果读取不属于固定节点');
+    const fixed = snapshot?.resultSources?.[node.binding];
+    if (!fixed) throw Error('结果读取没有固定来源');
+    verifyPrepared({ [node.binding]: fixed }, runId);
+    const v = validateObject<import('../shared/contracts.generated').RunResultRead>(
+      'RunResultRead',
+      value,
+    );
+    if (v.binding !== node.binding || digest(v.ref) !== digest(fixed.ref))
+      throw Error('读取结果与固定来源不一致');
+    verifyRead(v, fixed.owner, {
+      id: node.binding,
+      kind: 'run-result',
+      access: 'read',
+      required: true,
+      name: node.binding,
+      sourceEntries: [fixed.ref.source.entryId],
+    });
   }
   private checkSource(record: FlowRecord, nodeId: string, value: unknown) {
     const node = record && walk(record.flow.steps).find((n) => n.id === nodeId);

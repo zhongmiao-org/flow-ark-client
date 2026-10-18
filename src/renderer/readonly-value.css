@@ -43,6 +43,12 @@
 .readonly-value li + li {
   margin-top: 8px;
 }
+.complete-value-branch {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
 @container (max-width: 540px) {
   .readonly-value-field {
     grid-template-columns: minmax(0, 1fr);

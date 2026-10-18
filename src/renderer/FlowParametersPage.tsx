@@ -1,6 +1,8 @@
 import AIServiceBinding from './AIServiceBinding';
 import SkillPicker from './SkillPicker';
 import SourcePicker from './SourcePicker';
+import ResultSourcePicker from './ResultSourcePicker';
+import type { RunResultSaveChoices } from '../shared/contracts.generated';
 import { flatten } from './flow-editing';
 import ActionButton from './ActionButton';
 import { changeParameterValues, resolveParameterSources } from '../shared/parameter-sources';
@@ -47,7 +49,7 @@ export default function FlowParametersPage({
   credentials: string[];
   navigation: MutableRefObject<ScriptNavigation | undefined>;
   close: (next?: () => void) => void;
-  save: (record: FlowRecord) => Promise<FlowRecord>;
+  save: (record: FlowRecord, choices?: RunResultSaveChoices) => Promise<FlowRecord>;
   configuration: () => void;
   onDirtyChange?: (dirty: boolean) => void;
   returnLabel?: string;
@@ -70,6 +72,7 @@ export default function FlowParametersPage({
     };
   }, []);
   const [draft, setDraft] = useState(() => structuredClone(record));
+  const [resultChoices, setResultChoices] = useState<RunResultSaveChoices>({});
   const [busy, setBusy] = useState('');
   const [choosing, setChoosing] = useState('');
   const [selection, setSelection] = useState<{
@@ -208,9 +211,10 @@ export default function FlowParametersPage({
     setSaved(false);
     try {
       resolveParameterSources(draft.flow);
-      const result = await save(draft);
+      const result = await save(draft, resultChoices);
       if (alive.current) {
         setDraft(structuredClone(result));
+        setResultChoices({});
         setSelection(undefined);
         if (leaveAfterSave) close(next);
         else setSaved(true);
@@ -535,6 +539,45 @@ export default function FlowParametersPage({
                       })
                     }
                   />
+                </div>
+              ))}
+              {[
+                ...new Set(
+                  flatten(draft.flow.steps)
+                    .filter((n) => n.type === 'run-result')
+                    .map((n) => (n as Extract<typeof n, { type: 'run-result' }>).binding),
+                ),
+              ].map((binding) => (
+                <div key={'result:' + binding}>
+                  <h3>前次已保存结果 · {binding}</h3>
+                  {draft.bindings.template ? (
+                    <>
+                      <p>结果来源由实例资源统一管理。</p>
+                      <Button onClick={configuration}>编辑实例资源</Button>
+                    </>
+                  ) : (
+                    <ResultSourcePicker
+                      target={{ kind: 'author-flow', id: record.id, revision: record.updatedAt }}
+                      binding={binding}
+                      label={binding}
+                      value={draft.bindings.resources?.[binding]}
+                      disabled={!!busy}
+                      change={(value, choiceId) => {
+                        setDraft((current) => {
+                          const resources = { ...current.bindings.resources };
+                          if (value) resources[binding] = value;
+                          else delete resources[binding];
+                          return { ...current, bindings: { ...current.bindings, resources } };
+                        });
+                        setResultChoices((current) => {
+                          const next = { ...current };
+                          if (choiceId) next[binding] = choiceId;
+                          else delete next[binding];
+                          return next;
+                        });
+                      }}
+                    />
+                  )}
                 </div>
               ))}
               {[

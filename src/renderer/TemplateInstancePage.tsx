@@ -1,3 +1,4 @@
+import { saveTemplateResultDraft } from './result-save-recovery';
 import {
   Card,
   ConfigProvider,
@@ -291,7 +292,7 @@ export default function TemplateInstancePage({
           focusConfigurationError.current = tab === 'configuration';
           focusResourceError.current = tab !== 'configuration';
           setError(message(error));
-          if (/实例已变化|实例不存在|原入口流程/.test(message(error)))
+          if (/实例已变化|实例不存在|原入口流程|结果绑定保存未取得/.test(message(error)))
             setSourceError('原实例的已保存内容已变化。当前输入仍保留，请核对后重新读取。');
           throw error;
         }
@@ -329,8 +330,8 @@ export default function TemplateInstancePage({
     focusConfigurationError.current = scope === 'configuration';
     const next: TemplateDetail | undefined = await work(
       () =>
-        api('template.save', request).catch((error) => {
-          if (/实例已变化|实例不存在|原入口流程/.test(message(error)))
+        saveTemplateResultDraft(request, saved).catch((error) => {
+          if (/实例已变化|实例不存在|原入口流程|结果绑定保存未取得/.test(message(error)))
             setSourceError('原实例的已保存内容已变化。当前输入仍保留，请核对后重新读取。');
           throw error;
         }),

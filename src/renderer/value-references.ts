@@ -120,6 +120,20 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
         label + ' / 整理草稿',
         '前序步骤',
       );
+    if (node.type === 'run-result')
+      for (const [key, title] of Object.entries({
+        value: '可复用数据',
+        ref: '固定来源',
+        dataChanged: '是否经过过滤',
+        schemaValidation: '结构校验',
+        labels: '字段说明',
+      }))
+        add(
+          path + '.' + key,
+          label + ' / ' + title,
+          '前序步骤',
+          '完整已核验副本；读取不会扩大后续动作权限',
+        );
     if (node.type === 'source')
       for (const key of node.operation === 'manifest'
         ? ['source', 'manifest', 'current', 'manifest.requestCount', 'manifest.recordCount']

@@ -28,6 +28,7 @@ export type AuthorEditorOrigin = {
   sdk?: import('../shared/contracts.generated').TemplateAuthorSdkContext;
   sdkError?: string;
   sdkLoaded?: boolean;
+  resultResources?: { id: string; name: string }[];
 };
 const api = (method: string, args: unknown = {}) => window.flowark.request(method, args);
 const status: Record<string, string> = {
@@ -710,8 +711,14 @@ export default function TemplateAuthorWorkspace({
                               maxLength={100}
                               disabled={busy}
                               onChange={(e) =>
-                                setEntry((n) => {
-                                  n.id = e.target.value;
+                                edit((d) => {
+                                  const previous = d.entries[entryIndex].id;
+                                  d.entries[entryIndex].id = e.target.value;
+                                  for (const r of d.resources)
+                                    if (r.sourceEntries)
+                                      r.sourceEntries = r.sourceEntries.map((id) =>
+                                        id === previous ? e.target.value : id,
+                                      ) as [string, ...string[]];
                                 })
                               }
                             />
@@ -766,6 +773,14 @@ export default function TemplateAuthorWorkspace({
                               danger
                               disabled={busy}
                               onClick={() => {
+                                if (
+                                  definition.resources.some((r) =>
+                                    r.sourceEntries?.includes(entry.id),
+                                  )
+                                ) {
+                                  setError('入口仍被结果资源用作来源，请先解除来源引用');
+                                  return;
+                                }
                                 edit((d) => {
                                   d.entries.splice(entryIndex, 1);
                                 });
@@ -1226,6 +1241,7 @@ export default function TemplateAuthorWorkspace({
                               'ai',
                               'skill',
                               'conversation-source',
+                              'run-result',
                             ].map((value) => ({
                               value,
                               label: {
@@ -1235,6 +1251,7 @@ export default function TemplateAuthorWorkspace({
                                 ai: 'AI服务',
                                 skill: '确认Skill',
                                 'conversation-source': '完整会话来源',
+                                'run-result': '前次已保存结果',
                               }[value],
                             }))}
                             onChange={(v) => {
@@ -1250,6 +1267,8 @@ export default function TemplateAuthorWorkspace({
                               }
                               edit((d) => {
                                 d.resources[i].kind = v;
+                                if (v === 'run-result') delete d.resources[i].sourceEntries;
+                                else delete d.resources[i].sourceEntries;
                                 d.resources[i].access = ['browser', 'ai'].includes(v)
                                   ? 'use'
                                   : 'read';
@@ -1262,7 +1281,7 @@ export default function TemplateAuthorWorkspace({
                             disabled={busy}
                             options={(['browser', 'ai'].includes(r.kind)
                               ? ['use']
-                              : ['skill', 'conversation-source'].includes(r.kind)
+                              : ['skill', 'conversation-source', 'run-result'].includes(r.kind)
                                 ? ['read']
                                 : ['read', 'write', 'readwrite']
                             ).map((value) => ({
@@ -1312,6 +1331,31 @@ export default function TemplateAuthorWorkspace({
                           >
                             移除
                           </Button>
+                          {r.kind === 'run-result' && (
+                            <div className="author-directory-default">
+                              <span>允许的来源入口</span>
+                              <Select
+                                mode="multiple"
+                                aria-label={'资源' + (i + 1) + '允许的来源入口'}
+                                value={r.sourceEntries ?? []}
+                                disabled={busy}
+                                options={definition.entries.map((e) => ({
+                                  value: e.id,
+                                  label: e.name + ' · ' + e.id,
+                                }))}
+                                onChange={(v) =>
+                                  edit((d) => {
+                                    d.resources[i].sourceEntries = v.length
+                                      ? (v as [string, ...string[]])
+                                      : undefined;
+                                  })
+                                }
+                              />
+                              <p>
+                                至少选择一个本模板入口，只接受同一实例或同一制作草稿中已成功结束的准确来源；公开包不包含个人绑定。
+                              </p>
+                            </div>
+                          )}
                           {r.kind === 'directory' && (
                             <div className="author-directory-default">
                               <span>默认目录来源</span>

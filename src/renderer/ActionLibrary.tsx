@@ -12,7 +12,7 @@ import './action-library.css';
 
 const groups = [
   { id: 'browser', label: '网页操作', types: ['browser'] },
-  { id: 'value', label: '数据与变量', types: ['value', 'context', 'source'] },
+  { id: 'value', label: '数据与变量', types: ['value', 'context', 'source', 'run-result'] },
   { id: 'ai', label: 'AI 调用', types: ['ai', 'conversation', 'source-reduce'] },
   { id: 'http', label: 'HTTP 请求', types: ['http'] },
   { id: 'script', label: 'JS / TS 脚本', types: ['script'] },
@@ -22,6 +22,7 @@ const groups = [
 ];
 const descriptions: Record<string, string> = {
   'source-reduce': '使用本人AI分批处理完整来源，保存草稿与进度，中断后核对恢复',
+  'run-result': '读取本人选择并保存的准确前次结果，不创建运行或调用模型',
   source: '读取本人选择的固定完整会话来源，不调用模型',
   context: '读取本次配置、最新状态，或按修订更新完整状态',
   effect: '准备并去重本次操作，或登记核对结果；未知不重放',

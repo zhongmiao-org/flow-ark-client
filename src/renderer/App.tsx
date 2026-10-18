@@ -1,3 +1,5 @@
+import { saveFlowResultDraft } from './result-save-recovery';
+import RunResultNodeConfiguration from './RunResultNodeConfiguration';
 import EffectConfigurationWorkspace from './EffectConfigurationWorkspace';
 import EffectNodeConfiguration from './EffectNodeConfiguration';
 import { effectCapabilities } from '../shared/effect-node';
@@ -696,6 +698,9 @@ function WorkspaceApp() {
             checkoutId: origin.checkout.id,
             flowId: r.id,
             name: origin.draft.definition.metadata.name,
+            resultResources: origin.draft.definition.resources.filter(
+              (r: any) => r.kind === 'run-result',
+            ),
             sdk: origin.sdk,
             sdkError: origin.sdkError,
             sdkLoaded: true,
@@ -770,7 +775,11 @@ function WorkspaceApp() {
     if (edit)
       return action(async () => {
         checkEditorInput();
-        const saved = await api('flow.save', { flow: edit.flow, bindings: edit.bindings });
+        const saved = await api('flow.save', {
+          revision: edit.updatedAt,
+          flow: edit.flow,
+          bindings: edit.bindings,
+        });
         inputGroup.current = undefined;
         adoptSavedFlow(saved);
         return saved;
@@ -788,7 +797,11 @@ function WorkspaceApp() {
   async function run(r: FlowRecord, debug = false) {
     await action(async () => {
       checkEditorInput();
-      const saved = await api('flow.save', { flow: r.flow, bindings: r.bindings });
+      const saved = await api('flow.save', {
+        revision: r.updatedAt,
+        flow: r.flow,
+        bindings: r.bindings,
+      });
       inputGroup.current = undefined;
       adoptSavedFlow(saved);
       setFlowReview({
@@ -1222,6 +1235,7 @@ function WorkspaceApp() {
           save={async () => {
             checkEditorInput('保存并离开');
             const saved = (await api('flow.save', {
+              revision: edit.updatedAt,
               flow: edit.flow,
               bindings: edit.bindings,
             })) as FlowRecord;
@@ -2416,6 +2430,11 @@ function WorkspaceApp() {
                 </Card>
               )}
               <Editor
+                resultResources={
+                  authorEditorOrigin?.flowId === edit.id
+                    ? (authorEditorOrigin.resultResources ?? [])
+                    : []
+                }
                 key={edit.id}
                 active={!nodeSession && !moreOpen}
                 openLibrary={returnHome}
@@ -2551,6 +2570,7 @@ function WorkspaceApp() {
                 setError('');
                 try {
                   const saved = await api('flow.save', {
+                    revision: edit.updatedAt,
                     flow: edit.flow,
                     bindings: {
                       ...edit.bindings,
@@ -2661,15 +2681,16 @@ function WorkspaceApp() {
                     );
                   else setConfigOpen(true);
                 }}
-                save={async (record) => {
+                save={async (record, resultSourceChoices) => {
                   if (JSON.stringify(edit) !== JSON.stringify(nodeSession.record))
                     throw new Error(
                       '来源流程草稿已经变化，请保留输入并返回重新打开，避免覆盖其他修改',
                     );
-                  const saved = await api('flow.save', {
-                    flow: record.flow,
-                    bindings: record.bindings,
-                  });
+                  const saved = await saveFlowResultDraft(
+                    record,
+                    resultSourceChoices,
+                    nodeSession.record,
+                  );
                   inputGroup.current = undefined;
                   adoptSavedFlow(saved);
                   setNodeSession((current) =>
@@ -2701,6 +2722,7 @@ function WorkspaceApp() {
                     '来源流程草稿已经变化，请保留脚本内容并返回重新打开，避免覆盖其他修改',
                   );
                 const saved = await api('flow.save', {
+                  revision: record.updatedAt,
                   flow: record.flow,
                   bindings: record.bindings,
                 });
@@ -2727,6 +2749,7 @@ function WorkspaceApp() {
                     '来源流程草稿已经变化，请保留映射并返回重新打开，避免覆盖其他修改',
                   );
                 const saved = await api('flow.save', {
+                  revision: record.updatedAt,
                   flow: record.flow,
                   bindings: record.bindings,
                 });
@@ -3079,6 +3102,7 @@ function Empty({ text }: { text: string }) {
   );
 }
 function Editor({
+  resultResources,
   active,
   openLibrary,
   record: r,
@@ -3257,6 +3281,9 @@ function Editor({
             ...(flatten(steps).some((node) => node.type === 'source-reduce')
               ? ['source-reduce-v1', 'conversation-source-read-v1', 'ai-node-v1']
               : []),
+            ...(flatten(steps).some((node) => node.type === 'run-result')
+              ? ['run-result-read-v1']
+              : []),
             ...(flatten(steps).some((node) => node.type === 'source')
               ? ['conversation-source-read-v1']
               : []),
@@ -3317,6 +3344,9 @@ function Editor({
                 : []),
               ...(flatten(steps).some((node) => node.type === 'source-reduce')
                 ? ['source-reduce-v1', 'conversation-source-read-v1', 'ai-node-v1']
+                : []),
+              ...(flatten(steps).some((node) => node.type === 'run-result')
+                ? ['run-result-read-v1']
                 : []),
               ...(flatten(steps).some((node) => node.type === 'source')
                 ? ['conversation-source-read-v1']
@@ -4447,6 +4477,13 @@ function Editor({
                                         choices={choices}
                                         change={updateNode}
                                         changeBindings={(bindings) => setRecord({ ...r, bindings })}
+                                      />
+                                    )}
+                                    {selectedNode.type === 'run-result' && (
+                                      <RunResultNodeConfiguration
+                                        node={selectedNode}
+                                        resources={resultResources}
+                                        change={updateNode}
                                       />
                                     )}
                                     {selectedNode.type === 'source' && (

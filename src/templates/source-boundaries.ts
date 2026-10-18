@@ -35,6 +35,14 @@ export function assertPortableSourceFlow(flow: Flow) {
       typeof v.sha256 === 'string'
     )
       throw Error('公开流程不能包含本机完整来源引用，请改为只读来源资源及变量引用');
+    if (
+      v.version === 1 &&
+      ((v.policy === 'credential-redacted-v1' && v.run && v.source && v.dataSha256) ||
+        (v.proofSha256 && v.registeredPosition && v.ref) ||
+        (v.reviewId && v.readStamp) ||
+        (v.choiceId && v.ref))
+    )
+      throw Error('公开流程不能包含本机结果引用、证明或选择许可，请通过逻辑结果资源读取');
     for (const child of Object.values(v)) visit(child, depth + 1);
   };
   visit(flow, 0);

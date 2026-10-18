@@ -81,6 +81,7 @@ const asciiLower = (s: string) => s.replace(/[A-Z]/g, (c) => c.toLowerCase());
 /** All data and permits stay in the host. No arbitrary history API for models or scripts. */
 export class RunResultSources {
   private leases = new Map<string, Lease>();
+  private preparedChecks = new WeakMap<RunResultPreparedSources, () => void>();
   constructor(
     private store: Store,
     private entries: EntryResults,
@@ -516,24 +517,46 @@ export class RunResultSources {
       this.assertChanges(context, next, choices);
     };
   }
-  async prepareTarget(record: FlowRecord, target: Target): Promise<RunResultPreparedSources> {
-    const prepared: RunResultPreparedSources = {};
-    for (const node of walk(record.flow.steps).filter((n) => n.type === 'run-result')) {
-      const context = await this.context(target, node.binding);
-      const slot = record.bindings.resources?.[node.binding];
-      if (!slot || !equal(slot, context.resources[node.binding]))
+  async prepareTarget(
+    record: FlowRecord,
+    target: Target,
+    required: string[] = [],
+  ): Promise<RunResultPreparedSources> {
+    const prepared: RunResultPreparedSources = {},
+      checks: (() => void)[] = [];
+    const bindings = new Set([
+      ...required,
+      ...walk(record.flow.steps)
+        .filter((n) => n.type === 'run-result')
+        .map((n) => n.binding),
+    ]);
+    for (const binding of bindings) {
+      const context = await this.context(target, binding);
+      const slot = record.bindings.resources?.[binding];
+      if (!slot || !equal(slot, context.resources[binding]))
         throw Error('结果绑定已撤回或变化，请重新核对');
       const ref = this.binding(slot),
         loaded = await this.load(context, ref.run.id, ref);
-      prepared[node.binding] = {
-        binding: node.binding,
+      checks.push(context.assertCurrent, loaded.assertCurrent);
+      prepared[binding] = {
+        binding,
         ref,
         owner: context.owner,
         proofSha256: loaded.proof.proofSha256,
         registeredPosition: loaded.position,
       };
     }
+    const check = () => {
+      for (const assert of checks) assert();
+    };
+    check();
+    this.preparedChecks.set(prepared, check);
     return prepared;
+  }
+  assertPrepared(prepared: RunResultPreparedSources) {
+    const check = this.preparedChecks.get(prepared);
+    if (!check) throw Error('结果来源准备核对不存在');
+    check();
   }
   async perform(
     snapshot: FlowRecord & Partial<PreparedScripts>,

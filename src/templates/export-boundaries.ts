@@ -91,6 +91,20 @@ export function declareNativeBoundaries(
       node.binding = directory(node.binding, access);
       writes ||= access === 'write';
     }
+    if (node.type === 'run-result') {
+      const resource = manifest.resources.find((r) => r.id === node.binding);
+      if (
+        resource?.kind !== 'run-result' ||
+        resource.access !== 'read' ||
+        !resource.sourceEntries?.length
+      )
+        throw Error('请在模板制作的逻辑资源中声明结果来源入口，再带回导出');
+      if (!entry.resources.includes(node.binding)) entry.resources.push(node.binding);
+      if (!entry.capabilities.includes('run-result-read-v1'))
+        entry.capabilities.push('run-result-read-v1');
+      if (!flow.requiredCapabilities.includes('run-result-read-v1'))
+        flow.requiredCapabilities.push('run-result-read-v1');
+    }
     if (node.type === 'source' || node.type === 'source-reduce') {
       const old = manifest.resources.find((r) => r.id === node.binding);
       if (old && (old.kind !== 'conversation-source' || old.access !== 'read'))
