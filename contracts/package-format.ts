@@ -1,3 +1,4 @@
+import { assertEffectNodeCapabilities } from './effect-node';
 import { assertBrowserRenderedFieldsCapabilities } from './browser-rendered-fields';
 import { assertBrowserFieldsCapabilities } from './browser-fields';
 import { assertSkillUpdateNode } from './skill-update-review';
@@ -73,6 +74,7 @@ export function validatePackage(files:Map<string,Buffer>):PackageData {
    const p=n.code.startsWith('@package:')?n.code.slice(9):null;
    if(!p||!manifest.scripts.includes(p))throw new Error('脚本必须引用清单中的 @package:scripts/ 资源');
   }if(n.type==='browser'&&n.version===4){assertBrowserInspectionNode(n);if(!flow.requiredCapabilities.includes(browserInspectionCapability))throw new Error('网页只读节点未声明browser-observe-v1能力');}
+  assertEffectNodeCapabilities(n,flow.requiredCapabilities,manifest,entry);
   assertBrowserRenderedFieldsCapabilities(n,flow.requiredCapabilities,manifest,entry);
   assertBrowserFieldsCapabilities(n,flow.requiredCapabilities,manifest,entry);
   assertAIOutcomeCapabilities(n,flow.requiredCapabilities);

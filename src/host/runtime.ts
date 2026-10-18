@@ -1,4 +1,6 @@
 import { verifySkillDocument } from './skill-update-documents';
+import { EffectNodes } from './effect-nodes';
+import { assertEffectNodeCapabilities } from '../../contracts/effect-node';
 import { assertSkillUpdateNode } from '../../contracts/skill-update-review';
 import { SourceReductions } from './source-reductions';
 import { SourceReductionReviews, reductionSnapshotHash } from './source-reduction-reviews';
@@ -185,6 +187,7 @@ export class Runtime {
   private typedResults: TypedResults;
   private author: TemplateAuthor;
   private templateData: TemplateData;
+  private effectNodes: EffectNodes;
   private authorSdk: AuthorSdk;
   private admissions: Promise<void> = Promise.resolve();
   constructor(
@@ -495,6 +498,7 @@ export class Runtime {
       (id, revision, before, next, allowed) =>
         this.sources.assertChanges({ kind: 'instance', id }, revision, before, next, allowed),
     );
+    this.effectNodes = new EffectNodes(this.store, this.templates);
     this.templateData = new TemplateData(this.store, {
       available: () => this.assertAdmitting(),
       formal: (record) => this.templates.context(record),
@@ -846,6 +850,10 @@ export class Runtime {
     }
     const skillSnapshots = await this.skills.snapshot(record, record.skillSnapshots);
     const steps = walk(flow.steps);
+    await this.effectNodes.preflight(
+      record,
+      steps.filter((n) => n.type === 'effect'),
+    );
     for (const n of steps)
       if (n.type === 'source' || n.type === 'source-reduce')
         this.sources.assertBinding(record, n.binding);
@@ -1462,6 +1470,7 @@ export class Runtime {
       if (this.active === active) this.active = undefined;
       this.aiNodes.release(run.id);
       this.templateData.release(run.id);
+      this.effectNodes.release(run.id);
       await this.documents.release(run.id);
       this.scripts.finishRun(run.id);
       settled();
@@ -1485,6 +1494,11 @@ export class Runtime {
     if (method === 'mcp.cancel') return this.mcpRuns.cancel(id, args.nodeInstance);
     if (method === 'document.cancel')
       return this.active?.id === id ? this.documents.cancel(id, args.invocationId) : false;
+    if (method === 'effect.cancel') {
+      if (this.active?.id !== id || !this.active.nodeInstances?.has(args.nodeInstance))
+        return false;
+      return this.effectNodes.cancel(id, args.nodeInstance);
+    }
     if (method === 'context.cancel') return this.templateData.cancel(id, args.nodeInstance);
     if (method === 'reduction.cancel') {
       this.reductions.cancel(id, args.nodeInstance);
@@ -1496,6 +1510,30 @@ export class Runtime {
     this.checkActive(this.active);
     const runSignal = this.active.abort.signal;
     const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', id)!;
+    if (method === 'effect.node') {
+      const active = this.active,
+        node = walk(snapshot.flow.steps).find((n) => n.id === args.nodeId);
+      if (
+        !node ||
+        node.type !== 'effect' ||
+        typeof args.nodeInstance !== 'string' ||
+        !active.nodeInstances?.has(args.nodeInstance) ||
+        !(args.nodeInstance === node.id || args.nodeInstance.endsWith('/' + node.id))
+      )
+        throw Error('操作记录节点不属于当前执行实例');
+      const result = await this.effectNodes.perform(
+        snapshot,
+        id,
+        node,
+        args.nodeInstance,
+        args.input,
+        runSignal,
+        () => this.checkActive(active),
+      );
+      this.checkActive(active);
+      this.typedResults.save(id, node.id, args.nodeInstance, 'effect', result);
+      return result;
+    }
     if (method === 'context.node') {
       const active = this.active,
         node = walk(snapshot.flow.steps).find((n) => n.id === args.nodeId);
@@ -1758,7 +1796,9 @@ export class Runtime {
       const node = walk(snapshot.flow.steps).find((n) => n.id === args.id);
       if (!node) throw new Error('节点不属于当前快照');
       const { entry, pkg } = await this.templates.context(snapshot);
-      if (node.type === 'source')
+      if (node.type === 'effect')
+        assertEffectNodeCapabilities(node, snapshot.flow.requiredCapabilities, pkg.manifest, entry);
+      else if (node.type === 'source')
         assertConversationSourceNode(node, snapshot.flow.requiredCapabilities, pkg.manifest, entry);
       else if (node.type === 'source-reduce')
         assertSourceReductionNode(node, snapshot.flow.requiredCapabilities, pkg.manifest, entry);
@@ -2577,7 +2617,9 @@ export class Runtime {
           typedResults: this.typedResults
             .list(id)
             .filter(
-              (r) => run?.state === 'SUCCEEDED' || ['context', 'source-reduce'].includes(r.type),
+              (r) =>
+                run?.state === 'SUCCEEDED' ||
+                ['context', 'source-reduce', 'effect'].includes(r.type),
             ),
           snapshot: snapshot?.flow,
           scriptBundles: snapshot?.scriptBundles ?? [],

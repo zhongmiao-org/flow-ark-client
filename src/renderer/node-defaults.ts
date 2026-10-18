@@ -15,6 +15,7 @@ export function newStep(type: string): Step {
     },
     source: { name: '读取来源清单', operation: 'manifest', binding: 'source' },
     context: { operation: 'configuration' },
+    effect: { operation: 'prepare', action: '', key: '', timeoutMs: 600000 },
     skill: {
       operation: 'propose',
       binding: 'workspace',

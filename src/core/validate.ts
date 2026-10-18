@@ -1,4 +1,5 @@
 import { assertSkillUpdateNode } from '../../contracts/skill-update-review';
+import { assertEffectNodeCapabilities, effectNodeCapability } from '../../contracts/effect-node';
 import {
   assertBrowserFieldsNode,
   browserFieldsCapability,
@@ -40,6 +41,7 @@ export function validateObject<T>(name: string, value: unknown): T {
   return value as T;
 }
 export const capabilities = [
+  effectNodeCapability,
   'source-reduce-v1',
   'source-reduce',
   sourceCapability,
@@ -106,6 +108,7 @@ export function validateFlow(value: unknown): Flow {
     for (const n of steps) {
       if (++count > 1000 || all.has(n.id)) throw new Error('节点数量过多或 ID 重复：' + n.id);
       all.add(n.id);
+      assertEffectNodeCapabilities(n, flow.requiredCapabilities);
       assertConversationSourceNode(n, flow.requiredCapabilities);
       assertSourceReductionNode(n, flow.requiredCapabilities);
       assertSkillUpdateNode(n, flow.requiredCapabilities);

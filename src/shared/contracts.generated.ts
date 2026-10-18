@@ -882,6 +882,49 @@ export type Node =
             BrowserRenderedField,
             BrowserRenderedField
           ];
+    }
+  | {
+      id: string;
+      type: 'effect';
+      version: 1;
+      name?: string;
+      timeoutMs?: number;
+      operation: 'prepare';
+      action: string;
+      key:
+        | string
+        | {
+            $ref: string;
+          };
+      description?:
+        | string
+        | {
+            $ref: string;
+          };
+      review?: null | {
+        version: 1;
+        target:
+          | string
+          | {
+              $ref: string;
+            };
+        content:
+          | string
+          | {
+              $ref: string;
+            };
+      };
+    }
+  | {
+      id: string;
+      type: 'effect';
+      version: 1;
+      name?: string;
+      timeoutMs?: number;
+      operation: 'resolve';
+      receipt: Value;
+      state: 'confirmed' | 'failed' | 'unknown';
+      evidence?: Value;
     };
 export type Value =
   | Json
@@ -1489,6 +1532,17 @@ export type SkillUpdateApplication = {
   input: SkillUpdateApply;
   receipt: SkillUpdateReceipt | null;
 };
+export type EffectNode = EffectPrepareNode | EffectResolveNode;
+export type EffectPrepareResult = {
+  version: 1;
+  operation: 'prepare';
+  id: string;
+  action: string;
+  key: string;
+  runId: string;
+  execute: boolean;
+  state: 'submitting' | 'confirmed' | 'failed' | 'unknown';
+};
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -1647,6 +1701,11 @@ export interface FlowArkP1 {
   BrowserRenderedFieldsNode?: BrowserRenderedFieldsNode;
   BrowserRenderedFieldResult?: BrowserRenderedFieldResult;
   BrowserRenderedFieldsResult?: BrowserRenderedFieldsResult;
+  EffectPrepareNode?: EffectPrepareNode;
+  EffectResolveNode?: EffectResolveNode;
+  EffectNode?: EffectNode;
+  EffectPrepareResult?: EffectPrepareResult;
+  EffectResolveResult?: EffectResolveResult;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -4940,4 +4999,53 @@ export interface BrowserRenderedFieldsResult {
         BrowserRenderedFieldResult
       ];
   renderPolicy: 'bounded-rendered-text-v1';
+}
+export interface EffectPrepareNode {
+  id: string;
+  type: 'effect';
+  version: 1;
+  name?: string;
+  timeoutMs?: number;
+  operation: 'prepare';
+  action: string;
+  key:
+    | string
+    | {
+        $ref: string;
+      };
+  description?:
+    | string
+    | {
+        $ref: string;
+      };
+  review?: null | {
+    version: 1;
+    target:
+      | string
+      | {
+          $ref: string;
+        };
+    content:
+      | string
+      | {
+          $ref: string;
+        };
+  };
+}
+export interface EffectResolveNode {
+  id: string;
+  type: 'effect';
+  version: 1;
+  name?: string;
+  timeoutMs?: number;
+  operation: 'resolve';
+  receipt: Value;
+  state: 'confirmed' | 'failed' | 'unknown';
+  evidence?: Value;
+}
+export interface EffectResolveResult {
+  version: 1;
+  operation: 'resolve';
+  id: string;
+  state: 'confirmed' | 'failed' | 'unknown';
 }

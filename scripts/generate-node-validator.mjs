@@ -25,12 +25,11 @@ for (const [key, variants] of groups) {
   if (variants.length === 1) validators[key] = refs[0].$ref;
   else {
     if (
-      key !== 'node_source_1' ||
       variants.some(({ node }) => !node.properties.operation?.const) ||
       new Set(variants.map(({ node }) => node.properties.operation.const)).size !== variants.length
     )
-      throw new Error('Node variants must have distinct type/version or source operation');
-    const id = schema.$id + '.source-node-v1';
+      throw new Error('Node variants must have distinct type/version or fixed operation');
+    const id = schema.$id + '.' + key;
     ajv.addSchema({ $id: id, oneOf: refs });
     validators[key] = id;
   }
@@ -38,6 +37,8 @@ for (const [key, variants] of groups) {
 for (const name of ['Preview', 'Receipt'])
   validators['handoff_' + name.toLowerCase() + '_v1'] = `${schema.$id}#/$defs/EntryHandoff${name}`;
 validators.template_human_review_v1 = `${schema.$id}#/$defs/TemplateHumanReview`;
+validators.effect_prepare_result_v1 = `${schema.$id}#/$defs/EffectPrepareResult`;
+validators.effect_resolve_result_v1 = `${schema.$id}#/$defs/EffectResolveResult`;
 validators.conversation_snapshot_v1 = `${schema.$id}#/$defs/ConversationSnapshot`;
 validators.conversation_event_v1 = `${schema.$id}#/$defs/ConversationEvent`;
 validators.conversation_output_v1 = `${schema.$id}#/$defs/ConversationOutput`;
