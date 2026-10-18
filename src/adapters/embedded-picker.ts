@@ -1,6 +1,7 @@
 import type { MouseInputEvent, WebContents } from 'electron';
 import type { ElementTarget, PickerState } from '../shared/element-picker';
 import { describeElement } from './element-description';
+import { describeFieldsPick } from './browser-field-picking-dom';
 import { embeddedPointTarget, type PointIdentity, type PointHit } from './embedded-point-target';
 type Send = (method: string, params?: any, session?: string) => Promise<any>;
 type Frame = { id: string; parent?: string; session?: string; context?: number };
@@ -12,6 +13,7 @@ const highlight = {
 export class EmbeddedPicker {
   private state?: PickerState;
   private selectedIdentity?: { state: PickerState; point: PointIdentity };
+  private fieldsStates = new WeakSet<PickerState>();
   identity(requestId: string) {
     const selected = this.selectedIdentity;
     if (
@@ -140,11 +142,12 @@ export class EmbeddedPicker {
     await processing;
     return true;
   }
-  async start(requestId: string) {
+  async start(requestId: string, fields = false) {
     this.selectedIdentity = undefined;
     this.pointAbort?.();
     clearTimeout(this.timer);
     const state: PickerState = { requestId, phase: 'picking' };
+    if (fields) this.fieldsStates.add(state);
     this.state = state;
     await this.processing;
     await this.serialize(async () => {
@@ -207,6 +210,7 @@ export class EmbeddedPicker {
     frame: Frame,
     group: string,
     send: Send = this.send,
+    fields = false,
   ) {
     const { object } = await send(
       'DOM.resolveNode',
@@ -217,14 +221,23 @@ export class EmbeddedPicker {
       'Runtime.callFunctionOn',
       {
         objectId: object.objectId,
-        functionDeclaration: describeElement.toString(),
+        functionDeclaration: fields ? describeFieldsPick.toString() : describeElement.toString(),
+        ...(fields ? { arguments: [{ value: { rootSelector: null, selector: null } }] } : {}),
         returnByValue: true,
       },
       frame.session,
     );
     if (result.exceptionDetails)
       throw new Error(result.exceptionDetails.exception?.description ?? '目标定位失败');
-    return result.result.value;
+    if (!fields) return result.result.value;
+    const value = result.result.value;
+    return {
+      ...value,
+      selector: value.globalSelector,
+      inputType: '',
+      multiple: false,
+      options: [],
+    };
   }
   private async pointTarget(
     state: PickerState,
@@ -331,7 +344,8 @@ export class EmbeddedPicker {
         }
       }
       if (!selected) throw new Error('页面框架已变化，请重新选取');
-      const target = await this.inspectNode(backendNodeId, selected, group, send);
+      const fields = this.fieldsStates.has(state);
+      const target = await this.inspectNode(backendNodeId, selected, group, send, fields);
       const path: string[] = [];
       let child = selected;
       while (child.parent) {
@@ -339,7 +353,7 @@ export class EmbeddedPicker {
         const parent = frames.get(child.parent);
         if (!parent) throw new Error('无法定位父框架');
         const owner = await send('DOM.getFrameOwner', { frameId: child.id }, parent.session);
-        const described = await this.inspectNode(owner.backendNodeId, parent, group, send);
+        const described = await this.inspectNode(owner.backendNodeId, parent, group, send, fields);
         path.unshift(described.selector);
         target.structural ||= described.structural;
         child = parent;

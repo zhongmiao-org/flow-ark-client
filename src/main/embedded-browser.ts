@@ -6,7 +6,13 @@ import {
   type WebContents,
 } from 'electron';
 import { randomUUID } from 'node:crypto';
-import { EmbeddedPage } from '../adapters/embedded-page';
+import { EmbeddedPage, type FieldsRootAnchor } from '../adapters/embedded-page';
+import {
+  fieldsPickScopeSchema,
+  type FieldsPickCandidate,
+  type FieldsPickScope,
+  type FieldsPickState,
+} from '../shared/browser-field-picking';
 import type { BrowserCommand } from '../shared/types';
 import { desktopViewportWidth } from '../shared/browser-viewport';
 import {
@@ -34,9 +40,21 @@ import type { PointIdentity } from '../adapters/embedded-point-target';
 import type { ElementTarget } from '../shared/element-picker';
 
 type FocusCandidate = { selection: RepairSelection; target: ElementTarget; point: PointIdentity };
+type FieldsPickSession = {
+  requestId: string;
+  scope: FieldsPickScope;
+  root?: FieldsRootAnchor;
+  revision: number;
+  expires: number;
+  timer?: ReturnType<typeof setTimeout>;
+  candidate?: FieldsPickCandidate;
+  preparing?: Promise<FieldsPickCandidate>;
+  error?: string;
+  returnedFocus?: boolean;
+};
 
 type Bounds = { x: number; y: number; width: number; height: number };
-type Operation = { stop: (reason?: Error) => void; pickRequestId?: string };
+type Operation = { stop: (reason?: Error) => void; pickRequestId?: string; fields?: boolean };
 type Capture = { host: BrowserWindow; attached: boolean };
 type Download = {
   operation: Operation;
@@ -52,6 +70,7 @@ type Resource = {
   pickDocument?: { requestId: string; revision: number; returnedFocus?: boolean };
   confirmedTarget?: RepairSelection;
   focusCandidate?: FocusCandidate;
+  fieldsPick?: FieldsPickSession;
   taskElements?: Map<string, { selection: RepairSelection; point: PointIdentity }>;
   token?: string;
   phase: 'starting' | 'ready' | 'closing' | 'unknown' | 'closed';
@@ -365,6 +384,7 @@ export class EmbeddedBrowser {
     resource.observationFeedback = undefined;
     resource.confirmedTarget = undefined;
     resource.pickDocument = undefined;
+    this.clearFieldsPick(resource);
     const pending = (async () => {
       // A new explicit choice can recover from a prior scale failure. Cleanup
       // for this choice still has to succeed before changing the native view.
@@ -450,6 +470,7 @@ export class EmbeddedBrowser {
     resource.panning = true;
     resource.confirmedTarget = undefined;
     resource.pickDocument = undefined;
+    this.clearFieldsPick(resource);
     const pending = (async () => {
       await resource.page!.picker.cancel();
       this.assertResource(resource);
@@ -592,6 +613,7 @@ export class EmbeddedBrowser {
       const previous = resource.presented;
       resource.presented = presented;
       if (!presented && previous !== false) {
+        this.clearFieldsPick(resource);
         // cancel changes picker state before its first await. A status read must
         // not wait for an in-flight CDP request, or repeatedly queue its cleanup.
         void resource.page.picker.cancel().catch(() => {});
@@ -758,6 +780,7 @@ export class EmbeddedBrowser {
       this.assertOperation(resource, operation);
       if (resource.observationError) throw new Error(resource.observationError);
       await page.picker.cancel();
+      this.clearFieldsPick(resource);
       this.assertOperation(resource, operation);
       verifySelected();
       if (element) await this.inspectTaskElement(resource, expected!, element, operation);
@@ -928,6 +951,7 @@ export class EmbeddedBrowser {
     }
   }
   private closeResource(resource: Resource): Promise<EmbeddedCloseReceipt> {
+    this.clearFieldsPick(resource);
     if (resource.closing) return resource.closing;
     resource.phase = 'closing';
     if (resource.token) this.retiredTokens.add(resource.token);
@@ -1005,7 +1029,99 @@ export class EmbeddedBrowser {
     if (receipt && (!token || receipt.token === token)) return receipt;
     return { state: 'unknown', token, resourceId, error: '没有匹配此网页租约与资源代际的销毁确认' };
   }
-  async system(method: string, args: any) {
+  private clearFieldsPick(resource: Resource) {
+    clearTimeout(resource.fieldsPick?.timer);
+    resource.fieldsPick = undefined;
+  }
+  private async fieldsPickState(requestId: string, confirm = false): Promise<FieldsPickState> {
+    this.layout();
+    const resource = this.resource;
+    const owner = resource?.fieldsPick;
+    const cancelled = { requestId, phase: 'cancelled' as const };
+    if (!resource || !owner || owner.requestId !== requestId || !resource.page) return cancelled;
+    if (
+      this.resource !== resource ||
+      !resource.presented ||
+      resource.documentRevision !== owner.revision ||
+      Date.now() >= owner.expires ||
+      resource.contents!.isLoading()
+    ) {
+      this.clearFieldsPick(resource);
+      await resource.page.picker.cancel(requestId).catch(() => {});
+      return cancelled;
+    }
+    if (owner.error) return { requestId, phase: 'error', error: owner.error };
+    const selected = resource.page.picker.status(requestId);
+    if (selected.phase !== 'selected' || !selected.target)
+      return selected.phase === 'error'
+        ? {
+            requestId,
+            phase: 'error',
+            error: errorText(selected.error).slice(0, 2000) || '选取失败',
+          }
+        : selected.phase === 'picking'
+          ? { requestId, phase: 'picking' }
+          : cancelled;
+    const target = selected.target;
+    const inspect = async () => {
+      const candidate = await resource.page!.describeFieldsSelection(
+        target,
+        resource.page!.picker.identity(requestId),
+        owner.scope,
+        owner.root,
+      );
+      if (
+        this.resource !== resource ||
+        resource.fieldsPick !== owner ||
+        resource.documentRevision !== owner.revision ||
+        !resource.presented ||
+        resource.contents!.isLoading() ||
+        Date.now() >= owner.expires ||
+        resource.page!.picker.status(requestId) !== selected
+      )
+        throw Error('字段选取来源已改变，请重新选取');
+      if (owner.candidate && canonical(owner.candidate) !== canonical(candidate))
+        throw Error('根或相对定位已变化，请重新选取');
+      return candidate;
+    };
+    try {
+      const prepare = async () => {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        try {
+          return await Promise.race([
+            inspect(),
+            new Promise<never>((_, reject) => {
+              timer = setTimeout(() => reject(Error('字段候选解析超时，请重新选取')), 15000);
+            }),
+          ]);
+        } finally {
+          clearTimeout(timer);
+        }
+      };
+      const candidate = confirm
+        ? await inspect()
+        : (owner.candidate ?? (await (owner.preparing ??= prepare())));
+      if (resource.fieldsPick !== owner || resource.page.picker.status(requestId) !== selected)
+        return cancelled;
+      owner.candidate ??= candidate;
+      if (
+        !confirm &&
+        !owner.returnedFocus &&
+        !this.window.isDestroyed() &&
+        this.window.isFocused() &&
+        resource.contents!.isFocused()
+      )
+        this.window.webContents.focus();
+      if (!confirm) owner.returnedFocus = true;
+      return { requestId, phase: 'selected', candidate };
+    } catch (error) {
+      if (resource.fieldsPick !== owner) return cancelled;
+      owner.error = errorText(error).slice(0, 2000) || '字段选取核对失败';
+      await resource.page.picker.cancel(requestId).catch(() => {});
+      return { requestId, phase: 'error', error: owner.error };
+    }
+  }
+  async system(method: string, args: any): Promise<any> {
     switch (method) {
       case 'browser.embedded.task-element.capture':
         return this.captureTaskElement(args.requestId);
@@ -1018,7 +1134,11 @@ export class EmbeddedBrowser {
       case 'browser.embedded.review':
         return this.review();
       case 'browser.embedded.pick.start':
-      case 'browser.embedded.pick.validate': {
+      case 'browser.embedded.pick.validate':
+      case 'browser.embedded.fields.pick.start':
+      case 'browser.embedded.fields.pick.confirm':
+      case 'browser.embedded.fields.pick.validate': {
+        const fields = method.startsWith('browser.embedded.fields.');
         this.assertAvailable();
         if (this.resource?.operation) throw new Error('网页正在执行操作，请稍后选取');
         const resource = await this.ensure();
@@ -1028,6 +1148,7 @@ export class EmbeddedBrowser {
         if (!resource.presented) throw new Error('请先展开内置网页面板');
         if (!this.permitted(resource.contents!.getURL())) throw new Error('请先打开测试网页');
         const page = resource.page!;
+        if (!method.endsWith('.confirm')) this.clearFieldsPick(resource);
         resource.confirmedTarget = undefined;
         resource.focusCandidate = undefined;
         let stop!: (reason?: Error) => void;
@@ -1040,9 +1161,21 @@ export class EmbeddedBrowser {
         });
         const operation: Operation = {
           stop,
-          pickRequestId: method.endsWith('.start') ? args.requestId : undefined,
+          pickRequestId:
+            method.endsWith('.start') || (fields && method.endsWith('.confirm'))
+              ? args.requestId
+              : undefined,
+          fields,
         };
         resource.operation = operation;
+        const timer = fields
+          ? setTimeout(() => {
+              if (resource.operation !== operation) return;
+              if (resource.fieldsPick?.requestId === args.requestId) this.clearFieldsPick(resource);
+              void page.picker.cancel(args.requestId).catch(() => {});
+              stop(new Error('字段定位核对超时，请重新选取'));
+            }, 15000)
+          : undefined;
         try {
           const result = await Promise.race([
             (async () => {
@@ -1055,15 +1188,53 @@ export class EmbeddedBrowser {
               if (!resource.presented || resource.contents!.isLoading())
                 throw new Error('请先展开并等待网页加载完成');
               if (!this.permitted(resource.contents!.getURL())) throw new Error('请先打开测试网页');
+              if (fields && method.endsWith('.confirm')) {
+                const state = await this.fieldsPickState(args.requestId, true);
+                if (state.phase !== 'selected')
+                  throw Error(state.phase === 'error' ? state.error : '候选已失效，请重新选取');
+                return state.candidate;
+              }
               if (method.endsWith('.start')) {
+                if (fields) {
+                  const scope = fieldsPickScopeSchema.parse(args.scope);
+                  await page.picker.cancel();
+                  this.assertOperation(resource, operation);
+                  const revision = resource.documentRevision;
+                  const root =
+                    scope.kind === 'field' ? await page.captureFieldsRoot(scope.root) : undefined;
+                  this.assertOperation(resource, operation);
+                  if (!resource.presented || revision !== resource.documentRevision)
+                    throw Error('网页已变化，请重新选取');
+                  resource.fieldsPick = {
+                    requestId: args.requestId,
+                    scope,
+                    root,
+                    revision,
+                    expires: Date.now() + 120000,
+                  };
+                  const owner = resource.fieldsPick;
+                  owner.timer = setTimeout(() => {
+                    if (resource.fieldsPick !== owner) return;
+                    this.clearFieldsPick(resource);
+                    void page.picker.cancel(owner.requestId).catch(() => {});
+                  }, 120000);
+                  owner.timer.unref();
+                }
                 resource.pickDocument = {
                   requestId: args.requestId,
                   revision: resource.documentRevision,
                 };
-                return page.picker.start(args.requestId);
+                const state = await page.picker.start(args.requestId, fields);
+                return fields ? this.fieldsPickState(args.requestId) : state;
               }
               await page.picker.cancel();
               this.assertOperation(resource, operation);
+              if (fields)
+                return page.validateFieldsTarget(
+                  fieldsPickScopeSchema.parse(args.scope),
+                  args.selector,
+                  args.framePath,
+                );
               return page.inspectTarget(args.selector, args.framePath);
             })(),
             stopped,
@@ -1071,9 +1242,24 @@ export class EmbeddedBrowser {
           this.assertOperation(resource, operation);
           return result;
         } finally {
+          clearTimeout(timer);
           this.finishOperation(resource, operation);
         }
       }
+      case 'browser.embedded.fields.pick.status':
+        return this.fieldsPickState(args.requestId);
+      case 'browser.embedded.fields.pick.cancel':
+        if (
+          !this.resource ||
+          (this.resource.fieldsPick?.requestId !== args.requestId &&
+            !(
+              this.resource.operation?.fields &&
+              this.resource.operation.pickRequestId === args.requestId
+            ))
+        )
+          return true;
+        this.clearFieldsPick(this.resource);
+        return this.system('browser.embedded.pick.cancel', args);
       case 'browser.embedded.pick.confirm': {
         this.assertAvailable();
         const resource = this.resource;
@@ -1118,6 +1304,11 @@ export class EmbeddedBrowser {
         return state;
       }
       case 'browser.embedded.pick.cancel':
+        if (
+          this.resource &&
+          (!args.requestId || this.resource.fieldsPick?.requestId === args.requestId)
+        )
+          this.clearFieldsPick(this.resource);
         if (
           this.resource?.focusCandidate &&
           (!args.requestId || this.resource.focusCandidate.selection.requestId === args.requestId)

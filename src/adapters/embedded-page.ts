@@ -11,6 +11,19 @@ import type { ObservationPan } from '../shared/browser-observation';
 import { resolvedBrowserFields, assertBrowserFieldsResult } from '../shared/browser-fields';
 import { readBrowserFields } from './browser-fields-dom';
 import { readBrowserRenderedFields } from './browser-rendered-fields-dom';
+import { describeFieldsPick } from './browser-field-picking-dom';
+import {
+  fieldsPickCandidateSchema,
+  type FieldsPickCandidate,
+  type FieldsPickRoot,
+  type FieldsPickScope,
+} from '../shared/browser-field-picking';
+export type FieldsRootAnchor = {
+  root: FieldsPickRoot;
+  point: PointIdentity;
+  document: number;
+  epoch: number;
+};
 type Scope = {
   context: number;
   session?: string;
@@ -657,6 +670,178 @@ export class EmbeddedPage {
       '({x:visualViewport.offsetLeft,y:visualViewport.offsetTop,width:visualViewport.width,height:visualViewport.height})',
     );
     if (!fits(visible)) throw new Error('目标尚未进入原字号可见区域，请重新聚焦');
+  }
+  private async fieldsElement(scope: Scope, selector: string, rootSelector?: string) {
+    const value = await this.evaluate(
+      scope,
+      `(() => {
+        let root=document;
+        const rootSelector=${JSON.stringify(rootSelector ?? null)};
+        if(rootSelector!==null){
+          const roots=document.querySelectorAll(rootSelector);
+          if(roots.length!==1) throw Error('采集根元素须唯一匹配，实际匹配 '+roots.length+' 项');
+          root=roots[0];
+        }
+        const found=root.querySelectorAll(${JSON.stringify(selector)});
+        if(found.length!==1) throw Error('定位须唯一匹配，实际匹配 '+found.length+' 项');
+        return found[0];
+      })()`,
+      false,
+    );
+    if (!value.objectId) throw Error('目标元素已离开页面');
+    return value.objectId as string;
+  }
+  private async fieldsPoint(scope: Scope, objectId: string): Promise<PointIdentity> {
+    const { node } = await this.send('DOM.describeNode', { objectId }, scope.session);
+    return { backendNodeId: node.backendNodeId, session: scope.session };
+  }
+  private async fieldsDocument(scope: Scope) {
+    const value = await this.evaluate(scope, 'document', false);
+    try {
+      const point = await this.fieldsPoint(scope, value.objectId);
+      return point.backendNodeId;
+    } finally {
+      await this.send('Runtime.releaseObject', { objectId: value.objectId }, scope.session).catch(
+        () => {},
+      );
+    }
+  }
+  private sameFieldsPoint(a: PointIdentity, b: PointIdentity) {
+    return a.backendNodeId === b.backendNodeId && a.session === b.session;
+  }
+  async captureFieldsRoot(root: FieldsPickRoot): Promise<FieldsRootAnchor> {
+    const epoch = this.documentEpoch;
+    const scope = await this.scope(root.framePath, commandBudget(3000), false);
+    const element = await this.fieldsElement(scope, root.selector);
+    try {
+      const point = await this.fieldsPoint(scope, element);
+      const document = await this.fieldsDocument(scope);
+      if (epoch !== this.documentEpoch) throw Error('网页或框架已变化，请重新验证根');
+      return { root: structuredClone(root), point, document, epoch };
+    } finally {
+      await this.send('Runtime.releaseObject', { objectId: element }, scope.session).catch(
+        () => {},
+      );
+    }
+  }
+  async verifyFieldsRoot(anchor: FieldsRootAnchor) {
+    if (anchor.epoch !== this.documentEpoch) throw Error('网页或框架已变化，请重新验证根');
+    const current = await this.captureFieldsRoot(anchor.root);
+    if (
+      current.epoch !== anchor.epoch ||
+      current.document !== anchor.document ||
+      !this.sameFieldsPoint(current.point, anchor.point)
+    )
+      throw Error('原根元素已被替换，请重新验证根');
+  }
+  /** Strict Document/Element selectors, exactly as collect uses; never pierces ShadowRoot. */
+  async describeFieldsSelection(
+    target: ElementTarget,
+    expected: PointIdentity,
+    picking: FieldsPickScope,
+    anchor?: FieldsRootAnchor,
+  ): Promise<FieldsPickCandidate> {
+    const epoch = this.documentEpoch;
+    if (picking.kind === 'field') {
+      if (!anchor || JSON.stringify(anchor.root) !== JSON.stringify(picking.root))
+        throw Error('根定位来源未固定，请重新选取');
+      if (JSON.stringify(target.framePath) !== JSON.stringify(picking.root.framePath))
+        throw Error('字段目标不在原根的框架内，请重新选取');
+      await this.verifyFieldsRoot(anchor);
+    }
+    const scope = await this.scope(target.framePath, commandBudget(3000), false);
+    const document = await this.fieldsDocument(scope);
+    const element = await this.fieldsElement(scope, target.selector);
+    try {
+      if (!this.sameFieldsPoint(await this.fieldsPoint(scope, element), expected))
+        throw Error('原目标已被替换，请重新选取');
+      const info = await this.call(scope, element, describeFieldsPick.toString(), {
+        rootSelector: picking.kind === 'field' ? picking.root.selector : null,
+        selector: picking.kind === 'root' ? target.selector : null,
+      });
+      const again = await this.fieldsElement(scope, target.selector);
+      try {
+        if (!this.sameFieldsPoint(await this.fieldsPoint(scope, again), expected))
+          throw Error('原目标已被替换，请重新选取');
+      } finally {
+        await this.send('Runtime.releaseObject', { objectId: again }, scope.session).catch(
+          () => {},
+        );
+      }
+      if (picking.kind === 'field') await this.verifyFieldsRoot(anchor!);
+      if (epoch !== this.documentEpoch || document !== (await this.fieldsDocument(scope)))
+        throw Error('网页或框架已变化，请重新选取');
+      return fieldsPickCandidateSchema.parse({
+        version: 1,
+        kind: picking.kind,
+        root:
+          picking.kind === 'field'
+            ? picking.root
+            : { selector: target.selector, framePath: target.framePath },
+        field: picking.kind === 'field' ? { selector: info.selector } : null,
+        label: info.label,
+        tag: info.tag,
+        structural: info.structural || target.structural,
+      });
+    } finally {
+      await this.send('Runtime.releaseObject', { objectId: element }, scope.session).catch(
+        () => {},
+      );
+    }
+  }
+  async validateFieldsTarget(
+    picking: FieldsPickScope,
+    selector: string,
+    path: string[],
+  ): Promise<FieldsPickCandidate> {
+    const epoch = this.documentEpoch;
+    const anchor =
+      picking.kind === 'field' ? await this.captureFieldsRoot(picking.root) : undefined;
+    if (picking.kind === 'field' && JSON.stringify(path) !== JSON.stringify(picking.root.framePath))
+      throw Error('字段验证不能更换根的框架路径');
+    const scope = await this.scope(path, commandBudget(3000), false);
+    const document = await this.fieldsDocument(scope);
+    const element = await this.fieldsElement(
+      scope,
+      selector,
+      picking.kind === 'field' ? picking.root.selector : undefined,
+    );
+    try {
+      const point = await this.fieldsPoint(scope, element);
+      const info = await this.call(scope, element, describeFieldsPick.toString(), {
+        rootSelector: picking.kind === 'field' ? picking.root.selector : null,
+        selector,
+      });
+      const again = await this.fieldsElement(
+        scope,
+        selector,
+        picking.kind === 'field' ? picking.root.selector : undefined,
+      );
+      try {
+        if (!this.sameFieldsPoint(await this.fieldsPoint(scope, again), point))
+          throw Error('验证期间目标已被替换，请重新验证');
+      } finally {
+        await this.send('Runtime.releaseObject', { objectId: again }, scope.session).catch(
+          () => {},
+        );
+      }
+      if (anchor) await this.verifyFieldsRoot(anchor);
+      if (epoch !== this.documentEpoch || document !== (await this.fieldsDocument(scope)))
+        throw Error('验证期间网页或框架已变化，请重新验证');
+      return fieldsPickCandidateSchema.parse({
+        version: 1,
+        kind: picking.kind,
+        root: picking.kind === 'root' ? { selector, framePath: path } : picking.root,
+        field: picking.kind === 'field' ? { selector } : null,
+        label: info.label,
+        tag: info.tag,
+        structural: info.structural,
+      });
+    } finally {
+      await this.send('Runtime.releaseObject', { objectId: element }, scope.session).catch(
+        () => {},
+      );
+    }
   }
   async inspectTarget(
     selector: string,

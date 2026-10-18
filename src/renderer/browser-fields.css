@@ -117,3 +117,21 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+.fields-element-picker {
+  display: grid;
+  gap: var(--fa-space-12);
+  margin: var(--fa-space-12) 0;
+  min-width: 0;
+}
+.fields-element-picker p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.fields-pick-candidate .ant-card-body {
+  display: grid;
+  gap: var(--fa-space-12);
+}
+.fields-pick-candidate .ant-tag,
+.fields-pick-candidate .ant-btn {
+  justify-self: start;
+}

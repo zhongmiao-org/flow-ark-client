@@ -2504,11 +2504,16 @@ function WorkspaceApp() {
                 setPanel={setEditorPanel}
                 showBrowser={() => setBrowserOpen(true)}
                 browserOpen={browserOpen}
-                browserPanel={(picker: { pick?: () => void; focus?: () => void }) =>
+                browserPanel={(picker: {
+                  pick?: () => void;
+                  focus?: () => void;
+                  pickLabel?: string;
+                }) =>
                   browserOpen ? (
                     <BrowserSidebar
                       editing
                       onPick={picker.pick}
+                      pickLabel={picker.pickLabel}
                       onLocate={picker.focus}
                       close={() => setBrowserOpen(false)}
                       running={!!active && !['PAUSED', 'WAITING_INPUT'].includes(active.state)}
@@ -3702,10 +3707,25 @@ function Editor({
           guard={guardNodeInput}
           close={returnToFlow}
           showBrowser={() => {
-            setBrowserActionOpen(false);
+            if (selectedNode.version !== 5 && selectedNode.version !== 6)
+              setBrowserActionOpen(false);
             setPanel('node');
             showBrowser();
           }}
+          browserPanel={
+            browserOpen && (selectedNode.version === 5 || selectedNode.version === 6)
+              ? browserPanel({
+                  pickLabel: '查看左侧定位',
+                  pick: () => {
+                    const button = document.querySelector<HTMLButtonElement>(
+                      '.browser-action-page .fields-element-picker button:not(:disabled)',
+                    );
+                    button?.scrollIntoView({ block: 'nearest' });
+                    button?.focus({ preventScroll: true });
+                  },
+                })
+              : null
+          }
           error={saveError}
           clearError={clearError}
         />
@@ -4644,25 +4664,41 @@ function Editor({
               )}
             </aside>
           </div>
-          {browserPanel({
-            ...(selectedNode?.type === 'browser' &&
-            !['navigate', 'screenshot'].includes(selectedNode.operation)
-              ? {
-                  pick: () => {
-                    if (!guardNodeInput()) return;
-                    setTab('node');
-                    setPanel('node');
-                    requestAnimationFrame(() => pickerControls.current?.pick());
-                  },
-                  focus: () => {
-                    if (!guardNodeInput()) return;
-                    setTab('node');
-                    setPanel('node');
-                    requestAnimationFrame(() => pickerControls.current?.focus());
-                  },
-                }
-              : {}),
-          })}
+          {!(
+            browserActionOpen &&
+            selectedNode?.type === 'browser' &&
+            (selectedNode.version === 5 || selectedNode.version === 6)
+          ) &&
+            browserPanel({
+              ...(selectedNode?.type === 'browser' &&
+              (selectedNode.version === 5 || selectedNode.version === 6)
+                ? {
+                    pickLabel: '配置采集范围与字段',
+                    pick: () => {
+                      if (!guardNodeInput()) return;
+                      setTab('node');
+                      setPanel('node');
+                      setBrowserActionOpen(true);
+                    },
+                  }
+                : selectedNode?.type === 'browser' &&
+                    !['navigate', 'screenshot'].includes(selectedNode.operation)
+                  ? {
+                      pick: () => {
+                        if (!guardNodeInput()) return;
+                        setTab('node');
+                        setPanel('node');
+                        requestAnimationFrame(() => pickerControls.current?.pick());
+                      },
+                      focus: () => {
+                        if (!guardNodeInput()) return;
+                        setTab('node');
+                        setPanel('node');
+                        requestAnimationFrame(() => pickerControls.current?.focus());
+                      },
+                    }
+                  : {}),
+            })}
         </div>
       </div>
     </VariableNavigationContext.Provider>

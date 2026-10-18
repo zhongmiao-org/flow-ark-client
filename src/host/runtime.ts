@@ -2626,6 +2626,9 @@ export class Runtime {
         if (args.visible && this.executionBlock()) throw new Error(this.executionBlock());
         return this.sessions.embeddedVisibility(args.visible);
       case 'browser.embedded.pick.start':
+      case 'browser.embedded.fields.pick.start':
+      case 'browser.embedded.fields.pick.confirm':
+      case 'browser.embedded.fields.pick.validate':
       case 'browser.embedded.pick.confirm':
       case 'browser.embedded.pick.focus':
       case 'browser.embedded.observation':
@@ -2649,6 +2652,8 @@ export class Runtime {
       }
       case 'browser.embedded.pick.status':
       case 'browser.embedded.pick.cancel':
+      case 'browser.embedded.fields.pick.status':
+      case 'browser.embedded.fields.pick.cancel':
         return this.system(method, args);
       case 'browser.embedded.navigate': {
         if (this.executionBlock()) throw new Error(this.executionBlock());
