@@ -1,4 +1,5 @@
 import { SourceReductions } from './source-reductions';
+import { SourceReductionReviews } from './source-reduction-reviews';
 import { reductionMethods } from '../shared/source-reduction';
 import { assertSourceReductionNode } from '../../contracts/source-reduction';
 import { ConversationThreads } from './conversation-threads';
@@ -170,6 +171,7 @@ export class Runtime {
   private archives: ConversationArchives;
   private sources: ConversationSources;
   private reductions: SourceReductions;
+  private reductionReviews: SourceReductionReviews;
   private documents: DocumentProcesses;
   private skills: Skills;
   private typedResults: TypedResults;
@@ -533,6 +535,72 @@ export class Runtime {
         };
       },
       error: (error) => this.redactError(error),
+    });
+    this.reductionReviews = new SourceReductionReviews({
+      context: async (selection, epoch) => {
+        this.assertAdmitting();
+        this.assertNoHandoff();
+        const target = {
+          runId: selection.runId,
+          nodeId: selection.nodeId,
+          nodeInstance: selection.nodeInstance,
+        };
+        const scope = this.reruns.sourceScope(selection.runId);
+        const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', selection.runId)!;
+        const data = this.reductions.reviewContext(target, selection.jobId);
+        const checkConfiguration = this.aiSettings.capture([data.recipe.provider]);
+        if (snapshot.bindings.template) {
+          const { pkg, entry } = await this.templates.context(snapshot);
+          assertSourceReductionNode(
+            data.node,
+            snapshot.flow.requiredCapabilities,
+            pkg.manifest,
+            entry,
+          );
+        }
+        this.authorSdk.prepare(snapshot);
+        // A completed source reads its registered result without requiring a Key.
+        const configuration =
+          data.output.phase === 'complete'
+            ? null
+            : await this.system('ai.configuration.read', { provider: data.recipe.provider });
+        if (configuration && (!configuration.configured || !configuration.revision))
+          throw Error('来源整理需要先配置用户自己的AI Key');
+        const signature = digest(data);
+        const check = () => {
+          this.assertAdmitting();
+          this.assertNoHandoff();
+          checkConfiguration();
+          if (
+            this.reruns.sourceScope(selection.runId).signature !== scope.signature ||
+            digest(this.reductions.reviewContext(target, selection.jobId)) !== signature
+          )
+            throw Error('来源、任务、授权或运行快照已变化，请重新核对');
+        };
+        check();
+        return {
+          value: {
+            ...data,
+            epoch,
+            executionVersionId: scope.source.versionId,
+            snapshotSha256: digest({
+              flow: snapshot.flow,
+              bindings: snapshot.bindings,
+              webTarget: snapshot.webTarget,
+              outputTarget: snapshot.outputTarget,
+              toolTargets: snapshot.toolTargets,
+              desktopTarget: snapshot.desktopTarget,
+              scripts: snapshot.scripts,
+              scriptBundles: snapshot.scriptBundles,
+              skillSnapshots: snapshot.skillSnapshots,
+              templateData: snapshot.templateData,
+              authorSdk: snapshot.authorSdk,
+            }),
+            configurationRevision: configuration?.revision ?? null,
+          },
+          check,
+        };
+      },
     });
     this.handoffs = new EntryHandoffs(this.store, {
       available: () => this.assertAdmitting(),
@@ -2137,6 +2205,7 @@ export class Runtime {
       if (!rule) throw Error('整理IPC方法未授权');
       const v = rule.parse(args) as any,
         target = { runId: v.runId, nodeId: v.nodeId, nodeInstance: v.nodeInstance };
+      if (method === 'reduction.runPreview') return this.reductionReviews.preview(v);
       if (method === 'reduction.forRun') return this.reductions.forRun(target);
       if (method === 'reduction.detail') return this.reductions.detail(target, v.jobId);
       if (method === 'reduction.attempts')

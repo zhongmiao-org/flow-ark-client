@@ -9,6 +9,9 @@ export type {
   SourceReductionRecipe,
   SourceReductionCheckpoint,
   SourceReductionRef,
+  SourceReductionRunReview,
+  SourceReductionRunConfirmation,
+  SourceReductionRunReviewReceipt,
 } from './contracts.generated';
 import type { SourceReductionOutput, SourceReductionAttempt } from './contracts.generated';
 export type ReductionNode = Extract<Step, { type: 'source-reduce' }>;
@@ -45,6 +48,7 @@ const action = job
   .strict();
 export type ReductionTarget = z.infer<typeof target>;
 export const reductionMethods = {
+  'reduction.runPreview': job,
   'reduction.forRun': target,
   'reduction.detail': job,
   'reduction.attempts': job

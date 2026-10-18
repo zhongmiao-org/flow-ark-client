@@ -1,0 +1,310 @@
+{
+  "version": 1,
+  "sourceFixture": "example.source-reduction.json",
+  "ready": {
+    "version": 1,
+    "reviewId": "review-ready",
+    "epoch": "epoch-fictional",
+    "target": {
+      "runId": "run-example",
+      "nodeId": "reduce",
+      "nodeInstance": "reduce"
+    },
+    "mode": "snapshot",
+    "executionVersionId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "snapshotSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "job": {
+      "version": 1,
+      "jobId": "reduce-example",
+      "source": {
+        "version": 1,
+        "archiveId": "archive-example-8-14",
+        "sessionId": "archive-session",
+        "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+      },
+      "recipeHash": "237c2e4dccca91a1cff1a61c1e0dc1e0d973dcdce9d3a89e832d29b346c54baa"
+    },
+    "jobRevision": 1,
+    "checkpoint": {
+      "revision": 0,
+      "sha256": "2bad9a7c3c319b5369d96337e66d5385f95fe94771c1058b4bfbceb7395971ea",
+      "next": {
+        "version": 1,
+        "format": "canonical-record-json-v1",
+        "source": {
+          "version": 1,
+          "archiveId": "archive-example-8-14",
+          "sessionId": "archive-session",
+          "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+        },
+        "recordOrdinal": 1,
+        "byteOffset": 0,
+        "previousHash": "419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3"
+      },
+      "chunks": 0,
+      "records": 0,
+      "bytes": 0
+    },
+    "phase": "ready",
+    "operation": "continue-batch",
+    "pending": null,
+    "fragment": {
+      "version": 1,
+      "format": "canonical-record-json-v1",
+      "source": {
+        "version": 1,
+        "archiveId": "archive-example-8-14",
+        "sessionId": "archive-session",
+        "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+      },
+      "recordOrdinal": 1,
+      "recordKind": "origin",
+      "recordHash": "19378721c2620d2ed9dd0febe93497ec9bdaba4dcab95189616f255ee611c577",
+      "recordBytes": 7154,
+      "byteOffset": 0,
+      "byteEnd": 7154,
+      "sha256": "03a7aa36c752f5d416396b86395feeca8d2b6148f037513be1e2efaf2252cc68"
+    },
+    "batchLimit": 8,
+    "requestLimit": 8,
+    "requestScope": "source-node-instance",
+    "runStartsAtFirstNode": true,
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "configurationRevision": "configuration-example",
+    "attempts": 0,
+    "reportedTotalTokens": 0,
+    "unknownUsageRequests": 0,
+    "createdAt": "2026-10-17T10:00:00.000Z",
+    "expiresAt": "2026-10-17T10:10:00.000Z",
+    "sha256": "de2eb900d6c61a0c3940267d73d7787b329f313f107ef0050f3f64983822f4ab"
+  },
+  "retryWithSavedResponse": {
+    "version": 1,
+    "reviewId": "review-retry",
+    "epoch": "epoch-fictional",
+    "target": {
+      "runId": "run-example",
+      "nodeId": "reduce",
+      "nodeInstance": "reduce"
+    },
+    "mode": "snapshot",
+    "executionVersionId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "snapshotSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "job": {
+      "version": 1,
+      "jobId": "reduce-example",
+      "source": {
+        "version": 1,
+        "archiveId": "archive-example-8-14",
+        "sessionId": "archive-session",
+        "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+      },
+      "recipeHash": "237c2e4dccca91a1cff1a61c1e0dc1e0d973dcdce9d3a89e832d29b346c54baa"
+    },
+    "jobRevision": 2,
+    "checkpoint": {
+      "revision": 0,
+      "sha256": "2bad9a7c3c319b5369d96337e66d5385f95fe94771c1058b4bfbceb7395971ea",
+      "next": {
+        "version": 1,
+        "format": "canonical-record-json-v1",
+        "source": {
+          "version": 1,
+          "archiveId": "archive-example-8-14",
+          "sessionId": "archive-session",
+          "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+        },
+        "recordOrdinal": 1,
+        "byteOffset": 0,
+        "previousHash": "419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3"
+      },
+      "chunks": 0,
+      "records": 0,
+      "bytes": 0
+    },
+    "phase": "attention",
+    "operation": "retry-one",
+    "pending": {
+      "attemptId": "ra_7d2988ac68357bf5282e36afdb3497a0",
+      "state": "response",
+      "hasSavedResponse": true
+    },
+    "fragment": {
+      "version": 1,
+      "format": "canonical-record-json-v1",
+      "source": {
+        "version": 1,
+        "archiveId": "archive-example-8-14",
+        "sessionId": "archive-session",
+        "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+      },
+      "recordOrdinal": 1,
+      "recordKind": "origin",
+      "recordHash": "19378721c2620d2ed9dd0febe93497ec9bdaba4dcab95189616f255ee611c577",
+      "recordBytes": 7154,
+      "byteOffset": 0,
+      "byteEnd": 7154,
+      "sha256": "03a7aa36c752f5d416396b86395feeca8d2b6148f037513be1e2efaf2252cc68"
+    },
+    "batchLimit": 8,
+    "requestLimit": 1,
+    "requestScope": "source-node-instance",
+    "runStartsAtFirstNode": true,
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "configurationRevision": "configuration-example",
+    "attempts": 1,
+    "reportedTotalTokens": 100,
+    "unknownUsageRequests": 0,
+    "createdAt": "2026-10-17T10:00:00.000Z",
+    "expiresAt": "2026-10-17T10:10:00.000Z",
+    "sha256": "a132643d6fda98e8016702f5e5cc8690916e66c879fc26dcc85aa38c23642cac"
+  },
+  "complete": {
+    "version": 1,
+    "reviewId": "review-complete",
+    "epoch": "epoch-fictional",
+    "target": {
+      "runId": "run-example",
+      "nodeId": "reduce",
+      "nodeInstance": "reduce"
+    },
+    "mode": "snapshot",
+    "executionVersionId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "snapshotSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "job": {
+      "version": 1,
+      "jobId": "reduce-example",
+      "source": {
+        "version": 1,
+        "archiveId": "archive-example-8-14",
+        "sessionId": "archive-session",
+        "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+      },
+      "recipeHash": "237c2e4dccca91a1cff1a61c1e0dc1e0d973dcdce9d3a89e832d29b346c54baa"
+    },
+    "jobRevision": 11,
+    "checkpoint": {
+      "revision": 10,
+      "sha256": "55d8ec275676e5bdc0d544936951c541b070b4d2409d395351a190101615e432",
+      "next": null,
+      "chunks": 10,
+      "records": 10,
+      "bytes": 16483
+    },
+    "phase": "complete",
+    "operation": "use-complete",
+    "pending": null,
+    "fragment": null,
+    "batchLimit": 8,
+    "requestLimit": 0,
+    "requestScope": "source-node-instance",
+    "runStartsAtFirstNode": true,
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "configurationRevision": "configuration-example",
+    "attempts": 10,
+    "reportedTotalTokens": 1100,
+    "unknownUsageRequests": 0,
+    "createdAt": "2026-10-17T10:00:00.000Z",
+    "expiresAt": "2026-10-17T10:10:00.000Z",
+    "sha256": "332e17f2644811536dc98795e5450100e753d3297799775a44071753244713ec"
+  },
+  "confirmation": {
+    "version": 1,
+    "reviewId": "review-retry",
+    "reviewSha256": "a132643d6fda98e8016702f5e5cc8690916e66c879fc26dcc85aa38c23642cac",
+    "requestId": "request-fictional",
+    "reviewed": true
+  },
+  "receipt": {
+    "version": 1,
+    "requestId": "request-fictional",
+    "runId": "new-run-example",
+    "review": {
+      "version": 1,
+      "reviewId": "review-retry",
+      "epoch": "epoch-fictional",
+      "target": {
+        "runId": "run-example",
+        "nodeId": "reduce",
+        "nodeInstance": "reduce"
+      },
+      "mode": "snapshot",
+      "executionVersionId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "snapshotSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "job": {
+        "version": 1,
+        "jobId": "reduce-example",
+        "source": {
+          "version": 1,
+          "archiveId": "archive-example-8-14",
+          "sessionId": "archive-session",
+          "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+        },
+        "recipeHash": "237c2e4dccca91a1cff1a61c1e0dc1e0d973dcdce9d3a89e832d29b346c54baa"
+      },
+      "jobRevision": 2,
+      "checkpoint": {
+        "revision": 0,
+        "sha256": "2bad9a7c3c319b5369d96337e66d5385f95fe94771c1058b4bfbceb7395971ea",
+        "next": {
+          "version": 1,
+          "format": "canonical-record-json-v1",
+          "source": {
+            "version": 1,
+            "archiveId": "archive-example-8-14",
+            "sessionId": "archive-session",
+            "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+          },
+          "recordOrdinal": 1,
+          "byteOffset": 0,
+          "previousHash": "419af3351d458703607bd33ead84e57a183e0971f3ccb028b48d9738da8724f3"
+        },
+        "chunks": 0,
+        "records": 0,
+        "bytes": 0
+      },
+      "phase": "attention",
+      "operation": "retry-one",
+      "pending": {
+        "attemptId": "ra_7d2988ac68357bf5282e36afdb3497a0",
+        "state": "response",
+        "hasSavedResponse": true
+      },
+      "fragment": {
+        "version": 1,
+        "format": "canonical-record-json-v1",
+        "source": {
+          "version": 1,
+          "archiveId": "archive-example-8-14",
+          "sessionId": "archive-session",
+          "sha256": "d7e4da13c9e29526643d5448a8019c52aa4ee4f4607088df451b9f61f07a515d"
+        },
+        "recordOrdinal": 1,
+        "recordKind": "origin",
+        "recordHash": "19378721c2620d2ed9dd0febe93497ec9bdaba4dcab95189616f255ee611c577",
+        "recordBytes": 7154,
+        "byteOffset": 0,
+        "byteEnd": 7154,
+        "sha256": "03a7aa36c752f5d416396b86395feeca8d2b6148f037513be1e2efaf2252cc68"
+      },
+      "batchLimit": 8,
+      "requestLimit": 1,
+      "requestScope": "source-node-instance",
+      "runStartsAtFirstNode": true,
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "configurationRevision": "configuration-example",
+      "attempts": 1,
+      "reportedTotalTokens": 100,
+      "unknownUsageRequests": 0,
+      "createdAt": "2026-10-17T10:00:00.000Z",
+      "expiresAt": "2026-10-17T10:10:00.000Z",
+      "sha256": "a132643d6fda98e8016702f5e5cc8690916e66c879fc26dcc85aa38c23642cac"
+    },
+    "confirmedAt": "2026-10-17T10:00:30.000Z",
+    "sha256": "d09e59ee2da3efe5cfeb6c7b7b97b25e6175ead59b55b6985adcf104d3beec49"
+  }
+}

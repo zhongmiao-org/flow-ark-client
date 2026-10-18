@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.35.1/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.36.0/p1.schema.json",
   "title": "FlowArk P1 0.35.0: fixed conversation source resources and bounded reads",
   "$defs": {
     "Json": {
@@ -9326,6 +9326,432 @@
         "reportedTotalTokens",
         "unknownUsageRequests",
         "proof"
+      ],
+      "additionalProperties": false
+    },
+    "SourceReductionReviewTarget": {
+      "type": "object",
+      "properties": {
+        "runId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "nodeId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "nodeInstance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        }
+      },
+      "required": [
+        "runId",
+        "nodeId",
+        "nodeInstance"
+      ],
+      "additionalProperties": false
+    },
+    "SourceReductionReviewSelection": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "target": {
+          "$ref": "#/$defs/SourceReductionReviewTarget"
+        },
+        "jobId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        }
+      },
+      "required": [
+        "version",
+        "target",
+        "jobId"
+      ],
+      "additionalProperties": false
+    },
+    "SourceReductionReviewCheckpoint": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "next": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ConversationSourceCursor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "chunks": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "records": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "revision",
+        "sha256",
+        "next",
+        "chunks",
+        "records",
+        "bytes"
+      ],
+      "additionalProperties": false
+    },
+    "SourceReductionReviewFragment": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "format": {
+          "const": "canonical-record-json-v1"
+        },
+        "source": {
+          "$ref": "#/$defs/ConversationArchiveRef"
+        },
+        "recordOrdinal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740990
+        },
+        "recordKind": {
+          "enum": [
+            "origin",
+            "context",
+            "history"
+          ]
+        },
+        "recordHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "recordBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1052672
+        },
+        "byteOffset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1052671
+        },
+        "byteEnd": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1052672
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "version",
+        "format",
+        "source",
+        "recordOrdinal",
+        "recordKind",
+        "recordHash",
+        "recordBytes",
+        "byteOffset",
+        "byteEnd",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "SourceReductionReviewPending": {
+      "type": "object",
+      "properties": {
+        "attemptId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "state": {
+          "enum": [
+            "prepared",
+            "response",
+            "failed",
+            "unknown"
+          ]
+        },
+        "hasSavedResponse": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "attemptId",
+        "state",
+        "hasSavedResponse"
+      ],
+      "additionalProperties": false
+    },
+    "SourceReductionRunReview": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "reviewId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "epoch": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "target": {
+          "$ref": "#/$defs/SourceReductionReviewTarget"
+        },
+        "mode": {
+          "const": "snapshot"
+        },
+        "executionVersionId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "snapshotSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "job": {
+          "$ref": "#/$defs/SourceReductionRef"
+        },
+        "jobRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "checkpoint": {
+          "$ref": "#/$defs/SourceReductionReviewCheckpoint"
+        },
+        "phase": {
+          "enum": [
+            "ready",
+            "attention",
+            "complete"
+          ]
+        },
+        "operation": {
+          "enum": [
+            "continue-batch",
+            "retry-one",
+            "use-complete"
+          ]
+        },
+        "pending": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceReductionReviewPending"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fragment": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceReductionReviewFragment"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "batchLimit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        },
+        "requestLimit": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16
+        },
+        "requestScope": {
+          "const": "source-node-instance"
+        },
+        "runStartsAtFirstNode": {
+          "const": true
+        },
+        "provider": {
+          "enum": [
+            "deepseek",
+            "openai-codex"
+          ]
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,99}$"
+        },
+        "configurationRevision": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "attempts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "reportedTotalTokens": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "unknownUsageRequests": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "createdAt": {
+          "type": "string",
+          "minLength": 24,
+          "maxLength": 24,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+        },
+        "expiresAt": {
+          "type": "string",
+          "minLength": 24,
+          "maxLength": 24,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "version",
+        "reviewId",
+        "epoch",
+        "target",
+        "mode",
+        "executionVersionId",
+        "snapshotSha256",
+        "job",
+        "jobRevision",
+        "checkpoint",
+        "phase",
+        "operation",
+        "pending",
+        "fragment",
+        "batchLimit",
+        "requestLimit",
+        "requestScope",
+        "runStartsAtFirstNode",
+        "provider",
+        "model",
+        "configurationRevision",
+        "attempts",
+        "reportedTotalTokens",
+        "unknownUsageRequests",
+        "createdAt",
+        "expiresAt",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "SourceReductionRunConfirmation": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "reviewId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "reviewSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "reviewed": {
+          "const": true
+        }
+      },
+      "required": [
+        "version",
+        "reviewId",
+        "reviewSha256",
+        "requestId",
+        "reviewed"
+      ],
+      "additionalProperties": false
+    },
+    "SourceReductionRunReviewReceipt": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "runId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "review": {
+          "$ref": "#/$defs/SourceReductionRunReview"
+        },
+        "confirmedAt": {
+          "type": "string",
+          "minLength": 24,
+          "maxLength": 24,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "version",
+        "requestId",
+        "runId",
+        "review",
+        "confirmedAt",
+        "sha256"
       ],
       "additionalProperties": false
     }
