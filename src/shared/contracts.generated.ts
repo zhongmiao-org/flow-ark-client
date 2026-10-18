@@ -1543,6 +1543,70 @@ export type EffectPrepareResult = {
   execute: boolean;
   state: 'submitting' | 'confirmed' | 'failed' | 'unknown';
 };
+export type EntryResultId = string;
+export type EntryResultSha256 = string;
+export type EntryResultJson =
+  | null
+  | boolean
+  | number
+  | string
+  | EntryResultJson[]
+  | {
+      [k: string]: EntryResultJson;
+    };
+export type EntryResultSource = EntryResultTemplateSource | EntryResultAuthorSource;
+export type EntryResultAvailable = {
+  run?: {
+    state?: 'SUCCEEDED' | 'FAILED' | 'CANCELLED' | 'INTERRUPTED';
+    [k: string]: any;
+  };
+  [k: string]: any;
+} & {
+  formatVersion: '1.0';
+  run: EntryResultRun;
+  readStamp: EntryResultSha256;
+  viewStatus: 'available';
+  source: EntryResultSource;
+  completion: 'run-succeeded' | 'saved-only';
+  sourceValidation: 'passed';
+  privacy: 'host-redacted-v1';
+  displayChanged: boolean;
+  value: EntryResultJson;
+  valueSha256: EntryResultSha256;
+  valueBytes: number;
+  /**
+   * @maxItems 256
+   */
+  labels: EntryResultLabel[];
+  labelsComplete: boolean;
+};
+export type EntryResultMissing = {
+  run?: {
+    state?: 'SUCCEEDED' | 'FAILED' | 'CANCELLED' | 'INTERRUPTED';
+    [k: string]: any;
+  };
+  [k: string]: any;
+} & {
+  formatVersion: '1.0';
+  run: EntryResultRun;
+  readStamp: EntryResultSha256;
+  viewStatus: 'missing';
+  source: EntryResultSource;
+};
+export type EntryResultPending = {
+  run?: {
+    state?: 'QUEUED' | 'RUNNING' | 'PAUSED' | 'WAITING_INPUT' | 'CANCELLING';
+    [k: string]: any;
+  };
+  [k: string]: any;
+} & {
+  formatVersion: '1.0';
+  run: EntryResultRun;
+  readStamp: EntryResultSha256;
+  viewStatus: 'pending';
+};
+export type EntryResultResponse =
+  EntryResultAvailable | EntryResultMissing | EntryResultPending | EntryResultNotApplicable | EntryResultUnavailable;
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -1706,6 +1770,22 @@ export interface FlowArkP1 {
   EffectNode?: EffectNode;
   EffectPrepareResult?: EffectPrepareResult;
   EffectResolveResult?: EffectResolveResult;
+  EntryResultId?: EntryResultId;
+  EntryResultSha256?: EntryResultSha256;
+  EntryResultJson?: EntryResultJson;
+  EntryResultRun?: EntryResultRun;
+  EntryResultRequest?: EntryResultRequest;
+  EntryResultTemplateSource?: EntryResultTemplateSource;
+  EntryResultAuthorSource?: EntryResultAuthorSource;
+  EntryResultSource?: EntryResultSource;
+  EntryResultLabel?: EntryResultLabel;
+  EntryResultAvailable?: EntryResultAvailable;
+  EntryResultMissing?: EntryResultMissing;
+  EntryResultPending?: EntryResultPending;
+  EntryResultNotApplicable?: EntryResultNotApplicable;
+  EntryResultUnavailable?: EntryResultUnavailable;
+  EntryResultResponse?: EntryResultResponse;
+  EntryResultView?: EntryResultResponse;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -5048,4 +5128,77 @@ export interface EffectResolveResult {
   operation: 'resolve';
   id: string;
   state: 'confirmed' | 'failed' | 'unknown';
+}
+export interface EntryResultRun {
+  id: EntryResultId;
+  flowId: EntryResultId;
+  versionId: EntryResultId;
+  state:
+    | 'QUEUED'
+    | 'RUNNING'
+    | 'PAUSED'
+    | 'WAITING_INPUT'
+    | 'CANCELLING'
+    | 'SUCCEEDED'
+    | 'FAILED'
+    | 'CANCELLED'
+    | 'INTERRUPTED';
+}
+export interface EntryResultRequest {
+  runId: EntryResultId;
+}
+export interface EntryResultTemplateSource {
+  kind: 'template';
+  instanceId: EntryResultId;
+  templateId: string;
+  templateVersion: string;
+  packageKey: string;
+  packageDigest: EntryResultSha256;
+  entryId: EntryResultId;
+  entryName: string;
+  schemaPath: string;
+  schemaSha256: EntryResultSha256;
+}
+export interface EntryResultAuthorSource {
+  kind: 'author-checkout';
+  checkoutId: EntryResultId;
+  draftId: EntryResultId;
+  entryId: EntryResultId;
+  flowId: EntryResultId;
+  baseRevision: number;
+  contextId: EntryResultId;
+  definitionSha256: EntryResultSha256;
+  schemaSha256: EntryResultSha256;
+}
+export interface EntryResultLabel {
+  path: string;
+  label: string;
+  description?: string;
+}
+export interface EntryResultNotApplicable {
+  formatVersion: '1.0';
+  run: EntryResultRun;
+  readStamp: EntryResultSha256;
+  viewStatus: 'not-applicable';
+}
+export interface EntryResultUnavailable {
+  formatVersion: '1.0';
+  run: EntryResultRun;
+  readStamp: EntryResultSha256;
+  viewStatus: 'unavailable';
+  reason:
+    | 'snapshot-missing'
+    | 'snapshot-mismatch'
+    | 'owner-conflict'
+    | 'owner-unavailable'
+    | 'package-missing'
+    | 'package-mismatch'
+    | 'entry-missing'
+    | 'schema-missing'
+    | 'schema-invalid'
+    | 'result-invalid'
+    | 'read-limit'
+    | 'changed-during-read'
+    | 'storage-unavailable'
+    | 'privacy-unavailable';
 }

@@ -144,6 +144,7 @@ const allowed = new Set([
   'flow.run.preview',
   'flow.run.confirm',
   'run.detail',
+  'run.entryResult',
   'run.typedResult',
   'run.rerun.preview',
   'run.rerun.confirm',

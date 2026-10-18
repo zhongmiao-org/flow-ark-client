@@ -1,4 +1,5 @@
 import AuthorSdkInfo from './AuthorSdkInfo';
+import EntryResultView from './EntryResultView';
 import TypedRunResults from './TypedRunResults';
 import RunContextOperations from './RunContextOperations';
 import ActionButton from './ActionButton';
@@ -151,6 +152,8 @@ export default function RunOutputWorkspace({
   );
   return (
     <div className="run-output-workspace">
+      <EntryResultView key={detail.run.id} run={detail.run} />
+      <h3>步骤结果与其他输出</h3>
       <div className="run-output-columns">
         <section aria-label="已保存结果">
           <Card className="run-output-result">

@@ -2,10 +2,20 @@ import type { ReactNode } from 'react';
 import './readonly-value.css';
 
 /** A bounded presentation of an already validated JSON value; never changes its source. */
-export default function ReadonlyValue({ value }: { value: unknown }) {
+export default function ReadonlyValue({
+  value,
+  labels = [],
+  ariaLabel = '配置与状态值',
+}: {
+  value: unknown;
+  labels?: { path: string; label: string; description?: string }[];
+  ariaLabel?: string;
+}) {
+  const annotations = new Map(labels.map((label) => [label.path, label]));
+  const pointer = (key: string) => key.replace(/~/g, '~0').replace(/\//g, '~1');
   let remaining = 200;
   let limited = false;
-  const render = (current: unknown, depth: number): ReactNode => {
+  const render = (current: unknown, depth: number, path = ''): ReactNode => {
     if (remaining-- <= 0 || depth > 8) {
       limited = true;
       return <span className="readonly-value-muted">其余内容请查看高级原文</span>;
@@ -25,7 +35,7 @@ export default function ReadonlyValue({ value }: { value: unknown }) {
       if (!current.length) return <span>空列表 · 0 项</span>;
       const items: ReactNode[] = [];
       for (let i = 0; i < current.length && remaining > 0; i++)
-        items.push(<li key={i}>{render(current[i], depth + 1)}</li>);
+        items.push(<li key={i}>{render(current[i], depth + 1, `${path}/${i}`)}</li>);
       if (items.length < current.length) limited = true;
       return (
         <div>
@@ -40,10 +50,17 @@ export default function ReadonlyValue({ value }: { value: unknown }) {
       const rows: ReactNode[] = [];
       for (const [key, item] of entries) {
         if (remaining <= 0) break;
+        const nextPath = `${path}/${pointer(key)}`,
+          annotation = annotations.get(nextPath);
         rows.push(
           <div className="readonly-value-field" key={key}>
-            <dt>{key || '空字段名'}</dt>
-            <dd>{render(item, depth + 1)}</dd>
+            <dt>{annotation?.label || key || '空字段名'}</dt>
+            <dd>
+              {annotation?.description && (
+                <p className="readonly-value-muted">{annotation.description}</p>
+              )}
+              {render(item, depth + 1, nextPath)}
+            </dd>
           </div>,
         );
       }
@@ -54,8 +71,12 @@ export default function ReadonlyValue({ value }: { value: unknown }) {
   };
   const summary = render(value, 0);
   return (
-    <section className="readonly-value" aria-label="配置与状态值">
-      <p className="readonly-value-muted">字段名按已保存内容展示，不推断业务含义。</p>
+    <section className="readonly-value" aria-label={ariaLabel}>
+      <p className="readonly-value-muted">
+        {labels.length
+          ? '字段标题与说明来自模板，不是事实认证。'
+          : '字段名按已保存内容展示，不推断业务含义。'}
+      </p>
       {summary}
       {limited && (
         <p role="status" className="readonly-value-muted">

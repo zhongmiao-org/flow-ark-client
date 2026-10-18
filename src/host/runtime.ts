@@ -1,5 +1,6 @@
 import { verifySkillDocument } from './skill-update-documents';
 import { EffectNodes } from './effect-nodes';
+import { EntryResults } from './entry-results';
 import { assertEffectNodeCapabilities } from '../../contracts/effect-node';
 import { assertSkillUpdateNode } from '../../contracts/skill-update-review';
 import { SourceReductions } from './source-reductions';
@@ -185,6 +186,7 @@ export class Runtime {
   private documents: DocumentProcesses;
   private skills: Skills;
   private typedResults: TypedResults;
+  private entryResults: EntryResults;
   private author: TemplateAuthor;
   private templateData: TemplateData;
   private effectNodes: EffectNodes;
@@ -509,6 +511,7 @@ export class Runtime {
       () => this.assertAdmitting(),
       () => this.system('notification', { title: 'FlowArk 有新的作者调试提醒' }),
     );
+    this.entryResults = new EntryResults(this.store, this.templates.library, this.authorSdk);
     this.author = new TemplateAuthor(
       this.store,
       this.templates.library,
@@ -1469,6 +1472,7 @@ export class Runtime {
       clearTimeout(active.cancelTimer);
       this.sessions.finishRun(run.id);
       rpc.close();
+      await this.entryResults.finalize(run.id, () => this.secrets);
       this.secrets = [];
       if (this.active === active) this.active = undefined;
       this.aiNodes.release(run.id);
@@ -2596,6 +2600,8 @@ export class Runtime {
         return this.artifactCleanup.preview(args.id);
       case 'run.artifacts.clear':
         return this.artifactCleanup.clear(args.id, args.token, args.reviewed);
+      case 'run.entryResult':
+        return this.entryResults.read(args.runId);
       case 'run.detail': {
         const id = args.id;
         const artifacts = await Promise.all(

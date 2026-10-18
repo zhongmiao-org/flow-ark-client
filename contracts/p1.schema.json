@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.40.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.41.0/p1.schema.json",
   "title": "FlowArk P1 0.35.0: fixed conversation source resources and bounded reads",
   "$defs": {
     "Json": {
@@ -11891,6 +11891,542 @@
           ]
         }
       }
+    },
+    "EntryResultId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "not": {
+        "pattern": "[^a-zA-Z0-9_-]"
+      }
+    },
+    "EntryResultSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "minLength": 64,
+      "maxLength": 64
+    },
+    "EntryResultJson": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EntryResultJson"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/EntryResultJson"
+          }
+        }
+      ]
+    },
+    "EntryResultRun": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/EntryResultId"
+        },
+        "flowId": {
+          "$ref": "#/$defs/EntryResultId"
+        },
+        "versionId": {
+          "$ref": "#/$defs/EntryResultId"
+        },
+        "state": {
+          "enum": [
+            "QUEUED",
+            "RUNNING",
+            "PAUSED",
+            "WAITING_INPUT",
+            "CANCELLING",
+            "SUCCEEDED",
+            "FAILED",
+            "CANCELLED",
+            "INTERRUPTED"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "flowId",
+        "versionId",
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "EntryResultRequest": {
+      "type": "object",
+      "properties": {
+        "runId": {
+          "$ref": "#/$defs/EntryResultId"
+        }
+      },
+      "required": [
+        "runId"
+      ],
+      "additionalProperties": false
+    },
+    "EntryResultTemplateSource": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "template"
+        },
+        "instanceId": {
+          "$ref": "#/$defs/EntryResultId"
+        },
+        "templateId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "not": {
+            "pattern": "[^a-z0-9-]"
+          }
+        },
+        "templateVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[0-9A-Za-z.-]+$",
+          "not": {
+            "pattern": "[^0-9A-Za-z.-]"
+          }
+        },
+        "packageKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 181
+        },
+        "packageDigest": {
+          "$ref": "#/$defs/EntryResultSha256"
+        },
+        "entryId": {
+          "$ref": "#/$defs/EntryResultId"
+        },
+        "entryName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "schemaPath": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240,
+          "pattern": "^schemas/[a-zA-Z0-9._/-]+$",
+          "not": {
+            "pattern": "[^a-zA-Z0-9._/-]"
+          }
+        },
+        "schemaSha256": {
+          "$ref": "#/$defs/EntryResultSha256"
+        }
+      },
+      "required": [
+        "kind",
+        "instanceId",
+        "templateId",
+        "templateVersion",
+        "packageKey",
+        "packageDigest",
+        "entryId",
+        "entryName",
+        "schemaPath",
+        "schemaSha256"
+      ],
+      "additionalProperties": false
+    },
+    "EntryResultAuthorSource": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "author-checkout"
+        },
+        "checkoutId": {
+          "$ref": "#/$defs/EntryResultId"
+        },
+        "draftId": {
+          "$ref": "#/$defs/EntryResultId"
+        },
+        "entryId": {
+          "$ref": "#/$defs/EntryResultId"
+        },
+        "flowId": {
+          "$ref": "#/$defs/EntryResultId"
+        },
+        "baseRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "contextId": {
+          "$ref": "#/$defs/EntryResultId"
+        },
+        "definitionSha256": {
+          "$ref": "#/$defs/EntryResultSha256"
+        },
+        "schemaSha256": {
+          "$ref": "#/$defs/EntryResultSha256"
+        }
+      },
+      "required": [
+        "kind",
+        "checkoutId",
+        "draftId",
+        "entryId",
+        "flowId",
+        "baseRevision",
+        "contextId",
+        "definitionSha256",
+        "schemaSha256"
+      ],
+      "additionalProperties": false
+    },
+    "EntryResultSource": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/EntryResultTemplateSource"
+        },
+        {
+          "$ref": "#/$defs/EntryResultAuthorSource"
+        }
+      ]
+    },
+    "EntryResultLabel": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "maxLength": 2048,
+          "pattern": "^(?:/(?:[^~/]|~[01])*)*$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "description": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "path",
+        "label"
+      ],
+      "additionalProperties": false
+    },
+    "EntryResultAvailable": {
+      "type": "object",
+      "properties": {
+        "formatVersion": {
+          "const": "1.0"
+        },
+        "run": {
+          "$ref": "#/$defs/EntryResultRun"
+        },
+        "readStamp": {
+          "$ref": "#/$defs/EntryResultSha256"
+        },
+        "viewStatus": {
+          "const": "available"
+        },
+        "source": {
+          "$ref": "#/$defs/EntryResultSource"
+        },
+        "completion": {
+          "enum": [
+            "run-succeeded",
+            "saved-only"
+          ]
+        },
+        "sourceValidation": {
+          "const": "passed"
+        },
+        "privacy": {
+          "const": "host-redacted-v1"
+        },
+        "displayChanged": {
+          "type": "boolean"
+        },
+        "value": {
+          "$ref": "#/$defs/EntryResultJson"
+        },
+        "valueSha256": {
+          "$ref": "#/$defs/EntryResultSha256"
+        },
+        "valueBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 196608
+        },
+        "labels": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/EntryResultLabel"
+          }
+        },
+        "labelsComplete": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "formatVersion",
+        "run",
+        "readStamp",
+        "viewStatus",
+        "source",
+        "completion",
+        "sourceValidation",
+        "privacy",
+        "displayChanged",
+        "value",
+        "valueSha256",
+        "valueBytes",
+        "labels",
+        "labelsComplete"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "properties": {
+            "run": {
+              "properties": {
+                "state": {
+                  "enum": [
+                    "SUCCEEDED",
+                    "FAILED",
+                    "CANCELLED",
+                    "INTERRUPTED"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "run": {
+                "properties": {
+                  "state": {
+                    "const": "SUCCEEDED"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "completion": {
+                "const": "run-succeeded"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "completion": {
+                "const": "saved-only"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "EntryResultMissing": {
+      "type": "object",
+      "properties": {
+        "formatVersion": {
+          "const": "1.0"
+        },
+        "run": {
+          "$ref": "#/$defs/EntryResultRun"
+        },
+        "readStamp": {
+          "$ref": "#/$defs/EntryResultSha256"
+        },
+        "viewStatus": {
+          "const": "missing"
+        },
+        "source": {
+          "$ref": "#/$defs/EntryResultSource"
+        }
+      },
+      "required": [
+        "formatVersion",
+        "run",
+        "readStamp",
+        "viewStatus",
+        "source"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "properties": {
+            "run": {
+              "properties": {
+                "state": {
+                  "enum": [
+                    "SUCCEEDED",
+                    "FAILED",
+                    "CANCELLED",
+                    "INTERRUPTED"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "EntryResultPending": {
+      "type": "object",
+      "properties": {
+        "formatVersion": {
+          "const": "1.0"
+        },
+        "run": {
+          "$ref": "#/$defs/EntryResultRun"
+        },
+        "readStamp": {
+          "$ref": "#/$defs/EntryResultSha256"
+        },
+        "viewStatus": {
+          "const": "pending"
+        }
+      },
+      "required": [
+        "formatVersion",
+        "run",
+        "readStamp",
+        "viewStatus"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "properties": {
+            "run": {
+              "properties": {
+                "state": {
+                  "enum": [
+                    "QUEUED",
+                    "RUNNING",
+                    "PAUSED",
+                    "WAITING_INPUT",
+                    "CANCELLING"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "EntryResultNotApplicable": {
+      "type": "object",
+      "properties": {
+        "formatVersion": {
+          "const": "1.0"
+        },
+        "run": {
+          "$ref": "#/$defs/EntryResultRun"
+        },
+        "readStamp": {
+          "$ref": "#/$defs/EntryResultSha256"
+        },
+        "viewStatus": {
+          "const": "not-applicable"
+        }
+      },
+      "required": [
+        "formatVersion",
+        "run",
+        "readStamp",
+        "viewStatus"
+      ],
+      "additionalProperties": false
+    },
+    "EntryResultUnavailable": {
+      "type": "object",
+      "properties": {
+        "formatVersion": {
+          "const": "1.0"
+        },
+        "run": {
+          "$ref": "#/$defs/EntryResultRun"
+        },
+        "readStamp": {
+          "$ref": "#/$defs/EntryResultSha256"
+        },
+        "viewStatus": {
+          "const": "unavailable"
+        },
+        "reason": {
+          "enum": [
+            "snapshot-missing",
+            "snapshot-mismatch",
+            "owner-conflict",
+            "owner-unavailable",
+            "package-missing",
+            "package-mismatch",
+            "entry-missing",
+            "schema-missing",
+            "schema-invalid",
+            "result-invalid",
+            "read-limit",
+            "changed-during-read",
+            "storage-unavailable",
+            "privacy-unavailable"
+          ]
+        }
+      },
+      "required": [
+        "formatVersion",
+        "run",
+        "readStamp",
+        "viewStatus",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "EntryResultResponse": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/EntryResultAvailable"
+        },
+        {
+          "$ref": "#/$defs/EntryResultMissing"
+        },
+        {
+          "$ref": "#/$defs/EntryResultPending"
+        },
+        {
+          "$ref": "#/$defs/EntryResultNotApplicable"
+        },
+        {
+          "$ref": "#/$defs/EntryResultUnavailable"
+        }
+      ]
+    },
+    "EntryResultView": {
+      "$ref": "#/$defs/EntryResultResponse"
     }
   }
 }

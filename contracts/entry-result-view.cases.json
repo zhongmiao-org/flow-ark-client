@@ -1,0 +1,2864 @@
+[
+  {
+    "id": "template-object",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "expectedSource": {
+      "kind": "template",
+      "instanceId": "instance-one",
+      "templateId": "example-template",
+      "templateVersion": "1.0.0",
+      "packageKey": "example-template@1.0.0",
+      "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "entryId": "inspect",
+      "entryName": "核对输入",
+      "schemaPath": "schemas/result.schema",
+      "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "status": "ready",
+        "count": 0,
+        "items": []
+      },
+      "valueBytes": 39,
+      "valueSha256": "54431b0625af871b3bfce936907645d79b164ba30fd3d256adac6ef7610f6861",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "ba54f33185b37b6533bf87fbdf3d4d8e109b0181603892ebbc4fa1672422897e"
+    }
+  },
+  {
+    "id": "present-false",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": false,
+      "valueBytes": 5,
+      "valueSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+      "labels": [],
+      "labelsComplete": true,
+      "readStamp": "37d597a1a210e1b266775934e9ce832d44645507b5dafb544d71b7dadd7a654d"
+    }
+  },
+  {
+    "id": "present-zero",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": 0,
+      "valueBytes": 1,
+      "valueSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+      "labels": [],
+      "labelsComplete": true,
+      "readStamp": "55a92afef14a35044b62e2074ce9ff464992b2fee1694902ff6cc12ef4d00ae2"
+    }
+  },
+  {
+    "id": "present-empty-text",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": "",
+      "valueBytes": 2,
+      "valueSha256": "12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126",
+      "labels": [],
+      "labelsComplete": true,
+      "readStamp": "2a8f4cd95c12cbdea027fd69a3e0dbc61d7f561f71fd533b71ad5fdaa4c5a7a6"
+    }
+  },
+  {
+    "id": "present-null",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": null,
+      "valueBytes": 4,
+      "valueSha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "labels": [],
+      "labelsComplete": true,
+      "readStamp": "74fe51f6cc8aae76d391e141c2d0994c663338b148bdfc4e569140b30bf86257"
+    }
+  },
+  {
+    "id": "present-empty-object",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {},
+      "valueBytes": 2,
+      "valueSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "labels": [],
+      "labelsComplete": true,
+      "readStamp": "64a59c32fa2fa81430311b25d3dcd3aa63f86af96de2fbe52e0f292e117264fe"
+    }
+  },
+  {
+    "id": "present-empty-list",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": [],
+      "valueBytes": 2,
+      "valueSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "labels": [],
+      "labelsComplete": true,
+      "readStamp": "a87284f619896432dab115bdf61f408858315f62af7cce4970076e924aa04068"
+    }
+  },
+  {
+    "id": "present-unicode",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": "中文😀\n第二行",
+      "valueBytes": 23,
+      "valueSha256": "89b97f9eb770f48a6ae0812e10d9e6e07ef445f6b8a0abb1a3f2df33a07371a3",
+      "labels": [],
+      "labelsComplete": true,
+      "readStamp": "235e463e14c2df02f066f582b8b8a03e8f6e28ce31ee8576c784d44e69690b45"
+    }
+  },
+  {
+    "id": "author-source",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "expectedSource": {
+      "kind": "author-checkout",
+      "checkoutId": "checkout-one",
+      "draftId": "draft-one",
+      "entryId": "inspect",
+      "flowId": "flow-one",
+      "baseRevision": 4,
+      "contextId": "context-one",
+      "definitionSha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "author-checkout",
+        "checkoutId": "checkout-one",
+        "draftId": "draft-one",
+        "entryId": "inspect",
+        "flowId": "flow-one",
+        "baseRevision": 4,
+        "contextId": "context-one",
+        "definitionSha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "review": false
+      },
+      "valueBytes": 16,
+      "valueSha256": "2dca4491887b2680b9d1d3c71d19cf1e0bb4cc43e722cb2af850e180a1eca595",
+      "labels": [],
+      "labelsComplete": true,
+      "readStamp": "04ba21f56a1fe35be64ef38bc668f972188054880f80b3b27f65f8c8d4aa783d"
+    }
+  },
+  {
+    "id": "saved-failed",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "FAILED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "FAILED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "saved-only",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": false,
+      "valueBytes": 5,
+      "valueSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+      "labels": [],
+      "labelsComplete": true,
+      "readStamp": "679f40487b3dbbcd4ce13633bc5839e17c3406f554e7ae856d0061a0ef4ae7a8"
+    }
+  },
+  {
+    "id": "saved-cancelled",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "CANCELLED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "CANCELLED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "saved-only",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": false,
+      "valueBytes": 5,
+      "valueSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+      "labels": [],
+      "labelsComplete": true,
+      "readStamp": "561c9ba0b4be9266b903ec93648a8d273f4a5076da96422f5f83596a542f5cdd"
+    }
+  },
+  {
+    "id": "saved-interrupted",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "INTERRUPTED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "INTERRUPTED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "saved-only",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": false,
+      "valueBytes": 5,
+      "valueSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+      "labels": [],
+      "labelsComplete": true,
+      "readStamp": "e2e3dca6991b92f91c41a974ac2c82b855b59700eff5c1315eb25d311f4b826b"
+    }
+  },
+  {
+    "id": "escaped-pointer",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "a/b": {
+          "~x": "值"
+        }
+      },
+      "valueBytes": 20,
+      "valueSha256": "cbb71e1c01bf6e88b3393c002966a45fe45a981385c1180519006bd4864de68f",
+      "labels": [
+        {
+          "path": "/a~1b/~0x",
+          "label": "值"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "c459f8d981b28090bdcad4d47a453e5fee64195dc0eacf55f670ab05e91b0c26"
+    }
+  },
+  {
+    "id": "array-falsy-pointer",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": [
+        null,
+        0,
+        false
+      ],
+      "valueBytes": 14,
+      "valueSha256": "f16e58665245a9ff7a97873974ba21180fc6330c4181d848c4a10d043aa6b768",
+      "labels": [
+        {
+          "path": "/0",
+          "label": "第一项"
+        },
+        {
+          "path": "/1",
+          "label": "第二项"
+        },
+        {
+          "path": "/2",
+          "label": "第三项"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "a85a5d750da8a4931c0cb90eab982e6634abb7832b015e9c5f9af774f132dba7"
+    }
+  },
+  {
+    "id": "root-label",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": 0,
+      "valueBytes": 1,
+      "valueSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+      "labels": [
+        {
+          "path": "",
+          "label": "数量"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "f4c95cd913bbfb0abc09555a50f92a5352a4fc4b308d0a4b56ecc273bce75f51"
+    }
+  },
+  {
+    "id": "untrusted-label-text",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "x": "<script>文本</script>"
+      },
+      "valueBytes": 31,
+      "valueSha256": "db115e63e8e1aba31a3184aa6ef7f553e7391b0acd3b3b7b1232ef0e6f140632",
+      "labels": [
+        {
+          "path": "/x",
+          "label": "<img src=x>",
+          "description": "https://example.invalid 不自动打开"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "acc3880e5f54978075930633a7939f71cc262ec724f9aca58f4508c19dc0e274"
+    }
+  },
+  {
+    "id": "missing",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "missing",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "readStamp": "bdb5d03028c8729b6e4176e192baea304ef309fcdf4695ec697bbdcda21192d0"
+    }
+  },
+  {
+    "id": "pending-queued",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "QUEUED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "QUEUED"
+      },
+      "viewStatus": "pending",
+      "readStamp": "2cfe2acb9e8ac235943bafd900b6a22b8c16a986bdf21eccb3f04ca969c982ef"
+    }
+  },
+  {
+    "id": "pending-running",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "RUNNING"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "RUNNING"
+      },
+      "viewStatus": "pending",
+      "readStamp": "6988dc4b6c8db5204364681d354e19e6e07712139b079b418d7dd3c80744d9d7"
+    }
+  },
+  {
+    "id": "pending-paused",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "PAUSED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "PAUSED"
+      },
+      "viewStatus": "pending",
+      "readStamp": "d3cf74011463a7ab83e87424dc23a4fb655375d21eb9d0627232f7bf054a7890"
+    }
+  },
+  {
+    "id": "pending-waiting_input",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "WAITING_INPUT"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "WAITING_INPUT"
+      },
+      "viewStatus": "pending",
+      "readStamp": "3450ce4482fc12051cfde99dd3bb327ebc11a25a72a0e51ec705e5b62882a8aa"
+    }
+  },
+  {
+    "id": "pending-cancelling",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "CANCELLING"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "CANCELLING"
+      },
+      "viewStatus": "pending",
+      "readStamp": "b048ecb91c87511215b32a40e101a0d19a52ec3dbef3b76cbbb2a5d42abefcd1"
+    }
+  },
+  {
+    "id": "not-applicable",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "not-applicable",
+      "readStamp": "aa61d10b23657133a75f8b71e854549d52d58697896e92a1dcae28475d85bb91"
+    }
+  },
+  {
+    "id": "snapshot-missing",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "unavailable",
+      "reason": "snapshot-missing",
+      "readStamp": "821c2e0172bd5ed13b27a0515fa6584ec33c7417d478422a690945ffdc0550e0"
+    }
+  },
+  {
+    "id": "snapshot-mismatch",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "unavailable",
+      "reason": "snapshot-mismatch",
+      "readStamp": "91c6489a71349f784b819a137395b96e969464530af5608514b760cd63dcf01c"
+    }
+  },
+  {
+    "id": "owner-conflict",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "unavailable",
+      "reason": "owner-conflict",
+      "readStamp": "eb6c521defb4b72dff0447c10c2236c7b251b8852219492f7df8c497bf08c460"
+    }
+  },
+  {
+    "id": "owner-unavailable",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "unavailable",
+      "reason": "owner-unavailable",
+      "readStamp": "d7bca662df96f125a9f4089d50ac82c2952128a76884b1356a73d91f1412d202"
+    }
+  },
+  {
+    "id": "package-missing",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "unavailable",
+      "reason": "package-missing",
+      "readStamp": "e389abcf76356acee6e2c2a16a4fe36d5bab9dda48d9c84235262df9d5eced94"
+    }
+  },
+  {
+    "id": "package-mismatch",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "unavailable",
+      "reason": "package-mismatch",
+      "readStamp": "e825d9a56ec15f8ab49827e6d16e39da4378ef7fa4f7cbf6a99ecd625f26dd2f"
+    }
+  },
+  {
+    "id": "entry-missing",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "unavailable",
+      "reason": "entry-missing",
+      "readStamp": "95ca03fb60920d5d863ec958bacba31dbfb2faab6100679d53c5dac3eed1e624"
+    }
+  },
+  {
+    "id": "schema-missing",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "unavailable",
+      "reason": "schema-missing",
+      "readStamp": "a868b478d57c350b0c84d1e66f5e1712f98dd1ca91d20a492b468bbe5777f9cb"
+    }
+  },
+  {
+    "id": "schema-invalid",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "unavailable",
+      "reason": "schema-invalid",
+      "readStamp": "b515c7b2276f79589bcf470078dffba4599d61a28f01750043be95f85eec52a3"
+    }
+  },
+  {
+    "id": "result-invalid",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "unavailable",
+      "reason": "result-invalid",
+      "readStamp": "bc8b08511655a31c8973eb8f007ce64f6c15a16f2a901e86cf4ae15267063047"
+    }
+  },
+  {
+    "id": "read-limit",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "unavailable",
+      "reason": "read-limit",
+      "readStamp": "57ec878302a0f0d97db71fe8b0e280e1851753932eb7d547992753e7dcaaa1d5"
+    }
+  },
+  {
+    "id": "changed-during-read",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "unavailable",
+      "reason": "changed-during-read",
+      "readStamp": "ecc161d42489452b9a9de70e3c588aa563d4b1e4dc4a0ab53ebbefa4a638d43d"
+    }
+  },
+  {
+    "id": "storage-unavailable",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "unavailable",
+      "reason": "storage-unavailable",
+      "readStamp": "af5f3898513d5fdabc30cf6497d2cbbb9bb2f1c68f965f7929c197d30ed8ab39"
+    }
+  },
+  {
+    "id": "request",
+    "target": "Request",
+    "expected": "valid",
+    "value": {
+      "runId": "run-one"
+    }
+  },
+  {
+    "id": "request-execution-flag",
+    "target": "Request",
+    "expected": "format-invalid",
+    "value": {
+      "runId": "run-one",
+      "retry": true
+    }
+  },
+  {
+    "id": "request-source-override",
+    "target": "Request",
+    "expected": "format-invalid",
+    "value": {
+      "runId": "run-one",
+      "instanceId": "other"
+    }
+  },
+  {
+    "id": "available-without-value",
+    "target": "Response",
+    "expected": "format-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "valueBytes": 39,
+      "valueSha256": "54431b0625af871b3bfce936907645d79b164ba30fd3d256adac6ef7610f6861",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "f11a7149ea5d12e385a7e362028a5b772847e18cd64e5a0ab853ff814b21efe6"
+    }
+  },
+  {
+    "id": "missing-with-null",
+    "target": "Response",
+    "expected": "format-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "missing",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "value": null,
+      "readStamp": "e8df6a9f00bf677ffda43c7e4da36f54ed7a40e378a5899e6cd721c695641df5"
+    }
+  },
+  {
+    "id": "active-with-value",
+    "target": "Response",
+    "expected": "format-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "RUNNING"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "saved-only",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": 0,
+      "valueBytes": 1,
+      "valueSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+      "labels": [],
+      "labelsComplete": true,
+      "readStamp": "d18c0079151ca8efb1ee08685b5909d1933882a39b640aede1e22346393309b5"
+    }
+  },
+  {
+    "id": "terminal-pending",
+    "target": "Response",
+    "expected": "format-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "pending",
+      "readStamp": "783b4d309566901fa33646d1dcc0a59dda38378f0003d741b67dacd04a170923"
+    }
+  },
+  {
+    "id": "failure-marked-success",
+    "target": "Response",
+    "expected": "format-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "FAILED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "FAILED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": 0,
+      "valueBytes": 1,
+      "valueSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+      "labels": [],
+      "labelsComplete": true,
+      "readStamp": "d1ff031dfb1ae1f03bd96d96db8bf6809af1bdb142778cc618b9d8eafc22e6ff"
+    }
+  },
+  {
+    "id": "unavailable-leaks-value",
+    "target": "Response",
+    "expected": "format-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "unavailable",
+      "reason": "result-invalid",
+      "value": "private fixture",
+      "readStamp": "fc47c5b76a8e9fac1eedf9ac85ba89cba868327d0d0870c779c3902d1c3e4925"
+    }
+  },
+  {
+    "id": "unsupported-privacy",
+    "target": "Response",
+    "expected": "format-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "unredacted",
+      "displayChanged": false,
+      "value": {
+        "status": "ready",
+        "count": 0,
+        "items": []
+      },
+      "valueBytes": 39,
+      "valueSha256": "54431b0625af871b3bfce936907645d79b164ba30fd3d256adac6ef7610f6861",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "2a9c28e72c2baafaee0c547e0489b02f937ced4ec419e46361ddedf315ebdb6e"
+    }
+  },
+  {
+    "id": "mixed-author-template",
+    "target": "Response",
+    "expected": "format-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "checkoutId": "other"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "status": "ready",
+        "count": 0,
+        "items": []
+      },
+      "valueBytes": 39,
+      "valueSha256": "54431b0625af871b3bfce936907645d79b164ba30fd3d256adac6ef7610f6861",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "f21a9197bc97628e4505e93ce717c0535f645fd2f1514ccbf8ce5aa39d44ef00"
+    }
+  },
+  {
+    "id": "unknown-reason",
+    "target": "Response",
+    "expected": "format-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "unavailable",
+      "reason": "raw detailed error",
+      "readStamp": "263092d9c1e41b2f332a255fe81863ce5bbde5b1ab98a5030e144f9060e671b6"
+    }
+  },
+  {
+    "id": "read-fingerprint-mismatch",
+    "target": "Response",
+    "expected": "relation-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "status": "ready",
+        "count": 0,
+        "items": []
+      },
+      "valueBytes": 39,
+      "valueSha256": "54431b0625af871b3bfce936907645d79b164ba30fd3d256adac6ef7610f6861",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    }
+  },
+  {
+    "id": "value-digest-mismatch",
+    "target": "Response",
+    "expected": "relation-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "status": "ready",
+        "count": 0,
+        "items": []
+      },
+      "valueBytes": 39,
+      "valueSha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "110f7bd5d84dfd81c987e0bfaadc95119c52c773eefef64af640ea3a14a07447"
+    }
+  },
+  {
+    "id": "value-bytes-mismatch",
+    "target": "Response",
+    "expected": "relation-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "status": "ready",
+        "count": 0,
+        "items": []
+      },
+      "valueBytes": 40,
+      "valueSha256": "54431b0625af871b3bfce936907645d79b164ba30fd3d256adac6ef7610f6861",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "f72ce1872f44dc274eb76916bd56a881e9776bd286f7643047f861f23a11c372"
+    }
+  },
+  {
+    "id": "run-id-mismatch",
+    "target": "Response",
+    "expected": "relation-invalid",
+    "expectedRun": {
+      "id": "run-two",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "status": "ready",
+        "count": 0,
+        "items": []
+      },
+      "valueBytes": 39,
+      "valueSha256": "54431b0625af871b3bfce936907645d79b164ba30fd3d256adac6ef7610f6861",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "ba54f33185b37b6533bf87fbdf3d4d8e109b0181603892ebbc4fa1672422897e"
+    }
+  },
+  {
+    "id": "run-version-mismatch",
+    "target": "Response",
+    "expected": "relation-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-two",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "status": "ready",
+        "count": 0,
+        "items": []
+      },
+      "valueBytes": 39,
+      "valueSha256": "54431b0625af871b3bfce936907645d79b164ba30fd3d256adac6ef7610f6861",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "ba54f33185b37b6533bf87fbdf3d4d8e109b0181603892ebbc4fa1672422897e"
+    }
+  },
+  {
+    "id": "run-state-changed",
+    "target": "Response",
+    "expected": "relation-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "FAILED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "status": "ready",
+        "count": 0,
+        "items": []
+      },
+      "valueBytes": 39,
+      "valueSha256": "54431b0625af871b3bfce936907645d79b164ba30fd3d256adac6ef7610f6861",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "ba54f33185b37b6533bf87fbdf3d4d8e109b0181603892ebbc4fa1672422897e"
+    }
+  },
+  {
+    "id": "source-mismatch",
+    "target": "Response",
+    "expected": "relation-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "expectedSource": {
+      "kind": "template",
+      "instanceId": "instance-one",
+      "templateId": "example-template",
+      "templateVersion": "1.0.0",
+      "packageKey": "example-template@1.0.0",
+      "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "entryId": "other",
+      "entryName": "核对输入",
+      "schemaPath": "schemas/result.schema",
+      "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "status": "ready",
+        "count": 0,
+        "items": []
+      },
+      "valueBytes": 39,
+      "valueSha256": "54431b0625af871b3bfce936907645d79b164ba30fd3d256adac6ef7610f6861",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "ba54f33185b37b6533bf87fbdf3d4d8e109b0181603892ebbc4fa1672422897e"
+    }
+  },
+  {
+    "id": "package-key-mismatch",
+    "target": "Response",
+    "expected": "relation-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "other@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "status": "ready",
+        "count": 0,
+        "items": []
+      },
+      "valueBytes": 39,
+      "valueSha256": "54431b0625af871b3bfce936907645d79b164ba30fd3d256adac6ef7610f6861",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "0f3433a24dbeb30a00c764a5fdb5757370d5ef8f5a5641310cf6a0e6bdec9cb6"
+    }
+  },
+  {
+    "id": "schema-dot-segment",
+    "target": "Response",
+    "expected": "relation-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/../result",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "status": "ready",
+        "count": 0,
+        "items": []
+      },
+      "valueBytes": 39,
+      "valueSha256": "54431b0625af871b3bfce936907645d79b164ba30fd3d256adac6ef7610f6861",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "9f1cee7596dfc2c14f834c34faf6e3d9ca0249ff00b903824f8123acbdafc5f1"
+    }
+  },
+  {
+    "id": "schema-empty-segment",
+    "target": "Response",
+    "expected": "relation-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas//result",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "status": "ready",
+        "count": 0,
+        "items": []
+      },
+      "valueBytes": 39,
+      "valueSha256": "54431b0625af871b3bfce936907645d79b164ba30fd3d256adac6ef7610f6861",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "c34113bc304269a4c11a69ac82c5dcb10a5c898fea68854ca1d500fdf892d353"
+    }
+  },
+  {
+    "id": "schema-forbidden-extension",
+    "target": "Response",
+    "expected": "relation-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.node",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "status": "ready",
+        "count": 0,
+        "items": []
+      },
+      "valueBytes": 39,
+      "valueSha256": "54431b0625af871b3bfce936907645d79b164ba30fd3d256adac6ef7610f6861",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "18f154785e89ad29b5cdf56c774fcd260641fd43a6d3791acdcccd0e73153038"
+    }
+  },
+  {
+    "id": "schema-forbidden-directory",
+    "target": "Response",
+    "expected": "relation-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/node_modules/result",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "status": "ready",
+        "count": 0,
+        "items": []
+      },
+      "valueBytes": 39,
+      "valueSha256": "54431b0625af871b3bfce936907645d79b164ba30fd3d256adac6ef7610f6861",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "d6defbcb86fde42ad9076cc075e44c72622a64250c965ef670ba66db59370ab3"
+    }
+  },
+  {
+    "id": "author-flow-mismatch",
+    "target": "Response",
+    "expected": "relation-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "author-checkout",
+        "checkoutId": "checkout-one",
+        "draftId": "draft-one",
+        "entryId": "inspect",
+        "flowId": "flow-other",
+        "baseRevision": 4,
+        "contextId": "context-one",
+        "definitionSha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": 0,
+      "valueBytes": 1,
+      "valueSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+      "labels": [],
+      "labelsComplete": true,
+      "readStamp": "67e579a44316bb51ab7efd032962ab166b9d6134d2c4d751732f2a53f5680768"
+    }
+  },
+  {
+    "id": "duplicate-label",
+    "target": "Response",
+    "expected": "relation-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "status": "ready",
+        "count": 0,
+        "items": []
+      },
+      "valueBytes": 39,
+      "valueSha256": "54431b0625af871b3bfce936907645d79b164ba30fd3d256adac6ef7610f6861",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        },
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "f209e1c20e8fb066d652374f4dd65fc7310bc6dd449bf56d82926ef588b3bf4a"
+    }
+  },
+  {
+    "id": "missing-label-target",
+    "target": "Response",
+    "expected": "relation-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "x": 0
+      },
+      "valueBytes": 7,
+      "valueSha256": "5bff452c5ed93f2e87a23984db5a15050c6477335fdec955b70063bb2d692bf1",
+      "labels": [
+        {
+          "path": "/missing",
+          "label": "无效"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "7fdd866e315abe3e7791d9cd370b90fab098032b3bec4cf442b39a95b88c1853"
+    }
+  },
+  {
+    "id": "invalid-pointer-escape",
+    "target": "Response",
+    "expected": "format-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "x": 0
+      },
+      "valueBytes": 7,
+      "valueSha256": "5bff452c5ed93f2e87a23984db5a15050c6477335fdec955b70063bb2d692bf1",
+      "labels": [
+        {
+          "path": "/~2",
+          "label": "无效"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "0a90a134722cbac9b312c0512fa8c5447907b3d52ff4a6d2f7160d56aaaab433"
+    }
+  },
+  {
+    "id": "inherited-property",
+    "target": "Response",
+    "expected": "relation-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {},
+      "valueBytes": 2,
+      "valueSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "labels": [
+        {
+          "path": "/constructor",
+          "label": "无效"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "3b5bf7c46f3938865ccda4ac068d863e877cf949326189afe3b3364c06e9bd0b"
+    }
+  },
+  {
+    "id": "array-leading-zero",
+    "target": "Response",
+    "expected": "relation-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": [
+        0
+      ],
+      "valueBytes": 3,
+      "valueSha256": "d0bca111f8628137adc4c16f123496dcdd1d590d06cb5d9acd68b39fe656fb97",
+      "labels": [
+        {
+          "path": "/00",
+          "label": "无效"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "66a856f4551588e56e89f048bb8aba7f3384a1ecaa4c326a62587ff236289249"
+    }
+  },
+  {
+    "id": "array-out-of-range",
+    "target": "Response",
+    "expected": "relation-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": [
+        0
+      ],
+      "valueBytes": 3,
+      "valueSha256": "d0bca111f8628137adc4c16f123496dcdd1d590d06cb5d9acd68b39fe656fb97",
+      "labels": [
+        {
+          "path": "/1",
+          "label": "无效"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "f9d40bf8cda5651bc89a5c6ed7dddf64dd156fea75ffdc4f9065749f0a444d7b"
+    }
+  },
+  {
+    "id": "redacted-display",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": true,
+      "value": {
+        "facts": "[REDACTED]"
+      },
+      "valueBytes": 22,
+      "valueSha256": "315694f9e9adfba0cd8bbd6bf89827910238f0738b69e30124c9313bf3888008",
+      "labels": [],
+      "labelsComplete": true,
+      "readStamp": "d929ba830d45bf2794c4b5a76caa65afa51bb454553ecf2225bd35fb24db5cda"
+    }
+  },
+  {
+    "id": "known-source-not-applicable",
+    "target": "Response",
+    "expected": "relation-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "not-applicable",
+      "readStamp": "aa61d10b23657133a75f8b71e854549d52d58697896e92a1dcae28475d85bb91"
+    },
+    "expectedSource": {
+      "kind": "template",
+      "instanceId": "instance-one",
+      "templateId": "example-template",
+      "templateVersion": "1.0.0",
+      "packageKey": "example-template@1.0.0",
+      "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "entryId": "inspect",
+      "entryName": "核对输入",
+      "schemaPath": "schemas/result.schema",
+      "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  },
+  {
+    "id": "request-trailing-newline",
+    "target": "Request",
+    "expected": "format-invalid",
+    "value": {
+      "runId": "run-one\n"
+    }
+  },
+  {
+    "id": "source-trailing-newline-templateId",
+    "target": "Response",
+    "expected": "format-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template\n",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "status": "ready",
+        "count": 0,
+        "items": []
+      },
+      "valueBytes": 39,
+      "valueSha256": "54431b0625af871b3bfce936907645d79b164ba30fd3d256adac6ef7610f6861",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "643e788adc4f75e7ddb7deef517bbeb8e8fbf9798d7db8c3156608fe4d5a26e9"
+    }
+  },
+  {
+    "id": "source-trailing-newline-templateVersion",
+    "target": "Response",
+    "expected": "format-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0\n",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "status": "ready",
+        "count": 0,
+        "items": []
+      },
+      "valueBytes": 39,
+      "valueSha256": "54431b0625af871b3bfce936907645d79b164ba30fd3d256adac6ef7610f6861",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "97d79fcf59f999ba3fd336020c97fa4d4171fee94ce298d534047752e2517958"
+    }
+  },
+  {
+    "id": "source-trailing-newline-schemaPath",
+    "target": "Response",
+    "expected": "format-invalid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "available",
+      "source": {
+        "kind": "template",
+        "instanceId": "instance-one",
+        "templateId": "example-template",
+        "templateVersion": "1.0.0",
+        "packageKey": "example-template@1.0.0",
+        "packageDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entryId": "inspect",
+        "entryName": "核对输入",
+        "schemaPath": "schemas/result.schema\n",
+        "schemaSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "completion": "run-succeeded",
+      "sourceValidation": "passed",
+      "privacy": "host-redacted-v1",
+      "displayChanged": false,
+      "value": {
+        "status": "ready",
+        "count": 0,
+        "items": []
+      },
+      "valueBytes": 39,
+      "valueSha256": "54431b0625af871b3bfce936907645d79b164ba30fd3d256adac6ef7610f6861",
+      "labels": [
+        {
+          "path": "/count",
+          "label": "核对数量",
+          "description": "仅为模板返回值，不授权动作"
+        }
+      ],
+      "labelsComplete": true,
+      "readStamp": "0436a0e1d5bec5646a15e49d5c6d10ce19449c4c8058877b25e725a73f3490d5"
+    }
+  },
+  {
+    "id": "privacy-projection-unavailable",
+    "target": "Response",
+    "expected": "valid",
+    "expectedRun": {
+      "id": "run-one",
+      "flowId": "flow-one",
+      "versionId": "version-one",
+      "state": "SUCCEEDED"
+    },
+    "value": {
+      "formatVersion": "1.0",
+      "run": {
+        "id": "run-one",
+        "flowId": "flow-one",
+        "versionId": "version-one",
+        "state": "SUCCEEDED"
+      },
+      "viewStatus": "unavailable",
+      "reason": "privacy-unavailable",
+      "readStamp": "489a56d458ab1f8ccbbcea9802df4f91835cea0cd56209d3ec26553189b29180"
+    }
+  }
+]

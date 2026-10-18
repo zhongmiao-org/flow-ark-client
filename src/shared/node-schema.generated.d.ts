@@ -1,4 +1,4 @@
-/* Generated from contracts/p1.schema.json (ec900321ac13dfb1ed433aee02a8e5c904383f05b17d3516a2d2ed6bf8ae6f77). Do not edit. */
+/* Generated from contracts/p1.schema.json (49cce92ec89a2265039a8aa9e97e9aa45e90d9f240823ac579cba5e7cb7b280d). Do not edit. */
 import type { ValidateFunction } from 'ajv';
 export const node_value_1: ValidateFunction;
 export const node_assert_1: ValidateFunction;
