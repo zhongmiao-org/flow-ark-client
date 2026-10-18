@@ -36,6 +36,7 @@ import type { Store } from './store';
 import type { ConversationArchives } from './conversation-archives';
 import type { ConversationSources } from './conversation-sources';
 import type { SourceReductionReviewContext } from '../../contracts/source-reduction-review';
+import type { ReductionAdmission, ReductionPermit } from './source-reduction-reviews';
 
 const kinds = {
   job: 'source-reduction-job',
@@ -61,14 +62,6 @@ type Job = {
   error: string;
   updatedAt: string;
 };
-type Grant = {
-  revision: number;
-  pending: number;
-  checkpoint: string;
-  ceiling: number;
-  expires: number;
-  requestId: string;
-};
 type Live = { runId: string; nodeInstance: string; abort: AbortController };
 const resultKey = (t: ReductionTarget) => digest(t);
 const attemptKey = (id: string, sequence: number) => `${id}:${sequence}`;
@@ -93,7 +86,6 @@ function until<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
 /** Finite batches only. Provider calls, durable intent and cursor advancement stay in the host. */
 export class SourceReductions {
   private live = new Map<string, Live>();
-  private grants = new Map<string, Grant>();
   constructor(
     private store: Store,
     private archives: ConversationArchives,
@@ -108,6 +100,7 @@ export class SourceReductions {
       error: (error: unknown) => string;
       receipt: (runId: string, nodeInstance: string, receipt: AINodeReceipt) => void;
       fetch?: typeof fetch;
+      admit?: (input: ReductionAdmission) => Promise<ReductionPermit | undefined>;
     },
   ) {
     this.recoverStartup();
@@ -237,13 +230,14 @@ export class SourceReductions {
       throw Error('整理AI需要独立服务与模型绑定，不能混入其他资源');
     return aiBinding(record.bindings, id, 2);
   }
-  async preflight(record: FlowRecord) {
+  async preflight(record: FlowRecord, reviewedSource = false) {
     for (const node of walk(record.flow.steps).filter(
       (n): n is ReductionNode => n.type === 'source-reduce',
     )) {
       assertSourceReductionNode(node, record.flow.requiredCapabilities);
       assertAISchema(node.schema);
       this.sources.assertBinding(record, node.binding);
+      if (reviewedSource) continue;
       const binding = this.ai(record, node.aiBinding),
         config = await this.deps.configuration(binding.provider);
       if (!config.configured || !config.revision) throw Error('来源整理需要先配置用户自己的AI Key');
@@ -271,6 +265,29 @@ export class SourceReductions {
   forRun(t: ReductionTarget) {
     const j = this.target(t);
     return j ? this.view(j) : null;
+  }
+  hasJobsForRun(runId: string) {
+    const snapshot = this.store.get<FlowRecord>('snapshot', runId);
+    if (!snapshot) return false;
+    const nodes = new Set(
+      walk(snapshot.flow.steps)
+        .filter((n) => n.type === 'source-reduce')
+        .map((n) => n.id),
+    );
+    for (const instance of new Set(
+      this.store
+        .events(runId)
+        .map((e) => e.nodeInstance)
+        .filter(Boolean),
+    )) {
+      const nodeId = instance.split('/').at(-1)!;
+      if (
+        nodes.has(nodeId) &&
+        this.store.get(kinds.index, resultKey({ runId, nodeId, nodeInstance: instance }))
+      )
+        return true;
+    }
+    return false;
   }
   detail(t: ReductionTarget, id: string) {
     return this.view(this.target(t, id)!);
@@ -355,27 +372,6 @@ export class SourceReductions {
       throw Error('整理任务正在运行或已变化，请重新读取；原进度保留');
     return j;
   }
-  allowRetry(
-    t: ReductionTarget,
-    id: string,
-    revision: number,
-    pendingAttemptId: string,
-    requestId: string,
-  ) {
-    const j = this.action(t, id, revision, pendingAttemptId);
-    for (const [id, g] of this.grants) if (g.expires <= Date.now()) this.grants.delete(id);
-    if (this.grants.size >= 128 && !this.grants.has(id))
-      throw Error('当前重试核对数量达到上限，请稍后再试');
-    this.grants.set(id, {
-      revision: j.revision,
-      pending: j.pending!,
-      checkpoint: j.checkpoint.sha256,
-      ceiling: this.store.lastPosition('run'),
-      expires: Date.now() + 600000,
-      requestId,
-    });
-    return { ...this.view(j), retryReady: true };
-  }
   async recover(
     t: ReductionTarget,
     id: string,
@@ -432,6 +428,7 @@ export class SourceReductions {
     attempt: Attempt,
     check: () => void,
     action?: { key: string; inputHash: string },
+    advance?: ReductionPermit['advance'],
   ) {
     const m = this.archives.sourceInfo(job.checkpoint.job.source).manifest,
       ordinal = (attempt.request.input as any).fragment.cursor.recordOrdinal;
@@ -457,6 +454,7 @@ export class SourceReductions {
         throw Error('完整响应或检查点已经变化，未重复推进');
       this.putAttempt(j, a, { ...a, state: 'committed' });
       j.checkpoint = next;
+      advance?.(job.checkpoint, next);
       j.pending = null;
       j.phase = proof ? 'complete' : 'ready';
       j.proof = proof;
@@ -546,6 +544,16 @@ export class SourceReductions {
       id =
         'sr_' + digest({ owner, source, recipe: sourceReductionRecipeHash(recipe) }).slice(0, 40);
     let j = this.store.get<Job>(kinds.job, id);
+    if (j) {
+      this.output(j);
+      if (j.owner !== owner || !same(j.recipe, recipe) || !same(j.checkpoint.job.source, source))
+        throw Error('整理任务的来源或规则不一致');
+    }
+    // The resolved seed is known here, before creating a job or reading any Key.
+    const permit = await this.deps.admit?.({ record, target: t, jobId: id, recipe, job: j });
+    checkRun();
+    if (permit?.requestLimit === 0 && j?.phase !== 'complete')
+      throw Error('本次来源实例只允许读取已完整登记的结果');
     if (!j) {
       j = {
         id,
@@ -573,25 +581,17 @@ export class SourceReductions {
       throw Error('整理任务的来源或规则不一致');
     this.store.put(kinds.index, resultKey(t), { jobId: id, owner });
     if (this.live.has(id)) throw Error('此整理任务正在处理另一批请求');
-    let retryOnly = false;
     if (j.phase === 'attention') {
-      const g = this.grants.get(id);
-      if (
-        !g ||
-        g.expires <= Date.now() ||
-        g.revision !== j.revision ||
-        g.pending !== j.pending ||
-        g.checkpoint !== j.checkpoint.sha256 ||
-        this.store.position('run', t.runId) <= g.ceiling
-      )
-        return this.result(t, j);
-      this.grants.delete(id);
-      retryOnly = true;
+      if (!permit?.retry) return this.result(t, j);
+      const revision = j.revision,
+        pending = j.pending,
+        checkpoint = j.checkpoint.sha256;
       j = this.change(id, (job) => {
+        permit.authorize();
         if (
-          job.revision !== g.revision ||
-          job.pending !== g.pending ||
-          job.checkpoint.sha256 !== g.checkpoint
+          job.revision !== revision ||
+          job.pending !== pending ||
+          job.checkpoint.sha256 !== checkpoint
         )
           throw Error('重试核对已变化');
         const a = this.attempt(job, job.pending!);
@@ -609,10 +609,11 @@ export class SourceReductions {
       signal.throwIfAborted();
       checkRun();
       this.deps.available();
+      permit?.authorize();
     };
     const deadline = Date.now() + (node.timeoutMs ?? 1800000) - 6000;
     try {
-      for (let n = 0; n < (retryOnly ? 1 : node.maxRequests); n++) {
+      for (let n = 0; n < (permit?.requestLimit ?? node.maxRequests); n++) {
         check();
         j = this.load(id);
         if (j.phase === 'complete' || j.phase === 'attention') break;
@@ -627,6 +628,7 @@ export class SourceReductions {
         const config = await until(this.deps.configuration(binding.provider), signal);
         check();
         if (!config.configured || !config.revision) throw Error('本人AI Key配置不可用');
+        permit?.beforeRequest(j, config.revision);
         const key = await until(this.deps.key(binding.provider, config.revision), signal);
         check();
         if (typeof key !== 'string' || !key.trim()) throw Error('本人AI Key不可用');
@@ -671,6 +673,7 @@ export class SourceReductions {
             const a = this.attempt(job, sequence);
             if (job.pending !== sequence || a.state !== 'prepared')
               throw Error('请求发出意图已失效');
+            permit?.dispatch(job, a);
             this.putAttempt(job, a, { ...a, state: 'dispatched', transport });
           });
           check();
@@ -706,7 +709,7 @@ export class SourceReductions {
           });
           break;
         }
-        j = await this.commit(j, a, check);
+        j = await this.commit(j, a, check, undefined, permit?.advance);
       }
       return this.result(t, this.load(id));
     } catch (error) {
@@ -769,7 +772,6 @@ export class SourceReductions {
         live.abort.abort(Error('本批整理已取消'));
   }
   async stop() {
-    this.grants.clear();
     for (const live of this.live.values()) live.abort.abort(Error('应用正在退出或休眠'));
   }
 }

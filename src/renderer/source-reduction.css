@@ -55,3 +55,21 @@
 .reduction-panel footer {
   padding-top: 8px;
 }
+.source-run-review {
+  min-height: 560px;
+  max-height: max(560px, calc(100vh - 160px));
+}
+.source-run-review h3 {
+  font-size: 28px;
+  line-height: 40px;
+}
+.source-run-review-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.source-run-review .ant-descriptions-item-content {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}

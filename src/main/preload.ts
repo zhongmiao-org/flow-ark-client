@@ -5,12 +5,13 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type { ConversationEvent } from '../shared/conversation';
 const allowed = new Set([
   'reduction.runPreview',
+  'reduction.runPlan',
+  'reduction.runConfirm',
   'reduction.forRun',
   'reduction.detail',
   'reduction.attempts',
   'reduction.attempt',
   'reduction.recover',
-  'reduction.allowRetry',
   'source.list',
   'source.select',
   'source.inspect',

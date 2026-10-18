@@ -18,6 +18,11 @@ type Snapshot = FlowRecord &
     rerunAuthorization?: { browser?: BrowserBinding };
   };
 type RequestRecord = { requestId: string; fingerprint: string; runId: string };
+export type SourceRerunScope = {
+  fingerprint: string;
+  validate: () => Promise<() => void>;
+  persist: (run: Run) => void;
+};
 const terminal = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED']);
 
 export function executionVersion(record: FlowRecord, prepared: PreparedScripts) {
@@ -90,9 +95,10 @@ export class RunRerun {
     private options: {
       assertAdmitting: () => void;
       busy: (id: string) => boolean;
-      preflight: (record: Snapshot) => Promise<PreparedScripts>;
+      preflight: (record: Snapshot, sourceReview?: boolean) => Promise<PreparedScripts>;
       version: (record: FlowRecord, prepared: PreparedScripts) => string;
       dispatch: () => void;
+      requiresSourceReview?: (runId: string) => boolean;
     },
   ) {}
 
@@ -145,15 +151,17 @@ export class RunRerun {
       bindings: structuredClone(selected.bindings),
       ...(selected.webTarget ? { webTarget: structuredClone(selected.webTarget) } : {}),
       ...(selected.outputTarget ? { outputTarget: structuredClone(selected.outputTarget) } : {}),
-      ...(selected.toolTargets?.length
-        ? { toolTargets: structuredClone(selected.toolTargets) }
-        : {}),
+      ...(selected.toolTargets ? { toolTargets: structuredClone(selected.toolTargets) } : {}),
+      ...(selected.desktopTarget ? { desktopTarget: structuredClone(selected.desktopTarget) } : {}),
       updatedAt: selected.updatedAt,
       ...(args.mode === 'snapshot'
         ? {
             versionId: source.versionId,
             scripts: snapshot!.scripts,
             scriptBundles: snapshot!.scriptBundles,
+            ...(snapshot!.skillSnapshots
+              ? { skillSnapshots: structuredClone(snapshot!.skillSnapshots) }
+              : {}),
             ...(snapshot!.authorSdk ? { authorSdk: structuredClone(snapshot!.authorSdk) } : {}),
             ...(snapshot!.templateData
               ? { templateData: structuredClone(snapshot!.templateData) }
@@ -184,15 +192,17 @@ export class RunRerun {
     return this.capture({ id, mode: 'snapshot' });
   }
 
-  private async prepare(args: RunRerunPreviewInput) {
+  private async prepare(args: RunRerunPreviewInput, sourceReview = false) {
     const captured = this.capture(args);
+    if (!sourceReview && this.options.requiresSourceReview?.(captured.source.id))
+      throw Error('请在来源整理进度中核对准确片段及本次调用上限，再创建关联运行');
     if (
       args.mode === 'snapshot' &&
       captured.record.scriptBundles === undefined &&
       walk(captured.record.flow.steps).some((n) => n.type === 'script' && n.dependencies.length)
     )
       throw new Error('原快照没有固定脚本依赖，请核对后选择当前已保存流程');
-    const prepared = await this.options.preflight(captured.record);
+    const prepared = await this.options.preflight(captured.record, sourceReview);
     if (this.capture(args).signature !== captured.signature)
       throw new Error('重新运行预览已过期：流程、授权或来源已改变，请重新预览');
     const preview: RunRerunPreview = {
@@ -225,6 +235,10 @@ export class RunRerun {
     return (await this.prepare(runRerunPreviewSchema.parse(input))).preview;
   }
 
+  async sourcePreview(id: string): Promise<RunRerunPreview> {
+    return (await this.prepare({ id, mode: 'snapshot' }, true)).preview;
+  }
+
   private previous(args: RunRerunConfirmInput, fingerprint: string) {
     const previous = this.store.get<RequestRecord>('rerun-request', args.requestId);
     if (!previous) return undefined;
@@ -236,13 +250,18 @@ export class RunRerun {
   }
 
   // Runtime serializes this method with all manual and scheduled admissions.
-  async confirm(input: unknown, assertAdmission: () => void = () => {}): Promise<Run> {
+  async confirm(
+    input: unknown,
+    assertAdmission: () => void = () => {},
+    scope?: SourceRerunScope,
+  ): Promise<Run> {
     const args = runRerunConfirmSchema.parse(input);
-    const fingerprint = digest({ ...args, debug: !!args.debug });
+    const fingerprint = digest({ ...args, debug: !!args.debug, sourceScope: scope?.fingerprint });
     const previous = this.previous(args, fingerprint);
     if (previous) return previous;
     assertAdmission();
-    const captured = await this.prepare(args);
+    const captured = await this.prepare(args, !!scope);
+    const checkScope = await scope?.validate();
     assertAdmission();
     if (captured.preview.token !== args.token)
       throw new Error('重新运行预览已过期，请重新预览并核对');
@@ -252,6 +271,7 @@ export class RunRerun {
       assertAdmission();
       if (this.capture(args).signature !== captured.signature)
         throw new Error('重新运行预览已过期，请重新预览并核对');
+      checkScope?.();
       const time = now();
       const versionId = this.options.version(captured.record, captured.prepared);
       const next: Run = {
@@ -274,6 +294,7 @@ export class RunRerun {
         rerunAuthorization: { browser: captured.browser },
       });
       this.store.put('run', next.id, next);
+      scope?.persist(next);
       this.store.event(next.id, 'state', '', { state: 'QUEUED' });
       this.store.put('rerun-request', args.requestId, {
         requestId: args.requestId,
