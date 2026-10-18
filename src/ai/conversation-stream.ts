@@ -31,7 +31,10 @@ async function* sse(response: Response, signal: AbortSignal) {
   try {
     while (true) {
       signal.throwIfAborted();
-      const { value, done } = await reader.read();
+      const { value, done } = await reader.read().catch(() => {
+        signal.throwIfAborted();
+        throw new Error('AI 回复连接中断，未收到完整结果；部分回复保留，请检查网络后手动重试。');
+      });
       signal.throwIfAborted();
       if (value) bytes += value.byteLength;
       if (bytes > 8 * 1024 * 1024) throw new Error('AI 消息流超过本次大小限制');
@@ -107,7 +110,10 @@ export async function streamConversation(
             },
       ),
     },
-  );
+  ).catch(() => {
+    signal.throwIfAborted();
+    throw new Error('AI 服务连接失败，本轮未完成；请检查网络后手动重试，未自动重试或切换供应商。');
+  });
   if (!response.ok) throw new Error('AI 接口 HTTP ' + response.status + '；未重试或切换供应商');
   let text = '',
     model = input.model,
