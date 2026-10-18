@@ -1,6 +1,43 @@
 .template-author-root {
   min-width: 0;
 }
+.author-export-files {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-width: 0;
+}
+.template-author .author-export-files > .ant-select {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.template-manifest-review .template-entry-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 24px;
+  align-items: start;
+}
+.template-manifest-review .template-entry-layout > div {
+  min-width: 0;
+}
+.template-manifest-review .template-entry-requirements {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.template-manifest-review h3 {
+  margin-block: 0 12px;
+}
+.template-manifest-review .template-entry-choices button {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+@container (max-width: 880px) {
+  .template-manifest-review .template-entry-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 .author-directory-default {
   display: grid;
   grid-template-columns: 96px minmax(0, 1fr);
