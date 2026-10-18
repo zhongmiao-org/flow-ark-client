@@ -11,6 +11,7 @@ export const capabilityLabel = (name: string) =>
       'browser-forms-v1': '网页表单',
       'browser-observe-v1': '网页只读核对',
       'browser-fields-v1': '网页关联字段采集',
+      'browser-rendered-fields-v1': '网页关联字段与已排版正文',
       file: '文件操作',
       'file-create-v1': '创建文件',
       'file-create-numbered-v1': '同名文件编号',

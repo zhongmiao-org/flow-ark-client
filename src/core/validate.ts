@@ -1,5 +1,10 @@
 import { assertSkillUpdateNode } from '../../contracts/skill-update-review';
-import { assertBrowserFieldsNode, browserFieldsCapability } from '../shared/browser-fields';
+import {
+  assertBrowserFieldsNode,
+  browserFieldsCapability,
+  browserRenderedFieldsCapability,
+  browserFieldsCapabilityFor,
+} from '../shared/browser-fields';
 import { assertContinuousConversationCapabilities } from '../../contracts/continuous-conversation';
 import { assertConversationSourceNode } from '../../contracts/conversation-source';
 import { sourceCapability } from '../shared/conversation-source';
@@ -41,6 +46,7 @@ export const capabilities = [
   'source',
   browserInspectionCapability,
   browserFieldsCapability,
+  browserRenderedFieldsCapability,
   'conversation-evidence-v1',
   'conversation-v2',
   'conversation-checkpoint-v1',
@@ -153,14 +159,14 @@ export function validateFlow(value: unknown): Flow {
         mappingPreview(n, parameters);
       }
       if (n.type === 'browser') {
-        if (n.version === 5) {
+        if (n.version === 5 || n.version === 6) {
           assertBrowserFieldsNode(n);
           if (
-            !['browser', browserFieldsCapability].every((c) =>
+            !['browser', browserFieldsCapabilityFor(n.version)].every((c) =>
               flow.requiredCapabilities.includes(c),
             )
           )
-            throw Error('关联字段节点需要声明browser和browser-fields-v1能力');
+            throw Error('关联采集节点缺少其版本对应的browser和采集能力');
         }
         if (n.version === 4) {
           if (!flow.requiredCapabilities.includes(browserInspectionCapability))

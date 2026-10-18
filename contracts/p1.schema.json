@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.38.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.39.0/p1.schema.json",
   "title": "FlowArk P1 0.35.0: fixed conversation source resources and bounded reads",
   "$defs": {
     "Json": {
@@ -2043,6 +2043,78 @@
               "maxItems": 20,
               "items": {
                 "$ref": "#/$defs/BrowserField"
+              }
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "version",
+            "operation",
+            "selector",
+            "framePath",
+            "fields"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "type": {
+              "const": "browser"
+            },
+            "version": {
+              "const": 6
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 100000
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 3600000
+            },
+            "operation": {
+              "const": "collect"
+            },
+            "selector": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000,
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "$ref": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2000
+                    }
+                  },
+                  "required": [
+                    "$ref"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "framePath": {
+              "$ref": "#/$defs/FramePath"
+            },
+            "fields": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 20,
+              "items": {
+                "$ref": "#/$defs/BrowserRenderedField"
               }
             }
           },
@@ -10942,6 +11014,364 @@
         "framePath",
         "complete",
         "fields"
+      ],
+      "additionalProperties": false
+    },
+    "BrowserRenderedField": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$"
+        },
+        "selector": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000,
+              "pattern": "\\S"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "$ref": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                }
+              },
+              "required": [
+                "$ref"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "operation": {
+          "enum": [
+            "text",
+            "attribute",
+            "rendered-text"
+          ]
+        },
+        "attribute": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z_:][A-Za-z0-9_.:-]*$"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "$ref": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                }
+              },
+              "required": [
+                "$ref"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "key",
+        "selector",
+        "operation",
+        "attribute",
+        "required"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "enum": [
+                  "text",
+                  "rendered-text"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "attribute": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "attribute"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "attribute": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z_:][A-Za-z0-9_.:-]*$"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "$ref": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000
+                      }
+                    },
+                    "required": [
+                      "$ref"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "BrowserRenderedFieldsNode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "type": {
+          "const": "browser"
+        },
+        "version": {
+          "const": 6
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100000
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 3600000
+        },
+        "operation": {
+          "const": "collect"
+        },
+        "selector": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000,
+              "pattern": "\\S"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "$ref": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                }
+              },
+              "required": [
+                "$ref"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "framePath": {
+          "$ref": "#/$defs/FramePath"
+        },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/BrowserRenderedField"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "version",
+        "operation",
+        "selector",
+        "framePath",
+        "fields"
+      ],
+      "additionalProperties": false
+    },
+    "BrowserRenderedFieldResult": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$"
+        },
+        "selector": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "pattern": "\\S"
+        },
+        "operation": {
+          "enum": [
+            "text",
+            "attribute",
+            "rendered-text"
+          ]
+        },
+        "attribute": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z_:][A-Za-z0-9_.:-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "status": {
+          "enum": [
+            "ok",
+            "missing",
+            "ambiguous",
+            "missing-attribute",
+            "empty",
+            "hidden",
+            "clipped",
+            "unsupported"
+          ]
+        },
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 65536
+        },
+        "issues": {
+          "type": "array",
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "hidden-target",
+              "hidden-descendant",
+              "line-clamp",
+              "overflow-clip",
+              "unsupported-layout",
+              "embedded-content",
+              "generated-content"
+            ]
+          }
+        }
+      },
+      "required": [
+        "key",
+        "selector",
+        "operation",
+        "attribute",
+        "required",
+        "count",
+        "status",
+        "value",
+        "issues"
+      ],
+      "additionalProperties": false
+    },
+    "BrowserRenderedFieldsResult": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 2
+        },
+        "operation": {
+          "const": "collect"
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384
+        },
+        "documentUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384
+        },
+        "selector": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "pattern": "\\S"
+        },
+        "framePath": {
+          "$ref": "#/$defs/FramePath"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/BrowserRenderedFieldResult"
+          }
+        },
+        "renderPolicy": {
+          "const": "bounded-rendered-text-v1"
+        }
+      },
+      "required": [
+        "version",
+        "operation",
+        "url",
+        "documentUrl",
+        "selector",
+        "framePath",
+        "complete",
+        "fields",
+        "renderPolicy"
       ],
       "additionalProperties": false
     }

@@ -11,7 +11,8 @@ import type { BrowserBinding, BrowserCommand, BrowserDriver } from '../shared/ty
 import { framePathOf, validateFormCommand } from '../core/browser-command';
 import { commandBudget, assertBrowserOperations } from './browser-scope';
 import { resolvedBrowserFields, assertBrowserFieldsResult } from '../shared/browser-fields';
-import { readBrowserFields } from './browser-fields-dom';
+import { readBrowserFields, type BrowserFieldsDOMInput } from './browser-fields-dom';
+import { readBrowserRenderedFields } from './browser-rendered-fields-dom';
 export class PlaywrightDriver implements BrowserDriver {
   private documentEpoch = 0;
   private navigationRequests = new Set<Request>();
@@ -190,7 +191,7 @@ export class PlaywrightDriver implements BrowserDriver {
     const node = resolvedBrowserFields({
       id: 'driver',
       type: 'browser',
-      version: 5,
+      version: c.version ?? 5,
       operation: 'collect',
       selector: c.selector,
       framePath: path,
@@ -232,12 +233,19 @@ export class PlaywrightDriver implements BrowserDriver {
         }
       }
       verify();
-      const result = await frame.evaluate(readBrowserFields, {
+      const request = {
         selector: node.selector,
         fields: node.fields,
         framePath: path,
         url,
-      });
+      };
+      const result =
+        node.version === 6
+          ? await frame.evaluate(readBrowserRenderedFields, request)
+          : await frame.evaluate(readBrowserFields, {
+              ...request,
+              fields: request.fields as BrowserFieldsDOMInput['fields'],
+            });
       for (const { frame, handle } of documents)
         if (frame.isDetached() || !(await handle.evaluate((doc) => doc === document)))
           throw Error('采集文档身份已变化，整次结果未采用');

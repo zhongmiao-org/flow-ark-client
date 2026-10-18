@@ -633,6 +633,255 @@ export type Node =
             BrowserField,
             BrowserField
           ];
+    }
+  | {
+      id: string;
+      type: 'browser';
+      version: 6;
+      name?: string;
+      timeoutMs?: number;
+      operation: 'collect';
+      selector:
+        | string
+        | {
+            $ref: string;
+          };
+      framePath: FramePath;
+      /**
+       * @minItems 1
+       * @maxItems 20
+       */
+      fields:
+        | [BrowserRenderedField]
+        | [BrowserRenderedField, BrowserRenderedField]
+        | [BrowserRenderedField, BrowserRenderedField, BrowserRenderedField]
+        | [BrowserRenderedField, BrowserRenderedField, BrowserRenderedField, BrowserRenderedField]
+        | [BrowserRenderedField, BrowserRenderedField, BrowserRenderedField, BrowserRenderedField, BrowserRenderedField]
+        | [
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField
+          ]
+        | [
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField
+          ]
+        | [
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField
+          ]
+        | [
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField
+          ]
+        | [
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField
+          ]
+        | [
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField
+          ]
+        | [
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField
+          ]
+        | [
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField
+          ]
+        | [
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField
+          ]
+        | [
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField
+          ]
+        | [
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField
+          ]
+        | [
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField
+          ]
+        | [
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField
+          ]
+        | [
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField
+          ]
+        | [
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField,
+            BrowserRenderedField
+          ];
     };
 export type Value =
   | Json
@@ -656,6 +905,22 @@ export type BrowserField = {
         $ref: string;
       };
   operation: 'text' | 'attribute';
+  attribute:
+    | string
+    | {
+        $ref: string;
+      }
+    | null;
+  required: boolean;
+};
+export type BrowserRenderedField = {
+  key: string;
+  selector:
+    | string
+    | {
+        $ref: string;
+      };
+  operation: 'text' | 'attribute' | 'rendered-text';
   attribute:
     | string
     | {
@@ -1378,6 +1643,10 @@ export interface FlowArkP1 {
   BrowserFieldsNode?: BrowserFieldsNode;
   BrowserFieldResult?: BrowserFieldResult;
   BrowserFieldsResult?: BrowserFieldsResult;
+  BrowserRenderedField?: BrowserRenderedField;
+  BrowserRenderedFieldsNode?: BrowserRenderedFieldsNode;
+  BrowserRenderedFieldResult?: BrowserRenderedFieldResult;
+  BrowserRenderedFieldsResult?: BrowserRenderedFieldsResult;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -3892,4 +4161,783 @@ export interface BrowserFieldsResult {
         BrowserFieldResult,
         BrowserFieldResult
       ];
+}
+export interface BrowserRenderedFieldsNode {
+  id: string;
+  type: 'browser';
+  version: 6;
+  name?: string;
+  timeoutMs?: number;
+  operation: 'collect';
+  selector:
+    | string
+    | {
+        $ref: string;
+      };
+  framePath: FramePath;
+  /**
+   * @minItems 1
+   * @maxItems 20
+   */
+  fields:
+    | [BrowserRenderedField]
+    | [BrowserRenderedField, BrowserRenderedField]
+    | [BrowserRenderedField, BrowserRenderedField, BrowserRenderedField]
+    | [BrowserRenderedField, BrowserRenderedField, BrowserRenderedField, BrowserRenderedField]
+    | [BrowserRenderedField, BrowserRenderedField, BrowserRenderedField, BrowserRenderedField, BrowserRenderedField]
+    | [
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField
+      ]
+    | [
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField
+      ]
+    | [
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField
+      ]
+    | [
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField
+      ]
+    | [
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField
+      ]
+    | [
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField
+      ]
+    | [
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField
+      ]
+    | [
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField
+      ]
+    | [
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField
+      ]
+    | [
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField
+      ]
+    | [
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField
+      ]
+    | [
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField
+      ]
+    | [
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField
+      ]
+    | [
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField
+      ]
+    | [
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField,
+        BrowserRenderedField
+      ];
+}
+export interface BrowserRenderedFieldResult {
+  key: string;
+  selector: string;
+  operation: 'text' | 'attribute' | 'rendered-text';
+  attribute: string | null;
+  required: boolean;
+  count: number;
+  status: 'ok' | 'missing' | 'ambiguous' | 'missing-attribute' | 'empty' | 'hidden' | 'clipped' | 'unsupported';
+  value: string | null;
+  /**
+   * @maxItems 7
+   */
+  issues:
+    | []
+    | [
+        | 'hidden-target'
+        | 'hidden-descendant'
+        | 'line-clamp'
+        | 'overflow-clip'
+        | 'unsupported-layout'
+        | 'embedded-content'
+        | 'generated-content'
+      ]
+    | [
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        )
+      ]
+    | [
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        )
+      ]
+    | [
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        )
+      ]
+    | [
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        )
+      ]
+    | [
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        )
+      ]
+    | [
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        )
+      ];
+}
+export interface BrowserRenderedFieldsResult {
+  version: 2;
+  operation: 'collect';
+  url: string;
+  documentUrl: string;
+  selector: string;
+  framePath: FramePath;
+  complete: boolean;
+  /**
+   * @minItems 1
+   * @maxItems 20
+   */
+  fields:
+    | [BrowserRenderedFieldResult]
+    | [BrowserRenderedFieldResult, BrowserRenderedFieldResult]
+    | [BrowserRenderedFieldResult, BrowserRenderedFieldResult, BrowserRenderedFieldResult]
+    | [BrowserRenderedFieldResult, BrowserRenderedFieldResult, BrowserRenderedFieldResult, BrowserRenderedFieldResult]
+    | [
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult
+      ]
+    | [
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult
+      ]
+    | [
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult
+      ]
+    | [
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult
+      ]
+    | [
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult
+      ]
+    | [
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult
+      ]
+    | [
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult
+      ]
+    | [
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult
+      ]
+    | [
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult
+      ]
+    | [
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult
+      ]
+    | [
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult
+      ]
+    | [
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult
+      ]
+    | [
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult
+      ]
+    | [
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult
+      ]
+    | [
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult
+      ]
+    | [
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult,
+        BrowserRenderedFieldResult
+      ];
+  renderPolicy: 'bounded-rendered-text-v1';
 }

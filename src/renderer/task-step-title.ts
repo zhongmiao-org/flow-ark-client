@@ -39,7 +39,9 @@ export function taskStepTitle(step: Step): string {
   const title = (
     step.name?.trim() ||
     (step.type === 'browser'
-      ? browserLabels[step.operation]
+      ? step.version === 6
+        ? '关联字段与正文'
+        : browserLabels[step.operation]
       : step.type === 'context'
         ? contextOperations[step.operation]
         : kinds[step.type].label)

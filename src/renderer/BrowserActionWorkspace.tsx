@@ -112,7 +112,7 @@ export default function BrowserActionWorkspace(props: Props) {
   };
   const finish = () => {
     if (!props.guard()) return;
-    if (node.version === 5) {
+    if (node.version === 5 || node.version === 6) {
       try {
         assertBrowserFieldsNode(node);
       } catch (e) {
@@ -160,7 +160,11 @@ export default function BrowserActionWorkspace(props: Props) {
       <div className="browser-action-page">
         <header>
           <h1 ref={heading} id={id} tabIndex={-1}>
-            {node.version === 5 ? '读取关联字段' : '网页动作配置'}
+            {node.version === 6
+              ? '关联字段与正文'
+              : node.version === 5
+                ? '读取关联字段'
+                : '网页动作配置'}
           </h1>
           <p>
             当前步骤：{ordinal ? `${String(ordinal).padStart(2, '0')} ` : ''}
@@ -188,7 +192,7 @@ export default function BrowserActionWorkspace(props: Props) {
             />
           </div>
         )}
-        {node.version === 5 ? (
+        {node.version === 5 || node.version === 6 ? (
           <BrowserFieldsConfiguration
             node={node}
             change={props.change}
