@@ -3242,6 +3242,9 @@ function Editor({
               ? ['document-extract-v1']
               : []),
             ...(flatten(steps).some((node) => node.type === 'skill') ? ['skill-v1'] : []),
+            ...(flatten(steps).some((node) => node.type === 'skill' && node.version === 2)
+              ? ['skill-update-review-v1']
+              : []),
             ...(flatten(steps).some((node) => node.type === 'source-reduce')
               ? ['source-reduce-v1', 'conversation-source-read-v1', 'ai-node-v1']
               : []),
@@ -3293,6 +3296,9 @@ function Editor({
                 ? ['document-extract-v1']
                 : []),
               ...(flatten(steps).some((node) => node.type === 'skill') ? ['skill-v1'] : []),
+              ...(flatten(steps).some((node) => node.type === 'skill' && node.version === 2)
+                ? ['skill-update-review-v1']
+                : []),
               ...(flatten(steps).some((node) => node.type === 'source-reduce')
                 ? ['source-reduce-v1', 'conversation-source-read-v1', 'ai-node-v1']
                 : []),

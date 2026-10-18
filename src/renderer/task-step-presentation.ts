@@ -109,7 +109,9 @@ export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext
     case 'skill':
       return step.operation === 'read'
         ? `Skill资源「${step.binding}」 · 固定确认版本`
-        : `工作区「${step.binding}」 · 仅创建待确认草稿`;
+        : step.version === 2
+          ? `工作区「${step.binding}」 · 保存更新建议，手工内容默认保留`
+          : `工作区「${step.binding}」 · 仅创建待确认草稿`;
     case 'document':
       return `${resource(step.binding)} · 文件：${value(step.file)} · 本机文本提取，缺口须核对`;
     case 'file': {

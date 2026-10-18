@@ -203,7 +203,7 @@ export class RunReview {
           });
       }
       if (node.type === 'skill') {
-        if (node.operation === 'propose') directory(node.binding, true, true);
+        if (node.operation !== 'read') directory(node.binding, true, true);
         else {
           const b = record.bindings.resources?.[node.binding];
           if (!b?.skill || !b.path) throw Error('Skill确认版本尚未选择');

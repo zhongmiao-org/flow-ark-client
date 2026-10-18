@@ -1,8 +1,9 @@
+import { assertSkillUpdateNode } from '../../contracts/skill-update-review';
 import { assertContinuousConversationCapabilities } from '../../contracts/continuous-conversation';
 import { assertConversationSourceNode } from '../../contracts/conversation-source';
 import { sourceCapability } from '../shared/conversation-source';
 import { assertSourceReductionNode } from '../../contracts/source-reduction';
-import { skillCapability, skillBudget } from '../shared/skill';
+import { skillCapability, skillBudget, skillUpdateCapability } from '../shared/skill';
 import {
   browserInspectionCapability,
   assertBrowserInspectionNode,
@@ -45,6 +46,7 @@ export const capabilities = [
   templateDataCapability,
   'context',
   skillCapability,
+  skillUpdateCapability,
   'skill',
   documentCapability,
   'document',
@@ -98,6 +100,7 @@ export function validateFlow(value: unknown): Flow {
       all.add(n.id);
       assertConversationSourceNode(n, flow.requiredCapabilities);
       assertSourceReductionNode(n, flow.requiredCapabilities);
+      assertSkillUpdateNode(n, flow.requiredCapabilities);
       if (n.type === 'context' && !flow.requiredCapabilities.includes(templateDataCapability))
         throw Error('配置与状态需要声明template-data-v1能力');
       if (n.type === 'skill') {

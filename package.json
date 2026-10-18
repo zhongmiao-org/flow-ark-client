@@ -8,9 +8,9 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "f5810d915ea668fbebaf9164120f421e4a487a2d",
-    "contractsVersion": "0.36.0",
-    "contractsTag": "contracts-v0.36.0"
+    "governanceBaseline": "856ddbc2e7e2a9aba4869461ade1c439de3eb1d2",
+    "contractsVersion": "0.37.1",
+    "contractsTag": "contracts-v0.37.1"
   },
   "packageManager": "pnpm@10.14.0",
   "engines": {

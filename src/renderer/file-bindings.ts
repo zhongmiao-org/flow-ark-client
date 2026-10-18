@@ -23,7 +23,7 @@ export function fileBindingNames(
         step.type === 'file' ||
         step.type === 'excel' ||
         step.type === 'document' ||
-        (step.type === 'skill' && step.operation === 'propose')
+        (step.type === 'skill' && step.operation !== 'read')
       )
         names.add(step.binding);
       if (step.type === 'browser' && step.operation === 'upload') {

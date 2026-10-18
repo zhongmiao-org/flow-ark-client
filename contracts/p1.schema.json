@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.36.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.37.1/p1.schema.json",
   "title": "FlowArk P1 0.35.0: fixed conversation source resources and bounded reads",
   "$defs": {
     "Json": {
@@ -1923,6 +1923,65 @@
             "schema",
             "seed",
             "maxRequests"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "type": {
+              "const": "skill"
+            },
+            "version": {
+              "const": 2
+            },
+            "operation": {
+              "const": "propose-update"
+            },
+            "binding": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{0,99}$"
+            },
+            "base": {
+              "$ref": "#/$defs/Value"
+            },
+            "title": {
+              "$ref": "#/$defs/Value"
+            },
+            "markdown": {
+              "$ref": "#/$defs/Value"
+            },
+            "data": {
+              "$ref": "#/$defs/Value"
+            },
+            "evidence": {
+              "$ref": "#/$defs/Value"
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 3600000
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "version",
+            "operation",
+            "binding",
+            "base",
+            "title",
+            "markdown",
+            "data",
+            "evidence"
           ],
           "additionalProperties": false
         }
@@ -9752,6 +9811,736 @@
         "review",
         "confirmedAt",
         "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "SkillUpdateContent": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "\\S"
+        },
+        "markdown": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60000,
+          "pattern": "\\S"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Json"
+          }
+        }
+      },
+      "required": [
+        "title",
+        "markdown",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "SkillUpdateState": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "present": {
+              "const": false
+            }
+          },
+          "required": [
+            "present"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "present": {
+              "const": true
+            },
+            "value": {
+              "$ref": "#/$defs/Json"
+            }
+          },
+          "required": [
+            "present",
+            "value"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "SkillUpdateTarget": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "area": {
+              "enum": [
+                "title",
+                "markdown"
+              ]
+            },
+            "path": {
+              "type": "array",
+              "maxItems": 0
+            }
+          },
+          "required": [
+            "area",
+            "path"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "area": {
+              "const": "data"
+            },
+            "path": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "type": "string",
+                "maxLength": 1024
+              }
+            }
+          },
+          "required": [
+            "area",
+            "path"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "SkillUpdateField": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "target": {
+          "$ref": "#/$defs/SkillUpdateTarget"
+        },
+        "baseline": {
+          "$ref": "#/$defs/SkillUpdateState"
+        },
+        "current": {
+          "$ref": "#/$defs/SkillUpdateState"
+        },
+        "suggested": {
+          "$ref": "#/$defs/SkillUpdateState"
+        },
+        "status": {
+          "enum": [
+            "candidate",
+            "conflict",
+            "manual-only",
+            "already-applied"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "target",
+        "baseline",
+        "current",
+        "suggested",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "SkillUpdateReview": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "reviewId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "proposalId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "epoch": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "baselineSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "suggestionSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "currentSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "sourceSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "workspaceRevision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "createdAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+        },
+        "expiresAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+        },
+        "fields": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/SkillUpdateField"
+          }
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "base": {
+          "$ref": "#/$defs/SkillVersionRef"
+        },
+        "publishBase": {
+          "$ref": "#/$defs/SkillVersionRef"
+        },
+        "bundleSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "version",
+        "reviewId",
+        "proposalId",
+        "revision",
+        "epoch",
+        "base",
+        "baselineSha256",
+        "suggestionSha256",
+        "currentSha256",
+        "sourceSha256",
+        "workspaceRevision",
+        "createdAt",
+        "expiresAt",
+        "fields",
+        "sha256",
+        "publishBase",
+        "bundleSha256"
+      ],
+      "additionalProperties": false
+    },
+    "SkillUpdateChoice": {
+      "type": "object",
+      "properties": {
+        "fieldId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "replaceManual": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "fieldId",
+        "replaceManual"
+      ],
+      "additionalProperties": false
+    },
+    "SkillUpdateSelection": {
+      "type": "object",
+      "properties": {
+        "proposalId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "proposalId",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "SkillUpdateApply": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "proposalId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "reviewId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "reviewSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "choices": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/SkillUpdateChoice"
+          }
+        },
+        "reviewed": {
+          "const": true
+        }
+      },
+      "required": [
+        "version",
+        "proposalId",
+        "revision",
+        "reviewId",
+        "reviewSha256",
+        "requestId",
+        "choices",
+        "reviewed"
+      ],
+      "additionalProperties": false
+    },
+    "SkillUpdateReceipt": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "proposalId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "confirmationSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "reviewSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "revisionBefore": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "revisionAfter": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "contentSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "changed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "version",
+        "proposalId",
+        "requestId",
+        "confirmationSha256",
+        "reviewSha256",
+        "revisionBefore",
+        "revisionAfter",
+        "contentSha256",
+        "changed"
+      ],
+      "additionalProperties": false
+    },
+    "SkillUpdateOrigin": {
+      "type": "object",
+      "properties": {
+        "runId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "flowId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "nodeId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "nodeInstance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "executionVersionId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "runId",
+        "flowId",
+        "nodeId",
+        "nodeInstance",
+        "executionVersionId"
+      ],
+      "additionalProperties": false
+    },
+    "SkillUpdateBundle": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "proposalId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "workspaceBinding": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,99}$"
+        },
+        "origin": {
+          "$ref": "#/$defs/SkillUpdateOrigin"
+        },
+        "base": {
+          "$ref": "#/$defs/SkillVersionRef"
+        },
+        "baseline": {
+          "$ref": "#/$defs/SkillUpdateContent"
+        },
+        "baselineEvidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SkillEvidence"
+          },
+          "maxItems": 100
+        },
+        "suggestion": {
+          "$ref": "#/$defs/SkillDraft"
+        },
+        "createdAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "version",
+        "proposalId",
+        "workspaceBinding",
+        "origin",
+        "base",
+        "baseline",
+        "baselineEvidence",
+        "suggestion",
+        "createdAt",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "SkillUpdateInfo": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "mode": {
+          "const": "field-review"
+        },
+        "proposalId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "base": {
+          "$ref": "#/$defs/SkillVersionRef"
+        },
+        "bundleSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "baselineSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "suggestionSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "version",
+        "mode",
+        "proposalId",
+        "revision",
+        "base",
+        "bundleSha256",
+        "baselineSha256",
+        "suggestionSha256"
+      ],
+      "additionalProperties": false
+    },
+    "SkillUpdateInput": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "$ref": "#/$defs/SkillVersionRef"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "\\S"
+        },
+        "markdown": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60000,
+          "pattern": "\\S"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Json"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SkillEvidence"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "base",
+        "title",
+        "markdown",
+        "data",
+        "evidence"
+      ],
+      "additionalProperties": false
+    },
+    "SkillUpdateProposalOutput": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "status": {
+              "const": "pending"
+            },
+            "base": {
+              "$ref": "#/$defs/SkillVersionRef"
+            },
+            "proposalId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "version",
+            "status",
+            "base",
+            "proposalId",
+            "revision"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "status": {
+              "const": "confirmed"
+            },
+            "base": {
+              "$ref": "#/$defs/SkillVersionRef"
+            },
+            "proposalId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "ref": {
+              "$ref": "#/$defs/SkillVersionRef"
+            }
+          },
+          "required": [
+            "version",
+            "status",
+            "base",
+            "proposalId",
+            "revision",
+            "ref"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "status": {
+              "const": "unchanged"
+            },
+            "base": {
+              "$ref": "#/$defs/SkillVersionRef"
+            }
+          },
+          "required": [
+            "version",
+            "status",
+            "base"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "SkillUpdateApplication": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "pending",
+            "applied",
+            "rejected"
+          ]
+        },
+        "input": {
+          "$ref": "#/$defs/SkillUpdateApply"
+        },
+        "receipt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SkillUpdateReceipt"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "input",
+        "receipt"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "applied"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "receipt": {
+                "$ref": "#/$defs/SkillUpdateReceipt"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "receipt": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "SkillUpdateDetail": {
+      "type": "object",
+      "properties": {
+        "proposal": {
+          "$ref": "#/$defs/SkillProposalSnapshot"
+        },
+        "workspace": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "application": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SkillUpdateApplication"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "proposal",
+        "workspace",
+        "application"
       ],
       "additionalProperties": false
     }

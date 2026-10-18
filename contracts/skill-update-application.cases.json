@@ -1,0 +1,489 @@
+{
+  "notice": "Fictional wire values; no durable Store or ownership acceptance is asserted.",
+  "cases": [
+    {
+      "definition": "SkillUpdateApplication",
+      "valid": true,
+      "value": {
+        "status": "pending",
+        "input": {
+          "version": 1,
+          "proposalId": "proposal_example",
+          "revision": 4,
+          "reviewId": "review_example",
+          "reviewSha256": "7456a86f6bc8929bcacb2a17827b7a5a0143bc5e2c8b5e6a9fdf320bbf4e39e5",
+          "requestId": "request_example",
+          "choices": [
+            {
+              "fieldId": "50409786f4decc2e7fd9abee171f865c75c91c6b2fb2c474faf0c116f6ac9d67",
+              "replaceManual": false
+            }
+          ],
+          "reviewed": true
+        },
+        "receipt": null
+      }
+    },
+    {
+      "definition": "SkillUpdateApplication",
+      "valid": true,
+      "value": {
+        "status": "applied",
+        "input": {
+          "version": 1,
+          "proposalId": "proposal_example",
+          "revision": 4,
+          "reviewId": "review_example",
+          "reviewSha256": "7456a86f6bc8929bcacb2a17827b7a5a0143bc5e2c8b5e6a9fdf320bbf4e39e5",
+          "requestId": "request_example",
+          "choices": [
+            {
+              "fieldId": "50409786f4decc2e7fd9abee171f865c75c91c6b2fb2c474faf0c116f6ac9d67",
+              "replaceManual": false
+            }
+          ],
+          "reviewed": true
+        },
+        "receipt": {
+          "version": 1,
+          "proposalId": "proposal_example",
+          "requestId": "request_example",
+          "confirmationSha256": "99ebef5c4be99e6f202e9cdcc3538bad170157f012387dbaede3b91bd219b45b",
+          "reviewSha256": "7456a86f6bc8929bcacb2a17827b7a5a0143bc5e2c8b5e6a9fdf320bbf4e39e5",
+          "revisionBefore": 4,
+          "revisionAfter": 5,
+          "contentSha256": "73bbe1c8e2953d0a61225fe6300d274e7e0be94475dc43b7e1238b95f0e55b18",
+          "changed": true
+        }
+      }
+    },
+    {
+      "definition": "SkillUpdateApplication",
+      "valid": true,
+      "value": {
+        "status": "rejected",
+        "input": {
+          "version": 1,
+          "proposalId": "proposal_example",
+          "revision": 4,
+          "reviewId": "review_example",
+          "reviewSha256": "7456a86f6bc8929bcacb2a17827b7a5a0143bc5e2c8b5e6a9fdf320bbf4e39e5",
+          "requestId": "request_example",
+          "choices": [
+            {
+              "fieldId": "50409786f4decc2e7fd9abee171f865c75c91c6b2fb2c474faf0c116f6ac9d67",
+              "replaceManual": false
+            }
+          ],
+          "reviewed": true
+        },
+        "receipt": null
+      }
+    },
+    {
+      "definition": "SkillUpdateDetail",
+      "valid": true,
+      "value": {
+        "proposal": {
+          "version": 1,
+          "id": "proposal_example",
+          "revision": 5,
+          "key": "example-profile",
+          "workspaceBinding": "workspace",
+          "sourceFlowId": "skill-example",
+          "sourceNodeId": "propose",
+          "sourceFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "base": null,
+          "status": "draft",
+          "draft": {
+            "title": "虚构资料的沟通规则",
+            "markdown": "---\nname: example-profile\ndescription: 虚构资料核对示例\n---\n\n先回答重点。未知事实先询问本人。\n",
+            "data": {
+              "preferences": {},
+              "facts": []
+            },
+            "evidence": [
+              {
+                "kind": "conversation",
+                "label": "补充材料",
+                "sessionId": "session-example",
+                "revision": 4,
+                "sequence": 12,
+                "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+              }
+            ]
+          },
+          "createdAt": "2026-10-15T12:00:00.000Z",
+          "updatedAt": "2026-10-15T12:00:00.000Z"
+        },
+        "workspace": "/fictional/workspace",
+        "application": null
+      }
+    },
+    {
+      "definition": "SkillUpdateDetail",
+      "valid": true,
+      "value": {
+        "proposal": {
+          "version": 1,
+          "id": "proposal_example",
+          "revision": 5,
+          "key": "example-profile",
+          "workspaceBinding": "workspace",
+          "sourceFlowId": "skill-example",
+          "sourceNodeId": "propose",
+          "sourceFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "base": null,
+          "status": "draft",
+          "draft": {
+            "title": "虚构资料的沟通规则",
+            "markdown": "---\nname: example-profile\ndescription: 虚构资料核对示例\n---\n\n先回答重点。未知事实先询问本人。\n",
+            "data": {
+              "preferences": {},
+              "facts": []
+            },
+            "evidence": [
+              {
+                "kind": "conversation",
+                "label": "补充材料",
+                "sessionId": "session-example",
+                "revision": 4,
+                "sequence": 12,
+                "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+              }
+            ]
+          },
+          "createdAt": "2026-10-15T12:00:00.000Z",
+          "updatedAt": "2026-10-15T12:00:00.000Z"
+        },
+        "workspace": "/fictional/workspace",
+        "application": {
+          "status": "pending",
+          "input": {
+            "version": 1,
+            "proposalId": "proposal_example",
+            "revision": 4,
+            "reviewId": "review_example",
+            "reviewSha256": "7456a86f6bc8929bcacb2a17827b7a5a0143bc5e2c8b5e6a9fdf320bbf4e39e5",
+            "requestId": "request_example",
+            "choices": [
+              {
+                "fieldId": "50409786f4decc2e7fd9abee171f865c75c91c6b2fb2c474faf0c116f6ac9d67",
+                "replaceManual": false
+              }
+            ],
+            "reviewed": true
+          },
+          "receipt": null
+        }
+      }
+    },
+    {
+      "definition": "SkillUpdateDetail",
+      "valid": true,
+      "value": {
+        "proposal": {
+          "version": 1,
+          "id": "proposal_example",
+          "revision": 5,
+          "key": "example-profile",
+          "workspaceBinding": "workspace",
+          "sourceFlowId": "skill-example",
+          "sourceNodeId": "propose",
+          "sourceFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "base": null,
+          "status": "draft",
+          "draft": {
+            "title": "虚构资料的沟通规则",
+            "markdown": "---\nname: example-profile\ndescription: 虚构资料核对示例\n---\n\n先回答重点。未知事实先询问本人。\n",
+            "data": {
+              "preferences": {},
+              "facts": []
+            },
+            "evidence": [
+              {
+                "kind": "conversation",
+                "label": "补充材料",
+                "sessionId": "session-example",
+                "revision": 4,
+                "sequence": 12,
+                "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+              }
+            ]
+          },
+          "createdAt": "2026-10-15T12:00:00.000Z",
+          "updatedAt": "2026-10-15T12:00:00.000Z"
+        },
+        "workspace": "/fictional/workspace",
+        "application": {
+          "status": "applied",
+          "input": {
+            "version": 1,
+            "proposalId": "proposal_example",
+            "revision": 4,
+            "reviewId": "review_example",
+            "reviewSha256": "7456a86f6bc8929bcacb2a17827b7a5a0143bc5e2c8b5e6a9fdf320bbf4e39e5",
+            "requestId": "request_example",
+            "choices": [
+              {
+                "fieldId": "50409786f4decc2e7fd9abee171f865c75c91c6b2fb2c474faf0c116f6ac9d67",
+                "replaceManual": false
+              }
+            ],
+            "reviewed": true
+          },
+          "receipt": {
+            "version": 1,
+            "proposalId": "proposal_example",
+            "requestId": "request_example",
+            "confirmationSha256": "99ebef5c4be99e6f202e9cdcc3538bad170157f012387dbaede3b91bd219b45b",
+            "reviewSha256": "7456a86f6bc8929bcacb2a17827b7a5a0143bc5e2c8b5e6a9fdf320bbf4e39e5",
+            "revisionBefore": 4,
+            "revisionAfter": 5,
+            "contentSha256": "73bbe1c8e2953d0a61225fe6300d274e7e0be94475dc43b7e1238b95f0e55b18",
+            "changed": true
+          }
+        }
+      }
+    },
+    {
+      "definition": "SkillUpdateDetail",
+      "valid": true,
+      "value": {
+        "proposal": {
+          "version": 1,
+          "id": "proposal_example",
+          "revision": 5,
+          "key": "example-profile",
+          "workspaceBinding": "workspace",
+          "sourceFlowId": "skill-example",
+          "sourceNodeId": "propose",
+          "sourceFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "base": null,
+          "status": "draft",
+          "draft": {
+            "title": "虚构资料的沟通规则",
+            "markdown": "---\nname: example-profile\ndescription: 虚构资料核对示例\n---\n\n先回答重点。未知事实先询问本人。\n",
+            "data": {
+              "preferences": {},
+              "facts": []
+            },
+            "evidence": [
+              {
+                "kind": "conversation",
+                "label": "补充材料",
+                "sessionId": "session-example",
+                "revision": 4,
+                "sequence": 12,
+                "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+              }
+            ]
+          },
+          "createdAt": "2026-10-15T12:00:00.000Z",
+          "updatedAt": "2026-10-15T12:00:00.000Z"
+        },
+        "workspace": "/fictional/workspace",
+        "application": {
+          "status": "rejected",
+          "input": {
+            "version": 1,
+            "proposalId": "proposal_example",
+            "revision": 4,
+            "reviewId": "review_example",
+            "reviewSha256": "7456a86f6bc8929bcacb2a17827b7a5a0143bc5e2c8b5e6a9fdf320bbf4e39e5",
+            "requestId": "request_example",
+            "choices": [
+              {
+                "fieldId": "50409786f4decc2e7fd9abee171f865c75c91c6b2fb2c474faf0c116f6ac9d67",
+                "replaceManual": false
+              }
+            ],
+            "reviewed": true
+          },
+          "receipt": null
+        }
+      }
+    },
+    {
+      "definition": "SkillUpdateApplication",
+      "valid": false,
+      "value": {
+        "status": "pending",
+        "input": {
+          "version": 1,
+          "proposalId": "proposal_example",
+          "revision": 4,
+          "reviewId": "review_example",
+          "reviewSha256": "7456a86f6bc8929bcacb2a17827b7a5a0143bc5e2c8b5e6a9fdf320bbf4e39e5",
+          "requestId": "request_example",
+          "choices": [
+            {
+              "fieldId": "50409786f4decc2e7fd9abee171f865c75c91c6b2fb2c474faf0c116f6ac9d67",
+              "replaceManual": false
+            }
+          ],
+          "reviewed": true
+        },
+        "receipt": {
+          "version": 1,
+          "proposalId": "proposal_example",
+          "requestId": "request_example",
+          "confirmationSha256": "99ebef5c4be99e6f202e9cdcc3538bad170157f012387dbaede3b91bd219b45b",
+          "reviewSha256": "7456a86f6bc8929bcacb2a17827b7a5a0143bc5e2c8b5e6a9fdf320bbf4e39e5",
+          "revisionBefore": 4,
+          "revisionAfter": 5,
+          "contentSha256": "73bbe1c8e2953d0a61225fe6300d274e7e0be94475dc43b7e1238b95f0e55b18",
+          "changed": true
+        }
+      }
+    },
+    {
+      "definition": "SkillUpdateApplication",
+      "valid": false,
+      "value": {
+        "status": "applied",
+        "input": {
+          "version": 1,
+          "proposalId": "proposal_example",
+          "revision": 4,
+          "reviewId": "review_example",
+          "reviewSha256": "7456a86f6bc8929bcacb2a17827b7a5a0143bc5e2c8b5e6a9fdf320bbf4e39e5",
+          "requestId": "request_example",
+          "choices": [
+            {
+              "fieldId": "50409786f4decc2e7fd9abee171f865c75c91c6b2fb2c474faf0c116f6ac9d67",
+              "replaceManual": false
+            }
+          ],
+          "reviewed": true
+        },
+        "receipt": null
+      }
+    },
+    {
+      "definition": "SkillUpdateApplication",
+      "valid": false,
+      "value": {
+        "status": "unknown",
+        "input": {
+          "version": 1,
+          "proposalId": "proposal_example",
+          "revision": 4,
+          "reviewId": "review_example",
+          "reviewSha256": "7456a86f6bc8929bcacb2a17827b7a5a0143bc5e2c8b5e6a9fdf320bbf4e39e5",
+          "requestId": "request_example",
+          "choices": [
+            {
+              "fieldId": "50409786f4decc2e7fd9abee171f865c75c91c6b2fb2c474faf0c116f6ac9d67",
+              "replaceManual": false
+            }
+          ],
+          "reviewed": true
+        },
+        "receipt": null
+      }
+    },
+    {
+      "definition": "SkillUpdateApplication",
+      "valid": false,
+      "value": {
+        "status": "pending",
+        "input": {
+          "version": 1,
+          "proposalId": "proposal_example",
+          "revision": 4,
+          "reviewId": "review_example",
+          "reviewSha256": "7456a86f6bc8929bcacb2a17827b7a5a0143bc5e2c8b5e6a9fdf320bbf4e39e5",
+          "requestId": "request_example",
+          "choices": [
+            {
+              "fieldId": "50409786f4decc2e7fd9abee171f865c75c91c6b2fb2c474faf0c116f6ac9d67",
+              "replaceManual": false
+            }
+          ],
+          "reviewed": false
+        },
+        "receipt": null
+      }
+    },
+    {
+      "definition": "SkillUpdateDetail",
+      "valid": false,
+      "value": {
+        "proposal": {
+          "version": 1,
+          "id": "proposal_example",
+          "revision": 5,
+          "key": "example-profile",
+          "workspaceBinding": "workspace",
+          "sourceFlowId": "skill-example",
+          "sourceNodeId": "propose",
+          "sourceFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "base": null,
+          "status": "draft",
+          "draft": {
+            "title": "虚构资料的沟通规则",
+            "markdown": "---\nname: example-profile\ndescription: 虚构资料核对示例\n---\n\n先回答重点。未知事实先询问本人。\n",
+            "data": {
+              "preferences": {},
+              "facts": []
+            },
+            "evidence": [
+              {
+                "kind": "conversation",
+                "label": "补充材料",
+                "sessionId": "session-example",
+                "revision": 4,
+                "sequence": 12,
+                "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+              }
+            ]
+          },
+          "createdAt": "2026-10-15T12:00:00.000Z",
+          "updatedAt": "2026-10-15T12:00:00.000Z"
+        },
+        "workspace": "/fictional/workspace"
+      }
+    },
+    {
+      "definition": "SkillUpdateDetail",
+      "valid": false,
+      "value": {
+        "proposal": {
+          "version": 1,
+          "id": "proposal_example",
+          "revision": 5,
+          "key": "example-profile",
+          "workspaceBinding": "workspace",
+          "sourceFlowId": "skill-example",
+          "sourceNodeId": "propose",
+          "sourceFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "base": null,
+          "status": "draft",
+          "draft": {
+            "title": "虚构资料的沟通规则",
+            "markdown": "---\nname: example-profile\ndescription: 虚构资料核对示例\n---\n\n先回答重点。未知事实先询问本人。\n",
+            "data": {
+              "preferences": {},
+              "facts": []
+            },
+            "evidence": [
+              {
+                "kind": "conversation",
+                "label": "补充材料",
+                "sessionId": "session-example",
+                "revision": 4,
+                "sequence": 12,
+                "sha256": "e8240ba431433829bd139a16ca50d01ac4b299ede244ac18e6115cfbaedc0bc9"
+              }
+            ]
+          },
+          "createdAt": "2026-10-15T12:00:00.000Z",
+          "updatedAt": "2026-10-15T12:00:00.000Z"
+        },
+        "workspace": "",
+        "application": null
+      }
+    }
+  ]
+}

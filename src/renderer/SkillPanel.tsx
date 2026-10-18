@@ -1,3 +1,6 @@
+import SkillUpdateReviewPanel from './SkillUpdateReviewPanel';
+import type { SkillUpdateApplication, SkillUpdateDetail } from '../shared/contracts.generated';
+import { skill_update_detail_v1 } from '../shared/node-schema.generated';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Alert, Button, Card, Checkbox, Collapse, Input, Tag } from 'antd';
 import {
@@ -16,6 +19,7 @@ import ConversationPanel from './ConversationPanel';
 import { assertTrialPreview, type SkillTrialPreview } from '../shared/skill-trial';
 import SkillDataEditor from './SkillDataEditor';
 const api = (method: string, args: unknown = {}) => window.flowark.request(method, args);
+const isDetail = (v: unknown): v is SkillUpdateDetail => !!skill_update_detail_v1(v);
 const labels: Record<SkillProposalSnapshot['status'], string> = {
   draft: '待核对草稿',
   publishing: '正在保存',
@@ -97,6 +101,9 @@ export default function SkillPanel({
     [preview, setPreview] = useState<any>(),
     [versions, setVersions] = useState<SkillChoice[]>([]),
     [relocation, setRelocation] = useState('');
+  const [application, setApplication] = useState<SkillUpdateApplication | null>(null),
+    [updatePending, setUpdatePending] = useState(false);
+  const detailSequence = useRef(0);
   useEffect(() => setPublicationReviewed(false), [preview]);
   const [leave, setLeave] = useState<{ next: () => void; label: string }>();
   const [structuredPending, setStructuredPending] = useState(false);
@@ -150,9 +157,14 @@ export default function SkillPanel({
       pending.current = undefined;
   };
   const read = async () => {
+    const visit = id,
+      seq = ++detailSequence.current;
     const v = await api('skill.detail', { id });
-    if (!alive.current) return;
+    if (!alive.current || activeId.current !== visit || detailSequence.current !== seq) return;
+    if (!isDetail(v) || v.proposal.id !== visit) throw Error('草稿详情身份无效');
+    if (saved.current?.id === visit && v.proposal.revision < saved.current.revision) return;
     setWorkspace(v.workspace);
+    setApplication(v.application);
     accept(v.proposal);
   };
   useEffect(() => {
@@ -160,6 +172,9 @@ export default function SkillPanel({
     alive.current = true;
     saved.current = undefined;
     setSnapshot(undefined);
+    setApplication(null);
+    setUpdatePending(false);
+    const seq = ++detailSequence.current;
     setComparison(undefined);
     setError('');
     setPreview(undefined);
@@ -167,7 +182,10 @@ export default function SkillPanel({
     setStructuredPending(false);
     void api('skill.detail', { id })
       .then((v) => {
-        if (live) {
+        if (live && activeId.current === id && detailSequence.current === seq) {
+          if (!isDetail(v) || v.proposal.id !== id) throw Error('草稿详情身份无效');
+          if (saved.current?.id === id && v.proposal.revision < saved.current.revision) return;
+          setApplication(v.application);
           setWorkspace(v.workspace);
           assertSkillProposal(v.proposal);
           saved.current = v.proposal;
@@ -180,7 +198,7 @@ export default function SkillPanel({
         }
       })
       .catch((e) => {
-        if (live) setError(String(e.message ?? e));
+        if (live && detailSequence.current === seq) setError(String(e.message ?? e));
       });
     return () => {
       live = false;
@@ -296,6 +314,7 @@ export default function SkillPanel({
   const blocked =
     !snapshot ||
     busy ||
+    updatePending ||
     ['publishing', 'unknown', 'confirmed', 'discarded'].includes(snapshot.status);
   const confirmed = snapshot?.status === 'confirmed';
   const version = versions.find(
@@ -346,6 +365,17 @@ export default function SkillPanel({
             {labels[snapshot.status]} · 修订 {snapshot.revision}
           </Tag>
           {snapshot.error && <Alert type="warning" title={snapshot.error} />}
+          <SkillUpdateReviewPanel
+            key={id}
+            snapshot={snapshot}
+            application={application}
+            dirty={dirty}
+            disabled={
+              busy || ['publishing', 'unknown', 'confirmed', 'discarded'].includes(snapshot.status)
+            }
+            refresh={read}
+            pendingChange={setUpdatePending}
+          />
           <div className="skill-grid">
             <Card title="正文与结构化内容" styles={{ body: { padding: 24 } }}>
               <div className="skill-field">

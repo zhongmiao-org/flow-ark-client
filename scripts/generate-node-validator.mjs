@@ -90,6 +90,18 @@ for (const name of [
 ])
   validators['skill_' + name.replace(/^Skill/, '').toLowerCase() + '_v1'] =
     `${schema.$id}#/$defs/${name}`;
+for (const name of [
+  'Info',
+  'Review',
+  'Selection',
+  'Apply',
+  'Receipt',
+  'ProposalOutput',
+  'Application',
+  'Detail',
+])
+  validators['skill_update_' + name.toLowerCase() + '_v1'] =
+    `${schema.$id}#/$defs/SkillUpdate${name}`;
 const digest = createHash('sha256').update(source).digest('hex');
 for (const name of ['Definition', 'Draft', 'PackageMetadata', 'Checkout', 'ExportReceipt'])
   validators['author_' + name.toLowerCase() + '_v1'] = `${schema.$id}#/$defs/TemplateAuthor${name}`;

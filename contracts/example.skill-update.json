@@ -1,0 +1,158 @@
+{
+  "notice": "Fictional format only; no registered source or authority is asserted.",
+  "flow": {
+    "formatVersion": "1.0",
+    "id": "skill-update-example",
+    "name": "Update draft",
+    "description": "Fictional syntax only",
+    "parameters": {
+      "base": null
+    },
+    "requiredCapabilities": ["skill-v1", "skill-update-review-v1"],
+    "steps": [
+      {
+        "id": "update",
+        "type": "skill",
+        "version": 2,
+        "operation": "propose-update",
+        "binding": "workspace",
+        "base": {
+          "$ref": "params.base"
+        },
+        "title": "Example",
+        "markdown": "# Example",
+        "data": {
+          "tone": "brief"
+        },
+        "evidence": [
+          {
+            "kind": "manual",
+            "label": "Example 2",
+            "note": "Fictional annotation 2"
+          }
+        ]
+      }
+    ]
+  },
+  "resolvedInput": {
+    "base": {
+      "key": "sample-profile",
+      "versionId": "sv_11111111111111111111111111111111",
+      "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    "title": "Example",
+    "markdown": "# Example",
+    "data": {
+      "tone": "brief",
+      "manual": "keep"
+    },
+    "evidence": [
+      {
+        "kind": "manual",
+        "label": "Example 2",
+        "note": "Fictional annotation 2"
+      }
+    ]
+  },
+  "bundle": {
+    "version": 1,
+    "proposalId": "proposal_example",
+    "workspaceBinding": "workspace",
+    "origin": {
+      "runId": "run_example",
+      "flowId": "flow_example",
+      "nodeId": "update",
+      "nodeInstance": "update:0",
+      "executionVersionId": "5555555555555555555555555555555555555555555555555555555555555555"
+    },
+    "base": {
+      "key": "sample-profile",
+      "versionId": "sv_11111111111111111111111111111111",
+      "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    "baseline": {
+      "title": "Example",
+      "markdown": "# Example",
+      "data": {
+        "tone": "formal",
+        "manual": "keep"
+      }
+    },
+    "baselineEvidence": [
+      {
+        "kind": "manual",
+        "label": "Example 1",
+        "note": "Fictional annotation 1"
+      }
+    ],
+    "suggestion": {
+      "title": "Example",
+      "markdown": "# Example",
+      "data": {
+        "tone": "brief",
+        "manual": "keep"
+      },
+      "evidence": [
+        {
+          "kind": "manual",
+          "label": "Example 2",
+          "note": "Fictional annotation 2"
+        }
+      ]
+    },
+    "createdAt": "2026-10-18T04:00:00.000Z",
+    "sha256": "7c7b95526a93e1a1cef7153752dcf78e55c8f59180a3931b668b71339cfa7a60"
+  },
+  "info": {
+    "version": 1,
+    "mode": "field-review",
+    "proposalId": "proposal_example",
+    "revision": 4,
+    "base": {
+      "key": "sample-profile",
+      "versionId": "sv_11111111111111111111111111111111",
+      "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    "bundleSha256": "7c7b95526a93e1a1cef7153752dcf78e55c8f59180a3931b668b71339cfa7a60",
+    "baselineSha256": "e271aa64865e33a23c934d46f0de7f2d6222f13e466dc8118d98a044b986c80f",
+    "suggestionSha256": "fb7d0c0020018104365b795eaff99e037293c920de3c5957a92925594c6a907a"
+  },
+  "outputs": [
+    {
+      "version": 1,
+      "status": "pending",
+      "base": {
+        "key": "sample-profile",
+        "versionId": "sv_11111111111111111111111111111111",
+        "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "proposalId": "proposal_example",
+      "revision": 1
+    },
+    {
+      "version": 1,
+      "status": "confirmed",
+      "base": {
+        "key": "sample-profile",
+        "versionId": "sv_11111111111111111111111111111111",
+        "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "proposalId": "proposal_example",
+      "revision": 5,
+      "ref": {
+        "key": "sample-profile",
+        "versionId": "sv_33333333333333333333333333333333",
+        "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+      }
+    },
+    {
+      "version": 1,
+      "status": "unchanged",
+      "base": {
+        "key": "sample-profile",
+        "versionId": "sv_11111111111111111111111111111111",
+        "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    }
+  ]
+}

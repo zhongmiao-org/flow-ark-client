@@ -1,3 +1,4 @@
+import { assertSkillUpdateNode } from './skill-update-review';
 import { assertSourceReductionNode } from './source-reduction';
 import { assertConversationSourceNode } from './conversation-source';
 import { assertContinuousConversationCapabilities } from './continuous-conversation';
@@ -74,6 +75,7 @@ export function validatePackage(files:Map<string,Buffer>):PackageData {
   assertContinuousConversationCapabilities(n,flow.requiredCapabilities);
   assertConversationSourceNode(n,flow.requiredCapabilities,manifest,entry);
   assertSourceReductionNode(n,flow.requiredCapabilities,manifest,entry);
+  assertSkillUpdateNode(n,flow.requiredCapabilities,manifest,entry);
   if(n.type==='conversation'&&n.version===2){const resource=manifest.resources.find(r=>r.id===n.binding);if(!entry.capabilities.includes('conversation')||!entry.capabilities.includes('ai')||!entry.resources.includes(n.binding)||resource?.kind!=='ai'||resource.access!=='use')throw new Error('持续会话入口未声明conversation/ai及本入口AI资源');}
   if(n.type==='condition'){walk(n.then,depth+1);walk(n.else,depth+1);}if(n.type==='loop')walk(n.body,depth+1);}};walk(flow.steps);
  }

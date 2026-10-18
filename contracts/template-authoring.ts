@@ -1,3 +1,4 @@
+import { assertSkillUpdateNode } from './skill-update-review';
 import { assertSourceReductionNode } from './source-reduction';
 import { assertConversationSourceNode } from './conversation-source';
 import { assertContinuousConversationCapabilities } from './continuous-conversation';
@@ -120,6 +121,7 @@ export function validateAuthorDefinition(value: unknown): any {
       assertContinuousConversationCapabilities(node, entry.flow.requiredCapabilities);
       assertConversationSourceNode(node, entry.flow.requiredCapabilities, d, { capabilities: entry.flow.requiredCapabilities, resources: entry.resourceIds });
       assertSourceReductionNode(node, entry.flow.requiredCapabilities, d, { capabilities: entry.flow.requiredCapabilities, resources: entry.resourceIds });
+      assertSkillUpdateNode(node, entry.flow.requiredCapabilities, d, { capabilities: entry.flow.requiredCapabilities, resources: entry.resourceIds });
       if (node.type === 'conversation' && node.version === 2) {
         const r = d.resources.find((r: any) => r.id === node.binding);
         if (!entry.resourceIds.includes(node.binding) || r?.kind !== 'ai' || r.access !== 'use')

@@ -31,24 +31,38 @@ export default function SkillNodeConfiguration({
           options={[
             { value: 'propose', label: '创建待确认草稿' },
             { value: 'read', label: '读取固定确认版本' },
+            { value: 'propose-update', label: '更新已有 Skill · 保留手工内容' },
           ]}
           onChange={(operation) =>
             change(
               operation === 'read'
                 ? { id: node.id, type: 'skill', version: 1, operation: 'read', binding: 'profile' }
-                : {
-                    id: node.id,
-                    type: 'skill',
-                    version: 1,
-                    operation: 'propose',
-                    binding: 'workspace',
-                    key: 'personal-profile',
-                    title: '个人Skill',
-                    markdown: '',
-                    data: {},
-                    evidence: [],
-                    base: null,
-                  },
+                : operation === 'propose-update'
+                  ? {
+                      id: node.id,
+                      type: 'skill',
+                      version: 2,
+                      operation: 'propose-update',
+                      binding: 'workspace',
+                      title: '',
+                      markdown: '',
+                      data: {},
+                      evidence: [],
+                      base: null,
+                    }
+                  : {
+                      id: node.id,
+                      type: 'skill',
+                      version: 1,
+                      operation: 'propose',
+                      binding: 'workspace',
+                      key: 'personal-profile',
+                      title: '个人Skill',
+                      markdown: '',
+                      data: {},
+                      evidence: [],
+                      base: null,
+                    },
             )
           }
         />
@@ -92,16 +106,29 @@ export default function SkillNodeConfiguration({
               ['来源记录', 'evidence'],
               ['父确认版本', 'base'],
             ] as const
-          ).map(([label, key]) => (
-            <ValueField
-              key={key}
-              label={label}
-              value={node[key] ?? null}
-              choices={choices}
-              jsonDefault={key === 'data' ? {} : key === 'evidence' ? [] : undefined}
-              change={(value) => change({ ...node, [key]: value })}
-            />
-          ))}
+          )
+            .filter(([, key]) => key !== 'key' || node.version === 1)
+            .map(([label, key]) => (
+              <ValueField
+                key={key}
+                label={node.version === 2 && key === 'base' ? '准确父确认版本 · 必填' : label}
+                value={
+                  key === 'key'
+                    ? node.version === 1
+                      ? (node.key ?? null)
+                      : null
+                    : (node[key] ?? null)
+                }
+                choices={choices}
+                jsonDefault={key === 'data' ? {} : key === 'evidence' ? [] : undefined}
+                change={(value) => change({ ...node, [key]: value })}
+              />
+            ))}
+          {node.version === 2 && (
+            <p>
+              键从准确父版本取得；新建议单独保存，默认保留手工内容。内容相同不创建重复版本；父版本不可核验时停止。
+            </p>
+          )}
           <p>
             本节点仅保存待确认草稿，结束本批；请在参数与资源选择读写工作区。用户在“需要我处理”核对后，才写SKILL.md、data.json和清单到新版本目录。
           </p>
