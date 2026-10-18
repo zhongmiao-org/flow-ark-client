@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Button, Checkbox, Collapse, Descriptions, Tag } from 'antd';
+import { Alert, Button, Collapse, Descriptions, Tag } from 'antd';
+import SourceReductionRunReview from './SourceReductionRunReview';
 import type { Json } from '../shared/types';
 import {
   assertReductionAttempt,
@@ -72,18 +73,19 @@ export default function SourceReductionPanel({
   target,
   initial,
   rerun,
+  openRun,
 }: {
   target: ReductionTarget;
   initial?: Output;
   rerun?: () => void;
+  openRun?: (detail: any) => void;
 }) {
   const [view, setView] = useState<View>(),
     [error, setError] = useState(''),
     [acting, setActing] = useState(false),
     [attempt, setAttempt] = useState<Attempt>(),
     [page, setPage] = useState<any>(),
-    [retry, setRetry] = useState(false),
-    [reviewed, setReviewed] = useState(false),
+    [reviewOpen, setReviewOpen] = useState(false),
     [row, setRow] = useState<ConversationArchiveRecord>();
   const generation = useRef(0),
     current = useRef<View | undefined>(undefined),
@@ -121,8 +123,7 @@ export default function SourceReductionPanel({
     setError('');
     setAttempt(undefined);
     setPage(undefined);
-    setRetry(false);
-    setReviewed(false);
+    setReviewOpen(false);
     setRow(undefined);
     setActing(false);
     lock.current = false;
@@ -187,6 +188,14 @@ export default function SourceReductionPanel({
     if (visit === generation.current) setPage(result);
   }
   const complete = output.phase === 'complete';
+  if (reviewOpen)
+    return (
+      <SourceReductionRunReview
+        selection={params}
+        back={() => setReviewOpen(false)}
+        openRun={openRun}
+      />
+    );
   return (
     <section className="reduction-panel" aria-label="来源整理进度">
       <header>
@@ -379,59 +388,9 @@ export default function SourceReductionPanel({
               </Button>
             )}
             <p>采用完整响应不调用模型，不发布Skill；随后仍从原入口继续流程。</p>
-            {rerun && (
-              <Button
-                disabled={disabled}
-                onClick={() => {
-                  setRetry(!retry);
-                  setReviewed(false);
-                }}
-              >
-                核对一次新尝试
-              </Button>
-            )}
-            {retry && (
-              <section aria-label="允许当前片段重试">
-                <p>
-                  原请求可能已经收费。本节点只重试1个未提交片段；其余步骤在原入口运行核对页确认。已有排队运行不能使用本次许可，许可十分钟内有效。
-                </p>
-                <Checkbox
-                  checked={reviewed}
-                  disabled={disabled}
-                  onChange={(e) => setReviewed(e.target.checked)}
-                >
-                  我理解可能再次付费，并将核对原入口的执行范围
-                </Checkbox>
-                <div className="reduction-actions">
-                  <Button
-                    disabled={acting}
-                    onClick={() => {
-                      setRetry(false);
-                      setReviewed(false);
-                    }}
-                  >
-                    取消
-                  </Button>
-                  <Button
-                    type="primary"
-                    disabled={disabled || !reviewed}
-                    onClick={() =>
-                      void action(async () => {
-                        await window.flowark.request('reduction.allowRetry', {
-                          ...params,
-                          revision: output.revision,
-                          pendingAttemptId: output.pendingAttemptId,
-                          requestId: crypto.randomUUID(),
-                        });
-                        rerun?.();
-                      })
-                    }
-                  >
-                    前往运行核对
-                  </Button>
-                </div>
-              </section>
-            )}
+            <Button disabled={disabled} onClick={() => setReviewOpen(true)}>
+              核对一次新尝试
+            </Button>
           </>
         ) : (
           <p>
@@ -440,8 +399,8 @@ export default function SourceReductionPanel({
               : '当前草稿与下一位置已保存。继续将使用原任务处理后续片段，须核对原入口整体执行范围。'}
           </p>
         )}
-        {!view?.busy && output.phase !== 'attention' && rerun && (
-          <Button type="primary" disabled={disabled} onClick={rerun}>
+        {!view?.busy && output.phase !== 'attention' && (
+          <Button type="primary" disabled={disabled} onClick={() => setReviewOpen(true)}>
             {complete ? '进入后续流程核对' : '核对后继续下一批'}
           </Button>
         )}

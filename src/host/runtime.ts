@@ -1,5 +1,5 @@
 import { SourceReductions } from './source-reductions';
-import { SourceReductionReviews } from './source-reduction-reviews';
+import { SourceReductionReviews, reductionSnapshotHash } from './source-reduction-reviews';
 import { reductionMethods } from '../shared/source-reduction';
 import { assertSourceReductionNode } from '../../contracts/source-reduction';
 import { ConversationThreads } from './conversation-threads';
@@ -263,6 +263,7 @@ export class Runtime {
       receipt: (runId, nodeInstance, receipt) => {
         this.store.aiOutcome(runId, nodeInstance, receipt, this.secrets);
       },
+      admit: (input) => this.reductionReviews.admit(input),
     });
     this.aiSettings = new AISettings(this.store, {
       assertAvailable: () => {
@@ -471,9 +472,10 @@ export class Runtime {
         this.active?.id === id ||
         this.scripts.hasRun(id) ||
         (this.pendingCapabilities.get(id) ?? 0) > 0,
-      preflight: (record) => this.preflight(record),
+      preflight: (record, sourceReview) => this.preflight(record, undefined, sourceReview),
       version: (record, prepared) => this.version(record, prepared),
       dispatch: () => this.dispatch(),
+      requiresSourceReview: (id) => this.reductions.hasJobsForRun(id),
     });
     this.templates = new Templates(
       this.store,
@@ -536,7 +538,16 @@ export class Runtime {
       },
       error: (error) => this.redactError(error),
     });
-    this.reductionReviews = new SourceReductionReviews({
+    this.reductionReviews = new SourceReductionReviews(this.store, {
+      plan: (id) => this.reruns.sourcePreview(id),
+      create: (input, check, scope) => this.reruns.confirm(input, check, scope),
+      configurationGuard: (provider) => this.aiSettings.capture([provider]),
+      hasSourceJobs: (id) => this.reductions.hasJobsForRun(id),
+      error: (error) => this.redactError(error),
+      authorize: (run, snapshot) => {
+        this.assertAdmitting();
+        this.reruns.checkExecution(run, snapshot);
+      },
       context: async (selection, epoch) => {
         this.assertAdmitting();
         this.assertNoHandoff();
@@ -583,19 +594,7 @@ export class Runtime {
             ...data,
             epoch,
             executionVersionId: scope.source.versionId,
-            snapshotSha256: digest({
-              flow: snapshot.flow,
-              bindings: snapshot.bindings,
-              webTarget: snapshot.webTarget,
-              outputTarget: snapshot.outputTarget,
-              toolTargets: snapshot.toolTargets,
-              desktopTarget: snapshot.desktopTarget,
-              scripts: snapshot.scripts,
-              scriptBundles: snapshot.scriptBundles,
-              skillSnapshots: snapshot.skillSnapshots,
-              templateData: snapshot.templateData,
-              authorSdk: snapshot.authorSdk,
-            }),
+            snapshotSha256: reductionSnapshotHash(snapshot),
             configurationRevision: configuration?.revision ?? null,
           },
           check,
@@ -776,6 +775,7 @@ export class Runtime {
   async preflight(
     record: FlowRecord & Partial<PreparedScripts>,
     desktopRun?: string | true,
+    sourceReview = false,
   ): Promise<PreparedScripts> {
     const checkAI = this.aiSettings.capture([
       ...record.bindings.credentials,
@@ -817,7 +817,11 @@ export class Runtime {
     await this.webTargets.record(record);
     await this.outputs.record(record);
     await this.templates.preflight(record);
-    await this.reductions.preflight(record);
+    await this.reductions.preflight(
+      record,
+      sourceReview ||
+        (typeof desktopRun === 'string' && this.reductionReviews.hasReceipt(desktopRun)),
+    );
     await this.aiNodes.preflight(record);
     await this.aiNodes.preflightConversations(record);
     if (record.bindings.template) {
@@ -1356,6 +1360,7 @@ export class Runtime {
         this.store.state(run.id, 'RUNNING');
         const s = this.store.get<FlowRecord & PreparedScripts>('snapshot', run.id)!;
         this.reruns.checkExecution(run, s);
+        await this.waitActive(active, this.reductionReviews.checkQueuedRun(run.id));
         await this.waitActive(active, this.runReview.checkExecution(run, s));
         const prepared = await this.waitActive(active, this.preflight(s, run.id)); // Never recompile a fixed bundle.
         this.checkActive(active);
@@ -2200,12 +2205,30 @@ export class Runtime {
       if (method === 'skill.relocate') return this.skills.relocate(v.id, v.path);
     }
     if (method.startsWith('reduction.')) {
-      await this.ready;
       const rule = reductionMethods[method as keyof typeof reductionMethods];
       if (!rule) throw Error('整理IPC方法未授权');
       const v = rule.parse(args) as any,
         target = { runId: v.runId, nodeId: v.nodeId, nodeInstance: v.nodeInstance };
+      if (method === 'reduction.runConfirm') {
+        const epoch = this.admissionEpoch,
+          suspended = this.suspended;
+        const pending = this.admissions.then(async () => {
+          await this.ready;
+          const check = () => {
+            if (suspended) throw Error('系统正在休眠，恢复后请重新核对');
+            this.assertAdmission(epoch);
+          };
+          return this.reductionReviews.confirmOutcome(v, check);
+        });
+        this.admissions = pending.then(
+          () => {},
+          () => {},
+        );
+        return pending;
+      }
+      await this.ready;
       if (method === 'reduction.runPreview') return this.reductionReviews.preview(v);
+      if (method === 'reduction.runPlan') return this.reductionReviews.plan(v);
       if (method === 'reduction.forRun') return this.reductions.forRun(target);
       if (method === 'reduction.detail') return this.reductions.detail(target, v.jobId);
       if (method === 'reduction.attempts')
@@ -2214,14 +2237,6 @@ export class Runtime {
         return this.reductions.readAttempt(target, v.jobId, v.sequence);
       if (method === 'reduction.recover')
         return this.reductions.recover(
-          target,
-          v.jobId,
-          v.revision,
-          v.pendingAttemptId,
-          v.requestId,
-        );
-      if (method === 'reduction.allowRetry')
-        return this.reductions.allowRetry(
           target,
           v.jobId,
           v.revision,
@@ -2490,7 +2505,9 @@ export class Runtime {
           output: redact(this.store.get('output', id)),
           typedResults: this.typedResults
             .list(id)
-            .filter((r) => run?.state === 'SUCCEEDED' || r.type === 'context'),
+            .filter(
+              (r) => run?.state === 'SUCCEEDED' || ['context', 'source-reduce'].includes(r.type),
+            ),
           snapshot: snapshot?.flow,
           scriptBundles: snapshot?.scriptBundles ?? [],
           authorSdk: snapshot?.authorSdk,

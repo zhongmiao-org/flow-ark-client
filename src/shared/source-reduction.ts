@@ -1,7 +1,11 @@
 import { z } from 'zod';
-import { reduction_output_v1, reduction_attempt_v1 } from './node-schema.generated';
+import {
+  reduction_output_v1,
+  reduction_attempt_v1,
+  reduction_run_review_v1,
+} from './node-schema.generated';
 import { browserHash, browserDigest } from './conversation-archive';
-import type { Step } from './types';
+import type { Step, Run } from './types';
 export type {
   SourceReductionOutput,
   SourceReductionAttempt,
@@ -13,7 +17,12 @@ export type {
   SourceReductionRunConfirmation,
   SourceReductionRunReviewReceipt,
 } from './contracts.generated';
-import type { SourceReductionOutput, SourceReductionAttempt } from './contracts.generated';
+import type {
+  SourceReductionOutput,
+  SourceReductionAttempt,
+  SourceReductionRunReview,
+} from './contracts.generated';
+import type { RunRerunPreview } from './run-rerun';
 export type ReductionNode = Extract<Step, { type: 'source-reduce' }>;
 export const reductionCapabilities = [
   'source-reduce-v1',
@@ -47,8 +56,49 @@ const action = job
   })
   .strict();
 export type ReductionTarget = z.infer<typeof target>;
+export const reductionRunConfirmation = z
+  .object({
+    version: z.literal(1),
+    reviewId: id,
+    reviewSha256: z.string().regex(/^[a-f0-9]{64}$/),
+    requestId: id,
+    reviewed: z.literal(true),
+  })
+  .strict();
+export type SourceReductionRunPlan = { source: SourceReductionRunReview; run: RunRerunPreview };
+export type SourceReductionConfirmationOutcome =
+  | { status: 'created'; run: Run }
+  | { status: 'blocked' | 'unknown'; error: string };
+export async function verifyReductionRunReview(value: unknown): Promise<SourceReductionRunReview> {
+  if (
+    new TextEncoder().encode(JSON.stringify(value)).length > 32768 ||
+    !reduction_run_review_v1(value)
+  )
+    throw Error('来源运行核对格式或范围无效');
+  const r = value as SourceReductionRunReview;
+  const limit = r.phase === 'attention' ? 1 : r.phase === 'complete' ? 0 : r.batchLimit;
+  const operation =
+    r.phase === 'attention'
+      ? 'retry-one'
+      : r.phase === 'complete'
+        ? 'use-complete'
+        : 'continue-batch';
+  if (
+    r.requestLimit !== limit ||
+    r.operation !== operation ||
+    Date.parse(r.expiresAt) <= Date.parse(r.createdAt) ||
+    Date.parse(r.expiresAt) - Date.parse(r.createdAt) > 600000 ||
+    (r.phase === 'complete') !== (r.fragment === null) ||
+    (r.phase === 'attention') !== (r.pending !== null) ||
+    (await browserHash(r)) !== r.sha256
+  )
+    throw Error('来源运行核对的阶段、期限或摘要不一致');
+  return r;
+}
 export const reductionMethods = {
   'reduction.runPreview': job,
+  'reduction.runPlan': job,
+  'reduction.runConfirm': reductionRunConfirmation,
   'reduction.forRun': target,
   'reduction.detail': job,
   'reduction.attempts': job
@@ -58,7 +108,6 @@ export const reductionMethods = {
     .extend({ sequence: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER) })
     .strict(),
   'reduction.recover': action,
-  'reduction.allowRetry': action,
 };
 export function assertReductionOutput(value: unknown): asserts value is SourceReductionOutput {
   if (

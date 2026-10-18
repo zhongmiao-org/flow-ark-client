@@ -14,10 +14,12 @@ export function RunObservation({
   detail,
   compact = false,
   rerun,
+  openRun,
 }: {
   detail: any;
   compact?: boolean;
   rerun?: () => void;
+  openRun?: (detail: any) => void;
 }) {
   const [, updateClock] = useState(0);
   useEffect(() => {
@@ -105,7 +107,13 @@ export function RunObservation({
       )}
       {fileNode && <RunFileOperation detail={detail} step={view.step} node={fileNode} />}
       {view.statusNote && !compact && <p className="run-observation-note">{view.statusNote}</p>}
-      <RunStepDetails detail={detail} step={view.step} compact={compact} rerun={rerun} />
+      <RunStepDetails
+        detail={detail}
+        step={view.step}
+        compact={compact}
+        rerun={rerun}
+        openRun={openRun}
+      />
     </section>
   );
 }

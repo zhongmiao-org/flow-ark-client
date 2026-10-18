@@ -134,11 +134,13 @@ export default function RunOutputWorkspace({
   reveal,
   reload,
   rerun,
+  openRun,
 }: {
   detail: any;
   reveal: (id: string) => Promise<unknown>;
   reload: () => Promise<void>;
   rerun: () => void;
+  openRun?: (detail: any) => void;
 }) {
   const view = presentRun(detail, Date.now());
   const lastSaved =
@@ -172,7 +174,12 @@ export default function RunOutputWorkspace({
               />
             )}
             {detail.typedResults?.length ? (
-              <TypedRunResults runId={detail.run.id} entries={detail.typedResults} rerun={rerun} />
+              <TypedRunResults
+                runId={detail.run.id}
+                entries={detail.typedResults}
+                rerun={rerun}
+                openRun={openRun}
+              />
             ) : (
               <DocumentResults snapshot={detail.snapshot} output={detail.output} />
             )}

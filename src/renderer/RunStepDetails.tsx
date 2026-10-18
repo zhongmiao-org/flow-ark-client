@@ -329,11 +329,13 @@ export default function RunStepDetails({
   step,
   compact = false,
   rerun,
+  openRun,
 }: {
   detail: RunPresentationInput;
   step: RunStepPresentation;
   compact?: boolean;
   rerun?: () => void;
+  openRun?: (detail: any) => void;
 }) {
   const configurationRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
@@ -395,6 +397,7 @@ export default function RunStepDetails({
           key={detail.run.id + step.instance}
           target={{ runId: detail.run.id, nodeId: node.id, nodeInstance: step.instance }}
           rerun={rerun}
+          openRun={openRun}
         />
       )}
       {node?.type === 'ai' && (

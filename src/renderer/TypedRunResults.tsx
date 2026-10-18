@@ -19,10 +19,12 @@ export default function TypedRunResults({
   runId,
   entries,
   rerun,
+  openRun,
 }: {
   runId: string;
   entries: TypedResultMeta[];
   rerun?: () => void;
+  openRun?: (detail: any) => void;
 }) {
   const [selected, setSelected] = useState(entries[0]?.id),
     [value, setValue] = useState<any>(),
@@ -83,6 +85,7 @@ export default function TypedRunResults({
           target={{ runId, nodeId: value.nodeId, nodeInstance: value.nodeInstance }}
           initial={value.value}
           rerun={rerun}
+          openRun={openRun}
         />
       )}
       {value?.type === 'source' && (
