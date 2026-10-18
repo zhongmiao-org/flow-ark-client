@@ -1,0 +1,541 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:flowark:contracts:0.41.0:entry-result-view:1.0",
+  "title": "Read-only saved entry result view 1.0",
+  "$ref": "#/$defs/Response",
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "not": {
+        "pattern": "[^a-zA-Z0-9_-]"
+      }
+    },
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "minLength": 64,
+      "maxLength": 64
+    },
+    "Json": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Json"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Json"
+          }
+        }
+      ]
+    },
+    "Run": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "flowId": {
+          "$ref": "#/$defs/Id"
+        },
+        "versionId": {
+          "$ref": "#/$defs/Id"
+        },
+        "state": {
+          "enum": [
+            "QUEUED",
+            "RUNNING",
+            "PAUSED",
+            "WAITING_INPUT",
+            "CANCELLING",
+            "SUCCEEDED",
+            "FAILED",
+            "CANCELLED",
+            "INTERRUPTED"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "flowId",
+        "versionId",
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "Request": {
+      "type": "object",
+      "properties": {
+        "runId": {
+          "$ref": "#/$defs/Id"
+        }
+      },
+      "required": [
+        "runId"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateSource": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "template"
+        },
+        "instanceId": {
+          "$ref": "#/$defs/Id"
+        },
+        "templateId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "not": {
+            "pattern": "[^a-z0-9-]"
+          }
+        },
+        "templateVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[0-9A-Za-z.-]+$",
+          "not": {
+            "pattern": "[^0-9A-Za-z.-]"
+          }
+        },
+        "packageKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 181
+        },
+        "packageDigest": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "entryId": {
+          "$ref": "#/$defs/Id"
+        },
+        "entryName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "schemaPath": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240,
+          "pattern": "^schemas/[a-zA-Z0-9._/-]+$",
+          "not": {
+            "pattern": "[^a-zA-Z0-9._/-]"
+          }
+        },
+        "schemaSha256": {
+          "$ref": "#/$defs/Sha256"
+        }
+      },
+      "required": [
+        "kind",
+        "instanceId",
+        "templateId",
+        "templateVersion",
+        "packageKey",
+        "packageDigest",
+        "entryId",
+        "entryName",
+        "schemaPath",
+        "schemaSha256"
+      ],
+      "additionalProperties": false
+    },
+    "AuthorSource": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "author-checkout"
+        },
+        "checkoutId": {
+          "$ref": "#/$defs/Id"
+        },
+        "draftId": {
+          "$ref": "#/$defs/Id"
+        },
+        "entryId": {
+          "$ref": "#/$defs/Id"
+        },
+        "flowId": {
+          "$ref": "#/$defs/Id"
+        },
+        "baseRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "contextId": {
+          "$ref": "#/$defs/Id"
+        },
+        "definitionSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "schemaSha256": {
+          "$ref": "#/$defs/Sha256"
+        }
+      },
+      "required": [
+        "kind",
+        "checkoutId",
+        "draftId",
+        "entryId",
+        "flowId",
+        "baseRevision",
+        "contextId",
+        "definitionSha256",
+        "schemaSha256"
+      ],
+      "additionalProperties": false
+    },
+    "Source": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/TemplateSource"
+        },
+        {
+          "$ref": "#/$defs/AuthorSource"
+        }
+      ]
+    },
+    "Label": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "maxLength": 2048,
+          "pattern": "^(?:/(?:[^~/]|~[01])*)*$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "description": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "path",
+        "label"
+      ],
+      "additionalProperties": false
+    },
+    "Available": {
+      "type": "object",
+      "properties": {
+        "formatVersion": {
+          "const": "1.0"
+        },
+        "run": {
+          "$ref": "#/$defs/Run"
+        },
+        "readStamp": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "viewStatus": {
+          "const": "available"
+        },
+        "source": {
+          "$ref": "#/$defs/Source"
+        },
+        "completion": {
+          "enum": [
+            "run-succeeded",
+            "saved-only"
+          ]
+        },
+        "sourceValidation": {
+          "const": "passed"
+        },
+        "privacy": {
+          "const": "host-redacted-v1"
+        },
+        "displayChanged": {
+          "type": "boolean"
+        },
+        "value": {
+          "$ref": "#/$defs/Json"
+        },
+        "valueSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "valueBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 196608
+        },
+        "labels": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/Label"
+          }
+        },
+        "labelsComplete": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "formatVersion",
+        "run",
+        "readStamp",
+        "viewStatus",
+        "source",
+        "completion",
+        "sourceValidation",
+        "privacy",
+        "displayChanged",
+        "value",
+        "valueSha256",
+        "valueBytes",
+        "labels",
+        "labelsComplete"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "properties": {
+            "run": {
+              "properties": {
+                "state": {
+                  "enum": [
+                    "SUCCEEDED",
+                    "FAILED",
+                    "CANCELLED",
+                    "INTERRUPTED"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "run": {
+                "properties": {
+                  "state": {
+                    "const": "SUCCEEDED"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "completion": {
+                "const": "run-succeeded"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "completion": {
+                "const": "saved-only"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Missing": {
+      "type": "object",
+      "properties": {
+        "formatVersion": {
+          "const": "1.0"
+        },
+        "run": {
+          "$ref": "#/$defs/Run"
+        },
+        "readStamp": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "viewStatus": {
+          "const": "missing"
+        },
+        "source": {
+          "$ref": "#/$defs/Source"
+        }
+      },
+      "required": [
+        "formatVersion",
+        "run",
+        "readStamp",
+        "viewStatus",
+        "source"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "properties": {
+            "run": {
+              "properties": {
+                "state": {
+                  "enum": [
+                    "SUCCEEDED",
+                    "FAILED",
+                    "CANCELLED",
+                    "INTERRUPTED"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Pending": {
+      "type": "object",
+      "properties": {
+        "formatVersion": {
+          "const": "1.0"
+        },
+        "run": {
+          "$ref": "#/$defs/Run"
+        },
+        "readStamp": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "viewStatus": {
+          "const": "pending"
+        }
+      },
+      "required": [
+        "formatVersion",
+        "run",
+        "readStamp",
+        "viewStatus"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "properties": {
+            "run": {
+              "properties": {
+                "state": {
+                  "enum": [
+                    "QUEUED",
+                    "RUNNING",
+                    "PAUSED",
+                    "WAITING_INPUT",
+                    "CANCELLING"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "NotApplicable": {
+      "type": "object",
+      "properties": {
+        "formatVersion": {
+          "const": "1.0"
+        },
+        "run": {
+          "$ref": "#/$defs/Run"
+        },
+        "readStamp": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "viewStatus": {
+          "const": "not-applicable"
+        }
+      },
+      "required": [
+        "formatVersion",
+        "run",
+        "readStamp",
+        "viewStatus"
+      ],
+      "additionalProperties": false
+    },
+    "Unavailable": {
+      "type": "object",
+      "properties": {
+        "formatVersion": {
+          "const": "1.0"
+        },
+        "run": {
+          "$ref": "#/$defs/Run"
+        },
+        "readStamp": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "viewStatus": {
+          "const": "unavailable"
+        },
+        "reason": {
+          "enum": [
+            "snapshot-missing",
+            "snapshot-mismatch",
+            "owner-conflict",
+            "owner-unavailable",
+            "package-missing",
+            "package-mismatch",
+            "entry-missing",
+            "schema-missing",
+            "schema-invalid",
+            "result-invalid",
+            "read-limit",
+            "changed-during-read",
+            "storage-unavailable",
+            "privacy-unavailable"
+          ]
+        }
+      },
+      "required": [
+        "formatVersion",
+        "run",
+        "readStamp",
+        "viewStatus",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "Response": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Available"
+        },
+        {
+          "$ref": "#/$defs/Missing"
+        },
+        {
+          "$ref": "#/$defs/Pending"
+        },
+        {
+          "$ref": "#/$defs/NotApplicable"
+        },
+        {
+          "$ref": "#/$defs/Unavailable"
+        }
+      ]
+    }
+  }
+}

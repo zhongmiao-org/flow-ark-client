@@ -1,0 +1,91 @@
+[
+  {
+    "id": "value-exact-192k",
+    "kind": "value-bytes",
+    "size": 196608,
+    "expected": "valid"
+  },
+  {
+    "id": "value-over-192k",
+    "kind": "value-bytes",
+    "size": 196609,
+    "expected": "format-invalid"
+  },
+  {
+    "id": "labels-exact-256",
+    "kind": "labels",
+    "size": 256,
+    "expected": "valid"
+  },
+  {
+    "id": "labels-over-256",
+    "kind": "labels",
+    "size": 257,
+    "expected": "format-invalid"
+  },
+  {
+    "id": "label-exact-120",
+    "kind": "label",
+    "size": 120,
+    "expected": "valid"
+  },
+  {
+    "id": "label-over-120",
+    "kind": "label",
+    "size": 121,
+    "expected": "format-invalid"
+  },
+  {
+    "id": "description-exact-500",
+    "kind": "description",
+    "size": 500,
+    "expected": "valid"
+  },
+  {
+    "id": "description-over-500",
+    "kind": "description",
+    "size": 501,
+    "expected": "format-invalid"
+  },
+  {
+    "id": "pointer-exact-2048",
+    "kind": "path",
+    "size": 2048,
+    "expected": "valid"
+  },
+  {
+    "id": "pointer-over-2048",
+    "kind": "path",
+    "size": 2049,
+    "expected": "format-invalid"
+  },
+  {
+    "id": "response-over-512k",
+    "kind": "large-response",
+    "expected": "relation-invalid"
+  },
+  {
+    "id": "canonical-depth-64",
+    "kind": "canonical-depth",
+    "size": 64,
+    "expected": "valid"
+  },
+  {
+    "id": "canonical-depth-65",
+    "kind": "canonical-depth",
+    "size": 65,
+    "expected": "relation-invalid"
+  },
+  {
+    "id": "request-id-exact-100",
+    "kind": "request-id",
+    "size": 100,
+    "expected": "valid"
+  },
+  {
+    "id": "request-id-over-100",
+    "kind": "request-id",
+    "size": 101,
+    "expected": "format-invalid"
+  }
+]

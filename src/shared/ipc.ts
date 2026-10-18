@@ -119,6 +119,15 @@ export const methods = {
   'flow.run.preview': runReviewPreviewSchema,
   'flow.run.confirm': runReviewConfirmSchema,
   'run.detail': z.object({ id }).strict(),
+  'run.entryResult': z
+    .object({
+      runId: z
+        .string()
+        .min(1)
+        .max(100)
+        .refine((value) => !/[^a-zA-Z0-9_-]/.test(value)),
+    })
+    .strict(),
   'run.typedResult': z.object({ runId: id, id: z.string().regex(/^[a-f0-9]{64}$/) }).strict(),
   'run.rerun.preview': runRerunPreviewSchema,
   'run.rerun.confirm': runRerunConfirmSchema,
