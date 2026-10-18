@@ -24,6 +24,13 @@ import { redact } from '../shared/utils';
 type Snapshot = FlowRecord & Partial<PreparedScripts>;
 type Reason = Extract<EntryResultView, { viewStatus: 'unavailable' }>['reason'];
 type Saved = { source: EntryResultSource; schema: unknown; value: unknown; present: boolean };
+export type ReuseCapture = {
+  run: Run;
+  snapshot: Snapshot;
+  saved: Saved;
+  sourceRecord: unknown;
+  known: string[];
+};
 type Projection = {
   version: 1;
   policy: 'host-redacted-v1';
@@ -58,6 +65,7 @@ export class EntryResults {
     private store: Store,
     private library: Pick<PackageLibrary, 'load'>,
     private author: Pick<AuthorSdk, 'prepare'>,
+    private captureReuse?: (capture: ReuseCapture) => void,
   ) {}
 
   private records(runId: string) {
@@ -240,6 +248,20 @@ export class EntryResults {
       if (saved.present) this.checkValue(saved);
       // No await after final secret snapshot: later secrets cannot overtake this projection.
       const known = [...secrets()];
+      if (this.store.fault || this.changed(runId, before)) return;
+      if (saved.present && run.state === 'SUCCEEDED') {
+        try {
+          this.captureReuse?.({
+            run,
+            snapshot,
+            saved,
+            known,
+            sourceRecord: saved.source.kind === 'template' ? before.formal : before.author,
+          });
+        } catch {
+          // Reuse registration is independent of the historical display projection.
+        }
+      }
       const source = structuredClone(saved.source);
       for (const [key, value] of Object.entries(source)) {
         if (key === 'entryName') {
@@ -365,9 +387,39 @@ export class EntryResults {
       return this.response(run, { viewStatus: 'unavailable', reason });
     }
   }
+  /** Host-private full provenance. Never return this object through IPC or Worker. */
+  async fixedForReuse(runId: string) {
+    const before = this.records(runId),
+      run = before.run;
+    if (!run || run.id !== runId) throw Error('source-unavailable');
+    if (run.state !== 'SUCCEEDED') throw Error('source-not-succeeded');
+    if (this.owner(run, before.snapshot) === 'ordinary') throw Error('source-unavailable');
+    const snapshot = before.snapshot!,
+      saved = await this.saved(run, snapshot, before);
+    if (!saved.present) throw Error('reuse-unavailable');
+    this.checkValue(saved);
+    const assertCurrent = () => {
+      if (this.store.fault) throw Error('storage-unavailable');
+      if (this.changed(runId, before)) throw Error('changed-during-read');
+    };
+    assertCurrent();
+    return {
+      run,
+      snapshot,
+      saved,
+      sourceRecord: saved.source.kind === 'template' ? before.formal : before.author,
+      assertCurrent,
+    };
+  }
 }
 
-function extractLabels(schema: any, original: any, display: any, secrets: string[]) {
+export function extractLabels(
+  schema: any,
+  original: any,
+  display: any,
+  secrets: string[],
+  protect: (text: string) => string = (text) => redact(text, secrets),
+) {
   const labels: EntryResultLabel[] = [];
   let labelsComplete = true,
     count = 0;
@@ -427,14 +479,16 @@ function extractLabels(schema: any, original: any, display: any, secrets: string
       return;
     }
     if (typeof d.title === 'string' && d.title.length) {
-      const label = redact(d.title, secrets),
-        description =
-          typeof d.description === 'string' ? redact(d.description, secrets) : undefined;
+      const label = protect(d.title),
+        description = typeof d.description === 'string' ? protect(d.description) : undefined;
+      if (typeof d.description === 'string' && d.description.length && !description)
+        labelsComplete = false;
       if (
+        label.length > 0 &&
         label.length <= 120 &&
         (!description || description.length <= 500) &&
         labels.length < 256 &&
-        redact(path, secrets) === path
+        protect(path) === path
       )
         labels.push({ path, label, ...(description ? { description } : {}) });
       else labelsComplete = false;
@@ -450,7 +504,7 @@ function extractLabels(schema: any, original: any, display: any, secrets: string
       !Array.isArray(value)
     ) {
       for (const key of Object.keys(value)) {
-        if (!Object.hasOwn(raw, key) || redact(key, secrets) !== key) {
+        if (!Object.hasOwn(raw, key) || protect(key) !== key) {
           labelsComplete = false;
           continue;
         }

@@ -12,6 +12,11 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
       detail,
     });
     switch (node.type) {
+      case 'run-result':
+        return effect(
+          'read',
+          `读取已明确选择的结果资源“${node.binding}”；固定来源与数据摘要，读取前复验当前绑定，不调用模型。`,
+        );
       case 'source-reduce':
         return effect(
           'network',

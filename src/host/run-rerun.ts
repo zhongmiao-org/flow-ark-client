@@ -36,6 +36,7 @@ export function executionVersion(record: FlowRecord, prepared: PreparedScripts) 
     scriptBundles: prepared.scriptBundles,
     ...(prepared.templateData ? { templateData: prepared.templateData } : {}),
     ...(prepared.authorSdk ? { authorSdk: prepared.authorSdk } : {}),
+    ...(prepared.resultSources ? { resultSources: prepared.resultSources } : {}),
   });
 }
 

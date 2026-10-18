@@ -11,6 +11,14 @@ import { ConversationThreads } from './conversation-threads';
 import { ConversationArchives } from './conversation-archives';
 import { ConversationSources } from './conversation-sources';
 import { sourceMethods, type SourceNode } from '../shared/conversation-source';
+import { resultMethods } from '../shared/run-result-source';
+import { RunResultSources, type ResultOwnerContext } from './run-result-sources';
+import { assertRunResultResources } from '../../contracts/run-result-binding';
+import type {
+  RunResultTarget,
+  RunResultResource,
+  RunResultSaveChoices,
+} from '../shared/contracts.generated';
 import { assertConversationSourceNode } from '../../contracts/conversation-source';
 import { archiveMethods } from '../shared/conversation-archive';
 import { ConversationCapacity } from './conversation-request';
@@ -187,6 +195,7 @@ export class Runtime {
   private skills: Skills;
   private typedResults: TypedResults;
   private entryResults: EntryResults;
+  private resultSources: RunResultSources;
   private author: TemplateAuthor;
   private templateData: TemplateData;
   private effectNodes: EffectNodes;
@@ -499,6 +508,12 @@ export class Runtime {
       () => this.system('notification', { title: 'FlowArk 有新的待办' }),
       (id, revision, before, next, allowed) =>
         this.sources.assertChanges({ kind: 'instance', id }, revision, before, next, allowed),
+      (args) =>
+        this.resultSources.prepareChanges(
+          { kind: 'instance', id: args.id, revision: args.revision },
+          args.resources,
+          args.resultSourceChoices,
+        ),
     );
     this.effectNodes = new EffectNodes(this.store, this.templates);
     this.templateData = new TemplateData(this.store, {
@@ -511,7 +526,16 @@ export class Runtime {
       () => this.assertAdmitting(),
       () => this.system('notification', { title: 'FlowArk 有新的作者调试提醒' }),
     );
-    this.entryResults = new EntryResults(this.store, this.templates.library, this.authorSdk);
+    this.entryResults = new EntryResults(
+      this.store,
+      this.templates.library,
+      this.authorSdk,
+      (capture) => this.resultSources.capture(capture),
+    );
+    this.resultSources = new RunResultSources(this.store, this.entryResults, {
+      available: () => this.assertAdmitting(),
+      resolve: (target) => this.resultContext(target),
+    });
     this.author = new TemplateAuthor(
       this.store,
       this.templates.library,
@@ -701,8 +725,142 @@ export class Runtime {
   redactError(error: unknown): string {
     return redactedErrorText(error, this.secrets);
   }
-  saveFlow(flow: Flow, bindings: Bindings): FlowRecord {
+  private async resultContext(target: RunResultTarget): Promise<ResultOwnerContext> {
+    this.assertAdmitting();
+    if (target.kind === 'instance') {
+      const current = this.templates.sourceOwner(target.id);
+      if (current.revision !== target.revision) throw Error('实例已变化，请重新读取后选择结果');
+      const instance = this.store.get<any>('template-instance', target.id);
+      const pkg = this.store.get<any>('template-package', instance?.packageKey);
+      if (!instance || !pkg || `${pkg.manifest.id}@${pkg.manifest.version}` !== instance.packageKey)
+        throw Error('实例结果资源定义不可核验');
+      try {
+        validateObject('TemplateArchiveManifest', pkg.manifest);
+        assertRunResultResources(pkg.manifest);
+      } catch {
+        throw Error('实例结果资源定义不可核验');
+      }
+      const fingerprint = digest({ revision: current.fingerprint, manifest: pkg.manifest });
+      return {
+        target,
+        owner: {
+          kind: 'instance',
+          id: target.id,
+          packageKey: instance.packageKey,
+          packageDigest: pkg.manifest.contentDigest,
+        },
+        fingerprint,
+        resources: current.resources,
+        declarations: pkg.manifest.resources.filter(
+          (r: any) => r.kind === 'run-result',
+        ) as RunResultResource[],
+        assertCurrent: () => {
+          this.assertAdmitting();
+          const now = this.templates.sourceOwner(target.id),
+            currentPackage = this.store.get<any>('template-package', instance.packageKey);
+          if (
+            digest({ revision: now.fingerprint, manifest: currentPackage?.manifest }) !==
+            fingerprint
+          )
+            throw Error('changed-during-read');
+        },
+      };
+    }
+    const record = this.store.get<FlowRecord>('flow', target.id),
+      origin = this.author.origin(target.id);
+    if (
+      !record ||
+      record.bindings.template ||
+      record.updatedAt !== target.revision ||
+      !origin ||
+      !('sdk' in origin) ||
+      !origin.sdk
+    )
+      throw Error('请选择同一制作草稿的固定编排副本；普通流程不支持结果绑定');
+    const entry = origin.draft.definition.entries.find((e) => e.id === origin.checkout.entryId);
+    try {
+      assertRunResultResources(origin.draft.definition);
+    } catch {
+      throw Error('作者结果资源定义不可核验');
+    }
+    if (!entry || origin.sdk.owner.draftId !== origin.draft.id)
+      throw Error('作者结果资源定义不可核验');
+    const fingerprint = digest({ record, origin });
+    return {
+      target,
+      owner: { kind: 'author-draft', id: origin.draft.id },
+      fingerprint,
+      resources: record.bindings.resources ?? {},
+      declarations: origin.draft.definition.resources.filter(
+        (r) => r.kind === 'run-result' && entry.resourceIds.includes(r.id),
+      ) as RunResultResource[],
+      assertCurrent: () => {
+        this.assertAdmitting();
+        if (
+          digest({
+            record: this.store.get('flow', target.id),
+            origin: this.author.origin(target.id),
+          }) !== fingerprint
+        )
+          throw Error('changed-during-read');
+      },
+    };
+  }
+  private resultTarget(record: FlowRecord): RunResultTarget {
+    const ref = record.bindings.template;
+    return ref
+      ? {
+          kind: 'instance',
+          id: ref.instanceId,
+          revision: this.templates.sourceOwner(ref.instanceId).revision,
+        }
+      : { kind: 'author-flow', id: record.id, revision: record.updatedAt };
+  }
+  private async saveFlowResults(
+    flow: Flow,
+    bindings: Bindings,
+    choices: RunResultSaveChoices = {},
+    revision?: string,
+  ) {
     const previous = this.store.get<FlowRecord>('flow', flow.id);
+    const before = previous?.bindings.resources ?? {},
+      next = bindings.resources ?? {};
+    const hasResults = [...Object.values(before), ...Object.values(next)].some((v) => v.result);
+    if (!hasResults) return this.saveFlow(flow, bindings);
+    if (!previous || previous.bindings.template || revision !== previous.updatedAt)
+      throw Error('结果绑定目标已变化，请重新读取后保存；原绑定保留');
+    const fingerprint = digest(previous);
+    const check = Object.values(next).some((v) => v.result)
+      ? await this.resultSources.prepareChanges(
+          { kind: 'author-flow', id: flow.id, revision },
+          next,
+          choices,
+        )
+      : () => {};
+    const record = this.store.tx(() => {
+      if (digest(this.store.get('flow', flow.id)) !== fingerprint)
+        throw Error('流程已变化，原绑定保留');
+      check();
+      return this.saveFlow(flow, bindings, true);
+    });
+    this.resultSources.consumeChoices(choices);
+    return record;
+  }
+  saveFlow(flow: Flow, bindings: Bindings, resultChecked = false): FlowRecord {
+    const previous = this.store.get<FlowRecord>('flow', flow.id);
+    if (!resultChecked)
+      for (const id of new Set([
+        ...Object.keys(previous?.bindings.resources ?? {}),
+        ...Object.keys(bindings.resources ?? {}),
+      ])) {
+        const before = previous?.bindings.resources?.[id],
+          next = bindings.resources?.[id];
+        if (
+          (before?.result || next?.result) &&
+          canonical(before ?? null) !== canonical(next ?? null)
+        )
+          throw Error('结果来源只能在本目标的资源选择器核对后保存');
+      }
     if (previous?.bindings.template) {
       if (canonical(bindings) !== canonical(previous.bindings))
         throw new Error('模板实例资源与授权请在实例配置中修改');
@@ -2377,6 +2535,19 @@ export class Runtime {
           v.requestId,
         );
     }
+    if (method.startsWith('resultSource.')) {
+      await this.ready;
+      const rule = resultMethods[method as keyof typeof resultMethods];
+      if (!rule) throw Error('结果来源IPC方法未授权');
+      const v = rule.parse(args) as any;
+      if (method === 'resultSource.list')
+        return this.resultSources.list(v.target, v.binding, v.query, v.cursor);
+      if (method === 'resultSource.preview')
+        return this.resultSources.preview(v.target, v.binding, v.runId);
+      if (method === 'resultSource.select')
+        return this.resultSources.select(v.target, v.binding, v.reviewId, v.readStamp);
+      if (method === 'resultSource.inspect') return this.resultSources.inspect(v.target, v.binding);
+    }
     if (method.startsWith('source.')) {
       await this.ready;
       const rule = sourceMethods[method as keyof typeof sourceMethods];
@@ -2546,7 +2717,12 @@ export class Runtime {
       case 'bootstrap':
         return this.bootstrap();
       case 'flow.save':
-        return this.saveFlow(args.flow, args.bindings);
+        return this.saveFlowResults(
+          args.flow,
+          args.bindings,
+          args.resultSourceChoices,
+          args.revision,
+        );
       case 'flow.run':
         return this.enqueue(
           args.id,
@@ -2878,8 +3054,11 @@ export class Runtime {
         return this.templates.create(args.key, args.copyFrom);
       case 'template.detail':
         return this.templates.detail(args.id);
-      case 'template.save':
-        return this.templates.save(args);
+      case 'template.save': {
+        const result = await this.templates.save(args);
+        this.resultSources.consumeChoices(args.resultSourceChoices);
+        return result;
+      }
       case 'template.answer':
         return this.templates.answer(args.id, args.value);
       case 'flow.export': {

@@ -31,7 +31,7 @@ export type ReviewTemplate = {
   resources: {
     id: string;
     name: string;
-    kind: 'file' | 'directory' | 'browser' | 'ai' | 'skill' | 'conversation-source';
+    kind: 'file' | 'directory' | 'browser' | 'ai' | 'skill' | 'conversation-source' | 'run-result';
     access: 'read' | 'write' | 'readwrite' | 'use';
     required: boolean;
   }[];
@@ -189,6 +189,19 @@ export class RunReview {
     };
     const steps = walk(record.flow.steps);
     for (const node of steps) {
+      if (node.type === 'run-result') {
+        const ref = record.bindings.resources?.[node.binding]?.result;
+        if (!ref) throw Error('前次结果尚未选择');
+        if (!resources.some((r) => r.id === 'result:' + node.binding))
+          resources.push({
+            id: 'result:' + node.binding,
+            name: node.binding,
+            kind: 'run-result',
+            access: 'read',
+            detail:
+              '固定来源入口 ' + ref.source.entryId + ' · 数据摘要 ' + ref.dataSha256.slice(0, 8),
+          });
+      }
       if (node.type === 'document') directory(node.binding, true, false);
       if (node.type === 'source' || node.type === 'source-reduce') {
         const ref = record.bindings.resources?.[node.binding]?.source;
@@ -268,6 +281,19 @@ export class RunReview {
           kind: declaration.kind,
           read: declaration.access !== 'write',
           write: ['write', 'readwrite'].includes(declaration.access),
+        });
+      } else if (declaration.kind === 'run-result') {
+        if (!binding.result) throw Error('前次结果尚未选择');
+        resources.push({
+          id: 'template:' + declaration.id,
+          name: declaration.name,
+          kind: 'run-result',
+          access: 'read',
+          detail:
+            '固定来源入口 ' +
+            binding.result.source.entryId +
+            ' · 数据摘要 ' +
+            binding.result.dataSha256.slice(0, 8),
         });
       } else if (declaration.kind === 'conversation-source') {
         if (!binding.source) throw Error('完整来源尚未选择');

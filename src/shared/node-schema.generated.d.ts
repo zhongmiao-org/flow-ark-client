@@ -1,4 +1,4 @@
-/* Generated from contracts/p1.schema.json (49cce92ec89a2265039a8aa9e97e9aa45e90d9f240823ac579cba5e7cb7b280d). Do not edit. */
+/* Generated from contracts/p1.schema.json (292fc96c6ec2e415f752db2ca85aa8848a239e55ad6c79885bf7193c29aab532). Do not edit. */
 import type { ValidateFunction } from 'ajv';
 export const node_value_1: ValidateFunction;
 export const node_assert_1: ValidateFunction;
@@ -33,11 +33,20 @@ export const node_skill_2: ValidateFunction;
 export const node_browser_5: ValidateFunction;
 export const node_browser_6: ValidateFunction;
 export const node_effect_1: ValidateFunction;
+export const node_run_result_1: ValidateFunction;
 export const handoff_preview_v1: ValidateFunction;
 export const handoff_receipt_v1: ValidateFunction;
 export const template_human_review_v1: ValidateFunction;
 export const effect_prepare_result_v1: ValidateFunction;
 export const effect_resolve_result_v1: ValidateFunction;
+export const run_result_reference_v1: ValidateFunction;
+export const run_result_request_v1: ValidateFunction;
+export const run_result_read_v1: ValidateFunction;
+export const run_result_list_response_v1: ValidateFunction;
+export const run_result_preview_response_v1: ValidateFunction;
+export const run_result_select_response_v1: ValidateFunction;
+export const run_result_inspect_response_v1: ValidateFunction;
+export const run_result_save_choices_v1: ValidateFunction;
 export const conversation_snapshot_v1: ValidateFunction;
 export const conversation_event_v1: ValidateFunction;
 export const conversation_output_v1: ValidateFunction;

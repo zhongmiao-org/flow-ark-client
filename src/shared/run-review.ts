@@ -54,7 +54,8 @@ export type ReviewResource = {
     | 'credential'
     | 'action'
     | 'skill'
-    | 'conversation-source';
+    | 'conversation-source'
+    | 'run-result';
   access: string;
   location?: string;
   detail: string;

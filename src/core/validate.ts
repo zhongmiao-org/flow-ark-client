@@ -8,6 +8,7 @@ import {
 } from '../shared/browser-fields';
 import { assertContinuousConversationCapabilities } from '../../contracts/continuous-conversation';
 import { assertConversationSourceNode } from '../../contracts/conversation-source';
+import { assertRunResultNode } from '../../contracts/run-result-binding';
 import { sourceCapability } from '../shared/conversation-source';
 import { assertSourceReductionNode } from '../../contracts/source-reduction';
 import { skillCapability, skillBudget, skillUpdateCapability } from '../shared/skill';
@@ -114,6 +115,7 @@ export function validateFlow(value: unknown): Flow {
       assertSkillUpdateNode(n, flow.requiredCapabilities);
       if (n.type === 'context' && !flow.requiredCapabilities.includes(templateDataCapability))
         throw Error('配置与状态需要声明template-data-v1能力');
+      if (n.type === 'run-result') assertRunResultNode(n, flow.requiredCapabilities);
       if (n.type === 'skill') {
         if (!flow.requiredCapabilities.includes(skillCapability))
           throw Error('Skill需要声明skill-v1能力');
