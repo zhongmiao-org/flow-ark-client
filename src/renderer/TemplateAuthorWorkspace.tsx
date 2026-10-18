@@ -14,6 +14,9 @@ import type { TemplateNavigation } from './TemplateInstancePage';
 import { flatten } from './flow-editing';
 import AuthorSchemaEditor from './AuthorSchemaEditor';
 import EditorLeaveDialog from './EditorLeaveDialog';
+import TemplateManifestOverview from './TemplateManifestOverview';
+import MarkdownBody from './MarkdownBody';
+import { activateCollapseWithSpace } from './collapseKeyboard';
 import { usePageBack } from './use-page-back';
 import './template-author.css';
 export type AuthorOpenRequest = { nonce: string; id?: string; checkoutId?: string };
@@ -77,7 +80,7 @@ export default function TemplateAuthorWorkspace({
     [busy, setBusy] = useState(false),
     [merged, setMerged] = useState(false);
   const [preview, setPreview] = useState<any>(),
-    [file, setFile] = useState('manifest.json'),
+    [file, setFile] = useState('README.md'),
     [fileContent, setFileContent] = useState<any>(),
     [exportReviewed, setExportReviewed] = useState(false),
     [adoption, setAdoption] = useState<any>(),
@@ -383,8 +386,13 @@ export default function TemplateAuthorWorkspace({
       () => api('author.preview', { id: saved.id, revision: saved.revision }),
       (v) => {
         setPreview(v);
-        setFile('manifest.json');
+        setFile(
+          v.files.find((f: { path: string }) => f.path === 'README.md')?.path ??
+            v.files[0]?.path ??
+            'manifest.json',
+        );
         setFileContent(undefined);
+        setExportReviewed(false);
         pendingExport.current = undefined;
       },
     );
@@ -1616,68 +1624,116 @@ export default function TemplateAuthorWorkspace({
               )}
               {preview && (
                 <Card title="导出前完整核对">
-                  <p>
-                    {preview.manifest.id} · {preview.manifest.version} · {preview.bytes}字节
-                  </p>
-                  <p className="path-text">
-                    包摘要：{preview.manifest.contentDigest} · 归档摘要：{preview.archiveSha256}
-                  </p>
+                  <p>先查看每个入口及资源和动作，再核对公开说明。导出不执行流程或授予权限。</p>
+                  <TemplateManifestOverview
+                    key={preview.token}
+                    manifest={preview.manifest}
+                    checked
+                    layout="review"
+                  />
+                  <Card title="公开文件预览" size="small">
+                    <div className="author-export-files">
+                      <Select
+                        aria-label="查看固定包文件"
+                        disabled={busy}
+                        value={file}
+                        options={[
+                          ...new Set<string>([
+                            'manifest.json',
+                            ...preview.files.map((f: { path: string }) => f.path),
+                          ]),
+                        ].map((value) => ({
+                          value,
+                          label: value === 'manifest.json' ? `${value}（高级声明）` : value,
+                        }))}
+                        onChange={(v) => {
+                          setFile(v);
+                          setFileContent(undefined);
+                        }}
+                      />
+                      <Button
+                        disabled={busy}
+                        onClick={() =>
+                          attempt(() =>
+                            work(
+                              () =>
+                                api('author.file', {
+                                  id: saved.id,
+                                  token: preview.token,
+                                  path: file,
+                                }),
+                              setFileContent,
+                            ),
+                          )
+                        }
+                      >
+                        读取所选文件
+                      </Button>
+                    </div>
+                    <p className="template-catalog-muted">
+                      Markdown 提供阅读预览；脚本与 JSON 保留原文，不执行其中代码。
+                    </p>
+                    {fileContent?.kind === 'text' ? (
+                      /\.md$/i.test(file) ? (
+                        <Tabs
+                          key={`${preview.token}:${file}`}
+                          items={[
+                            {
+                              key: 'reading',
+                              label: '阅读预览',
+                              children: <MarkdownBody text={fileContent.text} />,
+                            },
+                            {
+                              key: 'source',
+                              label: '原文',
+                              children: <pre tabIndex={0}>{fileContent.text}</pre>,
+                            },
+                          ]}
+                        />
+                      ) : (
+                        <pre tabIndex={0}>{fileContent.text}</pre>
+                      )
+                    ) : (
+                      fileContent && (
+                        <p className="path-text">
+                          {fileContent.reason} · {fileContent.size}字节 · {fileContent.sha256}
+                        </p>
+                      )
+                    )}
+                  </Card>
                   <Collapse
                     items={[
                       {
                         key: 'requirements',
-                        label: '全部入口、能力、资源与动作声明',
+                        label: '高级：原始声明与摘要（可选）',
+                        onKeyDown: activateCollapseWithSpace,
                         children: (
-                          <pre tabIndex={0}>
-                            {JSON.stringify(
-                              {
-                                entries: preview.manifest.entries,
-                                resources: preview.manifest.resources,
-                                actions: preview.manifest.actions,
-                                dependencies: preview.manifest.dependencies,
-                              },
-                              null,
-                              2,
-                            )}
-                          </pre>
+                          <>
+                            <p>
+                              {preview.manifest.id} · {preview.manifest.version} · {preview.bytes}
+                              字节
+                            </p>
+                            <p className="path-text">
+                              包摘要：{preview.manifest.contentDigest} · 归档摘要：
+                              {preview.archiveSha256}
+                            </p>
+                            <pre tabIndex={0}>
+                              {JSON.stringify(
+                                {
+                                  entries: preview.manifest.entries,
+                                  resources: preview.manifest.resources,
+                                  actions: preview.manifest.actions,
+                                  dependencies: preview.manifest.dependencies,
+                                },
+                                null,
+                                2,
+                              )}
+                            </pre>
+                          </>
                         ),
                       },
                     ]}
                   />
-                  <Select
-                    aria-label="查看固定包文件"
-                    value={file}
-                    options={['manifest.json', ...preview.files.map((f: any) => f.path)].map(
-                      (value) => ({ value, label: value }),
-                    )}
-                    onChange={(v) => {
-                      setFile(v);
-                      setFileContent(undefined);
-                    }}
-                  />
-                  <Button
-                    disabled={busy}
-                    onClick={() =>
-                      attempt(() =>
-                        work(
-                          () =>
-                            api('author.file', { id: saved.id, token: preview.token, path: file }),
-                          setFileContent,
-                        ),
-                      )
-                    }
-                  >
-                    读取完整文件核对
-                  </Button>
-                  {fileContent?.kind === 'text' ? (
-                    <pre tabIndex={0}>{fileContent.text}</pre>
-                  ) : (
-                    fileContent && (
-                      <p>
-                        {fileContent.reason} · {fileContent.size}字节 · {fileContent.sha256}
-                      </p>
-                    )
-                  )}
                   <Alert
                     type="info"
                     title="参数/配置实际值、个人Skill、简历、聊天、Key、绑定与运行记录不进入定义。字面量、代码、README、提示词和公开默认值仍须逐项核对。"

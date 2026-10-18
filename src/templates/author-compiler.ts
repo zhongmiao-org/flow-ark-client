@@ -141,7 +141,7 @@ export async function compileAuthor(input: AuthorDefinition): Promise<PackageDat
       actions: [],
     };
     m.entries.push(entry);
-    declareNativeBoundaries(flow, m, entry.id);
+    declareNativeBoundaries(flow, m, entry.id, e.actionIds);
     entry.actions = [...new Set([...entry.actions, ...e.actionIds])];
     for (const n of walk(flow.steps))
       if (n.type === 'script') {

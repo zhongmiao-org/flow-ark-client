@@ -61,14 +61,18 @@ const accessLabel = { read: '读取', write: '写入', readwrite: '读写', use:
 export default function TemplateManifestOverview({
   manifest,
   checked = false,
+  layout = 'default',
 }: {
   manifest: TemplateManifest;
   checked?: boolean;
+  layout?: 'default' | 'review';
 }) {
   const [entryId, setEntryId] = useState(manifest.entries[0]?.id ?? '');
   const entry = manifest.entries.find((e) => e.id === entryId) ?? manifest.entries[0];
   return (
-    <section className="template-manifest">
+    <section
+      className={`template-manifest${layout === 'review' ? ' template-manifest-review' : ''}`}
+    >
       <Card className="template-catalog-card">
         <Tag
           className="run-state-tag"
@@ -95,60 +99,68 @@ export default function TemplateManifestOverview({
           ]}
         />
         <p className="template-catalog-muted">作者和来源由包提供，不代表签名认证。</p>
-        <h3>操作入口与要求</h3>
-        <div className="template-entry-choices" role="group" aria-label="查看入口要求">
-          {manifest.entries.map((e) => (
-            <Button key={e.id} aria-pressed={entry?.id === e.id} onClick={() => setEntryId(e.id)}>
-              <strong>{e.name}</strong>
-              <span>{e.capabilities.map(capabilityLabel).join(' · ') || '无额外能力声明'}</span>
-              <small>
-                {e.actions.length ? `${e.actions.length} 项动作待授权` : '未声明写入动作'} ·{' '}
-                {e.schedulable ? '可创建本机计划' : '手动运行'}
-              </small>
-            </Button>
-          ))}
-        </div>
-        {entry && (
-          <div className="template-entry-requirements" aria-live="polite">
-            <h3>{entry.name} · 本机资源</h3>
-            {entry.resources.length ? (
-              <ul>
-                {entry.resources.map((id) => {
-                  const r = manifest.resources.find((r) => r.id === id);
-                  return (
-                    <li key={id}>
-                      <strong>{r?.name ?? id}</strong>
-                      <span>
-                        {r
-                          ? `${resourceKind[r.kind]} · ${accessLabel[r.access]} · ${r.required ? '必需' : '可选'}`
-                          : id}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p>该入口未声明本机资源。</p>
-            )}
-            <h3>动作授权</h3>
-            {entry.actions.length ? (
-              <ul>
-                {entry.actions.map((id) => {
-                  const a = manifest.actions.find((a) => a.id === id);
-                  return (
-                    <li key={id}>
-                      <strong>{a?.name ?? id}</strong>
-                      <span>{a?.description}</span>
-                      <small>新实例默认禁止；需在资源与动作授权中配置。</small>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p>该入口未声明需授权动作；实际行为仍以模板定义和运行检查为准。</p>
-            )}
+        <div className="template-entry-layout">
+          <div>
+            <h3>操作入口与要求</h3>
+            <div className="template-entry-choices" role="group" aria-label="查看入口要求">
+              {manifest.entries.map((e) => (
+                <Button
+                  key={e.id}
+                  aria-pressed={entry?.id === e.id}
+                  onClick={() => setEntryId(e.id)}
+                >
+                  <strong>{e.name}</strong>
+                  <span>{e.capabilities.map(capabilityLabel).join(' · ') || '无额外能力声明'}</span>
+                  <small>
+                    {e.actions.length ? `${e.actions.length} 项动作待授权` : '未声明写入动作'} ·{' '}
+                    {e.schedulable ? '可创建本机计划' : '手动运行'}
+                  </small>
+                </Button>
+              ))}
+            </div>
           </div>
-        )}
+          {entry && (
+            <div className="template-entry-requirements" aria-live="polite">
+              <h3>{entry.name} · 本机资源</h3>
+              {entry.resources.length ? (
+                <ul>
+                  {entry.resources.map((id) => {
+                    const r = manifest.resources.find((r) => r.id === id);
+                    return (
+                      <li key={id}>
+                        <strong>{r?.name ?? id}</strong>
+                        <span>
+                          {r
+                            ? `${resourceKind[r.kind]} · ${accessLabel[r.access]} · ${r.required ? '必需' : '可选'}`
+                            : id}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p>该入口未声明本机资源。</p>
+              )}
+              <h3>动作授权</h3>
+              {entry.actions.length ? (
+                <ul>
+                  {entry.actions.map((id) => {
+                    const a = manifest.actions.find((a) => a.id === id);
+                    return (
+                      <li key={id}>
+                        <strong>{a?.name ?? id}</strong>
+                        <span>{a?.description}</span>
+                        <small>新实例默认禁止；需在资源与动作授权中配置。</small>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p>该入口未声明需授权动作；实际行为仍以模板定义和运行检查为准。</p>
+              )}
+            </div>
+          )}
+        </div>
         <Collapse
           className="template-manifest-details"
           size="small"
