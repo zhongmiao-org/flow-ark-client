@@ -136,6 +136,7 @@ export type Bridge = {
   ): () => void;
 };
 export type BrowserCommand = {
+  version?: number;
   operation: string;
   selector?: string;
   framePath?: string[];

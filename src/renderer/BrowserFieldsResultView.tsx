@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
 import { Alert, Button, Card, Collapse, Input } from 'antd';
-import type { BrowserFieldsResult } from '../shared/contracts.generated';
+import type { BrowserCollectedResult } from '../shared/browser-fields';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import './browser-fields.css';
 const statuses = {
@@ -9,8 +9,20 @@ const statuses = {
   ambiguous: '不唯一',
   'missing-attribute': '属性不存在',
   empty: '空文字或空白',
+  hidden: '隐藏',
+  clipped: '裁切',
+  unsupported: '无法判定',
 };
-export default function BrowserFieldsResultView({ value }: { value: BrowserFieldsResult }) {
+const reasons = {
+  'hidden-target': '元素或祖先隐藏',
+  'hidden-descendant': '后代含隐藏区域',
+  'line-clamp': '正文行数被限制',
+  'overflow-clip': '存在溢出裁切',
+  'unsupported-layout': '布局无法可靠判定',
+  'embedded-content': '包含非纯文字或嵌入内容',
+  'generated-content': '包含生成内容',
+};
+export default function BrowserFieldsResultView({ value }: { value: BrowserCollectedResult }) {
   const [index, setIndex] = useState(0),
     id = useId();
   const f = value.fields[Math.min(index, value.fields.length - 1)];
@@ -19,7 +31,7 @@ export default function BrowserFieldsResultView({ value }: { value: BrowserField
       className="browser-fields-configuration browser-fields-result"
       aria-label="完整关联字段采集结果"
     >
-      <h2>关联字段采集结果</h2>
+      <h2>{value.version === 2 ? '关联字段与正文采集结果' : '关联字段采集结果'}</h2>
       <div className="browser-fields-top">
         <Card>
           <h2>采集来源</h2>
@@ -42,10 +54,12 @@ export default function BrowserFieldsResultView({ value }: { value: BrowserField
             description={
               value.complete
                 ? `${value.fields.length}项已核对；必填字段均唯一且非空。`
-                : '必填字段缺失/为空，或有字段不唯一，请按流程分支或本人核对。'
+                : '字段缺失、为空、不唯一，或正文隐藏、裁切及无法判定，请查看原因并由本人核对。'
             }
           />
-          <p>可选字段缺失或为空不阻止完整。源内容仍不可信，完整性不代表账号验证或动作授权。</p>
+          <p>
+            可选字段缺失或为空不阻止完整；隐藏、裁切或无法判定的可选正文仍使结果不完整。源内容仍不可信，完整性不代表账号验证或动作授权。
+          </p>
         </Card>
       </div>
       <Card>
@@ -74,13 +88,28 @@ export default function BrowserFieldsResultView({ value }: { value: BrowserField
             <Input readOnly id={id + 'selector'} value={f.selector} />
             <dl>
               <dt>读取方式</dt>
-              <dd>{f.operation === 'text' ? '文字（textContent）' : '原始属性'}</dd>
+              <dd>
+                {f.operation === 'text'
+                  ? 'DOM文字（textContent）'
+                  : f.operation === 'rendered-text'
+                    ? '已排版正文（待核对）'
+                    : '原始属性'}
+              </dd>
               <dt>属性名</dt>
               <dd>{f.attribute ?? '不适用'}</dd>
               <dt>必填</dt>
               <dd>{f.required ? '是' : '否'}</dd>
             </dl>
-            <strong>原始值</strong>
+            {'issues' in f && f.issues.length > 0 && (
+              <Alert
+                type="warning"
+                title="正文未采用"
+                description={f.issues.map((issue) => reasons[issue]).join('；')}
+              />
+            )}
+            <strong>
+              {f.operation === 'rendered-text' ? '已排版正文候选 · 仍需本人核对' : '原始值'}
+            </strong>
             <div className="browser-fields-value">
               {f.value === null ? (
                 <code>null</code>
@@ -90,7 +119,10 @@ export default function BrowserFieldsResultView({ value }: { value: BrowserField
                 f.value
               )}
             </div>
-            <p>0 项、属性不存在和不唯一保留 null；空属性保留空文字，不把相对链接改成绝对地址。</p>
+            <p>
+              隐藏、裁切、无法判定的正文为 null，不返回剩余片段；0 项、属性不存在和不唯一保留
+              null；空属性保留空文字，不把相对链接改成绝对地址。
+            </p>
           </section>
         </div>
       </Card>

@@ -80,6 +80,7 @@ for (const name of ['RunReview', 'RunConfirmation', 'RunReviewReceipt'])
     `${schema.$id}#/$defs/SourceReduction${name}`;
 validators.document_result_v1 = `${schema.$id}#/$defs/DocumentResult`;
 validators.browser_fields_result_v1 = `${schema.$id}#/$defs/BrowserFieldsResult`;
+validators.browser_rendered_fields_result_v2 = `${schema.$id}#/$defs/BrowserRenderedFieldsResult`;
 validators.ai_outcome_v1 = `${schema.$id}#/$defs/AIOutcome`;
 validators.ai_receipt_v1 = `${schema.$id}#/$defs/AINodeReceipt`;
 for (const name of [

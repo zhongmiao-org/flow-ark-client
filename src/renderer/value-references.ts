@@ -237,9 +237,9 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
             )[node.operation] ?? [])
           : [];
     for (const key of known) add(path + '.' + key, label + ' / ' + key, '前序步骤', '步骤输出字段');
-    if (node.type === 'browser' && node.version === 5)
+    if (node.type === 'browser' && (node.version === 5 || node.version === 6))
       node.fields.forEach((field, i) => {
-        for (const key of ['value', 'count', 'status'])
+        for (const key of ['value', 'count', 'status', ...(node.version === 6 ? ['issues'] : [])])
           add(
             path + '.fields.' + i + '.' + key,
             label + ' / ' + field.key + ' / ' + key,

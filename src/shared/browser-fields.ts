@@ -1,8 +1,13 @@
-import { node_browser_5, browser_fields_result_v1 } from './node-schema.generated.js';
+import {
+  node_browser_5,
+  node_browser_6,
+  browser_fields_result_v1,
+  browser_rendered_fields_result_v2,
+} from './node-schema.generated.js';
 import type { Step } from './types';
-import type { BrowserFieldsResult } from './contracts.generated';
+import type { BrowserFieldsResult, BrowserRenderedFieldsResult } from './contracts.generated';
 
-export type BrowserFieldsNode = Extract<Step, { type: 'browser'; version: 5 }>;
+export type BrowserFieldsNode = Extract<Step, { type: 'browser'; version: 5 | 6 }>;
 export type ResolvedBrowserFieldsNode = Omit<BrowserFieldsNode, 'selector' | 'fields'> & {
   selector: string;
   fields: (Omit<BrowserFieldsNode['fields'][number], 'selector' | 'attribute'> & {
@@ -11,6 +16,20 @@ export type ResolvedBrowserFieldsNode = Omit<BrowserFieldsNode, 'selector' | 'fi
   })[];
 };
 export const browserFieldsCapability = 'browser-fields-v1';
+export const browserRenderedFieldsCapability = 'browser-rendered-fields-v1';
+export type BrowserCollectedResult = BrowserFieldsResult | BrowserRenderedFieldsResult;
+export const renderedIssueOrder = [
+  'hidden-target',
+  'hidden-descendant',
+  'line-clamp',
+  'overflow-clip',
+  'unsupported-layout',
+  'embedded-content',
+  'generated-content',
+] as const;
+export function browserFieldsCapabilityFor(version: number) {
+  return version === 6 ? browserRenderedFieldsCapability : browserFieldsCapability;
+}
 const encoder = new TextEncoder();
 const forbidden = ['__proto__', 'prototype', 'constructor'];
 function unicode(text: string) {
@@ -41,7 +60,7 @@ export function assertBrowserFieldsNode(
   value: unknown,
   resolved = false,
 ): asserts value is BrowserFieldsNode {
-  if (!node_browser_5(value))
+  if (!node_browser_5(value) && !node_browser_6(value))
     throw Error('关联字段配置无效，请核对根定位、字段名、相对定位和读取方式');
   const n = value as BrowserFieldsNode;
   input(n.selector, resolved);
@@ -59,7 +78,7 @@ export function resolvedBrowserFields(value: unknown): ResolvedBrowserFieldsNode
   return value as ResolvedBrowserFieldsNode;
 }
 export function assertBrowserFieldsInvocation(
-  source: BrowserFieldsNode,
+  source: unknown,
   value: unknown,
 ): ResolvedBrowserFieldsNode {
   assertBrowserFieldsNode(source);
@@ -89,10 +108,15 @@ export function assertBrowserFieldsInvocation(
 export function assertBrowserFieldsResult(
   node: ResolvedBrowserFieldsNode,
   value: unknown,
-): asserts value is BrowserFieldsResult {
+): asserts value is BrowserCollectedResult {
   resolvedBrowserFields(node);
-  if (!browser_fields_result_v1(value)) throw Error('关联字段结果格式无效');
-  const r = value as BrowserFieldsResult;
+  if (
+    !(node.version === 6
+      ? browser_rendered_fields_result_v2(value)
+      : browser_fields_result_v1(value))
+  )
+    throw Error('关联字段结果格式无效');
+  const r = value as BrowserCollectedResult;
   if (
     r.selector !== node.selector ||
     JSON.stringify(r.framePath) !== JSON.stringify(node.framePath) ||
@@ -112,38 +136,60 @@ export function assertBrowserFieldsResult(
       if (f[key] !== configured[key]) throw Error('关联字段顺序或配置不符');
     if (typeof f.value === 'string') {
       unicode(f.value);
-      if (encoder.encode(f.value).length > 8192) throw Error('关联字段单项结果超限');
+      if (encoder.encode(f.value).length > (f.operation === 'rendered-text' ? 65536 : 8192))
+        throw Error('关联字段单项结果超限');
     }
+    const issues: readonly string[] = 'issues' in f ? f.issues : [];
+    if (
+      issues.length &&
+      (f.operation !== 'rendered-text' ||
+        f.count !== 1 ||
+        f.value !== null ||
+        JSON.stringify(issues) !==
+          JSON.stringify(renderedIssueOrder.filter((v) => issues.includes(v))))
+    )
+      throw Error('正文原因、范围或值不一致');
     const status =
       f.count === 0
         ? 'missing'
         : f.count > 1
           ? 'ambiguous'
-          : f.value === null
-            ? 'missing-attribute'
-            : f.value.trim() === ''
-              ? 'empty'
-              : 'ok';
+          : issues.some((v) => v.startsWith('hidden-'))
+            ? 'hidden'
+            : issues.some((v) => v === 'line-clamp' || v === 'overflow-clip')
+              ? 'clipped'
+              : issues.length
+                ? 'unsupported'
+                : f.value === null
+                  ? 'missing-attribute'
+                  : f.value.trim() === ''
+                    ? 'empty'
+                    : 'ok';
     if (
       f.status !== status ||
-      (f.count === 1 && f.operation === 'text' && f.value === null) ||
+      (f.count === 1 && f.operation !== 'attribute' && !issues.length && f.value === null) ||
       (f.count !== 1 && f.value !== null)
     )
       throw Error('关联字段计数、值或状态不一致');
-    if (status === 'ambiguous' || (f.required && status !== 'ok')) complete = false;
+    if (
+      ['ambiguous', 'hidden', 'clipped', 'unsupported'].includes(status) ||
+      (f.required && status !== 'ok')
+    )
+      complete = false;
   }
   if (r.complete !== complete) throw Error('关联字段完整性不符');
-  if (encoder.encode(JSON.stringify(r)).length > 65536)
+  if (encoder.encode(JSON.stringify(r)).length > (node.version === 6 ? 131072 : 65536))
     throw Error('关联字段总结果超限，未截断或采用');
 }
 /** Structural rendering check; provenance is verified by the host, never inferred from this value. */
-export function assertBrowserFieldsValue(value: unknown): asserts value is BrowserFieldsResult {
-  if (!browser_fields_result_v1(value)) throw Error('关联字段结果格式无效');
-  const r = value as BrowserFieldsResult;
+export function assertBrowserFieldsValue(value: unknown): asserts value is BrowserCollectedResult {
+  if (!browser_fields_result_v1(value) && !browser_rendered_fields_result_v2(value))
+    throw Error('关联字段结果格式无效');
+  const r = value as BrowserCollectedResult;
   const n = resolvedBrowserFields({
     id: 'result',
     type: 'browser',
-    version: 5,
+    version: r.version === 2 ? 6 : 5,
     operation: 'collect',
     selector: r.selector,
     framePath: r.framePath,

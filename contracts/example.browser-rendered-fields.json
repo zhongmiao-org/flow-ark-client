@@ -1,0 +1,78 @@
+{
+  "node": {
+    "id": "collect",
+    "type": "browser",
+    "version": 6,
+    "operation": "collect",
+    "selector": "#workspace",
+    "framePath": [],
+    "fields": [
+      {
+        "key": "title",
+        "selector": "h1",
+        "operation": "text",
+        "attribute": null,
+        "required": true
+      },
+      {
+        "key": "body",
+        "selector": "#description",
+        "operation": "rendered-text",
+        "attribute": null,
+        "required": true
+      },
+      {
+        "key": "link",
+        "selector": "a",
+        "operation": "attribute",
+        "attribute": "href",
+        "required": false
+      }
+    ]
+  },
+  "result": {
+    "version": 2,
+    "operation": "collect",
+    "renderPolicy": "bounded-rendered-text-v1",
+    "url": "https://example.org/records",
+    "documentUrl": "https://example.org/records",
+    "selector": "#workspace",
+    "framePath": [],
+    "complete": true,
+    "fields": [
+      {
+        "key": "title",
+        "selector": "h1",
+        "operation": "text",
+        "attribute": null,
+        "required": true,
+        "count": 1,
+        "status": "ok",
+        "value": "示例标题",
+        "issues": []
+      },
+      {
+        "key": "body",
+        "selector": "#description",
+        "operation": "rendered-text",
+        "attribute": null,
+        "required": true,
+        "count": 1,
+        "status": "ok",
+        "value": "第一行正文。\n第二行正文。",
+        "issues": []
+      },
+      {
+        "key": "link",
+        "selector": "a",
+        "operation": "attribute",
+        "attribute": "href",
+        "required": false,
+        "count": 1,
+        "status": "ok",
+        "value": "/detail",
+        "issues": []
+      }
+    ]
+  }
+}

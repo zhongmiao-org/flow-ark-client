@@ -1,6 +1,6 @@
 import { Alert, Button, Card, Checkbox, Collapse, Input, Select, Space } from 'antd';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import type { BrowserField, FramePath } from '../shared/contracts.generated';
+import type { BrowserRenderedField, FramePath } from '../shared/contracts.generated';
 import { assertBrowserFieldsNode, type BrowserFieldsNode } from '../shared/browser-fields';
 import type { Json } from '../shared/types';
 import type { ReferenceChoice } from './value-references';
@@ -25,7 +25,7 @@ export default function BrowserFieldsConfiguration({
   const id = useId(),
     root = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState(0),
-    [draft, setDraft] = useState<BrowserField>(() => structuredClone(node.fields[0]));
+    [draft, setDraft] = useState<BrowserRenderedField>(() => structuredClone(node.fields[0]));
   const [original, setOriginal] = useState(() => JSON.stringify(node.fields[0]));
   const pinned = useRef(JSON.stringify(node.fields));
   const [error, setError] = useState(''),
@@ -46,7 +46,7 @@ export default function BrowserFieldsConfiguration({
   }
   const focus = () =>
     root.current?.querySelector<HTMLInputElement>('input[data-field-name]')?.focus();
-  const load = (index: number, fields: BrowserField[] = node.fields) => {
+  const load = (index: number, fields: BrowserRenderedField[] = node.fields) => {
     const next = Math.max(0, Math.min(index, fields.length - 1));
     pinned.current = JSON.stringify(fields);
     setSelected(next);
@@ -64,7 +64,7 @@ export default function BrowserFieldsConfiguration({
     }
     return true;
   };
-  const replace = (fields: BrowserField[], index: number) => {
+  const replace = (fields: BrowserRenderedField[], index: number) => {
     const next = { ...node, fields };
     assertBrowserFieldsNode(next);
     change(next);
@@ -211,8 +211,16 @@ export default function BrowserFieldsConfiguration({
         </Card>
         <Card>
           <h2>采集方式</h2>
-          <p>最多 20 项 · 文字 / 原始属性</p>
-          <p>同一同步 DOM 读取；单项 8 KiB，总结果 64 KiB。</p>
+          <p>
+            {node.version === 6
+              ? '最多 20 项 · DOM文字 / 原始属性 / 已排版正文（待核对）'
+              : '最多 20 项 · DOM文字 / 原始属性'}
+          </p>
+          <p>
+            {node.version === 6
+              ? '同一同步 DOM 读取；正文单项 64 KiB，原始字段 8 KiB，总结果 128 KiB。隐藏、裁切或无法判定时不采用正文；不自动展开或滚动。'
+              : '同一同步 DOM 读取；单项 8 KiB，总结果 64 KiB。'}
+          </p>
           <p>不完整时返回明确状态；导航、框架变化或超限时整次拒绝。</p>
           {actions}
         </Card>
@@ -238,7 +246,12 @@ export default function BrowserFieldsConfiguration({
               >
                 <strong>{f.key}</strong>
                 <small>
-                  {f.operation === 'text' ? '文字' : '属性'} · {f.required ? '必填' : '可选'}
+                  {f.operation === 'text'
+                    ? 'DOM文字'
+                    : f.operation === 'rendered-text'
+                      ? '已排版正文'
+                      : '属性'}{' '}
+                  · {f.required ? '必填' : '可选'}
                 </small>
               </Button>
             ))}
@@ -264,12 +277,15 @@ export default function BrowserFieldsConfiguration({
                   options={[
                     { value: 'text', label: '文字（textContent）' },
                     { value: 'attribute', label: '原始属性' },
+                    ...(node.version === 6
+                      ? [{ value: 'rendered-text', label: '已排版正文（待核对）' }]
+                      : []),
                   ]}
                   onChange={(operation) =>
                     setDraft({
                       ...draft,
                       operation,
-                      attribute: operation === 'text' ? null : 'href',
+                      attribute: operation === 'attribute' ? 'href' : null,
                     })
                   }
                 />
@@ -334,7 +350,8 @@ export default function BrowserFieldsConfiguration({
           </section>
         </div>
         <p>
-          文字读取 textContent；原始属性保留 null、空文字和相对链接。采集不产生账号验证或动作授权。
+          DOM文字读取 textContent；已排版正文须通过有限检查，仍需本人核对完整性。原始属性保留
+          null、空文字和相对链接。采集不产生账号验证或动作授权。
         </p>
       </Card>
       <Collapse

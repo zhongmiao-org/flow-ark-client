@@ -76,7 +76,7 @@ import { assertBrowserOperations } from '../adapters/browser-scope';
 import {
   assertBrowserFieldsInvocation,
   assertBrowserFieldsResult,
-  browserFieldsCapability,
+  browserFieldsCapabilityFor,
   type ResolvedBrowserFieldsNode,
 } from '../shared/browser-fields';
 import { discoverBrowsers, inspectBrowser, validateBinding } from '../adapters/browsers';
@@ -1816,14 +1816,14 @@ export class Runtime {
       const active = this.active;
       const inspection = args.version === 4;
       let fieldsInput: ResolvedBrowserFieldsNode | undefined;
-      if (args.version === 5) {
+      if (args.version === 5 || args.version === 6) {
         const { nodeInstance, ...nodeInput } = args;
         const source = walk(snapshot.flow.steps).find((n) => n.id === args.id);
         if (
           !source ||
           source.type !== 'browser' ||
-          source.version !== 5 ||
-          !['browser', browserFieldsCapability].every((c) =>
+          source.version !== args.version ||
+          !['browser', browserFieldsCapabilityFor(args.version)].every((c) =>
             snapshot.flow.requiredCapabilities.includes(c),
           ) ||
           typeof nodeInstance !== 'string' ||
@@ -1834,7 +1834,11 @@ export class Runtime {
         fieldsInput = assertBrowserFieldsInvocation(source, nodeInput);
         if (snapshot.bindings.template) {
           const { entry } = await this.templates.context(snapshot);
-          if (!['browser', browserFieldsCapability].every((c) => entry.capabilities.includes(c)))
+          if (
+            !['browser', browserFieldsCapabilityFor(args.version)].every((c) =>
+              entry.capabilities.includes(c),
+            )
+          )
             throw Error('模板入口未声明关联字段能力');
           this.checkActive(active);
         }
@@ -1871,7 +1875,7 @@ export class Runtime {
         framePath: args.framePath,
         value: args.value,
         timeoutMs: args.timeoutMs,
-        ...(fieldsInput ? { fields: fieldsInput.fields } : {}),
+        ...(fieldsInput ? { version: fieldsInput.version, fields: fieldsInput.fields } : {}),
       };
       if (args.operation === 'upload') {
         const source = uploadSource(args.value);

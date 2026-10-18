@@ -10,15 +10,15 @@ export const browserActions: Record<
     detail: string;
     keywords: string;
     value: Json;
-    version: 2 | 3 | 4 | 5;
+    version: 2 | 3 | 4 | 5 | 6;
   }
 > = {
   collect: {
-    label: '读取关联字段',
+    label: '读取关联字段与正文',
     detail: '在唯一根元素内同步采集指定字段，分别保留缺失、空值和不唯一状态',
     keywords: 'collect fields 关联字段 同次 只读',
     value: null,
-    version: 5,
+    version: 6,
   },
   url: {
     label: '读取当前网址',
@@ -139,17 +139,15 @@ export function changeBrowserOperation(
     ...(node.name !== undefined ? { name: node.name } : {}),
     ...(node.timeoutMs !== undefined ? { timeoutMs: node.timeoutMs } : {}),
   };
+  if (operation === 'collect' && node.operation === 'collect') return node;
   if (operation === 'collect')
     return {
       ...base,
-      version: 5,
+      version: 6,
       operation,
       selector: node.selector || 'body',
       framePath: 'framePath' in node ? node.framePath : [],
-      fields:
-        node.version === 5
-          ? node.fields
-          : [{ key: 'field1', selector: '', operation: 'text', attribute: null, required: true }],
+      fields: [{ key: 'field1', selector: '', operation: 'text', attribute: null, required: true }],
     };
   return {
     ...base,
@@ -173,7 +171,7 @@ export function newBrowserStep(operation: BrowserOperation): BrowserNode {
     return {
       id: 'n_' + crypto.randomUUID().slice(0, 8),
       type: 'browser',
-      version: 5,
+      version: 6,
       operation,
       selector: 'body',
       framePath: [],

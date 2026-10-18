@@ -10,6 +10,7 @@ import type { ElementTarget } from '../shared/element-picker';
 import type { ObservationPan } from '../shared/browser-observation';
 import { resolvedBrowserFields, assertBrowserFieldsResult } from '../shared/browser-fields';
 import { readBrowserFields } from './browser-fields-dom';
+import { readBrowserRenderedFields } from './browser-rendered-fields-dom';
 type Scope = {
   context: number;
   session?: string;
@@ -508,7 +509,7 @@ export class EmbeddedPage {
     const node = resolvedBrowserFields({
       id: 'driver',
       type: 'browser',
-      version: 5,
+      version: command.version ?? 5,
       operation: 'collect',
       selector: command.selector,
       framePath: path,
@@ -572,7 +573,7 @@ export class EmbeddedPage {
     verify();
     const result = await this.evaluate(
       scope,
-      `(${readBrowserFields.toString()})(${JSON.stringify({ selector: node.selector, fields: node.fields, framePath: path, url })})`,
+      `(${(node.version === 6 ? readBrowserRenderedFields : readBrowserFields).toString()})(${JSON.stringify({ selector: node.selector, fields: node.fields, framePath: path, url })})`,
     );
     for (const prior of chain) {
       const { frameTree } = await this.send('Page.getFrameTree', {}, prior.scope.session);
