@@ -69,6 +69,8 @@ export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext
     return `${value(node.actual)} ${operators[node.operator]}${node.operator === 'exists' ? '' : ' ' + value(node.expected)}`;
   };
   switch (step.type) {
+    case 'run-result':
+      return `读取已选择的结果资源「${step.binding || '尚未选择'}」；固定来源与摘要，失效时停止`;
     case 'effect':
       return step.operation === 'prepare'
         ? `准备动作 ${step.action || '尚未选择'} · 同键不再授权，实际动作须以允许执行为真进入`

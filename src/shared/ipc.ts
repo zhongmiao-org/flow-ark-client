@@ -2,6 +2,7 @@ import { threadMethods } from './conversation-thread';
 import { fieldsPickMethods } from './browser-field-picking';
 import { archiveMethods } from './conversation-archive';
 import { sourceMethods, sourceRefSchema } from './conversation-source';
+import { resultMethods, resultRefSchema, resultChoicesSchema } from './run-result-source';
 import { reductionMethods } from './source-reduction';
 import { handoffMethods } from './entry-handoff';
 import { templateSourceSchema } from './template-source';
@@ -54,6 +55,7 @@ const bindings = z
             path: z.string().max(4096).optional(),
             skill: skillRefSchema.optional(),
             source: sourceRefSchema.optional(),
+            result: resultRefSchema.optional(),
             browserId: id.optional(),
             provider: z.enum(['deepseek', 'openai-codex']).optional(),
             model: z.string().max(100).optional(),
@@ -87,6 +89,7 @@ export const templateSaveSchema = z
     resources: bindings.shape.resources.unwrap(),
     grants: bindings.shape.grants.unwrap(),
     inputs: z.record(id, z.unknown()),
+    resultSourceChoices: resultChoicesSchema.optional(),
   })
   .strict();
 export type TemplateSave = z.infer<typeof templateSaveSchema>;
@@ -94,6 +97,7 @@ export const methods = {
   ...fieldsPickMethods,
   ...reductionMethods,
   ...sourceMethods,
+  ...resultMethods,
   ...archiveMethods,
   ...handoffMethods,
   ...trialMethods,
@@ -111,7 +115,14 @@ export const methods = {
   ...taskMethods,
   ...learningMethods,
   bootstrap: empty,
-  'flow.save': z.object({ flow: z.unknown(), bindings }).strict(),
+  'flow.save': z
+    .object({
+      flow: z.unknown(),
+      bindings,
+      resultSourceChoices: resultChoicesSchema.optional(),
+      revision: z.string().min(1).max(100).optional(),
+    })
+    .strict(),
   'flow.create': empty,
   'flow.run': z
     .object({ id, debug: z.boolean().optional(), templateSource: templateSourceSchema.optional() })

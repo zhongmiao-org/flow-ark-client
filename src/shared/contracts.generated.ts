@@ -925,7 +925,8 @@ export type Node =
       receipt: Value;
       state: 'confirmed' | 'failed' | 'unknown';
       evidence?: Value;
-    };
+    }
+  | RunResultNode;
 export type Value =
   | Json
   | {
@@ -972,6 +973,8 @@ export type BrowserRenderedField = {
     | null;
   required: boolean;
 };
+export type RunResultId = string;
+export type RunResultBindingId = string;
 export type RunState =
   | 'QUEUED'
   | 'RUNNING'
@@ -999,6 +1002,19 @@ export type TemplateDataOwner =
       draftId: string;
       draftRevision: number;
       entryId: string;
+    };
+export type RunResultSha256 = string;
+export type RunResultSource = RunResultTemplateSource | RunResultAuthorSource;
+export type RunResultOwner =
+  | {
+      kind: 'instance';
+      id: RunResultId;
+      packageKey: string;
+      packageDigest: RunResultSha256;
+    }
+  | {
+      kind: 'author-draft';
+      id: RunResultId;
     };
 export type AIPlanningResult = {
   formatVersion: '1.0';
@@ -1246,13 +1262,18 @@ export type TemplateAuthorNeutralValue =
 export type TemplateAuthorResource = {
   id: string;
   name: string;
-  kind: 'file' | 'directory' | 'browser' | 'ai' | 'skill' | 'conversation-source';
+  kind: 'file' | 'directory' | 'browser' | 'ai' | 'skill' | 'conversation-source' | 'run-result';
   access: 'read' | 'write' | 'readwrite' | 'use';
   required: boolean;
   /**
    * Optional single-hop logical directory source for explicit resource-editor draft defaults; never a runtime binding fallback.
    */
   defaultDirectoryFrom?: string;
+  /**
+   * @minItems 1
+   * @maxItems 64
+   */
+  sourceEntries?: [string, ...string[]];
 };
 export type TemplateAuthorExportReceipt = {
   version: 1;
@@ -1607,6 +1628,144 @@ export type EntryResultPending = {
 };
 export type EntryResultResponse =
   EntryResultAvailable | EntryResultMissing | EntryResultPending | EntryResultNotApplicable | EntryResultUnavailable;
+export type RunResultJson =
+  | null
+  | boolean
+  | number
+  | string
+  | RunResultJson[]
+  | {
+      [k: string]: RunResultJson;
+    };
+export type RunResultRequest =
+  | {
+      method: 'resultSource.list';
+      params: RunResultListRequest;
+    }
+  | {
+      method: 'resultSource.preview';
+      params: RunResultPreviewRequest;
+    }
+  | {
+      method: 'resultSource.select';
+      params: RunResultSelectRequest;
+    }
+  | {
+      method: 'resultSource.inspect';
+      params: RunResultInspectRequest;
+    };
+export type RunResultTimestamp = string;
+export type RunResultReason =
+  | 'source-unavailable'
+  | 'source-not-succeeded'
+  | 'reuse-unavailable'
+  | 'schema-invalid'
+  | 'result-invalid'
+  | 'read-limit'
+  | 'privacy-unavailable'
+  | 'changed-during-read'
+  | 'storage-unavailable';
+export type RunResultChoice =
+  | {
+      run: {
+        id: RunResultId;
+        flowId: RunResultId;
+        versionId: RunResultSha256;
+        state: 'SUCCEEDED';
+      };
+      entryId: RunResultId;
+      entryName: string;
+      status: 'candidate';
+    }
+  | {
+      run: RunResultRun;
+      entryId: RunResultId;
+      entryName: string;
+      status: 'unavailable';
+      reason: RunResultReason;
+    };
+export type RunResultPreviewResponse = RunResultPreviewAvailable | RunResultUnavailable;
+export type RunResultInspectResponse = RunResultInspectAvailable | RunResultInspectUnbound | RunResultUnavailable;
+export type RunResultIndex =
+  | {
+      version: 1;
+      finalized: true;
+      owner: RunResultOwner;
+      run: {
+        id: RunResultId;
+        flowId: RunResultId;
+        versionId: RunResultSha256;
+        state: 'SUCCEEDED';
+      };
+      entryId: RunResultId;
+      entryName: string;
+      status: 'candidate';
+      ref: RunResultReference;
+    }
+  | {
+      version: 1;
+      finalized: true;
+      owner: RunResultOwner;
+      run: RunResultRun;
+      entryId: RunResultId;
+      entryName: string;
+      status: 'unavailable';
+      reason: RunResultReason;
+    };
+export type RunResultLease =
+  | {
+      version: 1;
+      id: RunResultSha256;
+      target: RunResultTarget;
+      targetSha256: RunResultSha256;
+      binding: RunResultBindingId;
+      issuedMonotonicMs: number;
+      expiresMonotonicMs: number;
+      kind: 'cursor';
+      cursor: RunResultCursor;
+    }
+  | {
+      version: 1;
+      id: RunResultSha256;
+      target: RunResultTarget;
+      targetSha256: RunResultSha256;
+      binding: RunResultBindingId;
+      issuedMonotonicMs: number;
+      expiresMonotonicMs: number;
+      kind: 'preview';
+      ref: RunResultReference;
+      proofSha256: RunResultSha256;
+      readStamp: RunResultSha256;
+    }
+  | {
+      version: 1;
+      id: RunResultSha256;
+      target: RunResultTarget;
+      targetSha256: RunResultSha256;
+      binding: RunResultBindingId;
+      issuedMonotonicMs: number;
+      expiresMonotonicMs: number;
+      kind: 'choice';
+      ref: RunResultReference;
+      proofSha256: RunResultSha256;
+      reviewId: RunResultSha256;
+      readStamp: RunResultSha256;
+    };
+export type RunResultResponse =
+  RunResultListResponse | RunResultPreviewResponse | RunResultSelectResponse | RunResultInspectResponse | RunResultRead;
+export type RunResultWire =
+  | RunResultResource
+  | RunResultReference
+  | RunResultNode
+  | RunResultRequest
+  | RunResultRead
+  | RunResultListResponse
+  | RunResultPreviewResponse
+  | RunResultSelectResponse
+  | RunResultInspectResponse
+  | RunResultBinding
+  | RunResultSaveChoices
+  | RunResultPreparedSources;
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -1786,6 +1945,49 @@ export interface FlowArkP1 {
   EntryResultUnavailable?: EntryResultUnavailable;
   EntryResultResponse?: EntryResultResponse;
   EntryResultView?: EntryResultResponse;
+  RunResultId?: RunResultId;
+  RunResultSha256?: RunResultSha256;
+  RunResultJson?: RunResultJson;
+  RunResultTemplateSource?: RunResultTemplateSource;
+  RunResultAuthorSource?: RunResultAuthorSource;
+  RunResultSource?: RunResultSource;
+  RunResultLabel?: RunResultLabel;
+  RunResultBindingId?: RunResultBindingId;
+  RunResultRunIdentity?: RunResultRunIdentity;
+  RunResultOwner?: RunResultOwner;
+  RunResultTarget?: RunResultTarget;
+  RunResultResource?: RunResultResource;
+  RunResultReference?: RunResultReference;
+  RunResultNode?: RunResultNode;
+  RunResultCursor?: RunResultCursor;
+  RunResultListRequest?: RunResultListRequest;
+  RunResultPreviewRequest?: RunResultPreviewRequest;
+  RunResultSelectRequest?: RunResultSelectRequest;
+  RunResultInspectRequest?: RunResultInspectRequest;
+  RunResultRequest?: RunResultRequest;
+  RunResultRead?: RunResultRead;
+  RunResultOpaqueId?: RunResultSha256;
+  RunResultTimestamp?: RunResultTimestamp;
+  RunResultReason?: RunResultReason;
+  RunResultRun?: RunResultRun;
+  RunResultChoice?: RunResultChoice;
+  RunResultListResponse?: RunResultListResponse;
+  RunResultPreviewAvailable?: RunResultPreviewAvailable;
+  RunResultUnavailable?: RunResultUnavailable;
+  RunResultPreviewResponse?: RunResultPreviewResponse;
+  RunResultSelectResponse?: RunResultSelectResponse;
+  RunResultInspectAvailable?: RunResultInspectAvailable;
+  RunResultInspectUnbound?: RunResultInspectUnbound;
+  RunResultInspectResponse?: RunResultInspectResponse;
+  RunResultBinding?: RunResultBinding;
+  RunResultSaveChoices?: RunResultSaveChoices;
+  RunResultPreparedSource?: RunResultPreparedSource;
+  RunResultPreparedSources?: RunResultPreparedSources;
+  RunResultProof?: RunResultProof;
+  RunResultIndex?: RunResultIndex;
+  RunResultLease?: RunResultLease;
+  RunResultResponse?: RunResultResponse;
+  RunResultWire?: RunResultWire;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -1799,6 +2001,15 @@ export interface ExcelColumnMapping {
   column: string;
   header: string;
   type: 'text' | 'number' | 'boolean';
+}
+export interface RunResultNode {
+  id: RunResultId;
+  type: 'run-result';
+  version: 1;
+  name: string;
+  timeoutMs?: number;
+  binding: RunResultBindingId;
+  operation: 'read';
 }
 export interface FlowDefinition {
   formatVersion: '1.0';
@@ -1847,6 +2058,7 @@ export interface RunSnapshot {
   scriptBundles?: ScriptBundle[];
   templateData?: TemplateDataContext;
   authorSdk?: TemplateAuthorSdkContext;
+  resultSources?: RunResultPreparedSources;
 }
 export interface ScriptBundle {
   nodeId: string;
@@ -1895,6 +2107,52 @@ export interface TemplateAuthorSdkOwner {
   entryId: string;
   flowId: string;
   baseRevision: number;
+}
+export interface RunResultPreparedSources {
+  [k: string]: RunResultPreparedSource;
+}
+export interface RunResultPreparedSource {
+  binding: RunResultBindingId;
+  ref: RunResultReference;
+  owner: RunResultOwner;
+  proofSha256: RunResultSha256;
+  registeredPosition: number;
+}
+export interface RunResultReference {
+  version: 1;
+  run: RunResultRunIdentity;
+  source: RunResultSource;
+  policy: 'credential-redacted-v1';
+  dataSha256: RunResultSha256;
+  dataBytes: number;
+}
+export interface RunResultRunIdentity {
+  id: RunResultId;
+  flowId: RunResultId;
+  versionId: RunResultSha256;
+}
+export interface RunResultTemplateSource {
+  kind: 'template';
+  instanceId: RunResultId;
+  templateId: string;
+  templateVersion: string;
+  packageKey: string;
+  packageDigest: RunResultSha256;
+  entryId: RunResultId;
+  entryName: string;
+  schemaPath: string;
+  schemaSha256: RunResultSha256;
+}
+export interface RunResultAuthorSource {
+  kind: 'author-checkout';
+  checkoutId: RunResultId;
+  draftId: RunResultId;
+  entryId: RunResultId;
+  flowId: RunResultId;
+  baseRevision: number;
+  contextId: RunResultId;
+  definitionSha256: RunResultSha256;
+  schemaSha256: RunResultSha256;
 }
 export interface RunEvent {
   runId: string;
@@ -1986,13 +2244,18 @@ export interface TemplateArchiveManifest {
   resources: {
     id: string;
     name: string;
-    kind: 'file' | 'directory' | 'browser' | 'ai' | 'skill' | 'conversation-source';
+    kind: 'file' | 'directory' | 'browser' | 'ai' | 'skill' | 'conversation-source' | 'run-result';
     access: 'read' | 'write' | 'readwrite' | 'use';
     required: boolean;
     /**
      * Optional single-hop logical directory source for explicit resource-editor draft defaults; never a runtime binding fallback.
      */
     defaultDirectoryFrom?: string;
+    /**
+     * @minItems 1
+     * @maxItems 64
+     */
+    sourceEntries?: [string, ...string[]];
   }[];
   /**
    * @maxItems 100
@@ -5201,4 +5464,401 @@ export interface EntryResultUnavailable {
     | 'changed-during-read'
     | 'storage-unavailable'
     | 'privacy-unavailable';
+}
+export interface RunResultLabel {
+  path: string;
+  label: string;
+  description?: string;
+}
+export interface RunResultTarget {
+  kind: 'instance' | 'author-flow';
+  id: RunResultId;
+  revision: string;
+}
+export interface RunResultResource {
+  id: RunResultBindingId;
+  name: string;
+  kind: 'run-result';
+  access: 'read';
+  required: boolean;
+  /**
+   * @minItems 1
+   * @maxItems 64
+   */
+  sourceEntries: [RunResultBindingId, ...RunResultBindingId[]];
+}
+export interface RunResultCursor {
+  version: 1;
+  targetSha256: RunResultSha256;
+  binding: RunResultBindingId;
+  querySha256: RunResultSha256;
+  ceiling: number;
+  before: number;
+  cursorId: RunResultSha256;
+}
+export interface RunResultListRequest {
+  target: RunResultTarget;
+  binding: RunResultBindingId;
+  query: string;
+  cursor: null | RunResultCursor;
+}
+export interface RunResultPreviewRequest {
+  target: RunResultTarget;
+  binding: RunResultBindingId;
+  runId: RunResultId;
+}
+export interface RunResultSelectRequest {
+  target: RunResultTarget;
+  binding: RunResultBindingId;
+  reviewId: RunResultSha256;
+  readStamp: RunResultSha256;
+  reviewed: true;
+}
+export interface RunResultInspectRequest {
+  target: RunResultTarget;
+  binding: RunResultBindingId;
+}
+export interface RunResultRead {
+  version: 1;
+  operation: 'read';
+  binding: RunResultBindingId;
+  ref: RunResultReference;
+  value: RunResultJson;
+  dataChanged: boolean;
+  schemaValidation: 'passed';
+  /**
+   * @maxItems 256
+   */
+  labels: RunResultLabel[];
+  labelsComplete: boolean;
+}
+export interface RunResultRun {
+  id: RunResultId;
+  flowId: RunResultId;
+  versionId: RunResultSha256;
+  state:
+    | 'QUEUED'
+    | 'RUNNING'
+    | 'PAUSED'
+    | 'WAITING_INPUT'
+    | 'CANCELLING'
+    | 'CANCELLED'
+    | 'INTERRUPTED'
+    | 'SUCCEEDED'
+    | 'FAILED';
+}
+export interface RunResultListResponse {
+  target: RunResultTarget;
+  binding: RunResultBindingId;
+  targetSha256: RunResultSha256;
+  /**
+   * @maxItems 20
+   */
+  choices:
+    | []
+    | [RunResultChoice]
+    | [RunResultChoice, RunResultChoice]
+    | [RunResultChoice, RunResultChoice, RunResultChoice]
+    | [RunResultChoice, RunResultChoice, RunResultChoice, RunResultChoice]
+    | [RunResultChoice, RunResultChoice, RunResultChoice, RunResultChoice, RunResultChoice]
+    | [RunResultChoice, RunResultChoice, RunResultChoice, RunResultChoice, RunResultChoice, RunResultChoice]
+    | [
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice
+      ]
+    | [
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice
+      ]
+    | [
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice
+      ]
+    | [
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice
+      ]
+    | [
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice
+      ]
+    | [
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice
+      ]
+    | [
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice
+      ]
+    | [
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice
+      ]
+    | [
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice
+      ]
+    | [
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice
+      ]
+    | [
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice
+      ]
+    | [
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice
+      ]
+    | [
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice
+      ]
+    | [
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice,
+        RunResultChoice
+      ];
+  next: null | RunResultCursor;
+}
+export interface RunResultPreviewAvailable {
+  target: RunResultTarget;
+  binding: RunResultBindingId;
+  status: 'available';
+  ref: RunResultReference;
+  value: RunResultJson;
+  dataChanged: boolean;
+  schemaValidation: 'passed';
+  /**
+   * @maxItems 256
+   */
+  labels: RunResultLabel[];
+  labelsComplete: boolean;
+  reviewId: RunResultSha256;
+  expiresAt: RunResultTimestamp;
+  readStamp: RunResultSha256;
+}
+export interface RunResultUnavailable {
+  target: RunResultTarget;
+  binding: RunResultBindingId;
+  status: 'unavailable';
+  reason: RunResultReason;
+  readStamp: RunResultSha256;
+}
+export interface RunResultSelectResponse {
+  target: RunResultTarget;
+  binding: RunResultBindingId;
+  status: 'selected';
+  ref: RunResultReference;
+  choiceId: RunResultSha256;
+  expiresAt: RunResultTimestamp;
+  readStamp: RunResultSha256;
+}
+export interface RunResultInspectAvailable {
+  target: RunResultTarget;
+  binding: RunResultBindingId;
+  status: 'available';
+  ref: RunResultReference;
+  value: RunResultJson;
+  dataChanged: boolean;
+  schemaValidation: 'passed';
+  /**
+   * @maxItems 256
+   */
+  labels: RunResultLabel[];
+  labelsComplete: boolean;
+  readStamp: RunResultSha256;
+}
+export interface RunResultInspectUnbound {
+  target: RunResultTarget;
+  binding: RunResultBindingId;
+  status: 'unbound';
+  readStamp: RunResultSha256;
+}
+export interface RunResultBinding {
+  result: RunResultReference;
+}
+export interface RunResultSaveChoices {
+  [k: string]: RunResultSha256;
+}
+export interface RunResultProof {
+  version: 1;
+  policy: 'credential-redacted-v1';
+  finalized: true;
+  finalSecretsComplete: true;
+  run: RunResultRunIdentity;
+  owner: RunResultOwner;
+  ref: RunResultReference;
+  snapshotSha256: RunResultSha256;
+  sourceRecordSha256: RunResultSha256;
+  originalValueSha256: RunResultSha256;
+  originalSourceSha256: RunResultSha256;
+  value: RunResultJson;
+  dataChanged: boolean;
+  /**
+   * @maxItems 256
+   */
+  labels: RunResultLabel[];
+  labelsComplete: boolean;
+  proofSha256: RunResultSha256;
 }

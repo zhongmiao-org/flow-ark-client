@@ -1,3 +1,4 @@
+import { assertRunResultNode, assertRunResultResources } from './run-result-binding';
 import { assertEffectNodeCapabilities } from './effect-node';
 import { assertBrowserRenderedFieldsCapabilities } from './browser-rendered-fields';
 import { assertBrowserFieldsCapabilities } from './browser-fields';
@@ -16,7 +17,7 @@ import {validateConfigurationSchema} from './configuration-schema';
 import { validateAuthorMetadata } from './template-authoring';
 export const LIMITS = { archive: 20*1024*1024, total: 100*1024*1024, file: 10*1024*1024, files: 512 };
 export type Entry = { id:string; name:string; flow:string; inputSchema:string; resultSchema:string; schedulable:boolean; capabilities:string[]; resources:string[]; actions:string[] };
-export type Manifest = { packageFormat:'2.0'; id:string; name:string; description:string; version:string; author:string; source:string; minimumClientVersion:string; sdkVersion:'1.0'; configurationSchema:string; stateSchema:string; entries:Entry[]; resources:{id:string;name:string;kind:'file'|'directory'|'browser'|'ai'|'skill'|'conversation-source';access:'read'|'write'|'readwrite'|'use';required:boolean;defaultDirectoryFrom?:string}[]; actions:{id:string;name:string;description:string;default:'deny'}[]; files:{path:string;size:number;sha256:string}[]; scripts:string[]; dependencies:{name:string;version:string;license:string}[];contentDigest:string };
+export type Manifest = { packageFormat:'2.0'; id:string; name:string; description:string; version:string; author:string; source:string; minimumClientVersion:string; sdkVersion:'1.0'; configurationSchema:string; stateSchema:string; entries:Entry[]; resources:{id:string;name:string;kind:'file'|'directory'|'browser'|'ai'|'skill'|'conversation-source'|'run-result';sourceEntries?:string[];access:'read'|'write'|'readwrite'|'use';required:boolean;defaultDirectoryFrom?:string}[]; actions:{id:string;name:string;description:string;default:'deny'}[]; files:{path:string;size:number;sha256:string}[]; scripts:string[]; dependencies:{name:string;version:string;license:string}[];contentDigest:string };
 export type PackageData = { manifest:Manifest; files:Map<string,Buffer> };
 export function canonical(value:any):string {
  if (value === undefined) throw new Error('摘要不能包含 undefined');
@@ -53,13 +54,14 @@ export function validatePackage(files:Map<string,Buffer>):PackageData {
  for(const f of manifest.files){packagePath(f.path);const b=files.get(f.path);if(!b||b.length!==f.size||sha256(b)!==f.sha256)throw new Error('资源完整性不匹配：'+f.path);}
  if(manifestDigest(manifest)!==manifest.contentDigest)throw new Error('模板摘要不匹配');
  assertDirectoryDefaults(manifest.resources);
+ assertRunResultResources(manifest);
  const schemaPaths=[manifest.configurationSchema,manifest.stateSchema,...manifest.entries.flatMap(e=>[e.inputSchema,e.resultSchema])];
  for(const p of schemaPaths){if(!p.startsWith('schemas/'))throw new Error('Schema 必须位于 schemas/');assertSchema(jsonFile(files,p));}
  for(const p of files.keys())if(p.startsWith('scripts/')&&!manifest.scripts.includes(p))throw new Error('脚本未由清单声明');
  validateConfigurationSchema(jsonFile(files,manifest.configurationSchema));
  for(const e of manifest.entries)validateConfigurationSchema(jsonFile(files,e.inputSchema));
  for(const p of manifest.scripts){if(!p.startsWith('scripts/')||!p.endsWith('.js')||!files.has(p))throw new Error('脚本资源无效');}
- for(const r of manifest.resources){if(['skill','conversation-source'].includes(r.kind)&&r.access!=='read')throw new Error('Skill 与完整来源资源只允许 read');if(['browser','ai'].includes(r.kind)?r.access!=='use':r.access==='use')throw new Error('浏览器和 AI 资源需声明 use');}
+ for(const r of manifest.resources){if(['skill','conversation-source','run-result'].includes(r.kind)&&r.access!=='read')throw new Error('Skill 与完整来源资源只允许 read');if(['browser','ai'].includes(r.kind)?r.access!=='use':r.access==='use')throw new Error('浏览器和 AI 资源需声明 use');}
  for(const entry of manifest.entries){
   unique(entry.resources,'入口资源');unique(entry.actions,'入口动作');unique(entry.capabilities,'入口能力');
   for(const id of entry.resources)if(!manifest.resources.some(r=>r.id===id))throw new Error('入口引用未知资源');
@@ -74,6 +76,7 @@ export function validatePackage(files:Map<string,Buffer>):PackageData {
    const p=n.code.startsWith('@package:')?n.code.slice(9):null;
    if(!p||!manifest.scripts.includes(p))throw new Error('脚本必须引用清单中的 @package:scripts/ 资源');
   }if(n.type==='browser'&&n.version===4){assertBrowserInspectionNode(n);if(!flow.requiredCapabilities.includes(browserInspectionCapability))throw new Error('网页只读节点未声明browser-observe-v1能力');}
+  assertRunResultNode(n,flow.requiredCapabilities,manifest,entry);
   assertEffectNodeCapabilities(n,flow.requiredCapabilities,manifest,entry);
   assertBrowserRenderedFieldsCapabilities(n,flow.requiredCapabilities,manifest,entry);
   assertBrowserFieldsCapabilities(n,flow.requiredCapabilities,manifest,entry);

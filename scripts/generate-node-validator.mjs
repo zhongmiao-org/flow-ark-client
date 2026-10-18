@@ -15,7 +15,16 @@ const ajv = new Ajv2020({
 });
 ajv.addSchema(schema);
 const groups = new Map();
-schema.$defs.Node.oneOf.forEach((node, index) => {
+schema.$defs.Node.oneOf.forEach((variant, index) => {
+  let node = variant;
+  const seen = new Set();
+  while (node.$ref) {
+    if (!node.$ref.startsWith('#/$defs/') || seen.has(node.$ref))
+      throw Error('Node definition must use an acyclic local reference');
+    seen.add(node.$ref);
+    node = schema.$defs[node.$ref.slice(8)];
+    if (!node) throw Error('Missing Node definition');
+  }
   const key = `node_${node.properties.type.const.replaceAll('-', '_')}_${node.properties.version.const}`;
   groups.set(key, [...(groups.get(key) ?? []), { node, index }]);
 });
@@ -39,6 +48,18 @@ for (const name of ['Preview', 'Receipt'])
 validators.template_human_review_v1 = `${schema.$id}#/$defs/TemplateHumanReview`;
 validators.effect_prepare_result_v1 = `${schema.$id}#/$defs/EffectPrepareResult`;
 validators.effect_resolve_result_v1 = `${schema.$id}#/$defs/EffectResolveResult`;
+for (const name of [
+  'Reference',
+  'Request',
+  'Read',
+  'ListResponse',
+  'PreviewResponse',
+  'SelectResponse',
+  'InspectResponse',
+  'SaveChoices',
+])
+  validators['run_result_' + name.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase() + '_v1'] =
+    `${schema.$id}#/$defs/RunResult${name}`;
 validators.conversation_snapshot_v1 = `${schema.$id}#/$defs/ConversationSnapshot`;
 validators.conversation_event_v1 = `${schema.$id}#/$defs/ConversationEvent`;
 validators.conversation_output_v1 = `${schema.$id}#/$defs/ConversationOutput`;

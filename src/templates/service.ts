@@ -56,6 +56,7 @@ export class Templates {
       next: NonNullable<Bindings['resources']>,
       allowed: string[],
     ) => void,
+    private resultChanges?: (args: TemplateSave) => Promise<() => void>,
   ) {
     this.library = new PackageLibrary(join(dataPath, 'template-packages'), version);
   }
@@ -287,9 +288,11 @@ export class Templates {
             ? ['browserId']
             : declaration.kind === 'conversation-source'
               ? ['source']
-              : declaration.kind === 'skill'
-                ? ['path', 'skill']
-                : ['path'];
+              : declaration.kind === 'run-result'
+                ? ['result']
+                : declaration.kind === 'skill'
+                  ? ['path', 'skill']
+                  : ['path'];
       if (declaration.kind === 'skill') {
         if (declaration.access !== 'read' || !value.path)
           throw Error('Skill资源需要确认版本及工作区');
@@ -302,6 +305,8 @@ export class Templates {
         throw Error('完整来源资源必须选择固定只读来源');
       if (Object.keys(value).some((field) => !fields.includes(field)))
         throw new Error('资源绑定类型不符');
+      if (declaration.kind === 'run-result' && (!value.result || declaration.access !== 'read'))
+        throw Error('已保存结果必须选择固定只读引用');
     }
     for (const key of Object.keys(args.grants))
       if (!manifest.actions.some((a) => a.id === key)) throw new Error('未知动作或授权');
@@ -310,10 +315,16 @@ export class Templates {
       if (!entry) throw new Error('入口不存在');
       validateData(jsonFile(pkg.files, entry.inputSchema), value);
     }
+    const hasResults =
+      Object.values(before.instance.resources).some((v) => v.result) ||
+      Object.values(args.resources).some((v) => v.result);
+    if (hasResults && !this.resultChanges) throw Error('结果绑定宿主尚未连接');
+    const checkResults = hasResults ? await this.resultChanges!(args) : () => {};
     return this.store.tx(() => {
       // Package loading is asynchronous; other editor writes can occur while it runs.
       const current = this.snapshot(args.id);
       if (current.revision !== args.revision) throw new Error('实例已变化，请重新读取后保存');
+      checkResults();
       if (Object.values(args.resources).some((v) => v.source)) {
         if (!this.sourceChanges) throw Error('来源绑定宿主尚未连接');
         this.sourceChanges(

@@ -1,0 +1,198 @@
+[
+  {
+    "id": "valid-declaration",
+    "valid": true,
+    "changes": []
+  },
+  {
+    "id": "no-flow-capability",
+    "valid": false,
+    "changes": [
+      {
+        "path": "/entries/1/flow/requiredCapabilities",
+        "value": []
+      }
+    ]
+  },
+  {
+    "id": "no-entry-capability",
+    "valid": false,
+    "changes": [
+      {
+        "path": "/entries/1/capabilities",
+        "value": []
+      }
+    ]
+  },
+  {
+    "id": "no-entry-resource",
+    "valid": false,
+    "changes": [
+      {
+        "path": "/entries/1/resources",
+        "value": []
+      }
+    ]
+  },
+  {
+    "id": "unknown-source-entry",
+    "valid": false,
+    "changes": [
+      {
+        "path": "/resources/0/sourceEntries",
+        "value": [
+          "other"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "duplicate-source-entry",
+    "valid": false,
+    "changes": [
+      {
+        "path": "/resources/0/sourceEntries",
+        "value": [
+          "source",
+          "source"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "no-source-entry",
+    "valid": false,
+    "changes": [
+      {
+        "path": "/resources/0/sourceEntries",
+        "value": []
+      }
+    ]
+  },
+  {
+    "id": "source-entries-absent",
+    "valid": false,
+    "changes": [
+      {
+        "path": "/resources/0/sourceEntries",
+        "remove": true
+      }
+    ]
+  },
+  {
+    "id": "resource-write",
+    "valid": false,
+    "changes": [
+      {
+        "path": "/resources/0/access",
+        "value": "write"
+      }
+    ]
+  },
+  {
+    "id": "resource-use",
+    "valid": false,
+    "changes": [
+      {
+        "path": "/resources/0/access",
+        "value": "use"
+      }
+    ]
+  },
+  {
+    "id": "resource-private-ref",
+    "valid": false,
+    "changes": [
+      {
+        "path": "/resources/0/result",
+        "value": {
+          "runId": "private"
+        }
+      }
+    ]
+  },
+  {
+    "id": "resource-default-binding",
+    "valid": false,
+    "changes": [
+      {
+        "path": "/resources/0/defaultDirectoryFrom",
+        "value": "workspace"
+      }
+    ]
+  },
+  {
+    "id": "node-latest",
+    "valid": false,
+    "changes": [
+      {
+        "path": "/entries/1/flow/steps/0/latest",
+        "value": true
+      }
+    ]
+  },
+  {
+    "id": "node-direct-run",
+    "valid": false,
+    "changes": [
+      {
+        "path": "/entries/1/flow/steps/0/runId",
+        "value": "private"
+      }
+    ]
+  },
+  {
+    "id": "node-path",
+    "valid": false,
+    "changes": [
+      {
+        "path": "/entries/1/flow/steps/0/path",
+        "value": "/private/example"
+      }
+    ]
+  },
+  {
+    "id": "node-write",
+    "valid": false,
+    "changes": [
+      {
+        "path": "/entries/1/flow/steps/0/operation",
+        "value": "write"
+      }
+    ]
+  },
+  {
+    "id": "node-wrong-resource",
+    "valid": false,
+    "changes": [
+      {
+        "path": "/entries/1/flow/steps/0/binding",
+        "value": "other"
+      }
+    ]
+  },
+  {
+    "id": "resource-other-kind",
+    "valid": false,
+    "changes": [
+      {
+        "path": "/resources/0/kind",
+        "value": "file"
+      }
+    ]
+  },
+  {
+    "id": "valid-unused-result-resource",
+    "valid": true,
+    "changes": [
+      {
+        "path": "/entries/1/flow/steps",
+        "value": []
+      },
+      {
+        "path": "/entries/1/resources",
+        "value": []
+      }
+    ]
+  }
+]

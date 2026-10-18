@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.41.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.42.0/p1.schema.json",
   "title": "FlowArk P1 0.35.0: fixed conversation source resources and bounded reads",
   "$defs": {
     "Json": {
@@ -2332,6 +2332,9 @@
             "receipt",
             "state"
           ]
+        },
+        {
+          "$ref": "#/$defs/RunResultNode"
         }
       ]
     },
@@ -2497,6 +2500,9 @@
         },
         "authorSdk": {
           "$ref": "#/$defs/TemplateAuthorSdkContext"
+        },
+        "resultSources": {
+          "$ref": "#/$defs/RunResultPreparedSources"
         }
       },
       "required": [
@@ -2885,7 +2891,8 @@
                   "browser",
                   "ai",
                   "skill",
-                  "conversation-source"
+                  "conversation-source",
+                  "run-result"
                 ]
               },
               "access": {
@@ -2903,6 +2910,16 @@
                 "type": "string",
                 "pattern": "^[a-z][a-z0-9-]{0,99}$",
                 "description": "Optional single-hop logical directory source for explicit resource-editor draft defaults; never a runtime binding fallback."
+              },
+              "sourceEntries": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 64,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{0,99}$"
+                }
               }
             },
             "required": [
@@ -2957,6 +2974,35 @@
                     "access": {
                       "const": "read"
                     }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "run-result"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "sourceEntries"
+                  ],
+                  "properties": {
+                    "access": {
+                      "const": "read"
+                    },
+                    "name": {
+                      "minLength": 1
+                    }
+                  }
+                },
+                "else": {
+                  "not": {
+                    "required": [
+                      "sourceEntries"
+                    ]
                   }
                 }
               }
@@ -4828,7 +4874,8 @@
             "browser",
             "ai",
             "skill",
-            "conversation-source"
+            "conversation-source",
+            "run-result"
           ]
         },
         "access": {
@@ -4846,6 +4893,16 @@
           "type": "string",
           "pattern": "^[a-z][a-z0-9-]{0,99}$",
           "description": "Optional single-hop logical directory source for explicit resource-editor draft defaults; never a runtime binding fallback."
+        },
+        "sourceEntries": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,99}$"
+          }
         }
       },
       "required": [
@@ -4900,6 +4957,35 @@
               "access": {
                 "const": "read"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "run-result"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "sourceEntries"
+            ],
+            "properties": {
+              "access": {
+                "const": "read"
+              },
+              "name": {
+                "minLength": 1
+              }
+            }
+          },
+          "else": {
+            "not": {
+              "required": [
+                "sourceEntries"
+              ]
             }
           }
         }
@@ -12427,6 +12513,1530 @@
     },
     "EntryResultView": {
       "$ref": "#/$defs/EntryResultResponse"
+    },
+    "RunResultId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "not": {
+        "pattern": "[^a-zA-Z0-9_-]"
+      }
+    },
+    "RunResultSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "minLength": 64,
+      "maxLength": 64
+    },
+    "RunResultJson": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RunResultJson"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/RunResultJson"
+          }
+        }
+      ]
+    },
+    "RunResultTemplateSource": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "template"
+        },
+        "instanceId": {
+          "$ref": "#/$defs/RunResultId"
+        },
+        "templateId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "not": {
+            "pattern": "[^a-z0-9-]"
+          }
+        },
+        "templateVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[0-9A-Za-z.-]+$",
+          "not": {
+            "pattern": "[^0-9A-Za-z.-]"
+          }
+        },
+        "packageKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 181
+        },
+        "packageDigest": {
+          "$ref": "#/$defs/RunResultSha256"
+        },
+        "entryId": {
+          "$ref": "#/$defs/RunResultId"
+        },
+        "entryName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "schemaPath": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240,
+          "pattern": "^schemas/[a-zA-Z0-9._/-]+$",
+          "not": {
+            "pattern": "[^a-zA-Z0-9._/-]"
+          }
+        },
+        "schemaSha256": {
+          "$ref": "#/$defs/RunResultSha256"
+        }
+      },
+      "required": [
+        "kind",
+        "instanceId",
+        "templateId",
+        "templateVersion",
+        "packageKey",
+        "packageDigest",
+        "entryId",
+        "entryName",
+        "schemaPath",
+        "schemaSha256"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultAuthorSource": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "author-checkout"
+        },
+        "checkoutId": {
+          "$ref": "#/$defs/RunResultId"
+        },
+        "draftId": {
+          "$ref": "#/$defs/RunResultId"
+        },
+        "entryId": {
+          "$ref": "#/$defs/RunResultId"
+        },
+        "flowId": {
+          "$ref": "#/$defs/RunResultId"
+        },
+        "baseRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "contextId": {
+          "$ref": "#/$defs/RunResultId"
+        },
+        "definitionSha256": {
+          "$ref": "#/$defs/RunResultSha256"
+        },
+        "schemaSha256": {
+          "$ref": "#/$defs/RunResultSha256"
+        }
+      },
+      "required": [
+        "kind",
+        "checkoutId",
+        "draftId",
+        "entryId",
+        "flowId",
+        "baseRevision",
+        "contextId",
+        "definitionSha256",
+        "schemaSha256"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultSource": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/RunResultTemplateSource"
+        },
+        {
+          "$ref": "#/$defs/RunResultAuthorSource"
+        }
+      ]
+    },
+    "RunResultLabel": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "maxLength": 2048,
+          "pattern": "^(?:/(?:[^~/]|~[01])*)*$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "description": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "path",
+        "label"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultBindingId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "not": {
+        "pattern": "[^a-z0-9-]"
+      }
+    },
+    "RunResultRunIdentity": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/RunResultId"
+        },
+        "flowId": {
+          "$ref": "#/$defs/RunResultId"
+        },
+        "versionId": {
+          "$ref": "#/$defs/RunResultSha256"
+        }
+      },
+      "required": [
+        "id",
+        "flowId",
+        "versionId"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultOwner": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "instance"
+            },
+            "id": {
+              "$ref": "#/$defs/RunResultId"
+            },
+            "packageKey": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 181
+            },
+            "packageDigest": {
+              "$ref": "#/$defs/RunResultSha256"
+            }
+          },
+          "required": [
+            "kind",
+            "id",
+            "packageKey",
+            "packageDigest"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "author-draft"
+            },
+            "id": {
+              "$ref": "#/$defs/RunResultId"
+            }
+          },
+          "required": [
+            "kind",
+            "id"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "RunResultTarget": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "instance",
+            "author-flow"
+          ]
+        },
+        "id": {
+          "$ref": "#/$defs/RunResultId"
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "not": {
+            "pattern": "[\u0000-\u001f]"
+          }
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultResource": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/RunResultBindingId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "kind": {
+          "const": "run-result"
+        },
+        "access": {
+          "const": "read"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "sourceEntries": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/RunResultBindingId"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "access",
+        "required",
+        "sourceEntries"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultReference": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "run": {
+          "$ref": "#/$defs/RunResultRunIdentity"
+        },
+        "source": {
+          "$ref": "#/$defs/RunResultSource"
+        },
+        "policy": {
+          "const": "credential-redacted-v1"
+        },
+        "dataSha256": {
+          "$ref": "#/$defs/RunResultSha256"
+        },
+        "dataBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 196608
+        }
+      },
+      "required": [
+        "version",
+        "run",
+        "source",
+        "policy",
+        "dataSha256",
+        "dataBytes"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultNode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/RunResultId"
+        },
+        "type": {
+          "const": "run-result"
+        },
+        "version": {
+          "const": 1
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600000
+        },
+        "binding": {
+          "$ref": "#/$defs/RunResultBindingId"
+        },
+        "operation": {
+          "const": "read"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "version",
+        "name",
+        "binding",
+        "operation"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultCursor": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "targetSha256": {
+          "$ref": "#/$defs/RunResultSha256"
+        },
+        "binding": {
+          "$ref": "#/$defs/RunResultBindingId"
+        },
+        "querySha256": {
+          "$ref": "#/$defs/RunResultSha256"
+        },
+        "ceiling": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740990
+        },
+        "before": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "cursorId": {
+          "$ref": "#/$defs/RunResultOpaqueId"
+        }
+      },
+      "required": [
+        "version",
+        "targetSha256",
+        "binding",
+        "querySha256",
+        "ceiling",
+        "before",
+        "cursorId"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultListRequest": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/RunResultTarget"
+        },
+        "binding": {
+          "$ref": "#/$defs/RunResultBindingId"
+        },
+        "query": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "cursor": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/RunResultCursor"
+            }
+          ]
+        }
+      },
+      "required": [
+        "target",
+        "binding",
+        "query",
+        "cursor"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultPreviewRequest": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/RunResultTarget"
+        },
+        "binding": {
+          "$ref": "#/$defs/RunResultBindingId"
+        },
+        "runId": {
+          "$ref": "#/$defs/RunResultId"
+        }
+      },
+      "required": [
+        "target",
+        "binding",
+        "runId"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultSelectRequest": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/RunResultTarget"
+        },
+        "binding": {
+          "$ref": "#/$defs/RunResultBindingId"
+        },
+        "reviewId": {
+          "$ref": "#/$defs/RunResultOpaqueId"
+        },
+        "readStamp": {
+          "$ref": "#/$defs/RunResultSha256"
+        },
+        "reviewed": {
+          "const": true
+        }
+      },
+      "required": [
+        "target",
+        "binding",
+        "reviewId",
+        "readStamp",
+        "reviewed"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultInspectRequest": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/RunResultTarget"
+        },
+        "binding": {
+          "$ref": "#/$defs/RunResultBindingId"
+        }
+      },
+      "required": [
+        "target",
+        "binding"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultRequest": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "method": {
+              "const": "resultSource.list"
+            },
+            "params": {
+              "$ref": "#/$defs/RunResultListRequest"
+            }
+          },
+          "required": [
+            "method",
+            "params"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "method": {
+              "const": "resultSource.preview"
+            },
+            "params": {
+              "$ref": "#/$defs/RunResultPreviewRequest"
+            }
+          },
+          "required": [
+            "method",
+            "params"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "method": {
+              "const": "resultSource.select"
+            },
+            "params": {
+              "$ref": "#/$defs/RunResultSelectRequest"
+            }
+          },
+          "required": [
+            "method",
+            "params"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "method": {
+              "const": "resultSource.inspect"
+            },
+            "params": {
+              "$ref": "#/$defs/RunResultInspectRequest"
+            }
+          },
+          "required": [
+            "method",
+            "params"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "RunResultRead": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "operation": {
+          "const": "read"
+        },
+        "binding": {
+          "$ref": "#/$defs/RunResultBindingId"
+        },
+        "ref": {
+          "$ref": "#/$defs/RunResultReference"
+        },
+        "value": {
+          "$ref": "#/$defs/RunResultJson"
+        },
+        "dataChanged": {
+          "type": "boolean"
+        },
+        "schemaValidation": {
+          "const": "passed"
+        },
+        "labels": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/RunResultLabel"
+          }
+        },
+        "labelsComplete": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "version",
+        "operation",
+        "binding",
+        "ref",
+        "value",
+        "dataChanged",
+        "schemaValidation",
+        "labels",
+        "labelsComplete"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultOpaqueId": {
+      "$ref": "#/$defs/RunResultSha256"
+    },
+    "RunResultTimestamp": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+      "minLength": 24,
+      "maxLength": 24
+    },
+    "RunResultReason": {
+      "enum": [
+        "source-unavailable",
+        "source-not-succeeded",
+        "reuse-unavailable",
+        "schema-invalid",
+        "result-invalid",
+        "read-limit",
+        "privacy-unavailable",
+        "changed-during-read",
+        "storage-unavailable"
+      ]
+    },
+    "RunResultRun": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/RunResultId"
+        },
+        "flowId": {
+          "$ref": "#/$defs/RunResultId"
+        },
+        "versionId": {
+          "$ref": "#/$defs/RunResultSha256"
+        },
+        "state": {
+          "enum": [
+            "QUEUED",
+            "RUNNING",
+            "PAUSED",
+            "WAITING_INPUT",
+            "CANCELLING",
+            "CANCELLED",
+            "INTERRUPTED",
+            "SUCCEEDED",
+            "FAILED"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "flowId",
+        "versionId",
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultChoice": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "run": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/$defs/RunResultId"
+                },
+                "flowId": {
+                  "$ref": "#/$defs/RunResultId"
+                },
+                "versionId": {
+                  "$ref": "#/$defs/RunResultSha256"
+                },
+                "state": {
+                  "const": "SUCCEEDED"
+                }
+              },
+              "required": [
+                "id",
+                "flowId",
+                "versionId",
+                "state"
+              ],
+              "additionalProperties": false
+            },
+            "entryId": {
+              "$ref": "#/$defs/RunResultId"
+            },
+            "entryName": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "status": {
+              "const": "candidate"
+            }
+          },
+          "required": [
+            "run",
+            "entryId",
+            "entryName",
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "run": {
+              "$ref": "#/$defs/RunResultRun"
+            },
+            "entryId": {
+              "$ref": "#/$defs/RunResultId"
+            },
+            "entryName": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "status": {
+              "const": "unavailable"
+            },
+            "reason": {
+              "$ref": "#/$defs/RunResultReason"
+            }
+          },
+          "required": [
+            "run",
+            "entryId",
+            "entryName",
+            "status",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "RunResultListResponse": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/RunResultTarget"
+        },
+        "binding": {
+          "$ref": "#/$defs/RunResultBindingId"
+        },
+        "targetSha256": {
+          "$ref": "#/$defs/RunResultSha256"
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RunResultChoice"
+          },
+          "maxItems": 20
+        },
+        "next": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/RunResultCursor"
+            }
+          ]
+        }
+      },
+      "required": [
+        "target",
+        "binding",
+        "targetSha256",
+        "choices",
+        "next"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultPreviewAvailable": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/RunResultTarget"
+        },
+        "binding": {
+          "$ref": "#/$defs/RunResultBindingId"
+        },
+        "status": {
+          "const": "available"
+        },
+        "ref": {
+          "$ref": "#/$defs/RunResultReference"
+        },
+        "value": {
+          "$ref": "#/$defs/RunResultJson"
+        },
+        "dataChanged": {
+          "type": "boolean"
+        },
+        "schemaValidation": {
+          "const": "passed"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RunResultLabel"
+          },
+          "maxItems": 256
+        },
+        "labelsComplete": {
+          "type": "boolean"
+        },
+        "reviewId": {
+          "$ref": "#/$defs/RunResultOpaqueId"
+        },
+        "expiresAt": {
+          "$ref": "#/$defs/RunResultTimestamp"
+        },
+        "readStamp": {
+          "$ref": "#/$defs/RunResultSha256"
+        }
+      },
+      "required": [
+        "target",
+        "binding",
+        "status",
+        "ref",
+        "value",
+        "dataChanged",
+        "schemaValidation",
+        "labels",
+        "labelsComplete",
+        "reviewId",
+        "expiresAt",
+        "readStamp"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultUnavailable": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/RunResultTarget"
+        },
+        "binding": {
+          "$ref": "#/$defs/RunResultBindingId"
+        },
+        "status": {
+          "const": "unavailable"
+        },
+        "reason": {
+          "$ref": "#/$defs/RunResultReason"
+        },
+        "readStamp": {
+          "$ref": "#/$defs/RunResultSha256"
+        }
+      },
+      "required": [
+        "target",
+        "binding",
+        "status",
+        "reason",
+        "readStamp"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultPreviewResponse": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/RunResultPreviewAvailable"
+        },
+        {
+          "$ref": "#/$defs/RunResultUnavailable"
+        }
+      ]
+    },
+    "RunResultSelectResponse": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/RunResultTarget"
+        },
+        "binding": {
+          "$ref": "#/$defs/RunResultBindingId"
+        },
+        "status": {
+          "const": "selected"
+        },
+        "ref": {
+          "$ref": "#/$defs/RunResultReference"
+        },
+        "choiceId": {
+          "$ref": "#/$defs/RunResultOpaqueId"
+        },
+        "expiresAt": {
+          "$ref": "#/$defs/RunResultTimestamp"
+        },
+        "readStamp": {
+          "$ref": "#/$defs/RunResultSha256"
+        }
+      },
+      "required": [
+        "target",
+        "binding",
+        "status",
+        "ref",
+        "choiceId",
+        "expiresAt",
+        "readStamp"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultInspectAvailable": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/RunResultTarget"
+        },
+        "binding": {
+          "$ref": "#/$defs/RunResultBindingId"
+        },
+        "status": {
+          "const": "available"
+        },
+        "ref": {
+          "$ref": "#/$defs/RunResultReference"
+        },
+        "value": {
+          "$ref": "#/$defs/RunResultJson"
+        },
+        "dataChanged": {
+          "type": "boolean"
+        },
+        "schemaValidation": {
+          "const": "passed"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RunResultLabel"
+          },
+          "maxItems": 256
+        },
+        "labelsComplete": {
+          "type": "boolean"
+        },
+        "readStamp": {
+          "$ref": "#/$defs/RunResultSha256"
+        }
+      },
+      "required": [
+        "target",
+        "binding",
+        "status",
+        "ref",
+        "value",
+        "dataChanged",
+        "schemaValidation",
+        "labels",
+        "labelsComplete",
+        "readStamp"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultInspectUnbound": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/RunResultTarget"
+        },
+        "binding": {
+          "$ref": "#/$defs/RunResultBindingId"
+        },
+        "status": {
+          "const": "unbound"
+        },
+        "readStamp": {
+          "$ref": "#/$defs/RunResultSha256"
+        }
+      },
+      "required": [
+        "target",
+        "binding",
+        "status",
+        "readStamp"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultInspectResponse": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/RunResultInspectAvailable"
+        },
+        {
+          "$ref": "#/$defs/RunResultInspectUnbound"
+        },
+        {
+          "$ref": "#/$defs/RunResultUnavailable"
+        }
+      ]
+    },
+    "RunResultBinding": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/$defs/RunResultReference"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultSaveChoices": {
+      "type": "object",
+      "maxProperties": 100,
+      "propertyNames": {
+        "$ref": "#/$defs/RunResultBindingId"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/RunResultOpaqueId"
+      }
+    },
+    "RunResultPreparedSource": {
+      "type": "object",
+      "properties": {
+        "binding": {
+          "$ref": "#/$defs/RunResultBindingId"
+        },
+        "ref": {
+          "$ref": "#/$defs/RunResultReference"
+        },
+        "owner": {
+          "$ref": "#/$defs/RunResultOwner"
+        },
+        "proofSha256": {
+          "$ref": "#/$defs/RunResultSha256"
+        },
+        "registeredPosition": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "binding",
+        "ref",
+        "owner",
+        "proofSha256",
+        "registeredPosition"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultPreparedSources": {
+      "type": "object",
+      "maxProperties": 100,
+      "propertyNames": {
+        "$ref": "#/$defs/RunResultBindingId"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/RunResultPreparedSource"
+      }
+    },
+    "RunResultProof": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "policy": {
+          "const": "credential-redacted-v1"
+        },
+        "finalized": {
+          "const": true
+        },
+        "finalSecretsComplete": {
+          "const": true
+        },
+        "run": {
+          "$ref": "#/$defs/RunResultRunIdentity"
+        },
+        "owner": {
+          "$ref": "#/$defs/RunResultOwner"
+        },
+        "ref": {
+          "$ref": "#/$defs/RunResultReference"
+        },
+        "snapshotSha256": {
+          "$ref": "#/$defs/RunResultSha256"
+        },
+        "sourceRecordSha256": {
+          "$ref": "#/$defs/RunResultSha256"
+        },
+        "originalValueSha256": {
+          "$ref": "#/$defs/RunResultSha256"
+        },
+        "originalSourceSha256": {
+          "$ref": "#/$defs/RunResultSha256"
+        },
+        "value": {
+          "$ref": "#/$defs/RunResultJson"
+        },
+        "dataChanged": {
+          "type": "boolean"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RunResultLabel"
+          },
+          "maxItems": 256
+        },
+        "labelsComplete": {
+          "type": "boolean"
+        },
+        "proofSha256": {
+          "$ref": "#/$defs/RunResultSha256"
+        }
+      },
+      "required": [
+        "version",
+        "policy",
+        "finalized",
+        "finalSecretsComplete",
+        "run",
+        "owner",
+        "ref",
+        "snapshotSha256",
+        "sourceRecordSha256",
+        "originalValueSha256",
+        "originalSourceSha256",
+        "value",
+        "dataChanged",
+        "labels",
+        "labelsComplete",
+        "proofSha256"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultIndex": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "finalized": {
+              "const": true
+            },
+            "owner": {
+              "$ref": "#/$defs/RunResultOwner"
+            },
+            "run": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/$defs/RunResultId"
+                },
+                "flowId": {
+                  "$ref": "#/$defs/RunResultId"
+                },
+                "versionId": {
+                  "$ref": "#/$defs/RunResultSha256"
+                },
+                "state": {
+                  "const": "SUCCEEDED"
+                }
+              },
+              "required": [
+                "id",
+                "flowId",
+                "versionId",
+                "state"
+              ],
+              "additionalProperties": false
+            },
+            "entryId": {
+              "$ref": "#/$defs/RunResultId"
+            },
+            "entryName": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "status": {
+              "const": "candidate"
+            },
+            "ref": {
+              "$ref": "#/$defs/RunResultReference"
+            }
+          },
+          "required": [
+            "version",
+            "finalized",
+            "owner",
+            "run",
+            "entryId",
+            "entryName",
+            "status",
+            "ref"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "finalized": {
+              "const": true
+            },
+            "owner": {
+              "$ref": "#/$defs/RunResultOwner"
+            },
+            "run": {
+              "$ref": "#/$defs/RunResultRun"
+            },
+            "entryId": {
+              "$ref": "#/$defs/RunResultId"
+            },
+            "entryName": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "status": {
+              "const": "unavailable"
+            },
+            "reason": {
+              "$ref": "#/$defs/RunResultReason"
+            }
+          },
+          "required": [
+            "version",
+            "finalized",
+            "owner",
+            "run",
+            "entryId",
+            "entryName",
+            "status",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "RunResultLease": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "id": {
+              "$ref": "#/$defs/RunResultOpaqueId"
+            },
+            "target": {
+              "$ref": "#/$defs/RunResultTarget"
+            },
+            "targetSha256": {
+              "$ref": "#/$defs/RunResultSha256"
+            },
+            "binding": {
+              "$ref": "#/$defs/RunResultBindingId"
+            },
+            "issuedMonotonicMs": {
+              "type": "number",
+              "minimum": 0
+            },
+            "expiresMonotonicMs": {
+              "type": "number",
+              "minimum": 0
+            },
+            "kind": {
+              "const": "cursor"
+            },
+            "cursor": {
+              "$ref": "#/$defs/RunResultCursor"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "target",
+            "targetSha256",
+            "binding",
+            "issuedMonotonicMs",
+            "expiresMonotonicMs",
+            "kind",
+            "cursor"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "id": {
+              "$ref": "#/$defs/RunResultOpaqueId"
+            },
+            "target": {
+              "$ref": "#/$defs/RunResultTarget"
+            },
+            "targetSha256": {
+              "$ref": "#/$defs/RunResultSha256"
+            },
+            "binding": {
+              "$ref": "#/$defs/RunResultBindingId"
+            },
+            "issuedMonotonicMs": {
+              "type": "number",
+              "minimum": 0
+            },
+            "expiresMonotonicMs": {
+              "type": "number",
+              "minimum": 0
+            },
+            "kind": {
+              "const": "preview"
+            },
+            "ref": {
+              "$ref": "#/$defs/RunResultReference"
+            },
+            "proofSha256": {
+              "$ref": "#/$defs/RunResultSha256"
+            },
+            "readStamp": {
+              "$ref": "#/$defs/RunResultSha256"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "target",
+            "targetSha256",
+            "binding",
+            "issuedMonotonicMs",
+            "expiresMonotonicMs",
+            "kind",
+            "ref",
+            "proofSha256",
+            "readStamp"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "id": {
+              "$ref": "#/$defs/RunResultOpaqueId"
+            },
+            "target": {
+              "$ref": "#/$defs/RunResultTarget"
+            },
+            "targetSha256": {
+              "$ref": "#/$defs/RunResultSha256"
+            },
+            "binding": {
+              "$ref": "#/$defs/RunResultBindingId"
+            },
+            "issuedMonotonicMs": {
+              "type": "number",
+              "minimum": 0
+            },
+            "expiresMonotonicMs": {
+              "type": "number",
+              "minimum": 0
+            },
+            "kind": {
+              "const": "choice"
+            },
+            "ref": {
+              "$ref": "#/$defs/RunResultReference"
+            },
+            "proofSha256": {
+              "$ref": "#/$defs/RunResultSha256"
+            },
+            "reviewId": {
+              "$ref": "#/$defs/RunResultOpaqueId"
+            },
+            "readStamp": {
+              "$ref": "#/$defs/RunResultSha256"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "target",
+            "targetSha256",
+            "binding",
+            "issuedMonotonicMs",
+            "expiresMonotonicMs",
+            "kind",
+            "ref",
+            "proofSha256",
+            "reviewId",
+            "readStamp"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "RunResultResponse": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RunResultListResponse"
+        },
+        {
+          "$ref": "#/$defs/RunResultPreviewResponse"
+        },
+        {
+          "$ref": "#/$defs/RunResultSelectResponse"
+        },
+        {
+          "$ref": "#/$defs/RunResultInspectResponse"
+        },
+        {
+          "$ref": "#/$defs/RunResultRead"
+        }
+      ]
+    },
+    "RunResultWire": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RunResultResource"
+        },
+        {
+          "$ref": "#/$defs/RunResultReference"
+        },
+        {
+          "$ref": "#/$defs/RunResultNode"
+        },
+        {
+          "$ref": "#/$defs/RunResultRequest"
+        },
+        {
+          "$ref": "#/$defs/RunResultRead"
+        },
+        {
+          "$ref": "#/$defs/RunResultListResponse"
+        },
+        {
+          "$ref": "#/$defs/RunResultPreviewResponse"
+        },
+        {
+          "$ref": "#/$defs/RunResultSelectResponse"
+        },
+        {
+          "$ref": "#/$defs/RunResultInspectResponse"
+        },
+        {
+          "$ref": "#/$defs/RunResultBinding"
+        },
+        {
+          "$ref": "#/$defs/RunResultSaveChoices"
+        },
+        {
+          "$ref": "#/$defs/RunResultPreparedSources"
+        }
+      ]
     }
   }
 }

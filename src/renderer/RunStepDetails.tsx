@@ -45,6 +45,12 @@ const operations: Record<string, string> = {
 
 function fields(node: Step): [string, string][] {
   switch (node.type) {
+    case 'run-result':
+      return [
+        ['操作', '读取已绑定结果'],
+        ['结果资源', node.binding || '尚未选择'],
+        ['范围', '固定来源与完整可复用数据；当前绑定失效时停止'],
+      ];
     case 'effect':
       return node.operation === 'prepare'
         ? [

@@ -17,6 +17,7 @@ export type PreparedScripts = {
   skillSnapshots?: Record<string, import('./skill').SkillVersion>;
   templateData?: import('./template-data').DataContext;
   authorSdk?: import('./contracts.generated').TemplateAuthorSdkContext;
+  resultSources?: import('./contracts.generated').RunResultPreparedSources;
 };
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export type Bindings = {
@@ -34,6 +35,7 @@ export type Bindings = {
       model?: string;
       skill?: import('./skill').SkillVersionRef;
       source?: import('./conversation-archive').ConversationArchiveRef;
+      result?: import('./contracts.generated').RunResultReference;
     }
   >;
   grants?: Record<string, 'deny' | 'confirm' | 'auto'>;
