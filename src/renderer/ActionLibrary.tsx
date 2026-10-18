@@ -18,12 +18,13 @@ const groups = [
   { id: 'script', label: 'JS / TS 脚本', types: ['script'] },
   { id: 'file', label: '文件处理 / Excel', types: ['skill', 'document', 'file', 'excel'] },
   { id: 'logic', label: '条件 / 串行循环', types: ['condition', 'loop'] },
-  { id: 'review', label: '结果断言 / 等待人工', types: ['assert', 'human'] },
+  { id: 'review', label: '结果断言 / 等待人工', types: ['assert', 'human', 'effect'] },
 ];
 const descriptions: Record<string, string> = {
   'source-reduce': '使用本人AI分批处理完整来源，保存草稿与进度，中断后核对恢复',
   source: '读取本人选择的固定完整会话来源，不调用模型',
   context: '读取本次配置、最新状态，或按修订更新完整状态',
+  effect: '准备并去重本次操作，或登记核对结果；未知不重放',
   skill: '保存待确认草稿，或读取固定的个人Skill确认版本',
   document: '提取PDF、DOCX或文本，并保留来源与内容缺口',
   value: '准备文本、数字或结构化数据',

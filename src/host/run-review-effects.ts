@@ -22,6 +22,13 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
           'read',
           `读取来源资源“${node.binding}”的固定${node.operation === 'manifest' ? '清单' : '有界片段'}；不调用模型，不生成Skill。`,
         );
+      case 'effect':
+        return effect(
+          'write',
+          node.operation === 'prepare'
+            ? '在本机持久准备并去重当前入口的声明动作；需要确认时等待本人。本步骤不执行后续网页或文件动作，只有本次新回执允许进入执行分支。'
+            : '按实际核对结果登记本次运行的提交中操作；未知会建立本地待办，不重新执行。',
+        );
       case 'context':
         return node.operation === 'state.write'
           ? effect(

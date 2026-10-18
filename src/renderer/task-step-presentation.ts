@@ -69,6 +69,10 @@ export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext
     return `${value(node.actual)} ${operators[node.operator]}${node.operator === 'exists' ? '' : ' ' + value(node.expected)}`;
   };
   switch (step.type) {
+    case 'effect':
+      return step.operation === 'prepare'
+        ? `准备动作 ${step.action || '尚未选择'} · 同键不再授权，实际动作须以允许执行为真进入`
+        : '登记核对结果；仅本次运行的提交中记录可变更，未知不重放';
     case 'context':
       return step.operation === 'configuration'
         ? '读取本次运行固定的共享配置'

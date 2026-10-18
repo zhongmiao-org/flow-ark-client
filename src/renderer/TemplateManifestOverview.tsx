@@ -29,6 +29,7 @@ export const capabilityLabel = (name: string) =>
       'conversation-evidence-v1': '已确认会话来源',
       'source-reduce': '分批整理来源',
       'source-reduce-v1': '可恢复的来源整理',
+      'effect-node-v1': '可视化操作准备与结果登记',
       'conversation-source-read-v1': '完整来源只读读取',
       source: '完整来源读取',
       skill: '个人 Skill',

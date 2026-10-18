@@ -1,0 +1,37 @@
+.effect-node-configuration {
+  gap: 16px;
+}
+.effect-node-configuration .effect-configuration-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.effect-node-configuration .ant-card {
+  min-width: 0;
+}
+.effect-node-configuration .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.effect-node-configuration .ant-select {
+  width: 100%;
+  min-width: 0;
+}
+.effect-node-configuration .ant-card label:not(.ant-checkbox-wrapper) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.effect-node-configuration .ant-card-head-title {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+@container (max-width: 800px) {
+  .effect-node-configuration .effect-configuration-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.effect-node-configuration {
+  container-type: inline-size;
+}

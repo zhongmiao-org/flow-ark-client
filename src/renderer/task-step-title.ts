@@ -1,3 +1,4 @@
+import { effectOperations } from '../shared/effect-node';
 import type { Step } from '../shared/types';
 import { kinds } from './node-kinds';
 import { contextOperations } from '../shared/template-data';
@@ -42,9 +43,11 @@ export function taskStepTitle(step: Step): string {
       ? step.version === 6
         ? '关联字段与正文'
         : browserLabels[step.operation]
-      : step.type === 'context'
-        ? contextOperations[step.operation]
-        : kinds[step.type].label)
+      : step.type === 'effect'
+        ? effectOperations[step.operation]
+        : step.type === 'context'
+          ? contextOperations[step.operation]
+          : kinds[step.type].label)
   )
     .replace(/\s+/g, ' ')
     .trim();

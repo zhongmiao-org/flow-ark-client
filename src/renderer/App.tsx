@@ -1,3 +1,6 @@
+import EffectConfigurationWorkspace from './EffectConfigurationWorkspace';
+import EffectNodeConfiguration from './EffectNodeConfiguration';
+import { effectCapabilities } from '../shared/effect-node';
 import SourceReductionConfiguration from './SourceReductionConfiguration';
 import SourceNodeConfiguration from './SourceNodeConfiguration';
 import AuthorSdkInfo from './AuthorSdkInfo';
@@ -3125,6 +3128,8 @@ function Editor({
   const [browserActionOpen, setBrowserActionOpen] = useState(false);
   const [resourceOpen, setResourceOpen] = useState(false);
   const [logicConfigurationOpen, setLogicConfigurationOpen] = useState(false);
+  const [effectConfigurationOpen, setEffectConfigurationOpen] = useState(false);
+  useEffect(() => setEffectConfigurationOpen(false), [active, r.id]);
   const [scriptConfigurationOpen, setScriptConfigurationOpen] = useState(false);
   const [stepSettingsOpen, setStepSettingsOpen] = useState(false);
   const [viewRequest, setViewRequest] = useState<{ key: number; mode: 'all' | 'selected' }>();
@@ -3226,6 +3231,7 @@ function Editor({
         requiredCapabilities: [
           ...new Set([
             ...r.flow.requiredCapabilities,
+            ...effectCapabilities(steps),
             ...(flatten(steps).some((node) => node.type === 'context') ? ['template-data-v1'] : []),
             ...(mapped ? ['excel-mapping-v1'] : []),
             ...(flatten(steps).some((node) => node.type === 'ai') ? ['ai-node-v1'] : []),
@@ -3285,6 +3291,7 @@ function Editor({
           requiredCapabilities: [
             ...new Set([
               ...r.flow.requiredCapabilities,
+              ...effectCapabilities(steps),
               ...(flatten(steps).some((node) => node.type === 'context')
                 ? ['template-data-v1']
                 : []),
@@ -3523,6 +3530,7 @@ function Editor({
           !controlOpen &&
           !resourceOpen &&
           !logicConfigurationOpen &&
+          !effectConfigurationOpen &&
           !scriptConfigurationOpen &&
           !positionOpen
         }
@@ -3542,6 +3550,7 @@ function Editor({
     if (!guardNodeInput()) return false;
     setScriptConfigurationOpen(false);
     setLogicConfigurationOpen(false);
+    setEffectConfigurationOpen(false);
     setResourceOpen(false);
     setBrowserActionOpen(false);
     setControlOpen(false);
@@ -3637,6 +3646,19 @@ function Editor({
           }}
           error={saveError}
           clearError={clearError}
+        />
+      )}
+      {effectConfigurationOpen && selectedNode?.type === 'effect' && (
+        <EffectConfigurationWorkspace
+          record={r}
+          node={selectedNode}
+          change={updateNode}
+          guard={guardNodeInput}
+          close={() => setEffectConfigurationOpen(false)}
+          showBrowser={() => {
+            setEffectConfigurationOpen(false);
+            showBrowser();
+          }}
         />
       )}
       {logicConfigurationOpen && (
@@ -3903,6 +3925,7 @@ function Editor({
                   !browserActionOpen &&
                   !resourceOpen &&
                   !logicConfigurationOpen &&
+                  !effectConfigurationOpen &&
                   !scriptConfigurationOpen
                 }
                 viewRequest={viewRequest}
@@ -4397,6 +4420,7 @@ function Editor({
                                     )}
                                     {selectedNode.type !== 'browser' &&
                                       !logicConfigurationOpen &&
+                                      !effectConfigurationOpen &&
                                       !scriptConfigurationOpen && (
                                         <>
                                           <NodeTiming
@@ -4446,6 +4470,25 @@ function Editor({
                                         choices={choices}
                                         change={updateNode}
                                       />
+                                    )}
+                                    {selectedNode.type === 'effect' && !effectConfigurationOpen && (
+                                      <>
+                                        <Button
+                                          onClick={() => {
+                                            if (guardNodeInput()) setEffectConfigurationOpen(true);
+                                          }}
+                                        >
+                                          展开操作记录配置
+                                        </Button>
+                                        <EffectNodeConfiguration
+                                          key={selectedNode.id + ':' + revision}
+                                          node={selectedNode}
+                                          record={r}
+                                          choices={choices}
+                                          change={updateNode}
+                                          guard={guardNodeInput}
+                                        />
+                                      </>
                                     )}
                                     {selectedNode.type === 'context' && (
                                       <ContextNodeConfiguration
@@ -4650,7 +4693,7 @@ function Editor({
                           />
                         </fieldset>
                       </ConfigProvider>
-                      {!logicConfigurationOpen && advancedInput}
+                      {!logicConfigurationOpen && !effectConfigurationOpen && advancedInput}
                     </>
                   ) : (
                     <Empty text="选择画布节点，编辑参数或脚本。" />

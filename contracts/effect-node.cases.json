@@ -1,0 +1,490 @@
+[
+  {
+    "name": "prepare-with-complete-review",
+    "definition": "EffectNode",
+    "value": {
+      "id": "prepare",
+      "type": "effect",
+      "version": 1,
+      "operation": "prepare",
+      "action": "save-document",
+      "key": {
+        "$ref": "params.operationKey"
+      },
+      "description": "保存已核对的虚构文档",
+      "review": {
+        "version": 1,
+        "target": {
+          "$ref": "params.target"
+        },
+        "content": {
+          "$ref": "params.content"
+        }
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "prepare-minimal",
+    "definition": "EffectNode",
+    "value": {
+      "id": "prepare",
+      "type": "effect",
+      "version": 1,
+      "operation": "prepare",
+      "action": "save-document",
+      "key": "fictional-document-v1"
+    },
+    "valid": true
+  },
+  {
+    "name": "prepare-null-review",
+    "definition": "EffectNode",
+    "value": {
+      "id": "prepare",
+      "type": "effect",
+      "version": 1,
+      "operation": "prepare",
+      "action": "save-document",
+      "key": "fictional-document-v1",
+      "review": null
+    },
+    "valid": true
+  },
+  {
+    "name": "resolve-from-complete-variable",
+    "definition": "EffectNode",
+    "value": {
+      "id": "resolve",
+      "type": "effect",
+      "version": 1,
+      "operation": "resolve",
+      "receipt": {
+        "$ref": "steps.prepare"
+      },
+      "state": "confirmed",
+      "evidence": {
+        "$ref": "steps.verify"
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "resolve-confirmed",
+    "definition": "EffectNode",
+    "value": {
+      "id": "resolve",
+      "type": "effect",
+      "version": 1,
+      "operation": "resolve",
+      "receipt": {
+        "version": 1,
+        "operation": "prepare",
+        "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "action": "save-document",
+        "key": "fictional-document-v1",
+        "runId": "fictional-run",
+        "execute": true,
+        "state": "submitting"
+      },
+      "state": "confirmed",
+      "evidence": null
+    },
+    "valid": true
+  },
+  {
+    "name": "resolve-failed",
+    "definition": "EffectNode",
+    "value": {
+      "id": "resolve",
+      "type": "effect",
+      "version": 1,
+      "operation": "resolve",
+      "receipt": {
+        "version": 1,
+        "operation": "prepare",
+        "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "action": "save-document",
+        "key": "fictional-document-v1",
+        "runId": "fictional-run",
+        "execute": true,
+        "state": "submitting"
+      },
+      "state": "failed",
+      "evidence": null
+    },
+    "valid": true
+  },
+  {
+    "name": "resolve-unknown",
+    "definition": "EffectNode",
+    "value": {
+      "id": "resolve",
+      "type": "effect",
+      "version": 1,
+      "operation": "resolve",
+      "receipt": {
+        "version": 1,
+        "operation": "prepare",
+        "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "action": "save-document",
+        "key": "fictional-document-v1",
+        "runId": "fictional-run",
+        "execute": true,
+        "state": "submitting"
+      },
+      "state": "unknown",
+      "evidence": null
+    },
+    "valid": true
+  },
+  {
+    "name": "existing-submitting",
+    "definition": "EffectPrepareResult",
+    "value": {
+      "version": 1,
+      "operation": "prepare",
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "action": "save-document",
+      "key": "fictional-document-v1",
+      "runId": "fictional-run",
+      "execute": false,
+      "state": "submitting"
+    },
+    "valid": true
+  },
+  {
+    "name": "existing-confirmed",
+    "definition": "EffectPrepareResult",
+    "value": {
+      "version": 1,
+      "operation": "prepare",
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "action": "save-document",
+      "key": "fictional-document-v1",
+      "runId": "fictional-run",
+      "execute": false,
+      "state": "confirmed"
+    },
+    "valid": true
+  },
+  {
+    "name": "existing-failed",
+    "definition": "EffectPrepareResult",
+    "value": {
+      "version": 1,
+      "operation": "prepare",
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "action": "save-document",
+      "key": "fictional-document-v1",
+      "runId": "fictional-run",
+      "execute": false,
+      "state": "failed"
+    },
+    "valid": true
+  },
+  {
+    "name": "existing-unknown",
+    "definition": "EffectPrepareResult",
+    "value": {
+      "version": 1,
+      "operation": "prepare",
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "action": "save-document",
+      "key": "fictional-document-v1",
+      "runId": "fictional-run",
+      "execute": false,
+      "state": "unknown"
+    },
+    "valid": true
+  },
+  {
+    "name": "new-submitting",
+    "definition": "EffectPrepareResult",
+    "value": {
+      "version": 1,
+      "operation": "prepare",
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "action": "save-document",
+      "key": "fictional-document-v1",
+      "runId": "fictional-run",
+      "execute": true,
+      "state": "submitting"
+    },
+    "valid": true
+  },
+  {
+    "name": "resolved-result",
+    "definition": "EffectResolveResult",
+    "value": {
+      "version": 1,
+      "operation": "resolve",
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "state": "confirmed"
+    },
+    "valid": true
+  },
+  {
+    "name": "prepare-empty-action",
+    "definition": "EffectNode",
+    "value": {
+      "id": "prepare",
+      "type": "effect",
+      "version": 1,
+      "operation": "prepare",
+      "action": "",
+      "key": "fictional-document-v1"
+    },
+    "valid": false
+  },
+  {
+    "name": "prepare-variable-action",
+    "definition": "EffectNode",
+    "value": {
+      "id": "prepare",
+      "type": "effect",
+      "version": 1,
+      "operation": "prepare",
+      "action": {
+        "$ref": "params.action"
+      },
+      "key": "fictional-document-v1"
+    },
+    "valid": false
+  },
+  {
+    "name": "prepare-empty-key",
+    "definition": "EffectNode",
+    "value": {
+      "id": "prepare",
+      "type": "effect",
+      "version": 1,
+      "operation": "prepare",
+      "action": "save-document",
+      "key": ""
+    },
+    "valid": false
+  },
+  {
+    "name": "prepare-whitespace-key",
+    "definition": "EffectNode",
+    "value": {
+      "id": "prepare",
+      "type": "effect",
+      "version": 1,
+      "operation": "prepare",
+      "action": "save-document",
+      "key": "   "
+    },
+    "valid": false
+  },
+  {
+    "name": "prepare-null-key",
+    "definition": "EffectNode",
+    "value": {
+      "id": "prepare",
+      "type": "effect",
+      "version": 1,
+      "operation": "prepare",
+      "action": "save-document",
+      "key": null
+    },
+    "valid": false
+  },
+  {
+    "name": "prepare-foreign-fields",
+    "definition": "EffectNode",
+    "value": {
+      "id": "prepare",
+      "type": "effect",
+      "version": 1,
+      "operation": "prepare",
+      "action": "save-document",
+      "key": "fictional-document-v1",
+      "state": "confirmed"
+    },
+    "valid": false
+  },
+  {
+    "name": "prepare-review-without-target",
+    "definition": "EffectNode",
+    "value": {
+      "id": "prepare",
+      "type": "effect",
+      "version": 1,
+      "operation": "prepare",
+      "action": "save-document",
+      "key": "fictional-document-v1",
+      "review": {
+        "version": 1,
+        "content": "示例"
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "prepare-review-blank-target",
+    "definition": "EffectNode",
+    "value": {
+      "id": "prepare",
+      "type": "effect",
+      "version": 1,
+      "operation": "prepare",
+      "action": "save-document",
+      "key": "fictional-document-v1",
+      "review": {
+        "version": 1,
+        "target": " ",
+        "content": "示例"
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "prepare-review-unknown-field",
+    "definition": "EffectNode",
+    "value": {
+      "id": "prepare",
+      "type": "effect",
+      "version": 1,
+      "operation": "prepare",
+      "action": "save-document",
+      "key": "fictional-document-v1",
+      "review": {
+        "version": 1,
+        "target": "示例",
+        "content": "示例",
+        "action": "other"
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "resolve-variable-state",
+    "definition": "EffectNode",
+    "value": {
+      "id": "resolve",
+      "type": "effect",
+      "version": 1,
+      "operation": "resolve",
+      "receipt": {
+        "$ref": "steps.prepare"
+      },
+      "state": {
+        "$ref": "params.state"
+      },
+      "evidence": {
+        "$ref": "steps.verify"
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "resolve-submitting-state",
+    "definition": "EffectNode",
+    "value": {
+      "id": "resolve",
+      "type": "effect",
+      "version": 1,
+      "operation": "resolve",
+      "receipt": {
+        "$ref": "steps.prepare"
+      },
+      "state": "submitting",
+      "evidence": {
+        "$ref": "steps.verify"
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "resolve-without-receipt",
+    "definition": "EffectNode",
+    "value": {
+      "id": "resolve",
+      "type": "effect",
+      "version": 1,
+      "operation": "resolve",
+      "state": "confirmed",
+      "evidence": {
+        "$ref": "steps.verify"
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "resolve-foreign-fields",
+    "definition": "EffectNode",
+    "value": {
+      "id": "resolve",
+      "type": "effect",
+      "version": 1,
+      "operation": "resolve",
+      "receipt": {
+        "$ref": "steps.prepare"
+      },
+      "state": "confirmed",
+      "evidence": {
+        "$ref": "steps.verify"
+      },
+      "action": "save-document"
+    },
+    "valid": false
+  },
+  {
+    "name": "execute-true-with-terminal-state",
+    "definition": "EffectPrepareResult",
+    "value": {
+      "version": 1,
+      "operation": "prepare",
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "action": "save-document",
+      "key": "fictional-document-v1",
+      "runId": "fictional-run",
+      "execute": true,
+      "state": "confirmed"
+    },
+    "valid": false
+  },
+  {
+    "name": "receipt-missing-owner",
+    "definition": "EffectPrepareResult",
+    "value": {
+      "version": 1,
+      "operation": "prepare",
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "action": "save-document",
+      "key": "fictional-document-v1",
+      "execute": true,
+      "state": "submitting"
+    },
+    "valid": false
+  },
+  {
+    "name": "receipt-upper-case-id",
+    "definition": "EffectPrepareResult",
+    "value": {
+      "version": 1,
+      "operation": "prepare",
+      "id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "action": "save-document",
+      "key": "fictional-document-v1",
+      "runId": "fictional-run",
+      "execute": true,
+      "state": "submitting"
+    },
+    "valid": false
+  },
+  {
+    "name": "result-unknown-property",
+    "definition": "EffectResolveResult",
+    "value": {
+      "version": 1,
+      "operation": "resolve",
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "state": "confirmed",
+      "execute": true
+    },
+    "valid": false
+  }
+]

@@ -17,6 +17,8 @@ import BrowserFieldsResultView from './BrowserFieldsResultView';
 import type { TypedResultMeta } from '../host/typed-results';
 import { verifySourceResult } from '../shared/conversation-source';
 import SourceResultView from './SourceResultView';
+import EffectResultView from './EffectResultView';
+import { assertEffectResult } from '../shared/effect-node';
 export default function TypedRunResults({
   runId,
   entries,
@@ -41,7 +43,8 @@ export default function TypedRunResults({
     void window.flowark
       .request('run.typedResult', { runId, id })
       .then(async (v) => {
-        if (v.type === 'source-reduce') await verifyReductionOutput(v.value);
+        if (v.type === 'effect') assertEffectResult(v.value);
+        else if (v.type === 'source-reduce') await verifyReductionOutput(v.value);
         else if (v.type === 'source') await verifySourceResult(v.value);
         else if (v.type === 'document') assertDocumentResult(v.value);
         else if (v.type === 'skill') assertSkillVersion(v.value);
@@ -96,6 +99,9 @@ export default function TypedRunResults({
         <SourceResultView runId={runId} nodeId={value.nodeId} value={value.value} />
       )}
       {value?.type === 'context' && <ContextResultView value={value.value} />}
+      {value?.type === 'effect' && (
+        <EffectResultView key={id} value={value.value} openRun={openRun} />
+      )}
       {value?.type === 'conversation' && <ConversationResultView value={value.value} />}
       {value?.type === 'browser' && value.operation === 'collect' && (
         <BrowserFieldsResultView key={id} value={value.value} />

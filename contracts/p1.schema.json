@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.39.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.40.0/p1.schema.json",
   "title": "FlowArk P1 0.35.0: fixed conversation source resources and bounded reads",
   "$defs": {
     "Json": {
@@ -2128,6 +2128,210 @@
             "fields"
           ],
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "type": {
+              "const": "effect"
+            },
+            "version": {
+              "const": 1
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 3600000
+            },
+            "operation": {
+              "const": "prepare"
+            },
+            "action": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{0,99}$"
+            },
+            "key": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000,
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "$ref"
+                  ],
+                  "properties": {
+                    "$ref": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2000
+                    }
+                  }
+                }
+              ]
+            },
+            "description": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 0,
+                  "maxLength": 1000
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "$ref"
+                  ],
+                  "properties": {
+                    "$ref": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2000
+                    }
+                  }
+                }
+              ]
+            },
+            "review": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "version",
+                    "target",
+                    "content"
+                  ],
+                  "properties": {
+                    "version": {
+                      "const": 1
+                    },
+                    "target": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4096,
+                          "pattern": "\\S"
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "$ref"
+                          ],
+                          "properties": {
+                            "$ref": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2000
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "content": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 0,
+                          "maxLength": 100000
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "$ref"
+                          ],
+                          "properties": {
+                            "$ref": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2000
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "version",
+            "operation",
+            "action",
+            "key"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "type": {
+              "const": "effect"
+            },
+            "version": {
+              "const": 1
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 3600000
+            },
+            "operation": {
+              "const": "resolve"
+            },
+            "receipt": {
+              "$ref": "#/$defs/Value"
+            },
+            "state": {
+              "enum": [
+                "confirmed",
+                "failed",
+                "unknown"
+              ]
+            },
+            "evidence": {
+              "$ref": "#/$defs/Value"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "version",
+            "operation",
+            "receipt",
+            "state"
+          ]
         }
       ]
     },
@@ -11374,6 +11578,319 @@
         "renderPolicy"
       ],
       "additionalProperties": false
+    },
+    "EffectPrepareNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "type": {
+          "const": "effect"
+        },
+        "version": {
+          "const": 1
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 3600000
+        },
+        "operation": {
+          "const": "prepare"
+        },
+        "action": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,99}$"
+        },
+        "key": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "pattern": "\\S"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "$ref"
+              ],
+              "properties": {
+                "$ref": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                }
+              }
+            }
+          ]
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 1000
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "$ref"
+              ],
+              "properties": {
+                "$ref": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                }
+              }
+            }
+          ]
+        },
+        "review": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "version",
+                "target",
+                "content"
+              ],
+              "properties": {
+                "version": {
+                  "const": 1
+                },
+                "target": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 4096,
+                      "pattern": "\\S"
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "$ref"
+                      ],
+                      "properties": {
+                        "$ref": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2000
+                        }
+                      }
+                    }
+                  ]
+                },
+                "content": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 0,
+                      "maxLength": 100000
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "$ref"
+                      ],
+                      "properties": {
+                        "$ref": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2000
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "version",
+        "operation",
+        "action",
+        "key"
+      ]
+    },
+    "EffectResolveNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "type": {
+          "const": "effect"
+        },
+        "version": {
+          "const": 1
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 3600000
+        },
+        "operation": {
+          "const": "resolve"
+        },
+        "receipt": {
+          "$ref": "#/$defs/Value"
+        },
+        "state": {
+          "enum": [
+            "confirmed",
+            "failed",
+            "unknown"
+          ]
+        },
+        "evidence": {
+          "$ref": "#/$defs/Value"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "version",
+        "operation",
+        "receipt",
+        "state"
+      ]
+    },
+    "EffectNode": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/EffectPrepareNode"
+        },
+        {
+          "$ref": "#/$defs/EffectResolveNode"
+        }
+      ]
+    },
+    "EffectPrepareResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "operation",
+        "id",
+        "action",
+        "key",
+        "runId",
+        "execute",
+        "state"
+      ],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "operation": {
+          "const": "prepare"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "action": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,99}$"
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "\\S"
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "execute": {
+          "type": "boolean"
+        },
+        "state": {
+          "enum": [
+            "submitting",
+            "confirmed",
+            "failed",
+            "unknown"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "execute": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "state": {
+                "const": "submitting"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "EffectResolveResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "operation",
+        "id",
+        "state"
+      ],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "operation": {
+          "const": "resolve"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "state": {
+          "enum": [
+            "confirmed",
+            "failed",
+            "unknown"
+          ]
+        }
+      }
     }
   }
 }

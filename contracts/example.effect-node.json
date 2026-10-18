@@ -1,0 +1,51 @@
+{
+  "prepare": {
+    "id": "prepare",
+    "type": "effect",
+    "version": 1,
+    "operation": "prepare",
+    "action": "save-document",
+    "key": {
+      "$ref": "params.operationKey"
+    },
+    "description": "保存已核对的虚构文档",
+    "review": {
+      "version": 1,
+      "target": {
+        "$ref": "params.target"
+      },
+      "content": {
+        "$ref": "params.content"
+      }
+    }
+  },
+  "prepareResult": {
+    "version": 1,
+    "operation": "prepare",
+    "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "action": "save-document",
+    "key": "fictional-document-v1",
+    "runId": "fictional-run",
+    "execute": true,
+    "state": "submitting"
+  },
+  "resolve": {
+    "id": "resolve",
+    "type": "effect",
+    "version": 1,
+    "operation": "resolve",
+    "receipt": {
+      "$ref": "steps.prepare"
+    },
+    "state": "confirmed",
+    "evidence": {
+      "$ref": "steps.verify"
+    }
+  },
+  "resolveResult": {
+    "version": 1,
+    "operation": "resolve",
+    "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "state": "confirmed"
+  }
+}

@@ -142,6 +142,27 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
           '前序步骤',
           '创建草稿须先判断status；读取固定确认版本不会授予模型或发送权限',
         );
+    if (node.type === 'effect') {
+      const labels: Record<string, string> = {
+        execute: '允许执行',
+        state: '状态',
+        id: '操作身份',
+        action: '声明动作',
+        key: '原去重键',
+        runId: '来源运行',
+      };
+      for (const key of node.operation === 'prepare'
+        ? ['execute', 'state', 'id', 'action', 'key', 'runId']
+        : ['id', 'state'])
+        add(
+          path + '.' + key,
+          label + ' / ' + labels[key],
+          '前序步骤',
+          key === 'execute'
+            ? '仅严格为真才进入实际动作；完整准备回执用于本次登记'
+            : '固定回执字段；历史或去重回执不能重新授权',
+        );
+    }
     if (node.type === 'context')
       for (const key of [
         'value',

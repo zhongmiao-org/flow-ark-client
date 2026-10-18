@@ -23,11 +23,21 @@ import {
 import type { ConversationCheckpoint } from '../shared/conversation-thread';
 import type { SourceNode } from '../shared/conversation-source';
 import type { ReductionTarget } from '../shared/source-reduction';
+import { assertEffectResult, effectOperations } from '../shared/effect-node';
+import { sha256 as effectId } from '../../contracts/package-format';
 export type TypedResultMeta = {
   id: string;
   nodeId: string;
   nodeInstance: string;
-  type: 'document' | 'skill' | 'context' | 'conversation' | 'browser' | 'source' | 'source-reduce';
+  type:
+    | 'document'
+    | 'skill'
+    | 'context'
+    | 'conversation'
+    | 'browser'
+    | 'source'
+    | 'source-reduce'
+    | 'effect';
   label: string;
   bytes: number;
   sha256: string;
@@ -51,7 +61,8 @@ export class TypedResults {
     const snapshot = this.store.get<FlowRecord>('snapshot', runId);
     const node = snapshot && walk(snapshot.flow.steps).find((n) => n.id === nodeId);
     if (!node || node.type !== type) throw Error('结构化结果不属于当前快照');
-    if (type === 'source-reduce') this.checkReduction(runId, nodeId, nodeInstance, value);
+    if (type === 'effect') this.effectResult(runId, nodeId, value);
+    else if (type === 'source-reduce') this.checkReduction(runId, nodeId, nodeInstance, value);
     else if (type === 'source') this.checkSource(snapshot!, nodeId, value);
     else if (type === 'document') assertDocumentResult(value);
     else if (type === 'skill') assertSkillVersion(value);
@@ -81,9 +92,11 @@ export class TypedResults {
       label:
         typeof node.name === 'string' && node.name.trim()
           ? node.name
-          : node.type === 'context'
-            ? contextOperations[node.operation]
-            : node.id,
+          : node.type === 'effect'
+            ? effectOperations[node.operation]
+            : node.type === 'context'
+              ? contextOperations[node.operation]
+              : node.id,
       bytes,
       sha256,
     };
@@ -111,6 +124,40 @@ export class TypedResults {
       this.store.put('typed-run-index', runId, { entries: [...entries, meta] });
     });
   }
+  private effectResult(runId: string, nodeId: string, value: unknown) {
+    assertEffectResult(value);
+    const snapshot = this.store.get<FlowRecord>('snapshot', runId);
+    const node = snapshot && walk(snapshot.flow.steps).find((n) => n.id === nodeId);
+    const ref = snapshot?.bindings.template;
+    const record = this.store.get<any>('template-effect', value.id);
+    if (
+      !ref ||
+      node?.type !== 'effect' ||
+      node.operation !== value.operation ||
+      !record ||
+      record.instanceId !== ref.instanceId ||
+      value.id !== effectId(ref.instanceId + ':' + record.action + ':' + record.key)
+    )
+      throw Error('操作记录结果与原运行不一致');
+    if (value.operation === 'prepare') {
+      if (
+        node.operation !== 'prepare' ||
+        value.action !== node.action ||
+        record.action !== value.action ||
+        record.key !== value.key ||
+        record.runId !== value.runId ||
+        (value.execute && value.runId !== runId)
+      )
+        throw Error('准备回执与实际账本不一致');
+    } else if (
+      node.operation !== 'resolve' ||
+      value.state !== node.state ||
+      record.runId !== runId ||
+      record.state !== value.state
+    )
+      throw Error('登记回执与实际账本不一致');
+    // Prepared receipts are immutable historical facts; the ledger may since have become terminal.
+  }
   list(runId: string): TypedResultMeta[] {
     return this.store.get<{ entries: TypedResultMeta[] }>('typed-run-index', runId)?.entries ?? [];
   }
@@ -122,14 +169,16 @@ export class TypedResults {
       );
     if (
       !run ||
-      (!['context', 'source-reduce'].includes(r?.meta.type ?? '') && run.state !== 'SUCCEEDED') ||
+      (!['context', 'source-reduce', 'effect'].includes(r?.meta.type ?? '') &&
+        run.state !== 'SUCCEEDED') ||
       !r ||
       r.runId !== runId ||
       !this.list(runId).some((e) => e.id === id)
     )
       throw Error('完整结构化结果尚不可采用');
     if (digest(r.value) !== r.meta.sha256) throw Error('结构化结果摘要不一致');
-    if (r.meta.type === 'source-reduce')
+    if (r.meta.type === 'effect') this.effectResult(runId, r.meta.nodeId, r.value);
+    else if (r.meta.type === 'source-reduce')
       this.checkReduction(runId, r.meta.nodeId, r.meta.nodeInstance, r.value);
     else if (r.meta.type === 'source')
       this.checkSource(this.store.get<FlowRecord>('snapshot', runId)!, r.meta.nodeId, r.value);

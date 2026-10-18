@@ -509,6 +509,105 @@ export class Templates {
       if (run?.state === 'WAITING_INPUT' && !signal.aborted) this.store.state(runId, 'RUNNING');
     }
   }
+  async effectPrepare(
+    record: FlowRecord,
+    runId: string,
+    q: any,
+    signal: AbortSignal,
+    active: () => void = () => {},
+  ) {
+    const check = () => {
+      signal.throwIfAborted();
+      active();
+    };
+    check();
+    const { entry, ref } = await this.context(record);
+    check();
+    if (!entry.capabilities.includes('effect')) throw Error('入口未声明能力：effect');
+    if (!q || typeof q !== 'object') throw Error('准备操作参数无效');
+    if (q.review !== undefined) {
+      if (!entry.capabilities.includes('human-review-v1'))
+        throw Error('入口未声明能力：human-review-v1');
+      validateObject<TemplateHumanReview>('TemplateHumanReview', q.review);
+    }
+    if (!entry.actions.includes(q.action) || typeof q.key !== 'string' || !q.key)
+      throw Error('动作未声明或缺少去重键');
+    const grant = record.bindings.grants?.[q.action];
+    if (grant !== 'auto' && grant !== 'confirm') throw Error('动作未授权');
+    const id = sha256(ref.instanceId + ':' + q.action + ':' + q.key),
+      old = this.store.get<any>('template-effect', id);
+    if (old) return { ...old, execute: false };
+    if (grant === 'confirm') {
+      const accepted = await this.human(
+        runId,
+        {
+          title: '确认：' + q.action,
+          description: q.description ?? '',
+          ...(q.review !== undefined ? { review: q.review } : {}),
+          schema: { type: 'boolean' },
+        },
+        signal,
+      );
+      check();
+      if (!accepted) throw Error('用户未确认动作');
+      this.store.put('template-approval', runId + ':' + q.action, { runId, action: q.action });
+    }
+    check();
+    return this.store.tx(() => {
+      check();
+      const existing = this.store.get<any>('template-effect', id);
+      if (existing) return { ...existing, execute: false };
+      const effect = {
+        id,
+        instanceId: ref.instanceId,
+        runId,
+        action: q.action,
+        key: q.key,
+        state: 'submitting',
+        time: new Date().toISOString(),
+      };
+      this.store.put('template-effect', id, effect);
+      return { ...effect, execute: true };
+    });
+  }
+  async effectResolve(
+    record: FlowRecord,
+    runId: string,
+    q: any,
+    signal: AbortSignal,
+    active: () => void = () => {},
+  ) {
+    const check = () => {
+      signal.throwIfAborted();
+      active();
+    };
+    check();
+    const { entry, ref } = await this.context(record);
+    check();
+    if (!entry.capabilities.includes('effect')) throw Error('入口未声明能力：effect');
+    const result = this.store.tx(() => {
+      check();
+      const old = q && this.store.get<any>('template-effect', q.id);
+      if (
+        !old ||
+        old.instanceId !== ref.instanceId ||
+        old.runId !== runId ||
+        old.state !== 'submitting' ||
+        !entry.actions.includes(old.action) ||
+        !['confirmed', 'failed', 'unknown'].includes(q.state)
+      )
+        throw Error('动作状态不能变更');
+      this.store.put('template-effect', q.id, {
+        ...old,
+        state: q.state,
+        evidence: q.evidence ?? null,
+      });
+      if (q.state === 'unknown') this.store.templateEffectAttention(old, '模板未能确认操作结果。');
+      return true;
+    });
+    if (q.state === 'unknown') void this.notify().catch(() => {});
+    return result;
+  }
   async call(
     record: FlowRecord,
     runId: string,
@@ -658,74 +757,10 @@ export class Templates {
         void this.notify().catch(() => {});
         return item;
       }
-      case 'effect.prepare': {
-        need('effect');
-        const q = args.request;
-        if (q.review !== undefined) {
-          need('human-review-v1');
-          validateObject<TemplateHumanReview>('TemplateHumanReview', q.review);
-        }
-        if (!entry.actions.includes(q.action) || typeof q.key !== 'string' || !q.key)
-          throw new Error('动作未声明或缺少去重键');
-        const grant = record.bindings.grants?.[q.action];
-        if (grant === 'deny' || !grant) throw new Error('动作未授权');
-        const id = sha256(ref.instanceId + ':' + q.action + ':' + q.key),
-          old = this.store.get<any>('template-effect', id);
-        if (old) return { ...old, execute: false };
-        if (grant === 'confirm') {
-          const accepted = await this.human(
-            runId,
-            {
-              title: '确认：' + q.action,
-              description: q.description ?? '',
-              ...(q.review !== undefined ? { review: q.review } : {}),
-              schema: { type: 'boolean' },
-            },
-            signal,
-          );
-          if (!accepted) throw new Error('用户未确认动作');
-          signal.throwIfAborted();
-          this.store.put('template-approval', runId + ':' + q.action, { runId, action: q.action });
-        }
-        return this.store.tx(() => {
-          const existing = this.store.get<any>('template-effect', id);
-          if (existing) return { ...existing, execute: false };
-          const effect = {
-            id,
-            instanceId: ref.instanceId,
-            runId,
-            action: q.action,
-            key: q.key,
-            state: 'submitting',
-            time: new Date().toISOString(),
-          };
-          this.store.put('template-effect', id, effect);
-          return { ...effect, execute: true };
-        });
-      }
-      case 'effect.resolve': {
-        need('effect');
-        const q = args.request,
-          old = this.store.get<any>('template-effect', q.id);
-        if (
-          !old ||
-          old.instanceId !== ref.instanceId ||
-          old.runId !== runId ||
-          old.state !== 'submitting' ||
-          !['confirmed', 'failed', 'unknown'].includes(q.state)
-        )
-          throw new Error('动作状态不能变更');
-        this.store.tx(() => {
-          this.store.put('template-effect', q.id, {
-            ...old,
-            state: q.state,
-            evidence: q.evidence ?? null,
-          });
-          if (q.state === 'unknown')
-            this.store.templateEffectAttention(old, '模板未能确认操作结果。');
-        });
-        return true;
-      }
+      case 'effect.prepare':
+        return this.effectPrepare(record, runId, args.request, signal);
+      case 'effect.resolve':
+        return this.effectResolve(record, runId, args.request, signal);
       case 'result':
         validateData(jsonFile(pkg.files, entry.resultSchema), args.value);
         this.store.put('template-result', runId, args.value);
@@ -748,12 +783,15 @@ export class Templates {
         q.reject(new Error('运行已结束'));
         this.questions.delete(id);
       }
+    let unknown = false;
     this.store.tx(() => {
       for (const effect of this.store.list<any>('template-effect'))
         if (effect.runId === runId && effect.state === 'submitting') {
           this.store.put('template-effect', effect.id, { ...effect, state: 'unknown' });
           this.store.templateEffectAttention(effect, '运行已结束，但操作结果尚未确认。');
+          unknown = true;
         }
     });
+    if (unknown) void this.notify().catch(() => {});
   }
 }

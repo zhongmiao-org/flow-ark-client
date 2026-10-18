@@ -45,6 +45,20 @@ const operations: Record<string, string> = {
 
 function fields(node: Step): [string, string][] {
   switch (node.type) {
+    case 'effect':
+      return node.operation === 'prepare'
+        ? [
+            ['操作', '准备操作'],
+            ['声明动作', node.action || '尚未选择'],
+            ['去重键', configured(node.key)],
+            ['核对内容', node.review ? '目标与完整正文' : '沿用动作授权确认'],
+          ]
+        : [
+            ['操作', '登记结果'],
+            ['准备回执', configured(node.receipt)],
+            ['状态', { confirmed: '已确认', failed: '失败', unknown: '结果未知' }[node.state]],
+            ['证据', configured(node.evidence)],
+          ];
     case 'context':
       return [
         [
