@@ -1,4 +1,5 @@
 import { assertSkillUpdateNode } from '../../contracts/skill-update-review';
+import { assertBrowserFieldsNode, browserFieldsCapability } from '../shared/browser-fields';
 import { assertContinuousConversationCapabilities } from '../../contracts/continuous-conversation';
 import { assertConversationSourceNode } from '../../contracts/conversation-source';
 import { sourceCapability } from '../shared/conversation-source';
@@ -39,6 +40,7 @@ export const capabilities = [
   sourceCapability,
   'source',
   browserInspectionCapability,
+  browserFieldsCapability,
   'conversation-evidence-v1',
   'conversation-v2',
   'conversation-checkpoint-v1',
@@ -151,6 +153,15 @@ export function validateFlow(value: unknown): Flow {
         mappingPreview(n, parameters);
       }
       if (n.type === 'browser') {
+        if (n.version === 5) {
+          assertBrowserFieldsNode(n);
+          if (
+            !['browser', browserFieldsCapability].every((c) =>
+              flow.requiredCapabilities.includes(c),
+            )
+          )
+            throw Error('关联字段节点需要声明browser和browser-fields-v1能力');
+        }
         if (n.version === 4) {
           if (!flow.requiredCapabilities.includes(browserInspectionCapability))
             throw Error('网页只读节点需要声明browser-observe-v1能力');

@@ -1,4 +1,4 @@
-import type { Step } from '../shared/types';
+import type { Step, Json } from '../shared/types';
 
 export type BrowserNode = Extract<Step, { type: 'browser' }>;
 export type BrowserOperation = BrowserNode['operation'];
@@ -9,10 +9,17 @@ export const browserActions: Record<
     label: string;
     detail: string;
     keywords: string;
-    value: BrowserNode['value'];
-    version: 2 | 3 | 4;
+    value: Json;
+    version: 2 | 3 | 4 | 5;
   }
 > = {
+  collect: {
+    label: '读取关联字段',
+    detail: '在唯一根元素内同步采集指定字段，分别保留缺失、空值和不唯一状态',
+    keywords: 'collect fields 关联字段 同次 只读',
+    value: null,
+    version: 5,
+  },
   url: {
     label: '读取当前网址',
     detail: '读取所选浏览器顶层页面的实际地址，不进行导航',
@@ -126,8 +133,26 @@ export function changeBrowserOperation(
 ): BrowserNode {
   const preset = browserActions[operation];
   const topLevel = ['navigate', 'screenshot', 'url'].includes(operation);
+  const base = {
+    id: node.id,
+    type: 'browser' as const,
+    ...(node.name !== undefined ? { name: node.name } : {}),
+    ...(node.timeoutMs !== undefined ? { timeoutMs: node.timeoutMs } : {}),
+  };
+  if (operation === 'collect')
+    return {
+      ...base,
+      version: 5,
+      operation,
+      selector: node.selector || 'body',
+      framePath: 'framePath' in node ? node.framePath : [],
+      fields:
+        node.version === 5
+          ? node.fields
+          : [{ key: 'field1', selector: '', operation: 'text', attribute: null, required: true }],
+    };
   return {
-    ...node,
+    ...base,
     operation,
     version: preset.version === 4 ? 4 : node.version === 3 ? 3 : preset.version,
     selector: topLevel
@@ -144,6 +169,16 @@ export function changeBrowserOperation(
 
 export function newBrowserStep(operation: BrowserOperation): BrowserNode {
   const preset = browserActions[operation];
+  if (operation === 'collect')
+    return {
+      id: 'n_' + crypto.randomUUID().slice(0, 8),
+      type: 'browser',
+      version: 5,
+      operation,
+      selector: 'body',
+      framePath: [],
+      fields: [{ key: 'field1', selector: '', operation: 'text', attribute: null, required: true }],
+    };
   return {
     id: 'n_' + crypto.randomUUID().slice(0, 8),
     type: 'browser',

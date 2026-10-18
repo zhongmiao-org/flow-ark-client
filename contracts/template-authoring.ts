@@ -1,3 +1,4 @@
+import { assertBrowserFieldsCapabilities } from './browser-fields';
 import { assertSkillUpdateNode } from './skill-update-review';
 import { assertSourceReductionNode } from './source-reduction';
 import { assertConversationSourceNode } from './conversation-source';
@@ -117,6 +118,7 @@ export function validateAuthorDefinition(value: unknown): any {
       if (!d.actions.some((a: any) => a.id === id)) throw Error('入口引用未知动作：' + id);
     const steps = nodes(entry.flow.steps);
     for (const node of steps) {
+      assertBrowserFieldsCapabilities(node, entry.flow.requiredCapabilities, d, { resources: entry.resourceIds });
       assertAIOutcomeCapabilities(node, entry.flow.requiredCapabilities);
       assertContinuousConversationCapabilities(node, entry.flow.requiredCapabilities);
       assertConversationSourceNode(node, entry.flow.requiredCapabilities, d, { capabilities: entry.flow.requiredCapabilities, resources: entry.resourceIds });

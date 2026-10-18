@@ -10,6 +10,7 @@ import { browserActions, changeBrowserOperation } from './browser-actions';
 import ValueField from './ValueField';
 import type { ReferenceChoice } from './value-references';
 import './node-configuration.css';
+import BrowserFieldsConfiguration from './BrowserFieldsConfiguration';
 
 type BrowserNode = Extract<Step, { type: 'browser' }>;
 export default function BrowserNodeConfiguration({
@@ -89,6 +90,24 @@ export default function BrowserNodeConfiguration({
     JSON.stringify(target.framePath) === pathKey
       ? target
       : null;
+  if (node.version === 5)
+    return (
+      <section className="node-configuration">
+        <label htmlFor={fieldId + 'collect-operation'}>操作</label>
+        <Select
+          id={fieldId + 'collect-operation'}
+          value={node.operation}
+          options={Object.entries(browserActions).map(([value, a]) => ({ value, label: a.label }))}
+          onChange={(operation) => change(changeBrowserOperation(node, operation))}
+        />
+        <BrowserFieldsConfiguration
+          node={node}
+          change={change}
+          choices={choices}
+          summaryOnly={!fieldsOnly}
+        />
+      </section>
+    );
   const topLevel = ['navigate', 'screenshot', 'url'].includes(node.operation);
   const picker = (
     <Fragment key="picker">

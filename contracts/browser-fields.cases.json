@@ -1,0 +1,1356 @@
+[
+  {
+    "name": "关联字段节点",
+    "definition": "BrowserFieldsNode",
+    "valid": true,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "定位及属性引用",
+    "definition": "BrowserFieldsNode",
+    "valid": true,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": {
+        "$ref": "params.root"
+      },
+      "framePath": [],
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": {
+            "$ref": "steps.previous.selector"
+          },
+          "operation": "attribute",
+          "attribute": {
+            "$ref": "item.attribute"
+          },
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "显式框架路径",
+    "definition": "BrowserFieldsNode",
+    "valid": true,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [
+        "iframe#outer",
+        "iframe#inner"
+      ],
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "不接受写入",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "click",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "不复用旧版本",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 4,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "根定位不能为空",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "根定位不能空白",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "  ",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "不接受引用附加键",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": {
+        "$ref": "params.root",
+        "fallback": "body"
+      },
+      "framePath": [],
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "至少一个字段",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": []
+    }
+  },
+  {
+    "name": "字段至多二十项",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "框架至多八层",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [
+        "iframe",
+        "iframe",
+        "iframe",
+        "iframe",
+        "iframe",
+        "iframe",
+        "iframe",
+        "iframe",
+        "iframe"
+      ],
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "框架定位不能为空",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [
+        ""
+      ],
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "拒绝旧操作多余字段",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ],
+      "value": null
+    }
+  },
+  {
+    "name": "字段名不能有点",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "bad.key",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "字段名不能数字开头",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "1name",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "字段名限长",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "相对定位不能为空",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "必填严格布尔",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": "true"
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "操作必须明确",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "read",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "属性方式需属性名",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "属性名不接受表达式",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "a || b",
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "属性引用拒绝多键",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": {
+            "$ref": "params.a",
+            "extra": true
+          },
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "文字方式属性严格空值",
+    "definition": "BrowserFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": "href",
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "完整结果",
+    "definition": "BrowserFieldsResult",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "operation": "collect",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "R-2048"
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例条目"
+        }
+      ]
+    }
+  },
+  {
+    "name": "缺失必填项格式",
+    "definition": "BrowserFieldsResult",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "operation": "collect",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": false,
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "R-2048"
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 0,
+          "status": "missing",
+          "value": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "可选缺失属性格式",
+    "definition": "BrowserFieldsResult",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "operation": "collect",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": false,
+          "count": 1,
+          "status": "missing-attribute",
+          "value": null
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例条目"
+        }
+      ]
+    }
+  },
+  {
+    "name": "空属性保持空文本",
+    "definition": "BrowserFieldsResult",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "operation": "collect",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": false,
+          "count": 1,
+          "status": "empty",
+          "value": ""
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例条目"
+        }
+      ]
+    }
+  },
+  {
+    "name": "不唯一保留计数",
+    "definition": "BrowserFieldsResult",
+    "valid": true,
+    "value": {
+      "version": 1,
+      "operation": "collect",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": false,
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true,
+          "count": 2,
+          "status": "ambiguous",
+          "value": null
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例条目"
+        }
+      ]
+    }
+  },
+  {
+    "name": "完整性严格布尔",
+    "definition": "BrowserFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "collect",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": "true",
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "R-2048"
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例条目"
+        }
+      ]
+    }
+  },
+  {
+    "name": "文档网址不能为空",
+    "definition": "BrowserFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "collect",
+      "url": "https://example.org/records",
+      "documentUrl": "",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "R-2048"
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例条目"
+        }
+      ]
+    }
+  },
+  {
+    "name": "顶层网址不能空值",
+    "definition": "BrowserFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "collect",
+      "url": null,
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "R-2048"
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例条目"
+        }
+      ]
+    }
+  },
+  {
+    "name": "不能附带身份声明",
+    "definition": "BrowserFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "collect",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "R-2048"
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例条目"
+        }
+      ],
+      "accountVerified": true
+    }
+  },
+  {
+    "name": "计数不能负数",
+    "definition": "BrowserFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "collect",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true,
+          "count": -1,
+          "status": "ok",
+          "value": "R-2048"
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例条目"
+        }
+      ]
+    }
+  },
+  {
+    "name": "计数不能小数",
+    "definition": "BrowserFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "collect",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true,
+          "count": 1.5,
+          "status": "ok",
+          "value": "R-2048"
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例条目"
+        }
+      ]
+    }
+  },
+  {
+    "name": "计数必须安全整数",
+    "definition": "BrowserFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "collect",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true,
+          "count": 9007199254740992,
+          "status": "ok",
+          "value": "R-2048"
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例条目"
+        }
+      ]
+    }
+  },
+  {
+    "name": "状态枚举固定",
+    "definition": "BrowserFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "collect",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true,
+          "count": 1,
+          "status": "success",
+          "value": "R-2048"
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例条目"
+        }
+      ]
+    }
+  },
+  {
+    "name": "值不能对象",
+    "definition": "BrowserFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "collect",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": {}
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例条目"
+        }
+      ]
+    }
+  },
+  {
+    "name": "值限字符长度",
+    "definition": "BrowserFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "collect",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "recordId",
+          "selector": "[data-record]",
+          "operation": "attribute",
+          "attribute": "data-id",
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        },
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例条目"
+        }
+      ]
+    }
+  }
+]

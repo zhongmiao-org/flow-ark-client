@@ -8,6 +8,8 @@ import { describeElement } from './element-description';
 import type { PointIdentity } from './embedded-point-target';
 import type { ElementTarget } from '../shared/element-picker';
 import type { ObservationPan } from '../shared/browser-observation';
+import { resolvedBrowserFields, assertBrowserFieldsResult } from '../shared/browser-fields';
+import { readBrowserFields } from './browser-fields-dom';
 type Scope = {
   context: number;
   session?: string;
@@ -26,11 +28,16 @@ export class EmbeddedPage {
   readonly picker: EmbeddedPicker;
   private abort = new AbortController();
   private frames = new Map<string, string>();
+  private documentEpoch = 0;
+  private navigationStarted = () => {
+    this.documentEpoch++;
+  };
   constructor(
     readonly contents: WebContents,
     coordinates: (mouse: MouseInputEvent) => { x: number; y: number },
   ) {
     contents.debugger.attach('1.3');
+    contents.on('did-start-navigation', this.navigationStarted);
     this.picker = new EmbeddedPicker(
       contents,
       (m, p, s) => this.send(m, p, s),
@@ -39,6 +46,17 @@ export class EmbeddedPage {
       coordinates,
     );
     contents.debugger.on('message', (_event, method, params) => {
+      if (
+        [
+          'Page.frameRequestedNavigation',
+          'Page.frameStartedLoading',
+          'Page.frameNavigated',
+          'Page.frameDetached',
+          'Target.attachedToTarget',
+          'Target.detachedFromTarget',
+        ].includes(method)
+      )
+        this.documentEpoch++;
       if (method === 'Target.attachedToTarget' && params.targetInfo.type === 'iframe') {
         this.frames.set(params.targetInfo.targetId, params.sessionId);
         void this.send('Page.enable', {}, params.sessionId).catch(() => {});
@@ -326,6 +344,7 @@ export class EmbeddedPage {
     const path = framePathOf(command),
       remaining = commandBudget(command.timeoutMs);
     this.abort.signal.throwIfAborted();
+    if (command.operation === 'collect') return this.collect(command, path, remaining);
     if (command.operation === 'navigate') {
       const url = new URL(String(command.value));
       if (!['https:', 'http:'].includes(url.protocol)) throw new Error('只支持 HTTP(S) 网页');
@@ -485,6 +504,90 @@ export class EmbeddedPage {
       );
     }
   }
+  private async collect(command: BrowserCommand, path: string[], remaining: () => number) {
+    const node = resolvedBrowserFields({
+      id: 'driver',
+      type: 'browser',
+      version: 5,
+      operation: 'collect',
+      selector: command.selector,
+      framePath: path,
+      fields: command.fields,
+    });
+    if (this.contents.isLoading()) throw Error('网页正在加载，关联采集未开始');
+    const epoch = this.documentEpoch,
+      url = this.contents.getURL();
+    const verify = () => {
+      remaining();
+      this.abort.signal.throwIfAborted();
+      if (
+        this.documentEpoch !== epoch ||
+        this.contents.getURL() !== url ||
+        this.contents.isLoading()
+      )
+        throw Error('采集期间网页或框架发生导航/更换，整次结果未采用');
+    };
+    const { frameTree } = await this.send('Page.getFrameTree');
+    let frameId: string = frameTree.frame.id,
+      session: string | undefined;
+    let scope = await this.world(frameId, session);
+    const chain: { scope: Scope; frameId: string; loaderId: string }[] = [];
+    const remember = async () => {
+      const { frameTree } = await this.send('Page.getFrameTree', {}, scope.session);
+      const find = (tree: any): any =>
+        tree.frame.id === frameId ? tree.frame : (tree.childFrames ?? []).map(find).find(Boolean);
+      const frame = find(frameTree);
+      if (!frame?.loaderId) throw Error('无法核对采集框架文档身份');
+      chain.push({ scope, frameId, loaderId: frame.loaderId });
+    };
+    await remember();
+    for (const selector of path) {
+      verify();
+      const parent = scope;
+      const handle = await this.evaluate(
+        scope,
+        `(()=>{const found=document.querySelectorAll(${JSON.stringify(selector)});if(found.length!==1||found[0].tagName!=='IFRAME')throw Error('采集框架须唯一匹配 iframe');return found[0];})()`,
+        false,
+      );
+      if (!handle.objectId) throw Error('采集框架不可用');
+      try {
+        const { node: element } = await this.send(
+          'DOM.describeNode',
+          { objectId: handle.objectId },
+          scope.session,
+        );
+        if (!element.frameId) throw Error('采集框架不可用');
+        frameId = element.frameId;
+        session = this.frames.get(frameId) ?? scope.session;
+        scope = await this.world(frameId, session);
+        await remember();
+      } finally {
+        await this.send(
+          'Runtime.releaseObject',
+          { objectId: handle.objectId },
+          parent.session,
+        ).catch(() => {});
+      }
+    }
+    verify();
+    const result = await this.evaluate(
+      scope,
+      `(${readBrowserFields.toString()})(${JSON.stringify({ selector: node.selector, fields: node.fields, framePath: path, url })})`,
+    );
+    for (const prior of chain) {
+      const { frameTree } = await this.send('Page.getFrameTree', {}, prior.scope.session);
+      const find = (tree: any): any =>
+        tree.frame.id === prior.frameId
+          ? tree.frame
+          : (tree.childFrames ?? []).map(find).find(Boolean);
+      if (find(frameTree)?.loaderId !== prior.loaderId)
+        throw Error('采集框架文档已更换，整次结果未采用');
+      await this.evaluate(prior.scope, 'document.readyState');
+    }
+    verify();
+    assertBrowserFieldsResult(node, result);
+    return result;
+  }
   private async revealTarget(scope: Scope, element: string) {
     const root = scope.ancestors[0]?.scope ?? scope;
     const viewport = await this.evaluate(
@@ -595,6 +698,7 @@ export class EmbeddedPage {
     }
   }
   stop() {
+    this.contents.removeListener('did-start-navigation', this.navigationStarted);
     this.picker.dispose();
     this.abort.abort(new Error('网页会话已关闭'));
   }

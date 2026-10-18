@@ -354,34 +354,36 @@ export default function TaskRepairPage({
                   onKeyDown: activateCollapseWithSpace,
                   children: (
                     <div className="feedback-body">
-                      {node?.type === 'browser' && node.version !== 4 && (
-                        <ElementPicker
-                          selector={node.selector}
-                          framePath={'framePath' in node ? node.framePath : []}
-                          allowInspect={false}
-                          active={active && phase === 'pick'}
-                          disabled={busy || generating}
-                          onStart={() => {
-                            setError('');
-                            discardSelection();
-                          }}
-                          onSelect={(target, requestId) => {
-                            if (!location.current.active || location.current.phase !== 'pick') {
-                              void api('browser.embedded.pick.cancel', { requestId }).catch(
-                                () => {},
-                              );
-                              return;
+                      {node?.type === 'browser' &&
+                        node.version < 4 &&
+                        typeof node.selector === 'string' && (
+                          <ElementPicker
+                            selector={node.selector}
+                            framePath={'framePath' in node ? node.framePath : []}
+                            allowInspect={false}
+                            active={active && phase === 'pick'}
+                            disabled={busy || generating}
+                            onStart={() => {
+                              setError('');
+                              discardSelection();
+                            }}
+                            onSelect={(target, requestId) => {
+                              if (!location.current.active || location.current.phase !== 'pick') {
+                                void api('browser.embedded.pick.cancel', { requestId }).catch(
+                                  () => {},
+                                );
+                                return;
+                              }
+                              ownPick.current = requestId;
+                              setPicked({ target, requestId });
+                              setPreview(undefined);
+                              setReviewed(false);
+                            }}
+                            onInspect={() =>
+                              setError('验证原定位不等于重新选择，请从网页选取修复目标。')
                             }
-                            ownPick.current = requestId;
-                            setPicked({ target, requestId });
-                            setPreview(undefined);
-                            setReviewed(false);
-                          }}
-                          onInspect={() =>
-                            setError('验证原定位不等于重新选择，请从网页选取修复目标。')
-                          }
-                        />
-                      )}
+                          />
+                        )}
                     </div>
                   ),
                 },

@@ -205,6 +205,13 @@ export function declareNativeBoundaries(
     }
     if (node.type === 'http') writes ||= node.method !== 'GET';
     if (node.type === 'browser') {
+      if (node.version === 5) {
+        for (const capability of ['browser', 'browser-fields-v1']) {
+          if (!entry.capabilities.includes(capability)) entry.capabilities.push(capability);
+          if (!flow.requiredCapabilities.includes(capability))
+            flow.requiredCapabilities.push(capability);
+        }
+      }
       if (node.version === 4) {
         if (!entry.capabilities.includes('browser-observe-v1'))
           entry.capabilities.push('browser-observe-v1');

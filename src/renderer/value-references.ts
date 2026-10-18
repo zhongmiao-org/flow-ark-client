@@ -232,10 +232,21 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
                 navigate: ['url', 'title'],
                 click: ['clicked', 'verified'],
                 check: ['checked'],
+                collect: ['complete', 'url', 'documentUrl', 'fields'],
               } as Record<string, string[]>
             )[node.operation] ?? [])
           : [];
     for (const key of known) add(path + '.' + key, label + ' / ' + key, '前序步骤', '步骤输出字段');
+    if (node.type === 'browser' && node.version === 5)
+      node.fields.forEach((field, i) => {
+        for (const key of ['value', 'count', 'status'])
+          add(
+            path + '.fields.' + i + '.' + key,
+            label + ' / ' + field.key + ' / ' + key,
+            '前序步骤',
+            '关联字段输出；先核对complete及单项状态，数组顺序随节点配置固定',
+          );
+      });
   }
   if (scope.loop) {
     add('item', '当前项', '当前循环', '最近一层循环的当前项；对象字段可指定子路径');
