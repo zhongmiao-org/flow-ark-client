@@ -14,7 +14,7 @@ import {
 } from '../../contracts/package-format';
 import JSZip from 'jszip';
 import { assertPortableSourceFlow } from './source-boundaries';
-export async function readArchive(path: string): Promise<PackageData> {
+export async function readArchive(path: string, resultEntry?: string): Promise<PackageData> {
   if ((await stat(path)).size > LIMITS.archive) throw new Error('模板压缩包超过 20 MiB');
   return new Promise((resolve, reject) => {
     yauzl.open(
@@ -39,6 +39,20 @@ export async function readArchive(path: string): Promise<PackageData> {
         zip.on('end', () => {
           if (finished) return;
           try {
+            // A result preview must reject its fixed Schema before validatePackage
+            // parses/compiles it. The existing whole-archive integrity limits still apply.
+            if (resultEntry !== undefined) {
+              const manifest = JSON.parse(files.get('manifest.json')?.toString('utf8') ?? '{}');
+              const entry = Array.isArray(manifest.entries)
+                ? manifest.entries.find((item: any) => item?.id === resultEntry)
+                : undefined;
+              const resultSchema = entry && files.get(packagePath(entry.resultSchema));
+              if (resultSchema && resultSchema.length > 65536) {
+                const error = new Error('入口结果定义超过只读展示范围');
+                Object.assign(error, { code: 'ENTRY_RESULT_LIMIT' });
+                throw error;
+              }
+            }
             const pkg = validatePackage(files);
             for (const entry of pkg.manifest.entries)
               assertPortableSourceFlow(materializeFlow(pkg, entry.id));
@@ -197,9 +211,9 @@ export class PackageLibrary {
       await this.cancel(token);
     }
   }
-  async load(key: string): Promise<PackageData> {
+  async load(key: string, resultEntry?: string): Promise<PackageData> {
     if (!/^[a-z][a-z0-9-]{0,99}@[0-9A-Za-z.-]+$/.test(key)) throw new Error('模板标识无效');
-    return readArchive(join(this.root, key, 'package.zip'));
+    return readArchive(join(this.root, key, 'package.zip'), resultEntry);
   }
   async export(key: string, target: string) {
     await this.load(key);

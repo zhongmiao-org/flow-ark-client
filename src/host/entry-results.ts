@@ -114,9 +114,15 @@ export class EntryResults {
       const ref = s.bindings.template;
       let pkg;
       try {
-        pkg = await this.library.load(ref.packageKey);
+        pkg = await this.library.load(ref.packageKey, ref.entryId);
       } catch (e: any) {
-        return refuse(e?.code === 'ENOENT' ? 'package-missing' : 'package-mismatch');
+        return refuse(
+          e?.code === 'ENTRY_RESULT_LIMIT'
+            ? 'read-limit'
+            : e?.code === 'ENOENT'
+              ? 'package-missing'
+              : 'package-mismatch',
+        );
       }
       if (
         pkg.manifest.contentDigest !== ref.digest ||
