@@ -199,7 +199,7 @@ export default function TemplateResources({
                                 chooseButtons.current.set(resource.id, element);
                               else chooseButtons.current.delete(resource.id);
                             }}
-                            aria-label={`选择${resource.name}${resource.kind === 'file' ? '文件' : '目录'}`}
+                            aria-label={`选择${resource.kind === 'file' ? '文件' : '目录'}：${resource.name}`}
                             onClick={() =>
                               void work(async () => {
                                 setChoosing(resource.id);

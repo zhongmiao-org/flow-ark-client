@@ -869,7 +869,9 @@ export default function TemplateInstancePage({
             <h1 ref={entryHeading} tabIndex={-1}>
               {entryDetail
                 ? draft.entries.find((entry) => entry.id === entryId)?.name
-                : `${draft.manifest.name} · ${instance.name}`}
+                : draft.manifest.name.trim() === instance.name.trim()
+                  ? instance.name
+                  : `${draft.manifest.name} · ${instance.name}`}
             </h1>
             <p>
               实例 {instance.id.slice(0, 8)} · 固定包 v{draft.manifest.version} ·
