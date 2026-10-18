@@ -1,6 +1,5 @@
 import AuthorSdkInfo from './AuthorSdkInfo';
 import TypedRunResults from './TypedRunResults';
-import type { TypedResultMeta } from '../host/typed-results';
 import RunContextOperations from './RunContextOperations';
 import ActionButton from './ActionButton';
 import DocumentResults from './DocumentResults';
@@ -182,14 +181,19 @@ export default function RunOutputWorkspace({
               runId={detail.run.id}
               runState={detail.run.state}
             />
-            {detail.typedResults?.some((entry: TypedResultMeta) =>
-              ['source', 'source-reduce'].includes(entry.type),
-            ) ? (
+            {!!detail.typedResults?.length && (
+              <p className="run-output-boundary">
+                运行终态、实际业务结果与产物可用性分别核对。其他步骤及入口输出可在高级详情中查看；查看不会重新执行。
+              </p>
+            )}
+            {detail.typedResults?.length ? (
               <Collapse
+                key={`debug-output:${detail.run.id}`}
                 items={[
                   {
-                    key: 'source-debug-output',
+                    key: 'debug-output',
                     label: '脱敏入口结果（高级，可选）',
+                    onKeyDown: activateCollapseWithSpace,
                     children: <RunOutput detail={detail} layout="result" />,
                   },
                 ]}

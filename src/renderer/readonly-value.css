@@ -1,0 +1,51 @@
+.context-result > .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.readonly-value {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  container-type: inline-size;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.readonly-value dl,
+.readonly-value ol,
+.readonly-value p,
+.readonly-value dd {
+  margin: 0;
+}
+.readonly-value dl {
+  display: grid;
+  gap: 16px;
+}
+.readonly-value-field {
+  display: grid;
+  grid-template-columns: minmax(80px, 160px) minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+}
+.readonly-value dd,
+.readonly-value dd > div {
+  min-width: 0;
+}
+.readonly-value dt,
+.readonly-value-muted {
+  color: var(--fa-text-secondary);
+}
+.readonly-value ol {
+  padding-inline-start: 24px;
+}
+.readonly-value li + li {
+  margin-top: 8px;
+}
+@container (max-width: 540px) {
+  .readonly-value-field {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+}

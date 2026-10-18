@@ -23,10 +23,36 @@ export function parameterSchema(value: unknown): any {
 }
 
 /** Native nodes expose logical resources; machine paths and grants never participate. */
-export function declareNativeBoundaries(flow: Flow, manifest: Manifest, entryId: string) {
+export function declareNativeBoundaries(
+  flow: Flow,
+  manifest: Manifest,
+  entryId: string,
+  declaredActionIds?: string[],
+) {
   assertPortableSourceFlow(flow);
   const entry = manifest.entries.find((e) => e.id === entryId)!;
   const hadDeclaredActions = entry.actions.length > 0;
+  const declared = declaredActionIds ?? [...entry.actions];
+  const requireAction = (prefix: string, name: string, description: string) => {
+    // Author compilation merges explicit actions after inference. A package copy
+    // already has the canonical declaration, but only its own entry may reuse it.
+    const existing = manifest.actions.find(
+      (a) =>
+        declared.includes(a.id) &&
+        a.name === name &&
+        a.description === description &&
+        a.default === 'deny',
+    );
+    if (existing) {
+      if (!entry.actions.includes(existing.id)) entry.actions.push(existing.id);
+      return;
+    }
+    let id = prefix,
+      i = 1;
+    while (manifest.actions.some((a) => a.id === id)) id = prefix + '-' + i++;
+    manifest.actions.push({ id, name, description, default: 'deny' });
+    entry.actions.push(id);
+  };
   const steps = walk(flow.steps);
   entry.capabilities = [
     ...new Set([...entry.capabilities, ...flow.requiredCapabilities, ...steps.map((n) => n.type)]),
@@ -203,27 +229,17 @@ export function declareNativeBoundaries(flow: Flow, manifest: Manifest, entryId:
     }
   }
   if (steps.some((n) => n.type === 'context' && n.operation === 'state.write')) {
-    let id = 'state-write',
-      i = 1;
-    while (manifest.actions.some((a) => a.id === id)) id = 'state-write-' + i++;
-    manifest.actions.push({
-      id,
-      name: '更新模板状态',
-      description: '按预期修订替换本实例的完整状态；提交后不因运行取消而撤销',
-      default: 'deny',
-    });
-    entry.actions.push(id);
+    requireAction(
+      'state-write',
+      '更新模板状态',
+      '按预期修订替换本实例的完整状态；提交后不因运行取消而撤销',
+    );
   }
   if (writes && !hadDeclaredActions) {
-    let id = 'workflow-write',
-      i = 1;
-    while (manifest.actions.some((a) => a.id === id)) id = 'workflow-write-' + i++;
-    manifest.actions.push({
-      id,
-      name: '执行流程写入',
-      description: '允许此入口的文件写入、网页修改和外部请求；执行范围以流程定义为准',
-      default: 'deny',
-    });
-    entry.actions.push(id);
+    requireAction(
+      'workflow-write',
+      '执行流程写入',
+      '允许此入口的文件写入、网页修改和外部请求；执行范围以流程定义为准',
+    );
   }
 }
