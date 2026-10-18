@@ -1,0 +1,119 @@
+.browser-fields-configuration {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fa-space-24);
+  min-width: 0;
+}
+.browser-fields-configuration h2 {
+  margin: 0 0 var(--fa-space-12);
+  font-size: 18px;
+  line-height: 28px;
+}
+.browser-fields-top {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--fa-space-24);
+}
+.browser-fields-top .ant-card-body,
+.browser-fields-current {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fa-space-8);
+  min-width: 0;
+}
+.browser-fields-configuration .ant-card {
+  background: var(--fa-bg-surface);
+  border-color: var(--fa-border-default);
+}
+.browser-fields-configuration label {
+  font-size: 13px;
+  color: var(--fa-text-primary);
+}
+.browser-fields-configuration .ant-select {
+  width: 100%;
+  min-width: 0;
+}
+.browser-fields-configuration .value-field {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fa-space-8);
+}
+.browser-fields-grid {
+  display: grid;
+  grid-template-columns: 256px minmax(0, 1fr);
+  gap: var(--fa-space-24);
+  margin: var(--fa-space-16) 0 var(--fa-space-24);
+}
+.browser-fields-grid nav {
+  background: var(--fa-bg-subtle);
+  padding: var(--fa-space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--fa-space-4);
+  align-self: start;
+  min-width: 0;
+}
+.browser-fields-grid nav .ant-btn {
+  height: auto;
+  min-height: 40px;
+  width: 100%;
+  white-space: normal;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fa-space-4);
+  text-align: left;
+}
+.browser-fields-grid nav strong,
+.browser-fields-grid nav small {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.browser-fields-name {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 1fr);
+  gap: var(--fa-space-12);
+}
+.browser-fields-configuration pre {
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.browser-fields-result .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fa-space-16);
+}
+.browser-fields-result dl {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--fa-space-8) var(--fa-space-16);
+  margin: 0;
+}
+.browser-fields-result dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.browser-fields-result .ant-table-cell {
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.browser-fields-value {
+  white-space: pre-wrap;
+  max-height: 220px;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+@container (max-width:800px) {
+  .browser-fields-top,
+  .browser-fields-grid,
+  .browser-fields-name {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

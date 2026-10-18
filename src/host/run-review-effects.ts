@@ -81,6 +81,13 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
           `仅读取目录“${node.binding}”中明确指定的资料，提取PDF/DOCX/UTF-8文本与来源；不调用AI，不自动OCR，缺口须核对。`,
         );
       case 'browser':
+        if (node.operation === 'collect')
+          return effect(
+            'read',
+            '在唯一根元素内同步读取' +
+              node.fields.length +
+              '个关联字段；缺失/空值/不唯一分别记录，导航、框架变化或超限整次拒绝，不产生动作授权。',
+          );
         if (node.operation === 'upload')
           return effect('network', '读取所绑定文件并上传到网页，可能向网站发送文件内容。');
         if (node.operation === 'download')

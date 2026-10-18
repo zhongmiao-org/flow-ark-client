@@ -3,6 +3,7 @@ import { kinds } from './node-kinds';
 import { contextOperations } from '../shared/template-data';
 
 export const browserLabels = {
+  collect: '读取关联字段',
   url: '读取当前网址',
   count: '统计匹配元素',
   attribute: '读取元素属性',

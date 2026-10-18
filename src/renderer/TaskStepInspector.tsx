@@ -117,7 +117,10 @@ export default function TaskStepInspector({
           'count',
         ].includes(step.operation)
       )
-        facts.push([step.operation === 'attribute' ? '属性名' : '操作内容', value(step.value)]);
+        facts.push([
+          step.operation === 'attribute' ? '属性名' : '操作内容',
+          step.operation === 'collect' ? `${step.fields.length}个关联字段` : value(step.value),
+        ]);
       facts.push([
         '内嵌页面',
         'framePath' in step && step.framePath.length ? step.framePath.join(' → ') : '页面主文档',

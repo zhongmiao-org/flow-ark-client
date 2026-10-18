@@ -177,7 +177,7 @@ const rpc = new Rpc(
         if (n.type === 'browser')
           return rpc.call(
             'browser',
-            n.version === 4 ? { ...resolved, nodeInstance: instance } : resolved,
+            n.version >= 4 ? { ...resolved, nodeInstance: instance } : resolved,
             timeout + 5000,
           );
         if (n.type === 'mcp') {

@@ -3235,6 +3235,9 @@ function Editor({
             ...(flatten(steps).some((node) => node.type === 'ai' && node.version === 2)
               ? ['ai-outcome-v1']
               : []),
+            ...(flatten(steps).some((node) => node.type === 'browser' && node.version === 5)
+              ? ['browser', 'browser-fields-v1']
+              : []),
             ...(flatten(steps).some((node) => node.type === 'browser' && node.version === 4)
               ? ['browser-observe-v1']
               : []),
@@ -3288,6 +3291,9 @@ function Editor({
               ...(flatten(steps).some((node) => node.type === 'ai') ? ['ai-node-v1'] : []),
               ...(flatten(steps).some((node) => node.type === 'ai' && node.version === 2)
                 ? ['ai-outcome-v1']
+                : []),
+              ...(flatten(steps).some((node) => node.type === 'browser' && node.version === 5)
+                ? ['browser', 'browser-fields-v1']
                 : []),
               ...(flatten(steps).some((node) => node.type === 'browser' && node.version === 4)
                 ? ['browser-observe-v1']

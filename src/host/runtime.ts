@@ -73,6 +73,12 @@ import {
 } from '../shared/utils';
 import { validateFlow, validateObject, walk } from '../core/validate';
 import { assertBrowserOperations } from '../adapters/browser-scope';
+import {
+  assertBrowserFieldsInvocation,
+  assertBrowserFieldsResult,
+  browserFieldsCapability,
+  type ResolvedBrowserFieldsNode,
+} from '../shared/browser-fields';
 import { discoverBrowsers, inspectBrowser, validateBinding } from '../adapters/browsers';
 import { compileScript, inspectScriptPackage, verifyScriptBundle } from '../adapters/script-bundle';
 import { ArtifactFiles } from '../adapters/artifacts';
@@ -1809,6 +1815,30 @@ export class Runtime {
     if (method === 'browser') {
       const active = this.active;
       const inspection = args.version === 4;
+      let fieldsInput: ResolvedBrowserFieldsNode | undefined;
+      if (args.version === 5) {
+        const { nodeInstance, ...nodeInput } = args;
+        const source = walk(snapshot.flow.steps).find((n) => n.id === args.id);
+        if (
+          !source ||
+          source.type !== 'browser' ||
+          source.version !== 5 ||
+          !['browser', browserFieldsCapability].every((c) =>
+            snapshot.flow.requiredCapabilities.includes(c),
+          ) ||
+          typeof nodeInstance !== 'string' ||
+          !active?.nodeInstances?.has(nodeInstance) ||
+          nodeInstance.split('/').at(-1) !== source.id
+        )
+          throw Error('关联字段节点不在当前固定运行中');
+        fieldsInput = assertBrowserFieldsInvocation(source, nodeInput);
+        if (snapshot.bindings.template) {
+          const { entry } = await this.templates.context(snapshot);
+          if (!['browser', browserFieldsCapability].every((c) => entry.capabilities.includes(c)))
+            throw Error('模板入口未声明关联字段能力');
+          this.checkActive(active);
+        }
+      }
       if (inspection) {
         const { nodeInstance, ...nodeInput } = args;
         assertBrowserInspectionNode(nodeInput, true);
@@ -1841,6 +1871,7 @@ export class Runtime {
         framePath: args.framePath,
         value: args.value,
         timeoutMs: args.timeoutMs,
+        ...(fieldsInput ? { fields: fieldsInput.fields } : {}),
       };
       if (args.operation === 'upload') {
         const source = uploadSource(args.value);
@@ -1856,6 +1887,11 @@ export class Runtime {
       const result = await this.sessions.use(binding, id, command, runSignal, snapshot.webTarget);
       this.checkActive(active);
       runSignal.throwIfAborted();
+      if (fieldsInput) {
+        assertBrowserFieldsResult(fieldsInput, result);
+        this.typedResults.save(id, args.id, args.nodeInstance, 'browser', result, fieldsInput);
+        return result;
+      }
       if (inspection) {
         assertBrowserInspectionResult(args.operation, result);
         this.typedResults.save(id, args.id, args.nodeInstance, 'browser', result);

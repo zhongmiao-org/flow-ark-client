@@ -10,6 +10,11 @@ import { validateTemplateDataOutput } from '../../contracts/template-data';
 import type { DataOutput, DataReceipt } from '../shared/template-data';
 import { contextOperations } from '../shared/template-data';
 import { assertBrowserInspectionResult } from '../shared/browser-inspection';
+import {
+  assertBrowserFieldsInvocation,
+  assertBrowserFieldsResult,
+  type ResolvedBrowserFieldsNode,
+} from '../shared/browser-fields';
 import { assertThreadOutput } from '../shared/conversation-thread';
 import {
   validateConversationCheckpoint,
@@ -39,6 +44,7 @@ export class TypedResults {
     nodeInstance: string,
     type: TypedResultMeta['type'],
     value: unknown,
+    browserInput?: ResolvedBrowserFieldsNode,
   ) {
     if (typeof nodeInstance !== 'string' || !nodeInstance || nodeInstance.length > 4000)
       throw Error('结构化结果步骤身份无效');
@@ -50,7 +56,8 @@ export class TypedResults {
     else if (type === 'document') assertDocumentResult(value);
     else if (type === 'skill') assertSkillVersion(value);
     else if (type === 'conversation') this.conversationResult(value, node.version);
-    else if (type === 'browser') this.browserResult(runId, nodeId, value);
+    else if (type === 'browser')
+      this.browserResult(runId, nodeId, nodeInstance, value, browserInput);
     else this.contextResult(runId, nodeInstance, value);
     const id = digest({ runId, nodeId, nodeInstance, type }),
       sha256 = digest(value),
@@ -81,6 +88,14 @@ export class TypedResults {
       sha256,
     };
     this.store.tx(() => {
+      if (browserInput) {
+        if (type !== 'browser' || node.type !== 'browser' || node.version !== 5)
+          throw Error('关联字段配置只能登记到对应节点');
+        this.store.put('browser-fields-input', digest({ runId, nodeId, nodeInstance }), {
+          node: browserInput,
+          sha256,
+        });
+      }
       this.store.put('typed-run-result', id, { runId, meta, value });
       if (type === 'document') {
         const source = (value as import('../shared/document').DocumentResult).source;
@@ -125,7 +140,8 @@ export class TypedResults {
       const node = snapshot && walk(snapshot.flow.steps).find((n) => n.id === r.meta.nodeId);
       if (node?.type !== 'conversation') throw Error('会话结果不属于固定节点');
       this.conversationResult(r.value, node.version);
-    } else if (r.meta.type === 'browser') this.browserResult(runId, r.meta.nodeId, r.value);
+    } else if (r.meta.type === 'browser')
+      this.browserResult(runId, r.meta.nodeId, r.meta.nodeInstance, r.value);
     else {
       assertSkillVersion(r.value);
       const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', runId);
@@ -137,7 +153,7 @@ export class TypedResults {
       value: r.value,
       nodeInstance: r.meta.nodeInstance,
       ...(r.meta.type === 'browser'
-        ? { operation: this.browserResult(runId, r.meta.nodeId, r.value) }
+        ? { operation: this.browserResult(runId, r.meta.nodeId, r.meta.nodeInstance, r.value) }
         : {}),
       ...(['source', 'source-reduce'].includes(r.meta.type) ? { nodeId: r.meta.nodeId } : {}),
     };
@@ -151,11 +167,31 @@ export class TypedResults {
     if (!this.reductionResult) throw Error('整理结果登记核对不可用');
     this.reductionResult({ runId, nodeId, nodeInstance }, value);
   }
-  private browserResult(runId: string, nodeId: string, value: unknown) {
+  private browserResult(
+    runId: string,
+    nodeId: string,
+    nodeInstance: string,
+    value: unknown,
+    input?: ResolvedBrowserFieldsNode,
+  ) {
     const snapshot = this.store.get<FlowRecord>('snapshot', runId);
     const node = snapshot && walk(snapshot.flow.steps).find((n) => n.id === nodeId);
-    if (!node || node.type !== 'browser' || node.version !== 4)
+    if (!node || node.type !== 'browser' || ![4, 5].includes(node.version))
       throw Error('网页只读结果不属于固定节点');
+    if (node.version === 5) {
+      const saved = this.store.get<{ node: ResolvedBrowserFieldsNode; sha256: string }>(
+        'browser-fields-input',
+        digest({ runId, nodeId, nodeInstance }),
+      );
+      if (
+        saved &&
+        (saved.sha256 !== digest(value) || (input && digest(saved.node) !== digest(input)))
+      )
+        throw Error('关联采集的原配置或摘要不一致');
+      const resolved = assertBrowserFieldsInvocation(node, input ?? saved?.node);
+      assertBrowserFieldsResult(resolved, value);
+      return 'collect';
+    }
     assertBrowserInspectionResult(node.operation, value);
     return node.operation;
   }

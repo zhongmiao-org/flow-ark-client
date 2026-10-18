@@ -1,14 +1,46 @@
-import { chromium, type BrowserContext, type Page, type Frame } from 'playwright-core';
+import {
+  chromium,
+  type BrowserContext,
+  type Page,
+  type Frame,
+  type Request,
+  type JSHandle,
+} from 'playwright-core';
 import { mkdir } from 'node:fs/promises';
 import type { BrowserBinding, BrowserCommand, BrowserDriver } from '../shared/types';
 import { framePathOf, validateFormCommand } from '../core/browser-command';
 import { commandBudget, assertBrowserOperations } from './browser-scope';
+import { resolvedBrowserFields, assertBrowserFieldsResult } from '../shared/browser-fields';
+import { readBrowserFields } from './browser-fields-dom';
 export class PlaywrightDriver implements BrowserDriver {
+  private documentEpoch = 0;
+  private navigationRequests = new Set<Request>();
   private constructor(
     private context: BrowserContext,
     private page: Page,
     private binding: BrowserBinding,
-  ) {}
+  ) {
+    this.watchPage(page);
+  }
+  private watchPage(page: Page) {
+    page.on('request', (request) => {
+      if (request.isNavigationRequest()) {
+        this.documentEpoch++;
+        this.navigationRequests.add(request);
+      }
+    });
+    const ended = (request: Request) => this.navigationRequests.delete(request);
+    page.on('requestfinished', ended);
+    page.on('requestfailed', ended);
+    const changed = () => {
+      this.documentEpoch++;
+    };
+    page.on('framenavigated', changed);
+    page.on('framedetached', changed);
+    page.on('frameattached', changed);
+    page.on('close', changed);
+    page.on('crash', changed);
+  }
   static async start(b: BrowserBinding, profile: string, headless = false) {
     await mkdir(profile, { recursive: true, mode: 0o700 });
     const context = await chromium.launchPersistentContext(profile, {
@@ -23,6 +55,8 @@ export class PlaywrightDriver implements BrowserDriver {
   static attach(context: BrowserContext, page: Page, b: BrowserBinding) {
     context.on('page', (p) => {
       driver.page = p;
+      driver.documentEpoch++;
+      driver.watchPage(p);
     });
     const driver = new PlaywrightDriver(context, page, b);
     return driver;
@@ -33,6 +67,7 @@ export class PlaywrightDriver implements BrowserDriver {
     const path = framePathOf(c);
     const remaining = commandBudget(c.timeoutMs);
     const page = this.page;
+    if (c.operation === 'collect') return this.collect(c, page, path, remaining);
     let frame: Frame = page.mainFrame();
     for (const selector of path) {
       // Pin this element's frame for this command. A replacement must not receive an old action.
@@ -149,6 +184,68 @@ export class PlaywrightDriver implements BrowserDriver {
         return page.url();
       default:
         throw new Error('浏览器不支持此操作');
+    }
+  }
+  private async collect(c: BrowserCommand, page: Page, path: string[], remaining: () => number) {
+    const node = resolvedBrowserFields({
+      id: 'driver',
+      type: 'browser',
+      version: 5,
+      operation: 'collect',
+      selector: c.selector,
+      framePath: path,
+      fields: c.fields,
+    });
+    if (this.navigationRequests.size) throw Error('网页正在导航，关联采集未开始');
+    const epoch = this.documentEpoch,
+      url = page.url();
+    const documents: { frame: Frame; handle: JSHandle<Document> }[] = [];
+    const verify = () => {
+      remaining();
+      if (
+        this.documentEpoch !== epoch ||
+        this.page !== page ||
+        page.isClosed() ||
+        this.navigationRequests.size ||
+        page.url() !== url
+      )
+        throw Error('采集期间网页或框架发生导航/更换，整次结果未采用');
+    };
+    try {
+      let frame = page.mainFrame();
+      documents.push({ frame, handle: await frame.evaluateHandle(() => document) });
+      for (const selector of path) {
+        verify();
+        const element = await frame.evaluateHandle((selector) => {
+          const found = document.querySelectorAll(selector);
+          if (found.length !== 1 || found[0].tagName !== 'IFRAME')
+            throw Error('采集框架须唯一匹配 iframe');
+          return found[0];
+        }, selector);
+        try {
+          const next = await element.asElement()?.contentFrame();
+          if (!next || next.isDetached()) throw Error('采集框架不可用：' + selector);
+          frame = next;
+          documents.push({ frame, handle: await frame.evaluateHandle(() => document) });
+        } finally {
+          await element.dispose();
+        }
+      }
+      verify();
+      const result = await frame.evaluate(readBrowserFields, {
+        selector: node.selector,
+        fields: node.fields,
+        framePath: path,
+        url,
+      });
+      for (const { frame, handle } of documents)
+        if (frame.isDetached() || !(await handle.evaluate((doc) => doc === document)))
+          throw Error('采集文档身份已变化，整次结果未采用');
+      verify();
+      assertBrowserFieldsResult(node, result);
+      return result;
+    } finally {
+      await Promise.all(documents.map((d) => d.handle.dispose().catch(() => {})));
     }
   }
   async close() {

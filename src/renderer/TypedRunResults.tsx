@@ -12,6 +12,8 @@ import { SkillVersionView } from './SkillPanel';
 import { assertDataOutput } from '../shared/template-data';
 import ContextResultView from './ContextResultView';
 import { assertBrowserInspectionResult } from '../shared/browser-inspection';
+import { assertBrowserFieldsValue } from '../shared/browser-fields';
+import BrowserFieldsResultView from './BrowserFieldsResultView';
 import type { TypedResultMeta } from '../host/typed-results';
 import { verifySourceResult } from '../shared/conversation-source';
 import SourceResultView from './SourceResultView';
@@ -47,8 +49,10 @@ export default function TypedRunResults({
         else if (v.type === 'conversation') {
           if (v.value?.formatVersion === '2.0') assertThreadOutput(v.value);
           else assertConversationOutput(v.value);
-        } else if (v.type === 'browser') assertBrowserInspectionResult(v.operation, v.value);
-        else throw Error('结果类型无效');
+        } else if (v.type === 'browser') {
+          if (v.operation === 'collect') assertBrowserFieldsValue(v.value);
+          else assertBrowserInspectionResult(v.operation, v.value);
+        } else throw Error('结果类型无效');
         if (live) setValue(v);
       })
       .catch((e) => {
@@ -93,7 +97,10 @@ export default function TypedRunResults({
       )}
       {value?.type === 'context' && <ContextResultView value={value.value} />}
       {value?.type === 'conversation' && <ConversationResultView value={value.value} />}
-      {value?.type === 'browser' && (
+      {value?.type === 'browser' && value.operation === 'collect' && (
+        <BrowserFieldsResultView key={id} value={value.value} />
+      )}
+      {value?.type === 'browser' && value.operation !== 'collect' && (
         <section aria-label="完整网页只读结果">
           <p>
             {value.operation === 'url'

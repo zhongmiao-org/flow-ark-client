@@ -163,6 +163,8 @@ export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext
               ? concise(step.selector || '未设置')
               : value(step.selector));
       const target = `${page} · ${targetName}${frame}`;
+      if (step.operation === 'collect')
+        return `${target} · 同步采集${step.fields.length}个字段 · 不完整时供流程分支核对`;
       if (step.operation === 'count') return `${target} · 统计匹配数量，无匹配为0`;
       if (step.operation === 'attribute')
         return `${target} · 原始属性：${value(step.value)} · 缺失为null`;

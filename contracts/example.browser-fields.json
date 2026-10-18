@@ -1,0 +1,57 @@
+{
+  "node": {
+    "id": "collect",
+    "type": "browser",
+    "version": 5,
+    "operation": "collect",
+    "selector": "#workspace",
+    "framePath": [],
+    "fields": [
+      {
+        "key": "recordId",
+        "selector": "[data-record]",
+        "operation": "attribute",
+        "attribute": "data-id",
+        "required": true
+      },
+      {
+        "key": "title",
+        "selector": "h1",
+        "operation": "text",
+        "attribute": null,
+        "required": true
+      }
+    ]
+  },
+  "result": {
+    "version": 1,
+    "operation": "collect",
+    "url": "https://example.org/records",
+    "documentUrl": "https://example.org/records",
+    "selector": "#workspace",
+    "framePath": [],
+    "complete": true,
+    "fields": [
+      {
+        "key": "recordId",
+        "selector": "[data-record]",
+        "operation": "attribute",
+        "attribute": "data-id",
+        "required": true,
+        "count": 1,
+        "status": "ok",
+        "value": "R-2048"
+      },
+      {
+        "key": "title",
+        "selector": "h1",
+        "operation": "text",
+        "attribute": null,
+        "required": true,
+        "count": 1,
+        "status": "ok",
+        "value": "示例条目"
+      }
+    ]
+  }
+}

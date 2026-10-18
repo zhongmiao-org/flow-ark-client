@@ -18,6 +18,10 @@ export function assertBrowserOperations(
 ) {
   for (const command of commands) {
     framePathOf(command);
+    if (command.operation === 'collect' && !['chrome', 'embedded'].includes(binding.product))
+      throw Error(
+        '此浏览器尚不能核对关联采集的文档代次，请明确选择内置浏览器或 Chrome；不会切换驱动或采用独立读取。',
+      );
     if (
       process.platform === 'darwin' &&
       binding.product === 'chrome' &&

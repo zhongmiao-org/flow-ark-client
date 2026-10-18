@@ -13,6 +13,7 @@ export function framePathOf(command: { operation: string; framePath?: unknown })
       'read',
       'count',
       'attribute',
+      'collect',
       'click',
       'fill',
       'wait',

@@ -141,6 +141,7 @@ export type BrowserCommand = {
   framePath?: string[];
   value?: any;
   timeoutMs?: number;
+  fields?: import('./browser-fields').ResolvedBrowserFieldsNode['fields'];
 };
 export type BrowserDriver = {
   perform(command: BrowserCommand): Promise<any>;
