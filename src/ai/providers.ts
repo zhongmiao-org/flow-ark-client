@@ -3,6 +3,7 @@ import Ajv from 'ajv/dist/2020.js';
 import { aiMetadata } from '../shared/ai-outcome';
 import { assertAISchema } from '../shared/ai-node';
 import { AIRequestFailureError } from './request-failure';
+import { outputFieldFeedback } from './output-feedback';
 import { validateObject } from '../core/validate';
 import { validateData } from '../../contracts/package-format';
 import {
@@ -285,8 +286,9 @@ export async function generate(
       if (error instanceof SyntaxError) fail('invalid-response', 'AI 输出JSON无效');
       throw error;
     }
-    if (!finiteJsonNumbers(output) || !validateOutput!(output))
-      fail('invalid-response', 'AI 输出Schema校验失败');
+    if (!finiteJsonNumbers(output)) fail('invalid-response', '模型返回的数字无效，未采用此结果。');
+    if (!validateOutput!(output))
+      fail('invalid-response', outputFieldFeedback(input.schema, output, validateOutput!.errors));
     signal.throwIfAborted();
     if (requestTimeout.aborted) fail('request-timeout', 'AI 请求等待超时');
   } else output = validateData(input.schema, JSON.parse(text));
