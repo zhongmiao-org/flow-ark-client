@@ -737,7 +737,8 @@ export class Templates {
   async complete(record: FlowRecord, runId: string, output: unknown) {
     if (!record.bindings.template) return;
     const { pkg, entry } = await this.context(record);
-    const value = this.store.get('template-result', runId) ?? output;
+    const savedResult = this.store.get('template-result', runId);
+    const value = savedResult === undefined ? output : savedResult;
     validateData(jsonFile(pkg.files, entry.resultSchema), value);
     this.store.put('template-result', runId, value);
   }
