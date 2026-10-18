@@ -217,3 +217,29 @@
 .author-sdk-info > .ant-tag {
   justify-self: start;
 }
+
+/* Keep author provenance available without squeezing the native webpage to a strip. */
+.author-editor-notice {
+  flex: 0 0 auto;
+  max-height: 144px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.author-notice-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fa-space-12);
+}
+.author-notice-heading h2 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+.author-editor-notice .author-sdk-info {
+  margin: 8px 0 0;
+  gap: 0;
+}
