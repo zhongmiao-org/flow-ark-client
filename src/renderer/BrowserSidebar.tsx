@@ -11,16 +11,21 @@ const browserErrorMessage = (reason: unknown) =>
     /^Error invoking remote method 'flowark:request': (?:Error: )?/,
     '',
   );
-const workbenchDialogOpen = () =>
+const workbenchDialogOpen = (panel?: HTMLElement | null) =>
   [
     ...document.querySelectorAll('.ant-modal[role="dialog"], .ant-drawer-open [role="dialog"]'),
-  ].some((element) => element.getClientRects().length > 0);
+  ].some(
+    (element) =>
+      element.getClientRects().length > 0 &&
+      !(panel?.closest('.browser-action-workspace.has-field-browser') && element.contains(panel)),
+  );
 export default function BrowserSidebar({
   close,
   running,
   obscured,
   editing = false,
   onPick,
+  pickLabel,
   onLocate,
   observationRequest,
   observationOriginLabel,
@@ -31,6 +36,7 @@ export default function BrowserSidebar({
   returnFromObservation?: () => void;
   editing?: boolean;
   onPick?: () => void;
+  pickLabel?: string;
   onLocate?: () => void;
   close: () => void;
   running: boolean;
@@ -96,10 +102,10 @@ export default function BrowserSidebar({
   const observationBusy = useRef(false);
   const statusRevision = useRef(0);
   const restoreFocus = useRef(false);
-  const [dialogOpen, setDialogOpen] = useState(workbenchDialogOpen);
+  const [dialogOpen, setDialogOpen] = useState(() => workbenchDialogOpen(panel.current));
   const hidden = obscured || dialogOpen;
   useEffect(() => {
-    const sync = () => setDialogOpen(workbenchDialogOpen());
+    const sync = () => setDialogOpen(workbenchDialogOpen(panel.current));
     const observer = new MutationObserver(sync);
     observer.observe(document.body, {
       subtree: true,
@@ -254,6 +260,7 @@ export default function BrowserSidebar({
     const observer = new ResizeObserver(bounds);
     if (viewport.current) observer.observe(viewport.current);
     window.addEventListener('resize', bounds);
+    window.addEventListener('flowark:browser-layout', bounds);
     const timer = setInterval(() => void refresh(), 750);
     return () => {
       live = false;
@@ -264,6 +271,7 @@ export default function BrowserSidebar({
       clearInterval(timer);
       observer.disconnect();
       window.removeEventListener('resize', bounds);
+      window.removeEventListener('flowark:browser-layout', bounds);
       void api('browser.embedded.visibility', { visible: false }).catch(() => {});
     };
   }, []);
@@ -572,9 +580,9 @@ export default function BrowserSidebar({
                 type="primary"
                 disabled={!onPick || running || !statusKnown || !!status.blocked || undefined}
                 onClick={onPick}
-                title={onPick ? '为当前步骤拾取网页目标' : '先选择需要网页目标的步骤'}
+                title={onPick ? pickLabel || '为当前步骤拾取网页目标' : '先选择需要网页目标的步骤'}
               >
-                拾取元素
+                {pickLabel || '拾取元素'}
               </Button>
             ) : (
               <Tag

@@ -8,6 +8,7 @@ import ValueField from './ValueField';
 import NodeTiming from './NodeTiming';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import './browser-fields.css';
+import FieldsElementPicker from './FieldsElementPicker';
 
 export default function BrowserFieldsConfiguration({
   node,
@@ -15,12 +16,14 @@ export default function BrowserFieldsConfiguration({
   choices,
   summaryOnly = false,
   actions,
+  pickingReady = true,
 }: {
   node: BrowserFieldsNode;
   change: (node: BrowserFieldsNode) => void;
   choices: ReferenceChoice[];
   summaryOnly?: boolean;
   actions?: ReactNode;
+  pickingReady?: boolean;
 }) {
   const id = useId(),
     root = useRef<HTMLDivElement>(null);
@@ -208,6 +211,36 @@ export default function BrowserFieldsConfiguration({
             </>
           )}
           <p>根元素须唯一；每个框架须唯一匹配 iframe。相对定位仅查询根元素后代。</p>
+          <FieldsElementPicker
+            scope={{ version: 1, kind: 'root' }}
+            selector={typeof node.selector === 'string' ? node.selector : undefined}
+            framePath={node.framePath}
+            sourceKey={JSON.stringify([
+              node.id,
+              node.version,
+              node.fields,
+              selected,
+              draft,
+              frames,
+            ])}
+            reason={
+              !pickingReady
+                ? '工作区正在展开，请稍候再选取。'
+                : typeof node.selector !== 'string'
+                  ? '当前根使用变量引用；静态拾取不会解析或覆盖该引用。'
+                  : frameError || (stale ? '字段列表已变化，请先重新读取。' : undefined)
+            }
+            beforeStart={guard}
+            onApply={(value) => {
+              if (value.kind !== 'root' || !guard()) return;
+              change({
+                ...node,
+                selector: value.root.selector,
+                framePath: value.root.framePath as FramePath,
+              });
+            }}
+          />
+          <p>更换根或框架保留原字段定位，请逐项重新核对。</p>
         </Card>
         <Card>
           <h2>采集方式</h2>
@@ -297,6 +330,38 @@ export default function BrowserFieldsConfiguration({
               (selector) => setDraft({ ...draft, selector }),
               'selector',
             )}
+            <FieldsElementPicker
+              scope={
+                typeof node.selector === 'string'
+                  ? {
+                      version: 1,
+                      kind: 'field',
+                      root: { selector: node.selector, framePath: node.framePath },
+                    }
+                  : undefined
+              }
+              selector={typeof draft.selector === 'string' ? draft.selector : undefined}
+              framePath={node.framePath}
+              sourceKey={JSON.stringify([
+                node.id,
+                node.version,
+                node.fields,
+                selected,
+                draft,
+                frames,
+              ])}
+              reason={
+                !pickingReady
+                  ? '工作区正在展开，请稍候再选取。'
+                  : typeof node.selector !== 'string' || typeof draft.selector !== 'string'
+                    ? '根或字段使用变量引用；静态拾取不会解析或覆盖该引用。'
+                    : frameError || (stale ? '字段列表已变化，请先重新读取。' : undefined)
+              }
+              onApply={(value) => {
+                if (value.kind !== 'field' || stale) return;
+                setDraft({ ...draft, selector: value.field.selector });
+              }}
+            />
             {draft.operation === 'attribute' &&
               valueInput(
                 '属性名',

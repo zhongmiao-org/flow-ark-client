@@ -1,4 +1,5 @@
 import { threadMethods } from './conversation-thread';
+import { fieldsPickMethods } from './browser-field-picking';
 import { archiveMethods } from './conversation-archive';
 import { sourceMethods, sourceRefSchema } from './conversation-source';
 import { reductionMethods } from './source-reduction';
@@ -90,6 +91,7 @@ export const templateSaveSchema = z
   .strict();
 export type TemplateSave = z.infer<typeof templateSaveSchema>;
 export const methods = {
+  ...fieldsPickMethods,
   ...reductionMethods,
   ...sourceMethods,
   ...archiveMethods,
