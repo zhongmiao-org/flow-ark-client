@@ -12,11 +12,13 @@ export default function AuthorSdkInfo({
   error,
   loading = false,
   runId,
+  compact = false,
 }: {
   context?: TemplateAuthorSdkContext;
   error?: string;
   loading?: boolean;
   runId?: string;
+  compact?: boolean;
 }) {
   const [value, setValue] = useState<TemplateAuthorSdkResult>();
   const [open, setOpen] = useState(false),
@@ -92,22 +94,33 @@ export default function AuthorSdkInfo({
   };
   return (
     <section className="author-sdk-info" aria-label="作者调试来源与结果">
-      <Tag color="processing" variant="filled">
-        作者调试
-      </Tag>
-      <p>
-        固定入口 {context.owner.entryId} · 制作修订 {context.owner.baseRevision}
-        。结果与提醒只属本副本，不写入正式实例或公开ZIP。
-      </p>
+      {!compact && (
+        <>
+          <Tag color="processing" variant="filled">
+            作者调试
+          </Tag>
+          <p>
+            固定入口 {context.owner.entryId} · 制作修订 {context.owner.baseRevision}
+            。结果与提醒只属本副本，不写入正式实例或公开ZIP。
+          </p>
+        </>
+      )}
       <Collapse
         size="small"
         items={[
           {
             key: 'source',
-            label: '查看固定SDK来源',
+            label: compact
+              ? `作者调试 · 固定入口 ${context.owner.entryId} · 制作修订 ${context.owner.baseRevision} · 查看固定SDK来源`
+              : '查看固定SDK来源',
             onKeyDown: activateCollapseWithSpace,
             children: (
               <>
+                {compact && (
+                  <p>
+                    保存和调试只影响此本机副本，结果与提醒不写入正式实例或公开ZIP。带回时排除参数值、资源绑定与调试结果，并重新核对提示词和制作修订。
+                  </p>
+                )}
                 <Descriptions
                   size="small"
                   column={1}

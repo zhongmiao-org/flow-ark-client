@@ -9,7 +9,7 @@ import TemplateAuthorWorkspace, {
   type AuthorEditorOrigin,
 } from './TemplateAuthorWorkspace';
 import ActionButton from './ActionButton';
-import { Alert, Collapse, ConfigProvider, Button, Input, Segmented, Tag } from 'antd';
+import { Alert, Card, Collapse, ConfigProvider, Button, Input, Segmented, Tag } from 'antd';
 import { VariableNavigationContext } from './variable-navigation';
 import StructureReferenceRecovery from './StructureReferenceRecovery';
 import InspectorAction from './InspectorAction';
@@ -2374,23 +2374,9 @@ function WorkspaceApp() {
                 </p>
               )}
               {authorEditorOrigin?.flowId === edit.id && (
-                <Alert
-                  type="info"
-                  showIcon
-                  title="模板入口编排副本"
-                  description={
-                    <>
-                      <p>
-                        保存和调试只影响此本机副本。带回时排除参数值、资源绑定与调试结果，并重新核对提示词和制作修订。
-                      </p>
-                      <AuthorSdkInfo
-                        context={authorEditorOrigin.sdk}
-                        error={authorEditorOrigin.sdkError}
-                        loading={!authorEditorOrigin.sdkLoaded}
-                      />
-                    </>
-                  }
-                  action={
+                <Card size="small" className="author-editor-notice" aria-label="模板入口编排副本">
+                  <div className="author-notice-heading">
+                    <h2>模板入口编排副本</h2>
                     <div className="author-actions">
                       <Button
                         disabled={busy}
@@ -2417,8 +2403,14 @@ function WorkspaceApp() {
                         保存并核对带回
                       </Button>
                     </div>
-                  }
-                />
+                  </div>
+                  <AuthorSdkInfo
+                    compact
+                    context={authorEditorOrigin.sdk}
+                    error={authorEditorOrigin.sdkError}
+                    loading={!authorEditorOrigin.sdkLoaded}
+                  />
+                </Card>
               )}
               <Editor
                 key={edit.id}
