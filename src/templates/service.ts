@@ -415,12 +415,63 @@ export class Templates {
         throw new Error('浏览器绑定不存在');
     }
   }
-  async canWrite(record: FlowRecord, runId: string, signal?: AbortSignal) {
-    if (!record.bindings.template) return;
-    const { entry } = await this.context(record);
+  async canWrite(
+    record: FlowRecord,
+    runId: string,
+    signal?: AbortSignal,
+    active: () => void = () => {},
+  ) {
+    await this.writeGuard(record, runId, signal, active);
+  }
+  /** Keep the immutable execution inputs, but never treat them as current write authority. */
+  async writeGuard(
+    record: FlowRecord,
+    runId: string,
+    signal?: AbortSignal,
+    active: () => void = () => {},
+  ): Promise<() => void> {
+    const available = () => {
+      active();
+      signal?.throwIfAborted();
+      if (this.store.fault) throw Error(this.store.fault);
+    };
+    available();
+    if (!record.bindings.template) return available;
+    const { entry, ref } = await this.context(record);
     if (!entry.actions.length) throw new Error('入口未声明写入动作');
+    const fixed = structuredClone({
+      flowId: record.id,
+      configuration: record.bindings.configuration,
+      resources: record.bindings.resources ?? {},
+      grants: record.bindings.grants ?? {},
+    });
+    const check = () => {
+      available();
+      const live = this.store.get<TemplateInstance>('template-instance', ref.instanceId);
+      const configuration = fixed.configuration;
+      if (
+        !live ||
+        live.packageKey !== ref.packageKey ||
+        live.entryFlows[ref.entryId] !== fixed.flowId ||
+        !configuration ||
+        !Number.isSafeInteger(configuration.revision) ||
+        configuration.revision! < 1 ||
+        (live.configurationRevision ?? 1) !== configuration.revision ||
+        canonical(live.configuration) !== canonical(configuration.values) ||
+        entry.resources.some(
+          (id) => canonical(live.resources[id] ?? null) !== canonical(fixed.resources[id] ?? null),
+        ) ||
+        entry.actions.some(
+          (id) =>
+            !['auto', 'confirm'].includes(fixed.grants[id]) || live.grants[id] !== fixed.grants[id],
+        )
+      )
+        throw Error('本次写入范围已失效：当前权限、配置或资源已改变，请返回原入口重新核对');
+    };
+    check();
     for (const action of entry.actions) {
-      const grant = record.bindings.grants?.[action];
+      check();
+      const grant = fixed.grants[action];
       if (grant === 'auto') continue;
       if (grant === 'confirm') {
         if (this.store.get('template-approval', runId + ':' + action)) continue;
@@ -432,12 +483,16 @@ export class Templates {
             signal,
           ))
         ) {
+          check();
           this.store.put('template-approval', runId + ':' + action, { runId, action });
           continue;
         }
+        check();
       }
       throw new Error('写入动作尚未确认：' + action);
     }
+    check();
+    return check;
   }
   async answer(id: string, value: any) {
     const pending = this.questions.get(id);
@@ -614,9 +669,10 @@ export class Templates {
     args: any,
     signal: AbortSignal,
     services: {
-      browser: (bindingId: string, command: any) => Promise<any>;
+      browser: (bindingId: string, command: any, beforeDispatch?: () => void) => Promise<any>;
       credential: (id: string) => Promise<string>;
       artifact: (name: string, content: string) => Promise<any>;
+      active?: () => void;
     },
   ) {
     const { pkg, entry, ref } = await this.context(record);
@@ -649,6 +705,7 @@ export class Templates {
       case 'state.set':
         need('state');
         validateData(jsonFile(pkg.files, pkg.manifest.stateSchema), args.value);
+        await this.canWrite(record, runId, signal, services.active);
         signal.throwIfAborted();
         setInstanceState(this.store, ref.instanceId, args.value);
         return true;
@@ -673,9 +730,14 @@ export class Templates {
           ].includes(op)
         )
           throw new Error('SDK 浏览器操作不支持');
-        if (['click', 'fill', 'select', 'check', 'press'].includes(op))
-          await this.canWrite(record, runId, signal);
-        return services.browser(binding.browserId!, { selector: '', value: null, ...args.command });
+        const guard = ['click', 'fill', 'select', 'check', 'press'].includes(op)
+          ? await this.writeGuard(record, runId, signal, services.active)
+          : undefined;
+        return services.browser(
+          binding.browserId!,
+          { selector: '', value: null, ...args.command },
+          guard,
+        );
       }
       case 'file': {
         need('file');
@@ -712,7 +774,7 @@ export class Templates {
           if ((await stat(target)).size > 10 * 1024 * 1024) throw new Error('文件过大');
           return readFile(target, 'utf8');
         }
-        await this.canWrite(record, runId, signal);
+        await this.canWrite(record, runId, signal, services.active);
         if (
           typeof args.request.content !== 'string' ||
           Buffer.byteLength(args.request.content) > 10 * 1024 * 1024
@@ -758,9 +820,9 @@ export class Templates {
         return item;
       }
       case 'effect.prepare':
-        return this.effectPrepare(record, runId, args.request, signal);
+        return this.effectPrepare(record, runId, args.request, signal, services.active);
       case 'effect.resolve':
-        return this.effectResolve(record, runId, args.request, signal);
+        return this.effectResolve(record, runId, args.request, signal, services.active);
       case 'result':
         validateData(jsonFile(pkg.files, entry.resultSchema), args.value);
         this.store.put('template-result', runId, args.value);

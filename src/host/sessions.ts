@@ -96,6 +96,7 @@ export class Sessions {
     command: BrowserCommand,
     signal?: AbortSignal,
     target?: TaskWebTarget,
+    beforeDispatch?: () => void,
   ) {
     const check = () => {
       signal?.throwIfAborted();
@@ -137,6 +138,7 @@ export class Sessions {
         if (this.embedded !== session || session.owner !== runId || session.phase !== 'ready')
           throw new Error('浏览器会话租约已失效');
         const expected = target ? (this.selectedPages.get(runId) ?? target.page) : undefined;
+        beforeDispatch?.();
         const result = await abortable(
           this.system(expected ? 'browser.embedded.perform.selected' : 'browser.embedded.perform', {
             token: session.token,
@@ -209,6 +211,7 @@ export class Sessions {
       check();
       if (this.sessions.get(binding.id) !== s || s.owner !== runId)
         throw new Error('浏览器会话租约已失效');
+      beforeDispatch?.();
       return await s.rpc.call('perform', command, (command.timeoutMs ?? 15000) + 5000);
     } catch (e) {
       await this.close(binding.id, s);
