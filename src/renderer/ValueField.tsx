@@ -1,8 +1,17 @@
 import { Select, Button, Input } from 'antd';
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import type { Json } from '../shared/types';
 import { referenceOf, type ReferenceChoice } from './value-references';
 import VariablePicker from './VariablePicker';
+import WorkflowValueComposer from './WorkflowValueComposer';
 
 type Props = {
   label: string;
@@ -30,6 +39,16 @@ export default function ValueField({
   const root = useRef<HTMLElement>(null);
   const focusFixedValue = useRef(false);
   const [open, setOpen] = useState(false);
+  const [composing, setComposing] = useState(false);
+  const [literalIncomplete, setLiteralIncomplete] = useState(false);
+  const incomplete = useCallback(
+    (_label: string, value: boolean) => setLiteralIncomplete(value),
+    [],
+  );
+  useLayoutEffect(() => {
+    onIncompleteChange?.(label, composing || literalIncomplete);
+    return () => onIncompleteChange?.(label, false);
+  }, [label, composing, literalIncomplete, onIncompleteChange]);
   useLayoutEffect(() => {
     if (!focusFixedValue.current || current !== undefined) return;
     focusFixedValue.current = false;
@@ -49,7 +68,12 @@ export default function ValueField({
       .filter((choice) => current?.startsWith(choice.path + '.'))
       .sort((a, b) => b.path.length - a.path.length)[0];
   return (
-    <section className="value-field" aria-label={label + '配置'} ref={root}>
+    <section
+      className="value-field"
+      aria-label={label + '配置'}
+      ref={root}
+      data-value-invalid={composing ? '组合字段编辑尚未应用或取消。' : undefined}
+    >
       {current !== undefined && compactReference ? (
         <div className="reference-value-compact">
           <span className="value-field-label">{label}</span>
@@ -96,7 +120,8 @@ export default function ValueField({
             value={value}
             change={change}
             jsonDefault={jsonDefault}
-            onIncompleteChange={onIncompleteChange}
+            onIncompleteChange={incomplete}
+            editStructured={() => setComposing(true)}
           />
         ))
       )}
@@ -131,13 +156,22 @@ export default function ValueField({
           close={() => setOpen(false)}
         />
       )}
+      {composing && (
+        <WorkflowValueComposer
+          label={label}
+          value={value}
+          choices={choices}
+          apply={change}
+          close={() => setComposing(false)}
+        />
+      )}
     </section>
   );
 }
 const valueType = (value: Json) =>
   value === null ? 'null' : typeof value === 'object' ? 'json' : typeof value;
 export type LiteralValueDraftSlot = {
-  literal?: { source: string; text: string; error: string };
+  literal?: { source: string; text: string; error: string; advanced?: boolean };
 };
 export function LiteralValue({
   label,
@@ -148,6 +182,7 @@ export function LiteralValue({
   onIncompleteChange,
   draft,
   jsonDefault,
+  editStructured,
 }: {
   label: string;
   value: Json;
@@ -157,6 +192,7 @@ export function LiteralValue({
   onIncompleteChange?: (label: string, incomplete: boolean) => void;
   draft?: LiteralValueDraftSlot;
   jsonDefault?: Json;
+  editStructured?: () => void;
 }) {
   const id = useId(),
     type = valueType(value);
@@ -166,13 +202,15 @@ export function LiteralValue({
   const restored = draft?.literal && draft.literal.source === source ? draft.literal : undefined;
   const [text, setText] = useState(() => restored?.text ?? format()),
     [error, setError] = useState(() => restored?.error ?? '');
+  const [advanced, setAdvanced] = useState(() => restored?.advanced ?? !!restored?.error);
+  const [composing, setComposing] = useState(false);
   const previousSource = useRef(source);
   const sourceChanged = previousSource.current !== source;
   const input = useRef<HTMLTextAreaElement>(null);
   useLayoutEffect(() => {
-    onIncompleteChange?.(label, !!error);
+    onIncompleteChange?.(label, !!error || composing);
     return () => onIncompleteChange?.(label, false);
-  }, [label, error, onIncompleteChange]);
+  }, [label, error, composing, onIncompleteChange]);
   useEffect(() => {
     if (previousSource.current === source) return;
     previousSource.current = source;
@@ -180,8 +218,8 @@ export function LiteralValue({
     setError('');
   }, [source]);
   useEffect(() => {
-    if (draft && !sourceChanged) draft.literal = { source, text, error };
-  }, [draft, source, text, error, sourceChanged]);
+    if (draft && !sourceChanged) draft.literal = { source, text, error, advanced };
+  }, [draft, source, text, error, advanced, sourceChanged]);
   const defaults: Record<string, Json> = {
     string: '',
     number: 0,
@@ -192,8 +230,8 @@ export function LiteralValue({
   return (
     <div
       className="literal-value"
-      data-value-invalid={error || undefined}
-      data-value-incomplete={error || undefined}
+      data-value-invalid={error || (composing ? '组合字段编辑尚未应用或取消。' : undefined)}
+      data-value-incomplete={error || (composing ? '组合字段编辑尚未应用或取消。' : undefined)}
     >
       <label htmlFor={id + '-type'}>{displayLabels?.type ?? `${label}类型`}</label>
       <Select<string>
@@ -240,6 +278,23 @@ export function LiteralValue({
         />
       ) : type === 'null' ? (
         <p className="note">null · 空值</p>
+      ) : type === 'json' && !advanced ? (
+        <div className="structured-value-summary">
+          <p>
+            {Array.isArray(value)
+              ? `数组 · ${value.length} 个条目`
+              : `对象 · ${Object.keys(value as object).length} 个字段`}
+          </p>
+          <Button
+            aria-label={'编辑字段 · ' + label}
+            onClick={() => (editStructured ? editStructured() : setComposing(true))}
+          >
+            编辑字段
+          </Button>
+          <Button onClick={() => setAdvanced(true)} aria-label={'高级 JSON · ' + label}>
+            高级 JSON
+          </Button>
+        </div>
       ) : (
         <Input.TextArea
           status={!!error ? 'error' : undefined}
@@ -275,6 +330,15 @@ export function LiteralValue({
           }}
         />
       )}
+      {type === 'json' && advanced && (
+        <Button
+          aria-label={'返回字段编辑 · ' + label}
+          disabled={!!error}
+          onClick={() => setAdvanced(false)}
+        >
+          返回字段编辑
+        </Button>
+      )}
       {error && (
         <>
           <p id={id + '-error'} className="field-error" role="alert">
@@ -296,6 +360,14 @@ export function LiteralValue({
             恢复已应用值
           </Button>
         </>
+      )}
+      {composing && (
+        <WorkflowValueComposer
+          label={label}
+          value={value}
+          apply={change}
+          close={() => setComposing(false)}
+        />
       )}
     </div>
   );

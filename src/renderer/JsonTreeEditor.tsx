@@ -1,6 +1,10 @@
 import { Alert, Button, Input, Select, Tree, type TreeDataNode } from 'antd';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Json } from '../shared/types';
+import VariablePicker from './VariablePicker';
+import { VariableNavigationContext } from './variable-navigation';
+import { referenceOf, type ReferenceChoice } from './value-references';
+import { checkVisualReference, type JsonContainer } from './workflow-value-model';
 import {
   jsonAt,
   jsonDefault,
@@ -17,25 +21,37 @@ import {
 } from './json-tree-model';
 import './json-tree-editor.css';
 
-type FieldDraft = { name: string; kind: JsonKind; text: string };
-const describe = (value: Json, path: JsonPath): FieldDraft => ({
-  name: String(path.at(-1) ?? 'data'),
-  kind: jsonKind(value),
-  text: jsonText(value),
-});
+type FieldKind = JsonKind | 'reference';
+type FieldDraft = { name: string; kind: FieldKind; text: string };
+const kindLabels = { ...jsonKindLabel, reference: '变量引用' };
 const keyOf = (path: JsonPath) => JSON.stringify(path);
 export default function JsonTreeEditor({
   value,
   change,
   disabled,
   onPendingChange,
+  rootLabel = 'data',
+  allowArrayRoot = false,
+  choices,
 }: {
-  value: Record<string, Json>;
-  change: (value: Record<string, Json>) => void;
+  value: JsonContainer;
+  change: (value: JsonContainer) => void;
   disabled: boolean;
   onPendingChange: (pending: boolean) => void;
+  rootLabel?: string;
+  allowArrayRoot?: boolean;
+  choices?: ReferenceChoice[];
 }) {
+  const describe = (value: Json, path: JsonPath): FieldDraft => {
+    const ref = choices !== undefined ? referenceOf(value) : undefined;
+    return {
+      name: String(path.at(-1) ?? rootLabel),
+      kind: ref !== undefined ? 'reference' : jsonKind(value),
+      text: ref ?? jsonText(value),
+    };
+  };
   const root = useRef<HTMLDivElement>(null);
+  const [picker, setPicker] = useState(false);
   const [path, setPath] = useState<JsonPath>([]);
   const [base, setBase] = useState(() => describe(value, []));
   const [draft, setDraft] = useState(base);
@@ -46,7 +62,7 @@ export default function JsonTreeEditor({
   const [expanded, setExpanded] = useState<string[]>(() => {
     const result: string[] = [];
     const visit = (node: Json, path: JsonPath) => {
-      if (!node || typeof node !== 'object') return;
+      if (!node || typeof node !== 'object' || (choices && referenceOf(node) !== undefined)) return;
       result.push(keyOf(path));
       for (const [name, child] of Object.entries(node))
         visit(child, [...path, Array.isArray(node) ? Number(name) : name]);
@@ -81,7 +97,7 @@ export default function JsonTreeEditor({
       load([]);
     }
   }, [valueText]);
-  const currentPath = jsonPathLabel(path);
+  const currentPath = rootLabel + jsonPathLabel(path).slice(4);
   const focusEditor = () =>
     root.current
       ?.querySelector<HTMLElement>(
@@ -100,9 +116,10 @@ export default function JsonTreeEditor({
         ? typeof p.at(-1) === 'number'
           ? '[' + p.at(-1) + ']'
           : String(p.at(-1)) || '（空名称）'
-        : 'data';
+        : rootLabel;
+      const kind = describe(v, p).kind;
       const children =
-        v && typeof v === 'object'
+        v && typeof v === 'object' && kind !== 'reference'
           ? Object.entries(v).map(([k, child]) =>
               node(child, [...p, Array.isArray(v) ? Number(k) : k]),
             )
@@ -110,17 +127,17 @@ export default function JsonTreeEditor({
       return {
         key: keyOf(p),
         title: (
-          <span title={jsonPathLabel(p)}>
-            {name} · {jsonKindLabel[jsonKind(v)]}
+          <span title={rootLabel + jsonPathLabel(p).slice(4)}>
+            {name} · {kindLabels[kind]}
           </span>
         ),
         children,
       };
     }
     return [node(value, [])];
-  }, [valueText]);
+  }, [valueText, choices, rootLabel]);
   const commit = (next: Json, nextPath: JsonPath, message: string) => {
-    change(next as Record<string, Json>);
+    change(next as JsonContainer);
     load(nextPath, next);
     setExpanded((current) => [
       ...new Set([
@@ -155,8 +172,15 @@ export default function JsonTreeEditor({
   const apply = (confirmed = false) =>
     attempt(() => {
       const original = current(),
-        next = jsonInput(draft.kind, draft.text, original);
-      if (!path.length && draft.kind !== 'object') throw Error('data根必须保留为对象。');
+        next =
+          draft.kind === 'reference'
+            ? { $ref: draft.text }
+            : base.kind === 'reference' && draft.kind === 'object'
+              ? {}
+              : jsonInput(draft.kind, draft.text, original);
+      if (draft.kind === 'reference') checkVisualReference(draft.text, choices!);
+      if (!path.length && !(allowArrayRoot ? ['object', 'array'] : ['object']).includes(draft.kind))
+        throw Error(allowArrayRoot ? '根值必须保留为对象或数组。' : 'data根必须保留为对象。');
       // Check duplicate names before asking to replace a value.
       const result = jsonRename(value, path, draft.name, next);
       if (draft.kind !== base.kind && !confirmed) {
@@ -250,22 +274,42 @@ export default function JsonTreeEditor({
             />
             <Select
               aria-label="当前字段类型"
-              disabled={disabled || !path.length}
+              disabled={disabled || (!path.length && !allowArrayRoot)}
               value={draft.kind}
-              options={(Object.entries(jsonKindLabel) as [JsonKind, string][]).map(
-                ([value, label]) => ({ value, label }),
-              )}
+              options={(Object.entries(kindLabels) as [FieldKind, string][])
+                .filter(([kind]) =>
+                  !path.length
+                    ? ['object', ...(allowArrayRoot ? ['array'] : [])].includes(kind)
+                    : kind !== 'reference' || choices !== undefined,
+                )
+                .map(([value, label]) => ({ value, label }))}
               onChange={(kind) => {
                 setDraft({
                   ...draft,
                   kind,
-                  text: kind === base.kind ? jsonText(baseValue) : jsonText(jsonDefault(kind)),
+                  text:
+                    kind === base.kind
+                      ? describe(baseValue, path).text
+                      : kind === 'reference'
+                        ? ''
+                        : jsonText(jsonDefault(kind)),
                 });
                 setReview(undefined);
                 setError('');
               }}
             />
           </div>
+          {draft.kind === 'reference' && (
+            <>
+              <p className="json-path">
+                {choices?.find((choice) => choice.path === draft.text)?.label ??
+                  (draft.text ? '变量路径 · ' + draft.text : '尚未选择变量')}
+              </p>
+              <Button disabled={disabled} onClick={() => setPicker(true)}>
+                选择 / 更换变量
+              </Button>
+            </>
+          )}
           {(draft.kind === 'string' || draft.kind === 'number') && (
             <Input.TextArea
               aria-label="当前字段值"
@@ -297,7 +341,7 @@ export default function JsonTreeEditor({
           )}
           {['object', 'array', 'null'].includes(draft.kind) && (
             <p>
-              {jsonKindLabel[draft.kind]}
+              {kindLabels[draft.kind]}
               {draft.kind === base.kind && baseValue && typeof baseValue === 'object'
                 ? ` · ${Object.keys(baseValue).length} 个直接子项`
                 : ''}
@@ -359,7 +403,7 @@ export default function JsonTreeEditor({
                   <p className="json-path">
                     {currentPath}{' '}
                     {review === 'type'
-                      ? `${jsonKindLabel[base.kind]} → ${jsonKindLabel[draft.kind]}`
+                      ? `${kindLabels[base.kind]} → ${kindLabels[draft.kind]}`
                       : ''}
                   </p>
                   <p>
@@ -387,6 +431,27 @@ export default function JsonTreeEditor({
           )}
         </section>
       </div>
+      {picker && choices && (
+        <VariableNavigationContext.Provider value={undefined}>
+          <VariablePicker
+            label={currentPath}
+            choices={choices}
+            current={draft.kind === 'reference' ? draft.text : undefined}
+            choose={(text) => {
+              checkVisualReference(text, choices);
+              setDraft({ ...draft, kind: 'reference', text });
+              setReview(undefined);
+              setError('');
+            }}
+            fixed={() => {
+              setDraft({ ...draft, kind: 'string', text: '' });
+              setReview(undefined);
+              setError('');
+            }}
+            close={() => setPicker(false)}
+          />
+        </VariableNavigationContext.Provider>
+      )}
       <p role="status" className="json-editor-status">
         {pending
           ? '有未应用字段编辑；先应用或放弃，再保存整个草稿。'
