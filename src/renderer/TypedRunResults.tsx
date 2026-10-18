@@ -1,3 +1,7 @@
+import CompleteValue from './CompleteValue';
+import { resultBudget } from '../shared/run-result-source';
+import { run_result_read_v1 } from '../shared/node-schema.generated';
+import { browserDigest } from '../shared/conversation-archive';
 import SourceReductionPanel from './SourceReductionPanel';
 import { verifyReductionOutput } from '../shared/source-reduction';
 import { useEffect, useState } from 'react';
@@ -43,7 +47,14 @@ export default function TypedRunResults({
     void window.flowark
       .request('run.typedResult', { runId, id })
       .then(async (v) => {
-        if (v.type === 'effect') assertEffectResult(v.value);
+        if (v.type === 'run-result') {
+          if (
+            !resultBudget(v.value) ||
+            !run_result_read_v1(v.value) ||
+            (await browserDigest(v.value.value)) !== v.value.ref.dataSha256
+          )
+            throw Error('完整读取结果核对失败');
+        } else if (v.type === 'effect') assertEffectResult(v.value);
         else if (v.type === 'source-reduce') await verifyReductionOutput(v.value);
         else if (v.type === 'source') await verifySourceResult(v.value);
         else if (v.type === 'document') assertDocumentResult(v.value);
@@ -94,6 +105,31 @@ export default function TypedRunResults({
           rerun={rerun}
           openRun={openRun}
         />
+      )}
+      {value?.type === 'run-result' && (
+        <section className="result-read-view" aria-label="已读取固定的前次结果">
+          <h3>已读取固定的前次结果</h3>
+          <p>
+            来源入口：{value.value.ref.source.entryId} · 原运行：{value.value.ref.run.id}
+          </p>
+          <p>
+            凭据过滤策略 v1 · 数据摘要 {value.value.ref.dataSha256.slice(0, 12)} · 固定结构核验通过
+          </p>
+          <CompleteValue key={id} value={value.value.value} labels={value.value.labels} />
+          <p>本步骤仅读取；后续动作仍须按当前事实、配置和权限核对。</p>
+          {openRun && (
+            <Button
+              onClick={() =>
+                void window.flowark
+                  .request('run.detail', { id: value.value.ref.run.id })
+                  .then(openRun)
+                  .catch((e) => setError(e.message))
+              }
+            >
+              查看来源运行
+            </Button>
+          )}
+        </section>
       )}
       {value?.type === 'source' && (
         <SourceResultView runId={runId} nodeId={value.nodeId} value={value.value} />

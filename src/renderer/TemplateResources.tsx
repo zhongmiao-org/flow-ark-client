@@ -1,5 +1,6 @@
 import SkillPicker from './SkillPicker';
 import SourcePicker from './SourcePicker';
+import ResultSourcePicker from './ResultSourcePicker';
 import { Card, Badge, Tag, ConfigProvider, Select, Button, Input } from 'antd';
 import {
   useId,
@@ -111,7 +112,30 @@ export default function TemplateResources({
                         {resource.name} · {resource.kind} / {resource.access}
                         {resource.required ? '（必需）' : '（可选）'}
                       </span>
-                      {resource.kind === 'conversation-source' ? (
+                      {resource.kind === 'run-result' ? (
+                        <ResultSourcePicker
+                          target={{ kind: 'instance', id: instance.id, revision: detail.revision }}
+                          binding={resource.id}
+                          value={instance.resources[resource.id]}
+                          label={resource.name}
+                          disabled={busy}
+                          change={(value, choiceId) =>
+                            change((current) => {
+                              const resources = { ...current.instance.resources },
+                                choices = { ...current.resultSourceChoices };
+                              if (value) resources[resource.id] = value;
+                              else delete resources[resource.id];
+                              if (choiceId) choices[resource.id] = choiceId;
+                              else delete choices[resource.id];
+                              return {
+                                ...current,
+                                resultSourceChoices: choices,
+                                instance: { ...current.instance, resources },
+                              };
+                            })
+                          }
+                        />
+                      ) : resource.kind === 'conversation-source' ? (
                         <SourcePicker
                           target={{ kind: 'instance', id: instance.id, revision: detail.revision }}
                           binding={resource.id}
@@ -189,7 +213,8 @@ export default function TemplateResources({
                       )}
                     </div>
                     {resource.kind === 'skill' ||
-                    resource.kind === 'conversation-source' ? null : resource.kind === 'file' ||
+                    resource.kind === 'conversation-source' ||
+                    resource.kind === 'run-result' ? null : resource.kind === 'file' ||
                       resource.kind === 'directory' ? (
                       <>
                         <div className="template-resource-file-actions">
@@ -376,7 +401,9 @@ export default function TemplateResources({
                     ? !binding.path || !binding.skill
                     : declaration.kind === 'conversation-source'
                       ? !binding.source
-                      : !binding.path;
+                      : declaration.kind === 'run-result'
+                        ? !binding.result
+                        : !binding.path;
             });
             const denied = entry.actions.filter(
               (id) => !instance.grants[id] || instance.grants[id] === 'deny',

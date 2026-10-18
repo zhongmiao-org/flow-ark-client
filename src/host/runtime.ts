@@ -13,7 +13,7 @@ import { ConversationSources } from './conversation-sources';
 import { sourceMethods, type SourceNode } from '../shared/conversation-source';
 import { resultMethods } from '../shared/run-result-source';
 import { RunResultSources, type ResultOwnerContext } from './run-result-sources';
-import { assertRunResultResources } from '../../contracts/run-result-binding';
+import { assertRunResultResources, assertRunResultNode } from '../../contracts/run-result-binding';
 import type {
   RunResultTarget,
   RunResultResource,
@@ -822,7 +822,11 @@ export class Runtime {
           id: ref.instanceId,
           revision: this.templates.sourceOwner(ref.instanceId).revision,
         }
-      : { kind: 'author-flow', id: record.id, revision: record.updatedAt };
+      : {
+          kind: 'author-flow',
+          id: record.id,
+          revision: this.store.get<FlowRecord>('flow', record.id)?.updatedAt ?? record.updatedAt,
+        };
   }
   private async saveFlowResults(
     flow: Flow,
@@ -963,8 +967,12 @@ export class Runtime {
       checkLocal();
     };
     const checked = (prepared: PreparedScripts) => {
-      checkCredentials();
-      this.credentialChecks.set(prepared, checkCredentials);
+      const check = () => {
+        checkCredentials();
+        if (prepared.resultSources) this.resultSources.assertPrepared(prepared.resultSources);
+      };
+      check();
+      this.credentialChecks.set(prepared, check);
       return prepared;
     };
     this.toolTargets.assertExecutable(record.id, record, !!desktopRun);
@@ -1011,6 +1019,36 @@ export class Runtime {
     }
     const skillSnapshots = await this.skills.snapshot(record, record.skillSnapshots);
     const steps = walk(flow.steps);
+    const resultNodes = steps.filter((n) => n.type === 'run-result');
+    const resultRequired: string[] = [];
+    if (record.bindings.template) {
+      const { entry, pkg } = await this.templates.context(record);
+      for (const node of resultNodes)
+        assertRunResultNode(node, flow.requiredCapabilities, pkg.manifest, entry);
+      for (const r of pkg.manifest.resources.filter(
+        (r) => r.kind === 'run-result' && entry.resources.includes(r.id),
+      ))
+        if (r.required || record.bindings.resources?.[r.id]) resultRequired.push(r.id);
+    } else if (authorSdk || resultNodes.length) {
+      if (resultNodes.length && !authorSdk?.capabilities.includes('run-result-read-v1'))
+        throw Error('固定作者副本未声明结果读取能力，请带回保存后重新打开编排副本');
+      for (const node of resultNodes) assertRunResultNode(node, flow.requiredCapabilities);
+      const origin = this.author.origin(record.id);
+      const entry = origin?.draft.definition.entries.find((e) => e.id === origin.checkout.entryId);
+      for (const r of origin?.draft.definition.resources ?? [])
+        if (
+          r.kind === 'run-result' &&
+          entry?.resourceIds.includes(r.id) &&
+          (r.required || record.bindings.resources?.[r.id])
+        )
+          resultRequired.push(r.id);
+    }
+    const resultSources =
+      resultNodes.length || resultRequired.length
+        ? await this.resultSources.prepareTarget(record, this.resultTarget(record), resultRequired)
+        : undefined;
+    if (record.resultSources && digest(record.resultSources) !== digest(resultSources ?? {}))
+      throw Error('运行固定结果来源已变化，未换用新结果');
     await this.effectNodes.preflight(
       record,
       steps.filter((n) => n.type === 'effect'),
@@ -1088,6 +1126,7 @@ export class Runtime {
         skillSnapshots,
         templateData,
         authorSdk,
+        ...(resultSources ? { resultSources } : {}),
       });
     }
     if (record.versionId && scriptNodes.some((n) => n.dependencies.length))
@@ -1098,6 +1137,7 @@ export class Runtime {
       skillSnapshots,
       templateData,
       authorSdk,
+      ...(resultSources ? { resultSources } : {}),
     };
     for (const n of steps)
       if (n.type === 'script') {
@@ -1752,6 +1792,41 @@ export class Runtime {
       );
       this.checkActive(active);
       this.typedResults.save(id, node.id, args.nodeInstance, 'source-reduce', result);
+      return result;
+    }
+    if (method === 'result.node') {
+      const active = this.active,
+        node = walk(snapshot.flow.steps).find((n) => n.id === args?.nodeId);
+      if (
+        !args ||
+        Object.keys(args).some((k) => !['nodeId', 'nodeInstance'].includes(k)) ||
+        node?.type !== 'run-result' ||
+        typeof args.nodeInstance !== 'string' ||
+        !active.nodeInstances?.has(args.nodeInstance) ||
+        !(args.nodeInstance === node.id || args.nodeInstance.endsWith('/' + node.id))
+      )
+        throw Error('结果读取节点不属于当前执行实例');
+      const check = () => {
+        this.checkActive(active);
+        runSignal.throwIfAborted();
+        if (!active.nodeInstances?.has(args.nodeInstance)) throw Error('原结果读取步骤已结束');
+      };
+      check();
+      assertRunResultNode(node, snapshot.flow.requiredCapabilities);
+      if (snapshot.bindings.template) {
+        const { entry, pkg } = await this.templates.context(snapshot);
+        assertRunResultNode(node, snapshot.flow.requiredCapabilities, pkg.manifest, entry);
+      } else if (!snapshot.authorSdk?.capabilities.includes('run-result-read-v1'))
+        throw Error('固定作者副本未声明结果读取能力');
+      const result = await this.resultSources.perform(
+        snapshot,
+        this.resultTarget(snapshot),
+        node.binding,
+        id,
+        check,
+      );
+      check();
+      this.typedResults.save(id, node.id, args.nodeInstance, 'run-result', result);
       return result;
     }
     if (method === 'source.node') {

@@ -47,6 +47,8 @@ export const capabilities = [
   'source-reduce',
   sourceCapability,
   'source',
+  'run-result',
+  'run-result-read-v1',
   browserInspectionCapability,
   browserFieldsCapability,
   browserRenderedFieldsCapability,

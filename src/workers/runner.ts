@@ -97,6 +97,10 @@ const rpc = new Rpc(
             signal.removeEventListener('abort', cancel);
           }
         }
+        if (n.type === 'run-result') {
+          signal.throwIfAborted();
+          return rpc.call('result.node', { nodeId: n.id, nodeInstance: instance }, timeout + 5000);
+        }
         if (n.type === 'source') {
           signal.throwIfAborted();
           return rpc.call(

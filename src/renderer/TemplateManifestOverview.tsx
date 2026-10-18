@@ -31,6 +31,7 @@ export const capabilityLabel = (name: string) =>
       'source-reduce-v1': '可恢复的来源整理',
       'effect-node-v1': '可视化操作准备与结果登记',
       'conversation-source-read-v1': '完整来源只读读取',
+      'run-result': '读取已保存结果',
       'run-result-read-v1': '已保存结果只读读取',
       source: '完整来源读取',
       skill: '个人 Skill',
@@ -140,6 +141,15 @@ export default function TemplateManifestOverview({
                             ? `${resourceKind[r.kind]} · ${accessLabel[r.access]} · ${r.required ? '必需' : '可选'}`
                             : id}
                         </span>
+                        {r?.kind === 'run-result' && (
+                          <span>
+                            允许来源入口：
+                            {r.sourceEntries
+                              ?.map((id) => manifest.entries.find((e) => e.id === id)?.name ?? id)
+                              .join('、')}
+                            ；仅同一实例或制作草稿，公开包不含个人绑定。
+                          </span>
+                        )}
                       </li>
                     );
                   })}

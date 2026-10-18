@@ -235,7 +235,9 @@ export default function TemplateEntry({
       ? !browsers.some((browser) => browser.id === binding.browserId)
       : declaration.kind === 'conversation-source'
         ? !binding.source
-        : !binding.path;
+        : declaration.kind === 'run-result'
+          ? !binding.result
+          : !binding.path;
   });
   const denied = entry.actions.filter(
     (id) => !instance.grants[id] || instance.grants[id] === 'deny',
