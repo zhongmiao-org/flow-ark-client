@@ -502,15 +502,7 @@ export class Runtime {
     this.templateData = new TemplateData(this.store, {
       available: () => this.assertAdmitting(),
       formal: (record) => this.templates.context(record),
-      authorize: (record, runId, signal) => {
-        const live = this.store.get<any>('template-instance', record.bindings.template!.instanceId);
-        if (!live) throw Error('模板实例不存在');
-        return this.templates.canWrite(
-          { ...record, bindings: { ...record.bindings, grants: live.grants } },
-          runId,
-          signal,
-        );
-      },
+      authorize: (record, runId, signal) => this.templates.canWrite(record, runId, signal),
     });
     this.authorSdk = new AuthorSdk(
       this.store,
@@ -1094,10 +1086,21 @@ export class Runtime {
             this.assertScriptOwner(owner),
           )
         : await this.templates.call(snapshot, owner.runId, args, this.active!.abort.signal, {
-            browser: async (bindingId, command) => {
+            active: () => this.assertScriptOwner(owner),
+            browser: async (bindingId, command, beforeDispatch) => {
               const binding = this.store.get<BrowserBinding>('browser', bindingId);
               if (!binding) throw new Error('浏览器不存在');
-              return this.sessions.use(binding, owner.runId, command, this.active!.abort.signal);
+              return this.sessions.use(
+                binding,
+                owner.runId,
+                command,
+                this.active!.abort.signal,
+                undefined,
+                () => {
+                  this.assertScriptOwner(owner);
+                  beforeDispatch?.();
+                },
+              );
             },
             credential: async (id) => this.workerRequest(owner.runId, 'credential', { id }),
             artifact: async (name, content) =>
@@ -1905,8 +1908,11 @@ export class Runtime {
           this.checkActive(active);
         }
       }
-      if (['click', 'fill', 'select', 'check', 'press', 'upload'].includes(args.operation))
-        await this.templates.canWrite(snapshot, id, runSignal);
+      const writeGuard = ['click', 'fill', 'select', 'check', 'press', 'upload'].includes(
+        args.operation,
+      )
+        ? await this.templates.writeGuard(snapshot, id, runSignal)
+        : undefined;
       const binding = this.store.get<BrowserBinding>('browser', snapshot.bindings.browserId ?? '');
       if (!binding) throw new Error('未选择浏览器');
       const command = {
@@ -1928,7 +1934,19 @@ export class Runtime {
           id,
           args.operation === 'screenshot' ? uid() + '.png' : String(args.value),
         );
-      const result = await this.sessions.use(binding, id, command, runSignal, snapshot.webTarget);
+      const result = await this.sessions.use(
+        binding,
+        id,
+        command,
+        runSignal,
+        snapshot.webTarget,
+        writeGuard
+          ? () => {
+              this.checkActive(active);
+              writeGuard();
+            }
+          : undefined,
+      );
       this.checkActive(active);
       runSignal.throwIfAborted();
       if (fieldsInput) {
