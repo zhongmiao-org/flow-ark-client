@@ -50,6 +50,7 @@ export default function AuthorSchemaEditor({
   label,
   form = true,
   rootObject = false,
+  plainOptions = false,
 }: {
   schema: any;
   change: (v: any) => void;
@@ -58,6 +59,7 @@ export default function AuthorSchemaEditor({
   label: string;
   form?: boolean;
   rootObject?: boolean;
+  plainOptions?: boolean;
 }) {
   const [path, setPath] = useState<Path>([]),
     [keyDraft, setKeyDraft] = useState(''),
@@ -214,9 +216,17 @@ export default function AuthorSchemaEditor({
     replace(next, where);
     setError('类型已切换，不适用的子项和约束已移除；保存前可重新核对。');
   }
-  const options =
-    current.oneOf ?? current.enum?.map((v: any) => ({ const: v, title: String(v) })) ?? [];
+  const options = plainOptions
+    ? (current.enum?.map((v: any) => ({ const: v, title: String(v) })) ?? [])
+    : (current.oneOf ?? current.enum?.map((v: any) => ({ const: v, title: String(v) })) ?? []);
   function option(index: number, part: string, value: any) {
+    if (plainOptions) {
+      update(
+        'enum',
+        options.map((o: any, i: number) => (i === index ? value : o.const)),
+      );
+      return;
+    }
     const list = structuredClone(options);
     list[index] = { ...list[index], [part]: value };
     const next = { ...current, oneOf: list };
@@ -280,23 +290,24 @@ export default function AuthorSchemaEditor({
               })}
             </div>
             <div className="author-actions">
-              <Button disabled={disabled || dirty} onClick={add}>
+              <Button disabled={disabled || dirty || current.type !== 'object'} onClick={add}>
                 添加子字段
               </Button>
-              <Button
-                disabled={!form || disabled || rawDirty || validating}
-                onClick={() => {
-                  void check(schema, true, () => {
-                    setPreviewValue(schemaDefaults(schema));
-                    setPreview(!preview);
-                  });
-                }}
-              >
-                预览使用者表单
-              </Button>
+              {form && (
+                <Button
+                  disabled={!form || disabled || rawDirty || validating}
+                  onClick={() => {
+                    void check(schema, true, () => {
+                      setPreviewValue(schemaDefaults(schema));
+                      setPreview(!preview);
+                    });
+                  }}
+                >
+                  预览使用者表单
+                </Button>
+              )}
             </div>
             <p>对象和数组逐层维护；字段键变化后请检查已有引用。公开默认值不复制本机输入。</p>
-            {!form && <p>使用者表单预览仅用于共享配置和入口输入。</p>}
           </Card>
           <Card title={'所选字段 · ' + (key ?? (path.at(-1) === 'items' ? '数组项' : '根结构'))}>
             {key !== undefined && (
@@ -426,7 +437,10 @@ export default function AuthorSchemaEditor({
             )}
             {['string', 'number', 'integer', 'boolean'].includes(current.type) && (
               <div className="author-stack">
-                <span>选项列表（公开）</span>
+                <span>{plainOptions ? '可选值列表' : '选项列表（公开）'}</span>
+                {plainOptions && current.oneOf && (
+                  <p>原有组合规则保持；可选值另作限制，完整规则可在高级Schema核对。</p>
+                )}
                 {options.map((o: any, i: number) => (
                   <div className="author-option" key={i}>
                     {current.type === 'boolean' ? (
@@ -450,14 +464,27 @@ export default function AuthorSchemaEditor({
                         onChange={(v) => option(i, 'const', v ?? 0)}
                       />
                     )}
-                    <Input
-                      aria-label={'选项' + (i + 1) + '名称'}
-                      value={o.title ?? ''}
-                      onChange={(e) => option(i, 'title', e.target.value)}
-                    />
+                    {!plainOptions && (
+                      <Input
+                        aria-label={'选项' + (i + 1) + '名称'}
+                        value={o.title ?? ''}
+                        onChange={(e) => option(i, 'title', e.target.value)}
+                      />
+                    )}
                     <Button
                       aria-label={'移除选项' + (i + 1)}
                       onClick={() => {
+                        if (plainOptions) {
+                          update(
+                            'enum',
+                            options.length > 1
+                              ? options
+                                  .filter((_: any, j: number) => j !== i)
+                                  .map((o: any) => o.const)
+                              : undefined,
+                          );
+                          return;
+                        }
                         const next = {
                           ...current,
                           oneOf: options.filter((_: any, j: number) => j !== i),
@@ -472,7 +499,26 @@ export default function AuthorSchemaEditor({
                   </div>
                 ))}
                 <Button
+                  disabled={plainOptions && current.type === 'boolean' && options.length >= 2}
                   onClick={() => {
+                    if (plainOptions) {
+                      const existing = options.map((o: any) => o.const);
+                      let index = options.length + 1;
+                      let value =
+                        current.type === 'string'
+                          ? '选项' + index
+                          : current.type === 'boolean'
+                            ? !existing.includes(false)
+                              ? false
+                              : true
+                            : index;
+                      while (existing.includes(value) && current.type !== 'boolean') {
+                        index++;
+                        value = current.type === 'string' ? '选项' + index : index;
+                      }
+                      update('enum', [...existing, value]);
+                      return;
+                    }
                     const next = {
                       ...current,
                       oneOf: [

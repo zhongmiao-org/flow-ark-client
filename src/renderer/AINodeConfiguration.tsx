@@ -1,4 +1,5 @@
 import AIServiceBinding from './AIServiceBinding';
+import AIOutputSchemaWorkspace from './AIOutputSchemaWorkspace';
 import { Alert, Button, Checkbox, Collapse, Input, Select } from 'antd';
 import { useEffect, useId, useState } from 'react';
 import type { Bindings, Json, Step } from '../shared/types';
@@ -98,10 +99,11 @@ export default function AINodeConfiguration({
   node: Node;
   bindings: Bindings;
   choices: ReferenceChoice[];
-  change: (node: Step) => void;
+  change: (node: Step) => void | boolean;
   changeBindings: (bindings: Bindings) => void;
 }) {
   const id = useId();
+  const [schemaOpen, setSchemaOpen] = useState(false);
   const schema: any = node.schema;
   const properties: Record<string, any> = schema.properties ?? {};
   const names = Object.keys(properties);
@@ -119,7 +121,11 @@ export default function AINodeConfiguration({
   };
   const logicalValid = /^[a-z][a-z0-9-]{0,99}$/.test(node.binding);
   return (
-    <section className="node-configuration ai-node-configuration" aria-label="结构化 AI 调用配置">
+    <section
+      className="node-configuration ai-node-configuration"
+      aria-label="结构化 AI 调用配置"
+      data-value-invalid={schemaOpen ? '输出结构编辑尚未应用或取消。' : undefined}
+    >
       <header>
         <h4>结构化 AI 调用</h4>
       </header>
@@ -158,6 +164,18 @@ export default function AINodeConfiguration({
         change={(input) => change({ ...node, input })}
       />
       <h4>输出格式</h4>
+      <Button onClick={() => setSchemaOpen(true)}>编辑完整输出结构</Button>
+      {schemaOpen && (
+        <AIOutputSchemaWorkspace
+          nodeId={node.id}
+          schema={node.schema}
+          close={() => setSchemaOpen(false)}
+          apply={(schema) => {
+            if (change({ ...node, schema }) === false)
+              throw Error('当前步骤有未完成配置，输出结构未应用；请先修正后重试。');
+          }}
+        />
+      )}
       {node.version === 2 ? (
         <>
           <label htmlFor={id + '-failure'}>请求失败时</label>

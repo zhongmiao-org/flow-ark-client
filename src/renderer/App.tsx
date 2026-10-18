@@ -3378,10 +3378,11 @@ function Editor({
   const targets = destinationChoices(r.flow.steps);
   const choices = referenceChoices(r.flow, selected);
   const updateNode = (next: Step) => {
-    if (!guardNodeInput(false)) return;
+    if (!guardNodeInput(false)) return false;
     patch(() => next);
     setRaw(JSON.stringify(next, null, 2));
     setInvalid('');
+    return true;
   };
   const { nodes, edges, stepCount } = buildTaskDiagram(r.flow, selected, {
     bindings: r.bindings,
@@ -4473,7 +4474,7 @@ function Editor({
                                     )}
                                     {selectedNode.type === 'ai' && (
                                       <AINodeConfiguration
-                                        key={selectedNode.id + ':ai:' + revision}
+                                        key={selectedNode.id + ':ai'}
                                         node={selectedNode}
                                         bindings={r.bindings}
                                         choices={choices}
