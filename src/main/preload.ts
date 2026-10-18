@@ -4,6 +4,7 @@ import type { ArchiveEvent } from '../shared/conversation-archive';
 import { contextBridge, ipcRenderer } from 'electron';
 import type { ConversationEvent } from '../shared/conversation';
 const allowed = new Set([
+  'reduction.runPreview',
   'reduction.forRun',
   'reduction.detail',
   'reduction.attempts',
@@ -197,7 +198,9 @@ const allowed = new Set([
 ]);
 contextBridge.exposeInMainWorld('flowark', {
   onmessage: (
-    listener: (event: ConversationEvent | ConversationThreadEvent | ArchiveEvent | SourceReductionOutput) => void,
+    listener: (
+      event: ConversationEvent | ConversationThreadEvent | ArchiveEvent | SourceReductionOutput,
+    ) => void,
   ) => {
     const receive = (
       _event: Electron.IpcRendererEvent,

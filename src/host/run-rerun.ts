@@ -179,6 +179,11 @@ export class RunRerun {
     };
   }
 
+  /** Host-only capture; no execution, credential read or caller-supplied snapshot. */
+  sourceScope(id: string) {
+    return this.capture({ id, mode: 'snapshot' });
+  }
+
   private async prepare(args: RunRerunPreviewInput) {
     const captured = this.capture(args);
     if (

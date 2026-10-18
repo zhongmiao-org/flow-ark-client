@@ -1036,6 +1036,14 @@ export interface FlowArkP1 {
   SourceReductionProof?: SourceReductionProof;
   SourceReductionEvidence?: SourceReductionEvidence;
   SourceReductionOutput?: SourceReductionOutput;
+  SourceReductionReviewTarget?: SourceReductionReviewTarget;
+  SourceReductionReviewSelection?: SourceReductionReviewSelection;
+  SourceReductionReviewCheckpoint?: SourceReductionReviewCheckpoint;
+  SourceReductionReviewFragment?: SourceReductionReviewFragment;
+  SourceReductionReviewPending?: SourceReductionReviewPending;
+  SourceReductionRunReview?: SourceReductionRunReview;
+  SourceReductionRunConfirmation?: SourceReductionRunConfirmation;
+  SourceReductionRunReviewReceipt?: SourceReductionRunReviewReceipt;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -2874,4 +2882,83 @@ export interface SourceReductionOutput {
   reportedTotalTokens: number;
   unknownUsageRequests: number;
   proof: null | SourceReductionProof;
+}
+export interface SourceReductionReviewTarget {
+  runId: string;
+  nodeId: string;
+  nodeInstance: string;
+}
+export interface SourceReductionReviewSelection {
+  version: 1;
+  target: SourceReductionReviewTarget;
+  jobId: string;
+}
+export interface SourceReductionReviewCheckpoint {
+  revision: number;
+  sha256: string;
+  next: ConversationSourceCursor | null;
+  chunks: number;
+  records: number;
+  bytes: number;
+}
+export interface SourceReductionReviewFragment {
+  version: 1;
+  format: 'canonical-record-json-v1';
+  source: ConversationArchiveRef;
+  recordOrdinal: number;
+  recordKind: 'origin' | 'context' | 'history';
+  recordHash: string;
+  recordBytes: number;
+  byteOffset: number;
+  byteEnd: number;
+  sha256: string;
+}
+export interface SourceReductionReviewPending {
+  attemptId: string;
+  state: 'prepared' | 'response' | 'failed' | 'unknown';
+  hasSavedResponse: boolean;
+}
+export interface SourceReductionRunReview {
+  version: 1;
+  reviewId: string;
+  epoch: string;
+  target: SourceReductionReviewTarget;
+  mode: 'snapshot';
+  executionVersionId: string;
+  snapshotSha256: string;
+  job: SourceReductionRef;
+  jobRevision: number;
+  checkpoint: SourceReductionReviewCheckpoint;
+  phase: 'ready' | 'attention' | 'complete';
+  operation: 'continue-batch' | 'retry-one' | 'use-complete';
+  pending: SourceReductionReviewPending | null;
+  fragment: SourceReductionReviewFragment | null;
+  batchLimit: number;
+  requestLimit: number;
+  requestScope: 'source-node-instance';
+  runStartsAtFirstNode: true;
+  provider: 'deepseek' | 'openai-codex';
+  model: string;
+  configurationRevision: string | null;
+  attempts: number;
+  reportedTotalTokens: number;
+  unknownUsageRequests: number;
+  createdAt: string;
+  expiresAt: string;
+  sha256: string;
+}
+export interface SourceReductionRunConfirmation {
+  version: 1;
+  reviewId: string;
+  reviewSha256: string;
+  requestId: string;
+  reviewed: true;
+}
+export interface SourceReductionRunReviewReceipt {
+  version: 1;
+  requestId: string;
+  runId: string;
+  review: SourceReductionRunReview;
+  confirmedAt: string;
+  sha256: string;
 }

@@ -1,4 +1,4 @@
-/* Generated from contracts/p1.schema.json (45fb4bd415d8e6eaa23b29860520eddea5cc3004822235604221f0e1a0221a46). Do not edit. */
+/* Generated from contracts/p1.schema.json (06d3efdc6dc45a7e3d564b531423c2fcee231e34d048bd6f0e64bb21e54938f4). Do not edit. */
 import type { ValidateFunction } from 'ajv';
 export const node_value_1: ValidateFunction;
 export const node_assert_1: ValidateFunction;
@@ -68,6 +68,9 @@ export const reduction_attempt_v1: ValidateFunction;
 export const reduction_proof_v1: ValidateFunction;
 export const reduction_evidence_v1: ValidateFunction;
 export const reduction_output_v1: ValidateFunction;
+export const reduction_run_review_v1: ValidateFunction;
+export const reduction_run_confirmation_v1: ValidateFunction;
+export const reduction_run_review_receipt_v1: ValidateFunction;
 export const document_result_v1: ValidateFunction;
 export const ai_outcome_v1: ValidateFunction;
 export const ai_receipt_v1: ValidateFunction;

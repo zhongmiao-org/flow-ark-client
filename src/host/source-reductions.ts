@@ -35,6 +35,7 @@ import type { AIConfiguration } from '../shared/ai-settings';
 import type { Store } from './store';
 import type { ConversationArchives } from './conversation-archives';
 import type { ConversationSources } from './conversation-sources';
+import type { SourceReductionReviewContext } from '../../contracts/source-reduction-review';
 
 const kinds = {
   job: 'source-reduction-job',
@@ -273,6 +274,40 @@ export class SourceReductions {
   }
   detail(t: ReductionTarget, id: string) {
     return this.view(this.target(t, id)!);
+  }
+  /** Private source data for host projection. Never return this context to Renderer. */
+  reviewContext(t: ReductionTarget, id: string) {
+    this.deps.available();
+    const j = this.target(t, id)!;
+    if (this.live.has(id) || j.phase === 'running')
+      throw Error('整理任务正在运行或收尾，请稍后重新核对');
+    const snapshot = this.store.get<FlowRecord>('snapshot', t.runId)!;
+    const node = this.node(snapshot, t.nodeId, t.nodeInstance);
+    const source = this.sources.assertBinding(snapshot, node.binding);
+    const binding = this.ai(snapshot, node.aiBinding);
+    if (
+      !same(source, j.checkpoint.job.source) ||
+      !same(binding, { provider: j.recipe.provider, model: j.recipe.model })
+    )
+      throw Error('原任务的来源或模型绑定已不匹配，请核对原记录');
+    const ordinal = j.checkpoint.next?.recordOrdinal;
+    return {
+      target: structuredClone(t),
+      node: structuredClone(node),
+      capabilities: [...snapshot.flow.requiredCapabilities],
+      manifest: this.archives.sourceInfo(source).manifest,
+      recipe: structuredClone(j.recipe),
+      output: this.output(j),
+      pendingAttempt: j.pending === null ? null : this.attempt(j, j.pending),
+      record: ordinal === undefined ? null : this.archives.sourceRecord(source, ordinal),
+      previousRecord:
+        ordinal === undefined || ordinal === 1
+          ? null
+          : this.archives.sourceRecord(source, ordinal - 1),
+    } satisfies Omit<
+      SourceReductionReviewContext,
+      'epoch' | 'executionVersionId' | 'snapshotSha256' | 'configurationRevision'
+    >;
   }
   private view(j: Job) {
     return { output: this.output(j), busy: this.live.has(j.id), error: j.error };
