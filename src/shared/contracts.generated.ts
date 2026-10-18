@@ -385,6 +385,20 @@ export type Node =
       };
       seed: Value;
       maxRequests: number;
+    }
+  | {
+      id: string;
+      type: 'skill';
+      version: 2;
+      operation: 'propose-update';
+      binding: string;
+      base: Value;
+      title: Value;
+      markdown: Value;
+      data: Value;
+      evidence: Value;
+      name?: string;
+      timeoutMs?: number;
     };
 export type Value =
   | Json
@@ -910,6 +924,56 @@ export type ConversationThreadOutput = {
   evidence: ConversationCheckpointEvidence | null;
   proposalId: string | null;
 };
+export type SkillUpdateState =
+  | {
+      present: false;
+    }
+  | {
+      present: true;
+      value: Json;
+    };
+export type SkillUpdateTarget =
+  | {
+      area: 'title' | 'markdown';
+      /**
+       * @maxItems 0
+       */
+      path: [];
+    }
+  | {
+      area: 'data';
+      /**
+       * @minItems 1
+       * @maxItems 32
+       */
+      path: [string, ...string[]];
+    };
+export type SkillUpdateProposalOutput =
+  | {
+      version: 1;
+      status: 'pending';
+      base: SkillVersionRef;
+      proposalId: string;
+      revision: number;
+    }
+  | {
+      version: 1;
+      status: 'confirmed';
+      base: SkillVersionRef;
+      proposalId: string;
+      revision: number;
+      ref: SkillVersionRef;
+    }
+  | {
+      version: 1;
+      status: 'unchanged';
+      base: SkillVersionRef;
+    };
+export type SkillUpdateApplication = {
+  status: 'pending' | 'applied' | 'rejected';
+  input: SkillUpdateApply;
+  receipt: SkillUpdateReceipt | null;
+};
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -1044,6 +1108,22 @@ export interface FlowArkP1 {
   SourceReductionRunReview?: SourceReductionRunReview;
   SourceReductionRunConfirmation?: SourceReductionRunConfirmation;
   SourceReductionRunReviewReceipt?: SourceReductionRunReviewReceipt;
+  SkillUpdateContent?: SkillUpdateContent;
+  SkillUpdateState?: SkillUpdateState;
+  SkillUpdateTarget?: SkillUpdateTarget;
+  SkillUpdateField?: SkillUpdateField;
+  SkillUpdateReview?: SkillUpdateReview;
+  SkillUpdateChoice?: SkillUpdateChoice;
+  SkillUpdateSelection?: SkillUpdateSelection;
+  SkillUpdateApply?: SkillUpdateApply;
+  SkillUpdateReceipt?: SkillUpdateReceipt;
+  SkillUpdateOrigin?: SkillUpdateOrigin;
+  SkillUpdateBundle?: SkillUpdateBundle;
+  SkillUpdateInfo?: SkillUpdateInfo;
+  SkillUpdateInput?: SkillUpdateInput;
+  SkillUpdateProposalOutput?: SkillUpdateProposalOutput;
+  SkillUpdateApplication?: SkillUpdateApplication;
+  SkillUpdateDetail?: SkillUpdateDetail;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -2961,4 +3041,122 @@ export interface SourceReductionRunReviewReceipt {
   review: SourceReductionRunReview;
   confirmedAt: string;
   sha256: string;
+}
+export interface SkillUpdateContent {
+  title: string;
+  markdown: string;
+  data: {
+    [k: string]: Json;
+  };
+}
+export interface SkillUpdateField {
+  id: string;
+  target: SkillUpdateTarget;
+  baseline: SkillUpdateState;
+  current: SkillUpdateState;
+  suggested: SkillUpdateState;
+  status: 'candidate' | 'conflict' | 'manual-only' | 'already-applied';
+}
+export interface SkillUpdateReview {
+  version: 1;
+  reviewId: string;
+  proposalId: string;
+  revision: number;
+  epoch: string;
+  baselineSha256: string;
+  suggestionSha256: string;
+  currentSha256: string;
+  sourceSha256: string;
+  workspaceRevision: string;
+  createdAt: string;
+  expiresAt: string;
+  /**
+   * @maxItems 256
+   */
+  fields: SkillUpdateField[];
+  sha256: string;
+  base: SkillVersionRef;
+  publishBase: SkillVersionRef;
+  bundleSha256: string;
+}
+export interface SkillUpdateChoice {
+  fieldId: string;
+  replaceManual: boolean;
+}
+export interface SkillUpdateSelection {
+  proposalId: string;
+  revision: number;
+}
+export interface SkillUpdateApply {
+  version: 1;
+  proposalId: string;
+  revision: number;
+  reviewId: string;
+  reviewSha256: string;
+  requestId: string;
+  /**
+   * @maxItems 256
+   */
+  choices: SkillUpdateChoice[];
+  reviewed: true;
+}
+export interface SkillUpdateReceipt {
+  version: 1;
+  proposalId: string;
+  requestId: string;
+  confirmationSha256: string;
+  reviewSha256: string;
+  revisionBefore: number;
+  revisionAfter: number;
+  contentSha256: string;
+  changed: boolean;
+}
+export interface SkillUpdateOrigin {
+  runId: string;
+  flowId: string;
+  nodeId: string;
+  nodeInstance: string;
+  executionVersionId: string;
+}
+export interface SkillUpdateBundle {
+  version: 1;
+  proposalId: string;
+  workspaceBinding: string;
+  origin: SkillUpdateOrigin;
+  base: SkillVersionRef;
+  baseline: SkillUpdateContent;
+  /**
+   * @maxItems 100
+   */
+  baselineEvidence: SkillEvidence[];
+  suggestion: SkillDraft;
+  createdAt: string;
+  sha256: string;
+}
+export interface SkillUpdateInfo {
+  version: 1;
+  mode: 'field-review';
+  proposalId: string;
+  revision: number;
+  base: SkillVersionRef;
+  bundleSha256: string;
+  baselineSha256: string;
+  suggestionSha256: string;
+}
+export interface SkillUpdateInput {
+  base: SkillVersionRef;
+  title: string;
+  markdown: string;
+  data: {
+    [k: string]: Json;
+  };
+  /**
+   * @maxItems 100
+   */
+  evidence: SkillEvidence[];
+}
+export interface SkillUpdateDetail {
+  proposal: SkillProposalSnapshot;
+  workspace: string;
+  application: SkillUpdateApplication | null;
 }

@@ -133,8 +133,8 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
             : '本机来源读取输出，不等于模型处理覆盖',
         );
     if (node.type === 'skill')
-      for (const key of node.operation === 'propose'
-        ? ['proposalId', 'revision', 'status', 'ref']
+      for (const key of node.operation !== 'read'
+        ? ['proposalId', 'revision', 'status', 'ref', ...(node.version === 2 ? ['base'] : [])]
         : ['ref', 'title', 'markdown', 'data', 'evidence', 'parent', 'confirmedAt'])
         add(
           path + '.' + key,

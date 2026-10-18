@@ -1,3 +1,4 @@
+import { realpathSync, statSync } from 'node:fs';
 import type { Store } from './store';
 import { validateConversationOutput } from '../../contracts/skill-trial';
 import type { FlowRecord, Run, PreparedScripts } from '../shared/types';
@@ -81,6 +82,17 @@ export class TypedResults {
     };
     this.store.tx(() => {
       this.store.put('typed-run-result', id, { runId, meta, value });
+      if (type === 'document') {
+        const source = (value as import('../shared/document').DocumentResult).source;
+        if (node.type !== 'document' || source.binding !== node.binding)
+          throw Error('资料来源与固定节点不一致');
+        const root = realpathSync(snapshot!.bindings.files[source.binding]),
+          stat = statSync(root, { bigint: true });
+        if (!stat.isDirectory()) throw Error('资料目录不可用');
+        const pointer = { id, root: { path: root, dev: String(stat.dev), ino: String(stat.ino) } };
+        this.store.put('document-source-proof', digest({ runId, source }), pointer);
+        this.store.put('document-source-proof', digest({ source }), pointer);
+      }
       this.store.put('typed-run-index', runId, { entries: [...entries, meta] });
     });
   }

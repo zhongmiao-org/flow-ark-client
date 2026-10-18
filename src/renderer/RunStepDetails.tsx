@@ -135,7 +135,14 @@ function fields(node: Step): [string, string][] {
       ];
     case 'skill':
       return [
-        ['操作', node.operation === 'read' ? '固定确认版本读取' : '创建待确认草稿'],
+        [
+          '操作',
+          node.operation === 'read'
+            ? '固定确认版本读取'
+            : node.version === 2
+              ? '更新建议 · 保留手工内容'
+              : '创建待确认草稿',
+        ],
         ['逻辑资源', node.binding],
         ['结果', '正文与结构化内容需独立确认；不授予发送权限'],
       ];

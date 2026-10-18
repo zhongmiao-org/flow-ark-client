@@ -31,6 +31,7 @@ export const capabilityLabel = (name: string) =>
       source: '完整来源读取',
       skill: '个人 Skill',
       'skill-v1': 'Skill 确认版本 v1',
+      'skill-update-review-v1': 'Skill 更新逐项核对',
       'skill-trial-v1': '草稿内部试聊',
       document: '资料解析',
       'document-extract-v1': '可追溯资料解析 v1',

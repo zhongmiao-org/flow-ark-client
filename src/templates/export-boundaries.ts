@@ -125,8 +125,14 @@ export function declareNativeBoundaries(
       if (!entry.resources.includes(node.aiBinding)) entry.resources.push(node.aiBinding);
     }
     if (node.type === 'skill') {
-      if (node.operation === 'propose') {
-        for (const key of ['markdown', 'data', 'evidence', 'base'] as const) {
+      if (node.operation !== 'read') {
+        for (const key of [
+          ...(node.version === 2 ? ['title' as const] : []),
+          'markdown',
+          'data',
+          'evidence',
+          'base',
+        ] as const) {
           const value = node[key];
           const reference =
             value &&

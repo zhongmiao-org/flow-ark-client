@@ -1,4 +1,4 @@
-/* Generated from contracts/p1.schema.json (06d3efdc6dc45a7e3d564b531423c2fcee231e34d048bd6f0e64bb21e54938f4). Do not edit. */
+/* Generated from contracts/p1.schema.json (b178dc33ed2a58c7cbd09f2b388097ae8fb9f1c3efc97daa7ea00daf9ef267b3). Do not edit. */
 import type { ValidateFunction } from 'ajv';
 export const node_value_1: ValidateFunction;
 export const node_assert_1: ValidateFunction;
@@ -29,6 +29,7 @@ export const node_browser_4: ValidateFunction;
 export const node_conversation_2: ValidateFunction;
 export const node_source_1: ValidateFunction;
 export const node_source_reduce_1: ValidateFunction;
+export const node_skill_2: ValidateFunction;
 export const handoff_preview_v1: ValidateFunction;
 export const handoff_receipt_v1: ValidateFunction;
 export const template_human_review_v1: ValidateFunction;
@@ -79,6 +80,14 @@ export const skill_draft_v1: ValidateFunction;
 export const skill_manifest_v1: ValidateFunction;
 export const skill_version_v1: ValidateFunction;
 export const skill_proposalsnapshot_v1: ValidateFunction;
+export const skill_update_info_v1: ValidateFunction;
+export const skill_update_review_v1: ValidateFunction;
+export const skill_update_selection_v1: ValidateFunction;
+export const skill_update_apply_v1: ValidateFunction;
+export const skill_update_receipt_v1: ValidateFunction;
+export const skill_update_proposaloutput_v1: ValidateFunction;
+export const skill_update_application_v1: ValidateFunction;
+export const skill_update_detail_v1: ValidateFunction;
 export const author_definition_v1: ValidateFunction;
 export const author_draft_v1: ValidateFunction;
 export const author_packagemetadata_v1: ValidateFunction;

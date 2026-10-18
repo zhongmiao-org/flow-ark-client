@@ -96,3 +96,32 @@
     gap: 8px;
   }
 }
+
+.skill-update-review .skill-update-field {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-width: 0;
+}
+.skill-update-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.skill-update-columns > section {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.skill-update-columns h4 {
+  margin: 0 0 12px;
+}
+@container (max-width:900px) {
+  .skill-update-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -5,6 +5,7 @@ import {
   skill_manifest_v1,
   skill_version_v1,
   skill_proposalsnapshot_v1,
+  skill_update_apply_v1,
 } from './node-schema.generated';
 import type { Bindings, Step } from './types';
 export type {
@@ -24,6 +25,7 @@ import type {
 } from './contracts.generated';
 export type SkillNode = Extract<Step, { type: 'skill' }>;
 export const skillCapability = 'skill-v1';
+export const skillUpdateCapability = 'skill-update-review-v1';
 export const skillBytes = (value: unknown) =>
   new TextEncoder().encode(JSON.stringify(value)).length;
 export function skillBudget(value: unknown) {
@@ -100,7 +102,17 @@ export const skillRefSchema = z
     sha256: z.string().regex(/^[a-f0-9]{64}$/),
   })
   .strict();
+const selection = z.object({ proposalId: id, revision }).strict();
 export const skillMethods = {
+  'skill.update.info': selection,
+  'skill.update.review': selection,
+  'skill.update.apply': z.unknown().transform((v, ctx) => {
+    if (!skill_update_apply_v1(v)) {
+      ctx.addIssue({ code: 'custom', message: '更新确认格式无效' });
+      return z.NEVER;
+    }
+    return v as import('./contracts.generated').SkillUpdateApply;
+  }),
   'skill.list': z.object({}).strict(),
   'skill.inspectBinding': z
     .object({ path: z.string().min(1).max(4096), ref: skillRefSchema })

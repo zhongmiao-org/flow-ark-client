@@ -1,0 +1,724 @@
+{
+  "note": "Fictional values only. Format fixtures are not a host, persistence or authorization acceptance.",
+  "cases": [
+    {
+      "definition": "SkillUpdateContent",
+      "valid": true,
+      "value": {
+        "title": "Example",
+        "markdown": "# Example",
+        "data": {
+          "tone": "formal",
+          "note": "manual",
+          "extra": "private"
+        }
+      }
+    },
+    {
+      "definition": "SkillVersionRef",
+      "valid": true,
+      "value": {
+        "key": "sample-profile",
+        "versionId": "sv_11111111111111111111111111111111",
+        "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    {
+      "definition": "SkillUpdateState",
+      "valid": true,
+      "value": {
+        "present": false
+      }
+    },
+    {
+      "definition": "SkillUpdateState",
+      "valid": true,
+      "value": {
+        "present": true,
+        "value": null
+      }
+    },
+    {
+      "definition": "SkillUpdateTarget",
+      "valid": true,
+      "value": {
+        "area": "data",
+        "path": ["__proto__"]
+      }
+    },
+    {
+      "definition": "SkillUpdateField",
+      "valid": true,
+      "value": {
+        "id": "ff771e485890a38398cd4519156f2db59b3898b435b8d7871c51233f485a5033",
+        "target": {
+          "area": "data",
+          "path": ["extra"]
+        },
+        "baseline": {
+          "present": false
+        },
+        "current": {
+          "present": true,
+          "value": "private"
+        },
+        "suggested": {
+          "present": false
+        },
+        "status": "manual-only"
+      }
+    },
+    {
+      "definition": "SkillUpdateReview",
+      "valid": true,
+      "value": {
+        "version": 1,
+        "reviewId": "review_example",
+        "proposalId": "proposal_example",
+        "revision": 4,
+        "epoch": "epoch_example",
+        "base": {
+          "key": "sample-profile",
+          "versionId": "sv_11111111111111111111111111111111",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        "publishBase": {
+          "key": "sample-profile",
+          "versionId": "sv_11111111111111111111111111111111",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        "bundleSha256": "6666666666666666666666666666666666666666666666666666666666666666",
+        "baselineSha256": "ffaf175346fdfff93b910fb075b7286ba934a25ad7a2772e65508d0345a24aad",
+        "suggestionSha256": "20441e452adb5cb81e1305a429db0ac622122cd6b0c28c006653492041e6200e",
+        "currentSha256": "db21aeb4cd0e5ff4d83b69f6e23ef3a5f2d230af03a65f93295cada462575d50",
+        "sourceSha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "workspaceRevision": "4444444444444444444444444444444444444444444444444444444444444444",
+        "createdAt": "2026-10-18T04:00:00.000Z",
+        "expiresAt": "2026-10-18T04:05:00.000Z",
+        "fields": [
+          {
+            "id": "ff771e485890a38398cd4519156f2db59b3898b435b8d7871c51233f485a5033",
+            "target": {
+              "area": "data",
+              "path": ["extra"]
+            },
+            "baseline": {
+              "present": false
+            },
+            "current": {
+              "present": true,
+              "value": "private"
+            },
+            "suggested": {
+              "present": false
+            },
+            "status": "manual-only"
+          },
+          {
+            "id": "d4b7718aa8a5ffcbac41b655ef8eb1ac81bf62ee7dd7af5edf9d83f027c28b26",
+            "target": {
+              "area": "data",
+              "path": ["note"]
+            },
+            "baseline": {
+              "present": true,
+              "value": "keep"
+            },
+            "current": {
+              "present": true,
+              "value": "manual"
+            },
+            "suggested": {
+              "present": true,
+              "value": "keep"
+            },
+            "status": "manual-only"
+          },
+          {
+            "id": "50409786f4decc2e7fd9abee171f865c75c91c6b2fb2c474faf0c116f6ac9d67",
+            "target": {
+              "area": "data",
+              "path": ["tone"]
+            },
+            "baseline": {
+              "present": true,
+              "value": "formal"
+            },
+            "current": {
+              "present": true,
+              "value": "formal"
+            },
+            "suggested": {
+              "present": true,
+              "value": "brief"
+            },
+            "status": "candidate"
+          }
+        ],
+        "sha256": "7456a86f6bc8929bcacb2a17827b7a5a0143bc5e2c8b5e6a9fdf320bbf4e39e5"
+      }
+    },
+    {
+      "definition": "SkillUpdateChoice",
+      "valid": true,
+      "value": {
+        "fieldId": "50409786f4decc2e7fd9abee171f865c75c91c6b2fb2c474faf0c116f6ac9d67",
+        "replaceManual": false
+      }
+    },
+    {
+      "definition": "SkillUpdateSelection",
+      "valid": true,
+      "value": {
+        "proposalId": "proposal_example",
+        "revision": 4
+      }
+    },
+    {
+      "definition": "SkillUpdateApply",
+      "valid": true,
+      "value": {
+        "version": 1,
+        "proposalId": "proposal_example",
+        "revision": 4,
+        "reviewId": "review_example",
+        "reviewSha256": "7456a86f6bc8929bcacb2a17827b7a5a0143bc5e2c8b5e6a9fdf320bbf4e39e5",
+        "requestId": "request_example",
+        "choices": [
+          {
+            "fieldId": "50409786f4decc2e7fd9abee171f865c75c91c6b2fb2c474faf0c116f6ac9d67",
+            "replaceManual": false
+          }
+        ],
+        "reviewed": true
+      }
+    },
+    {
+      "definition": "SkillUpdateReceipt",
+      "valid": true,
+      "value": {
+        "version": 1,
+        "proposalId": "proposal_example",
+        "requestId": "request_example",
+        "confirmationSha256": "99ebef5c4be99e6f202e9cdcc3538bad170157f012387dbaede3b91bd219b45b",
+        "reviewSha256": "7456a86f6bc8929bcacb2a17827b7a5a0143bc5e2c8b5e6a9fdf320bbf4e39e5",
+        "revisionBefore": 4,
+        "revisionAfter": 5,
+        "contentSha256": "73bbe1c8e2953d0a61225fe6300d274e7e0be94475dc43b7e1238b95f0e55b18",
+        "changed": true
+      }
+    },
+    {
+      "definition": "SkillUpdateContent",
+      "valid": false,
+      "value": {
+        "title": " ",
+        "markdown": "# Example",
+        "data": {
+          "tone": "formal",
+          "note": "manual",
+          "extra": "private"
+        }
+      }
+    },
+    {
+      "definition": "SkillVersionRef",
+      "valid": false,
+      "value": {
+        "key": "sample-profile",
+        "versionId": "unfixed",
+        "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    {
+      "definition": "SkillUpdateState",
+      "valid": false,
+      "value": {
+        "present": false,
+        "value": null
+      }
+    },
+    {
+      "definition": "SkillUpdateTarget",
+      "valid": false,
+      "value": {
+        "area": "markdown",
+        "path": ["x"]
+      }
+    },
+    {
+      "definition": "SkillUpdateField",
+      "valid": false,
+      "value": {
+        "id": "ff771e485890a38398cd4519156f2db59b3898b435b8d7871c51233f485a5033",
+        "target": {
+          "area": "data",
+          "path": ["extra"]
+        },
+        "baseline": {
+          "present": false
+        },
+        "current": {
+          "present": true,
+          "value": "private"
+        },
+        "suggested": {
+          "present": false
+        },
+        "status": "auto-apply"
+      }
+    },
+    {
+      "definition": "SkillUpdateReview",
+      "valid": false,
+      "value": {
+        "version": 1,
+        "reviewId": "review_example",
+        "proposalId": "proposal_example",
+        "revision": 4,
+        "epoch": "epoch_example",
+        "publishBase": {
+          "key": "sample-profile",
+          "versionId": "sv_11111111111111111111111111111111",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        "bundleSha256": "6666666666666666666666666666666666666666666666666666666666666666",
+        "baselineSha256": "ffaf175346fdfff93b910fb075b7286ba934a25ad7a2772e65508d0345a24aad",
+        "suggestionSha256": "20441e452adb5cb81e1305a429db0ac622122cd6b0c28c006653492041e6200e",
+        "currentSha256": "db21aeb4cd0e5ff4d83b69f6e23ef3a5f2d230af03a65f93295cada462575d50",
+        "sourceSha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "workspaceRevision": "4444444444444444444444444444444444444444444444444444444444444444",
+        "createdAt": "2026-10-18T04:00:00.000Z",
+        "expiresAt": "2026-10-18T04:05:00.000Z",
+        "fields": [
+          {
+            "id": "ff771e485890a38398cd4519156f2db59b3898b435b8d7871c51233f485a5033",
+            "target": {
+              "area": "data",
+              "path": ["extra"]
+            },
+            "baseline": {
+              "present": false
+            },
+            "current": {
+              "present": true,
+              "value": "private"
+            },
+            "suggested": {
+              "present": false
+            },
+            "status": "manual-only"
+          },
+          {
+            "id": "d4b7718aa8a5ffcbac41b655ef8eb1ac81bf62ee7dd7af5edf9d83f027c28b26",
+            "target": {
+              "area": "data",
+              "path": ["note"]
+            },
+            "baseline": {
+              "present": true,
+              "value": "keep"
+            },
+            "current": {
+              "present": true,
+              "value": "manual"
+            },
+            "suggested": {
+              "present": true,
+              "value": "keep"
+            },
+            "status": "manual-only"
+          },
+          {
+            "id": "50409786f4decc2e7fd9abee171f865c75c91c6b2fb2c474faf0c116f6ac9d67",
+            "target": {
+              "area": "data",
+              "path": ["tone"]
+            },
+            "baseline": {
+              "present": true,
+              "value": "formal"
+            },
+            "current": {
+              "present": true,
+              "value": "formal"
+            },
+            "suggested": {
+              "present": true,
+              "value": "brief"
+            },
+            "status": "candidate"
+          }
+        ],
+        "sha256": "7456a86f6bc8929bcacb2a17827b7a5a0143bc5e2c8b5e6a9fdf320bbf4e39e5"
+      }
+    },
+    {
+      "definition": "SkillUpdateChoice",
+      "valid": false,
+      "value": {
+        "fieldId": "50409786f4decc2e7fd9abee171f865c75c91c6b2fb2c474faf0c116f6ac9d67",
+        "replaceManual": "yes"
+      }
+    },
+    {
+      "definition": "SkillUpdateSelection",
+      "valid": false,
+      "value": {
+        "proposalId": "proposal_example",
+        "revision": 0
+      }
+    },
+    {
+      "definition": "SkillUpdateApply",
+      "valid": false,
+      "value": {
+        "version": 1,
+        "proposalId": "proposal_example",
+        "revision": 4,
+        "reviewId": "review_example",
+        "reviewSha256": "7456a86f6bc8929bcacb2a17827b7a5a0143bc5e2c8b5e6a9fdf320bbf4e39e5",
+        "requestId": "request_example",
+        "choices": [
+          {
+            "fieldId": "50409786f4decc2e7fd9abee171f865c75c91c6b2fb2c474faf0c116f6ac9d67",
+            "replaceManual": false
+          }
+        ],
+        "reviewed": false
+      }
+    },
+    {
+      "definition": "SkillUpdateReceipt",
+      "valid": false,
+      "value": {
+        "version": 1,
+        "proposalId": "proposal_example",
+        "requestId": "request_example",
+        "confirmationSha256": "99ebef5c4be99e6f202e9cdcc3538bad170157f012387dbaede3b91bd219b45b",
+        "reviewSha256": "7456a86f6bc8929bcacb2a17827b7a5a0143bc5e2c8b5e6a9fdf320bbf4e39e5",
+        "revisionBefore": 4,
+        "revisionAfter": 5,
+        "contentSha256": "73bbe1c8e2953d0a61225fe6300d274e7e0be94475dc43b7e1238b95f0e55b18",
+        "changed": true,
+        "extra": true
+      }
+    },
+    {
+      "definition": "SkillUpdateBundle",
+      "valid": true,
+      "value": {
+        "version": 1,
+        "proposalId": "proposal_example",
+        "workspaceBinding": "workspace",
+        "origin": {
+          "runId": "run_example",
+          "flowId": "flow_example",
+          "nodeId": "update",
+          "nodeInstance": "update:0",
+          "executionVersionId": "5555555555555555555555555555555555555555555555555555555555555555"
+        },
+        "base": {
+          "key": "sample-profile",
+          "versionId": "sv_11111111111111111111111111111111",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        "baseline": {
+          "title": "Example",
+          "markdown": "# Example",
+          "data": {
+            "tone": "formal",
+            "manual": "keep"
+          }
+        },
+        "baselineEvidence": [
+          {
+            "kind": "manual",
+            "label": "Example 1",
+            "note": "Fictional annotation 1"
+          }
+        ],
+        "suggestion": {
+          "title": "Example",
+          "markdown": "# Example",
+          "data": {
+            "tone": "brief",
+            "manual": "keep"
+          },
+          "evidence": [
+            {
+              "kind": "manual",
+              "label": "Example 2",
+              "note": "Fictional annotation 2"
+            }
+          ]
+        },
+        "createdAt": "2026-10-18T04:00:00.000Z",
+        "sha256": "7c7b95526a93e1a1cef7153752dcf78e55c8f59180a3931b668b71339cfa7a60"
+      }
+    },
+    {
+      "definition": "SkillUpdateInfo",
+      "valid": true,
+      "value": {
+        "version": 1,
+        "mode": "field-review",
+        "proposalId": "proposal_example",
+        "revision": 4,
+        "base": {
+          "key": "sample-profile",
+          "versionId": "sv_11111111111111111111111111111111",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        "bundleSha256": "7c7b95526a93e1a1cef7153752dcf78e55c8f59180a3931b668b71339cfa7a60",
+        "baselineSha256": "e271aa64865e33a23c934d46f0de7f2d6222f13e466dc8118d98a044b986c80f",
+        "suggestionSha256": "fb7d0c0020018104365b795eaff99e037293c920de3c5957a92925594c6a907a"
+      }
+    },
+    {
+      "definition": "SkillUpdateInput",
+      "valid": true,
+      "value": {
+        "base": {
+          "key": "sample-profile",
+          "versionId": "sv_11111111111111111111111111111111",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        "title": "Example",
+        "markdown": "# Example",
+        "data": {
+          "tone": "brief",
+          "manual": "keep"
+        },
+        "evidence": [
+          {
+            "kind": "manual",
+            "label": "Example 2",
+            "note": "Fictional annotation 2"
+          }
+        ]
+      }
+    },
+    {
+      "definition": "SkillUpdateProposalOutput",
+      "valid": true,
+      "value": {
+        "version": 1,
+        "status": "pending",
+        "base": {
+          "key": "sample-profile",
+          "versionId": "sv_11111111111111111111111111111111",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        "proposalId": "proposal_example",
+        "revision": 1
+      }
+    },
+    {
+      "definition": "SkillUpdateProposalOutput",
+      "valid": true,
+      "value": {
+        "version": 1,
+        "status": "confirmed",
+        "base": {
+          "key": "sample-profile",
+          "versionId": "sv_11111111111111111111111111111111",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        "proposalId": "proposal_example",
+        "revision": 5,
+        "ref": {
+          "key": "sample-profile",
+          "versionId": "sv_33333333333333333333333333333333",
+          "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+        }
+      }
+    },
+    {
+      "definition": "SkillUpdateProposalOutput",
+      "valid": true,
+      "value": {
+        "version": 1,
+        "status": "unchanged",
+        "base": {
+          "key": "sample-profile",
+          "versionId": "sv_11111111111111111111111111111111",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+        }
+      }
+    },
+    {
+      "definition": "Node",
+      "valid": true,
+      "value": {
+        "id": "update",
+        "type": "skill",
+        "version": 2,
+        "operation": "propose-update",
+        "binding": "workspace",
+        "base": {
+          "$ref": "params.base"
+        },
+        "title": "Example",
+        "markdown": "# Example",
+        "data": {
+          "tone": "brief"
+        },
+        "evidence": [
+          {
+            "kind": "manual",
+            "label": "Example 2",
+            "note": "Fictional annotation 2"
+          }
+        ]
+      }
+    },
+    {
+      "definition": "SkillUpdateBundle",
+      "valid": false,
+      "value": {
+        "version": 1,
+        "proposalId": "proposal_example",
+        "workspaceBinding": "workspace",
+        "origin": {
+          "runId": "run_example",
+          "flowId": "flow_example",
+          "nodeId": "update",
+          "nodeInstance": "update:0",
+          "executionVersionId": "5555555555555555555555555555555555555555555555555555555555555555"
+        },
+        "base": {
+          "key": "sample-profile",
+          "versionId": "sv_11111111111111111111111111111111",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        "baseline": {
+          "title": "Example",
+          "markdown": "# Example",
+          "data": {
+            "tone": "formal",
+            "manual": "keep"
+          }
+        },
+        "baselineEvidence": [
+          {
+            "kind": "manual",
+            "label": "Example 1",
+            "note": "Fictional annotation 1"
+          }
+        ],
+        "suggestion": {
+          "title": "Example",
+          "markdown": "# Example",
+          "data": {
+            "tone": "brief",
+            "manual": "keep"
+          },
+          "evidence": [
+            {
+              "kind": "manual",
+              "label": "Example 2",
+              "note": "Fictional annotation 2"
+            }
+          ]
+        },
+        "createdAt": "2026-10-18T04:00:00.000Z",
+        "sha256": "7c7b95526a93e1a1cef7153752dcf78e55c8f59180a3931b668b71339cfa7a60",
+        "extra": true
+      }
+    },
+    {
+      "definition": "SkillUpdateInfo",
+      "valid": false,
+      "value": {
+        "version": 1,
+        "mode": "field-review",
+        "proposalId": "proposal_example",
+        "revision": 4,
+        "base": {
+          "key": "sample-profile",
+          "versionId": "sv_11111111111111111111111111111111",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        "bundleSha256": "7c7b95526a93e1a1cef7153752dcf78e55c8f59180a3931b668b71339cfa7a60",
+        "baselineSha256": "e271aa64865e33a23c934d46f0de7f2d6222f13e466dc8118d98a044b986c80f",
+        "suggestionSha256": "fb7d0c0020018104365b795eaff99e037293c920de3c5957a92925594c6a907a",
+        "suggestion": {
+          "title": "Example",
+          "markdown": "# Example",
+          "data": {
+            "tone": "brief",
+            "manual": "keep"
+          },
+          "evidence": [
+            {
+              "kind": "manual",
+              "label": "Example 2",
+              "note": "Fictional annotation 2"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "definition": "SkillUpdateInput",
+      "valid": false,
+      "value": {
+        "base": null,
+        "title": "Example",
+        "markdown": "# Example",
+        "data": {
+          "tone": "brief",
+          "manual": "keep"
+        },
+        "evidence": [
+          {
+            "kind": "manual",
+            "label": "Example 2",
+            "note": "Fictional annotation 2"
+          }
+        ]
+      }
+    },
+    {
+      "definition": "SkillUpdateProposalOutput",
+      "valid": false,
+      "value": {
+        "version": 1,
+        "status": "unchanged",
+        "base": {
+          "key": "sample-profile",
+          "versionId": "sv_11111111111111111111111111111111",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        "proposalId": "fake"
+      }
+    },
+    {
+      "definition": "Node",
+      "valid": false,
+      "value": {
+        "id": "update",
+        "type": "skill",
+        "version": 1,
+        "operation": "propose-update",
+        "binding": "workspace",
+        "base": {
+          "$ref": "params.base"
+        },
+        "title": "Example",
+        "markdown": "# Example",
+        "data": {
+          "tone": "brief"
+        },
+        "evidence": [
+          {
+            "kind": "manual",
+            "label": "Example 2",
+            "note": "Fictional annotation 2"
+          }
+        ]
+      }
+    }
+  ]
+}

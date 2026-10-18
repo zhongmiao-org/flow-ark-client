@@ -1,3 +1,29 @@
+import {
+  validateSkillUpdateApplication,
+  validateSkillUpdateDetail,
+} from '../../contracts/skill-update-application';
+import { walk } from '../core/validate';
+import {
+  createSkillUpdateBundle,
+  validateSkillUpdateBundle,
+  validateSkillUpdateInput,
+  skillUpdateInfo,
+  skillUpdateUnchanged,
+  createReview,
+  projectApplication,
+  matchCommittedReceipt,
+  mergeSkillUpdateEvidence,
+} from '../../contracts/skill-update-review';
+import type {
+  SkillUpdateBundle,
+  SkillUpdateOrigin,
+  SkillUpdateInfo,
+  SkillUpdateReview,
+  SkillUpdateApply,
+  SkillUpdateReceipt,
+  SkillUpdateProposalOutput,
+  SkillUpdateApplication,
+} from '../shared/contracts.generated';
 import { randomBytes } from 'node:crypto';
 import {
   skillTrialPreview,
@@ -32,6 +58,12 @@ import {
   byteDigest,
   type Workspace,
 } from './skill-files';
+type ApplyJournal = {
+  input: SkillUpdateApply;
+  confirmationSha256: string;
+  epoch: string;
+  status: 'pending' | 'applied' | 'rejected';
+};
 type Saved = { workspace: Workspace; snapshot: SkillProposalSnapshot; baseObservation?: string };
 type Registered = {
   id: string;
@@ -68,6 +100,8 @@ export class Skills {
       expires: number;
     }
   >();
+  private updateEpoch = randomBytes(16).toString('hex');
+  private updateReviews = new Map<string, SkillUpdateReview>();
   private closed = false;
   constructor(
     private store: Store,
@@ -75,6 +109,8 @@ export class Skills {
       available: () => void;
       notify: () => Promise<unknown>;
       verifyConversation?: (evidence: unknown, current: boolean) => void;
+      verifyDocument?: (evidence: unknown, current: boolean, runId?: string) => void;
+      updated?: (ref: SkillVersionRef) => Promise<unknown>;
     },
   ) {
     for (const saved of store.list<Saved>('skill-proposal'))
@@ -116,15 +152,386 @@ export class Skills {
   }
   private verifyEvidence(draft: SkillDraft, current = true) {
     for (const e of draft.evidence)
-      if (e.kind === 'conversation' || e.kind === 'conversation-checkpoint' || e.kind === 'source-reduction') {
+      if (
+        e.kind === 'conversation' ||
+        e.kind === 'conversation-checkpoint' ||
+        e.kind === 'source-reduction'
+      ) {
         if (!this.deps.verifyConversation) throw Error('会话来源核对不可用，草稿未确认');
         this.deps.verifyConversation(e, current);
       }
   }
+  private updateBundle(saved: Saved): SkillUpdateBundle | null {
+    const row = this.store.get<{
+      workspace: Workspace;
+      bundle: SkillUpdateBundle;
+      fingerprint: string;
+    }>('skill-update-bundle', saved.snapshot.id);
+    if (!row) return null;
+    const b = validateSkillUpdateBundle(row.bundle) as SkillUpdateBundle,
+      s = saved.snapshot;
+    const original = this.store.get<FlowRecord>('snapshot', b.origin.runId);
+    const node = original && walk(original.flow.steps).find((n) => n.id === b.origin.nodeId);
+    if (node?.type !== 'skill' || node.version !== 2 || node.binding !== b.workspaceBinding)
+      throw Error('更新节点与原快照不一致');
+    const parent = this.registered(saved.workspace, b.base).version;
+    assertSkillVersion(parent);
+    if (
+      !same(row.workspace, saved.workspace) ||
+      row.fingerprint !== s.sourceFingerprint ||
+      b.proposalId !== s.id ||
+      b.workspaceBinding !== s.workspaceBinding ||
+      b.base.key !== s.key ||
+      b.origin.flowId !== s.sourceFlowId ||
+      b.origin.nodeId !== s.sourceNodeId ||
+      !original ||
+      original.id !== b.origin.flowId ||
+      digest(original) !== b.origin.executionVersionId ||
+      !same(b.baseline, this.content(parent)) ||
+      !same(b.baselineEvidence, parent.evidence)
+    )
+      throw Error('更新建议的基线、工作区或原运行登记不可核验');
+    return b;
+  }
+  private content(d: SkillDraft | SkillVersion) {
+    return { title: d.title, markdown: d.markdown, data: d.data };
+  }
+  private verifyProposalEvidence(saved: Saved, draft = saved.snapshot.draft, current = true) {
+    const b = this.updateBundle(saved);
+    if (!b) {
+      this.verifyEvidence(draft, current);
+      return;
+    }
+    if (!saved.snapshot.base || saved.snapshot.base.key !== b.base.key)
+      throw Error('更新建议必须核对同一键的准确发布父版本');
+    const parent = this.registered(saved.workspace, saved.snapshot.base).version;
+    const inherited = new Set([...b.baselineEvidence, ...parent.evidence].map((e) => digest(e)));
+    for (const evidence of draft.evidence) {
+      const isCurrent = current && !inherited.has(digest(evidence));
+      if (evidence.kind === 'document') {
+        if (!this.deps.verifyDocument) throw Error('资料来源登记核对不可用');
+        this.deps.verifyDocument(evidence, isCurrent, isCurrent ? b.origin.runId : undefined);
+      } else if (evidence.kind !== 'manual') {
+        if (!this.deps.verifyConversation) throw Error('会话来源登记核对不可用');
+        this.deps.verifyConversation(evidence, isCurrent);
+      }
+    }
+  }
+  updateInfo(id: string, revision: number): SkillUpdateInfo | null {
+    this.available();
+    const saved = this.get(id, revision),
+      b = this.updateBundle(saved);
+    return b ? skillUpdateInfo(b, revision) : null;
+  }
+  async proposeUpdate(
+    record: FlowRecord,
+    node: Extract<SkillNode, { version: 2 }>,
+    path: string,
+    input: unknown,
+    origin: SkillUpdateOrigin,
+    check: () => void,
+  ): Promise<SkillUpdateProposalOutput> {
+    this.available();
+    const actual = this.store.get<FlowRecord>('snapshot', origin.runId);
+    if (
+      !actual ||
+      !same(actual, record) ||
+      origin.flowId !== record.id ||
+      origin.nodeId !== node.id ||
+      origin.executionVersionId !== digest(actual) ||
+      !walk(actual.flow.steps).some((n) => same(n, node))
+    )
+      throw Error('更新提案须来自实际固定运行的准确节点');
+    validateSkillUpdateInput(input);
+    const candidate = input as SkillDraft & { base: SkillVersionRef };
+    const draft: SkillDraft = {
+      title: candidate.title,
+      markdown: candidate.markdown,
+      data: candidate.data,
+      evidence: candidate.evidence,
+    };
+    assertSkillDraft(draft);
+    const w = await workspace(path),
+      base = candidate.base;
+    const fingerprint = digest({
+      update: 1,
+      workspace: w,
+      flow: record.id,
+      node: node.id,
+      nodeInstance: origin.nodeInstance,
+      execution: origin.executionVersionId,
+      base,
+      draft,
+    });
+    return this.exclusive(headKey(w, base.key), async () => {
+      this.available();
+      check();
+      const old = this.store.get<{ id: string }>('skill-update-index', fingerprint);
+      if (old) {
+        const existing = this.get(old.id),
+          b = this.updateBundle(existing);
+        if (
+          !b ||
+          !same(existing.workspace, w) ||
+          !same(b.base, base) ||
+          !same(b.suggestion, draft) ||
+          ['unknown', 'discarded', 'publishing'].includes(existing.snapshot.status)
+        )
+          throw Error('原更新提案需要本人核对，未创建替代身份或重置手工内容');
+        const s = existing.snapshot;
+        return s.status === 'confirmed'
+          ? {
+              version: 1,
+              status: 'confirmed',
+              base,
+              proposalId: s.id,
+              revision: s.revision,
+              ref: s.confirmed!,
+            }
+          : { version: 1, status: 'pending', base, proposalId: s.id, revision: s.revision };
+      }
+      const parent = await this.read(w.path, base);
+      this.available();
+      check();
+      if (!same(await workspace(w.path), w) || !same(this.head(w, base.key), base))
+        throw Error('父版本或工作区已变化，请重新核对');
+      const timestamp = now(),
+        proposalId = 'sp_' + randomBytes(16).toString('hex');
+      const b = createSkillUpdateBundle({
+        version: 1,
+        proposalId,
+        workspaceBinding: node.binding,
+        origin,
+        base,
+        baseline: this.content(parent),
+        baselineEvidence: parent.evidence,
+        suggestion: draft,
+        createdAt: timestamp,
+      }) as SkillUpdateBundle;
+      const saved: Saved = {
+        workspace: w,
+        snapshot: {
+          version: 1,
+          id: proposalId,
+          revision: 1,
+          key: base.key,
+          workspaceBinding: node.binding,
+          sourceFlowId: record.id,
+          sourceNodeId: node.id,
+          sourceFingerprint: fingerprint,
+          base,
+          status: 'draft',
+          draft: { ...this.content(parent), evidence: parent.evidence },
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        },
+      };
+      const verifyCandidate = () => {
+        const historical = new Set(parent.evidence.map((e) => digest(e)));
+        for (const e of draft.evidence) {
+          const current = !historical.has(digest(e));
+          if (e.kind === 'document') {
+            if (!this.deps.verifyDocument) throw Error('资料来源核对不可用');
+            this.deps.verifyDocument(e, current, current ? origin.runId : undefined);
+          } else if (e.kind !== 'manual') {
+            if (!this.deps.verifyConversation) throw Error('会话来源核对不可用');
+            this.deps.verifyConversation(e, current);
+          }
+        }
+      };
+      verifyCandidate();
+      const observation = await this.baseline(saved);
+      this.available();
+      check();
+      if (!same(await workspace(w.path), w)) throw Error('工作区身份已变化');
+      verifyCandidate();
+      if (skillUpdateUnchanged(b.baseline, draft)) return { version: 1, status: 'unchanged', base };
+      if (this.store.count('skill-proposal') >= 1000) throw Error('Skill草稿已达到本机上限');
+      this.store.tx(() => {
+        this.available();
+        check();
+        if (!same(this.head(w, base.key), base)) throw Error('确认头已变化');
+        verifyCandidate();
+        this.store.put('skill-update-bundle', proposalId, { workspace: w, bundle: b, fingerprint });
+        this.persist(saved, true);
+        this.store.put('skill-update-index', fingerprint, { id: proposalId });
+      });
+      void this.deps.notify().catch(() => {});
+      return { version: 1, status: 'pending', base, proposalId, revision: 1 };
+    });
+  }
+  private async updateContext(saved: Saved) {
+    const s = saved.snapshot,
+      b = this.updateBundle(saved);
+    if (!b || !s.base || ['publishing', 'unknown', 'confirmed', 'discarded'].includes(s.status))
+      throw Error('当前提案不能应用建议，请核对原操作或父版本');
+    const revision = s.revision;
+    if (!same(await workspace(saved.workspace.path), saved.workspace))
+      throw Error('Skill工作区身份已变化');
+    const observation = await this.baseline(saved);
+    this.available();
+    const latest = this.get(s.id, revision);
+    this.verifyProposalEvidence(latest);
+    this.verifyProposalEvidence(latest, b.suggestion);
+    if (!same(latest.snapshot, s)) throw Error('草稿已变化，请重新核对');
+    return {
+      proposalId: s.id,
+      revision,
+      epoch: this.updateEpoch,
+      base: b.base,
+      publishBase: s.base,
+      bundleSha256: b.sha256,
+      baseline: b.baseline,
+      current: this.content(s.draft),
+      suggested: this.content(b.suggestion),
+      sourceSha256: digest({
+        baselineEvidence: b.baselineEvidence,
+        suggestionEvidence: b.suggestion.evidence,
+        currentEvidence: s.draft.evidence,
+      }),
+      workspaceRevision: digest({
+        workspace: saved.workspace,
+        head: this.head(saved.workspace, s.key),
+        publishBase: s.base,
+        observation,
+      }),
+    };
+  }
+  async reviewUpdate(id: string, revision: number): Promise<SkillUpdateReview> {
+    this.available();
+    const initial = this.get(id, revision);
+    return this.exclusive(headKey(initial.workspace, initial.snapshot.key), async () => {
+      this.noPendingApplication(id);
+      const saved = this.get(id, revision),
+        context = await this.updateContext(saved);
+      const time = Date.now(),
+        review = createReview(
+          context,
+          'sur_' + randomBytes(16).toString('hex'),
+          new Date(time).toISOString(),
+          new Date(time + 300000).toISOString(),
+        ) as SkillUpdateReview;
+      let bytes = 0;
+      for (const [key, value] of this.updateReviews) {
+        if (Date.parse(value.expiresAt) <= time) this.updateReviews.delete(key);
+        else bytes += skillBytes(value);
+      }
+      if (this.updateReviews.size >= 64 || bytes + skillBytes(review) > 32 * 1048576)
+        throw Error('待核对建议已达读取上限，请稍后重新核对');
+      this.updateReviews.set(review.reviewId, structuredClone(review));
+      return review;
+    });
+  }
+  private application(id: string): SkillUpdateApplication | null {
+    const last = this.store.get<{ key: string }>('skill-update-last', id);
+    if (!last) return null;
+    const row = this.store.get<ApplyJournal>('skill-update-request', last.key);
+    if (!row || row.input.proposalId !== id || row.confirmationSha256 !== digest(row.input))
+      throw Error('原应用请求登记不可核验');
+    const receipt =
+      this.store.get<{ receipt: SkillUpdateReceipt }>('skill-update-apply', last.key)?.receipt ??
+      null;
+    const state = receipt ? 'applied' : row.status;
+    if (state === 'applied' && !receipt) throw Error('应用状态缺少真实提交回执');
+    return validateSkillUpdateApplication({
+      status: state,
+      input: row.input,
+      receipt,
+    }) as SkillUpdateApplication;
+  }
+  private noPendingApplication(id: string) {
+    if (this.application(id)?.status === 'pending')
+      throw Error('原应用请求尚待核对，请先核对同一请求；不能开始新确认');
+  }
+  async applyUpdate(input: SkillUpdateApply): Promise<SkillUpdateReceipt> {
+    validateSkillUpdateApplication({ status: 'pending', input, receipt: null });
+    this.available();
+    const initial = this.get(input.proposalId),
+      key = digest({ proposalId: input.proposalId, requestId: input.requestId });
+    return this.exclusive(headKey(initial.workspace, initial.snapshot.key), async () => {
+      this.available();
+      const prior = this.store.get<{ receipt: SkillUpdateReceipt }>('skill-update-apply', key);
+      if (prior) return matchCommittedReceipt(input, prior.receipt) as SkillUpdateReceipt;
+      let row = this.store.get<ApplyJournal>('skill-update-request', key);
+      if (row && row.confirmationSha256 !== digest(input))
+        throw Error('原应用请求身份已使用，不能更换内容');
+      if (
+        row &&
+        (row.input.proposalId !== input.proposalId ||
+          digest(row.input) !== row.confirmationSha256 ||
+          !['pending', 'rejected'].includes(row.status))
+      )
+        throw Error('原应用状态与可信回执不一致，停止新应用');
+      if (row?.status === 'rejected')
+        throw Error('原应用请求已经核对为未提交，请重新核对建议；不重放旧请求');
+      if (!row) {
+        this.noPendingApplication(input.proposalId);
+        if (this.store.count('skill-update-request') >= 10000)
+          throw Error('更新请求记录已达到本机上限');
+        this.get(input.proposalId, input.revision);
+        row = {
+          input: structuredClone(input),
+          confirmationSha256: digest(input),
+          epoch: this.updateEpoch,
+          status: 'pending',
+        };
+        this.store.tx(() => {
+          this.store.put('skill-update-request', key, row);
+          this.store.put('skill-update-last', input.proposalId, { key });
+        });
+      }
+      try {
+        const review = this.updateReviews.get(input.reviewId);
+        if (!review || row.epoch !== this.updateEpoch) throw Error('原核对已过期或重启');
+        const saved = this.get(input.proposalId, input.revision),
+          context = await this.updateContext(saved);
+        const projected = projectApplication(input, review, context, Date.now()),
+          b = this.updateBundle(saved)!;
+        if (projected.changed) {
+          saved.snapshot.draft = {
+            ...projected.content,
+            evidence: mergeSkillUpdateEvidence(
+              saved.snapshot.draft.evidence,
+              b.suggestion.evidence,
+            ),
+          };
+          assertSkillDraft(saved.snapshot.draft);
+          saved.snapshot.revision = projected.receipt.revisionAfter;
+          saved.snapshot.status = 'draft';
+          delete saved.snapshot.error;
+        }
+        this.store.tx(() => {
+          this.available();
+          this.get(input.proposalId, input.revision);
+          this.verifyProposalEvidence(saved);
+          this.verifyProposalEvidence(saved, b.suggestion);
+          if (projected.changed) this.persist(saved, true);
+          this.store.put('skill-update-apply', key, { receipt: projected.receipt });
+          this.store.put('skill-update-request', key, { ...row!, status: 'applied' });
+        });
+        if (projected.changed)
+          for (const [token, p] of this.previews)
+            if (p.id === input.proposalId) this.previews.delete(token);
+        return projected.receipt as SkillUpdateReceipt;
+      } catch (error) {
+        if (this.store.fault) throw Error('本地存储无法核验，原应用请求保持待核对；没有自动重试');
+        const committed = this.store.get<{ receipt: SkillUpdateReceipt }>(
+          'skill-update-apply',
+          key,
+        );
+        if (committed) return matchCommittedReceipt(input, committed.receipt) as SkillUpdateReceipt;
+        this.store.put('skill-update-request', key, { ...row!, status: 'rejected' });
+        throw Error(
+          '已核对原请求未提交；请重新核对建议。' + (error instanceof Error ? error.message : ''),
+        );
+      }
+    });
+  }
   trialUnchanged(source: SkillTrialSource) {
     this.available();
+    this.noPendingApplication(source.proposalId);
     const s = this.get(source.proposalId).snapshot;
-    this.verifyEvidence(s.draft);
+    this.verifyProposalEvidence(this.get(s.id), s.draft);
     if (
       !['draft', 'failed', 'conflict'].includes(s.status) ||
       s.revision !== source.revision ||
@@ -173,7 +580,7 @@ export class Skills {
     const s = latest.snapshot;
     let validSource = true;
     try {
-      this.verifyEvidence(s.draft);
+      this.verifyProposalEvidence(this.get(s.id), s.draft);
     } catch {
       validSource = false;
     }
@@ -255,7 +662,11 @@ export class Skills {
   }
   detail(id: string) {
     const s = this.get(id);
-    return { proposal: structuredClone(s.snapshot), workspace: s.workspace.path };
+    return validateSkillUpdateDetail({
+      proposal: structuredClone(s.snapshot),
+      workspace: s.workspace.path,
+      application: this.application(id),
+    });
   }
   list() {
     return this.store
@@ -369,16 +780,22 @@ export class Skills {
   }
   save(id: string, revision: number, draft: unknown) {
     this.available();
+    this.noPendingApplication(id);
     assertSkillDraft(draft);
-    this.verifyEvidence(draft, false);
     const saved = this.get(id, revision);
+    this.verifyProposalEvidence(saved, draft, false);
+    if (
+      this.updateBundle(saved) &&
+      saved.snapshot.draft.evidence.some((e) => !draft.evidence.some((x) => same(e, x)))
+    )
+      throw Error('本次更新保留既有来源；不能通过普通草稿编辑删除来源记录');
     if (['publishing', 'unknown', 'confirmed', 'discarded'].includes(saved.snapshot.status))
       throw Error('此Skill草稿正在保存、待核对或已经确认，请先核对状态');
     saved.snapshot.draft = structuredClone(draft);
     saved.snapshot.status = 'draft';
     delete saved.snapshot.error;
     try {
-      this.verifyEvidence(draft);
+      this.verifyProposalEvidence(saved, draft);
     } catch (e) {
       saved.snapshot.status = 'conflict';
       saved.snapshot.error =
@@ -418,10 +835,20 @@ export class Skills {
   async preview(id: string, revision: number) {
     this.available();
     const saved = this.get(id, revision);
+    this.noPendingApplication(id);
     if (['publishing', 'unknown', 'confirmed', 'discarded'].includes(saved.snapshot.status))
       throw Error('当前Skill状态不可确认，请先核对已有操作');
     const current = await workspace(saved.workspace.path);
     if (!same(current, saved.workspace)) throw Error('Skill工作区身份已变化');
+    if (
+      this.updateBundle(saved) &&
+      saved.snapshot.base &&
+      same(
+        this.content(saved.snapshot.draft),
+        this.content(this.registered(saved.workspace, saved.snapshot.base).version),
+      )
+    )
+      throw Error('当前内容与已确认版本相同；请先逐项采纳建议或编辑草稿，不创建重复版本');
     let observation: string | null;
     try {
       observation = await this.baseline(saved);
@@ -435,7 +862,7 @@ export class Skills {
     }
     this.available();
     this.get(id, revision);
-    this.verifyEvidence(saved.snapshot.draft);
+    this.verifyProposalEvidence(saved);
     for (const [key, value] of this.previews)
       if (value.expires < Date.now()) this.previews.delete(key);
     if (this.previews.size >= 1000) throw Error('待核对确认过多，请稍后重试');
@@ -473,6 +900,7 @@ export class Skills {
           throw Error('确认请求身份已使用，不能更换内容或目标');
         return this.get(args.id).snapshot;
       }
+      this.noPendingApplication(args.id);
       const saved = this.get(args.id, args.revision),
         s = saved.snapshot,
         p = this.previews.get(args.token);
@@ -488,7 +916,7 @@ export class Skills {
         throw Error('Skill确认已失效，请保留草稿并重新核对');
       const observation = await this.baseline(saved);
       this.get(args.id, args.revision);
-      this.verifyEvidence(s.draft);
+      this.verifyProposalEvidence(this.get(s.id), s.draft);
       if (observation !== p.baseObservation) throw Error('确认期间基线已变化');
       this.available();
       if (this.store.count('skill-operation') >= 10000) throw Error('Skill确认操作已达到本机上限');
@@ -540,7 +968,7 @@ export class Skills {
           this.available(),
         );
         await this.baseline(saved);
-        this.verifyEvidence(op.draft);
+        this.verifyProposalEvidence(saved, op.draft);
         this.available();
         const latest = this.get(s.id);
         if (
@@ -598,12 +1026,44 @@ export class Skills {
     delete s.error;
     s.revision++;
     op.state = 'confirmed';
+    const notificationId = this.store.get('skill-update-bundle', s.id)
+      ? digest({ version: version.ref, workspace: saved.workspace })
+      : null;
+    const notifyNew =
+      !!notificationId && !this.store.get('skill-update-notification', notificationId);
     this.store.tx(() => {
       this.store.put('skill-version', id, record);
       this.store.put('skill-head', headKey(saved.workspace, s.key), { ref: version.ref });
       this.store.put('skill-operation', op.id, op);
       this.persist(saved, true);
+      if (notifyNew) {
+        this.store.put('skill-update-notification', notificationId!, {
+          ref: version.ref,
+          status: 'pending',
+        });
+        this.store.attention(
+          'confirmation',
+          'Skill新版本已保存',
+          {
+            skillProposalId: s.id,
+            version: version.ref,
+            message: '已写出并登记新版本；原流程绑定保持，请明确选择新版。',
+          },
+          'skill-updated:' + notificationId,
+        );
+      }
     });
+    if (notifyNew && this.deps.updated)
+      void Promise.resolve()
+        .then(() => this.deps.updated!(version.ref))
+        .then(() => {
+          if (!this.closed && !this.store.fault)
+            this.store.put('skill-update-notification', notificationId!, {
+              ref: version.ref,
+              status: 'reported',
+            });
+        })
+        .catch(() => {});
     return structuredClone(s);
   }
   async inspect(id: string, requestId: string) {
@@ -639,7 +1099,7 @@ export class Skills {
       }
       try {
         await this.baseline(saved);
-        this.verifyEvidence(op.draft);
+        this.verifyProposalEvidence(saved, op.draft);
       } catch {
         s.status = 'conflict';
         s.error = '完整文件保留，但当前确认基线或来源已变化；本次未登记，请核对差异后另建新版本。';
@@ -677,6 +1137,7 @@ export class Skills {
     this.available();
     const saved = this.get(args.id);
     return this.exclusive(headKey(saved.workspace, saved.snapshot.key), async () => {
+      this.noPendingApplication(args.id);
       const latest = this.get(args.id, args.revision),
         s = latest.snapshot;
       if (['publishing', 'unknown', 'confirmed', 'discarded'].includes(s.status))
@@ -689,6 +1150,17 @@ export class Skills {
       if (args.adoptExternal) {
         if (!current.external) throw Error('未读取到可核对外部正文，当前输入保留');
         s.draft = current.external;
+      }
+      if (this.updateBundle(latest)) {
+        if (!current.head || current.head.key !== s.key)
+          throw Error('更新提案需要同键的准确父版本');
+        const before = this.get(args.id, args.revision).snapshot.draft.evidence;
+        s.draft.evidence = mergeSkillUpdateEvidence(before, s.draft.evidence);
+        s.draft.evidence = mergeSkillUpdateEvidence(
+          s.draft.evidence,
+          current.current?.evidence ?? [],
+        );
+        assertSkillDraft(s.draft);
       }
       s.base = current.head;
       latest.baseObservation = current.observation ?? undefined;

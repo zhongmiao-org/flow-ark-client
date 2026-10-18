@@ -1,3 +1,5 @@
+import { verifySkillDocument } from './skill-update-documents';
+import { assertSkillUpdateNode } from '../../contracts/skill-update-review';
 import { SourceReductions } from './source-reductions';
 import { SourceReductionReviews, reductionSnapshotHash } from './source-reduction-reviews';
 import { reductionMethods } from '../shared/source-reduction';
@@ -198,6 +200,8 @@ export class Runtime {
     this.skills = new Skills(this.store, {
       available: () => this.assertAdmitting(),
       notify: () => this.system('notification', { title: 'FlowArk 有待核对的Skill草稿' }),
+      updated: () => this.system('notification', { title: 'FlowArk Skill 新版本已保存' }),
+      verifyDocument: (e, current, runId) => verifySkillDocument(this.store, e, current, runId),
       verifyConversation: (evidence, current) =>
         (evidence as { kind?: string }).kind === 'source-reduction'
           ? this.reductions.verifyEvidence(evidence, current)
@@ -864,7 +868,7 @@ export class Runtime {
         n.type === 'file' ||
         n.type === 'excel' ||
         n.type === 'document' ||
-        (n.type === 'skill' && n.operation === 'propose')
+        (n.type === 'skill' && n.operation !== 'read')
       )
         await this.fileDirectory(record.bindings, n.binding);
       if (n.type === 'browser' && n.operation === 'upload') {
@@ -1551,7 +1555,7 @@ export class Runtime {
       const node = walk(snapshot.flow.steps).find((n) => n.id === args.nodeId);
       if (!node || node.type !== 'skill') throw Error('Skill节点不在当前快照中');
       const checkpointSource =
-        node.operation === 'propose' &&
+        node.operation !== 'read' &&
         Array.isArray(args.input?.evidence) &&
         args.input.evidence.some((e: any) => e?.kind === 'conversation-checkpoint');
       if (
@@ -1567,8 +1571,11 @@ export class Runtime {
           !entry.capabilities.includes('skill-v1') ||
           (checkpointSource && !entry.capabilities.includes('conversation-checkpoint-v1')) ||
           !entry.resources.includes(node.binding) ||
-          (node.operation === 'propose'
-            ? r?.kind !== 'directory' || r.access !== 'readwrite'
+          (node.operation !== 'read'
+            ? r?.kind !== 'directory' ||
+              (node.version === 2
+                ? !['write', 'readwrite'].includes(r.access)
+                : r.access !== 'readwrite')
             : r?.kind !== 'skill' || r.access !== 'read')
         )
           throw Error('模板入口未声明Skill能力与准确资源');
@@ -1583,6 +1590,26 @@ export class Runtime {
         return fixed;
       }
       const root = await this.fileDirectory(snapshot.bindings, node.binding);
+      if (node.version === 2) {
+        assertSkillUpdateNode(node, snapshot.flow.requiredCapabilities);
+        const input = Object.fromEntries(
+          ['base', 'title', 'markdown', 'data', 'evidence'].map((k) => [k, args.input?.[k]]),
+        );
+        return this.skills.proposeUpdate(
+          snapshot,
+          node,
+          root,
+          input,
+          {
+            runId: id,
+            flowId: snapshot.id,
+            nodeId: node.id,
+            nodeInstance: args.nodeInstance,
+            executionVersionId: digest(snapshot),
+          },
+          () => this.checkActive(active),
+        );
+      }
       return this.skills.propose(snapshot, node, root, args.input, () => this.checkActive(active));
     }
     if (method === 'document.extract') {
@@ -2188,6 +2215,10 @@ export class Runtime {
         const fixed = await this.skills.trialInput(v.source);
         return this.conversations.openSkillTrial(v, fixed);
       }
+      if (method === 'skill.update.info') return this.skills.updateInfo(v.proposalId, v.revision);
+      if (method === 'skill.update.review')
+        return this.skills.reviewUpdate(v.proposalId, v.revision);
+      if (method === 'skill.update.apply') return this.skills.applyUpdate(v);
       if (method === 'skill.list') return this.skills.list();
       if (method === 'skill.inspectBinding') {
         const r = await this.skills.read(v.path, v.ref);
