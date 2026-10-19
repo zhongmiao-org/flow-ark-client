@@ -1,3 +1,8 @@
+import {
+  assertBrowserTargetInvocation,
+  assertBrowserTargetCapabilities,
+  assertBrowserTargetResult,
+} from '../shared/browser-target';
 import { verifySkillDocument } from './skill-update-documents';
 import { EffectNodes } from './effect-nodes';
 import { EntryResults } from './entry-results';
@@ -2103,6 +2108,31 @@ export class Runtime {
     if (method === 'browser') {
       const active = this.active;
       const inspection = args.version === 4;
+      const targetInput = args.version === 8;
+      if (targetInput) {
+        const source = walk(snapshot.flow.steps).find((n) => n.id === args.id);
+        if (
+          !source ||
+          source.type !== 'browser' ||
+          source.version !== 8 ||
+          typeof args.nodeInstance !== 'string' ||
+          !active?.nodeInstances?.has(args.nodeInstance)
+        )
+          throw Error('网页变量目标节点不在当前固定运行中');
+        assertBrowserTargetInvocation(source, args);
+        assertBrowserTargetCapabilities(source, snapshot.flow.requiredCapabilities);
+        if (snapshot.bindings.template) {
+          const { entry, pkg } = await this.templates.context(snapshot);
+          assertBrowserTargetCapabilities(
+            source,
+            snapshot.flow.requiredCapabilities,
+            pkg.manifest,
+            entry,
+          );
+          this.checkActive(active);
+        }
+        runSignal.throwIfAborted();
+      }
       let fieldsInput: ResolvedBrowserFieldsNode | undefined;
       if (args.version === 5 || args.version === 6 || args.version === 7) {
         const { nodeInstance, ...nodeInput } = args;
@@ -2167,6 +2197,7 @@ export class Runtime {
         value: args.value,
         timeoutMs: args.timeoutMs,
         ...(fieldsInput ? { version: fieldsInput.version, fields: fieldsInput.fields } : {}),
+        ...(targetInput ? { version: 8 } : {}),
       };
       if (args.operation === 'upload') {
         const source = uploadSource(args.value);
@@ -2194,6 +2225,11 @@ export class Runtime {
       );
       this.checkActive(active);
       runSignal.throwIfAborted();
+      if (targetInput) {
+        assertBrowserTargetResult(args.operation, result);
+        this.typedResults.save(id, args.id, args.nodeInstance, 'browser', result);
+        return result;
+      }
       if (fieldsInput) {
         assertBrowserFieldsResult(fieldsInput, result);
         this.typedResults.save(id, args.id, args.nodeInstance, 'browser', result, fieldsInput);

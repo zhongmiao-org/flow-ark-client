@@ -1,10 +1,19 @@
 // Paths are per command; callers must never keep a sticky current frame.
-export function framePathOf(command: { operation: string; framePath?: unknown }): string[] {
+export function framePathOf(command: {
+  operation: string;
+  framePath?: unknown;
+  version?: number;
+}): string[] {
   const path = command.framePath === undefined ? [] : command.framePath;
   if (
     !Array.isArray(path) ||
     path.length > 8 ||
-    path.some((s) => typeof s !== 'string' || !s.trim() || s.length > 2000)
+    path.some(
+      (s) =>
+        typeof s !== 'string' ||
+        !s.trim() ||
+        (command.version === 8 ? [...s].length : s.length) > 2000,
+    )
   )
     throw new Error('框架路径需为最多 8 层的非空 CSS 选择器数组');
   if (

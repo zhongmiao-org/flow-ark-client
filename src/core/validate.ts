@@ -1,3 +1,4 @@
+import { browserTargetCapability, assertBrowserTargetCapabilities } from '../shared/browser-target';
 import { assertSkillUpdateNode } from '../../contracts/skill-update-review';
 import { assertEffectNodeCapabilities, effectNodeCapability } from '../../contracts/effect-node';
 import {
@@ -51,6 +52,7 @@ export const capabilities = [
   'run-result',
   'run-result-read-v1',
   browserInspectionCapability,
+  browserTargetCapability,
   browserFieldsCapability,
   browserRenderedFieldsCapability,
   browserScopedRenderedFieldsCapability,
@@ -168,6 +170,7 @@ export function validateFlow(value: unknown): Flow {
         mappingPreview(n, parameters);
       }
       if (n.type === 'browser') {
+        assertBrowserTargetCapabilities(n, flow.requiredCapabilities);
         if (n.version === 5 || n.version === 6 || n.version === 7) {
           assertBrowserFieldsNode(n);
           if (

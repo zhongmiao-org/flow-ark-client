@@ -139,6 +139,8 @@ export function changeBrowserOperation(
     ...(node.name !== undefined ? { name: node.name } : {}),
     ...(node.timeoutMs !== undefined ? { timeoutMs: node.timeoutMs } : {}),
   };
+  if (node.version === 8 && ['click', 'read', 'wait'].includes(operation))
+    return { ...node, operation, value: null } as BrowserNode;
   if (operation === 'collect' && node.operation === 'collect') return node;
   if (operation === 'collect')
     return {
@@ -162,6 +164,22 @@ export function changeBrowserOperation(
           : '',
     value: structuredClone(preset.value),
     framePath: topLevel ? [] : 'framePath' in node ? node.framePath : [],
+  } as BrowserNode;
+}
+
+export function useBrowserTargetInput(node: BrowserNode): BrowserNode {
+  if (!['click', 'read', 'wait'].includes(node.operation))
+    throw Error('只有点击、读取文字和等待可见支持变量目标');
+  return {
+    id: node.id,
+    type: 'browser',
+    version: 8,
+    operation: node.operation,
+    selector: node.selector,
+    framePath: 'framePath' in node ? node.framePath : [],
+    value: null,
+    ...(node.name !== undefined ? { name: node.name } : {}),
+    ...(node.timeoutMs !== undefined ? { timeoutMs: node.timeoutMs } : {}),
   } as BrowserNode;
 }
 

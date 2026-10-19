@@ -19,6 +19,7 @@ import './editor-workspace-dialog.css';
 import './browser-action-workspace.css';
 import BrowserFieldsConfiguration from './BrowserFieldsConfiguration';
 import { assertBrowserFieldsNode } from '../shared/browser-fields';
+import { assertBrowserTargetNode } from '../shared/browser-target';
 
 const groups: { title: string; operations: BrowserOperation[]; detail: string }[] = [
   {
@@ -114,9 +115,10 @@ export default function BrowserActionWorkspace(props: Props) {
   };
   const finish = () => {
     if (!props.guard()) return;
-    if (node.version === 5 || node.version === 6 || node.version === 7) {
+    if ([5, 6, 7, 8].includes(node.version)) {
       try {
-        assertBrowserFieldsNode(node);
+        if (node.version === 8) assertBrowserTargetNode(node);
+        else assertBrowserFieldsNode(node);
       } catch (e) {
         setLocalError((e as Error).message);
         requestAnimationFrame(() => errorRef.current?.focus());
@@ -170,7 +172,7 @@ export default function BrowserActionWorkspace(props: Props) {
         <div className="browser-action-page">
           <header>
             <h1 ref={heading} id={id} tabIndex={-1}>
-              {node.version >= 6
+              {node.version === 6 || node.version === 7
                 ? '关联字段与正文'
                 : node.version === 5
                   ? '读取关联字段'
@@ -259,7 +261,7 @@ export default function BrowserActionWorkspace(props: Props) {
                       />
                       {active ? (
                         <>
-                          {!topLevel && node.version !== 4 && (
+                          {!topLevel && node.version !== 4 && node.version !== 8 && (
                             <div className="browser-action-target">
                               <span>目标元素</span>
                               <Button onClick={() => locator.current?.focus()}>
@@ -301,7 +303,7 @@ export default function BrowserActionWorkspace(props: Props) {
                 <Card className="browser-action-card browser-action-locator">
                   <h2>定位与期限</h2>
                   {topLevel && <p>此动作作用于顶层网页，不使用元素定位和 iframe 路径。</p>}
-                  {node.version !== 4 && (
+                  {node.version !== 4 && node.version !== 8 && (
                     <>
                       <label htmlFor={id + '-selector'}>选择器</label>
                       <Input
@@ -345,7 +347,14 @@ export default function BrowserActionWorkspace(props: Props) {
                       setFrameError('');
                       props.change({
                         ...node,
-                        version: node.version === 4 ? 4 : node.version === 3 ? 3 : 2,
+                        version:
+                          node.version === 8
+                            ? 8
+                            : node.version === 4
+                              ? 4
+                              : node.version === 3
+                                ? 3
+                                : 2,
                         framePath: next as FramePath,
                       } as BrowserNode);
                     }}

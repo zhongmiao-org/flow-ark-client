@@ -5,6 +5,7 @@ import {
   type Frame,
   type Request,
   type JSHandle,
+  type ElementHandle,
 } from 'playwright-core';
 import { mkdir } from 'node:fs/promises';
 import type { BrowserBinding, BrowserCommand, BrowserDriver } from '../shared/types';
@@ -13,6 +14,8 @@ import { commandBudget, assertBrowserOperations } from './browser-scope';
 import { resolvedBrowserFields, assertBrowserFieldsResult } from '../shared/browser-fields';
 import { readBrowserFields, type BrowserFieldsDOMInput } from './browser-fields-dom';
 import { readBrowserRenderedFields } from './browser-rendered-fields-dom';
+import { browserTargetDOM, browserTargetPointerGuard } from './browser-target-dom';
+import { resolvedBrowserTarget, assertBrowserTargetResult } from '../shared/browser-target';
 export class PlaywrightDriver implements BrowserDriver {
   private documentEpoch = 0;
   private navigationRequests = new Set<Request>();
@@ -68,6 +71,7 @@ export class PlaywrightDriver implements BrowserDriver {
     const path = framePathOf(c);
     const remaining = commandBudget(c.timeoutMs);
     const page = this.page;
+    if (c.version === 8) return this.target(c, page, path, remaining);
     if (c.operation === 'collect') return this.collect(c, page, path, remaining);
     let frame: Frame = page.mainFrame();
     for (const selector of path) {
@@ -185,6 +189,111 @@ export class PlaywrightDriver implements BrowserDriver {
         return page.url();
       default:
         throw new Error('浏览器不支持此操作');
+    }
+  }
+  private async target(c: BrowserCommand, page: Page, path: string[], remaining: () => number) {
+    const command = resolvedBrowserTarget(c),
+      epoch = this.documentEpoch;
+    const handles: JSHandle[] = [];
+    const chain: { frame: Frame; selector: string; element: ElementHandle<Element> }[] = [];
+    const verify = () => {
+      remaining();
+      if (
+        this.documentEpoch !== epoch ||
+        this.page !== page ||
+        page.isClosed() ||
+        this.navigationRequests.size
+      )
+        throw Error('网页或框架在派发前已变化，未重新定位');
+    };
+    const state = async (item: (typeof chain)[number], read = false) => {
+      verify();
+      const result = await item.frame.evaluate(browserTargetDOM, {
+        selector: item.selector,
+        expected: item.element,
+        mode: read ? ('read' as const) : ('check' as const),
+      });
+      verify();
+      if (!result || !('visible' in result)) throw Error('网页目标状态不可核对');
+      return result;
+    };
+    const bind = async (frame: Frame, selector: string) => {
+      for (;;) {
+        verify();
+        const handle = await frame.evaluateHandle(browserTargetDOM, {
+          selector,
+          mode: 'bind' as const,
+        });
+        const element = handle.asElement() as ElementHandle<Element> | null;
+        if (element) {
+          handles.push(handle);
+          return { frame, selector, element };
+        }
+        await handle.dispose();
+        await new Promise((resolve) => setTimeout(resolve, Math.min(30, remaining())));
+      }
+    };
+    const visible = async (item: (typeof chain)[number]) => {
+      for (;;) {
+        for (const ancestor of chain)
+          if (!(await state(ancestor)).visible) throw Error('已绑定框架不再可见');
+        const result = await state(item);
+        if (result.visible) return;
+        await new Promise((resolve) => setTimeout(resolve, Math.min(30, remaining())));
+      }
+    };
+    try {
+      verify();
+      let frame = page.mainFrame();
+      for (const selector of path) {
+        const item = await bind(frame, selector);
+        await visible(item);
+        const next = await item.element.contentFrame();
+        verify();
+        if (!next || next.isDetached()) throw Error('目标不是可用框架');
+        chain.push(item);
+        frame = next;
+      }
+      const item = await bind(frame, command.selector);
+      await visible(item);
+      let result: unknown;
+      if (command.operation === 'click') {
+        // ElementHandle keeps this exact element; never use a re-resolving Locator here.
+        for (const ancestor of chain)
+          if (!(await state(ancestor)).visible) throw Error('框架不可见');
+        if (!(await state(item)).visible) throw Error('目标不可见');
+        const guard = await frame.evaluateHandle(browserTargetPointerGuard, {
+          selector: item.selector,
+          element: item.element,
+        });
+        try {
+          await item.element.click({ timeout: remaining(), noWaitAfter: true });
+          let observation;
+          try {
+            observation = await guard.evaluate((value) => value.read());
+          } catch (error) {
+            if (this.documentEpoch === epoch) throw error;
+          }
+          if (observation && (observation.blocked || !observation.pressed))
+            throw Error('点击期间固定目标发生变化，结果未确认');
+        } finally {
+          await guard.evaluate((value) => value.dispose()).catch(() => {});
+          await guard.dispose().catch(() => {});
+        }
+        // Closing a popup or navigation after dispatch must never trigger another click.
+        result = { clicked: true, verified: false };
+      } else if (command.operation === 'read') {
+        const value = await state(item, true);
+        if (!value.visible) throw Error('读取目标不再可见');
+        result = value.text;
+      } else {
+        if (!(await state(item)).visible) throw Error('等待目标不再可见');
+        result = true;
+      }
+      assertBrowserTargetResult(command.operation, result);
+      return result;
+    } finally {
+      await Promise.all(handles.map((handle) => handle.dispose().catch(() => {})));
     }
   }
   private async collect(c: BrowserCommand, page: Page, path: string[], remaining: () => number) {

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.43.0/p1.schema.json",
-  "title": "FlowArk P1 0.43.0",
+  "$id": "https://flowark.local/contracts/0.44.0/p1.schema.json",
+  "title": "FlowArk P1 0.44.0",
   "$defs": {
     "Json": {
       "anyOf": [
@@ -2338,6 +2338,9 @@
         },
         {
           "$ref": "#/$defs/BrowserScopedRenderedFieldsNode"
+        },
+        {
+          "$ref": "#/$defs/BrowserTargetNode"
         }
       ]
     },
@@ -14299,6 +14302,173 @@
         "renderPolicy"
       ],
       "additionalProperties": false
+    },
+    "BrowserTargetNode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "type": {
+          "const": "browser"
+        },
+        "version": {
+          "const": 8
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100000
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 3600000
+        },
+        "operation": {
+          "enum": [
+            "click",
+            "read",
+            "wait"
+          ]
+        },
+        "selector": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000,
+              "pattern": "\\S"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "$ref": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                }
+              },
+              "required": [
+                "$ref"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "value": {
+          "type": "null"
+        },
+        "framePath": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "pattern": "\\S"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "version",
+        "operation",
+        "selector",
+        "value",
+        "framePath"
+      ],
+      "additionalProperties": false
+    },
+    "BrowserTargetInvocation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "type": {
+          "const": "browser"
+        },
+        "version": {
+          "const": 8
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100000
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 3600000
+        },
+        "operation": {
+          "enum": [
+            "click",
+            "read",
+            "wait"
+          ]
+        },
+        "selector": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "pattern": "\\S"
+        },
+        "value": {
+          "type": "null"
+        },
+        "framePath": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "pattern": "\\S"
+          }
+        },
+        "nodeInstance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "version",
+        "operation",
+        "selector",
+        "value",
+        "framePath",
+        "nodeInstance"
+      ],
+      "additionalProperties": false
+    },
+    "BrowserTargetClickResult": {
+      "type": "object",
+      "properties": {
+        "clicked": {
+          "const": true
+        },
+        "verified": {
+          "const": false
+        }
+      },
+      "required": [
+        "clicked",
+        "verified"
+      ],
+      "additionalProperties": false
+    },
+    "BrowserTargetWaitResult": {
+      "const": true
+    },
+    "BrowserTargetReadResult": {
+      "type": "string",
+      "maxLength": 65536
     }
   }
 }

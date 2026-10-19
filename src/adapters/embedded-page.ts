@@ -11,6 +11,8 @@ import type { ObservationPan } from '../shared/browser-observation';
 import { resolvedBrowserFields, assertBrowserFieldsResult } from '../shared/browser-fields';
 import { readBrowserFields } from './browser-fields-dom';
 import { readBrowserRenderedFields } from './browser-rendered-fields-dom';
+import { browserTargetDOM } from './browser-target-dom';
+import { resolvedBrowserTarget, assertBrowserTargetResult } from '../shared/browser-target';
 import {
   renderingDiagnosticDataSchema,
   type RenderingInspectionRequest,
@@ -247,7 +249,7 @@ export class EmbeddedPage {
       await new Promise((resolve) => setTimeout(resolve, Math.min(30, remaining())));
     }
   }
-  private async pointerGuard(scope: Scope, objectId: string) {
+  private async pointerGuard(scope: Scope, objectId: string, selector?: string) {
     const result = await this.send(
       'Runtime.callFunctionOn',
       {
@@ -256,7 +258,9 @@ export class EmbeddedPage {
         const target=this, state={hovered:false,pressed:false,blocked:false};
         const listen=e=>{
           if(!e.isTrusted) return;
-          const hit=target.isConnected && !target.matches(':disabled') && e.composedPath().includes(target);
+          let unique=true;
+          ${selector ? `try { unique=(${browserTargetDOM.toString()})({selector:${JSON.stringify(selector)},expected:target,mode:'check'}).visible; } catch { unique=false; }` : ''}
+          const hit=unique && target.isConnected && !target.matches(':disabled') && e.composedPath().includes(target);
           if(e.type==='mousemove') { state.hovered=hit; return; }
           if(!hit) { state.blocked=true; e.preventDefault(); e.stopImmediatePropagation(); }
           else if(e.type==='mousedown') state.pressed=true;
@@ -313,9 +317,15 @@ export class EmbeddedPage {
     // require another multiplication, but observation panning adds this offset.
     return { x: x - viewport.x, y: y - viewport.y };
   }
-  private async click(scope: Scope, objectId: string, remaining: () => number) {
+  private async click(
+    scope: Scope,
+    objectId: string,
+    remaining: () => number,
+    beforePress?: () => Promise<void>,
+    selector?: string,
+  ) {
     await this.visible(scope, objectId, remaining, true);
-    const guard = await this.pointerGuard(scope, objectId);
+    const guard = await this.pointerGuard(scope, objectId, selector);
     let navigated = false;
     const navigation = () => {
       navigated = true;
@@ -325,6 +335,7 @@ export class EmbeddedPage {
       let point: { x: number; y: number };
       for (;;) {
         remaining();
+        await beforePress?.();
         point = await this.pointerPoint(scope, objectId);
         await this.call(scope, guard, 'function(){this.reset();}');
         // A trusted hover proves that Chromium has routed input into the target
@@ -339,6 +350,7 @@ export class EmbeddedPage {
         await new Promise((resolve) => setTimeout(resolve, Math.min(20, remaining())));
       }
       remaining();
+      await beforePress?.();
       const input = { ...point, button: 'left', clickCount: 1 };
       await this.send('Input.dispatchMouseEvent', { ...input, type: 'mousePressed' });
       await this.send('Input.dispatchMouseEvent', { ...input, type: 'mouseReleased' });
@@ -362,6 +374,7 @@ export class EmbeddedPage {
     const path = framePathOf(command),
       remaining = commandBudget(command.timeoutMs);
     this.abort.signal.throwIfAborted();
+    if (command.version === 8) return this.target(command, path, remaining);
     if (command.operation === 'collect') return this.collect(command, path, remaining);
     if (command.operation === 'navigate') {
       const url = new URL(String(command.value));
@@ -519,6 +532,110 @@ export class EmbeddedPage {
     } finally {
       await this.send('Runtime.releaseObject', { objectId: element }, scope.session).catch(
         () => {},
+      );
+    }
+  }
+  private async target(command: BrowserCommand, path: string[], remaining: () => number) {
+    const input = resolvedBrowserTarget(command),
+      epoch = this.documentEpoch;
+    const handles: { scope: Scope; objectId: string }[] = [];
+    const chain: { scope: Scope; objectId: string; selector: string }[] = [];
+    const verify = () => {
+      remaining();
+      this.abort.signal.throwIfAborted();
+      if (this.contents.isDestroyed() || this.documentEpoch !== epoch)
+        throw Error('网页或框架在派发前已变化，未重新定位');
+    };
+    const state = async (item: (typeof chain)[number], read = false) => {
+      verify();
+      const result = await this.call(
+        item.scope,
+        item.objectId,
+        `function(selector,mode){return (${browserTargetDOM.toString()})({selector,mode,expected:this});}`,
+        item.selector,
+        read ? 'read' : 'check',
+      );
+      verify();
+      if (!result || typeof result.visible !== 'boolean') throw Error('网页目标状态不可核对');
+      return result as { visible: boolean; text?: string };
+    };
+    const bind = async (scope: Scope, selector: string) => {
+      for (;;) {
+        verify();
+        const object = await this.evaluate(
+          scope,
+          `(${browserTargetDOM.toString()})(${JSON.stringify({ selector, mode: 'bind' })})`,
+          false,
+        );
+        if (object.objectId && object.subtype !== 'null') {
+          const item = { scope, objectId: object.objectId as string, selector };
+          handles.push(item);
+          return item;
+        }
+        await new Promise((resolve) => setTimeout(resolve, Math.min(30, remaining())));
+      }
+    };
+    const checkChain = async () => {
+      for (const item of chain) if (!(await state(item)).visible) throw Error('已绑定框架不再可见');
+    };
+    const visible = async (item: (typeof chain)[number]) => {
+      for (;;) {
+        await checkChain();
+        if ((await state(item)).visible) return;
+        await new Promise((resolve) => setTimeout(resolve, Math.min(30, remaining())));
+      }
+    };
+    try {
+      verify();
+      const { frameTree } = await this.send('Page.getFrameTree');
+      let scope = await this.world(frameTree.frame.id);
+      for (const selector of path) {
+        const item = await bind(scope, selector);
+        await visible(item);
+        const { node } = await this.send(
+          'DOM.describeNode',
+          { objectId: item.objectId },
+          scope.session,
+        );
+        verify();
+        if (!node.frameId) throw Error('目标不是可用框架');
+        const next = await this.world(node.frameId, this.frames.get(node.frameId) ?? scope.session);
+        next.ancestors = [...scope.ancestors, { scope, selector }];
+        chain.push(item);
+        scope = next;
+      }
+      const item = await bind(scope, input.selector);
+      await visible(item);
+      let result: unknown;
+      if (input.operation === 'click') {
+        await this.click(
+          scope,
+          item.objectId,
+          remaining,
+          async () => {
+            await checkChain();
+            if (!(await state(item)).visible) throw Error('点击目标不再可见');
+          },
+          input.selector,
+        );
+        result = { clicked: true, verified: false };
+      } else if (input.operation === 'read') {
+        await checkChain();
+        const value = await state(item, true);
+        if (!value.visible) throw Error('读取目标不再可见');
+        result = value.text;
+      } else {
+        await checkChain();
+        if (!(await state(item)).visible) throw Error('等待目标不再可见');
+        result = true;
+      }
+      assertBrowserTargetResult(input.operation, result);
+      return result;
+    } finally {
+      await Promise.all(
+        handles.map(({ scope, objectId }) =>
+          this.send('Runtime.releaseObject', { objectId }, scope.session).catch(() => {}),
+        ),
       );
     }
   }

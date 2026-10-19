@@ -40,7 +40,7 @@ export function taskStepTitle(step: Step): string {
   const title = (
     step.name?.trim() ||
     (step.type === 'browser'
-      ? step.version >= 6
+      ? step.version === 6 || step.version === 7
         ? '关联字段与正文'
         : browserLabels[step.operation]
       : step.type === 'effect'

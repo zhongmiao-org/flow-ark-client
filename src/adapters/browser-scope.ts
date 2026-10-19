@@ -14,10 +14,14 @@ export function commandBudget(timeoutMs = 15000): () => number {
 
 export function assertBrowserOperations(
   binding: Pick<BrowserBinding, 'product'> & Partial<Pick<BrowserBinding, 'version'>>,
-  commands: Pick<BrowserCommand, 'operation' | 'framePath'>[],
+  commands: Pick<BrowserCommand, 'operation' | 'framePath' | 'version'>[],
 ) {
   for (const command of commands) {
     framePathOf(command);
+    if (command.version === 8 && !['chrome', 'embedded'].includes(binding.product))
+      throw Error(
+        '此浏览器尚未实现变量目标的固定元素核对，请选择内置浏览器或 Chrome；不会改用旧节点执行。',
+      );
     if (command.operation === 'collect' && !['chrome', 'embedded'].includes(binding.product))
       throw Error(
         '此浏览器尚不能核对关联采集的文档代次，请明确选择内置浏览器或 Chrome；不会切换驱动或采用独立读取。',

@@ -927,7 +927,8 @@ export type Node =
       evidence?: Value;
     }
   | RunResultNode
-  | BrowserScopedRenderedFieldsNode;
+  | BrowserScopedRenderedFieldsNode
+  | BrowserTargetNode;
 export type Value =
   | Json
   | {
@@ -2047,6 +2048,8 @@ export type BrowserScopedRenderedFieldResult = {
       ];
   ignoredAncestorSpaces: number;
 };
+export type BrowserTargetWaitResult = true;
+export type BrowserTargetReadResult = string;
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -2272,6 +2275,11 @@ export interface FlowArkP1 {
   BrowserScopedRenderedFieldsNode?: BrowserScopedRenderedFieldsNode;
   BrowserScopedRenderedFieldResult?: BrowserScopedRenderedFieldResult;
   BrowserScopedRenderedFieldsResult?: BrowserScopedRenderedFieldsResult;
+  BrowserTargetNode?: BrowserTargetNode;
+  BrowserTargetInvocation?: BrowserTargetInvocation;
+  BrowserTargetClickResult?: BrowserTargetClickResult;
+  BrowserTargetWaitResult?: BrowserTargetWaitResult;
+  BrowserTargetReadResult?: BrowserTargetReadResult;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -2543,6 +2551,33 @@ export interface BrowserScopedRenderedFieldsNode {
         BrowserRenderedField,
         BrowserRenderedField
       ];
+}
+export interface BrowserTargetNode {
+  id: string;
+  type: 'browser';
+  version: 8;
+  name?: string;
+  timeoutMs?: number;
+  operation: 'click' | 'read' | 'wait';
+  selector:
+    | string
+    | {
+        $ref: string;
+      };
+  value: null;
+  /**
+   * @maxItems 8
+   */
+  framePath:
+    | []
+    | [string]
+    | [string, string]
+    | [string, string, string]
+    | [string, string, string, string]
+    | [string, string, string, string, string]
+    | [string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string];
 }
 export interface FlowDefinition {
   formatVersion: '1.0';
@@ -6650,4 +6685,32 @@ export interface BrowserScopedRenderedFieldsResult {
         BrowserScopedRenderedFieldResult
       ];
   renderPolicy: 'bounded-rendered-text-v2';
+}
+export interface BrowserTargetInvocation {
+  id: string;
+  type: 'browser';
+  version: 8;
+  name?: string;
+  timeoutMs?: number;
+  operation: 'click' | 'read' | 'wait';
+  selector: string;
+  value: null;
+  /**
+   * @maxItems 8
+   */
+  framePath:
+    | []
+    | [string]
+    | [string, string]
+    | [string, string, string]
+    | [string, string, string, string]
+    | [string, string, string, string, string]
+    | [string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string];
+  nodeInstance: string;
+}
+export interface BrowserTargetClickResult {
+  clicked: true;
+  verified: false;
 }

@@ -16,6 +16,7 @@ import { SkillVersionView } from './SkillPanel';
 import { assertDataOutput } from '../shared/template-data';
 import ContextResultView from './ContextResultView';
 import { assertBrowserInspectionResult } from '../shared/browser-inspection';
+import { assertBrowserTargetResult } from '../shared/browser-target';
 import { assertBrowserFieldsValue } from '../shared/browser-fields';
 import BrowserFieldsResultView from './BrowserFieldsResultView';
 import type { TypedResultMeta } from '../host/typed-results';
@@ -65,6 +66,8 @@ export default function TypedRunResults({
           else assertConversationOutput(v.value);
         } else if (v.type === 'browser') {
           if (v.operation === 'collect') assertBrowserFieldsValue(v.value);
+          else if (['read', 'click', 'wait'].includes(v.operation))
+            assertBrowserTargetResult(v.operation, v.value);
           else assertBrowserInspectionResult(v.operation, v.value);
         } else throw Error('结果类型无效');
         if (live) setValue(v);
@@ -143,17 +146,29 @@ export default function TypedRunResults({
         <BrowserFieldsResultView key={id} value={value.value} />
       )}
       {value?.type === 'browser' && value.operation !== 'collect' && (
-        <section aria-label="完整网页只读结果">
+        <section
+          aria-label={
+            ['read', 'click', 'wait'].includes(value.operation)
+              ? '完整网页目标结果'
+              : '完整网页只读结果'
+          }
+        >
           <p>
-            {value.operation === 'url'
-              ? '当前顶层页面实际地址'
-              : value.operation === 'count'
-                ? '匹配数量；0表示当前范围没有匹配'
-                : value.value === null
-                  ? '该元素没有此属性（null）'
-                  : value.value === ''
-                    ? '属性存在，值为空文本（""）'
-                    : '唯一元素的原始DOM属性'}
+            {value.operation === 'read'
+              ? '本次绑定唯一可见目标的完整文字'
+              : value.operation === 'click'
+                ? '已调用点击；业务结果仍未核对，不会自动再次点击'
+                : value.operation === 'wait'
+                  ? '本次绑定目标已可见'
+                  : value.operation === 'url'
+                    ? '当前顶层页面实际地址'
+                    : value.operation === 'count'
+                      ? '匹配数量；0表示当前范围没有匹配'
+                      : value.value === null
+                        ? '该元素没有此属性（null）'
+                        : value.value === ''
+                          ? '属性存在，值为空文本（""）'
+                          : '唯一元素的原始DOM属性'}
           </p>
           <pre
             style={{
