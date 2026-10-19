@@ -23,6 +23,27 @@ import type { Bindings, FlowRecord, Run } from '../shared/types';
 import type { TemplateHumanReview } from '../shared/contracts.generated';
 import type { TemplateInstance } from './types';
 import { templateSaveSchema, type TemplateSave } from '../shared/ipc';
+
+function actionConfirmation(pkg: PackageData, entry: Entry, id: string) {
+  const declaration = pkg.manifest.actions.find((action) => action.id === id);
+  if (!declaration) throw Error('模板动作声明不存在，请重新核对模板包');
+  const name = declaration.name.trim() || '未命名模板动作';
+  const characters = Array.from(name);
+  // Human request titles have a 200 UTF-16-unit limit. Keep the full name in the body.
+  const titleName = characters.slice(0, 80).join('') + (characters.length > 80 ? '…' : '');
+  return {
+    name,
+    titleName,
+    description: [
+      `入口：${entry.name}`,
+      `动作：${name}`,
+      `模板声明范围：${declaration.description.trim() || '模板未提供范围说明，请先核对固定流程并联系模板作者。'}`,
+      '写入确认范围：本次运行中该动作的后续执行（包括循环），并非只确认当前一次点击。其他动作仍需分别授权。',
+      '配置、资源或权限变化仍会阻止写入；本次确认不会修改实例默认权限，也不代表外部业务已受理。',
+    ].join('\n\n'),
+  };
+}
+
 export class Templates {
   readonly library: PackageLibrary;
   private mutations: Promise<unknown> = Promise.resolve();
@@ -448,7 +469,7 @@ export class Templates {
     };
     available();
     if (!record.bindings.template) return available;
-    const { entry, ref } = await this.context(record);
+    const { entry, ref, pkg } = await this.context(record);
     if (!entry.actions.length) throw new Error('入口未声明写入动作');
     const fixed = structuredClone({
       flowId: record.id,
@@ -483,6 +504,7 @@ export class Templates {
     for (const action of entry.actions) {
       check();
       const grant = fixed.grants[action];
+      const confirmation = actionConfirmation(pkg, entry, action);
       if (grant === 'auto') continue;
       if (grant === 'confirm') {
         if (this.store.get('template-approval', runId + ':' + action)) continue;
@@ -490,7 +512,11 @@ export class Templates {
           signal &&
           (await this.human(
             runId,
-            { title: '确认：' + action, schema: { type: 'boolean' } },
+            {
+              title: '允许本次运行：' + confirmation.titleName,
+              description: confirmation.description,
+              schema: { type: 'boolean' },
+            },
             signal,
           ))
         ) {
@@ -500,7 +526,7 @@ export class Templates {
         }
         check();
       }
-      throw new Error('写入动作尚未确认：' + action);
+      throw new Error('写入动作尚未确认：' + confirmation.name);
     }
     check();
     return check;
@@ -587,7 +613,7 @@ export class Templates {
       active();
     };
     check();
-    const { entry, ref } = await this.context(record);
+    const { entry, ref, pkg } = await this.context(record);
     check();
     if (!entry.capabilities.includes('effect')) throw Error('入口未声明能力：effect');
     if (!q || typeof q !== 'object') throw Error('准备操作参数无效');
@@ -604,11 +630,16 @@ export class Templates {
       old = this.store.get<any>('template-effect', id);
     if (old) return { ...old, execute: false };
     if (grant === 'confirm') {
+      const confirmation = actionConfirmation(pkg, entry, q.action);
       const accepted = await this.human(
         runId,
         {
-          title: '确认：' + q.action,
-          description: q.description ?? '',
+          title: '准备操作：' + confirmation.titleName,
+          description: [
+            confirmation.description,
+            '本次操作准备：确认后登记当前操作记录；后续每份操作记录仍须独立准备，同键不会重新执行。',
+            ...(q.description ? [`模板提供的本次说明：\n${q.description}`] : []),
+          ].join('\n\n'),
           ...(q.review !== undefined ? { review: q.review } : {}),
           schema: { type: 'boolean' },
         },
