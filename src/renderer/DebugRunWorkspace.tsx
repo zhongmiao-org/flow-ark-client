@@ -43,7 +43,7 @@ export default function DebugRunWorkspace(props: Props) {
   const currentLabel =
     props.view.step.instance &&
     runInstancePresenter(props.detail.snapshot)(props.view.step.instance) === null
-      ? `${stepPrefix ? `${stepPrefix}：` : ''}${props.view.step.instance}（位置待核对）`
+      ? `${stepPrefix ? `${stepPrefix}：` : ''}步骤位置待核对`
       : current && current.ordinal !== null && stepPrefix
         ? `${stepPrefix}：${runTimelineTitle(current)}`
         : props.view.step.label;
@@ -193,8 +193,8 @@ export default function DebugRunWorkspace(props: Props) {
                         layout="vertical"
                         column={1}
                         items={[
-                          { key: 'run', label: '运行', children: run.id },
-                          { key: 'version', label: '固定版本', children: run.versionId },
+                          { key: 'run', label: '运行', children: run.name },
+                          { key: 'version', label: '执行方案', children: '按启动时保存的方案执行' },
                           {
                             key: 'elapsed',
                             label: '已记录时长',

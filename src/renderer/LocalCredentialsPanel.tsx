@@ -618,7 +618,9 @@ export default function LocalCredentialsPanel({
                   </div>
                 )}
                 <p className="local-credential-mask">••••••••</p>
-                {!compact && <code>{entry.id}</code>}
+                {!compact && (
+                  <TechnicalDetails items={[{ label: '凭据引用 ID', value: entry.id }]} />
+                )}
                 <div className="local-credential-actions">
                   <Button
                     disabled={loading || !!listError || undefined}
@@ -644,7 +646,9 @@ export default function LocalCredentialsPanel({
                       onKeyDown: activateCollapseWithSpace,
                       children: (
                         <>
-                          {compact && <code>{entry.id}</code>}
+                          {compact && (
+                            <TechnicalDetails items={[{ label: '凭据引用 ID', value: entry.id }]} />
+                          )}
                           {entry.boundFlows.length ? (
                             <ul>
                               {entry.boundFlows.map((flow) => (

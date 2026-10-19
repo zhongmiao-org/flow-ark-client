@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import { Drawer, Button, Card, Empty, Input, Collapse, Descriptions, Alert } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
@@ -217,7 +218,7 @@ export default function VariablePicker({
                           color={base === choice.path ? 'primary' : 'default'}
                           variant={base === choice.path ? 'filled' : 'outlined'}
                           aria-pressed={base === choice.path}
-                          title={choice.path}
+                          title={choice.label}
                           onClick={() => {
                             setBase(choice.path);
                             setSuffix('');
@@ -277,14 +278,9 @@ export default function VariablePicker({
                     size="small"
                     items={[{ key: 'source', label: '来源', children: selected.hint }]}
                   />
-                  <div className="variable-picker-path">
-                    <label htmlFor={titleId + '-path'}>引用路径</label>
-                    <Input
-                      id={titleId + '-path'}
-                      readOnly
-                      value={suffix ? `${base}.${suffix}` : base}
-                    />
-                  </div>
+                  <TechnicalDetails
+                    items={[{ label: '完整引用路径', value: suffix ? `${base}.${suffix}` : base }]}
+                  />
                   <p className="variable-picker-note">
                     不使用历史运行值作为默认数据；未知子路径在运行时核验。
                   </p>
@@ -303,7 +299,9 @@ export default function VariablePicker({
                     }
                   />
 
-                  {current && <code>{current}</code>}
+                  {current && (
+                    <TechnicalDetails items={[{ label: '原引用路径', value: current }]} />
+                  )}
                 </div>
               )}
               {failure && (

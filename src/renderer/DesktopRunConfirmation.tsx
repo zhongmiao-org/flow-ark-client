@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import { Alert, Collapse, Descriptions, Card } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { RunReviewPreview } from '../shared/run-review';
@@ -47,14 +48,19 @@ export default function DesktopRunConfirmation({ preview }: { preview: RunReview
           。运行期间请保持文档与选区不变。
         </p>
       )}
-      {preview.rerun && <p>关联原运行：{preview.rerun.runId}。本次从头执行，可能再次修改文档。</p>}
+      {preview.rerun && (
+        <>
+          <p>将关联原运行记录。本次从头执行，可能再次修改文档。</p>
+          <TechnicalDetails items={[{ label: '来源运行 ID', value: preview.rerun.runId }]} />
+        </>
+      )}
       <Collapse
         items={[
           {
             key: 'version',
             forceRender: true,
             onKeyDown: activateCollapseWithSpace,
-            label: <>查看固定方案与运行记录位置</>,
+            label: <>查看固定方案与运行记录位置（高级诊断）</>,
             children: (
               <>
                 <Descriptions

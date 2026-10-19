@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import { referenceChoices } from './value-references';
 import { Alert, Button, Collapse, Input, Space, Tag } from 'antd';
 import { useEffect, useState, type RefObject, type Ref } from 'react';
@@ -113,7 +114,7 @@ export default function ReadStepInspector({
         output: (
           <div className="read-step-output">
             <label>输出</label>
-            <p className="read-step-value" title={reference}>
+            <p className="read-step-value" title="当前步骤输出 → 文本">
               当前步骤输出 → 文本
             </p>
             <Collapse
@@ -127,7 +128,7 @@ export default function ReadStepInspector({
                   forceRender: true,
                   children: (
                     <div className="read-step-references">
-                      <code>{reference}</code>
+                      <TechnicalDetails items={[{ label: '完整输出引用', value: reference }]} />
                       <p>
                         后续步骤可通过变量选择引用此输出。这里展示草稿引用关系，不包含实际读取结果。
                       </p>

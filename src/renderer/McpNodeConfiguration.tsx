@@ -1,16 +1,17 @@
+import TechnicalDetails from './TechnicalDetails';
 import { Alert, Collapse, Descriptions, Select } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { Step } from '../shared/types';
 import type { TaskMcpTarget } from '../shared/task-mcp-targets';
 import type { ReferenceChoice } from './value-references';
-import { referenceOf } from './value-references';
+import { readableReference, referenceOf } from './value-references';
 import ValueField from './ValueField';
 import './mcp-node.css';
 
 type ToolStep = Extract<Step, { type: 'mcp' }>;
-const value = (input: unknown): string => {
+const value = (input: unknown, choices: ReferenceChoice[]): string => {
   const ref = referenceOf(input);
-  if (ref !== undefined) return `引用 ${ref}`;
+  if (ref !== undefined) return readableReference(ref, choices);
   return typeof input === 'string' ? input : JSON.stringify(input, null, 2);
 };
 export default function McpNodeConfiguration({
@@ -52,7 +53,7 @@ export default function McpNodeConfiguration({
                   });
               }}
               options={[
-                ...(!target ? [{ value: node.target, label: <>未绑定 · {node.target}</> }] : []),
+                ...(!target ? [{ value: node.target, label: '尚未绑定工具对象' }] : []),
                 ...targets.map((target) => ({
                   value: target.selectionId,
                   label: target.displayName,
@@ -227,7 +228,8 @@ export default function McpNodeConfiguration({
         />
       ) : argsRef ? (
         <p className="mcp-argument-reference">
-          整组参数来自 <code>{argsRef}</code>
+          通过已选变量读取整组参数
+          <TechnicalDetails items={[{ label: '完整引用路径', value: argsRef }]} />
         </p>
       ) : (
         <Descriptions
@@ -239,7 +241,7 @@ export default function McpNodeConfiguration({
           items={Object.entries(node.arguments ?? {}).map(([key, input]) => ({
             key,
             label: key,
-            children: <pre>{value(input)}</pre>,
+            children: <pre>{value(input, choices)}</pre>,
           }))}
         />
       )}

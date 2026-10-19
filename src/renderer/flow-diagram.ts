@@ -1,3 +1,4 @@
+import { taskStepTitle } from './task-step-title';
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
 import type { Step } from '../shared/types';
 import { kinds } from './node-kinds';
@@ -129,6 +130,10 @@ export function buildDiagram(
     });
     return { id, handle: 'out' };
   }
+  function connectionName(id: string): string {
+    const node = nodes.find((node) => node.id === id);
+    return node?.data.step ? taskStepTitle(node.data.step) : node?.data.label || '分支汇合点';
+  }
   function connect(
     from: Pin,
     to: Pin,
@@ -142,6 +147,7 @@ export function buildDiagram(
       target: to.id,
       targetHandle: to.handle,
       label,
+      ariaLabel: `连接：${connectionName(from.id)} → ${connectionName(to.id)}${label ? ' · ' + label : ''}`,
       type: route ? 'routed' : 'smoothstep',
       data: route,
       markerEnd: task

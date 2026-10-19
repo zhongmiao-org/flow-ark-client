@@ -6,9 +6,7 @@ import {
 } from '../shared/flow-references';
 export class StructureReferenceError extends Error {
   constructor(public readonly issues: ReferenceIssue[]) {
-    super(
-      `无法调整：${issues.map((issue) => `${issue.nodeId} 的 ${issue.reference} ${issue.message}`).join('；')}。请先调整引用。`,
-    );
+    super(`无法调整：有 ${issues.length} 处变量引用需要核对。请先在受影响字段中重新选择来源。`);
     this.name = 'StructureReferenceError';
   }
 }

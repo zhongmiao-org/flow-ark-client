@@ -1,3 +1,4 @@
+import { readableReference } from './value-references';
 import { Alert, Button, Card, Checkbox, Collapse, Input, Select, Space } from 'antd';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import type { BrowserRenderedField, FramePath } from '../shared/contracts.generated';
@@ -149,7 +150,10 @@ export default function BrowserFieldsConfiguration({
       <section className="browser-fields-summary">
         <p>在唯一根元素内同步读取 {node.fields.length} 个字段。</p>
         <p>
-          根定位：{typeof node.selector === 'string' ? node.selector : '引用 ' + node.selector.$ref}
+          根定位：
+          {typeof node.selector === 'string'
+            ? node.selector
+            : readableReference(node.selector.$ref, choices)}
         </p>
         <p>在“网页动作配置”中维护字段列表、定位和必填设置。</p>
         {invalid && <p className="field-error">{invalid}</p>}

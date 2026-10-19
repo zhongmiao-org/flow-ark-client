@@ -221,7 +221,7 @@ export default function DesktopTaskRun({
                         ? `文本编辑 / ${desktop.windowTitle} / 原选区`
                         : '本次记录未提供窗口名称',
                     },
-                    { key: 'version', label: '固定版本', children: run.versionId },
+                    { key: 'version', label: '执行方案', children: '按启动时保存的方案执行' },
                     {
                       key: 'state',
                       label: '运行记录',

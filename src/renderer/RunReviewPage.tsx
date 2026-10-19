@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import { runRecordLabel } from './readable-labels';
 import { Alert, Button, Checkbox, Collapse, Descriptions, Card } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
@@ -228,7 +229,9 @@ function Contents({
                     {compact && preview.rerun && (
                       <div className="run-review-rerun-origin">
                         <p>关联原运行：{preview.rerun.name}</p>
-                        <p className="run-review-version">{preview.rerun.runId}</p>
+                        <TechnicalDetails
+                          items={[{ label: '来源运行 ID', value: preview.rerun.runId }]}
+                        />
                         <p>已核对原输出与外部结果；新运行从第 1 步开始，不恢复旧脚本内部现场。</p>
                       </div>
                     )}

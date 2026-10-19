@@ -9,6 +9,17 @@ export type ReferenceChoice = {
   group: '流程参数' | '前序步骤' | '当前循环';
   hint: string;
 };
+
+export function readableReference(reference: string, choices: readonly ReferenceChoice[]): string {
+  const source =
+    choices.find((choice) => choice.path === reference) ??
+    choices
+      .filter((choice) => reference.startsWith(choice.path + '.'))
+      .sort((a, b) => b.path.length - a.path.length)[0];
+  if (!source) return '变量来源待核对';
+  const suffix = reference.slice(source.path.length).split('.').filter(Boolean).join(' / ');
+  return `${source.group} / ${source.label}${suffix ? ' / ' + suffix : ''}`;
+}
 const forbidden = new Set(['__proto__', 'prototype', 'constructor']);
 export const referenceKey = (key: string) => !!key && !key.includes('.') && !forbidden.has(key);
 export function referenceOf(value: unknown): string | undefined {

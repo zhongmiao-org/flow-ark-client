@@ -727,7 +727,7 @@ export default function TaskRunPage({
                   items={[
                     {
                       key: 'evidence-4',
-                      label: '固定版本与已记录影响',
+                      label: '固定版本与已记录影响（高级诊断）',
                       forceRender: true,
                       onKeyDown: activateCollapseWithSpace,
                       children: (

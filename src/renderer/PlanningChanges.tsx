@@ -56,7 +56,7 @@ const readable = (value: unknown) => {
   if (value === '') return '空文本';
   if (typeof value === 'boolean') return value ? '是' : '否';
   if (value && typeof value === 'object' && '$ref' in value && typeof value.$ref === 'string')
-    return `引用：${value.$ref}`;
+    return '变量引用（来源待核对）';
   return typeof value === 'string' ? value : raw(value);
 };
 const fieldValue = (field: string, value: unknown) => {

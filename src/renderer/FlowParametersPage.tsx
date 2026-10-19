@@ -189,7 +189,7 @@ export default function FlowParametersPage({
           const entry = entries.get(nodeId);
           const name = entry
             ? `第 ${entry.ordinal} 步「${taskStepTitle(entry.step)}」`
-            : `步骤 ${nodeId}`;
+            : '步骤名称待核对';
           return `${name} → ${reference}`;
         }),
       ),

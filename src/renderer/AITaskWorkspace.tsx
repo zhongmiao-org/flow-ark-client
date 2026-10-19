@@ -2658,7 +2658,7 @@ export default function AITaskWorkspace(props: Props) {
                               key: 'proposal',
                               forceRender: true,
                               onKeyDown: activateCollapseWithSpace,
-                              label: <>本次提案来源</>,
+                              label: <>本次提案来源（高级诊断）</>,
                               children: (
                                 <>
                                   <Descriptions

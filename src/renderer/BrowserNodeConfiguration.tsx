@@ -1,3 +1,4 @@
+import { readableReference } from './value-references';
 import { Button, Select, Input, Collapse, Space } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { Fragment, useEffect, useId, useRef, useState, type ReactNode, type Ref } from 'react';
@@ -43,7 +44,9 @@ export default function BrowserNodeConfiguration({
   const selectorInput = useRef<HTMLInputElement>(null);
   const staticSelector = typeof node.selector === 'string' ? node.selector : '';
   const selectorDisplay =
-    typeof node.selector === 'string' ? node.selector : `引用：${node.selector.$ref}`;
+    typeof node.selector === 'string'
+      ? node.selector
+      : readableReference(node.selector.$ref, choices);
   const fieldId = fieldsOnly ? instanceId + '-' : '';
   const [inspected, setInspected] = useState(false);
   const [target, setTarget] = useState<ElementTarget | null>(null);

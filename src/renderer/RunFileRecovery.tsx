@@ -133,7 +133,7 @@ export default function RunFileRecovery({
                     (typeof node.name === 'string'
                       ? node.name
                       : referenceOf(node.name) !== undefined
-                        ? `引用 ${referenceOf(node.name)}（实际名称待核对）`
+                        ? '使用已选变量（实际名称待核对）'
                         : '配置未提供可核对的文件名');
                   return (
                     <article key={step.instance}>

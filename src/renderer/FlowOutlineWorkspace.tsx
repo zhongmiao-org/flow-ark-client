@@ -562,7 +562,7 @@ export default function FlowOutlineWorkspace({
                     {selectedRows.map((row) => (
                       <div className="outline-instance" key={row.instance}>
                         <strong>{row.label}</strong>
-                        <code>{row.instance}</code>
+                        <p>{row.pathLabel ?? '步骤位置待核对'}</p>
                       </div>
                     ))}
                     <Button onClick={() => detail && showRun(detail)}>查看此运行详情</Button>

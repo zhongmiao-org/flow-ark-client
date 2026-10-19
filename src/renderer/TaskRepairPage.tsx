@@ -574,7 +574,7 @@ export default function TaskRepairPage({
                     (node?.type === 'browser'
                       ? typeof node.selector === 'string'
                         ? node.selector
-                        : '引用：' + node.selector.$ref
+                        : '使用已选变量（实际定位以运行记录为准）'
                       : undefined)
                   }
                   framePath={
