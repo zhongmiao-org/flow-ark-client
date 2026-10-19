@@ -6,6 +6,37 @@ import {
   type FieldsPickCandidate,
   type FieldsPickScope,
 } from '../shared/browser-field-picking';
+import {
+  parseRenderingInspection,
+  renderingInspectionStatusSchema,
+  type RenderingInspection,
+  type RenderingLocation,
+} from '../shared/browser-rendering-diagnostics';
+
+const issueLabels = {
+  'hidden-target': '目标或祖先不可见',
+  'hidden-descendant': '后代不可见',
+  'line-clamp': '行数截断',
+  'overflow-clip': '溢出裁剪',
+  'unsupported-layout': '无法核准的排版',
+  'embedded-content': '嵌入内容',
+  'generated-content': '生成内容',
+};
+const positionLabel = (location: RenderingLocation) => {
+  const scope =
+    location.scope === 'target'
+      ? '目标'
+      : location.scope === 'ancestor'
+        ? `祖先第 ${location.depth} 层`
+        : location.scope === 'frame-ancestor'
+          ? `框架祖先第 ${location.depth} 层`
+          : location.scope === 'descendant'
+            ? `后代第 ${location.depth} 层`
+            : '位置无法关联';
+  return [scope, location.tag?.toUpperCase(), location.pseudo && `::${location.pseudo}`]
+    .filter(Boolean)
+    .join(' · ');
+};
 
 const api = (method: string, args: unknown) => window.flowark.request(method, args);
 const message = (error: unknown) =>
@@ -19,6 +50,7 @@ export default function FieldsElementPicker({
   framePath,
   sourceKey,
   reason,
+  rendered = false,
   beforeStart,
   onApply,
 }: {
@@ -27,20 +59,28 @@ export default function FieldsElementPicker({
   framePath: string[];
   sourceKey: string;
   reason?: string;
+  rendered?: boolean;
   beforeStart?: () => boolean;
   onApply: (candidate: FieldsPickCandidate) => void;
 }) {
-  const key = JSON.stringify([scope, selector, framePath, sourceKey, reason]);
+  const key = JSON.stringify([scope, selector, framePath, sourceKey, reason, rendered]);
   const current = useRef({ key, onApply, beforeStart });
   current.current = { key, onApply, beforeStart };
   const request = useRef<{ id: string; key: string } | undefined>(undefined);
   const alive = useRef(true);
-  const [phase, setPhase] = useState<'idle' | 'picking' | 'candidate' | 'applying' | 'validating'>(
-    'idle',
-  );
+  const [phase, setPhase] = useState<
+    'idle' | 'picking' | 'candidate' | 'applying' | 'validating' | 'diagnosing'
+  >('idle');
   const [candidate, setCandidate] = useState<FieldsPickCandidate>();
   const [error, setError] = useState('');
   const [verified, setVerified] = useState(false);
+  const [inspection, setInspection] = useState<RenderingInspection>();
+  const inspectionRef = useRef<RenderingInspection | undefined>(undefined);
+  const inspectionKey = useRef('');
+  const clearInspection = () => {
+    inspectionRef.current = undefined;
+    setInspection(undefined);
+  };
   const applyButton = useRef<HTMLButtonElement>(null);
   const cancelRequest = () => {
     const owner = request.current;
@@ -61,6 +101,7 @@ export default function FieldsElementPicker({
     setCandidate(undefined);
     setError('');
     setVerified(false);
+    clearInspection();
   }, [key]);
   const isCurrent = (owner: { id: string; key: string }) =>
     alive.current && request.current === owner && current.current.key === owner.key;
@@ -70,7 +111,43 @@ export default function FieldsElementPicker({
     setPhase('idle');
     setError('');
     setVerified(false);
+    clearInspection();
   };
+  useEffect(() => {
+    if (!inspection) return;
+    const expectedKey = key;
+    let live = true,
+      timer: ReturnType<typeof setTimeout>;
+    const valid = () =>
+      live &&
+      alive.current &&
+      current.current.key === expectedKey &&
+      inspectionRef.current === inspection;
+    const poll = async () => {
+      try {
+        const status = renderingInspectionStatusSchema.parse(
+          await api('browser.embedded.fields.rendering.status', { source: inspection.source }),
+        );
+        if (!valid()) return;
+        if (!status.current) {
+          clearInspection();
+          setError('当前网页已变化或不可用，请重新查看拒绝位置');
+          return;
+        }
+      } catch (e) {
+        if (!valid()) return;
+        clearInspection();
+        setError(message(e));
+        return;
+      }
+      if (valid()) timer = setTimeout(() => void poll(), 500);
+    };
+    void poll();
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [inspection, key]);
   useEffect(() => {
     if (!candidate) return;
     applyButton.current?.focus();
@@ -132,6 +209,7 @@ export default function FieldsElementPicker({
     setPhase('picking');
     setError('');
     setVerified(false);
+    clearInspection();
     try {
       await open();
       if (!isCurrent(owner)) return;
@@ -175,6 +253,7 @@ export default function FieldsElementPicker({
     setPhase('validating');
     setError('');
     setVerified(false);
+    clearInspection();
     try {
       await open();
       if (!isCurrent(owner)) return;
@@ -184,6 +263,43 @@ export default function FieldsElementPicker({
       if (!isCurrent(owner)) return;
       if (value.kind !== scope.kind) throw Error('定位验证类型与当前配置不一致');
       setVerified(true);
+    } catch (e) {
+      if (isCurrent(owner)) setError(message(e));
+    } finally {
+      if (isCurrent(owner)) {
+        request.current = undefined;
+        setPhase('idle');
+      }
+    }
+  };
+  const diagnose = async () => {
+    if (
+      !rendered ||
+      scope?.kind !== 'field' ||
+      reason ||
+      !selector?.trim() ||
+      phase !== 'idle' ||
+      current.current.beforeStart?.() === false
+    )
+      return;
+    const owner = { id: crypto.randomUUID(), key };
+    const input = { version: 1 as const, requestId: owner.id, root: scope.root, selector };
+    request.current = owner;
+    clearInspection();
+    setPhase('diagnosing');
+    setError('');
+    setVerified(false);
+    try {
+      await open();
+      if (!isCurrent(owner)) return;
+      const value = parseRenderingInspection(
+        await api('browser.embedded.fields.rendering.inspect', input),
+        input,
+      );
+      if (!isCurrent(owner)) return;
+      inspectionRef.current = value;
+      inspectionKey.current = owner.key;
+      setInspection(value);
     } catch (e) {
       if (isCurrent(owner)) setError(message(e));
     } finally {
@@ -234,7 +350,20 @@ export default function FieldsElementPicker({
         >
           {root ? '验证根定位' : '验证当前字段'}
         </Button>
-        {phase !== 'idle' && <Button onClick={cancel}>取消本次候选</Button>}
+        {rendered && !root && (
+          <Button
+            disabled={!!reason || scope?.kind !== 'field' || !selector?.trim() || phase !== 'idle'}
+            loading={phase === 'diagnosing'}
+            onClick={() => void diagnose()}
+          >
+            查看拒绝位置
+          </Button>
+        )}
+        {(phase !== 'idle' || inspection) && (
+          <Button onClick={cancel}>
+            {phase === 'diagnosing' ? '取消本次诊断' : inspection ? '清除诊断' : '取消本次候选'}
+          </Button>
+        )}
       </Space>
       {reason && <p>{reason}</p>}
       {phase === 'picking' && (
@@ -246,6 +375,45 @@ export default function FieldsElementPicker({
         <p role="status">刚才验证时唯一匹配；页面变化后请重新验证。定位不证明正文完整。</p>
       )}
       {error && <Alert type="error" title={error} role="alert" />}
+      {inspection && inspectionKey.current === key && (
+        <Card
+          size="small"
+          className="fields-rendering-diagnostic"
+          title="当前字段 · 拒绝原因与位置"
+          role="status"
+        >
+          <p>本次检查不读取正文；页面或定位变化后请重新检查，诊断不写入历史。</p>
+          <p>
+            {inspection.issues.length
+              ? inspection.issues.map((s) => issueLabels[s]).join('、')
+              : '本次有限检查未发现拒绝原因；不代表正文完整。'}
+          </p>
+          {inspection.truncated && (
+            <Alert
+              type="warning"
+              title="位置记录已达到 32 项上限；拒绝原因仍保留，未列出的位置不代表不存在。"
+            />
+          )}
+          <ol aria-label="拒绝位置列表">
+            {inspection.locations.map((location, i) => (
+              <li key={i}>
+                <strong>{positionLabel(location)}</strong>：{issueLabels[location.issue]}
+                {location.contentKind && (
+                  <span>
+                    {' '}
+                    · {location.contentKind === 'whitespace-string' ? '空白字符串' : '其他生成内容'}
+                    ；正文仍未采用
+                  </span>
+                )}
+              </li>
+            ))}
+          </ol>
+          <p>
+            已检查 {inspection.scannedElements} 个元素 / {inspection.scannedNodes}{' '}
+            个节点；仅限此刻页面及当前有限策略。
+          </p>
+        </Card>
+      )}
       {candidate && (
         <Card size="small" className="fields-pick-candidate">
           <Tag color="processing">待采用 · {candidate.label || candidate.tag}</Tag>

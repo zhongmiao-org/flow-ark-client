@@ -11,6 +11,10 @@ import type { ObservationPan } from '../shared/browser-observation';
 import { resolvedBrowserFields, assertBrowserFieldsResult } from '../shared/browser-fields';
 import { readBrowserFields } from './browser-fields-dom';
 import { readBrowserRenderedFields } from './browser-rendered-fields-dom';
+import {
+  renderingDiagnosticDataSchema,
+  type RenderingInspectionRequest,
+} from '../shared/browser-rendering-diagnostics';
 import { describeFieldsPick } from './browser-field-picking-dom';
 import {
   fieldsPickCandidateSchema,
@@ -837,6 +841,47 @@ export class EmbeddedPage {
         tag: info.tag,
         structural: info.structural,
       });
+    } finally {
+      await this.send('Runtime.releaseObject', { objectId: element }, scope.session).catch(
+        () => {},
+      );
+    }
+  }
+  async inspectFieldsRendering(request: RenderingInspectionRequest) {
+    const epoch = this.documentEpoch;
+    const anchor = await this.captureFieldsRoot(request.root);
+    const scope = await this.scope(request.root.framePath, commandBudget(3000), false);
+    const document = await this.fieldsDocument(scope);
+    const element = await this.fieldsElement(scope, request.selector, request.root.selector);
+    try {
+      const point = await this.fieldsPoint(scope, element);
+      const data = renderingDiagnosticDataSchema.parse(
+        await this.call(
+          scope,
+          element,
+          `function(input) { return (${readBrowserRenderedFields.toString()})({ ...input, diagnosticsOnly: true, diagnosticTarget: this }); }`,
+          {
+            selector: request.root.selector,
+            diagnosticSelector: request.selector,
+            framePath: request.root.framePath,
+            fields: [],
+            url: '',
+          },
+        ),
+      );
+      const again = await this.fieldsElement(scope, request.selector, request.root.selector);
+      try {
+        if (!this.sameFieldsPoint(await this.fieldsPoint(scope, again), point))
+          throw Error('诊断期间目标已被替换，请重新检查');
+      } finally {
+        await this.send('Runtime.releaseObject', { objectId: again }, scope.session).catch(
+          () => {},
+        );
+      }
+      await this.verifyFieldsRoot(anchor);
+      if (epoch !== this.documentEpoch || document !== (await this.fieldsDocument(scope)))
+        throw Error('诊断期间网页或框架已变化，请重新检查');
+      return data;
     } finally {
       await this.send('Runtime.releaseObject', { objectId: element }, scope.session).catch(
         () => {},

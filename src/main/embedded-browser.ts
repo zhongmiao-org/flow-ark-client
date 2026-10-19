@@ -6,6 +6,10 @@ import {
   type WebContents,
 } from 'electron';
 import { randomUUID } from 'node:crypto';
+import {
+  parseRenderingInspection,
+  renderingInspectionRequestSchema,
+} from '../shared/browser-rendering-diagnostics';
 import { EmbeddedPage, type FieldsRootAnchor } from '../adapters/embedded-page';
 import {
   fieldsPickScopeSchema,
@@ -1133,11 +1137,26 @@ export class EmbeddedBrowser {
         return this.verifyTarget(args.selection);
       case 'browser.embedded.review':
         return this.review();
+      case 'browser.embedded.fields.rendering.status': {
+        const source = args.source;
+        const current = this.review();
+        return {
+          current: !!(
+            current.started &&
+            !current.loading &&
+            !current.blocked &&
+            this.resource?.presented &&
+            current.resourceId === source.resourceId &&
+            current.documentRevision === source.documentRevision
+          ),
+        };
+      }
       case 'browser.embedded.pick.start':
       case 'browser.embedded.pick.validate':
       case 'browser.embedded.fields.pick.start':
       case 'browser.embedded.fields.pick.confirm':
-      case 'browser.embedded.fields.pick.validate': {
+      case 'browser.embedded.fields.pick.validate':
+      case 'browser.embedded.fields.rendering.inspect': {
         const fields = method.startsWith('browser.embedded.fields.');
         this.assertAvailable();
         if (this.resource?.operation) throw new Error('网页正在执行操作，请稍后选取');
@@ -1162,7 +1181,9 @@ export class EmbeddedBrowser {
         const operation: Operation = {
           stop,
           pickRequestId:
-            method.endsWith('.start') || (fields && method.endsWith('.confirm'))
+            method.endsWith('.start') ||
+            (fields && method.endsWith('.confirm')) ||
+            method.endsWith('.inspect')
               ? args.requestId
               : undefined,
           fields,
@@ -1229,6 +1250,26 @@ export class EmbeddedBrowser {
               }
               await page.picker.cancel();
               this.assertOperation(resource, operation);
+              if (method === 'browser.embedded.fields.rendering.inspect') {
+                const request = renderingInspectionRequestSchema.parse(args);
+                const revision = resource.documentRevision;
+                const data = await page.inspectFieldsRendering(request);
+                this.assertOperation(resource, operation);
+                if (
+                  !resource.presented ||
+                  resource.contents!.isLoading() ||
+                  revision !== resource.documentRevision
+                )
+                  throw Error('诊断期间网页已变化，请重新检查');
+                return parseRenderingInspection(
+                  {
+                    ...request,
+                    ...data,
+                    source: { resourceId: resource.id, documentRevision: revision },
+                  },
+                  request,
+                );
+              }
               if (fields)
                 return page.validateFieldsTarget(
                   fieldsPickScopeSchema.parse(args.scope),

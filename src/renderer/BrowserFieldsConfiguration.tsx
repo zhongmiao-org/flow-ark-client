@@ -341,6 +341,7 @@ export default function BrowserFieldsConfiguration({
                   : undefined
               }
               selector={typeof draft.selector === 'string' ? draft.selector : undefined}
+              rendered={draft.operation === 'rendered-text'}
               framePath={node.framePath}
               sourceKey={JSON.stringify([
                 node.id,
