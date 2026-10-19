@@ -1,11 +1,15 @@
 import { walk } from '../core/validate';
 import type { Flow } from '../shared/types';
 import type { ReviewEffect } from '../shared/run-review';
+import { taskStepTitle } from '../shared/step-title';
 
 /** Describe every declared branch. Do not infer actual loop counts or business success. */
 export function reviewEffects(flow: Flow): ReviewEffect[] {
-  return walk(flow.steps).map((node) => {
-    const base = { nodeId: node.id, name: typeof node.name === 'string' ? node.name : node.id };
+  return walk(flow.steps).map((node, index) => {
+    const base = {
+      nodeId: node.id,
+      name: `${String(index + 1).padStart(2, '0')} ${taskStepTitle(node)}`,
+    };
     const effect = (kind: ReviewEffect['kind'], detail: string): ReviewEffect => ({
       ...base,
       kind,
