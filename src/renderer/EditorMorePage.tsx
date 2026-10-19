@@ -204,7 +204,8 @@ export default function EditorMorePage(props: Props) {
                   >
                     <span>{step.name || '脚本步骤'}</span>
                     <small>
-                      {step.id} · {step.type === 'script' ? step.language : ''}
+                      第 {flatten(record.flow.steps).indexOf(step) + 1} 步 ·{' '}
+                      {step.type === 'script' ? step.language : ''}
                     </small>
                   </Button>
                 ))}

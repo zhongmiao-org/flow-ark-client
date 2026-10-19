@@ -1220,9 +1220,11 @@ export default function AttentionWorkspace({
                           {selected.origin.baseRevision}
                         </p>
                         <p className="attention-muted">
-                          编排副本 {selected.origin.checkoutId}
-                          ；与正式实例和其他副本分开，同键保留首次来源与已读。
+                          来自本地编排副本；与正式实例和其他副本分开，同键保留首次来源与已读。
                         </p>
+                        <TechnicalDetails
+                          items={[{ label: '编排副本 ID', value: selected.origin.checkoutId }]}
+                        />
                       </section>
                     )}
                   {relatedRuns}

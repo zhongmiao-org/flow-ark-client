@@ -20,6 +20,8 @@ import { runTimeline } from './run-timeline';
 import { branchCount, flowOutline, outlineMatches, revealOutline, stepTitle } from './flow-outline';
 import { useOutlineRun } from './use-outline-run';
 import OutlineStepSearch from './OutlineStepSearch';
+import TechnicalDetails from './TechnicalDetails';
+import { taskStepValue } from './task-step-presentation';
 export type OutlineLocation = {
   mode: 'draft' | 'run';
   view: 'list' | 'graph';
@@ -498,14 +500,12 @@ export default function FlowOutlineWorkspace({
         <aside className="outline-inspector" aria-label="大纲当前步骤">
           <Card className="outline-card">
             <h2>当前步骤</h2>
-            {entry ? (
+            {entry && flow ? (
               <>
                 <h3>
                   {entry.ordinal} · {stepTitle(entry.step)}
                 </h3>
-                <p>
-                  {kinds[entry.step.type].label} · {entry.step.id}
-                </p>
+                <p>{kinds[entry.step.type].label}</p>
                 <p>
                   {mode === 'run'
                     ? '以下属于固定运行快照，保持只读。'
@@ -526,8 +526,7 @@ export default function FlowOutlineWorkspace({
                       label: fields[key],
                       children: (
                         <span className="outline-value-preview">
-                          {format(value).slice(0, 180)}
-                          {format(value).length > 180 ? '…' : ''}
+                          {taskStepValue(value, flow, entry.step.id)}
                         </span>
                       ),
                     }))}
@@ -538,13 +537,14 @@ export default function FlowOutlineWorkspace({
                     items={[
                       {
                         key: 'configuration',
-                        label: '完整步骤配置',
+                        label: '完整步骤配置（高级诊断）',
                         forceRender: true,
                         children: <pre>{format(nodeReferenceValues(entry.step))}</pre>,
                       },
                     ]}
                   />
                 </div>
+                <TechnicalDetails items={[{ label: '步骤内部 ID', value: entry.step.id }]} />
                 {mode === 'draft' ? (
                   <>
                     <Button onClick={() => edit(entry.step.id)}>编辑步骤配置</Button>

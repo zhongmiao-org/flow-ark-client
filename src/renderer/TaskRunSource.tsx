@@ -39,11 +39,11 @@ export default function TaskRunSource({ run, open }: { run: Run; open: (detail: 
       关联{' '}
       <Button
         htmlType="button"
-        aria-label={`查看原运行 ${sourceId}`}
+        aria-label="查看关联的原运行记录"
         disabled={pending || undefined}
         onClick={() => void inspect()}
       >
-        {sourceId}
+        原运行记录
       </Button>
       {pending && <span role="status"> · 正在读取原运行…</span>}
       {error && (

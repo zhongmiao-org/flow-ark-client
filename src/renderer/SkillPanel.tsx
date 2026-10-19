@@ -421,7 +421,7 @@ export default function SkillPanel({
               </p>
             </Card>
             <Card title="来源与草稿状态" styles={{ body: { padding: 24 } }}>
-              <p>Skill键：{snapshot.key}</p>
+              <TechnicalDetails items={[{ label: 'Skill 内部键', value: snapshot.key }]} />
               <p className="path-text">工作区：{workspace}</p>
               <p>{snapshot.base ? '基于已有确认版本编辑' : '首次确认'}</p>
               <p>
