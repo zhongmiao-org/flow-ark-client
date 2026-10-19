@@ -1,0 +1,13 @@
+.saved-flow-step-list {
+  margin: 0;
+  padding: 8px 8px 8px 32px;
+  max-height: 360px;
+  overflow: auto;
+  color: var(--fa-text-secondary);
+  line-height: 24px;
+  overflow-wrap: anywhere;
+}
+.saved-flow-steps-page .ant-tag {
+  width: fit-content;
+  white-space: normal;
+}

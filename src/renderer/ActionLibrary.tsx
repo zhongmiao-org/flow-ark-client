@@ -107,11 +107,13 @@ export default function ActionLibrary({
   add,
   destination,
   setDestination,
+  reuse,
 }: {
   steps: Step[];
   add: (node: Step, destination: Destination) => boolean;
   destination: string;
   setDestination: (destination: string) => void;
+  reuse: () => void;
 }) {
   const [query, setQuery] = useState('');
   const [expanded, setExpanded] = useState('');
@@ -275,6 +277,9 @@ export default function ActionLibrary({
           </div>
         )}
       </div>
+      <Button block aria-label="从已有流程添加步骤" onClick={reuse}>
+        从已有流程添加步骤
+      </Button>
       <Alert
         type={notice?.type ?? 'info'}
         showIcon
