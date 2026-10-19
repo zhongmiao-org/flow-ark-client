@@ -49,8 +49,10 @@ export class EmbeddedPage {
   private abort = new AbortController();
   private frames = new Map<string, string>();
   private documentEpoch = 0;
-  private navigationStarted = () => {
+  private targetWatches = new Set<(frameId?: string) => void>();
+  private navigationStarted = (details: { isMainFrame: boolean }) => {
     this.documentEpoch++;
+    if (details.isMainFrame) this.invalidateTarget();
   };
   constructor(
     readonly contents: WebContents,
@@ -77,7 +79,20 @@ export class EmbeddedPage {
         ].includes(method)
       )
         this.documentEpoch++;
+      if (
+        [
+          'Page.frameRequestedNavigation',
+          'Page.frameStartedLoading',
+          'Page.frameNavigated',
+          'Page.frameDetached',
+          'Page.navigatedWithinDocument',
+        ].includes(method)
+      ) {
+        const frameId = params.frameId ?? params.frame?.id;
+        if (typeof frameId === 'string') this.invalidateTarget(frameId);
+      }
       if (method === 'Target.attachedToTarget' && params.targetInfo.type === 'iframe') {
+        this.invalidateTarget(params.targetInfo.targetId);
         this.frames.set(params.targetInfo.targetId, params.sessionId);
         void this.send('Page.enable', {}, params.sessionId).catch(() => {});
         void this.send(
@@ -88,10 +103,16 @@ export class EmbeddedPage {
       }
       if (method === 'Target.detachedFromTarget') {
         for (const [id, session] of this.frames)
-          if (session === params.sessionId) this.frames.delete(id);
+          if (session === params.sessionId) {
+            this.invalidateTarget(id);
+            this.frames.delete(id);
+          }
       }
     });
     contents.once('destroyed', () => this.abort.abort(new Error('网页会话已关闭')));
+  }
+  private invalidateTarget(frameId?: string) {
+    for (const notify of this.targetWatches) notify(frameId);
   }
   private async send(method: string, params: any = {}, session?: string) {
     // Disposal must reject like transport failure so best-effort cleanup can catch it.
@@ -536,14 +557,27 @@ export class EmbeddedPage {
     }
   }
   private async target(command: BrowserCommand, path: string[], remaining: () => number) {
-    const input = resolvedBrowserTarget(command),
-      epoch = this.documentEpoch;
+    const input = resolvedBrowserTarget(command);
+    // Observe from command entry, including changes before a child world is created.
+    // Only the root document and the frames used by this fixed path can invalidate it.
+    const changedFrames = new Set<string>(),
+      usedFrames = new Set<string>();
+    let rootChanged = false;
+    const changed = (frameId?: string) => {
+      if (frameId === undefined) rootChanged = true;
+      else changedFrames.add(frameId);
+    };
+    this.targetWatches.add(changed);
     const handles: { scope: Scope; objectId: string }[] = [];
     const chain: { scope: Scope; objectId: string; selector: string }[] = [];
     const verify = () => {
       remaining();
       this.abort.signal.throwIfAborted();
-      if (this.contents.isDestroyed() || this.documentEpoch !== epoch)
+      if (
+        this.contents.isDestroyed() ||
+        rootChanged ||
+        [...usedFrames].some((id) => changedFrames.has(id))
+      )
         throw Error('网页或框架在派发前已变化，未重新定位');
     };
     const state = async (item: (typeof chain)[number], read = false) => {
@@ -588,7 +622,10 @@ export class EmbeddedPage {
     try {
       verify();
       const { frameTree } = await this.send('Page.getFrameTree');
+      usedFrames.add(frameTree.frame.id);
+      verify();
       let scope = await this.world(frameTree.frame.id);
+      verify();
       for (const selector of path) {
         const item = await bind(scope, selector);
         await visible(item);
@@ -599,7 +636,10 @@ export class EmbeddedPage {
         );
         verify();
         if (!node.frameId) throw Error('目标不是可用框架');
+        usedFrames.add(node.frameId);
+        verify();
         const next = await this.world(node.frameId, this.frames.get(node.frameId) ?? scope.session);
+        verify();
         next.ancestors = [...scope.ancestors, { scope, selector }];
         chain.push(item);
         scope = next;
@@ -632,6 +672,7 @@ export class EmbeddedPage {
       assertBrowserTargetResult(input.operation, result);
       return result;
     } finally {
+      this.targetWatches.delete(changed);
       await Promise.all(
         handles.map(({ scope, objectId }) =>
           this.send('Runtime.releaseObject', { objectId }, scope.session).catch(() => {}),
