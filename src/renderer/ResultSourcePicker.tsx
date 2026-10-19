@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import { Alert, Button, Card, Input, Modal, Select, Space, Tag } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { Bindings } from '../shared/types';
@@ -198,9 +199,7 @@ export default function ResultSourcePicker({
   return (
     <div className="source-picker result-source-picker">
       <p role="status">
-        {value?.result
-          ? `固定来源入口：${value.result.source.entryId} · 数据摘要 ${value.result.dataSha256.slice(0, 12)}`
-          : '尚未选择前次结果'}
+        {value?.result ? '已固定你选择的来源运行；可查看完整来源' : '尚未选择前次结果'}
       </p>
       <Space wrap>
         <Button disabled={disabled || busy} onClick={() => list()}>
@@ -298,10 +297,10 @@ export default function ResultSourcePicker({
                     disabled={busy}
                     placeholder="选择准确的已完成运行"
                     onChange={setSelected}
-                    options={(page?.choices ?? []).map((c) => ({
+                    options={(page?.choices ?? []).map((c, index) => ({
                       value: c.run.id,
                       disabled: c.status !== 'candidate',
-                      label: `${c.entryName || c.entryId} · ${c.run.id.slice(0, 8)} · ${c.status === 'candidate' ? '可预览' : reason[c.reason!] || '不可复用'}`,
+                      label: `${c.entryName || '来源入口'} · 本页第 ${index + 1} 次记录 · ${c.status === 'candidate' ? '可预览' : reason[c.reason!] || '不可复用'}`,
                     }))}
                   />
                 </label>
@@ -321,8 +320,15 @@ export default function ResultSourcePicker({
                 <>
                   <p>
                     <Tag>准确来源 · 固定版本</Tag>
-                    {preview.ref.source.entryId} · {preview.ref.run.id}
+                    已固定本次选择的来源
                   </p>
+                  <TechnicalDetails
+                    items={[
+                      { label: '来源入口 ID', value: preview.ref.source.entryId },
+                      { label: '来源运行 ID', value: preview.ref.run.id },
+                      { label: '数据摘要', value: preview.ref.dataSha256 },
+                    ]}
+                  />
                   <p className="readonly-value-muted">
                     凭据字段、已知秘密和常见Key文本已过滤，可能包含本人资料。
                     {preview.dataChanged ? '本副本经过过滤。' : ''}

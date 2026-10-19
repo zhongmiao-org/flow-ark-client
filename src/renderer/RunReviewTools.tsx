@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import { Alert, Badge, Collapse, Descriptions, Card } from 'antd';
 import { useEffect, useState } from 'react';
 import { activateCollapseWithSpace } from './collapseKeyboard';
@@ -161,7 +162,9 @@ function Call({ call }: { call: ReviewToolCall }) {
                       {refs.found.map((entry) => (
                         <li key={entry.path}>
                           <code>{entry.path}</code> · {referenceLabel(entry.reference)}
-                          <code>{entry.reference}</code>
+                          <TechnicalDetails
+                            items={[{ label: '完整引用路径', value: entry.reference }]}
+                          />
                         </li>
                       ))}
                     </ul>

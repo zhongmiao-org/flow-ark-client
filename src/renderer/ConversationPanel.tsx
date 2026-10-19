@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Alert, Button, Card, Collapse, Input, Tag } from 'antd';
 import {
@@ -374,15 +375,7 @@ export default function ConversationPanel({
           value={`修订 ${trialSource.revision} · 仅供内部核对`}
         />
       </div>
-      <div className="conversation-source-field">
-        <label htmlFor="conversation-source-digest">内容摘要</label>
-        <Input
-          id="conversation-source-digest"
-          readOnly
-          value={trialSource.sha256}
-          title={trialSource.sha256}
-        />
-      </div>
+      <TechnicalDetails items={[{ label: '草稿内容摘要', value: trialSource.sha256 }]} />
       {trialState?.current && (
         <p>
           当前草稿修订 {trialState.current.revision} · {trialDraftLabels[trialState.current.status]}

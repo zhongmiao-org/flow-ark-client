@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { RunPresentationInput } from '../shared/run-presentation';
+import type { RunPresentationInput } from './run-presentation';
 
 export function useOutlineRun(visible: boolean, flowId: string, activeRunId?: string) {
   const [observation, setObservation] = useState<{

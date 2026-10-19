@@ -33,7 +33,7 @@ export function taskStepValue(input: unknown, flow: Flow, stepId: string): strin
     if (root === 'item' && scope?.loop)
       return `当前循环项${key ? ' / ' + [key, ...path].join(' / ') : ''}`;
     if (root === 'index' && !key && scope?.loop) return '当前循环序号（从 0 开始）';
-    return `引用 ${concise(reference)}（需核对来源）`;
+    return '变量来源待核对';
   }
   if (typeof input === 'string')
     return input === '' ? '空文本' : !input.trim() ? '空白文本' : `「${concise(input)}」`;
@@ -106,7 +106,7 @@ export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext
     case 'mcp': {
       const target = context.toolTargets?.find((entry) => entry.selectionId === step.target);
       const tool = target?.tools.find((entry) => entry.name === step.tool);
-      return `${target ? concise(target.displayName) : context.snapshot ? '工具对象引用：' + concise(step.target) : '工具对象尚未匹配'} · ${concise(tool?.title || step.tool)} · ${context.snapshot ? '外部影响以调用回执为准' : '试运行前核对外部影响'}`;
+      return `${target ? concise(target.displayName) : context.snapshot ? '工具对象名称待核对' : '工具对象尚未匹配'} · ${concise(tool?.title || step.tool)} · ${context.snapshot ? '外部影响以调用回执为准' : '试运行前核对外部影响'}`;
     }
     case 'source-reduce':
       return `来源「${step.binding}」 · 本人AI「${step.aiBinding}」 · 本批最多${step.maxRequests}次，保存位置后可继续`;

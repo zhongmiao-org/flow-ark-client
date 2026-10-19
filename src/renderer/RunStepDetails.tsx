@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import SourceReductionPanel from './SourceReductionPanel';
 import { Alert, Button, Collapse, Descriptions, Tag } from 'antd';
 import { useEffect, useRef, useState } from 'react';
@@ -6,7 +7,7 @@ import { aiReceiptMessage } from '../shared/ai-outcome';
 import type { AINodeReceipt, Event } from '../shared/types';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { Step } from '../shared/types';
-import type { RunPresentationInput, RunStepPresentation } from '../shared/run-presentation';
+import type { RunPresentationInput, RunStepPresentation } from './run-presentation';
 import { flatten } from './flow-editing';
 import { browserActions } from './browser-actions';
 import { kinds } from './node-kinds';
@@ -479,7 +480,9 @@ export default function RunStepDetails({
               onKeyDown: activateCollapseWithSpace,
               children: (
                 <div className="feedback-body" ref={configurationRef} tabIndex={-1}>
-                  {step.instance && <p>节点实例：{step.instance}</p>}
+                  {step.instance && (
+                    <TechnicalDetails items={[{ label: '步骤实例路径', value: step.instance }]} />
+                  )}
                   {configuration}
                 </div>
               ),

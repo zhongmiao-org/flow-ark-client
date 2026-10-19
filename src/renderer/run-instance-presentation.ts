@@ -1,6 +1,14 @@
 import type { Flow, Step } from '../shared/types';
 import { flatten } from './flow-editing';
-import { taskStepTitle } from './task-step-presentation';
+import { taskStepTitle } from './task-step-title';
+
+export function flowStepLabel(snapshot: Flow | undefined, nodeId: string): string {
+  const steps = flatten(snapshot?.steps ?? []);
+  const index = steps.findIndex((step) => step.id === nodeId);
+  return index < 0
+    ? '步骤名称待核对'
+    : `${String(index + 1).padStart(2, '0')} ${taskStepTitle(steps[index])}`;
+}
 
 /** Describe only instance paths that can be followed through the fixed snapshot. */
 export function runInstancePresenter(snapshot?: Flow) {

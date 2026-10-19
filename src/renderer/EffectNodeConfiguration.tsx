@@ -165,7 +165,7 @@ export default function EffectNodeConfiguration({
                 placeholder="选择当前入口声明的动作"
                 disabled={loading || !!error}
                 options={[
-                  ...actions.map((a) => ({ value: a.id, label: a.name || a.id })),
+                  ...actions.map((a) => ({ value: a.id, label: a.name || '未命名动作' })),
                   ...(node.action && !action
                     ? [
                         {

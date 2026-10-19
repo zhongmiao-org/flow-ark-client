@@ -118,7 +118,7 @@ export default function TaskLatestRun({
                         {
                           key: latest.id,
                           onKeyDown: activateCollapseWithSpace,
-                          label: '运行标识与固定版本',
+                          label: '运行标识与固定版本（高级诊断）',
                           children: (
                             <Descriptions
                               className="metadata-facts"

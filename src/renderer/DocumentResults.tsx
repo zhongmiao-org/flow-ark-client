@@ -125,7 +125,10 @@ export default function DocumentResults({
         aria-label="选择资料解析步骤"
         value={current.id}
         onChange={setSelected}
-        options={results.map((r) => ({ value: r.id, label: `${r.id} · ${r.value.source.name}` }))}
+        options={results.map((r, index) => ({
+          value: r.id,
+          label: `${index + 1}. ${r.value.source.name}`,
+        }))}
       />
       {(visits > 10000 || results.length >= 1000) && (
         <p>这里只列出有界数量的来源；其他结果可在完整结构化输出中核对。</p>

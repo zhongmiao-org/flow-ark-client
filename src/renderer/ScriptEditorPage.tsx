@@ -1,3 +1,5 @@
+import { recordTime, runRecordLabel } from './readable-labels';
+import { runInstancePresenter } from './run-instance-presentation';
 import {
   Alert,
   Card,
@@ -348,8 +350,8 @@ export default function ScriptEditorPage({
           <section className="script-editor-code">
             <Card className="script-editor-card">
               <div className="script-editor-toolbar">
-                <span className="badge" title={node.id}>
-                  {node.name || node.id}.{node.language}
+                <span className="badge">
+                  {node.name || '未命名脚本'}.{node.language}
                 </span>
                 <ActionButton
                   hint={
@@ -465,7 +467,7 @@ export default function ScriptEditorPage({
                           label: (
                             <>
                               {new Date(run.createdAt).toLocaleString('zh-CN')} ·{' '}
-                              {run.id.slice(0, 8)} · {runDisplayLabels[run.state]}
+                              {recordTime(run.createdAt)} · {runDisplayLabels[run.state]}
                             </>
                           ),
                         })),
@@ -520,9 +522,7 @@ export default function ScriptEditorPage({
                         tabIndex={-1}
                         aria-label="所选运行的历史输出"
                       >
-                        <p>
-                          固定版本 {currentDetail.run.versionId} · 运行 {currentDetail.run.id}
-                        </p>
+                        <p>{runRecordLabel(currentDetail.run)} · 按启动时保存的方案执行</p>
                         <p>
                           {JSON.stringify(snapshotNode) === JSON.stringify(node)
                             ? '步骤配置与当前草稿相同；历史结果不保证下一次结果。'
@@ -531,8 +531,11 @@ export default function ScriptEditorPage({
                         {outputs.length ? (
                           outputs.map((output) => (
                             <div key={output.instance}>
-                              <strong>{output.instance}</strong>
-                              <pre tabIndex={0} aria-label={`历史输出 ${output.instance}`}>
+                              <strong>
+                                {runInstancePresenter(currentDetail.snapshot)(output.instance) ??
+                                  '步骤位置待核对'}
+                              </strong>
+                              <pre tabIndex={0} aria-label="已保存的历史步骤输出">
                                 {json(output.value)}
                               </pre>
                             </div>

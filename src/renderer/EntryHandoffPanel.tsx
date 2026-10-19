@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import { Alert, Button, Card, Checkbox, Input } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { HandoffPreview, HandoffReceipt, HandoffSelection } from '../shared/entry-handoff';
@@ -244,7 +245,7 @@ export default function EntryHandoffPanel({
               <ul>
                 {preview.runs.map((r) => (
                   <li key={r.id}>
-                    {r.name} · {r.id.slice(0, 8)} ·{' '}
+                    {r.name} ·{' '}
                     {runDisplayLabels[r.state as keyof typeof runDisplayLabels] ?? r.state}
                   </li>
                 ))}
@@ -272,15 +273,21 @@ export default function EntryHandoffPanel({
                   {labels[receipt.status]} · 修订 {receipt.revision}
                 </p>
                 {receipt.error && <Alert showIcon type="warning" title={receipt.error} />}
-                <p>停止范围：{receipt.stoppedRunIds.map((id) => id.slice(0, 8)).join('、')}</p>
-                {receipt.runId && <p>新入口运行：{receipt.runId.slice(0, 8)} · 结果仍须独立核对</p>}
+                <p>停止范围：本次已核对的 {receipt.stoppedRunIds.length} 次运行</p>
+                {receipt.runId && <p>新入口运行已创建 · 结果仍须独立核对</p>}
               </>
             )}
             {error && <Alert type="warning" showIcon title={error} />}
           </div>
           {requestId && (
             <>
-              <p>请求编号：{requestId}</p>
+              <TechnicalDetails
+                items={[
+                  { label: '请求 ID', value: requestId },
+                  { label: '新运行 ID', value: receipt?.runId },
+                  { label: '停止运行 ID', value: receipt?.stoppedRunIds.join('、') },
+                ]}
+              />
               <Button onClick={() => void read()}>读取本次请求</Button>
             </>
           )}

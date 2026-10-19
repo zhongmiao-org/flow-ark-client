@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { Card, Empty, Divider, Select, Button, Collapse, Descriptions } from 'antd';
 import {
@@ -85,8 +86,7 @@ function EventItem({ event, name }: { event: Event; name?: string }) {
       <p className="run-log-source">
         {event.nodeInstance ? (
           <>
-            {name && <b>{name} · </b>}
-            <code>{event.nodeInstance}</code>
+            <b>{name ?? '步骤位置待核对'}</b>
           </>
         ) : (
           '运行级记录'
@@ -109,10 +109,14 @@ function EventItem({ event, name }: { event: Event; name?: string }) {
           {
             key: 'raw',
             onKeyDown: activateCollapseWithSpace,
-            label: `原始记录 · ${event.type}`,
+            label: '原始记录（高级诊断）',
             children: rawOpen ? (
               <LogText
-                text={JSON.stringify(event.data, null, 2) ?? '未记录数据'}
+                text={JSON.stringify(
+                  { type: event.type, nodeInstance: event.nodeInstance, data: event.data },
+                  null,
+                  2,
+                )}
                 label="原始记录"
               />
             ) : null,
@@ -180,20 +184,24 @@ export default function RunEventLog({
                 layout="vertical"
                 column={1}
                 items={[
-                  { key: 'run', label: 'Run', children: run.id },
+                  { key: 'run', label: '运行', children: run.name },
                   {
                     key: 'source',
                     label: '来源',
                     children: runSourceLabels[runSource(run)] ?? run.source,
                   },
-                  { key: 'version', label: '启动时固定版本', children: run.versionId },
+                  { key: 'version', label: '执行方案', children: '按启动时保存的方案执行' },
+                ]}
+              />
+              <TechnicalDetails
+                items={[
+                  { label: '运行 ID', value: run.id },
+                  { label: '固定版本摘要', value: run.versionId },
+                  { label: '来源运行 ID', value: run.rerun?.runId },
                 ]}
               />
               {run.rerun && (
-                <p>
-                  原运行：{run.rerun.runId} ·{' '}
-                  {run.rerun.mode === 'snapshot' ? '原快照' : '当前已保存版本'}
-                </p>
+                <p>来源运行 · {run.rerun.mode === 'snapshot' ? '原快照' : '当前已保存版本'}</p>
               )}
             </Card>
           </section>
@@ -209,7 +217,7 @@ export default function RunEventLog({
                     ? '全部步骤与运行级记录'
                     : instance === ''
                       ? '仅运行级记录'
-                      : (instanceTitle(instance) ?? instance)
+                      : (instanceTitle(instance) ?? '步骤位置待核对')
                 }
                 onChange={(value) => changeInstance(value)}
                 options={[
@@ -219,20 +227,21 @@ export default function RunEventLog({
                     ? [
                         {
                           value: instance,
-                          label: <>原选择 · {instanceTitle(instance) ?? instance}</>,
+                          label: <>原选择 · {instanceTitle(instance) ?? '步骤位置待核对'}</>,
                         },
                       ]
                     : []),
                   ...instances.map((value) => ({
                     value: value,
-                    label: instanceTitle(value) ?? value,
+                    label:
+                      instanceTitle(value) ?? `位置待核对 · 第 ${instances.indexOf(value) + 1} 处`,
                   })),
                 ]}
               />
               {instance && instance !== '*' && (
                 <p className="run-log-selected-instance">
                   {instanceTitle(instance) ?? '无法从固定快照确认此位置'}
-                  <code>{instance}</code>
+                  <TechnicalDetails items={[{ label: '步骤实例路径', value: instance }]} />
                 </p>
               )}
               <Descriptions

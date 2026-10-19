@@ -1,3 +1,4 @@
+import { runRecordLabel } from './readable-labels';
 import { runStateColors } from './theme';
 import { Alert, Button, Descriptions, Tag, Badge, Card } from 'antd';
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
@@ -76,9 +77,7 @@ export default function DesktopTaskRun({
           <h1 ref={heading} tabIndex={-1}>
             {title}
           </h1>
-          <p>
-            {run.name} · 应用任务 {run.id} · 固定方案快照
-          </p>
+          <p>{runRecordLabel(run)} · 按启动时保存的方案执行</p>
         </div>
       </div>
       {error && (
@@ -222,7 +221,7 @@ export default function DesktopTaskRun({
                         ? `文本编辑 / ${desktop.windowTitle} / 原选区`
                         : '本次记录未提供窗口名称',
                     },
-                    { key: 'version', label: '固定版本', children: run.versionId },
+                    { key: 'version', label: '执行方案', children: '按启动时保存的方案执行' },
                     {
                       key: 'state',
                       label: '运行记录',

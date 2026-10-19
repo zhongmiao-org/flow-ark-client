@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import { Alert, Button, Card } from 'antd';
 import type { ToolConnection } from '../shared/tool-connections';
 
@@ -29,11 +30,11 @@ export default function ToolConnectionUsage({
               <li key={task.taskId}>
                 <Card size="small" className="tool-usage-card">
                   <strong>{task.description || '未命名任务'}</strong>
-                  <small>流程 {task.flowId}</small>
+                  <TechnicalDetails items={[{ label: '关联流程 ID', value: task.flowId }]} />
                   {openTask && (
                     <Button disabled={busy || undefined} onClick={() => openTask(task)}>
                       查看任务
-                      <span className="sr-only">：{task.description || task.taskId}</span>
+                      <span className="sr-only">：{task.description || '未命名任务'}</span>
                     </Button>
                   )}
                 </Card>

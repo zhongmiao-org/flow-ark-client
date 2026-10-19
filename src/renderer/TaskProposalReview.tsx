@@ -198,7 +198,7 @@ export default function TaskProposalReview({
             key: 'source',
             forceRender: true,
             onKeyDown: activateCollapseWithSpace,
-            label: <>查看提案来源与基线</>,
+            label: <>查看提案来源与基线（高级诊断）</>,
             children: (
               <>
                 <Descriptions

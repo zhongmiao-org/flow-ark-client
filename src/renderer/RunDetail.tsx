@@ -1,3 +1,5 @@
+import TechnicalDetails from './TechnicalDetails';
+import { recordTime } from './readable-labels';
 import ActionButton from './ActionButton';
 import { runStateColors, runStepColors } from './theme';
 import { Alert, Button, Collapse, Tabs, Tag, Badge, Card } from 'antd';
@@ -7,7 +9,7 @@ import DebugRunWorkspace from './DebugRunWorkspace';
 import { useRunControl, RunControlFeedback } from './useRunControl';
 import { useEffect, useRef, useState } from 'react';
 import type { Event, Run } from '../shared/types';
-import { formatRunDuration, presentRun } from '../shared/run-presentation';
+import { formatRunDuration, presentRun } from './run-presentation';
 import {
   runSource,
   runSourceLabels,
@@ -195,7 +197,7 @@ export default function RunDetail({
         {controllable && r.state === 'PAUSED' && pause && (
           <section aria-label="调试位置">
             <h3>下一步：{pause.data.nodeName}</h3>
-            <code>{pause.nodeInstance}</code>
+            <p>{runInstancePresenter(d.snapshot)(pause.nodeInstance) ?? '步骤位置待核对'}</p>
           </section>
         )}
         {results.length > 0 && (
@@ -209,7 +211,7 @@ export default function RunDetail({
                   key={event.sequence}
                   event={event}
                   latest={event === results.at(-1)}
-                  label={step ? runTimelineTitle(step) : event.nodeInstance || '运行输出'}
+                  label={step ? runTimelineTitle(step) : '运行输出 · 步骤位置待核对'}
                   instance={step && step.instance !== step.nodeId ? step.instance : undefined}
                 />
               );
@@ -336,14 +338,11 @@ export default function RunDetail({
                 </h1>
                 <p>
                   {tab === 'output' ? (
-                    <>
-                      <span title={r.id}>{r.id}</span> · 使用本次运行保存的结果，不重新执行节点。
-                    </>
+                    <>{recordTime(r.createdAt)} · 使用本次运行保存的结果，不重新执行节点。</>
                   ) : (
                     <>
                       {tab !== 'current' && `${r.name} · `}
-                      <span title={r.id}>{r.id}</span> · {runSourceLabels[runSource(r)] ?? r.source}{' '}
-                      · {time(r.createdAt)}
+                      {runSourceLabels[runSource(r)] ?? '运行记录'} · {time(r.createdAt)}
                     </>
                   )}
                 </p>
@@ -380,7 +379,7 @@ export default function RunDetail({
                         ? '将在步骤边界暂停'
                         : view.step.instance &&
                             runInstancePresenter(d.snapshot)(view.step.instance) === null
-                          ? `运行位置：${view.step.instance}（位置待核对）`
+                          ? '步骤位置待核对'
                           : view.step.label}
                 </strong>
                 {runControls}
@@ -390,8 +389,15 @@ export default function RunDetail({
                 {view.elapsed.milliseconds === null
                   ? '待核对'
                   : formatRunDuration(view.elapsed.milliseconds)}{' '}
-                · 使用启动时的固定版本 <code title={r.versionId}>{r.versionId.slice(0, 12)}</code>
+                · 按启动时保存的方案执行
               </p>
+              <TechnicalDetails
+                items={[
+                  { label: '运行 ID', value: r.id },
+                  { label: '固定版本摘要', value: r.versionId },
+                  { label: '步骤实例路径', value: view.step.instance },
+                ]}
+              />
               {controlNote && <Alert type="info" showIcon title={controlNote} role="status" />}
               {view.statusNote && (
                 <Alert type="warning" showIcon title={view.statusNote} role="status" />
@@ -425,7 +431,9 @@ export default function RunDetail({
                           </span>
                           <span>{step.name}</span>
                         </div>
-                        {step.instance !== step.nodeId && <code>{step.instance}</code>}
+                        {step.pathLabel && step.instance !== step.nodeId && (
+                          <small>{step.pathLabel}</small>
+                        )}
                         <Tag
                           className="run-state-tag"
                           variant="filled"

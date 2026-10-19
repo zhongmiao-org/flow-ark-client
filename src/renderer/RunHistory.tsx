@@ -1,3 +1,4 @@
+import { runRecordLabel } from './readable-labels';
 import { runStateColors } from './theme';
 import { Select, Button, Input, Table, Tag, Badge, Collapse, Card, Modal, Alert, Flex } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
@@ -11,7 +12,7 @@ import {
   type RunListPage,
   type RunListQuery,
 } from '../shared/run-history';
-import { formatRunDuration } from '../shared/run-presentation';
+import { formatRunDuration } from './run-presentation';
 import type { FlowRecord } from '../shared/types';
 
 const api = (method: string, args: any) => window.flowark.request(method, args);
@@ -447,7 +448,7 @@ export default function RunHistory({
                                     label:
                                       scope?.id === draft.flowId
                                         ? scope.name
-                                        : `当前筛选的流程（不在本地清单）：${draft.flowId}`,
+                                        : '当前筛选的流程（不在本地清单）',
                                   },
                                 ]
                               : []),
@@ -546,7 +547,7 @@ export default function RunHistory({
               pagination={false}
               scroll={{ x: 760 }}
               dataSource={data?.runs ?? []}
-              onRow={(run) => ({ 'aria-label': `${run.name} · ${run.id}` })}
+              onRow={(run) => ({ 'aria-label': runRecordLabel(run) })}
               locale={{
                 emptyText: (
                   <p className="history-empty" role="status">
@@ -565,19 +566,12 @@ export default function RunHistory({
               columns={[
                 {
                   key: 'flow',
-                  title: '流程 / 运行编号',
+                  title: '流程',
                   width: '30%',
                   render: (_, run) => (
                     <div className="history-run-source">
                       <b>{run.name}</b>
-                      <small className="history-run-id" title={run.id}>
-                        {run.id}
-                      </small>
-                      {scope && (
-                        <small className="history-version" title={run.versionId}>
-                          运行版本 {run.versionId.slice(0, 12)}
-                        </small>
-                      )}
+                      {scope && <small className="history-version">按启动时保存的方案执行</small>}
                     </div>
                   ),
                 },
@@ -639,8 +633,8 @@ export default function RunHistory({
                     <Button
                       type="text"
                       className="history-open"
-                      aria-label={`查看 ${run.name} · ${run.id}`}
-                      title={`查看 ${run.name} · ${run.id}`}
+                      aria-label={`查看 ${runRecordLabel(run)}`}
+                      title={`查看 ${runRecordLabel(run)}`}
                       data-run-id={run.id}
                       disabled={!!opening}
                       onClick={() => void inspect(run.id)}

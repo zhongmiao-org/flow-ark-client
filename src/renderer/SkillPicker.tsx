@@ -1,3 +1,4 @@
+import { recordTime } from './readable-labels';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Button, Select } from 'antd';
 import type { Bindings } from '../shared/types';
@@ -93,21 +94,14 @@ export default function SkillPicker({
             ? [
                 {
                   value: 'original',
-                  label: '原绑定 · ' + value.skill.key + ' / ' + value.skill.versionId,
+                  label: '原绑定确认版本 · 请核对工作区后刷新',
                   disabled: true,
                 },
               ]
             : []),
           ...choices.map((v) => ({
             value: v.id,
-            label:
-              v.title +
-              ' · ' +
-              v.ref.key +
-              ' / ' +
-              v.ref.versionId.slice(-8) +
-              ' · ' +
-              v.ref.sha256.slice(0, 8),
+            label: v.title + ' · 确认于 ' + recordTime(v.confirmedAt),
           })),
         ]}
       />

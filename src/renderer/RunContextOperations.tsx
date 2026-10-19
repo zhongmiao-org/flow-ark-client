@@ -1,3 +1,6 @@
+import TechnicalDetails from './TechnicalDetails';
+import type { Flow } from '../shared/types';
+import { runInstancePresenter } from './run-instance-presentation';
 import { useEffect, useState } from 'react';
 import { Alert, Button, Card, Descriptions } from 'antd';
 import { assertDataReceipt, type DataReceipt } from '../shared/template-data';
@@ -14,9 +17,11 @@ const labels = {
 export default function RunContextOperations({
   runId,
   runState,
+  snapshot,
 }: {
   runId: string;
   runState: string;
+  snapshot?: Flow;
 }) {
   const [ops, setOps] = useState<Operation[]>([]),
     [error, setError] = useState(''),
@@ -80,11 +85,21 @@ export default function RunContextOperations({
           <Descriptions
             column={1}
             items={[
-              { key: 'node', label: '步骤实例', children: op.nodeInstance },
-              { key: 'id', label: '操作身份', children: op.receipt.operationId },
+              {
+                key: 'node',
+                label: '步骤',
+                children: runInstancePresenter(snapshot)(op.nodeInstance) ?? '步骤位置待核对',
+              },
+
               ...('currentRevision' in op.receipt
                 ? [{ key: 'rev', label: '当前修订', children: String(op.receipt.currentRevision) }]
                 : []),
+            ]}
+          />
+          <TechnicalDetails
+            items={[
+              { label: '步骤实例路径', value: op.nodeInstance },
+              { label: '操作 ID', value: op.receipt.operationId },
             ]}
           />
           {'error' in op.receipt && op.receipt.error && (

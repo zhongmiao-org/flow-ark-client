@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import { Select, Button, Input } from 'antd';
 import {
   useCallback,
@@ -88,9 +89,9 @@ export default function ValueField({
               event.currentTarget.focus();
               setOpen(true);
             }}
-            title={current}
+            title={source?.label ?? '来源待重新选择'}
           >
-            {source ? `${source.group} → ${source.label}` : current}
+            {source ? `${source.group} → ${source.label}` : '来源待重新选择'}
           </Button>
           {!source && <p className="field-error">来源已缺失或不在当前作用域，请重新选择。</p>}
         </div>
@@ -99,7 +100,7 @@ export default function ValueField({
           <span className="value-field-label">{label}</span>
           <span className="eyebrow">{source?.group ?? '已有引用'}</span>
           <strong>{source?.label ?? '当前来源不可用'}</strong>
-          <code>{current}</code>
+          <TechnicalDetails items={[{ label: '完整引用路径', value: current }]} />
           {!source && <p className="field-error">来源已缺失或不在当前作用域，请重新选择。</p>}
           <Button
             htmlType="button"

@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Alert, Button, Card, Collapse, Input, Select } from 'antd';
 import {
@@ -147,20 +148,21 @@ export default function SkillTrialSetup({
               value={`修订 ${preview.source.revision} · 仅供内部试聊`}
             />
           </div>
-          <div className="skill-field">
-            <label htmlFor="trial-digest">内容摘要</label>
-            <Input
-              id="trial-digest"
-              readOnly
-              value={preview.source.sha256}
-              title={preview.source.sha256}
-            />
-          </div>
+          <TechnicalDetails
+            items={[
+              { label: '草稿内容摘要', value: preview.source.sha256 },
+              { label: '父版本 ID', value: preview.base?.versionId },
+              { label: '草稿键', value: preview.key },
+            ]}
+          />
           <div className="skill-field">
             <label htmlFor="trial-parent">父版本</label>
-            <Input id="trial-parent" readOnly value={preview.base?.versionId ?? '尚无确认版本'} />
+            <Input
+              id="trial-parent"
+              readOnly
+              value={preview.base ? '基于已有确认版本' : '尚无确认版本'}
+            />
           </div>
-          <p>草稿键：{preview.key}</p>
           <p>包括正文、结构化数据及来源；修改后须重新建立。回复不会自动写回草稿或生成确认版本。</p>
           <Collapse
             items={[

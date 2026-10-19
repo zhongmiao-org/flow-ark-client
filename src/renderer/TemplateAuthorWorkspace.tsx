@@ -1,3 +1,4 @@
+import { flowStepLabel } from './run-instance-presentation';
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import { Alert, Button, Card, Checkbox, Collapse, Input, Select, Tabs, Tag } from 'antd';
 import {
@@ -515,7 +516,7 @@ export default function TemplateAuthorWorkspace({
                 placeholder="选择已安装的准确版本"
                 options={data.templates.map((p) => ({
                   value: p.key,
-                  label: `${p.manifest.name} · ${p.manifest.version} · ${p.manifest.contentDigest.slice(0, 8)}`,
+                  label: `${p.manifest.name} · v${p.manifest.version}`,
                 }))}
                 onChange={setForkKey}
               />
@@ -680,7 +681,7 @@ export default function TemplateAuthorWorkspace({
                             key={i}
                             onClick={() => setEntryIndex(i)}
                           >
-                            {e.id} · {e.name} · {e.schedulable ? '可定时' : '不定时'}
+                            {e.name} · {e.schedulable ? '可定时' : '不定时'}
                           </Button>
                         ))}
                         <Select
@@ -808,7 +809,7 @@ export default function TemplateAuthorWorkspace({
                       }}
                       options={checkouts.map((c) => ({
                         value: c.id,
-                        label: `${c.entryId} · 来源修订${c.baseRevision} · ${c.flowId.slice(0, 8)}`,
+                        label: `${definition.entries.find((entry) => entry.id === c.entryId)?.name ?? '来源入口待核对'} · 来源修订 ${c.baseRevision} · ${data.flows.find((flow) => flow.id === c.flowId)?.flow.name ?? '本机编排副本'}`,
                       }))}
                     />
                     <Button
@@ -855,7 +856,8 @@ export default function TemplateAuthorWorkspace({
                                   )
                                 }
                               >
-                                明确解除 {i.nodeId} 的 {i.promptId} 绑定后，再采用副本手工内容
+                                明确解除 {flowStepLabel(adoption.flow, i.nodeId)}{' '}
+                                的公共提示词绑定后，再采用副本手工内容
                               </Checkbox>
                             ))}
                             <Button
@@ -958,7 +960,7 @@ export default function TemplateAuthorWorkspace({
                         value={entryIndex}
                         options={definition.entries.map((e, i) => ({
                           value: i,
-                          label: e.id + ' · ' + e.name,
+                          label: e.name,
                         }))}
                         onChange={(i) => {
                           if (!pendingInput) setEntryIndex(i);
@@ -1007,7 +1009,7 @@ export default function TemplateAuthorWorkspace({
                       value={prompt ? promptIndex : undefined}
                       options={definition.prompts.map((p, i) => ({
                         value: i,
-                        label: p.id + ' · ' + p.name,
+                        label: p.name,
                       }))}
                       onChange={setPromptIndex}
                     />
@@ -1107,7 +1109,9 @@ export default function TemplateAuthorWorkspace({
                       e.promptBindings.map((b) => (
                         <div className="author-stack" key={e.id + '/' + b.nodeId}>
                           <p>
-                            {e.id} / {b.nodeId} → {b.promptId}
+                            {e.name} / {flowStepLabel(e.flow, b.nodeId)} →{' '}
+                            {definition.prompts.find((prompt) => prompt.id === b.promptId)?.name ??
+                              '公共提示词'}
                           </p>
                           <Button
                             disabled={busy}
@@ -1144,7 +1148,7 @@ export default function TemplateAuthorWorkspace({
                           .filter((n) => ['ai', 'conversation', 'source-reduce'].includes(n.type))
                           .map((n) => ({
                             value: JSON.stringify([e.id, n.id]),
-                            label: e.id + ' / ' + n.id,
+                            label: e.name + ' / ' + flowStepLabel(e.flow, n.id),
                           })),
                       )}
                     />
@@ -1341,7 +1345,7 @@ export default function TemplateAuthorWorkspace({
                                 disabled={busy}
                                 options={definition.entries.map((e) => ({
                                   value: e.id,
-                                  label: e.name + ' · ' + e.id,
+                                  label: e.name,
                                 }))}
                                 onChange={(v) =>
                                   edit((d) => {
@@ -1374,7 +1378,7 @@ export default function TemplateAuthorWorkspace({
                                     )
                                     .map((source) => ({
                                       value: source.id,
-                                      label: `${source.name}（${source.id}）`,
+                                      label: source.name,
                                     })),
                                 ]}
                                 onChange={(value) => {
@@ -1493,7 +1497,7 @@ export default function TemplateAuthorWorkspace({
                         value={entryIndex}
                         options={definition.entries.map((e, i) => ({
                           value: i,
-                          label: e.id + ' · ' + e.name,
+                          label: e.name,
                         }))}
                         onChange={setEntryIndex}
                       />
@@ -1504,7 +1508,7 @@ export default function TemplateAuthorWorkspace({
                         value={entry.resourceIds}
                         options={definition.resources.map((r) => ({
                           value: r.id,
-                          label: r.id + ' · ' + r.name,
+                          label: r.name,
                         }))}
                         onChange={(v) =>
                           setEntry((e) => {
@@ -1519,7 +1523,7 @@ export default function TemplateAuthorWorkspace({
                         value={entry.actionIds}
                         options={definition.actions.map((a) => ({
                           value: a.id,
-                          label: a.id + ' · ' + a.name,
+                          label: a.name,
                         }))}
                         onChange={(v) =>
                           setEntry((e) => {

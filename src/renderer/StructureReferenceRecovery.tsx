@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import { Button, Card } from 'antd';
 import { useContext, useState } from 'react';
 import type { Flow, Step } from '../shared/types';
@@ -97,7 +98,7 @@ export default function StructureReferenceRecovery({
           {fields.map((field) => (
             <li key={JSON.stringify([field.nodeId, field.keys])}>
               <strong>{field.label}</strong>
-              <code>{field.reference}</code>
+              <TechnicalDetails items={[{ label: '完整引用路径', value: field.reference }]} />
               <Button
                 htmlType="button"
                 onClick={(event) => {

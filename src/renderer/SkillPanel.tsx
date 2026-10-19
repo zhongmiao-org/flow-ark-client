@@ -1,3 +1,5 @@
+import TechnicalDetails from './TechnicalDetails';
+import { recordTime } from './readable-labels';
 import SkillUpdateReviewPanel from './SkillUpdateReviewPanel';
 import type { SkillUpdateApplication, SkillUpdateDetail } from '../shared/contracts.generated';
 import { skill_update_detail_v1 } from '../shared/node-schema.generated';
@@ -43,12 +45,17 @@ export function SkillVersionView({ value }: { value: SkillVersion }) {
       <div className="skill-grid">
         <Card title="来源与确认版本">
           <p>{value.title}</p>
+          <TechnicalDetails
+            items={[
+              { label: 'Skill 键', value: value.ref.key },
+              { label: '版本 ID', value: value.ref.versionId },
+              { label: '内容摘要', value: value.ref.sha256 },
+              { label: '父版本 ID', value: value.parent?.versionId },
+            ]}
+          />
           <p>
-            {value.ref.key} / {value.ref.versionId}
-          </p>
-          <p className="path-text">摘要：{value.ref.sha256}</p>
-          <p>
-            确认于 {value.confirmedAt} · 父版本 {value.parent?.versionId ?? '无'}
+            确认于 {recordTime(value.confirmedAt)} ·{' '}
+            {value.parent ? '基于已有确认版本更新' : '首次确认'}
           </p>
           <p>本次运行的内容与来源保存在本机加密记录中。</p>
         </Card>
@@ -416,7 +423,7 @@ export default function SkillPanel({
             <Card title="来源与草稿状态" styles={{ body: { padding: 24 } }}>
               <p>Skill键：{snapshot.key}</p>
               <p className="path-text">工作区：{workspace}</p>
-              <p>父版本：{snapshot.base?.versionId ?? '首次确认'}</p>
+              <p>{snapshot.base ? '基于已有确认版本编辑' : '首次确认'}</p>
               <p>
                 保存普通可读的SKILL.md、data.json和清单；新版本不会覆盖现有文件或自动更换流程绑定。
               </p>
@@ -680,10 +687,14 @@ export default function SkillPanel({
           )}
           {confirmed && (
             <Card title="固定确认版本与持续维护">
-              <p>
-                {snapshot.confirmed?.key} / {snapshot.confirmed?.versionId}
-              </p>
-              <p className="path-text">摘要：{snapshot.confirmed?.sha256}</p>
+              <p>{snapshot.draft.title} · 已确认保存</p>
+              <TechnicalDetails
+                items={[
+                  { label: 'Skill 键', value: snapshot.confirmed?.key },
+                  { label: '版本 ID', value: snapshot.confirmed?.versionId },
+                  { label: '内容摘要', value: snapshot.confirmed?.sha256 },
+                ]}
+              />
               <p>在流程的Skill资源中明确选择本版本。首版保留所有确认版本，不提供直接删除入口。</p>
               <div className="skill-actions">
                 <Button

@@ -301,7 +301,7 @@ export default function TemplateSchedulePage({
                           ? '下次 ' + inZone(plan.nextAt, plan.timezone)
                           : '暂无下次执行'}
                       </p>
-                      <small>固定版本 {plan.versionId.slice(0, 8)}</small>
+                      <small>按保存计划时的固定方案执行</small>
                       <div className="ai-task-actions">
                         <Button
                           disabled={busy || undefined}
@@ -391,7 +391,7 @@ export default function TemplateSchedulePage({
                     type="success"
                     role="status"
                     showIcon
-                    title={<>计划已创建 · 固定版本 {created.versionId.slice(0, 8)}</>}
+                    title="计划已创建 · 执行方案已固定"
                     description="已暂停，启用后才会执行。"
                   />
                   <Button htmlType="button" onClick={back}>

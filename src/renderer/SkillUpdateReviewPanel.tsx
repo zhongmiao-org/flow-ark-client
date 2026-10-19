@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Button, Card, Collapse, Tag } from 'antd';
 import type {
@@ -252,9 +253,13 @@ export default function SkillUpdateReviewPanel({
       </div>
       {review && (
         <>
-          <p>
-            原建议基线：{review.base.versionId} · 发布父版本：{review.publishBase.versionId}
-          </p>
+          <p>原建议基线与当前发布父版本已固定</p>
+          <TechnicalDetails
+            items={[
+              { label: '原建议基线版本 ID', value: review.base.versionId },
+              { label: '发布父版本 ID', value: review.publishBase.versionId },
+            ]}
+          />
           {expired && (
             <Alert type="warning" title="本次核对已过期，请重新核对后选择；没有自动应用。" />
           )}

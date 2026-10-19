@@ -1,3 +1,4 @@
+import { recordTime, runRecordLabel } from './readable-labels';
 import { Alert, Collapse, ConfigProvider, Button, Checkbox, Descriptions, Radio, Card } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -348,12 +349,12 @@ export default function RunRerunPanel({
                   已创建新运行
                   <Button
                     htmlType="button"
-                    aria-label={'查看新运行 ' + created.id}
+                    aria-label="查看新运行"
                     ref={createdButton}
                     disabled={submitting || !!opening || undefined}
                     onClick={() => void inspect(created.id)}
                   >
-                    {created.id.slice(0, 8)} · 查看新运行
+                    查看新运行
                   </Button>
                 </p>
               )}
@@ -395,7 +396,7 @@ export default function RunRerunPanel({
                       {
                         key: 'source',
                         label: '来源运行',
-                        children: `${preview.source.id} · ${modes[preview.mode]}`,
+                        children: `${preview.source.name} · ${modes[preview.mode]}`,
                       },
                       {
                         key: 'summary',
@@ -409,7 +410,7 @@ export default function RunRerunPanel({
                     items={[
                       {
                         key: 'evidence-0',
-                        label: <>查看版本、绑定与引用明细</>,
+                        label: <>查看版本、绑定与引用明细（高级诊断）</>,
                         forceRender: true,
                         onKeyDown: activateCollapseWithSpace,
                         children: (
@@ -639,7 +640,7 @@ export default function RunRerunPanel({
                           size="small"
                           items={[
                             { key: 'name', label: '当前运行', children: run.name },
-                            { key: 'id', label: '运行标识', children: <code>{run.id}</code> },
+                            { key: 'time', label: '运行时间', children: recordTime(run.createdAt) },
                             {
                               key: 'state',
                               label: '当前记录状态',
@@ -655,7 +656,7 @@ export default function RunRerunPanel({
                             <span>本次根据{modes[run.rerun.mode]}重新运行，来源：</span>
                             <Button
                               htmlType="button"
-                              aria-label={'查看来源运行 ' + run.rerun.runId}
+                              aria-label={'查看来源运行 ' + (related?.source?.name ?? '原记录')}
                               ref={(element) => {
                                 if (element instanceof HTMLButtonElement)
                                   relatedButtons.current.set(run.rerun!.runId, element);
@@ -664,7 +665,7 @@ export default function RunRerunPanel({
                               disabled={submitting || !!opening || undefined}
                               onClick={() => void inspect(run.rerun!.runId)}
                             >
-                              {related?.source?.name ?? '来源运行'} · {run.rerun.runId.slice(0, 8)}
+                              {related?.source ? runRecordLabel(related.source) : '查看来源运行'}
                             </Button>
                             {related?.source && <span>{runStateLabels[related.source.state]}</span>}
                           </div>
@@ -687,7 +688,7 @@ export default function RunRerunPanel({
                                         <li key={item.id}>
                                           <Button
                                             htmlType="button"
-                                            aria-label={'查看派生运行 ' + item.id}
+                                            aria-label={'查看派生运行 ' + runRecordLabel(item)}
                                             ref={(element) => {
                                               if (element instanceof HTMLButtonElement)
                                                 relatedButtons.current.set(item.id, element);
@@ -696,7 +697,7 @@ export default function RunRerunPanel({
                                             disabled={submitting || !!opening || undefined}
                                             onClick={() => void inspect(item.id)}
                                           >
-                                            {item.name} · {item.id.slice(0, 8)}
+                                            {runRecordLabel(item)}
                                           </Button>
                                           <span>{runStateLabels[item.state]}</span>
                                           <time>

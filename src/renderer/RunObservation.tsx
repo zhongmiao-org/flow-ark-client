@@ -1,13 +1,12 @@
+import TechnicalDetails from './TechnicalDetails';
 import { Button, Collapse } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { Event } from '../shared/types';
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Clock, ListChecks, Terminal } from 'lucide-react';
-import { formatRunDuration, presentRun } from '../shared/run-presentation';
-import RunStepDetails, { RunFileOperation, fileOperationTitle } from './RunStepDetails';
-import { kinds } from './node-kinds';
+import { formatRunDuration, presentRun } from './run-presentation';
+import RunStepDetails, { RunFileOperation } from './RunStepDetails';
 import { flatten } from './flow-editing';
-import { browserActions } from './browser-actions';
 import { runInstancePresenter } from './run-instance-presentation';
 
 export function RunObservation({
@@ -33,12 +32,6 @@ export function RunObservation({
     ? undefined
     : flatten(detail.snapshot?.steps ?? []).find((item) => item.id === view.step.nodeId);
   const fileNode = node?.type === 'file' || node?.type === 'excel' ? node : undefined;
-  const defaultName =
-    node?.type === 'browser'
-      ? browserActions[node.operation]?.label
-      : view.step.type
-        ? kinds[view.step.type]?.label
-        : undefined;
   const stepLabel = {
     current: '当前步骤',
     paused: '下一步',
@@ -66,15 +59,11 @@ export function RunObservation({
           </span>
         )}
         <strong data-testid="run-current-step">
-          {unresolved
-            ? `${view.step.instance}（位置待核对）`
-            : fileNode
-              ? fileOperationTitle(fileNode)
-              : view.step.name === view.step.nodeId && view.step.type
-                ? (defaultName ?? view.step.name)
-                : (view.step.name ?? view.step.label)}
+          {unresolved ? '步骤位置待核对' : (view.step.name ?? view.step.label)}
         </strong>
-        {view.step.instance && !compact && <code>{view.step.instance}</code>}
+        {view.step.instance && !compact && (
+          <TechnicalDetails items={[{ label: '步骤实例路径', value: view.step.instance }]} />
+        )}
       </div>
       {(!compact || !fileNode) && (
         <div className="run-observation-metrics">
@@ -168,44 +157,54 @@ export function RunOutput({
             </>
           )}
         </h3>
-        {layout !== 'result' && output.truncated && (
-          <Button
-            onClick={(event) => {
-              toggleOrigin.current = event.currentTarget as HTMLButtonElement;
-              setExpanded(!expanded);
-            }}
-            aria-expanded={expanded}
-            aria-controls={outputId}
-          >
-            {expanded ? '收起输出' : '展开完整输出'}
-          </Button>
-        )}
       </div>
       {output.available ? (
-        <>
-          <p className="muted">
-            {layout === 'task'
-              ? '已脱敏 JSON'
-              : layout === 'result'
-                ? '已保存输出 · 已脱敏'
-                : '已保存的脱敏输出；业务结果请结合回执核对。'}
-          </p>
-          {output.truncated && !expanded && (
-            <p className="output-limit">
-              长输出预览已截断，共 {output.characters.toLocaleString('zh-CN')}{' '}
-              字符。展开只读取已保存内容。
-            </p>
-          )}
-          <pre
-            data-expanded={expanded}
-            id={outputId}
-            ref={content}
-            tabIndex={0}
-            aria-label="已保存的结构化输出"
-          >
-            {expanded ? output.full : output.preview}
-          </pre>
-        </>
+        <Collapse
+          key={detail.run.id}
+          size="small"
+          items={[
+            {
+              key: 'raw-output',
+              label: '原始输出（高级诊断）',
+              onKeyDown: activateCollapseWithSpace,
+              children: (
+                <>
+                  <p className="muted">
+                    {layout === 'task'
+                      ? '已脱敏 JSON'
+                      : layout === 'result'
+                        ? '已保存输出 · 已脱敏'
+                        : '已保存的脱敏输出；业务结果请结合回执核对。'}
+                  </p>
+                  {output.truncated && !expanded && (
+                    <p className="output-limit">
+                      长输出预览已截断，共 {output.characters.toLocaleString('zh-CN')}{' '}
+                      字符。展开只读取已保存内容。
+                    </p>
+                  )}
+                  {output.truncated && (
+                    <Button
+                      onClick={() => setExpanded(!expanded)}
+                      aria-expanded={expanded}
+                      aria-controls={outputId}
+                    >
+                      {expanded ? '收起完整输出' : '阅读完整输出'}
+                    </Button>
+                  )}
+                  <pre
+                    data-expanded={expanded}
+                    id={outputId}
+                    ref={content}
+                    tabIndex={0}
+                    aria-label="已保存的结构化输出"
+                  >
+                    {expanded ? output.full : output.preview}
+                  </pre>
+                </>
+              ),
+            },
+          ]}
+        />
       ) : (
         <p className="muted">
           尚无已保存的运行输出。失败、取消或存储异常时，请查看步骤记录与业务回执。
@@ -216,19 +215,6 @@ export function RunOutput({
           <p className="run-output-boundary">
             运行结束、外部业务结果与文件可用性分别核对；查看结果不会重新执行步骤。
           </p>
-          {output.available && (
-            <Button
-              className="run-result-output-toggle"
-              aria-expanded={expanded}
-              aria-controls={outputId}
-              onClick={(event) => {
-                toggleOrigin.current = event.currentTarget as HTMLButtonElement;
-                setExpanded(!expanded);
-              }}
-            >
-              {expanded ? '收起完整脱敏输出' : '展开完整脱敏输出'}
-            </Button>
-          )}
         </>
       )}
     </section>
@@ -263,7 +249,9 @@ export function RunStepOutput({
           onKeyDown: activateCollapseWithSpace,
           children: (
             <>
-              {instance && <code className="path-text">{instance}</code>}
+              {instance && (
+                <TechnicalDetails items={[{ label: '步骤实例路径', value: instance }]} />
+              )}
               <pre tabIndex={0} aria-label={`${label} · 已保存步骤输出`}>
                 {event.data.outputPreview}
               </pre>

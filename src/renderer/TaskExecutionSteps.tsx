@@ -3,7 +3,7 @@ import { runStepColors } from './theme';
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import type { taskRunPresentation } from './task-run-presentation';
 import './task-execution-steps.css';
-import type { RunPresentationInput } from '../shared/run-presentation';
+import type { RunPresentationInput } from './run-presentation';
 import RunStepDetails from './RunStepDetails';
 import { flatten } from './flow-editing';
 import { taskStepSummary } from './task-step-presentation';
@@ -232,10 +232,7 @@ export default function TaskExecutionSteps({
                     </p>
                   )}
                   {(!compact || row.instance !== row.nodeId) && (
-                    <small>
-                      {row.instance !== row.nodeId ? '循环/分支位置：' : '步骤编号：'}
-                      {row.instance}
-                    </small>
+                    <small>{row.pathLabel ?? '步骤位置待核对'}</small>
                   )}
                   <div id={`${id}-record-${index}`} hidden={expanded !== row.instance}>
                     {expanded === row.instance && (

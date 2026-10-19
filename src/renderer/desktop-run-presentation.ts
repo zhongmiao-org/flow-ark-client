@@ -1,6 +1,6 @@
 import type { Step } from '../shared/types';
 import type { DesktopReceipt } from '../shared/desktop-run';
-import type { RunPresentationInput } from '../shared/run-presentation';
+import type { RunPresentationInput } from './run-presentation';
 import type { RunTargetContext } from '../shared/run-target-context';
 
 export function verifiedDesktopReceipt(

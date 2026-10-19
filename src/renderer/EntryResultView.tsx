@@ -122,8 +122,8 @@ export default function EntryResultView({ run }: { run: Run }) {
       {source && (
         <p className="entry-result-source">
           {source.kind === 'template'
-            ? `模板 ${source.templateId} · ${source.templateVersion} / ${source.entryName} / 固定包 ${source.packageDigest.slice(0, 12)}`
-            : `编排副本 / 制作修订 ${source.baseRevision} / 固定上下文 ${source.contextId.slice(0, 12)}`}
+            ? `模板 v${source.templateVersion} / ${source.entryName}`
+            : `编排副本 / 制作修订 ${source.baseRevision}`}
         </p>
       )}
       {saved && (

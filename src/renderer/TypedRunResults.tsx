@@ -1,3 +1,6 @@
+import TechnicalDetails from './TechnicalDetails';
+import type { Flow } from '../shared/types';
+import { runInstancePresenter } from './run-instance-presentation';
 import CompleteValue from './CompleteValue';
 import { resultBudget } from '../shared/run-result-source';
 import { run_result_read_v1 } from '../shared/node-schema.generated';
@@ -27,11 +30,13 @@ import { assertEffectResult } from '../shared/effect-node';
 export default function TypedRunResults({
   runId,
   entries,
+  snapshot,
   rerun,
   openRun,
 }: {
   runId: string;
   entries: TypedResultMeta[];
+  snapshot?: Flow;
   rerun?: () => void;
   openRun?: (detail: any) => void;
 }) {
@@ -86,7 +91,12 @@ export default function TypedRunResults({
         <Select
           aria-label="选择结构化步骤结果"
           value={id}
-          options={entries.map((e) => ({ value: e.id, label: e.label + ' · ' + e.nodeInstance }))}
+          options={entries.map((e, index) => ({
+            value: e.id,
+            label:
+              runInstancePresenter(snapshot)(e.nodeInstance) ??
+              `第 ${index + 1} 项结果 · 位置待核对`,
+          }))}
           onChange={setSelected}
         />
       )}
@@ -112,12 +122,15 @@ export default function TypedRunResults({
       {value?.type === 'run-result' && (
         <section className="result-read-view" aria-label="已读取固定的前次结果">
           <h3>已读取固定的前次结果</h3>
-          <p>
-            来源入口：{value.value.ref.source.entryId} · 原运行：{value.value.ref.run.id}
-          </p>
-          <p>
-            凭据过滤策略 v1 · 数据摘要 {value.value.ref.dataSha256.slice(0, 12)} · 固定结构核验通过
-          </p>
+          <p>已读取你选择并固定的来源运行</p>
+          <p>凭据字段已过滤 · 固定结构核验通过</p>
+          <TechnicalDetails
+            items={[
+              { label: '来源入口 ID', value: value.value.ref.source.entryId },
+              { label: '来源运行 ID', value: value.value.ref.run.id },
+              { label: '数据摘要', value: value.value.ref.dataSha256 },
+            ]}
+          />
           <CompleteValue key={id} value={value.value.value} labels={value.value.labels} />
           <p>本步骤仅读取；后续动作仍须按当前事实、配置和权限核对。</p>
           {openRun && (

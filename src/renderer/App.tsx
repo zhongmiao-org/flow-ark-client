@@ -1767,13 +1767,13 @@ function WorkspaceApp() {
                         <>
                           <a
                             href="#run-detail"
-                            title={detail.run.id}
+                            title={detail.run.name}
                             onClick={(event) => {
                               event.preventDefault();
                               setRunTab('current');
                             }}
                           >
-                            {detail.run.id.slice(0, 8)}
+                            运行详情
                           </a>
                           <span aria-hidden="true">/</span>
                         </>
@@ -1828,7 +1828,7 @@ function WorkspaceApp() {
                           ? '输出与产物'
                           : runTab === 'logs'
                             ? '运行日志'
-                            : detail.run.id.slice(0, 8)
+                            : '运行详情'
                     : '筛选运行记录'
                   : editorBrowser
                     ? compactDrawer

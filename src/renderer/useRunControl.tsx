@@ -1,7 +1,7 @@
 import { Alert, Button } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { Event, Run } from '../shared/types';
-import type { RunPresentation } from '../shared/run-presentation';
+import type { RunPresentation } from './run-presentation';
 
 type Command = {
   action: string;

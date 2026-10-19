@@ -271,8 +271,8 @@ export default function TaskRepairPage({
             </h1>
             <p>
               {phase === 'restart'
-                ? `会创建新运行，关联 ${run.id}；不恢复旧脚本内部现场`
-                : `针对运行 ${run.id} · ${stepName || '网页步骤'}`}
+                ? '会创建新运行并关联原记录；不恢复旧脚本内部现场'
+                : `针对 ${run.name} · ${stepName || '网页步骤'}`}
             </p>
           </div>
         </div>
@@ -574,7 +574,7 @@ export default function TaskRepairPage({
                     (node?.type === 'browser'
                       ? typeof node.selector === 'string'
                         ? node.selector
-                        : '引用：' + node.selector.$ref
+                        : '使用已选变量（实际定位以运行记录为准）'
                       : undefined)
                   }
                   framePath={

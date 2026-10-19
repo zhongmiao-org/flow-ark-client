@@ -185,7 +185,7 @@ export default function TemplateManifestOverview({
           items={[
             {
               key: 'identity',
-              label: '包内容与身份',
+              label: '包内容与身份（高级诊断）',
               forceRender: true,
               onKeyDown: activateCollapseWithSpace,
               children: (

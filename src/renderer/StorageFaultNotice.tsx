@@ -1,3 +1,5 @@
+import TechnicalDetails from './TechnicalDetails';
+import { recordTime } from './readable-labels';
 import { Alert, Badge, Button, Card, Empty, Tag, type AlertRef } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { Bootstrap } from '../shared/types';
@@ -149,14 +151,14 @@ export default function StorageFaultNotice({
                     {!execution
                       ? '尚未取得当前活动状态，无法判断是否仍在执行。'
                       : owner
-                        ? `应用仍在处理运行${owner.phase === 'closing' ? '，正在收尾' : ''}：${owner.runId}`
+                        ? `应用仍在处理运行${owner.phase === 'closing' ? '，正在收尾' : ''}`
                         : '本次观察未发现活动运行；这不能证明历史未知资源已退出或外部操作未发生。'}
                   </p>
                   <p className="storage-fault-muted">{time} · 当前活动与已保存状态分别记录</p>
                   {owner && !records.some((run) => run.id === owner.runId) && (
                     <div className="storage-fault-run">
                       <strong>活动运行的保存记录暂不可用</strong>
-                      <code>{owner.runId}</code>
+                      <TechnicalDetails items={[{ label: '活动运行 ID', value: owner.runId }]} />
                       <Button disabled={!!busy || undefined} onClick={() => viewRun(owner.runId)}>
                         读取该运行记录
                       </Button>
@@ -168,7 +170,7 @@ export default function StorageFaultNotice({
                         <li key={run.id}>
                           <div>
                             <strong>{run.name}</strong>
-                            <code>{run.id}</code>
+                            <span>{recordTime(run.createdAt)}</span>
                             <span>
                               最后保存：{runStateLabels[run.state] ?? run.state}
                               {run.id === owner?.runId ? ' · 仍在处理' : ' · 当前执行未确认'}

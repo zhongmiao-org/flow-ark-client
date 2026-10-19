@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { Card, Divider, Alert, Collapse, Tag } from 'antd';
 import { mcpReceiptColors } from './theme';
@@ -130,9 +131,8 @@ export default function McpRunReceipts({
               </p>
               <p className="mcp-receipt-time">
                 步骤位置：{receipt.instanceLabel ?? '无法与本次固定方案核对'}
-                <br />
-                步骤实例：<code>{receipt.nodeInstance}</code>
               </p>
+              <TechnicalDetails items={[{ label: '步骤实例路径', value: receipt.nodeInstance }]} />
             </article>
           );
         })}

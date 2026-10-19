@@ -1,6 +1,8 @@
+import { runRecordLabel } from './readable-labels';
+import { runInstancePresenter } from './run-instance-presentation';
 import { Alert, Button, Collapse, Descriptions } from 'antd';
 import { useEffect, useRef, useState } from 'react';
-import type { RunPresentationInput } from '../shared/run-presentation';
+import type { RunPresentationInput } from './run-presentation';
 import type { RunTargetContext } from '../shared/run-target-context';
 import { flatten } from './flow-editing';
 import { runTimeline } from './run-timeline';
@@ -120,10 +122,7 @@ export default function RunFileRecovery({
             onKeyDown: activateCollapseWithSpace,
             children: (
               <div className="run-file-recovery-targets">
-                <p>
-                  来源 Run：<code>{detail.run.id}</code> · 固定版本：
-                  <code>{detail.run.versionId}</code>
-                </p>
+                <p>{runRecordLabel(detail.run)} · 按启动时保存的方案执行</p>
                 {steps.map((step) => {
                   const node = step.node;
                   const directory =
@@ -134,7 +133,7 @@ export default function RunFileRecovery({
                     (typeof node.name === 'string'
                       ? node.name
                       : referenceOf(node.name) !== undefined
-                        ? `引用 ${referenceOf(node.name)}（实际名称待核对）`
+                        ? '使用已选变量（实际名称待核对）'
                         : '配置未提供可核对的文件名');
                   return (
                     <article key={step.instance}>
@@ -147,8 +146,10 @@ export default function RunFileRecovery({
                         items={[
                           {
                             key: 'instance',
-                            label: '步骤实例',
-                            children: <code>{step.instance}</code>,
+                            label: '步骤',
+                            children:
+                              runInstancePresenter(detail.snapshot)(step.instance) ??
+                              '步骤位置待核对',
                           },
                           {
                             key: 'binding',

@@ -992,7 +992,7 @@ export default function TemplateLibrary({
                 return (
                   <article className="template-instance-card" key={i.id}>
                     <Card className="template-catalog-card">
-                      <h2 title={`${i.id} · 创建于 ${date(i.createdAt)}`}>{i.name}</h2>
+                      <h2 title={`创建于 ${date(i.createdAt)}`}>{i.name}</h2>
                       <p>
                         {source
                           ? `${instanceFilter ? '' : source.manifest.name + ' · '}v${source.manifest.version}`

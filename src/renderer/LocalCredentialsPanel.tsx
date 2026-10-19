@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import {
   Card,
   Divider,
@@ -257,7 +258,7 @@ function CredentialDialog({
             {removing ? (
               <section className="local-credential-impact">
                 <h3>{editor.entry?.name}</h3>
-                <code>{editor.id}</code>
+                <TechnicalDetails items={[{ label: '凭据引用 ID', value: editor.id }]} />
                 {editor.entry?.boundFlows.length ? (
                   <>
                     <p>仍被以下流程引用，请先移除绑定：</p>
@@ -617,7 +618,9 @@ export default function LocalCredentialsPanel({
                   </div>
                 )}
                 <p className="local-credential-mask">••••••••</p>
-                {!compact && <code>{entry.id}</code>}
+                {!compact && (
+                  <TechnicalDetails items={[{ label: '凭据引用 ID', value: entry.id }]} />
+                )}
                 <div className="local-credential-actions">
                   <Button
                     disabled={loading || !!listError || undefined}
@@ -643,7 +646,9 @@ export default function LocalCredentialsPanel({
                       onKeyDown: activateCollapseWithSpace,
                       children: (
                         <>
-                          {compact && <code>{entry.id}</code>}
+                          {compact && (
+                            <TechnicalDetails items={[{ label: '凭据引用 ID', value: entry.id }]} />
+                          )}
                           {entry.boundFlows.length ? (
                             <ul>
                               {entry.boundFlows.map((flow) => (

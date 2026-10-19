@@ -189,7 +189,7 @@ export default function FlowParametersPage({
           const entry = entries.get(nodeId);
           const name = entry
             ? `第 ${entry.ordinal} 步「${taskStepTitle(entry.step)}」`
-            : `步骤 ${nodeId}`;
+            : '步骤名称待核对';
           return `${name} → ${reference}`;
         }),
       ),
@@ -651,7 +651,7 @@ export default function FlowParametersPage({
                   key={id}
                 >
                   <span>
-                    {credentialNames[id] ? `${credentialNames[id]} · ${id}` : id}
+                    {credentialNames[id] || '未命名凭据（请在本地设置核对）'}
                     {!credentials.includes(id) ? ' · 凭据不可用' : ''}
                   </span>
                 </Checkbox>
