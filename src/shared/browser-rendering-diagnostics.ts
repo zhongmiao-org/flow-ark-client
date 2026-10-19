@@ -11,6 +11,72 @@ const issueOrder = [
   'generated-content',
 ] as const;
 const issue = z.enum(issueOrder);
+export const ancestorSpaceRuleOrder = [
+  'ordinary-space',
+  'position',
+  'float',
+  'z-index',
+  'background-image',
+  'border-image-source',
+  'outline-style',
+  'box-shadow',
+  'text-shadow',
+  'text-decoration-line',
+  'text-emphasis-style',
+  '-webkit-text-stroke-width',
+  'filter',
+  'backdrop-filter',
+  'transform',
+  'perspective',
+  'clip',
+  'clip-path',
+  'mask-image',
+  '-webkit-mask-box-image-source',
+  'opacity',
+  'mix-blend-mode',
+  'visibility',
+  'content-visibility',
+  'animation-name',
+  'contain',
+  'overflow-x',
+  'overflow-y',
+  '-webkit-box-reflect',
+  'rotate',
+  'scale',
+  'translate',
+  'zoom',
+  'display',
+  'white-space',
+  'background-color',
+  'border-width',
+  'transition-duration',
+] as const;
+export type AncestorSpaceRule = (typeof ancestorSpaceRuleOrder)[number];
+const ancestorSpaceFailureSchema = z
+  .object({
+    rule: z.enum(ancestorSpaceRuleOrder),
+    state: z.enum(['mismatch', 'unavailable']),
+  })
+  .strict();
+export type AncestorSpaceFailure = z.infer<typeof ancestorSpaceFailureSchema>;
+const ancestorSpaceSchema = z
+  .object({
+    failures: z.array(ancestorSpaceFailureSchema).min(1).max(8),
+    more: z.boolean(),
+  })
+  .strict()
+  .superRefine((v, ctx) => {
+    if (
+      (v.more && v.failures.length !== 8) ||
+      v.failures.some(
+        (f, i) =>
+          i > 0 &&
+          ancestorSpaceRuleOrder.indexOf(f.rule) <=
+            ancestorSpaceRuleOrder.indexOf(v.failures[i - 1].rule),
+      )
+    )
+      ctx.addIssue({ code: 'custom', message: '祖先空格检查项重复、无序或超出解释范围' });
+  });
 const location = z
   .object({
     issue,
@@ -25,6 +91,7 @@ const location = z
       .nullable(),
     pseudo: z.enum(['before', 'after']).nullable(),
     contentKind: z.enum(['whitespace-string', 'other-generated']).nullable(),
+    ancestorSpace: ancestorSpaceSchema.nullable().optional(),
   })
   .strict()
   .superRefine((v, ctx) => {
@@ -44,6 +111,7 @@ const location = z
 const renderingDataBaseSchema = z
   .object({
     policy: z.enum(['bounded-rendered-text-v1', 'bounded-rendered-text-v2']),
+    details: z.literal('ancestor-space-checks-v1').optional(),
     issues: z.array(issue).max(7),
     locations: z.array(location).max(32),
     truncated: z.boolean(),
@@ -52,7 +120,18 @@ const renderingDataBaseSchema = z
   })
   .strict()
   .superRefine((v, ctx) => {
+    const detailed = v.details !== undefined;
     if (
+      (detailed && v.policy !== 'bounded-rendered-text-v2') ||
+      v.locations.some((l) => {
+        if (!detailed) return Object.hasOwn(l, 'ancestorSpace');
+        if (!Object.hasOwn(l, 'ancestorSpace')) return true;
+        const eligible =
+          l.issue === 'generated-content' &&
+          ['ancestor', 'frame-ancestor'].includes(l.scope) &&
+          l.contentKind === 'whitespace-string';
+        return eligible ? !l.ancestorSpace : l.ancestorSpace !== null;
+      }) ||
       v.scannedElements > v.scannedNodes ||
       v.issues.some(
         (s, i) => i > 0 && issueOrder.indexOf(s) <= issueOrder.indexOf(v.issues[i - 1]),
@@ -81,8 +160,13 @@ export const renderingInspectionRequestSchema = z
     root: fieldsPickRootSchema,
     selector: fieldsPickRootSchema.shape.selector,
     policy: z.enum(['bounded-rendered-text-v1', 'bounded-rendered-text-v2']).optional(),
+    details: z.literal('ancestor-space-checks-v1').optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((v, ctx) => {
+    if (v.details && v.policy !== 'bounded-rendered-text-v2')
+      ctx.addIssue({ code: 'custom', message: '祖先空格解释只适用于明确的选区正文规则' });
+  });
 const sourceSchema = z
   .object({
     resourceId: z.string().min(1).max(256),
@@ -91,7 +175,10 @@ const sourceSchema = z
   .strict();
 export const renderingInspectionStatusSchema = z.object({ current: z.boolean() }).strict();
 const inspectionMetadata = {
-  ...renderingInspectionRequestSchema.omit({ policy: true }).shape,
+  version: renderingInspectionRequestSchema.shape.version,
+  requestId: renderingInspectionRequestSchema.shape.requestId,
+  root: renderingInspectionRequestSchema.shape.root,
+  selector: renderingInspectionRequestSchema.shape.selector,
   source: sourceSchema,
 };
 export const renderingInspectionSchema = z.discriminatedUnion('policy', [
@@ -108,6 +195,7 @@ export function parseRenderingInspection(value: unknown, request: RenderingInspe
   if (
     result.requestId !== request.requestId ||
     result.policy !== (request.policy ?? 'bounded-rendered-text-v1') ||
+    result.details !== request.details ||
     result.selector !== request.selector ||
     result.root.selector !== request.root.selector ||
     JSON.stringify(result.root.framePath) !== JSON.stringify(request.root.framePath) ||

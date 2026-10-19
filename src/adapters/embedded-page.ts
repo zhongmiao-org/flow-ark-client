@@ -1025,6 +1025,7 @@ export class EmbeddedPage {
             fields: [],
             url: '',
             renderPolicy: request.policy ?? 'bounded-rendered-text-v1',
+            diagnosticDetails: request.details,
           },
         ),
       );

@@ -6,6 +6,8 @@ import type { ResolvedBrowserFieldsNode } from '../shared/browser-fields';
 import type {
   RenderingDiagnosticData,
   RenderingLocation,
+  AncestorSpaceFailure,
+  AncestorSpaceRule,
 } from '../shared/browser-rendering-diagnostics';
 
 type Input = {
@@ -20,6 +22,7 @@ type DiagnosticInput = Omit<Input, 'diagnosticsOnly'> & {
   diagnosticsOnly: true;
   diagnosticTarget: Element;
   diagnosticSelector: string;
+  diagnosticDetails?: 'ancestor-space-checks-v1';
 };
 export function readBrowserRenderedFields(input: DiagnosticInput): RenderingDiagnosticData;
 export function readBrowserRenderedFields(
@@ -39,8 +42,13 @@ export function readBrowserRenderedFields(
   let elements = 0,
     nodes = 0;
   const scoped = input.renderPolicy === 'bounded-rendered-text-v2';
+  const explainSpace =
+    scoped && input.diagnosticsOnly && input.diagnosticDetails === 'ancestor-space-checks-v1';
   let ignoredAncestorSpaces = 0;
-  const nonPaintingSpace = (style: CSSStyleDeclaration) => {
+  const nonPaintingSpace = (
+    style: CSSStyleDeclaration,
+    failed?: (failure: AncestorSpaceFailure) => void,
+  ) => {
     const exact = {
       position: 'static',
       float: 'none',
@@ -74,18 +82,60 @@ export function readBrowserRenderedFields(
       scale: 'none',
       translate: 'none',
       zoom: '1',
+    } satisfies Partial<Record<AncestorSpaceRule, string>>;
+    const check = (rule: AncestorSpaceRule, observed: string | string[], passes: boolean) => {
+      if (!passes && failed)
+        failed({
+          rule,
+          state: (Array.isArray(observed) ? observed.some((v) => !v) : !observed)
+            ? 'unavailable'
+            : 'mismatch',
+        });
+      return passes;
     };
-    return (
-      Object.entries(exact).every(([key, value]) => style.getPropertyValue(key) === value) &&
-      ['block', 'inline', 'table'].includes(style.display) &&
-      ['normal', 'nowrap'].includes(style.whiteSpace) &&
-      ['transparent', 'rgba(0, 0, 0, 0)'].includes(style.backgroundColor) &&
-      ['top', 'right', 'bottom', 'left'].every(
-        (side) => style.getPropertyValue(`border-${side}-width`) === '0px',
-      ) &&
-      !!style.transitionDuration &&
-      style.transitionDuration.split(',').every((v) => v.trim() === '0s')
+    const checks = (Object.entries(exact) as [AncestorSpaceRule, string][]).map(
+      ([rule, expected]) =>
+        () => {
+          const value = style.getPropertyValue(rule);
+          return check(rule, value, value === expected);
+        },
     );
+    checks.push(
+      () => {
+        const v = style.display;
+        return check('display', v, ['block', 'inline', 'table'].includes(v));
+      },
+      () => {
+        const v = style.whiteSpace;
+        return check('white-space', v, ['normal', 'nowrap'].includes(v));
+      },
+      () => {
+        const v = style.backgroundColor;
+        return check('background-color', v, ['transparent', 'rgba(0, 0, 0, 0)'].includes(v));
+      },
+      () => {
+        const v = ['top', 'right', 'bottom', 'left'].map((side) =>
+          style.getPropertyValue('border-' + side + '-width'),
+        );
+        return check(
+          'border-width',
+          v,
+          v.every((w) => w === '0px'),
+        );
+      },
+      () => {
+        const v = style.transitionDuration;
+        return check('transition-duration', v, !!v && v.split(',').every((d) => d.trim() === '0s'));
+      },
+    );
+    let passes = true;
+    for (const evaluate of checks) {
+      if (!evaluate()) {
+        passes = false;
+        if (!failed) return false;
+      }
+    }
+    return passes;
   };
   const visit = (node: Node) => {
     if (nodes >= 6000 || (node.nodeType === 1 && elements >= 2000))
@@ -115,6 +165,7 @@ export function readBrowserRenderedFields(
       element?: Element,
       pseudo: RenderingLocation['pseudo'] = null,
       contentKind: RenderingLocation['contentKind'] = null,
+      ancestorSpace: RenderingLocation['ancestorSpace'] = null,
     ) => {
       issues.add(issue);
       if (!input.diagnosticsOnly) return;
@@ -132,6 +183,14 @@ export function readBrowserRenderedFields(
         tag: known ? tag : null,
         pseudo,
         contentKind,
+        ...(explainSpace
+          ? {
+              ancestorSpace:
+                known && position && ['ancestor', 'frame-ancestor'].includes(position.scope)
+                  ? ancestorSpace
+                  : null,
+            }
+          : {}),
       });
     };
     const ancestors: Element[] = [];
@@ -271,23 +330,29 @@ export function readBrowserRenderedFields(
         const pseudoStyle = win.getComputedStyle(element, pseudo);
         const content = pseudoStyle.content;
         if (content && !['none', 'normal', '""', "''"].includes(content)) {
-          if (
-            scoped &&
-            !descendant &&
-            element !== target &&
-            /^(?:" +"|' +')$/.test(content) &&
-            nonPaintingSpace(pseudoStyle)
-          )
-            ignoredAncestorSpaces++;
-          else
+          const whitespace = /^(?:"[\t\n\f\r ]*"|'[\t\n\f\r ]*')$/.test(content);
+          const ancestor = scoped && !descendant && element !== target;
+          const detailed = explainSpace && ancestor && whitespace;
+          const failures: AncestorSpaceFailure[] = [];
+          const ordinary = /^(?:" +"|' +')$/.test(content);
+          const allowed =
+            ancestor &&
+            ordinary &&
+            nonPaintingSpace(
+              pseudoStyle,
+              detailed ? (failure) => failures.push(failure) : undefined,
+            );
+          if (allowed) ignoredAncestorSpaces++;
+          else {
+            if (detailed && !ordinary) failures.push({ rule: 'ordinary-space', state: 'mismatch' });
             report(
               'generated-content',
               element,
               pseudo === '::before' ? 'before' : 'after',
-              /^(?:"[\t\n\f\r ]*"|'[\t\n\f\r ]*')$/.test(content)
-                ? 'whitespace-string'
-                : 'other-generated',
+              whitespace ? 'whitespace-string' : 'other-generated',
+              detailed ? { failures: failures.slice(0, 8), more: failures.length > 8 } : null,
             );
+          }
         }
       }
       return true;
@@ -322,6 +387,7 @@ export function readBrowserRenderedFields(
       scannedElements: elements,
       scannedNodes: nodes,
       ...(scoped ? { ignoredAncestorSpaces } : {}),
+      ...(explainSpace ? { details: 'ancestor-space-checks-v1' as const } : {}),
     } as RenderingDiagnosticData;
   }
   const fields = input.fields.map((f) => {
