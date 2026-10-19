@@ -190,6 +190,9 @@ function Contents({
                   ? '采用已检查的固定方案，运行中修改草稿不影响此次执行。'
                   : '当前显示已保存方案；检查尚未通过，还没有创建运行或固定执行版本。'}
           </p>
+          {preview.resources.some((resource) => resource.id === 'browser:embedded') && (
+            <p>网页面板保留当前展开或收起状态，可用右上角入口调整。</p>
+          )}
           <Collapse
             items={[
               {
