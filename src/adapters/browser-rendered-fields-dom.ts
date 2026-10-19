@@ -1,14 +1,28 @@
 import type { BrowserRenderedFieldsResult } from '../shared/contracts.generated';
 import type { ResolvedBrowserFieldsNode } from '../shared/browser-fields';
+import type {
+  RenderingDiagnosticData,
+  RenderingLocation,
+} from '../shared/browser-rendering-diagnostics';
 
 type Input = {
   selector: string;
   framePath: string[];
   url: string;
   fields: ResolvedBrowserFieldsNode['fields'];
+  diagnosticsOnly?: false;
 };
+type DiagnosticInput = Omit<Input, 'diagnosticsOnly'> & {
+  diagnosticsOnly: true;
+  diagnosticTarget: Element;
+  diagnosticSelector: string;
+};
+export function readBrowserRenderedFields(input: DiagnosticInput): RenderingDiagnosticData;
+export function readBrowserRenderedFields(input: Input): BrowserRenderedFieldsResult;
 /** Serialized into one document. Synchronous, closure-free, read-only and fail-closed. */
-export function readBrowserRenderedFields(input: Input): BrowserRenderedFieldsResult {
+export function readBrowserRenderedFields(
+  input: Input | DiagnosticInput,
+): BrowserRenderedFieldsResult | RenderingDiagnosticData {
   const encoder = new TextEncoder();
   const check = (value: string, limit: number) => {
     const bytes = encoder.encode(value);
@@ -36,8 +50,35 @@ export function readBrowserRenderedFields(input: Input): BrowserRenderedFieldsRe
     'generated-content',
   ] as const;
   type Issue = (typeof order)[number];
+  const locations: RenderingLocation[] = [];
+  let truncated = false;
   const inspect = (target: Element): Issue[] => {
     const issues = new Set<Issue>();
+    const positions = new Map<Element, Pick<RenderingLocation, 'scope' | 'depth' | 'scanIndex'>>();
+    const report = (
+      issue: Issue,
+      element?: Element,
+      pseudo: RenderingLocation['pseudo'] = null,
+      contentKind: RenderingLocation['contentKind'] = null,
+    ) => {
+      issues.add(issue);
+      if (!input.diagnosticsOnly) return;
+      if (locations.length >= 32) {
+        truncated = true;
+        return;
+      }
+      const position = element && positions.get(element);
+      const tag = element?.localName;
+      const known =
+        !!position && !!tag && tag.length <= 100 && /^[a-zA-Z][a-zA-Z0-9:_-]*$/.test(tag);
+      locations.push({
+        issue,
+        ...(known ? position : { scope: 'unavailable' as const, depth: null, scanIndex: null }),
+        tag: known ? tag : null,
+        pseudo,
+        contentKind,
+      });
+    };
     const ancestors: Element[] = [];
     let current: Element | null = target;
     let doc: Document = document;
@@ -53,13 +94,24 @@ export function readBrowserRenderedFields(input: Input): BrowserRenderedFieldsRe
         while (current) {
           if (ancestors.length >= 64) throw Error('正文祖先预算超限，整次采集未采用');
           visit(current);
+          if (input.diagnosticsOnly)
+            positions.set(current, {
+              scope:
+                current === target
+                  ? 'target'
+                  : current.ownerDocument === document
+                    ? 'ancestor'
+                    : 'frame-ancestor',
+              depth: ancestors.length,
+              scanIndex: nodes,
+            });
           ancestors.push(current);
           current = current.parentElement;
         }
         if (doc.defaultView === doc.defaultView?.top) break;
         const owner = doc.defaultView?.frameElement;
         if (!owner) {
-          issues.add('unsupported-layout');
+          report('unsupported-layout');
           break;
         }
         current = owner;
@@ -75,7 +127,7 @@ export function readBrowserRenderedFields(input: Input): BrowserRenderedFieldsRe
       }
     } catch (error) {
       if (error instanceof Error && error.message.includes('预算')) throw error;
-      issues.add('unsupported-layout');
+      report('unsupported-layout');
     }
     const inspectElement = (element: Element, descendant: boolean, alreadyVisited = false) => {
       if (!alreadyVisited) visit(element);
@@ -86,7 +138,7 @@ export function readBrowserRenderedFields(input: Input): BrowserRenderedFieldsRe
         !element.ownerDocument.fonts ||
         typeof element.getAnimations !== 'function'
       ) {
-        issues.add('unsupported-layout');
+        report('unsupported-layout', element);
         return false;
       }
       const style = win.getComputedStyle(element);
@@ -101,7 +153,7 @@ export function readBrowserRenderedFields(input: Input): BrowserRenderedFieldsRe
           visibilityProperty: true,
         });
       if (hidden) {
-        issues.add(descendant ? 'hidden-descendant' : 'hidden-target');
+        report(descendant ? 'hidden-descendant' : 'hidden-target', element);
         return false;
       }
       if (
@@ -118,7 +170,7 @@ export function readBrowserRenderedFields(input: Input): BrowserRenderedFieldsRe
         ![0, 1].includes(Number(style.opacity)) ||
         element.getAnimations().some((a) => a.playState === 'running' || a.pending)
       )
-        issues.add('unsupported-layout');
+        report('unsupported-layout', element);
       const clamp = style.getPropertyValue('line-clamp');
       const webkitClamp = style.getPropertyValue('-webkit-line-clamp');
       if (
@@ -129,7 +181,7 @@ export function readBrowserRenderedFields(input: Input): BrowserRenderedFieldsRe
           ['-webkit-box', '-webkit-inline-box', 'flow-root'].includes(style.display) &&
           style.getPropertyValue('-webkit-box-orient') === 'vertical')
       )
-        issues.add('line-clamp');
+        report('line-clamp', element);
       const box = element.getBoundingClientRect();
       const rect = targetRects.get(element.ownerDocument);
       const clipX = ['hidden', 'clip'].includes(style.overflowX),
@@ -147,7 +199,7 @@ export function readBrowserRenderedFields(input: Input): BrowserRenderedFieldsRe
               (rect.top < box.top + element.clientTop ||
                 rect.bottom > box.top + element.clientTop + element.clientHeight))))
       )
-        issues.add('overflow-clip');
+        report('overflow-clip', element);
       if (
         element.shadowRoot ||
         element.localName.includes('-') ||
@@ -157,30 +209,54 @@ export function readBrowserRenderedFields(input: Input): BrowserRenderedFieldsRe
         ) &&
           (element.ownerDocument === document || element.localName !== 'iframe'))
       ) {
-        issues.add('embedded-content');
+        report('embedded-content', element);
         return false;
       }
       for (const pseudo of ['::before', '::after']) {
         const content = win.getComputedStyle(element, pseudo).content;
         if (content && !['none', 'normal', '""', "''"].includes(content))
-          issues.add('generated-content');
+          report(
+            'generated-content',
+            element,
+            pseudo === '::before' ? 'before' : 'after',
+            /^(?:"[\t\n\f\r ]*"|'[\t\n\f\r ]*')$/.test(content)
+              ? 'whitespace-string'
+              : 'other-generated',
+          );
       }
       return true;
     };
     for (const ancestor of ancestors)
       if (!inspectElement(ancestor, false, true)) return order.filter((v) => issues.has(v));
     if (!target.getClientRects().length) {
-      issues.add('hidden-target');
+      report('hidden-target', target);
       return order.filter((v) => issues.has(v));
     }
-    const walk = (node: Node) => {
+    const walk = (node: Node, depth: number) => {
       visit(node);
+      if (input.diagnosticsOnly && node.nodeType === 1)
+        positions.set(node as Element, { scope: 'descendant', depth, scanIndex: nodes });
       if (node.nodeType === 1 && !inspectElement(node as Element, true, true)) return;
-      for (let child = node.firstChild; child; child = child.nextSibling) walk(child);
+      for (let child = node.firstChild; child; child = child.nextSibling) walk(child, depth + 1);
     };
-    for (let child = target.firstChild; child; child = child.nextSibling) walk(child);
+    for (let child = target.firstChild; child; child = child.nextSibling) walk(child, 1);
     return order.filter((v) => issues.has(v));
   };
+  // Editor-only inspection exits before any field text or attribute is read.
+  if (input.diagnosticsOnly) {
+    const matches = roots[0].querySelectorAll(input.diagnosticSelector);
+    if (matches.length !== 1 || matches[0] !== input.diagnosticTarget)
+      throw Error('诊断目标不唯一或已被替换，请重新检查');
+    const issues = inspect(matches[0]);
+    return {
+      policy: 'bounded-rendered-text-v1',
+      issues,
+      locations,
+      truncated,
+      scannedElements: elements,
+      scannedNodes: nodes,
+    };
+  }
   const fields = input.fields.map((f) => {
     const matches = roots[0].querySelectorAll(f.selector),
       count = matches.length;

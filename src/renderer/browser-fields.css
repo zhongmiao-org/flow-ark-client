@@ -135,3 +135,17 @@
 .fields-pick-candidate .ant-btn {
   justify-self: start;
 }
+.fields-rendering-diagnostic .ant-card-body {
+  display: grid;
+  gap: var(--fa-space-12);
+}
+.fields-rendering-diagnostic ol {
+  max-height: 24rem;
+  overflow: auto;
+  margin: 0;
+  padding-inline-start: 1.5rem;
+  overflow-wrap: anywhere;
+}
+.fields-rendering-diagnostic li + li {
+  margin-top: var(--fa-space-12);
+}
