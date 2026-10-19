@@ -235,7 +235,7 @@ export default function TaskStepInspector({
             .map((key) => {
               const split = key.lastIndexOf(':');
               const ancestor = entries.find((item) => item.step.id === key.slice(0, split));
-              return `${ancestor ? taskStepTitle(ancestor.step) : key.slice(0, split)} · ${{ then: '条件成立', else: '条件不成立', body: '循环体' }[key.slice(split + 1)] ?? ''}`;
+              return `${ancestor ? taskStepTitle(ancestor.step) : '上级步骤待核对'} · ${{ then: '条件成立', else: '条件不成立', body: '循环体' }[key.slice(split + 1)] ?? ''}`;
             })
             .join(' → ')}
         </p>

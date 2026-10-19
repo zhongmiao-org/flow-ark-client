@@ -4327,7 +4327,8 @@ function Editor({
                                       </div>
                                     </div>
                                     <p className="muted inspector-node-meta">
-                                      {selectedNode.id} · 保存后，下次运行生效
+                                      第 {editorSteps.indexOf(selectedNode) + 1} 步 ·
+                                      保存后，下次运行生效
                                     </p>
                                     <div
                                       className="inspector-actions"

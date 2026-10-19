@@ -65,7 +65,7 @@ export default function FlowParametersPage({
           setCredentialNames(Object.fromEntries(entries.map((entry) => [entry.id, entry.name])));
       })
       .catch(() => {
-        if (live) setCredentialError('凭据名称暂未读取，以下保留实际引用标识。');
+        if (live) setCredentialError('凭据名称暂未读取，请在本地设置核对。');
       });
     return () => {
       live = false;
