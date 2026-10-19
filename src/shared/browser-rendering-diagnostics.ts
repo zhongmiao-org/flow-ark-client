@@ -41,9 +41,9 @@ const location = z
     )
       ctx.addIssue({ code: 'custom', message: '拒绝位置关系无效' });
   });
-export const renderingDiagnosticDataSchema = z
+const renderingDataBaseSchema = z
   .object({
-    policy: z.literal('bounded-rendered-text-v1'),
+    policy: z.enum(['bounded-rendered-text-v1', 'bounded-rendered-text-v2']),
     issues: z.array(issue).max(7),
     locations: z.array(location).max(32),
     truncated: z.boolean(),
@@ -63,12 +63,24 @@ export const renderingDiagnosticDataSchema = z
     )
       ctx.addIssue({ code: 'custom', message: '拒绝原因、位置或扫描预算不一致' });
   });
+const renderingDataV1Schema = renderingDataBaseSchema.safeExtend({
+  policy: z.literal('bounded-rendered-text-v1'),
+});
+const renderingDataV2Schema = renderingDataBaseSchema.safeExtend({
+  policy: z.literal('bounded-rendered-text-v2'),
+  ignoredAncestorSpaces: z.number().int().min(0).max(128),
+});
+export const renderingDiagnosticDataSchema = z.discriminatedUnion('policy', [
+  renderingDataV1Schema,
+  renderingDataV2Schema,
+]);
 export const renderingInspectionRequestSchema = z
   .object({
     version: z.literal(1),
     requestId: z.string().min(1).max(100),
     root: fieldsPickRootSchema,
     selector: fieldsPickRootSchema.shape.selector,
+    policy: z.enum(['bounded-rendered-text-v1', 'bounded-rendered-text-v2']).optional(),
   })
   .strict();
 const sourceSchema = z
@@ -78,12 +90,14 @@ const sourceSchema = z
   })
   .strict();
 export const renderingInspectionStatusSchema = z.object({ current: z.boolean() }).strict();
-export const renderingInspectionSchema = renderingDiagnosticDataSchema
-  .safeExtend({
-    ...renderingInspectionRequestSchema.shape,
-    source: sourceSchema,
-  })
-  .strict();
+const inspectionMetadata = {
+  ...renderingInspectionRequestSchema.omit({ policy: true }).shape,
+  source: sourceSchema,
+};
+export const renderingInspectionSchema = z.discriminatedUnion('policy', [
+  renderingDataV1Schema.safeExtend(inspectionMetadata),
+  renderingDataV2Schema.safeExtend(inspectionMetadata),
+]);
 export type RenderingDiagnosticData = z.infer<typeof renderingDiagnosticDataSchema>;
 export type RenderingLocation = RenderingDiagnosticData['locations'][number];
 export type RenderingInspectionRequest = z.infer<typeof renderingInspectionRequestSchema>;
@@ -93,6 +107,7 @@ export function parseRenderingInspection(value: unknown, request: RenderingInspe
   const result = renderingInspectionSchema.parse(value);
   if (
     result.requestId !== request.requestId ||
+    result.policy !== (request.policy ?? 'bounded-rendered-text-v1') ||
     result.selector !== request.selector ||
     result.root.selector !== request.root.selector ||
     JSON.stringify(result.root.framePath) !== JSON.stringify(request.root.framePath) ||

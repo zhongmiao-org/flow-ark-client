@@ -51,6 +51,7 @@ export default function FieldsElementPicker({
   sourceKey,
   reason,
   rendered = false,
+  renderPolicy = 'bounded-rendered-text-v1',
   beforeStart,
   onApply,
 }: {
@@ -60,10 +61,19 @@ export default function FieldsElementPicker({
   sourceKey: string;
   reason?: string;
   rendered?: boolean;
+  renderPolicy?: 'bounded-rendered-text-v1' | 'bounded-rendered-text-v2';
   beforeStart?: () => boolean;
   onApply: (candidate: FieldsPickCandidate) => void;
 }) {
-  const key = JSON.stringify([scope, selector, framePath, sourceKey, reason, rendered]);
+  const key = JSON.stringify([
+    scope,
+    selector,
+    framePath,
+    sourceKey,
+    reason,
+    rendered,
+    renderPolicy,
+  ]);
   const current = useRef({ key, onApply, beforeStart });
   current.current = { key, onApply, beforeStart };
   const request = useRef<{ id: string; key: string } | undefined>(undefined);
@@ -283,7 +293,13 @@ export default function FieldsElementPicker({
     )
       return;
     const owner = { id: crypto.randomUUID(), key };
-    const input = { version: 1 as const, requestId: owner.id, root: scope.root, selector };
+    const input = {
+      version: 1 as const,
+      requestId: owner.id,
+      root: scope.root,
+      selector,
+      ...(renderPolicy === 'bounded-rendered-text-v2' ? { policy: renderPolicy } : {}),
+    };
     request.current = owner;
     clearInspection();
     setPhase('diagnosing');
@@ -388,6 +404,12 @@ export default function FieldsElementPicker({
               ? inspection.issues.map((s) => issueLabels[s]).join('、')
               : '本次有限检查未发现拒绝原因；不代表正文完整。'}
           </p>
+          {inspection.policy === 'bounded-rendered-text-v2' && (
+            <p>
+              本次核准无绘制祖先空格 {inspection.ignoredAncestorSpaces}{' '}
+              处；未读取正文，仍须在正式运行中核对全文。
+            </p>
+          )}
           {inspection.truncated && (
             <Alert
               type="warning"

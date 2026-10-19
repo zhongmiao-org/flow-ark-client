@@ -24,7 +24,7 @@ function input(value: any, resolved: boolean) {
   unicode(value.$ref);
 }
 export function assertBrowserRenderedFieldsNode(value: unknown, resolved = false): any {
-  shape('BrowserRenderedFieldsNode', value);
+  shape((value as any)?.version === 7 ? 'BrowserScopedRenderedFieldsNode' : 'BrowserRenderedFieldsNode', value);
   const n = value as any;
   input(n.selector, resolved); n.framePath.forEach(unicode);
   const keys = new Set<string>();
@@ -35,9 +35,9 @@ export function assertBrowserRenderedFieldsNode(value: unknown, resolved = false
   return n;
 }
 export function assertBrowserRenderedFieldsCapabilities(value: any, capabilities: string[], manifest?: any, entry?: any) {
-  if (value?.type !== 'browser' || value.version !== 6) return;
+  if (value?.type !== 'browser' || ![6, 7].includes(value.version)) return;
   assertBrowserRenderedFieldsNode(value);
-  if (!['browser', browserRenderedFieldsCapability].every(c => capabilities.includes(c))) throw Error('关联正文节点必须声明browser和browser-rendered-fields-v1能力');
+  if (!['browser', value.version === 7 ? 'browser-rendered-fields-v2' : browserRenderedFieldsCapability].every(c => capabilities.includes(c))) throw Error('关联正文节点必须声明browser和browser-rendered-fields-v1能力');
   if (manifest && (!entry || !manifest.resources.some((r: any) => r.kind === 'browser' && r.access === 'use' && entry.resources.includes(r.id)))) throw Error('关联正文入口必须声明自己的browser/use资源');
 }
 export function renderedFieldStatus(f: any): string {
@@ -62,7 +62,7 @@ export function renderedFieldStatus(f: any): string {
 /** Exact resolved input must be supplied by the host's own driver invocation. */
 export function assertBrowserRenderedFieldsResult(node: unknown, value: unknown): any {
   const n = assertBrowserRenderedFieldsNode(node, true);
-  shape('BrowserRenderedFieldsResult', value);
+  shape(n.version === 7 ? 'BrowserScopedRenderedFieldsResult' : 'BrowserRenderedFieldsResult', value);
   const r = value as any;
   if (r.selector !== n.selector || JSON.stringify(r.framePath) !== JSON.stringify(n.framePath) || r.fields.length !== n.fields.length) throw Error('关联正文结果不属于本次配置');
   if (!n.framePath.length && r.url !== r.documentUrl) throw Error('顶层正文文档网址不一致');
@@ -71,6 +71,7 @@ export function assertBrowserRenderedFieldsResult(node: unknown, value: unknown)
   for (let i = 0; i < n.fields.length; i++) {
     const f = r.fields[i], configured = n.fields[i];
     for (const key of ['key', 'selector', 'operation', 'attribute', 'required']) if (f[key] !== configured[key]) throw Error('关联正文字段顺序或配置不符');
+    if (n.version === 7 && (f.operation !== 'rendered-text' || f.count !== 1) && f.ignoredAncestorSpaces !== 0) throw Error('Ignored ancestor count outside rendered target');
     const status = renderedFieldStatus(f);
     if (status !== f.status) throw Error('关联正文字段计数、值、原因或状态不一致');
     if (typeof f.value === 'string') { unicode(f.value); if (Buffer.byteLength(f.value) > (f.operation === 'rendered-text' ? browserRenderedFieldsLimits.renderedFieldBytes : browserRenderedFieldsLimits.rawFieldBytes)) throw Error('关联正文单项超限'); }

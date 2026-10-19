@@ -114,7 +114,7 @@ export default function BrowserActionWorkspace(props: Props) {
   };
   const finish = () => {
     if (!props.guard()) return;
-    if (node.version === 5 || node.version === 6) {
+    if (node.version === 5 || node.version === 6 || node.version === 7) {
       try {
         assertBrowserFieldsNode(node);
       } catch (e) {
@@ -126,7 +126,8 @@ export default function BrowserActionWorkspace(props: Props) {
     props.close();
   };
   const showBrowser = () => {
-    if (node.version === 5 || node.version === 6 || props.guard()) props.showBrowser();
+    if (node.version === 5 || node.version === 6 || node.version === 7 || props.guard())
+      props.showBrowser();
   };
   return (
     <Drawer
@@ -169,7 +170,7 @@ export default function BrowserActionWorkspace(props: Props) {
         <div className="browser-action-page">
           <header>
             <h1 ref={heading} id={id} tabIndex={-1}>
-              {node.version === 6
+              {node.version >= 6
                 ? '关联字段与正文'
                 : node.version === 5
                   ? '读取关联字段'
@@ -201,7 +202,7 @@ export default function BrowserActionWorkspace(props: Props) {
               />
             </div>
           )}
-          {node.version === 5 || node.version === 6 ? (
+          {node.version === 5 || node.version === 6 || node.version === 7 ? (
             <BrowserFieldsConfiguration
               pickingReady={pickingReady}
               node={node}

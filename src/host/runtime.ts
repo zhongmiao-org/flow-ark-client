@@ -2104,7 +2104,7 @@ export class Runtime {
       const active = this.active;
       const inspection = args.version === 4;
       let fieldsInput: ResolvedBrowserFieldsNode | undefined;
-      if (args.version === 5 || args.version === 6) {
+      if (args.version === 5 || args.version === 6 || args.version === 7) {
         const { nodeInstance, ...nodeInput } = args;
         const source = walk(snapshot.flow.steps).find((n) => n.id === args.id);
         if (

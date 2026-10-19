@@ -1,13 +1,19 @@
 import {
   node_browser_5,
   node_browser_6,
+  node_browser_7,
   browser_fields_result_v1,
   browser_rendered_fields_result_v2,
+  browser_scoped_rendered_fields_result_v3,
 } from './node-schema.generated.js';
 import type { Step } from './types';
-import type { BrowserFieldsResult, BrowserRenderedFieldsResult } from './contracts.generated';
+import type {
+  BrowserFieldsResult,
+  BrowserRenderedFieldsResult,
+  BrowserScopedRenderedFieldsResult,
+} from './contracts.generated';
 
-export type BrowserFieldsNode = Extract<Step, { type: 'browser'; version: 5 | 6 }>;
+export type BrowserFieldsNode = Extract<Step, { type: 'browser'; version: 5 | 6 | 7 }>;
 export type ResolvedBrowserFieldsNode = Omit<BrowserFieldsNode, 'selector' | 'fields'> & {
   selector: string;
   fields: (Omit<BrowserFieldsNode['fields'][number], 'selector' | 'attribute'> & {
@@ -17,7 +23,11 @@ export type ResolvedBrowserFieldsNode = Omit<BrowserFieldsNode, 'selector' | 'fi
 };
 export const browserFieldsCapability = 'browser-fields-v1';
 export const browserRenderedFieldsCapability = 'browser-rendered-fields-v1';
-export type BrowserCollectedResult = BrowserFieldsResult | BrowserRenderedFieldsResult;
+export const browserScopedRenderedFieldsCapability = 'browser-rendered-fields-v2';
+export type BrowserCollectedResult =
+  | BrowserFieldsResult
+  | BrowserRenderedFieldsResult
+  | BrowserScopedRenderedFieldsResult;
 export const renderedIssueOrder = [
   'hidden-target',
   'hidden-descendant',
@@ -28,7 +38,11 @@ export const renderedIssueOrder = [
   'generated-content',
 ] as const;
 export function browserFieldsCapabilityFor(version: number) {
-  return version === 6 ? browserRenderedFieldsCapability : browserFieldsCapability;
+  return version === 7
+    ? browserScopedRenderedFieldsCapability
+    : version === 6
+      ? browserRenderedFieldsCapability
+      : browserFieldsCapability;
 }
 const encoder = new TextEncoder();
 const forbidden = ['__proto__', 'prototype', 'constructor'];
@@ -60,7 +74,7 @@ export function assertBrowserFieldsNode(
   value: unknown,
   resolved = false,
 ): asserts value is BrowserFieldsNode {
-  if (!node_browser_5(value) && !node_browser_6(value))
+  if (!node_browser_5(value) && !node_browser_6(value) && !node_browser_7(value))
     throw Error('关联字段配置无效，请核对根定位、字段名、相对定位和读取方式');
   const n = value as BrowserFieldsNode;
   input(n.selector, resolved);
@@ -111,9 +125,11 @@ export function assertBrowserFieldsResult(
 ): asserts value is BrowserCollectedResult {
   resolvedBrowserFields(node);
   if (
-    !(node.version === 6
-      ? browser_rendered_fields_result_v2(value)
-      : browser_fields_result_v1(value))
+    !(node.version === 7
+      ? browser_scoped_rendered_fields_result_v3(value)
+      : node.version === 6
+        ? browser_rendered_fields_result_v2(value)
+        : browser_fields_result_v1(value))
   )
     throw Error('关联字段结果格式无效');
   const r = value as BrowserCollectedResult;
@@ -140,6 +156,12 @@ export function assertBrowserFieldsResult(
         throw Error('关联字段单项结果超限');
     }
     const issues: readonly string[] = 'issues' in f ? f.issues : [];
+    if (
+      'ignoredAncestorSpaces' in f &&
+      (f.operation !== 'rendered-text' || f.count !== 1) &&
+      f.ignoredAncestorSpaces !== 0
+    )
+      throw Error('祖先空格计数不属于唯一正文字段');
     if (
       issues.length &&
       (f.operation !== 'rendered-text' ||
@@ -178,18 +200,22 @@ export function assertBrowserFieldsResult(
       complete = false;
   }
   if (r.complete !== complete) throw Error('关联字段完整性不符');
-  if (encoder.encode(JSON.stringify(r)).length > (node.version === 6 ? 131072 : 65536))
+  if (encoder.encode(JSON.stringify(r)).length > (node.version >= 6 ? 131072 : 65536))
     throw Error('关联字段总结果超限，未截断或采用');
 }
 /** Structural rendering check; provenance is verified by the host, never inferred from this value. */
 export function assertBrowserFieldsValue(value: unknown): asserts value is BrowserCollectedResult {
-  if (!browser_fields_result_v1(value) && !browser_rendered_fields_result_v2(value))
+  if (
+    !browser_fields_result_v1(value) &&
+    !browser_rendered_fields_result_v2(value) &&
+    !browser_scoped_rendered_fields_result_v3(value)
+  )
     throw Error('关联字段结果格式无效');
   const r = value as BrowserCollectedResult;
   const n = resolvedBrowserFields({
     id: 'result',
     type: 'browser',
-    version: r.version === 2 ? 6 : 5,
+    version: r.version === 3 ? 7 : r.version === 2 ? 6 : 5,
     operation: 'collect',
     selector: r.selector,
     framePath: r.framePath,

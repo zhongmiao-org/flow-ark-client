@@ -244,13 +244,36 @@ export default function BrowserFieldsConfiguration({
         </Card>
         <Card>
           <h2>采集方式</h2>
+          {node.version === 6 && (
+            <Alert
+              type="info"
+              title="当前采用原正文检查规则"
+              description={
+                <Space direction="vertical">
+                  <span>
+                    更新后只核准满足完整条件的无绘制祖先空格；其他生成内容、隐藏或裁切仍阻止采用。仅改当前草稿，保存后用于下次运行。
+                  </span>
+                  <Button
+                    onClick={() => {
+                      if (guard()) change({ ...node, version: 7 });
+                    }}
+                  >
+                    更新检查规则
+                  </Button>
+                </Space>
+              }
+            />
+          )}
+          {node.version === 7 && (
+            <p>选区正文规则：只排除经核准无绘制的祖先普通空格；候选仍须本人完整阅读核对。</p>
+          )}
           <p>
-            {node.version === 6
+            {node.version >= 6
               ? '最多 20 项 · DOM文字 / 原始属性 / 已排版正文（待核对）'
               : '最多 20 项 · DOM文字 / 原始属性'}
           </p>
           <p>
-            {node.version === 6
+            {node.version >= 6
               ? '同一同步 DOM 读取；正文单项 64 KiB，原始字段 8 KiB，总结果 128 KiB。隐藏、裁切或无法判定时不采用正文；不自动展开或滚动。'
               : '同一同步 DOM 读取；单项 8 KiB，总结果 64 KiB。'}
           </p>
@@ -310,7 +333,7 @@ export default function BrowserFieldsConfiguration({
                   options={[
                     { value: 'text', label: '文字（textContent）' },
                     { value: 'attribute', label: '原始属性' },
-                    ...(node.version === 6
+                    ...(node.version >= 6
                       ? [{ value: 'rendered-text', label: '已排版正文（待核对）' }]
                       : []),
                   ]}
@@ -342,6 +365,9 @@ export default function BrowserFieldsConfiguration({
               }
               selector={typeof draft.selector === 'string' ? draft.selector : undefined}
               rendered={draft.operation === 'rendered-text'}
+              renderPolicy={
+                node.version === 7 ? 'bounded-rendered-text-v2' : 'bounded-rendered-text-v1'
+              }
               framePath={node.framePath}
               sourceKey={JSON.stringify([
                 node.id,
