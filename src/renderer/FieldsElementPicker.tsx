@@ -11,6 +11,7 @@ import {
   renderingInspectionStatusSchema,
   type RenderingInspection,
   type RenderingLocation,
+  type AncestorSpaceRule,
 } from '../shared/browser-rendering-diagnostics';
 
 const issueLabels = {
@@ -21,6 +22,46 @@ const issueLabels = {
   'unsupported-layout': '无法核准的排版',
   'embedded-content': '嵌入内容',
   'generated-content': '生成内容',
+};
+const ancestorSpaceLabels: Record<AncestorSpaceRule, string> = {
+  'ordinary-space': '普通空格字面量',
+  position: '定位方式',
+  float: '浮动方式',
+  'z-index': '层级',
+  'background-image': '背景图像',
+  'border-image-source': '边框图像',
+  'outline-style': '轮廓描边',
+  'box-shadow': '盒阴影',
+  'text-shadow': '文字阴影',
+  'text-decoration-line': '文字装饰',
+  'text-emphasis-style': '文字强调',
+  '-webkit-text-stroke-width': '文字描边',
+  filter: '滤镜',
+  'backdrop-filter': '背景滤镜',
+  transform: '变换',
+  perspective: '透视',
+  clip: '裁剪区域',
+  'clip-path': '裁剪路径',
+  'mask-image': '遮罩图像',
+  '-webkit-mask-box-image-source': '边框遮罩',
+  opacity: '不透明度',
+  'mix-blend-mode': '混合模式',
+  visibility: '可见性',
+  'content-visibility': '内容可见性',
+  'animation-name': '动画',
+  contain: '布局与绘制包含',
+  'overflow-x': '横向溢出',
+  'overflow-y': '纵向溢出',
+  '-webkit-box-reflect': '镜像反射',
+  rotate: '旋转',
+  scale: '缩放',
+  translate: '平移',
+  zoom: '页面缩放',
+  display: '显示方式',
+  'white-space': '换行规则',
+  'background-color': '背景颜色',
+  'border-width': '边框宽度',
+  'transition-duration': '过渡时长',
 };
 const positionLabel = (location: RenderingLocation) => {
   const scope =
@@ -298,7 +339,9 @@ export default function FieldsElementPicker({
       requestId: owner.id,
       root: scope.root,
       selector,
-      ...(renderPolicy === 'bounded-rendered-text-v2' ? { policy: renderPolicy } : {}),
+      ...(renderPolicy === 'bounded-rendered-text-v2'
+        ? { policy: renderPolicy, details: 'ancestor-space-checks-v1' as const }
+        : {}),
     };
     request.current = owner;
     clearInspection();
@@ -426,6 +469,24 @@ export default function FieldsElementPicker({
                     · {location.contentKind === 'whitespace-string' ? '空白字符串' : '其他生成内容'}
                     ；正文仍未采用
                   </span>
+                )}
+                {location.ancestorSpace && (
+                  <div>
+                    <p>未通过的祖先空格检查（仍按原规则拒绝）：</p>
+                    <ul aria-label="祖先空格未通过的检查项">
+                      {location.ancestorSpace.failures.map((failure) => (
+                        <li key={failure.rule}>
+                          {ancestorSpaceLabels[failure.rule]}：
+                          {failure.state === 'unavailable'
+                            ? '浏览器未提供可判断值'
+                            : '不符合现有规则'}
+                        </li>
+                      ))}
+                    </ul>
+                    {location.ancestorSpace.more && (
+                      <p>此位置仅列出前8项未通过条件，仍有其他条件未通过。</p>
+                    )}
+                  </div>
                 )}
               </li>
             ))}

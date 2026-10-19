@@ -1263,7 +1263,10 @@ export class EmbeddedBrowser {
                   throw Error('诊断期间网页已变化，请重新检查');
                 return parseRenderingInspection(
                   {
-                    ...request,
+                    version: request.version,
+                    requestId: request.requestId,
+                    root: request.root,
+                    selector: request.selector,
                     ...data,
                     source: { resourceId: resource.id, documentRevision: revision },
                   },
