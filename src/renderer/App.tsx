@@ -22,6 +22,8 @@ import type { ReferenceIssue } from '../shared/flow-references';
 import { usePageBack } from './use-page-back';
 import DesktopStepDetails from './DesktopStepDetails';
 import StepPositionPage from './StepPositionPage';
+import SavedFlowStepsPage from './SavedFlowStepsPage';
+import { reuseFlowSteps } from './flow-editing';
 import ControlWorkspace from './ControlWorkspace';
 import BrowserActionWorkspace from './BrowserActionWorkspace';
 import ResourceWorkspace from './ResourceWorkspace';
@@ -3148,6 +3150,8 @@ function Editor({
     if (active && focusedRequest) setPanel('node');
   }, [active, focusedRequest, setPanel]);
   const [positionOpen, setPositionOpen] = useState(false);
+  const [savedStepsOpen, setSavedStepsOpen] = useState(false);
+  const savedStepsOrigin = useRef<'position' | 'library'>('position');
   const [controlOpen, setControlOpen] = useState(false);
   const [browserActionOpen, setBrowserActionOpen] = useState(false);
   const [resourceOpen, setResourceOpen] = useState(false);
@@ -3313,7 +3317,11 @@ function Editor({
       },
     });
   };
-  const structure = (build: () => Step[], nextSelected = selected) => {
+  const structure = (
+    build: () => Step[],
+    nextSelected = selected,
+    addedCapabilities: string[] = [],
+  ) => {
     if (!guardNodeInput()) return false;
     setReferenceNotice(undefined);
     try {
@@ -3327,6 +3335,7 @@ function Editor({
           requiredCapabilities: [
             ...new Set([
               ...r.flow.requiredCapabilities,
+              ...addedCapabilities,
               ...effectCapabilities(steps),
               ...(flatten(steps).some((node) => node.type === 'context')
                 ? ['template-data-v1']
@@ -3580,7 +3589,8 @@ function Editor({
           !logicConfigurationOpen &&
           !effectConfigurationOpen &&
           !scriptConfigurationOpen &&
-          !positionOpen
+          !positionOpen &&
+          !savedStepsOpen
         }
         blockingRunId={blockingRunId}
         onViewRun={showRun}
@@ -3874,6 +3884,13 @@ function Editor({
             insertAt(side);
           }}
           duplicate={duplicate}
+          reuse={() => {
+            if (!guardNodeInput()) return;
+            setStructureError('');
+            savedStepsOrigin.current = 'position';
+            setPositionOpen(false);
+            setSavedStepsOpen(true);
+          }}
           move={() => {
             const target = targets.find((target) => target.value === moveTo);
             return !!target && structure(() => moveStep(r.flow.steps, selected, target));
@@ -3906,6 +3923,54 @@ function Editor({
                 )
                 ?.focus({ preventScroll: true }),
             );
+          }}
+        />
+      )}
+      {savedStepsOpen && (
+        <SavedFlowStepsPage
+          target={r}
+          targets={targets}
+          destination={destination}
+          busy={saveBusy}
+          error={structureError}
+          backLabel={savedStepsOrigin.current === 'position' ? '返回步骤编辑' : '返回流程编排'}
+          apply={(source, target) => {
+            if (!guardNodeInput()) return false;
+            try {
+              const at = targets.find((choice) => choice.value === target);
+              if (!at) throw new Error('添加位置已变化，请重新选择');
+              const next = reuseFlowSteps(r.flow, source.flow, at);
+              const previous = new Set(editorSteps.map((node) => node.id));
+              const first = flatten(next.steps).find((node) => !previous.has(node.id));
+              if (
+                !first ||
+                !structure(() => next.steps, first.id, source.flow.requiredCapabilities)
+              )
+                return false;
+              setSavedStepsOpen(false);
+              setCopiedStep({
+                id: first.id,
+                flowId: r.id,
+                count: flatten(source.flow.steps).length,
+              });
+              return true;
+            } catch (error: any) {
+              setStructureError(
+                error instanceof StructureReferenceError
+                  ? '来源或目标步骤的引用需要核对，请先修复来源或补齐目标参数。'
+                  : error.message,
+              );
+              return false;
+            }
+          }}
+          parameters={() => {
+            if (!guardNodeInput()) return;
+            setSavedStepsOpen(false);
+            openParameters();
+          }}
+          close={() => {
+            setSavedStepsOpen(false);
+            if (savedStepsOrigin.current === 'position') setPositionOpen(true);
           }}
         />
       )}
@@ -3969,6 +4034,12 @@ function Editor({
               add={append}
               destination={destination}
               setDestination={setDestination}
+              reuse={() => {
+                if (!guardNodeInput()) return;
+                savedStepsOrigin.current = 'library';
+                setStructureError('');
+                setSavedStepsOpen(true);
+              }}
             />
             <div className="canvas" ref={canvasElement}>
               <DiagramCanvas
@@ -3978,6 +4049,7 @@ function Editor({
                   active &&
                   !outlineOpen &&
                   !positionOpen &&
+                  !savedStepsOpen &&
                   !controlOpen &&
                   !browserActionOpen &&
                   !resourceOpen &&
@@ -4110,6 +4182,7 @@ function Editor({
                               active &&
                               (!compact || panel === 'node') &&
                               !positionOpen &&
+                              !savedStepsOpen &&
                               !browserActionOpen &&
                               !outlineOpen
                             }

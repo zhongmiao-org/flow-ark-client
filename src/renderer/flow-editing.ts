@@ -1,4 +1,4 @@
-import type { Step } from '../shared/types';
+import type { Flow, Step } from '../shared/types';
 import {
   nodeReferenceValues,
   referenceIssues,
@@ -112,16 +112,17 @@ export function moveSibling(steps: Step[], id: string, direction: -1 | 1): Step[
     return next;
   });
 }
-export function duplicateStep(
-  steps: Step[],
-  id: string,
+export function cloneStepForest(
+  source: Step[],
+  target: Step[],
   makeId = () => 'n_' + crypto.randomUUID().replaceAll('-', ''),
-): { steps: Step[]; id: string } {
-  const original = flatten(steps).find((n) => n.id === id);
-  if (!original) throw new Error('待复制步骤已删除');
-  const used = new Set(flatten(steps).map((n) => n.id)),
+): Step[] {
+  const sourceNodes = flatten(source);
+  if (new Set(sourceNodes.map((node) => node.id)).size !== sourceNodes.length)
+    throw new Error('来源流程含重复步骤，请先修复来源');
+  const used = new Set([...flatten(target), ...sourceNodes].map((n) => n.id)),
     ids = new Map<string, string>();
-  for (const node of flatten([original])) {
+  for (const node of sourceNodes) {
     let next = makeId(),
       attempts = 0;
     while (used.has(next)) {
@@ -139,7 +140,7 @@ export function duplicateStep(
       if (root === 'steps' && ids.has(step)) {
         // Condition outputs are keyed by child IDs; loop outputs add an array index.
         // Rewrite only those structural keys, never arbitrary output-object properties.
-        let source = flatten([original]).find((node) => node.id === step),
+        let source = sourceNodes.find((node) => node.id === step),
           index = 0;
         while (source && index < tail.length) {
           if (source.type === 'loop') {
@@ -177,11 +178,60 @@ export function duplicateStep(
           : node.type === 'loop'
             ? { ...refs({ ...node, body: [] }), body: node.body.map(cloneNode) }
             : refs(node);
-  const cloned = cloneNode(original);
-  for (const node of flatten([cloned])) node.id = ids.get(node.id)!;
+  const cloned = source.map(cloneNode);
+  for (const node of flatten(cloned)) node.id = ids.get(node.id)!;
+  return cloned;
+}
+export function duplicateStep(
+  steps: Step[],
+  id: string,
+  makeId = () => 'n_' + crypto.randomUUID().replaceAll('-', ''),
+): { steps: Step[]; id: string } {
+  const original = flatten(steps).find((n) => n.id === id);
+  if (!original) throw new Error('待复制步骤已删除');
+  const [cloned] = cloneStepForest([original], steps, makeId);
   if (original.name && !['file', 'excel'].includes(original.type))
     cloned.name = original.name + ' 副本';
   return { steps: insertStep(steps, cloned, { anchor: id, side: 'after' }), id: cloned.id };
+}
+
+export function stepParameterNames(steps: Step[]): string[] {
+  const names = new Set<string>();
+  const visit = (value: unknown) => {
+    if (!value || typeof value !== 'object') return;
+    if ('$ref' in value && typeof value.$ref === 'string') {
+      const [root, name] = value.$ref.split('.');
+      if (root === 'params' && name) names.add(name);
+      return;
+    }
+    for (const child of Object.values(value)) visit(child);
+  };
+  for (const node of flatten(steps)) visit(nodeReferenceValues(node));
+  return [...names].sort();
+}
+
+export function reuseFlowSteps(target: Flow, source: Flow, destination: Destination): Flow {
+  if (!source.steps.length) throw new Error('来源流程没有可添加的步骤');
+  checkStructure([], source.steps, source.parameters);
+  const missing = stepParameterNames(source.steps).filter(
+    (name) => !Object.hasOwn(target.parameters, name),
+  );
+  if (missing.length) throw new Error(`请先在目标参数中定义：${missing.join('、')}`);
+  const added = cloneStepForest(source.steps, target.steps);
+  let steps = target.steps,
+    at = destination;
+  for (const node of added) {
+    steps = insertStep(steps, node, at);
+    at = { anchor: node.id, side: 'after' };
+  }
+  checkStructure(target.steps, steps, target.parameters);
+  return {
+    ...target,
+    steps,
+    requiredCapabilities: [
+      ...new Set([...target.requiredCapabilities, ...source.requiredCapabilities]),
+    ],
+  };
 }
 // Outputs from conditions and loops contain child IDs. Moving a child can leave
 // the first reference segment valid while breaking a later structural segment.

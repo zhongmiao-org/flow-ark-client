@@ -15,6 +15,7 @@ type Props = {
   add: () => void;
   insert: (side: 'before' | 'after') => void;
   duplicate: () => boolean;
+  reuse: () => void;
   move: () => boolean;
   remove: () => boolean;
   undo: () => void;
@@ -273,6 +274,7 @@ export default function StepPositionPage(props: Props) {
             <section className="step-position-card step-position-draft" aria-label="草稿与视图">
               <Card>
                 <h2>草稿与视图</h2>
+                <Button onClick={props.reuse}>从已有流程添加步骤</Button>
                 <div className="step-position-actions">
                   <Button
                     disabled={!props.canUndo || undefined}
