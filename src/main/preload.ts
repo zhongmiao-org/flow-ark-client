@@ -168,6 +168,8 @@ const allowed = new Set([
   'browser.embedded.fields.pick.cancel',
   'browser.embedded.fields.pick.confirm',
   'browser.embedded.fields.pick.validate',
+  'browser.embedded.fields.rendering.inspect',
+  'browser.embedded.fields.rendering.status',
   'browser.embedded.pick.status',
   'browser.embedded.pick.confirm',
   'browser.embedded.pick.focus',
