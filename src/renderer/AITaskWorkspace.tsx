@@ -1930,7 +1930,7 @@ export default function AITaskWorkspace(props: Props) {
                             : generating
                               ? '正在理解本次任务，你可以取消生成。'
                               : scope
-                                ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : scope.nodeId} · 尚未执行`
+                                ? `仅修改第 ${scopeIndex + 1} 步 · ${scopedStep ? stepTitle(scopedStep) : '所选步骤待核对'} · 尚未执行`
                                 : fullModification
                                   ? `完整流程修改 · 任务基线修订 ${detail?.proposal?.baseRevision} · 尚未采纳`
                                   : standaloneGraph
@@ -2721,11 +2721,9 @@ export default function AITaskWorkspace(props: Props) {
                             {rejectionNotice && <p className="ai-task-note">{rejectionNotice}</p>}
                             <b>
                               仅修改第 {scopeIndex + 1} 步 ·{' '}
-                              {scopedStep ? stepTitle(scopedStep) : scope.nodeId}
+                              {scopedStep ? stepTitle(scopedStep) : '所选步骤待核对'}
                             </b>
-                            <small>
-                              步骤 {scope.nodeId} · 基线 {scope.baseFlowHash.slice(0, 12)}
-                            </small>
+                            <small>按本次选择的步骤与草稿基线修改</small>
                             <p>其他步骤、子步骤和静态资源保持不变。采纳只更新草稿。</p>
                           </div>
                         )}

@@ -1,7 +1,7 @@
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { Card, Alert, Button, Collapse, Descriptions } from 'antd';
 import { useEffect, useRef, useState } from 'react';
-import { presentRun } from '../shared/run-presentation';
+import { presentRun } from './run-presentation';
 import { runDisplayLabels } from '../shared/run-history';
 import type { RunRerunDetails } from '../shared/run-rerun';
 import type { Run } from '../shared/types';
@@ -102,11 +102,10 @@ export default function RunLogSummary({
         else buttons.current.delete(id);
       }}
       disabled={!!opening || undefined}
-      aria-label={`查看关联运行 ${id}`}
+      aria-label={`查看关联运行 ${name || '运行记录'}`}
       onClick={() => void open(id)}
     >
       {opening === id ? '正在读取…' : name || '查看运行'}
-      <code>{id}</code>
     </Button>
   );
   return (
@@ -131,9 +130,7 @@ export default function RunLogSummary({
               {
                 key: 'position',
                 label: view.step.kind === 'last' ? '最后记录步骤' : '记录位置',
-                children: unresolved
-                  ? `${view.step.instance}（位置待核对）`
-                  : (view.step.name ?? view.step.label),
+                children: unresolved ? '步骤位置待核对' : (view.step.name ?? view.step.label),
               },
               {
                 key: 'progress',

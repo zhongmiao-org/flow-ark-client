@@ -1,3 +1,4 @@
+import { runRecordLabel } from './readable-labels';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { runStateColors } from './theme';
 import { Select, Button, Tag, Badge, Collapse, Descriptions, Card, Alert } from 'antd';
@@ -422,12 +423,10 @@ export default function TaskRunPage({
             </h1>
             <p>
               {model.success && page === 'overview' ? (
-                <>
-                  运行 {run.id} · 已完成 · {model.completed.length} 次步骤已确认完成
-                </>
+                <>本次运行已完成 · {model.completed.length} 次步骤已确认完成</>
               ) : (
                 <>
-                  {run.name} · 本次执行 {run.id} · {versionLabel}
+                  {runRecordLabel(run)} · {versionLabel}
                   {run.task && ` · 任务修订 ${run.task.revision}`}
                   {run.rerun && page === 'overview' && (
                     <>
@@ -581,7 +580,7 @@ export default function TaskRunPage({
                   <div>
                     <dt className="sr-only">运行标识</dt>
                     <dd className="task-run-path">
-                      {run.id}
+                      {runRecordLabel(run)}
                       {run.rerun && (
                         <>
                           {' · '}

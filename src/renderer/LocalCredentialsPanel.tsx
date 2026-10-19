@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import {
   Card,
   Divider,
@@ -257,7 +258,7 @@ function CredentialDialog({
             {removing ? (
               <section className="local-credential-impact">
                 <h3>{editor.entry?.name}</h3>
-                <code>{editor.id}</code>
+                <TechnicalDetails items={[{ label: '凭据引用 ID', value: editor.id }]} />
                 {editor.entry?.boundFlows.length ? (
                   <>
                     <p>仍被以下流程引用，请先移除绑定：</p>

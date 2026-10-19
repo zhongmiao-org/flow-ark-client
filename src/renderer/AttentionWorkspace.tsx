@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import { isTemplateAttentionOrigin } from '../../contracts/template-attention';
 import SkillPanel from './SkillPanel';
 import ConversationThreadPanel from './ConversationThreadPanel';
@@ -644,10 +645,10 @@ export default function AttentionWorkspace({
                     ? `保存状态：${runStateLabels[run.state]} · ${date(run.updatedAt)}`
                     : '当前摘要未包含此记录，可打开详情核对。'}
                 </p>
-                <code>{id}</code>
+                <TechnicalDetails items={[{ label: '关联运行 ID', value: id }]} />
                 <Button
                   disabled={busy || undefined}
-                  aria-label={`查看第 ${index + 1} 个关联运行：${run?.name || id}`}
+                  aria-label={`查看第 ${index + 1} 个关联运行：${run?.name || '运行记录'}`}
                   onClick={(event) => viewRun(id, event.currentTarget as HTMLButtonElement)}
                 >
                   {openingRunId === id ? '正在读取运行…' : '查看运行详情'}

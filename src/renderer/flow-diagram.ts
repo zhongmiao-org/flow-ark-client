@@ -122,7 +122,7 @@ export function buildDiagram(
       draggable: false,
       deletable: false,
       ariaLabel: step
-        ? `${kinds[step.type]?.label ?? step.type} · ${typeof step.name === 'string' ? step.name : step.id}`
+        ? `${kinds[step.type]?.label ?? step.type} · ${typeof step.name === 'string' && step.name.trim() ? step.name : '未命名步骤'}`
         : label,
       ariaRole: step ? 'button' : undefined,
       domAttributes: step ? { 'aria-pressed': id === selected } : undefined,

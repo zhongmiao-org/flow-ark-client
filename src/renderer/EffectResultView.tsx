@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import { Alert, Button, Card, Collapse, Descriptions } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { EffectResult } from '../shared/effect-node';
@@ -72,11 +73,11 @@ export default function EffectResultView({
                   children: value.execute ? '是，仅原运行当时' : '否',
                 },
                 { key: 'action', label: '声明动作', children: value.action },
-                { key: 'key', label: '原去重键', children: value.key },
               ]
             : []),
         ]}
       />
+      {preparing && <TechnicalDetails items={[{ label: '原去重键', value: value.key }]} />}
       {preparing && openRun && (
         <Button loading={busy} onClick={() => void source()}>
           查看来源运行

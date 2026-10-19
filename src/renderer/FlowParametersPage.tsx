@@ -651,7 +651,7 @@ export default function FlowParametersPage({
                   key={id}
                 >
                   <span>
-                    {credentialNames[id] ? `${credentialNames[id]} · ${id}` : id}
+                    {credentialNames[id] || '未命名凭据（请在本地设置核对）'}
                     {!credentials.includes(id) ? ' · 凭据不可用' : ''}
                   </span>
                 </Checkbox>

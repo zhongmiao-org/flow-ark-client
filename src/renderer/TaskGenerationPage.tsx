@@ -85,7 +85,7 @@ export default function TaskGenerationPage({
                 <p tabIndex={0} aria-label="本次生成要求">
                   {task.scope?.instruction || task.description}
                 </p>
-                {task.scope && <small>仅修改所选步骤 · {task.scope.nodeId}</small>}
+                {task.scope && <small>仅修改本次选择的步骤</small>}
               </Card>
             </article>
             <p>

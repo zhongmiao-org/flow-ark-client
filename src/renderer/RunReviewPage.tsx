@@ -1,3 +1,4 @@
+import { runRecordLabel } from './readable-labels';
 import { Alert, Button, Checkbox, Collapse, Descriptions, Card } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
@@ -551,7 +552,7 @@ export default function RunReviewPage(props: Props) {
                     <div className="feedback-body">
                       <b>{attempt.run.name}</b>
                       <p className="run-review-version" data-run-id={attempt.run.id}>
-                        {attempt.run.id}
+                        {runRecordLabel(attempt.run)}
                       </p>
                       <p>返回或查看结果不会重复执行。</p>
                       <Button

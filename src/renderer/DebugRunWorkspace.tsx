@@ -1,10 +1,11 @@
+import TechnicalDetails from './TechnicalDetails';
 import { runStateColors, runStepColors } from './theme';
 import { Alert, Button, Card, Collapse, Descriptions, Empty, Tag, Badge } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { ReactNode, RefObject } from 'react';
 import type { Event } from '../shared/types';
-import type { RunPresentation, RunPresentationInput } from '../shared/run-presentation';
-import { formatRunDuration } from '../shared/run-presentation';
+import type { RunPresentation, RunPresentationInput } from './run-presentation';
+import { formatRunDuration } from './run-presentation';
 import { runDisplayLabels } from '../shared/run-history';
 import { runTimeline, runTimelineTitle } from './run-timeline';
 import { RunObservation, RunStepOutput } from './RunObservation';
@@ -92,7 +93,9 @@ export default function DebugRunWorkspace(props: Props) {
                     {step.pathLabel && step.instance !== step.nodeId && (
                       <p className="debug-run-instance-path">{step.pathLabel}</p>
                     )}
-                    {step.instance !== step.nodeId && <code>{step.instance}</code>}
+                    {step.instance !== step.nodeId && (
+                      <TechnicalDetails items={[{ label: '步骤实例路径', value: step.instance }]} />
+                    )}
                     <Tag
                       className="run-state-tag"
                       variant="filled"
@@ -159,9 +162,7 @@ export default function DebugRunWorkspace(props: Props) {
                               key={event.sequence}
                               event={event}
                               latest={event === props.results.at(-1)}
-                              label={
-                                step ? runTimelineTitle(step) : event.nodeInstance || '运行输出'
-                              }
+                              label={step ? runTimelineTitle(step) : '运行输出 · 步骤位置待核对'}
                               instance={
                                 step && step.instance !== step.nodeId ? step.instance : undefined
                               }

@@ -260,7 +260,7 @@ export default function TemplateEntry({
         defaultModel(provider),
       source: {
         kind: 'template',
-        title: `${detail.manifest.name} / ${instance.name} · ${instance.id.slice(0, 8)} / ${entry.name}`,
+        title: `${detail.manifest.name} / ${instance.name} / ${entry.name}`,
         returnLabel: `${instance.name} · ${entry.name}`,
         instanceId: instance.id,
         entryId,
@@ -315,7 +315,7 @@ export default function TemplateEntry({
     return {
       source: { instanceId: instance.id, entryId, revision: saved.revision },
       flowId,
-      title: `${instance.name} · ${instance.id.slice(0, 8)} / ${entry.name}`,
+      title: `${instance.name} / ${entry.name}`,
       savedAt,
       back: () => {
         returnFocus.current = focused;
@@ -565,7 +565,7 @@ export default function TemplateEntry({
                     type="warning"
                     role="presentation"
                     showIcon
-                    title={<>入口运行已创建 · {createdRun.id.slice(0, 8)}</>}
+                    title="入口运行已创建"
                     description="详情尚未打开。继续查看会读取同一条运行，不会再次执行入口。"
                   />
                 </div>
@@ -986,7 +986,7 @@ export default function TemplateEntry({
                           ) : latest ? (
                             <>
                               <small>
-                                {latest.id.slice(0, 8)} · {runDisplayLabels[latest.state]} ·{' '}
+                                {runDisplayLabels[latest.state]} ·{' '}
                                 {new Date(latest.createdAt).toLocaleString('zh-CN')}
                               </small>
                               <Button

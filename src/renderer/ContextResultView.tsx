@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import { Card, Collapse, Descriptions } from 'antd';
 import type { DataOutput } from '../shared/template-data';
 import { contextOperations } from '../shared/template-data';
@@ -9,7 +10,7 @@ export default function ContextResultView({ value }: { value: DataOutput }) {
       <Descriptions
         column={1}
         items={[
-          { key: 'context', label: '上下文', children: value.contextId },
+          { key: 'context', label: '范围', children: '本次运行的共享配置与状态' },
           {
             key: 'revision',
             label: '修订',
@@ -19,11 +20,17 @@ export default function ContextResultView({ value }: { value: DataOutput }) {
                 : value.revision,
           },
           ...(value.operation === 'state.write'
-            ? [
-                { key: 'operation', label: '操作身份', children: value.operationId },
-                { key: 'at', label: '已提交', children: value.committedAt },
-              ]
+            ? [{ key: 'at', label: '已提交', children: value.committedAt }]
             : []),
+        ]}
+      />
+      <TechnicalDetails
+        items={[
+          { label: '上下文 ID', value: value.contextId },
+          {
+            label: '操作 ID',
+            value: value.operation === 'state.write' ? value.operationId : undefined,
+          },
         ]}
       />
       <ReadonlyValue value={value.value} />

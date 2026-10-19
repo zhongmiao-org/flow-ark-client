@@ -1,3 +1,5 @@
+import { recordTime } from './readable-labels';
+import TechnicalDetails from './TechnicalDetails';
 import { saveTemplateResultDraft } from './result-save-recovery';
 import {
   Card,
@@ -446,7 +448,7 @@ export default function TemplateInstancePage({
         packageKey: instance.packageKey,
         entryFlowId: instance.entryFlows[entryId],
         view: 'resources',
-        title: `${instance.name} · ${instance.id.slice(0, 8)} / 资源与动作授权`,
+        title: `${instance.name} / 资源与动作授权`,
       },
     });
   };
@@ -605,15 +607,13 @@ export default function TemplateInstancePage({
                       <ActionButton
                         stretch
                         hint={
-                          busy
-                            ? '正在保存，请等待完成'
-                            : `${other.name} · ${other.id}；切换前核对当前未保存修改`
+                          busy ? '正在保存，请等待完成' : `${other.name}；切换前核对当前未保存修改`
                         }
                         key={other.id}
                         disabled={busy || undefined}
                         onClick={() => go(() => choose(other.id), `实例 · ${other.name}`)}
                       >
-                        {other.name} · {other.id.slice(0, 8)}
+                        {other.name} · {recordTime(other.createdAt)}
                       </ActionButton>
                     ))}
                   {data.instances.every((other) => other.id === instance.id) && (
@@ -707,8 +707,13 @@ export default function TemplateInstancePage({
                   { key: 'version', label: '固定版本', children: draft.manifest.version },
                   { key: 'source', label: '来源声明', children: draft.manifest.source },
                   { key: 'author', label: '作者声明', children: draft.manifest.author },
-                  { key: 'instance', label: '实例', children: instance.id },
-                  { key: 'digest', label: '内容摘要', children: draft.manifest.contentDigest },
+                  { key: 'instance', label: '实例', children: instance.name },
+                ]}
+              />
+              <TechnicalDetails
+                items={[
+                  { label: '实例 ID', value: instance.id },
+                  { label: '包内容摘要', value: draft.manifest.contentDigest },
                 ]}
               />
               <div className="template-version-adoption">
@@ -852,8 +857,8 @@ export default function TemplateInstancePage({
             模板库
           </a>
           <span aria-hidden="true">/</span>
-          <span className="ai-source-title" title={`${instance.name} · ${instance.id}`}>
-            {instance.name} · {instance.id.slice(0, 8)}
+          <span className="ai-source-title" title={instance.name}>
+            {instance.name}
           </span>
           <span aria-hidden="true">/</span>
           <span aria-current="page">
@@ -874,10 +879,7 @@ export default function TemplateInstancePage({
                   ? instance.name
                   : `${draft.manifest.name} · ${instance.name}`}
             </h1>
-            <p>
-              实例 {instance.id.slice(0, 8)} · 固定包 v{draft.manifest.version} ·
-              共享配置修改不影响已开始的运行
-            </p>
+            <p>当前实例 · 固定包 v{draft.manifest.version} · 共享配置修改不影响已开始的运行</p>
           </div>
         </div>
         {adoptedFrom && !entryDetail && (
@@ -902,7 +904,7 @@ export default function TemplateInstancePage({
                     新旧版本并存
                   </Tag>
                   <p>
-                    原实例 {adoptedFrom.id.slice(0, 8)} 继续使用 v{adoptedFrom.version}
+                    原实例继续使用 v{adoptedFrom.version}
                     ，原有计划与运行快照保持不变。
                   </p>
                   <p>

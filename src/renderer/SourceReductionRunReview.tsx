@@ -1,3 +1,4 @@
+import TechnicalDetails from './TechnicalDetails';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Button, Checkbox, Collapse, Descriptions, Tag } from 'antd';
 import {
@@ -230,7 +231,7 @@ export default function SourceReductionRunReview({
       {error && <Alert type="warning" title={error} />}
       {created && (
         <>
-          <p>已创建关联运行 {created.id}。相同确认不再创建第二个运行。</p>
+          <p>已创建关联运行。相同确认不再创建第二个运行。</p>
           {openRun ? (
             <Button disabled={busy} onClick={() => void inspect(created)}>
               查看新运行
@@ -269,6 +270,14 @@ export default function SourceReductionRunReview({
                 次用量未知（不补零）
               </p>
               <p>本次仅限这个来源节点实例；整个入口仍从第一步执行，其他节点单独核对。</p>
+              <TechnicalDetails
+                items={[
+                  { label: '来源运行 ID', value: r.target.runId },
+                  { label: '步骤实例路径', value: r.target.nodeInstance },
+                  { label: '整理任务 ID', value: r.job.jobId },
+                  { label: '来源记录 ID', value: r.job.source.archiveId },
+                ]}
+              />
               {r.pending?.hasSavedResponse && (
                 <p>已保存完整响应。可以返回请求记录先零调用采用；确认另发请求仍可能再次计费。</p>
               )}
@@ -283,10 +292,7 @@ export default function SourceReductionRunReview({
                 size="small"
                 column={1}
                 items={[
-                  { key: 'run', label: '原运行', children: r.target.runId },
-                  { key: 'instance', label: '准确节点实例', children: r.target.nodeInstance },
-                  { key: 'job', label: '原整理任务', children: r.job.jobId },
-                  { key: 'source', label: '固定来源', children: r.job.source.archiveId },
+                  { key: 'source', label: '固定范围', children: '本次选定的来源与整理步骤' },
                   {
                     key: 'config',
                     label: 'Key配置修订',

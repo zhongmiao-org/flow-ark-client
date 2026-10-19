@@ -635,7 +635,7 @@ export default function ScheduleWorkbench({
                             () => {
                               void open(plan);
                             },
-                            `编辑计划 · ${data.flows.find((flow) => flow.id === plan.flowId)?.flow.name ?? plan.id}`,
+                            `编辑计划 · ${data.flows.find((flow) => flow.id === plan.flowId)?.flow.name ?? '流程名称待核对'}`,
                           )
                         }
                       >
@@ -717,11 +717,7 @@ export default function ScheduleWorkbench({
                             { value: '', label: '选择已保存的流程或入口' },
                             ...data.flows.map((flow) => ({
                               value: flow.id,
-                              label: (
-                                <>
-                                  {flow.flow.name} · {flow.id.slice(0, 8)}
-                                </>
-                              ),
+                              label: <>{flow.flow.name}</>,
                             })),
                           ]}
                         />
@@ -745,9 +741,7 @@ export default function ScheduleWorkbench({
                             : '先选择已保存的流程或入口'}
                       </p>
                       {draft.plan && (
-                        <small className="schedule-version-id">
-                          版本标识：{draft.plan.versionId}
-                        </small>
+                        <small className="schedule-version-id">按保存计划时的固定方案执行</small>
                       )}
                     </div>
                     <Checkbox
@@ -974,7 +968,7 @@ export default function ScheduleWorkbench({
                     ? '下次：' + inZone(history.result.plan.nextAt, history.result.plan.timezone)
                     : '暂停期间不触发；已有运行不受影响。'}
                 </p>
-                <small>固定版本：{history.result.plan.versionId}</small>
+                <small>按保存计划时的固定方案执行</small>
               </Card>
             )}
             <p>错过不补跑，占用时不重复创建运行。这里只显示已报告的记录。</p>

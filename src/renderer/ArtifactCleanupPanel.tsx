@@ -1,3 +1,4 @@
+import { runRecordLabel } from './readable-labels';
 import { Alert, Button, Card, Checkbox, Modal } from 'antd';
 import './antd-layout.css';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -168,9 +169,7 @@ function CleanupDialog({
         <h2 id={titleId} ref={heading} tabIndex={-1}>
           {title}
         </h2>
-        <p>
-          来源运行 <code>{run.id}</code>
-        </p>
+        <p>来源运行：{runRecordLabel(run)}</p>
       </header>
       {(stage === 'loading' || busy) && (
         <Alert

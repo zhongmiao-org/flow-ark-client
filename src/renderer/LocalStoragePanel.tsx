@@ -48,7 +48,7 @@ function resourcesFor(flow: FlowRecord, templates: Bootstrap['templates']): Reso
     const declaration = manifest?.resources.find((item) => item.id === id);
     resources.push({
       key: `resource:${id}`,
-      name: declaration ? `${declaration.name} · ${id}` : id,
+      name: declaration?.name || `本机资源 ${resources.length + 1}（名称待核对）`,
       path: flow.bindings.resources?.[id]?.path,
       kind:
         declaration?.kind === 'file'

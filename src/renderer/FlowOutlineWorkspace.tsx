@@ -1,3 +1,4 @@
+import { recordTime } from './readable-labels';
 import { Card, Button, Collapse, Dropdown, Descriptions } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import {
@@ -9,7 +10,7 @@ import {
   type MutableRefObject,
 } from 'react';
 import type { FlowRecord, Step } from '../shared/types';
-import { presentRun } from '../shared/run-presentation';
+import { presentRun } from './run-presentation';
 import { runDisplayLabels } from '../shared/run-history';
 import { nodeReferenceValues } from '../shared/flow-references';
 import { buildDiagram } from './flow-diagram';
@@ -298,11 +299,7 @@ export default function FlowOutlineWorkspace({
         <h1>{model.entries.length} 步任务，也能找到当前一步</h1>
         <p>
           步骤大纲、搜索定位和分支折叠 · {saved ? '草稿已保存' : '草稿有未保存修改'}
-          {detail && (
-            <span title={detail.run.versionId}>
-              {` · 运行固定版本 ${detail.run.versionId.slice(0, 8)}`}
-            </span>
-          )}
+          {detail && <span>{' · 按启动时保存的方案执行'}</span>}
         </p>
       </header>
       <div className="outline-toolbar">
@@ -448,7 +445,7 @@ export default function FlowOutlineWorkspace({
               <p>
                 {observation.reason ??
                   (detail
-                    ? `${runDisplayLabels[detail.run.state]} · ${detail.run.id}`
+                    ? `${runDisplayLabels[detail.run.state]} · ${recordTime(detail.run.createdAt)}`
                     : '尚无运行记录')}
                 {detail &&
                   JSON.stringify(record.flow) !== JSON.stringify(detail.snapshot) &&

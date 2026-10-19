@@ -13,7 +13,7 @@ import ArtifactCleanupPanel from './ArtifactCleanupPanel';
 import { artifactLabel, type RunArtifact } from './task-run-presentation';
 import { runDisplayLabels } from '../shared/run-history';
 import type { RunState } from '../shared/types';
-import { presentRun } from '../shared/run-presentation';
+import { presentRun } from './run-presentation';
 import RunResultReview from './RunResultReview';
 import RunFileRecovery from './RunFileRecovery';
 import './run-output-workspace.css';
@@ -180,6 +180,7 @@ export default function RunOutputWorkspace({
               <TypedRunResults
                 runId={detail.run.id}
                 entries={detail.typedResults}
+                snapshot={detail.snapshot}
                 rerun={rerun}
                 openRun={openRun}
               />
@@ -190,6 +191,7 @@ export default function RunOutputWorkspace({
               key={`context:${detail.run.id}`}
               runId={detail.run.id}
               runState={detail.run.state}
+              snapshot={detail.snapshot}
             />
             {!!detail.typedResults?.length && (
               <p className="run-output-boundary">

@@ -1,5 +1,5 @@
 import type { Step } from '../shared/types';
-import { presentRun, type RunPresentationInput } from '../shared/run-presentation';
+import { presentRun, type RunPresentationInput } from './run-presentation';
 import { taskStepTitle } from './task-step-presentation';
 import { runInstancePresenter } from './run-instance-presentation';
 
@@ -87,7 +87,7 @@ export function runTimeline(detail: RunPresentationInput, now = Date.now()) {
     return {
       ...row,
       key: row.located ? row.instance : `unresolved:${row.instance}`,
-      name: node ? taskStepTitle(node) : row.instance,
+      name: node ? taskStepTitle(node) : '步骤位置待核对',
       ordinal: node ? (ordinals.get(row.nodeId) ?? null) : null,
       pathLabel: node ? describeInstance(row.instance) : null,
       type: node?.type,
